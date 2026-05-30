@@ -31,6 +31,18 @@
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="20">
 
+            <!-- Provider Header -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                <Viewbox Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center">
+                    <Path Data="{StaticResource GeoEA}" Fill="#E11D48"/>
+                </Viewbox>
+                <TextBlock Text="{DynamicResource LOCPlayAch_Provider_EA}"
+                           FontSize="20"
+                           FontWeight="Bold"
+                           VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextBrush}"/>
+            </StackPanel>
+
             <!-- Provider Enable Toggle -->
             <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,12">
                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
@@ -58,12 +70,8 @@
             <Border Style="{StaticResource SectionBorderStyle}"
                     IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_EA_Connection}"
+                    <TextBlock x:Name="ConnectionLabel"
                                Style="{StaticResource SectionHeaderStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_EA_OwnAuthHelp}"
-                               Style="{StaticResource MutedTextStyle}"
-                               Margin="0,0,0,12"
-                               TextWrapping="Wrap"/>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -72,7 +80,7 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0"
-                                   Text="{DynamicResource LOCPlayAch_Label_EAAuth}"
+                                   x:Name="AuthLabel"
                                    Foreground="{DynamicResource TextBrush}"
                                    VerticalAlignment="Top"
                                    Margin="0,8,0,0"/>
@@ -134,6 +142,10 @@
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="{DynamicResource LOCPlayAch_Button_Login}"
                                             Click="LoginWeb_Click"
+                                            Style="{StaticResource AuthActionButtonStyle}"
+                                            Margin="0,0,8,0"/>
+                                    <Button Content="{DynamicResource LOCPlayAch_Common_Check}"
+                                            Click="Auth_Check_Click"
                                             Style="{StaticResource AuthActionButtonStyle}"
                                             Margin="0,0,8,0"/>
                                     <Button Content="{DynamicResource LOCPlayAch_Button_Clear}"

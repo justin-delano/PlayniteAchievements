@@ -1,32 +1,49 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Win32;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
-using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Manual;
-using PlayniteAchievements.Providers.RetroAchievements;
+using PlayniteAchievements.Providers.RPCS3;
+using PlayniteAchievements.Providers.ShadPS4;
+using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Services;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public sealed class GameOptionsViewModel : ObservableObject
+    public sealed class GameOptionsViewModel : PlayniteAchievements.Common.ObservableObject
     {
+        private const string ProviderOverrideNoneKey = "None";
+
+        public sealed class ProviderOverrideOption
+        {
+            public string ProviderKey { get; set; }
+
+            public string DisplayName { get; set; }
+        }
+
         private readonly Guid _gameId;
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly RefreshRuntime _refreshService;
         private readonly Action _persistSettingsForUi;
         private readonly AchievementOverridesService _achievementOverridesService;
+        private readonly GameOptionsDataSnapshotProvider _gameDataSnapshotProvider;
         private readonly IPlayniteAPI _playniteApi;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private readonly AchievementPageLinkResolver _achievementPageLinkResolver;
 
         private GameOptionsTab _selectedTab;
         private bool _hasGame;
@@ -43,39 +60,43 @@ namespace PlayniteAchievements.ViewModels
         private string _currentCapstoneName;
         private bool _isExcluded;
         private bool _isExcludedFromSummaries;
-        private bool _isRaCapable;
-        private bool _hasRaOverride;
-        private string _raOverrideValue;
-        private string _raOverrideInput;
-        private bool _isXeniaCapable;
         private bool _hasManualTrackingLink;
         private string _manualTrackingSummary;
         private bool _hasCapstoneData;
+        private bool _hasAchievementPageLink;
         private string _capstoneEmptyMessage;
         private bool _isRefreshing;
         private string _cachedProviderKey;
         private bool _cachedHasAchievements;
         private string _manualTrackingWarningAcceptedForProvider;
         private bool _showManualTrackingTab = true;
-        private bool _showExophaseToggle;
-        private bool _useExophaseForGame;
-        private bool _isExophaseManagedByPlatform;
-        private string _exophaseAutoSlug;
-        private string _exophaseSlugOverrideValue;
-        private string _exophaseSlugInput;
-        private bool _hasExophaseSlugOverride;
+        private bool _useSeparateLockedIconsOverride;
+        private bool _isLoadingProviderOverride;
+        private string _selectedProviderOverrideKey = ProviderOverrideNoneKey;
+        private string _providerOverrideInput;
+        private bool _hasProviderOverride;
+        private string _providerOverrideKey = ProviderOverrideNoneKey;
+        private string _providerOverrideValue;
+        private bool _canExportCustomJson;
+        private bool _canClearCustomData;
+        private int _customDataRevision;
+
+        public IReadOnlyList<ProviderOverrideOption> ProviderOverrideOptions { get; }
 
         public RelayCommand OpenAchievementsCommand { get; }
+        public AsyncCommand OpenAchievementPageCommand { get; }
         public RelayCommand ToggleExclusionCommand { get; }
         public RelayCommand ToggleSummaryExclusionCommand { get; }
-        public RelayCommand ApplyRaOverrideCommand { get; }
-        public RelayCommand ClearRaOverrideCommand { get; }
-        public RelayCommand ApplyExophaseSlugOverrideCommand { get; }
-        public RelayCommand ClearExophaseSlugOverrideCommand { get; }
+        public RelayCommand ApplyProviderOverrideCommand { get; }
+        public RelayCommand ClearProviderOverrideCommand { get; }
         public RelayCommand UnlinkManualTrackingCommand { get; }
         public RelayCommand RefreshStateCommand { get; }
         public AsyncCommand RefreshGameCommand { get; }
         public RelayCommand ClearGameDataCommand { get; }
+        public RelayCommand ExportCustomJsonCommand { get; }
+        public RelayCommand ExportCustomPackageCommand { get; }
+        public RelayCommand ImportCustomJsonCommand { get; }
+        public RelayCommand ClearCustomDataCommand { get; }
 
         public GameOptionsViewModel(
             Guid gameId,
@@ -84,6 +105,7 @@ namespace PlayniteAchievements.ViewModels
             RefreshRuntime refreshRuntime,
             Action persistSettingsForUi,
             AchievementOverridesService achievementOverridesService,
+            GameOptionsDataSnapshotProvider gameDataSnapshotProvider,
             IPlayniteAPI playniteApi,
             PlayniteAchievementsSettings settings,
             ILogger logger)
@@ -94,21 +116,27 @@ namespace PlayniteAchievements.ViewModels
             _refreshService = refreshRuntime;
             _persistSettingsForUi = persistSettingsForUi ?? throw new ArgumentNullException(nameof(persistSettingsForUi));
             _achievementOverridesService = achievementOverridesService;
+            _gameDataSnapshotProvider = gameDataSnapshotProvider;
             _playniteApi = playniteApi;
             _settings = settings;
             _logger = logger;
+            _achievementPageLinkResolver = new AchievementPageLinkResolver(_refreshService?.Providers);
+            ProviderOverrideOptions = BuildProviderOverrideOptions();
 
             OpenAchievementsCommand = new RelayCommand(_ => OpenAchievements(), _ => HasGame);
+            OpenAchievementPageCommand = new AsyncCommand(_ => OpenAchievementPageAsync(), _ => HasGame && HasAchievementPageLink);
             ToggleExclusionCommand = new RelayCommand(_ => ToggleExclusion(), _ => HasGame);
             ToggleSummaryExclusionCommand = new RelayCommand(_ => ToggleSummaryExclusion(), _ => HasGame);
-            ApplyRaOverrideCommand = new RelayCommand(_ => ApplyRaOverride(), _ => HasGame && IsRaCapable);
-            ClearRaOverrideCommand = new RelayCommand(_ => ClearRaOverride(), _ => HasGame && IsRaCapable && HasRaOverride);
-            ApplyExophaseSlugOverrideCommand = new RelayCommand(_ => ApplyExophaseSlugOverride(), _ => HasGame && ShowExophaseToggle);
-            ClearExophaseSlugOverrideCommand = new RelayCommand(_ => ClearExophaseSlugOverride(), _ => HasGame && ShowExophaseToggle && HasExophaseSlugOverride);
+            ApplyProviderOverrideCommand = new RelayCommand(_ => ApplyProviderOverride(), _ => HasGame);
+            ClearProviderOverrideCommand = new RelayCommand(_ => ClearProviderOverride(), _ => HasGame && HasProviderOverride);
             UnlinkManualTrackingCommand = new RelayCommand(_ => UnlinkManualTracking(), _ => HasGame && HasManualTrackingLink);
             RefreshStateCommand = new RelayCommand(_ => Reload());
             RefreshGameCommand = new AsyncCommand(_ => RefreshGameAsync(), _ => HasGame && !IsRefreshing && !(_refreshService?.IsRebuilding ?? false));
             ClearGameDataCommand = new RelayCommand(_ => ClearGameData(), _ => HasGame);
+            ExportCustomJsonCommand = new RelayCommand(_ => ExportCustomJson(), _ => HasGame && CanExportCustomJson);
+            ExportCustomPackageCommand = new RelayCommand(_ => ExportCustomPackage(), _ => HasGame && CanExportCustomJson);
+            ImportCustomJsonCommand = new RelayCommand(_ => ImportCustomJson(), _ => HasGame);
+            ClearCustomDataCommand = new RelayCommand(_ => ClearCustomData(), _ => HasGame && CanClearCustomData);
 
             Reload();
         }
@@ -135,7 +163,8 @@ namespace PlayniteAchievements.ViewModels
                 if (!HasCapstoneData &&
                     (value == GameOptionsTab.Capstones ||
                      value == GameOptionsTab.AchievementOrder ||
-                     value == GameOptionsTab.Category))
+                     value == GameOptionsTab.Category ||
+                     value == GameOptionsTab.CustomIcons))
                 {
                     return;
                 }
@@ -175,78 +204,137 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _showManualTrackingTab, value);
         }
 
-        public bool ShowExophaseToggle
+        public bool UseSeparateLockedIconsOverride
         {
-            get => _showExophaseToggle;
-            private set => SetValue(ref _showExophaseToggle, value);
-        }
-
-        public bool UseExophaseForGame
-        {
-            get => _useExophaseForGame;
+            get => _useSeparateLockedIconsOverride;
             set
             {
-                if (SetValueAndReturn(ref _useExophaseForGame, value))
+                if (!HasGame)
                 {
-                    if (ExophaseDataProvider.SetIncludedGame(_gameId, GameName, value, _persistSettingsForUi, _logger))
-                    {
-                        TriggerRefresh();
-                    }
-                    else
-                    {
-                        Reload();
-                    }
+                    return;
+                }
+
+                if (SetValueAndReturn(ref _useSeparateLockedIconsOverride, value))
+                {
+                    _achievementOverridesService?.SetSeparateLockedIconOverride(_gameId, value);
+                    RefreshCustomDataState();
+                    OnPropertyChanged(nameof(SeparateLockedIconsStatusText));
                 }
             }
         }
 
-        public bool IsExophaseManagedByPlatform
+        public string SeparateLockedIconsStatusText
         {
-            get => _isExophaseManagedByPlatform;
-            private set => SetValue(ref _isExophaseManagedByPlatform, value);
+            get
+            {
+                if (UseSeparateLockedIconsOverride)
+                {
+                    return L(
+                        "LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusOverride",
+                        "Enabled via override");
+                }
+
+                if (GameCustomDataLookup.ShouldUseSeparateLockedIcons(_gameId, _settings?.Persisted))
+                {
+                    return L(
+                        "LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusSettings",
+                        "Enabled via settings");
+                }
+
+                return L(
+                    "LOCPlayAch_Common_Status_Disabled",
+                    "Disabled");
+            }
         }
 
-        /// <summary>
-        /// The auto-detected Exophase slug for this game (shown as placeholder).
-        /// </summary>
-        public string ExophaseAutoSlug
+        public string SelectedProviderOverrideKey
         {
-            get => _exophaseAutoSlug;
-            private set => SetValue(ref _exophaseAutoSlug, value);
-        }
-
-        /// <summary>
-        /// The current slug override value (or null if not overridden).
-        /// </summary>
-        public string ExophaseSlugOverrideValue
-        {
-            get => _exophaseSlugOverrideValue;
-            private set => SetValue(ref _exophaseSlugOverrideValue, value);
-        }
-
-        /// <summary>
-        /// Input field for the slug override.
-        /// </summary>
-        public string ExophaseSlugInput
-        {
-            get => _exophaseSlugInput;
+            get => _selectedProviderOverrideKey;
             set
             {
-                if (SetValueAndReturn(ref _exophaseSlugInput, value ?? string.Empty))
+                var normalized = NormalizeProviderOverrideSelection(value);
+                if (SetValueAndReturn(ref _selectedProviderOverrideKey, normalized))
+                {
+                    if (!_isLoadingProviderOverride)
+                    {
+                        ProviderOverrideInput = string.Empty;
+                    }
+
+                    OnProviderOverrideSelectionChanged();
+                }
+            }
+        }
+
+        public string ProviderOverrideInput
+        {
+            get => _providerOverrideInput;
+            set
+            {
+                if (SetValueAndReturn(ref _providerOverrideInput, value ?? string.Empty))
                 {
                     RaiseCommandStates();
                 }
             }
         }
 
-        /// <summary>
-        /// Whether this game has an active slug override.
-        /// </summary>
-        public bool HasExophaseSlugOverride
+        public bool HasProviderOverride
         {
-            get => _hasExophaseSlugOverride;
-            private set => SetValue(ref _hasExophaseSlugOverride, value);
+            get => _hasProviderOverride;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasProviderOverride, value))
+                {
+                    OnPropertyChanged(nameof(ProviderOverrideStatusText));
+                    OnPropertyChanged(nameof(ProviderOverrideSummaryText));
+                    RaiseCommandStates();
+                }
+            }
         }
+
+        public string ProviderOverrideValue
+        {
+            get => _providerOverrideValue;
+            private set
+            {
+                if (SetValueAndReturn(ref _providerOverrideValue, value ?? string.Empty))
+                {
+                    OnPropertyChanged(nameof(ProviderOverrideStatusText));
+                    OnPropertyChanged(nameof(ProviderOverrideSummaryText));
+                }
+            }
+        }
+
+        public bool IsProviderOverrideProviderSelected =>
+            !string.Equals(SelectedProviderOverrideKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase);
+
+        public string ProviderOverrideInputLabel => GetProviderOverrideInputLabel(SelectedProviderOverrideKey);
+
+        public string ProviderOverrideStatusText
+        {
+            get
+            {
+                if (!HasProviderOverride)
+                {
+                    return L("LOCPlayAch_Common_Status_NoOverrideSet", "No override set");
+                }
+
+                var providerName = GetProviderOverrideDisplayName(_providerOverrideKey);
+                if (string.Equals(_providerOverrideKey, "Exophase", StringComparison.OrdinalIgnoreCase) &&
+                    string.IsNullOrWhiteSpace(ProviderOverrideValue))
+                {
+                    return string.Format(
+                        L("LOCPlayAch_GameOptions_Overrides_ProviderStatusAuto", "Override set: {0} (auto-detect)"),
+                        providerName);
+                }
+
+                return string.Format(
+                    L("LOCPlayAch_GameOptions_Overrides_ProviderStatusValue", "Override set: {0} - {1}"),
+                    providerName,
+                    ProviderOverrideValue);
+            }
+        }
+
+        public string ProviderOverrideSummaryText => ProviderOverrideStatusText;
 
         public bool HasGame
         {
@@ -276,6 +364,18 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _hasCachedData;
             private set => SetValue(ref _hasCachedData, value);
+        }
+
+        public bool HasAchievementPageLink
+        {
+            get => _hasAchievementPageLink;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasAchievementPageLink, value))
+                {
+                    RaiseCommandStates();
+                }
+            }
         }
 
         public string ProviderName
@@ -395,84 +495,8 @@ namespace PlayniteAchievements.ViewModels
             : L("LOCPlayAch_GameOptions_Status_IncludedFromSummaries", "Included in Summaries");
 
         public string SummaryExclusionActionText => IsExcludedFromSummaries
-            ? L("LOCPlayAch_GameOptions_Action_IncludeInSummaries", "Include in Summaries")
-            : L("LOCPlayAch_GameOptions_Action_ExcludeFromSummaries", "Exclude from Summaries");
-
-        public bool IsRaCapable
-        {
-            get => _isRaCapable;
-            private set
-            {
-                if (SetValueAndReturn(ref _isRaCapable, value))
-                {
-                    OnPropertyChanged(nameof(RaStatusText));
-                    RaiseCommandStates();
-                }
-            }
-        }
-
-        public bool HasRaOverride
-        {
-            get => _hasRaOverride;
-            private set
-            {
-                if (SetValueAndReturn(ref _hasRaOverride, value))
-                {
-                    OnPropertyChanged(nameof(RaStatusText));
-                    RaiseCommandStates();
-                }
-            }
-        }
-
-        public string RaOverrideValue
-        {
-            get => _raOverrideValue;
-            private set => SetValue(ref _raOverrideValue, value);
-        }
-
-        public string RaOverrideInput
-        {
-            get => _raOverrideInput;
-            set
-            {
-                if (SetValueAndReturn(ref _raOverrideInput, value ?? string.Empty))
-                {
-                    RaiseCommandStates();
-                }
-            }
-        }
-
-        public string RaStatusText
-        {
-            get
-            {
-                if (!IsRaCapable)
-                {
-                    return L("LOCPlayAch_GameOptions_Overrides_RaNotCapable", "RetroAchievements override is not available for this game.");
-                }
-
-                if (!HasRaOverride)
-                {
-                    return L("LOCPlayAch_GameOptions_Status_RaOverrideNone", "No override set");
-                }
-
-                return string.Format(
-                    L("LOCPlayAch_GameOptions_Status_RaOverrideValue", "Override set: {0}"),
-                    RaOverrideValue);
-            }
-        }
-
-        public bool IsXeniaCapable
-        {
-            get => _isXeniaCapable;
-            private set
-            {
-                if (SetValueAndReturn(ref _isXeniaCapable, value))
-                {
-                    RaiseCommandStates();
-                }
-            }
-        }
+            ? L("LOCPlayAch_Common_Action_IncludeInSummaries", "Include in Summaries")
+            : L("LOCPlayAch_Common_Action_ExcludeFromSummaries", "Exclude from Summaries");
 
         public bool HasManualTrackingLink
         {
@@ -494,8 +518,8 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public string ManualTrackingStatusText => HasManualTrackingLink
-            ? L("LOCPlayAch_GameOptions_Status_ManualLinked", "Linked")
-            : L("LOCPlayAch_GameOptions_Status_ManualUnlinked", "Not linked");
+            ? L("LOCPlayAch_Common_Status_Linked", "Linked")
+            : L("LOCPlayAch_Common_Status_NotLinked", "Not linked");
 
         public bool HasCapstoneData
         {
@@ -519,6 +543,48 @@ namespace PlayniteAchievements.ViewModels
                     RaiseCommandStates();
                 }
             }
+        }
+
+        public bool CanExportCustomJson
+        {
+            get => _canExportCustomJson;
+            private set
+            {
+                if (SetValueAndReturn(ref _canExportCustomJson, value))
+                {
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public bool CanClearCustomData
+        {
+            get => _canClearCustomData;
+            private set
+            {
+                if (SetValueAndReturn(ref _canClearCustomData, value))
+                {
+                    RaiseCommandStates();
+                }
+            }
+        }
+
+        public int CustomDataRevision
+        {
+            get => _customDataRevision;
+            private set => SetValue(ref _customDataRevision, value);
+        }
+
+        private GameAchievementData GetHydratedGameData()
+        {
+            return _gameDataSnapshotProvider?.GetHydratedGameData() ??
+                   _plugin?.AchievementDataService?.GetGameAchievementData(_gameId);
+        }
+
+        private GameAchievementData GetRawGameData()
+        {
+            return _gameDataSnapshotProvider?.GetRawGameData() ??
+                   _plugin?.AchievementDataService?.GetRawGameAchievementData(_gameId);
         }
 
         public void Reload()
@@ -545,7 +611,8 @@ namespace PlayniteAchievements.ViewModels
 
                 GameImagePath = imagePath;
 
-                var gameData = _plugin?.AchievementDataService?.GetGameAchievementData(_gameId);
+                var gameData = GetHydratedGameData();
+                var rawGameData = GetRawGameData();
                 HasCachedData = gameData != null;
                 _cachedProviderKey = gameData?.ProviderKey?.Trim();
                 _cachedHasAchievements = gameData?.HasAchievements ?? false;
@@ -579,60 +646,30 @@ namespace PlayniteAchievements.ViewModels
                     ? capstone.DisplayName.Trim()
                     : !string.IsNullOrWhiteSpace(capstone?.ApiName)
                         ? capstone.ApiName.Trim()
-                        : L("LOCPlayAch_Capstone_Current_None", "None");
+                        : L("LOCPlayAch_CustomRefresh_None", "None");
 
                 HasCapstoneData = (gameData?.HasAchievements ?? false) && list.Count > 0;
-                CapstoneEmptyMessage = string.Format(
-                    L("LOCPlayAch_Capstone_NoCachedData", "No cached achievements are available for \"{0}\". Refresh this game first."),
-                    GameName);
+                CapstoneEmptyMessage = L(
+                    "LOCPlayAch_Common_NoCachedAchievementsForGame",
+                    "No cached achievements are available for this game.");
 
+                var currentCustomData = TryLoadStoredCustomData(_plugin?.GameCustomDataStore);
                 IsExcluded = isExcluded;
-                IsExcludedFromSummaries = _settings?.Persisted?.ExcludedFromSummariesGameIds?.Contains(_gameId) ?? false;
-
-                var raProvider = _refreshService?.Providers
-                    ?.FirstOrDefault(p => p.ProviderKey == "RetroAchievements");
-                IsRaCapable = raProvider?.IsCapable(game) == true ||
-                              RetroAchievementsDataProvider.CanSetOverride(game);
-
-                var xeniaProvider = _refreshService?.Providers
-                    ?.FirstOrDefault(p => p.ProviderKey == "Xenia");
-                IsXeniaCapable = xeniaProvider?.IsCapable(game) == true;
-
-                if (RetroAchievementsDataProvider.TryGetGameIdOverride(_gameId, out var raId))
-                {
-                    HasRaOverride = true;
-                    RaOverrideValue = raId.ToString();
-                    RaOverrideInput = RaOverrideValue;
-                }
-                else
-                {
-                    HasRaOverride = false;
-                    RaOverrideValue = string.Empty;
-                    RaOverrideInput = string.Empty;
-                }
+                IsExcludedFromSummaries = GameCustomDataLookup.IsExcludedFromSummaries(_gameId, _settings?.Persisted);
+                SetValue(
+                    ref _useSeparateLockedIconsOverride,
+                    currentCustomData?.UseSeparateLockedIconsOverride == true);
+                OnPropertyChanged(nameof(SeparateLockedIconsStatusText));
+                ReloadProviderOverrideState(currentCustomData);
 
                 ManualAchievementLink manualLink;
                 var hasManualLink = ManualAchievementsProvider.TryGetManualLink(_gameId, out manualLink);
                 HasManualTrackingLink = hasManualLink;
                 ManualTrackingSummary = ManualAchievementsProvider.GetGameOptionsLinkSummary(manualLink);
+                HasAchievementPageLink = HasGame && _achievementPageLinkResolver.CanResolve(
+                    new AchievementPageLinkContext(game, gameData, rawGameData, manualLink));
 
-                ExophaseDataProvider.GetGameOptionsState(
-                    game,
-                    _gameId,
-                    out var showExophaseToggle,
-                    out var isExophaseManagedByPlatform,
-                    out var useExophaseForGame,
-                    out var exophaseAutoSlug,
-                    out var hasExophaseSlugOverride,
-                    out var exophaseSlugOverrideValue);
-
-                ShowExophaseToggle = showExophaseToggle;
-                IsExophaseManagedByPlatform = isExophaseManagedByPlatform;
-                SetValue(ref _useExophaseForGame, useExophaseForGame);
-                ExophaseAutoSlug = exophaseAutoSlug;
-                HasExophaseSlugOverride = hasExophaseSlugOverride;
-                ExophaseSlugOverrideValue = exophaseSlugOverrideValue;
-                ExophaseSlugInput = hasExophaseSlugOverride ? exophaseSlugOverrideValue : string.Empty;
+                RefreshCustomDataState();
 
                 if (!ShowManualTrackingTab && SelectedTab == GameOptionsTab.ManualTracking)
                 {
@@ -642,7 +679,8 @@ namespace PlayniteAchievements.ViewModels
                 if (!HasCapstoneData &&
                     (SelectedTab == GameOptionsTab.Capstones ||
                      SelectedTab == GameOptionsTab.AchievementOrder ||
-                     SelectedTab == GameOptionsTab.Category))
+                     SelectedTab == GameOptionsTab.Category ||
+                     SelectedTab == GameOptionsTab.CustomIcons))
                 {
                     SelectedTab = GameOptionsTab.Overview;
                 }
@@ -662,6 +700,48 @@ namespace PlayniteAchievements.ViewModels
             _plugin?.OpenSingleGameAchievementsView(_gameId);
         }
 
+        private async Task OpenAchievementPageAsync()
+        {
+            try
+            {
+                var game = _playniteApi?.Database?.Games?.Get(_gameId);
+                ManualAchievementLink manualLink;
+                ManualAchievementsProvider.TryGetManualLink(_gameId, out manualLink);
+
+                var url = await _achievementPageLinkResolver.ResolveUrlAsync(
+                    new AchievementPageLinkContext(game, GetHydratedGameData(), GetRawGameData(), manualLink),
+                    CancellationToken.None);
+
+                if (string.IsNullOrWhiteSpace(url))
+                {
+                    ShowAchievementPageUnavailable();
+                    return;
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed opening achievement page for gameId={_gameId}.");
+                ShowAchievementPageUnavailable();
+            }
+        }
+
+        private void ShowAchievementPageUnavailable()
+        {
+            _playniteApi?.Dialogs?.ShowMessage(
+                L(
+                    "LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable",
+                    "No achievement page link is available for this game."),
+                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+        }
+
         private void ToggleExclusion()
         {
             _plugin?.ToggleGameExclusion(_gameId);
@@ -674,56 +754,311 @@ namespace PlayniteAchievements.ViewModels
             Reload();
         }
 
-        private void ApplyRaOverride()
+        private void ApplyProviderOverride()
         {
-            if (!IsRaCapable)
+            var providerKey = NormalizeProviderOverrideSelection(SelectedProviderOverrideKey);
+            if (string.Equals(providerKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase))
             {
+                if (TryClearProviderOverride())
+                {
+                    Reload();
+                }
+
                 return;
             }
 
-            var text = (RaOverrideInput ?? string.Empty).Trim();
-            if (!int.TryParse(text, out var newId) || newId <= 0)
+            if (!TryCreateProviderOverride(providerKey, ProviderOverrideInput, out var providerOverride, out var validationMessageKey, out var validationMessageFallback))
             {
                 _playniteApi?.Dialogs?.ShowMessage(
-                    L("LOCPlayAch_Menu_RaGameId_InvalidId", "Please enter a valid positive integer game ID."),
+                    L(validationMessageKey, validationMessageFallback),
                     L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Warning);
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
-            if (TrySetRaOverride(newId))
+            if (TrySetProviderOverride(providerOverride))
             {
                 Reload();
             }
         }
 
-        private void ClearRaOverride()
+        private void ClearProviderOverride()
         {
-            if (TryClearRaOverride())
+            if (TryClearProviderOverride())
             {
                 Reload();
             }
         }
 
-        private bool TrySetRaOverride(int newId)
+        private void ExportCustomJson()
+        {
+            if (!HasGame)
+            {
+                return;
+            }
+
+            try
+            {
+                var store = _plugin?.GameCustomDataStore;
+                if (store == null)
+                {
+                    throw new InvalidOperationException("Game custom data store is not available.");
+                }
+
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "Playnite Achievements Portable (*.pa)|*.pa",
+                    AddExtension = true,
+                    DefaultExt = GameCustomDataStore.PortableFileExtension,
+                    FileName = BuildDefaultPortablePaFileName()
+                };
+
+                if (dialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                var destinationPath = NormalizePortableExportPath(
+                    dialog.FileName,
+                    GameCustomDataStore.PortableFileExtension);
+                var result = store.ExportPortablePa(_gameId, destinationPath);
+                var successMessage = L("LOCPlayAch_Status_Succeeded", "Success!") + "\n" + result.DestinationPath;
+                if (result.HasOmittedLocalIconOverrides)
+                {
+                    successMessage += "\n\n" + string.Format(
+                        L(
+                            "LOCPlayAch_GameOptions_Overrides_ExportPaOmittedLocalIcons",
+                            ".PA export omitted {0} local image override(s). Use .PA.ZIP to export full image sets."),
+                        result.OmittedLocalIconOverrideCount);
+                }
+
+                _playniteApi?.Dialogs?.ShowMessage(
+                    successMessage,
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed exporting custom game data for gameId={_gameId}");
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                Reload();
+            }
+        }
+
+        private void ExportCustomPackage()
+        {
+            if (!HasGame)
+            {
+                return;
+            }
+
+            try
+            {
+                var store = _plugin?.GameCustomDataStore;
+                if (store == null)
+                {
+                    throw new InvalidOperationException("Game custom data store is not available.");
+                }
+
+                var dialog = new SaveFileDialog
+                {
+                    Filter = "Playnite Achievements Package (*.pa.zip)|*.pa.zip",
+                    AddExtension = true,
+                    DefaultExt = ".zip",
+                    FileName = BuildDefaultPortablePackageFileName()
+                };
+
+                if (dialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                var destinationPath = NormalizePortableExportPath(
+                    dialog.FileName,
+                    GameCustomDataStore.PortablePackageFileExtension);
+                store.ExportPortablePackage(_gameId, destinationPath);
+                _playniteApi?.Dialogs?.ShowMessage(
+                    L("LOCPlayAch_Status_Succeeded", "Success!") + "\n" + destinationPath,
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed exporting custom game package for gameId={_gameId}");
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+            finally
+            {
+                Reload();
+            }
+        }
+
+        private void ImportCustomJson()
+        {
+            if (!HasGame)
+            {
+                return;
+            }
+
+            try
+            {
+                var dialog = new OpenFileDialog
+                {
+                    Filter = "Playnite Achievements Files (*.pa;*.pa.zip)|*.pa;*.pa.zip|Playnite Achievements Portable (*.pa)|*.pa|Playnite Achievements Package (*.pa.zip)|*.pa.zip",
+                    CheckFileExists = true,
+                    Multiselect = false
+                };
+
+                if (dialog.ShowDialog() != true)
+                {
+                    return;
+                }
+
+                var store = _plugin?.GameCustomDataStore;
+                if (store == null)
+                {
+                    throw new InvalidOperationException("Game custom data store is not available.");
+                }
+
+                var previousData = TryLoadStoredCustomData(store);
+                var importResult = store.ImportReplacePortable(_gameId, dialog.FileName);
+                var currentData = importResult?.ImportedData;
+                if (currentData == null)
+                {
+                    throw new InvalidOperationException("Imported custom game data was empty.");
+                }
+
+                var transitionEffects = AnalyzeCustomDataTransition(previousData, currentData);
+                NotifyCustomDataChanged(transitionEffects.RequiresRefresh, transitionEffects.ForceIconRefresh);
+
+                var successMessage = L("LOCPlayAch_Status_Succeeded", "Success!");
+                if (importResult.HasIgnoredPackageImages)
+                {
+                    successMessage += "\n\n" + string.Format(
+                        L(
+                            "LOCPlayAch_GameOptions_Overrides_ImportIgnoredPackageImages",
+                            "Ignored {0} image file(s) because their file names did not match this game's achievement API names."),
+                        importResult.IgnoredPackageImageCount);
+                }
+
+                _playniteApi?.Dialogs?.ShowMessage(
+                    successMessage,
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    importResult.HasIgnoredPackageImages
+                        ? MessageBoxImage.Warning
+                        : MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed importing custom game data for gameId={_gameId}");
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
+        private void ClearCustomData()
+        {
+            if (!HasGame)
+            {
+                return;
+            }
+
+            var store = _plugin?.GameCustomDataStore;
+            if (store == null || !store.TryLoad(_gameId, out var currentData) || currentData == null)
+            {
+                return;
+            }
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                string.Format(
+                    L(
+                        "LOCPlayAch_GameOptions_Overrides_ClearCustomDataConfirm",
+                        "Clear all custom data for \"{0}\"?\n\nThis removes per-game exclusions, manual links, capstones, order/category changes, and provider overrides stored by Playnite Achievements. Cached achievement data is not removed."),
+                    GameName),
+                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                store.Delete(_gameId);
+                var transitionEffects = AnalyzeCustomDataTransition(currentData, null);
+                NotifyCustomDataChanged(transitionEffects.RequiresRefresh, transitionEffects.ForceIconRefresh);
+
+                _playniteApi?.Dialogs?.ShowMessage(
+                    L("LOCPlayAch_Status_Succeeded", "Success!"),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed clearing custom data for gameId={_gameId}");
+                _playniteApi?.Dialogs?.ShowMessage(
+                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Reload();
+            }
+        }
+
+        private bool TrySetProviderOverride(ProviderOverrideData providerOverride)
         {
             var game = _playniteApi?.Database?.Games?.Get(_gameId);
-            if (game == null || newId <= 0)
+            if (game == null || providerOverride == null)
             {
                 return false;
             }
 
-            if (!RetroAchievementsDataProvider.TrySetGameIdOverride(_gameId, newId, game.Name, _persistSettingsForUi, _logger))
+            if (_achievementOverridesService != null)
             {
-                return false;
+                _achievementOverridesService.SetProviderOverride(_gameId, providerOverride);
+            }
+            else
+            {
+                var store = _plugin?.GameCustomDataStore;
+                if (store == null)
+                {
+                    return false;
+                }
+
+                store.Update(_gameId, customData =>
+                {
+                    customData.ProviderOverride = providerOverride.Clone();
+                });
             }
 
+            _persistSettingsForUi?.Invoke();
+            _logger?.Info($"Set provider override for '{game.Name}' to {providerOverride.ProviderKey}:{providerOverride.Value ?? string.Empty}");
             TriggerRefresh();
             return true;
         }
 
-        private bool TryClearRaOverride()
+        private bool TryClearProviderOverride()
         {
             var game = _playniteApi?.Database?.Games?.Get(_gameId);
             if (game == null)
@@ -731,83 +1066,38 @@ namespace PlayniteAchievements.ViewModels
                 return false;
             }
 
-            if (!RetroAchievementsDataProvider.TryClearGameIdOverride(_gameId, game.Name, _persistSettingsForUi, _logger))
+            if (_achievementOverridesService != null)
             {
-                return false;
+                _achievementOverridesService.SetProviderOverride(_gameId, null);
+            }
+            else
+            {
+                var store = _plugin?.GameCustomDataStore;
+                if (store == null)
+                {
+                    return false;
+                }
+
+                store.Update(_gameId, customData =>
+                {
+                    customData.ProviderOverride = null;
+                });
             }
 
+            _persistSettingsForUi?.Invoke();
+            _logger?.Info($"Cleared provider override for '{game.Name}'");
             TriggerRefresh();
             return true;
         }
 
-        private void ApplyExophaseSlugOverride()
-        {
-            var text = (ExophaseSlugInput ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                _playniteApi?.Dialogs?.ShowMessage(
-                    L("LOCPlayAch_Menu_ExophaseSlug_Empty", "Please enter an Exophase game slug."),
-                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Warning);
-                return;
-            }
-
-            if (TrySetExophaseSlugOverride(text))
-            {
-                Reload();
-            }
-        }
-
-        private void ClearExophaseSlugOverride()
-        {
-            if (TryClearExophaseSlugOverride())
-            {
-                Reload();
-            }
-        }
-
-        private bool TrySetExophaseSlugOverride(string slug)
-        {
-            var game = _playniteApi?.Database?.Games?.Get(_gameId);
-            if (game == null || string.IsNullOrWhiteSpace(slug))
-            {
-                return false;
-            }
-
-            if (!ExophaseDataProvider.TrySetSlugOverride(_gameId, game.Name, slug, _persistSettingsForUi, _logger))
-            {
-                return false;
-            }
-
-            TriggerRefresh();
-            return true;
-        }
-
-        private bool TryClearExophaseSlugOverride()
-        {
-            var game = _playniteApi?.Database?.Games?.Get(_gameId);
-            if (game == null)
-            {
-                return false;
-            }
-
-            if (!ExophaseDataProvider.TryClearSlugOverride(_gameId, game.Name, _persistSettingsForUi, _logger))
-            {
-                return false;
-            }
-
-            TriggerRefresh();
-            return true;
-        }
-
-        private void TriggerRefresh()
+        private void TriggerRefresh(bool forceIconRefresh = false)
         {
             _ = _plugin?.RefreshEntryPoint?.ExecuteAsync(
                 new RefreshRequest
                 {
                     Mode = RefreshModeType.Single,
-                    SingleGameId = _gameId
+                    SingleGameId = _gameId,
+                    ForceIconRefresh = forceIconRefresh
                 },
                 RefreshExecutionPolicy.ProgressWindow(_gameId));
         }
@@ -909,9 +1199,7 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(
-                        L("LOCPlayAch_Menu_ClearData_SuccessSingle", "Cleared cached data for \"{0}\"."),
-                        GameName),
+                    L("LOCPlayAch_Status_Succeeded", "Success!"),
                     L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Information);
@@ -920,9 +1208,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, $"Failed to clear cached data for gameId={_gameId}");
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(
-                        L("LOCPlayAch_Menu_ClearData_Failed", "Failed to clear cached data: {0}"),
-                        ex.Message),
+                    string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
                     L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);
@@ -936,16 +1222,62 @@ namespace PlayniteAchievements.ViewModels
         private void RaiseCommandStates()
         {
             OpenAchievementsCommand?.RaiseCanExecuteChanged();
+            OpenAchievementPageCommand?.RaiseCanExecuteChanged();
             ToggleExclusionCommand?.RaiseCanExecuteChanged();
             ToggleSummaryExclusionCommand?.RaiseCanExecuteChanged();
-            ApplyRaOverrideCommand?.RaiseCanExecuteChanged();
-            ClearRaOverrideCommand?.RaiseCanExecuteChanged();
-            ApplyExophaseSlugOverrideCommand?.RaiseCanExecuteChanged();
-            ClearExophaseSlugOverrideCommand?.RaiseCanExecuteChanged();
+            ApplyProviderOverrideCommand?.RaiseCanExecuteChanged();
+            ClearProviderOverrideCommand?.RaiseCanExecuteChanged();
             UnlinkManualTrackingCommand?.RaiseCanExecuteChanged();
             RefreshStateCommand?.RaiseCanExecuteChanged();
             RefreshGameCommand?.RaiseCanExecuteChanged();
             ClearGameDataCommand?.RaiseCanExecuteChanged();
+            ExportCustomJsonCommand?.RaiseCanExecuteChanged();
+            ExportCustomPackageCommand?.RaiseCanExecuteChanged();
+            ImportCustomJsonCommand?.RaiseCanExecuteChanged();
+            ClearCustomDataCommand?.RaiseCanExecuteChanged();
+        }
+
+        private void RefreshCustomDataState()
+        {
+            var store = _plugin?.GameCustomDataStore;
+            GameCustomDataFile currentData = null;
+            var hasStoredData = HasGame && store != null && store.TryLoad(_gameId, out currentData) && currentData != null;
+            CanClearCustomData = hasStoredData;
+            CanExportCustomJson = hasStoredData && GameCustomDataNormalizer.HasPortableData(currentData);
+        }
+
+        internal void NotifyCustomDataChanged(
+            bool requiresRefresh,
+            bool forceIconRefresh = false)
+        {
+            _gameDataSnapshotProvider?.Invalidate();
+            _refreshService?.Cache?.NotifyCacheInvalidated();
+
+            if (_settings?.SelectedGame?.Id == _gameId)
+            {
+                _plugin?.ThemeUpdateService?.RequestUpdate(_gameId);
+            }
+
+            Reload();
+            CustomDataRevision = unchecked(CustomDataRevision + 1);
+
+            if (requiresRefresh)
+            {
+                TriggerRefresh(forceIconRefresh);
+            }
+        }
+
+        internal void NotifyIconOverridesChanged()
+        {
+            _gameDataSnapshotProvider?.Invalidate();
+            _refreshService?.Cache?.NotifyCacheInvalidated();
+            if (_settings?.SelectedGame?.Id == _gameId)
+            {
+                _plugin?.ThemeUpdateService?.RequestUpdate(_gameId);
+            }
+
+            RefreshCustomDataState();
+            TriggerRefresh(forceIconRefresh: true);
         }
 
         private bool ShouldWarnAboutManualTrackingOverride(out string providerKey)
@@ -1006,13 +1338,468 @@ namespace PlayniteAchievements.ViewModels
             return candidate;
         }
 
+        private void ReloadProviderOverrideState(GameCustomDataFile currentCustomData)
+        {
+            var providerOverride = GameCustomDataNormalizer.NormalizeProviderOverride(currentCustomData?.ProviderOverride);
+            _isLoadingProviderOverride = true;
+            try
+            {
+                if (providerOverride == null)
+                {
+                    HasProviderOverride = false;
+                    _providerOverrideKey = ProviderOverrideNoneKey;
+                    ProviderOverrideValue = string.Empty;
+                    SelectedProviderOverrideKey = ProviderOverrideNoneKey;
+                    ProviderOverrideInput = string.Empty;
+                    return;
+                }
+
+                HasProviderOverride = true;
+                _providerOverrideKey = providerOverride.ProviderKey;
+                ProviderOverrideValue = providerOverride.Value ?? string.Empty;
+                SelectedProviderOverrideKey = providerOverride.ProviderKey;
+                ProviderOverrideInput = providerOverride.Value ?? string.Empty;
+            }
+            finally
+            {
+                _isLoadingProviderOverride = false;
+                OnProviderOverrideSelectionChanged();
+            }
+        }
+
+        private void OnProviderOverrideSelectionChanged()
+        {
+            OnPropertyChanged(nameof(IsProviderOverrideProviderSelected));
+            OnPropertyChanged(nameof(ProviderOverrideInputLabel));
+            OnPropertyChanged(nameof(ProviderOverrideStatusText));
+            RaiseCommandStates();
+        }
+
+        private bool TryCreateProviderOverride(
+            string providerKey,
+            string value,
+            out ProviderOverrideData providerOverride,
+            out string validationMessageKey,
+            out string validationMessageFallback)
+        {
+            providerOverride = null;
+            validationMessageKey = null;
+            validationMessageFallback = null;
+
+            var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
+            var trimmedValue = (value ?? string.Empty).Trim();
+            switch (normalizedKey)
+            {
+                case "Steam":
+                    if (!int.TryParse(trimmedValue, out var steamAppId) || steamAppId <= 0)
+                    {
+                        validationMessageKey = "LOCPlayAch_Menu_SteamAppId_InvalidId";
+                        validationMessageFallback = "Please enter a valid positive integer Steam AppID.";
+                        return false;
+                    }
+
+                    providerOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = normalizedKey,
+                        Value = steamAppId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    };
+                    return true;
+
+                case "RetroAchievements":
+                    if (!int.TryParse(trimmedValue, out var raGameId) || raGameId <= 0)
+                    {
+                        validationMessageKey = "LOCPlayAch_Menu_RaGameId_InvalidId";
+                        validationMessageFallback = "Please enter a valid positive integer game ID.";
+                        return false;
+                    }
+
+                    providerOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = normalizedKey,
+                        Value = raGameId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    };
+                    return true;
+
+                case "Xenia":
+                    if (!XeniaTitleIdHelper.TryNormalize(trimmedValue, out var xeniaTitleId))
+                    {
+                        validationMessageKey = "LOCPlayAch_Menu_XeniaTitleId_InvalidId";
+                        validationMessageFallback = "Please enter a valid 8-character hexadecimal Xenia TitleID.";
+                        return false;
+                    }
+
+                    providerOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = normalizedKey,
+                        Value = xeniaTitleId
+                    };
+                    return true;
+
+                case "ShadPS4":
+                    if (!ShadPS4MatchIdHelper.TryNormalize(trimmedValue, out var shadMatchId))
+                    {
+                        validationMessageKey = "LOCPlayAch_Menu_ShadPS4MatchId_InvalidId";
+                        validationMessageFallback = "Please enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00.";
+                        return false;
+                    }
+
+                    providerOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = normalizedKey,
+                        Value = shadMatchId
+                    };
+                    return true;
+
+                case "RPCS3":
+                    if (!Rpcs3MatchIdHelper.TryNormalize(trimmedValue, out var rpcs3MatchId))
+                    {
+                        validationMessageKey = "LOCPlayAch_Menu_Rpcs3MatchId_InvalidId";
+                        validationMessageFallback = "Please enter a valid RPCS3 trophy NP Comm ID such as NPWR12345_00.";
+                        return false;
+                    }
+
+                    providerOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = normalizedKey,
+                        Value = rpcs3MatchId
+                    };
+                    return true;
+
+                case "Exophase":
+                    providerOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = normalizedKey,
+                        Value = string.IsNullOrWhiteSpace(trimmedValue) ? null : trimmedValue
+                    };
+                    return true;
+
+                default:
+                    validationMessageKey = "LOCPlayAch_GameOptions_Overrides_ProviderInvalid";
+                    validationMessageFallback = "Please select a provider override.";
+                    return false;
+            }
+        }
+
+        private IReadOnlyList<ProviderOverrideOption> BuildProviderOverrideOptions()
+        {
+            return new List<ProviderOverrideOption>
+            {
+                new ProviderOverrideOption
+                {
+                    ProviderKey = ProviderOverrideNoneKey,
+                    DisplayName = L("LOCPlayAch_CustomRefresh_None", "None")
+                },
+                new ProviderOverrideOption
+                {
+                    ProviderKey = "Steam",
+                    DisplayName = ProviderRegistry.GetLocalizedName("Steam")
+                },
+                new ProviderOverrideOption
+                {
+                    ProviderKey = "RetroAchievements",
+                    DisplayName = ProviderRegistry.GetLocalizedName("RetroAchievements")
+                },
+                new ProviderOverrideOption
+                {
+                    ProviderKey = "ShadPS4",
+                    DisplayName = ProviderRegistry.GetLocalizedName("ShadPS4")
+                },
+                new ProviderOverrideOption
+                {
+                    ProviderKey = "RPCS3",
+                    DisplayName = ProviderRegistry.GetLocalizedName("RPCS3")
+                },
+                new ProviderOverrideOption
+                {
+                    ProviderKey = "Xenia",
+                    DisplayName = ProviderRegistry.GetLocalizedName("Xenia")
+                },
+                new ProviderOverrideOption
+                {
+                    ProviderKey = "Exophase",
+                    DisplayName = ProviderRegistry.GetLocalizedName("Exophase")
+                }
+            };
+        }
+
+        private string GetProviderOverrideDisplayName(string providerKey)
+        {
+            var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
+            if (string.Equals(normalizedKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return L("LOCPlayAch_CustomRefresh_None", "None");
+            }
+
+            return ProviderRegistry.GetLocalizedName(normalizedKey);
+        }
+
+        private string GetProviderOverrideInputLabel(string providerKey)
+        {
+            switch (NormalizeProviderOverrideSelection(providerKey))
+            {
+                case "Steam":
+                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Steam", "Steam AppID");
+                case "RetroAchievements":
+                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RetroAchievements", "RetroAchievements Game ID");
+                case "ShadPS4":
+                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_ShadPS4", "ShadPS4 Match ID");
+                case "RPCS3":
+                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RPCS3", "RPCS3 NP Comm ID");
+                case "Xenia":
+                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia", "Xenia TitleID");
+                case "Exophase":
+                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Exophase", "Exophase game ID or slug");
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string NormalizeProviderOverrideSelection(string providerKey)
+        {
+            var normalized = (providerKey ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized) ||
+                string.Equals(normalized, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return ProviderOverrideNoneKey;
+            }
+
+            if (string.Equals(normalized, "Steam", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Steam";
+            }
+
+            if (string.Equals(normalized, "RetroAchievements", StringComparison.OrdinalIgnoreCase))
+            {
+                return "RetroAchievements";
+            }
+
+            if (string.Equals(normalized, "ShadPS4", StringComparison.OrdinalIgnoreCase))
+            {
+                return "ShadPS4";
+            }
+
+            if (string.Equals(normalized, "RPCS3", StringComparison.OrdinalIgnoreCase))
+            {
+                return "RPCS3";
+            }
+
+            if (string.Equals(normalized, "Xenia", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Xenia";
+            }
+
+            if (string.Equals(normalized, "Exophase", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Exophase";
+            }
+
+            return ProviderOverrideNoneKey;
+        }
+
         private static string L(string key, string fallback)
         {
             var value = ResourceProvider.GetString(key);
             return string.IsNullOrWhiteSpace(value) ? fallback : value;
         }
+
+        private string BuildDefaultPortablePaFileName()
+        {
+            return BuildDefaultPortableFileBaseName() + GameCustomDataStore.PortableFileExtension;
+        }
+
+        private string BuildDefaultPortablePackageFileName()
+        {
+            return BuildDefaultPortableFileBaseName() + GameCustomDataStore.PortablePackageFileExtension;
+        }
+
+        private string BuildDefaultPortableFileBaseName()
+        {
+            var preferredName = SanitizePortableFileNamePart(
+                string.IsNullOrWhiteSpace(GameName) ? _gameId.ToString("D") : GameName);
+            var providerStub = SanitizePortableFileNamePart(
+                _gameDataSnapshotProvider?.GetHydratedGameData()?.EffectiveProviderKey ??
+                _plugin?.AchievementDataService?.GetGameAchievementData(_gameId)?.EffectiveProviderKey ??
+                _cachedProviderKey);
+
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(preferredName))
+            {
+                parts.Add(preferredName);
+            }
+
+            if (!string.IsNullOrWhiteSpace(providerStub))
+            {
+                parts.Add(providerStub);
+            }
+
+            if (parts.Count == 0)
+            {
+                parts.Add(_gameId.ToString("D"));
+            }
+
+            return string.Join("_", parts);
+        }
+
+        private static string SanitizePortableFileNamePart(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            var invalidChars = Path.GetInvalidFileNameChars();
+            var sanitized = new string(
+                normalized.Select(ch => invalidChars.Contains(ch) || char.IsWhiteSpace(ch) ? '_' : ch).ToArray());
+
+            while (sanitized.Contains("__"))
+            {
+                sanitized = sanitized.Replace("__", "_");
+            }
+
+            sanitized = sanitized.Trim('_', '.');
+            return string.IsNullOrWhiteSpace(sanitized) ? null : sanitized;
+        }
+
+        private static string NormalizePortableExportPath(string path, string extension)
+        {
+            var normalized = (path ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return normalized;
+            }
+
+            foreach (var suffix in new[]
+            {
+                GameCustomDataStore.PortablePackageFileExtension,
+                GameCustomDataStore.PortableFileExtension,
+                ".json",
+                ".zip"
+            })
+            {
+                if (normalized.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+                {
+                    normalized = normalized.Substring(0, normalized.Length - suffix.Length);
+                    break;
+                }
+            }
+
+            return normalized + extension;
+        }
+
+        private static bool StoredDataRequiresRefresh(GameCustomDataFile data)
+        {
+            return data?.ManualLink != null ||
+                   data?.ProviderOverride != null ||
+                   data?.RetroAchievementsGameIdOverride.HasValue == true ||
+                   !string.IsNullOrWhiteSpace(data?.XeniaTitleIdOverride) ||
+                   !string.IsNullOrWhiteSpace(data?.ShadPS4MatchIdOverride) ||
+                   data?.ForceUseExophase == true ||
+                   !string.IsNullOrWhiteSpace(data?.ExophaseSlugOverride);
+        }
+
+        private static CustomDataTransitionEffects AnalyzeCustomDataTransition(
+            GameCustomDataFile previousData,
+            GameCustomDataFile currentData)
+        {
+            var forceIconRefresh = HaveIconOverridesChanged(previousData, currentData);
+            return new CustomDataTransitionEffects(
+                StoredDataRequiresRefresh(previousData) ||
+                StoredDataRequiresRefresh(currentData) ||
+                forceIconRefresh,
+                forceIconRefresh);
+        }
+
+        private GameCustomDataFile TryLoadStoredCustomData(GameCustomDataStore store)
+        {
+            if (store == null)
+            {
+                return null;
+            }
+
+            return store.TryLoad(_gameId, out var currentData)
+                ? currentData
+                : null;
+        }
+
+        private static bool HaveIconOverridesChanged(
+            GameCustomDataFile previousData,
+            GameCustomDataFile currentData)
+        {
+            return !AreStringMapsEqual(
+                       previousData?.AchievementUnlockedIconOverrides,
+                       currentData?.AchievementUnlockedIconOverrides) ||
+                   !AreStringMapsEqual(
+                       previousData?.AchievementLockedIconOverrides,
+                       currentData?.AchievementLockedIconOverrides);
+        }
+
+        private static bool AreStringMapsEqual(
+            IReadOnlyDictionary<string, string> left,
+            IReadOnlyDictionary<string, string> right)
+        {
+            var normalizedLeft = NormalizeStringMap(left);
+            var normalizedRight = NormalizeStringMap(right);
+            if (normalizedLeft.Count != normalizedRight.Count)
+            {
+                return false;
+            }
+
+            foreach (var pair in normalizedLeft)
+            {
+                if (!normalizedRight.TryGetValue(pair.Key, out var value) ||
+                    !string.Equals(pair.Value, value, StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static Dictionary<string, string> NormalizeStringMap(IReadOnlyDictionary<string, string> source)
+        {
+            var normalized = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (source == null)
+            {
+                return normalized;
+            }
+
+            foreach (var pair in source)
+            {
+                var key = NormalizeOverrideValue(pair.Key);
+                var value = NormalizeOverrideValue(pair.Value);
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                normalized[key] = value;
+            }
+
+            return normalized;
+        }
+
+        private static string NormalizeOverrideValue(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
+        }
+
+        private readonly struct CustomDataTransitionEffects
+        {
+            public CustomDataTransitionEffects(bool requiresRefresh, bool forceIconRefresh)
+            {
+                RequiresRefresh = requiresRefresh;
+                ForceIconRefresh = forceIconRefresh;
+            }
+
+            public bool RequiresRefresh { get; }
+            public bool ForceIconRefresh { get; }
+        }
     }
 }
+
 
 
 

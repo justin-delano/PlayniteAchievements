@@ -5,6 +5,7 @@ using PlayniteAchievements.Providers.EA.Models;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using System;
+using System.Globalization;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -18,15 +19,16 @@ namespace PlayniteAchievements.Providers.EA
             "https://accounts.ea.com/connect/auth?client_id=ORIGIN_JS_SDK&response_type=token&redirect_uri=nucleus:rest&prompt=none";
 
         private const string UrlLogin = "https://www.ea.com/login";
-        private const string UrlProfile = "https://myaccount.ea.com/cp-ui/aboutme/index";
-
         private const string GraphQlEndpoint = "https://service-aggregation-layer.juno.ea.com/graphql";
         private const string IdentityQuery = @"query { me { player { pd psd displayName } } }";
 
         private static readonly TimeSpan InteractiveAuthTimeout = TimeSpan.FromMinutes(3);
+        private static readonly TimeSpan TokenExpiryBuffer = TimeSpan.FromMinutes(2);
+        private static readonly TimeSpan FallbackTokenCacheDuration = TimeSpan.FromMinutes(25);
 
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
+        private readonly HttpClient _httpClient;
         private readonly SemaphoreSlim _tokenSemaphore = new SemaphoreSlim(1, 1);
 
         private int _authCheckInProgress;
@@ -34,17 +36,17 @@ namespace PlayniteAchievements.Providers.EA
 
         private string _cachedAccessToken;
         private DateTime _cachedTokenExpiryUtc = DateTime.MinValue;
-        private readonly TimeSpan _tokenCacheDuration = TimeSpan.FromMinutes(30);
 
         public string ProviderKey => "EA";
 
         public bool IsAuthenticated =>
             !string.IsNullOrWhiteSpace(ProviderRegistry.Settings<EASettings>().PlayerSubId);
 
-        public EASessionManager(IPlayniteAPI api, ILogger logger)
+        public EASessionManager(IPlayniteAPI api, ILogger logger, HttpClient httpClient)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
         public string GetPlayerSubId() => ProviderRegistry.Settings<EASettings>().PlayerSubId;
@@ -66,11 +68,10 @@ namespace PlayniteAchievements.Providers.EA
                     return _cachedAccessToken;
                 }
 
-                var token = await ProbeTokenUrlAsync(timeoutMs: 10000).ConfigureAwait(false);
+                var token = await ProbeTokenUrlAsync(timeoutMs: 10000, ct: ct).ConfigureAwait(false);
                 if (token != null && token.IsLoggedIn)
                 {
-                    _cachedAccessToken = token.AccessToken;
-                    _cachedTokenExpiryUtc = DateTime.UtcNow + _tokenCacheDuration;
+                    SetCachedToken(token);
                     return _cachedAccessToken;
                 }
             }
@@ -90,18 +91,18 @@ namespace PlayniteAchievements.Providers.EA
                 {
                     ct.ThrowIfCancellationRequested();
 
-                    var token = await ProbeTokenUrlAsync(timeoutMs: 10000).ConfigureAwait(false);
+                    var token = await ProbeTokenUrlAsync(timeoutMs: 10000, ct: ct).ConfigureAwait(false);
                     if (token != null && token.IsLoggedIn)
                     {
-                        await EnsureIdentityAsync(token.AccessToken, ct).ConfigureAwait(false);
-
-                        var settings = ProviderRegistry.Settings<EASettings>();
-                        if (!string.IsNullOrWhiteSpace(settings.PlayerSubId))
+                        SetCachedToken(token);
+                        var identity = await FetchIdentityAsync(token.AccessToken, ct).ConfigureAwait(false);
+                        if (identity != null && !string.IsNullOrWhiteSpace(identity.Psd))
                         {
-                            _cachedAccessToken = token.AccessToken;
-                            _cachedTokenExpiryUtc = DateTime.UtcNow + _tokenCacheDuration;
-                            return AuthProbeResult.AlreadyAuthenticated(settings.PlayerSubId, DateTime.UtcNow + _tokenCacheDuration);
+                            PersistIdentity(identity);
+                            return AuthProbeResult.AlreadyAuthenticated(identity.Psd, GetCachedTokenExpiryOrNull());
                         }
+
+                        return AuthProbeResult.ProbeFailed();
                     }
 
                     ClearSettings();
@@ -200,7 +201,10 @@ namespace PlayniteAchievements.Providers.EA
 
                 _logger?.Info("[EAAuth] Interactive login succeeded.");
                 progress?.Report(AuthProgressStep.Completed);
-                return AuthProbeResult.Authenticated(extractedId, windowOpened: windowOpened);
+                return AuthProbeResult.Authenticated(
+                    extractedId,
+                    expiresUtc: GetCachedTokenExpiryOrNull(),
+                    windowOpened: windowOpened);
             }
             catch (OperationCanceledException)
             {
@@ -255,10 +259,11 @@ namespace PlayniteAchievements.Providers.EA
             }
         }
 
-        private async Task<EaTokenResponse> ProbeTokenUrlAsync(int timeoutMs = 10000)
+        private async Task<EaTokenResponse> ProbeTokenUrlAsync(int timeoutMs = 10000, CancellationToken ct = default)
         {
             using (PerfScope.Start(_logger, "EA.ProbeTokenUrlAsync", thresholdMs: 50))
             {
+                ct.ThrowIfCancellationRequested();
                 var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
                 {
                     using (var view = _api.WebViews.CreateOffscreenView())
@@ -281,47 +286,23 @@ namespace PlayniteAchievements.Providers.EA
                     }
                 });
 
+                ct.ThrowIfCancellationRequested();
                 var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
+                ct.ThrowIfCancellationRequested();
                 return await responseTask.ConfigureAwait(false);
-            }
-        }
-
-        private async Task EnsureIdentityAsync(string accessToken, CancellationToken ct)
-        {
-            var settings = ProviderRegistry.Settings<EASettings>();
-            if (!string.IsNullOrWhiteSpace(settings.PlayerSubId))
-            {
-                return;
-            }
-
-            try
-            {
-                var identity = await FetchIdentityAsync(accessToken, ct).ConfigureAwait(false);
-                if (identity != null)
-                {
-                    settings.PlayerId = identity.Pd;
-                    settings.PlayerSubId = identity.Psd;
-                    settings.DisplayName = identity.DisplayName;
-                    ProviderRegistry.Write(settings, persistToDisk: true);
-                    _logger?.Info($"[EAAuth] Identity persisted: pd={identity.Pd}, psd={identity.Psd}, name={identity.DisplayName}");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Warn(ex, "[EAAuth] Failed to fetch EA identity during probe.");
             }
         }
 
         private async Task<EaPlayerIdentity> FetchIdentityAsync(string accessToken, CancellationToken ct)
         {
-            using (var client = new HttpClient())
+            var body = JsonConvert.SerializeObject(new { query = IdentityQuery });
+            using (var request = new HttpRequestMessage(HttpMethod.Post, GraphQlEndpoint))
             {
-                client.DefaultRequestHeaders.Add("Authorization", $"Bearer {accessToken}");
+                request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {accessToken}");
+                request.Content = new StringContent(body, Encoding.UTF8, "application/json");
 
-                var body = JsonConvert.SerializeObject(new { query = IdentityQuery });
-                using (var content = new StringContent(body, Encoding.UTF8, "application/json"))
+                using (var response = await _httpClient.SendAsync(request, ct).ConfigureAwait(false))
                 {
-                    var response = await client.PostAsync(GraphQlEndpoint, content, ct).ConfigureAwait(false);
                     var json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     if (!response.IsSuccessStatusCode)
@@ -447,21 +428,14 @@ namespace PlayniteAchievements.Providers.EA
 
                 try
                 {
-                    var token = await ProbeTokenUrlAsync(timeoutMs: 6000).ConfigureAwait(false);
+                    var token = await ProbeTokenUrlAsync(timeoutMs: 6000, ct: ct).ConfigureAwait(false);
                     if (token != null && token.IsLoggedIn)
                     {
+                        SetCachedToken(token);
                         var identity = await FetchIdentityAsync(token.AccessToken, ct).ConfigureAwait(false);
                         if (identity != null && !string.IsNullOrWhiteSpace(identity.Psd))
                         {
-                            var settings = ProviderRegistry.Settings<EASettings>();
-                            settings.PlayerId = identity.Pd;
-                            settings.PlayerSubId = identity.Psd;
-                            settings.DisplayName = identity.DisplayName;
-                            ProviderRegistry.Write(settings, persistToDisk: true);
-
-                            _cachedAccessToken = token.AccessToken;
-                            _cachedTokenExpiryUtc = DateTime.UtcNow + _tokenCacheDuration;
-
+                            PersistIdentity(identity);
                             return identity.Psd;
                         }
                     }
@@ -478,6 +452,66 @@ namespace PlayniteAchievements.Providers.EA
             }
 
             return null;
+        }
+
+        private void PersistIdentity(EaPlayerIdentity identity)
+        {
+            if (identity == null || string.IsNullOrWhiteSpace(identity.Psd))
+            {
+                return;
+            }
+
+            var settings = ProviderRegistry.Settings<EASettings>();
+            var changed =
+                !string.Equals(settings.PlayerId, identity.Pd, StringComparison.Ordinal) ||
+                !string.Equals(settings.PlayerSubId, identity.Psd, StringComparison.Ordinal) ||
+                !string.Equals(settings.DisplayName, identity.DisplayName, StringComparison.Ordinal);
+
+            settings.PlayerId = identity.Pd;
+            settings.PlayerSubId = identity.Psd;
+            settings.DisplayName = identity.DisplayName;
+
+            if (changed)
+            {
+                ProviderRegistry.Write(settings, persistToDisk: true);
+                _logger?.Info($"[EAAuth] Identity persisted: pd={identity.Pd}, psd={identity.Psd}, name={identity.DisplayName}");
+            }
+        }
+
+        private void SetCachedToken(EaTokenResponse token)
+        {
+            if (token == null || !token.IsLoggedIn)
+            {
+                return;
+            }
+
+            _cachedAccessToken = token.AccessToken;
+            _cachedTokenExpiryUtc = GetTokenExpiryUtc(token);
+        }
+
+        private static DateTime GetTokenExpiryUtc(EaTokenResponse token)
+        {
+            if (token != null &&
+                int.TryParse(token.ExpiresIn, NumberStyles.Integer, CultureInfo.InvariantCulture, out var expiresInSeconds) &&
+                expiresInSeconds > 0)
+            {
+                var ttl = TimeSpan.FromSeconds(expiresInSeconds);
+                if (ttl > TokenExpiryBuffer)
+                {
+                    ttl -= TokenExpiryBuffer;
+                }
+
+                return DateTime.UtcNow.Add(ttl);
+            }
+
+            return DateTime.UtcNow.Add(FallbackTokenCacheDuration);
+        }
+
+        private DateTime? GetCachedTokenExpiryOrNull()
+        {
+            return _cachedTokenExpiryUtc > DateTime.MinValue
+                ? (DateTime?)_cachedTokenExpiryUtc
+                : null;
         }
 
         private sealed class GraphQlIdentityResponse

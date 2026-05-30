@@ -9,7 +9,6 @@ namespace PlayniteAchievements.Services.Sidebar
         public List<AchievementDisplayItem> Achievements { get; set; } = new List<AchievementDisplayItem>();
         public List<GameOverviewItem> GamesOverview { get; set; } = new List<GameOverviewItem>();
         public List<AchievementDisplayItem> RecentAchievements { get; set; } = new List<AchievementDisplayItem>();
-
         public Dictionary<DateTime, int> GlobalUnlockCountsByDate { get; set; } =
             new Dictionary<DateTime, int>();
 

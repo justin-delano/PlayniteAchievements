@@ -158,6 +158,48 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _gameIconPath, value);
         }
 
+        private string _platformText;
+        public string PlatformText
+        {
+            get => _platformText;
+            private set
+            {
+                if (SetValueAndReturn(ref _platformText, value))
+                {
+                    OnPropertyChanged(nameof(SecondaryMetadataText));
+                    OnPropertyChanged(nameof(HasSecondaryMetadataText));
+                }
+            }
+        }
+
+        private string _regionText;
+        public string RegionText
+        {
+            get => _regionText;
+            private set
+            {
+                if (SetValueAndReturn(ref _regionText, value))
+                {
+                    OnPropertyChanged(nameof(SecondaryMetadataText));
+                    OnPropertyChanged(nameof(HasSecondaryMetadataText));
+                }
+            }
+        }
+
+        private string _playtimeText;
+        public string PlaytimeText
+        {
+            get => _playtimeText;
+            private set
+            {
+                if (SetValueAndReturn(ref _playtimeText, value))
+                {
+                    OnPropertyChanged(nameof(SecondaryMetadataText));
+                    OnPropertyChanged(nameof(HasSecondaryMetadataText));
+                }
+            }
+        }
+
         private int _totalAchievements;
         public int TotalAchievements
         {
@@ -302,11 +344,25 @@ namespace PlayniteAchievements.ViewModels
 
         public bool HasAchievements => TotalAchievements > 0;
 
+        public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildSidebarMetadataText(
+            PlatformText,
+            PlaytimeText,
+            RegionText);
+
+        public bool HasSecondaryMetadataText => !string.IsNullOrWhiteSpace(SecondaryMetadataText);
+
         public bool HasCustomAchievementOrder
         {
             get => _hasCustomAchievementOrder;
             private set => SetValue(ref _hasCustomAchievementOrder, value);
         }
+
+        public string CurrentSortPath => _currentSortPath;
+
+        public ListSortDirection? CurrentSortDirection =>
+            string.IsNullOrWhiteSpace(_currentSortPath)
+                ? (ListSortDirection?)null
+                : _currentSortDirection;
 
         public string SearchText
         {
@@ -361,7 +417,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedCategoryTypeFilterText => GetSelectedFilterText(
             _selectedCategoryTypeFilters,
             CategoryTypeFilterOptions,
-            L("LOCPlayAch_GameOptions_Category_TypeSelectorPlaceholder", "Type"));
+            L("LOCPlayAch_Common_Label_Type", "Type"));
 
         public bool IsCategoryTypeFilterSelected(string value)
         {
@@ -384,7 +440,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedCategoryLabelFilterText => GetSelectedFilterText(
             _selectedCategoryLabelFilters,
             CategoryLabelFilterOptions,
-            L("LOCPlayAch_GameOptions_Category_Filter_LabelSelectorPlaceholder", "Category"));
+            L("LOCPlayAch_Common_Label_Category", "Category"));
 
         public bool IsCategoryLabelFilterSelected(string value)
         {
@@ -486,7 +542,6 @@ namespace PlayniteAchievements.ViewModels
         private void UpdateAchievementFilterOptions(IEnumerable<AchievementDisplayItem> source)
         {
             var typeValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var categoryValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             if (source != null)
             {
@@ -506,12 +561,6 @@ namespace PlayniteAchievements.ViewModels
                             typeValues.Add(parsedType);
                         }
                     }
-
-                    var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
-                    if (!string.IsNullOrWhiteSpace(normalizedCategory))
-                    {
-                        categoryValues.Add(normalizedCategory);
-                    }
                 }
             }
 
@@ -519,9 +568,9 @@ namespace PlayniteAchievements.ViewModels
                 .Where(typeValues.Contains)
                 .ToList();
 
-            var categoryOptions = categoryValues
-                .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            var categoryOptions = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
+                source,
+                item => item?.CategoryLabel);
 
             CollectionHelper.SynchronizeCollection(CategoryTypeFilterOptions, typeOptions);
             CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, categoryOptions);
@@ -545,13 +594,15 @@ namespace PlayniteAchievements.ViewModels
                 if (game == null)
                 {
                     _logger?.Warn($"Game not found: {_gameId}");
+                    ApplyGameMetadata(null);
                     return;
                 }
 
                 GameName = game.Name;
                 GameIconPath = (!string.IsNullOrEmpty(game.Icon)) ? _playniteApi.Database.GetFullFilePath(game.Icon) : null;
+                ApplyGameMetadata(game);
 
-                var gameData = _achievementDataService.GetGameAchievementData(_gameId);
+                var gameData = _achievementDataService.GetVisibleGameAchievementData(_gameId);
                 if (gameData == null || !gameData.HasAchievements || gameData.Achievements == null)
                 {
                     _logger?.Info($"No achievement data for game: {game.Name}");
@@ -590,7 +641,6 @@ namespace PlayniteAchievements.ViewModels
                 int common = 0, uncommon = 0, rare = 0, ultraRare = 0;
                 // Calculate trophy counts (for PlayStation games)
                 int trophyPlatinum = 0, trophyGold = 0, trophySilver = 0, trophyBronze = 0;
-                var projectionOptions = AchievementProjectionService.CreateOptions(_settings, gameData);
                 var displayItems = new List<AchievementDisplayItem>();
                 var unlockCounts = new Dictionary<DateTime, int>();
 
@@ -621,11 +671,11 @@ namespace PlayniteAchievements.ViewModels
                         }
 
                         // Only count rarity if data is available (null means no rarity info for this provider)
-                        AchievementProjectionService.AccumulateRarity(ach, ref common, ref uncommon, ref rare, ref ultraRare);
-                        AchievementProjectionService.AccumulateTrophy(ach, ref trophyPlatinum, ref trophyGold, ref trophySilver, ref trophyBronze);
+                        AchievementDisplayItem.AccumulateRarity(ach, ref common, ref uncommon, ref rare, ref ultraRare);
+                        AchievementDisplayItem.AccumulateTrophy(ach, ref trophyPlatinum, ref trophyGold, ref trophySilver, ref trophyBronze);
                     }
 
-                    var item = AchievementProjectionService.CreateDisplayItem(gameData, ach, projectionOptions, _gameId);
+                    var item = AchievementDisplayItem.Create(gameData, ach, _settings, playniteGameIdOverride: _gameId);
                     if (item != null)
                     {
                         displayItems.Add(item);
@@ -643,19 +693,7 @@ namespace PlayniteAchievements.ViewModels
                 TrophySilverCount = trophySilver;
                 TrophyBronzeCount = trophyBronze;
 
-                if (hasCustomOrder)
-                {
-                    _allAchievements = AchievementOrderHelper.ApplyOrder(
-                        displayItems,
-                        a => a.ApiName,
-                        gameData.AchievementOrder);
-                }
-                else
-                {
-                    _allAchievements = AchievementGridSortHelper.CreateDefaultSortedList(
-                        displayItems,
-                        AchievementGridSortScope.GameAchievements);
-                }
+                _allAchievements = displayItems;
 
                 UpdateAchievementFilterOptions(_allAchievements);
                 ApplySearchFilter();
@@ -675,6 +713,21 @@ namespace PlayniteAchievements.ViewModels
         private void RevealAchievement(AchievementDisplayItem item)
         {
             item?.ToggleReveal();
+        }
+
+        private void ApplyGameMetadata(Playnite.SDK.Models.Game game)
+        {
+            if (game == null)
+            {
+                PlatformText = string.Empty;
+                RegionText = string.Empty;
+                PlaytimeText = string.Empty;
+                return;
+            }
+
+            PlatformText = PlayniteGameMetadataFormatter.GetPlatformText(game);
+            RegionText = PlayniteGameMetadataFormatter.GetRegionText(game);
+            PlaytimeText = PlayniteGameMetadataFormatter.FormatPlaytime(game.Playtime);
         }
 
         private void DismissStatus()
@@ -763,9 +816,18 @@ namespace PlayniteAchievements.ViewModels
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (AchievementProjectionService.IsAppearanceSettingPropertyName(e?.PropertyName))
+            if (AchievementDisplayItem.IsAppearanceSettingPropertyName(e?.PropertyName))
             {
                 ApplyAppearanceSettingsToAchievements();
+                return;
+            }
+
+            if (!CurrentSortDirection.HasValue &&
+                AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                    e?.PropertyName,
+                    AchievementSortSurface.SingleGame))
+            {
+                ApplySearchFilter();
             }
         }
 
@@ -776,7 +838,6 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var options = AchievementProjectionService.CreateOptions(_settings, null);
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
                 var items = new HashSet<AchievementDisplayItem>();
@@ -798,7 +859,7 @@ namespace PlayniteAchievements.ViewModels
 
                 foreach (var item in items)
                 {
-                    AchievementProjectionService.ApplyAppearanceSettings(item, options);
+                    item.ApplyAppearanceSettings(_settings);
                 }
             });
         }
@@ -821,11 +882,11 @@ namespace PlayniteAchievements.ViewModels
         {
             var items = Achievements.ToList();
             var currentSortDirection = (ListSortDirection?)_currentSortDirection;
-            if (!AchievementGridSortHelper.TrySortItems(
+            if (!AchievementSortHelper.TrySortItems(
                     items,
                     sortMemberPath,
                     direction,
-                    AchievementGridSortScope.GameAchievements,
+                    AchievementSortScope.GameAchievements,
                     ref _currentSortPath,
                     ref currentSortDirection))
             {
@@ -840,7 +901,16 @@ namespace PlayniteAchievements.ViewModels
             CollectionHelper.SynchronizeCollection(Achievements, items);
         }
 
-        private void ApplySearchFilter()
+        public void ResetSortToDefault()
+        {
+            _currentSortPath = null;
+            _currentSortDirection = AchievementSortHelper.GetConfiguredDefaultSort(
+                _settings?.Persisted,
+                AchievementSortSurface.SingleGame).Direction;
+            ApplySearchFilter(skipDefaultSort: true);
+        }
+
+        private void ApplySearchFilter(bool skipDefaultSort = false)
         {
             IEnumerable<AchievementDisplayItem> filtered = _allAchievements;
 
@@ -885,7 +955,29 @@ namespace PlayniteAchievements.ViewModels
 
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
-                CollectionHelper.SynchronizeCollection(Achievements, filtered.ToList());
+                var filteredItems = filtered.ToList();
+                if (CurrentSortDirection.HasValue)
+                {
+                    var currentSortDirection = CurrentSortDirection;
+                    AchievementSortHelper.TrySortItems(
+                        filteredItems,
+                        _currentSortPath,
+                        currentSortDirection.Value,
+                        AchievementSortScope.GameAchievements,
+                        ref _currentSortPath,
+                        ref currentSortDirection);
+                }
+                else if (!skipDefaultSort)
+                {
+                    AchievementSortHelper.ApplyConfiguredDefaultSort(
+                        filteredItems,
+                        _settings?.Persisted,
+                        AchievementSortSurface.SingleGame,
+                        AchievementSortScope.GameAchievements,
+                        stableOrder: AchievementSortHelper.CreateStableOrderMap(filteredItems));
+                }
+
+                CollectionHelper.SynchronizeCollection(Achievements, filteredItems);
             });
         }
 
@@ -914,6 +1006,7 @@ namespace PlayniteAchievements.ViewModels
         #endregion
     }
 }
+
 
 
 

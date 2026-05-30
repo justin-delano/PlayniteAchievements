@@ -63,6 +63,194 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Import_ExtractsExophaseSlugFromAchievementAndTrophyUrlsAndAllowsUnauthenticatedSchemaFetch()
+        {
+            var achievementGameId = Guid.NewGuid();
+            var trophyGameId = Guid.NewGuid();
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                WriteLegacyFile(
+                    tempDir,
+                    achievementGameId,
+                    CreateLegacyPayload(
+                        isManual: true,
+                        isIgnored: false,
+                        sourceName: "Exophase",
+                        sourceUrl: "https://www.exophase.com/game/shogun-showdown-steam/achievements/",
+                        items: new[] { CreateItem("ach_one") }));
+
+                WriteLegacyFile(
+                    tempDir,
+                    trophyGameId,
+                    CreateLegacyPayload(
+                        isManual: true,
+                        isIgnored: false,
+                        sourceName: "Exophase",
+                        sourceUrl: "https://www.exophase.com/game/final-fantasy-vii-rebirth-ps5/trophies/",
+                        items: new[] { CreateItem("trophy_one") }));
+
+                var settings = new PersistedSettings();
+                var importer = CreateImporter(
+                    settings,
+                    new HashSet<Guid> { achievementGameId, trophyGameId },
+                    new HashSet<Guid>());
+
+                var result = importer.Import(tempDir);
+
+                Assert.AreEqual(2, result.Imported);
+                Assert.AreEqual("shogun-showdown-steam", GetManualLinks(settings)[achievementGameId].SourceGameId);
+                Assert.AreEqual("final-fantasy-vii-rebirth-ps5", GetManualLinks(settings)[trophyGameId].SourceGameId);
+                Assert.IsTrue(GetManualLinks(settings)[achievementGameId].AllowUnauthenticatedSchemaFetch == true);
+                Assert.IsTrue(GetManualLinks(settings)[trophyGameId].AllowUnauthenticatedSchemaFetch == true);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void Import_NormalizesLegacyExophaseUnlockKeysForManualRefreshMatching()
+        {
+            var gameId = Guid.NewGuid();
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                WriteLegacyFile(
+                    tempDir,
+                    gameId,
+                    CreateLegacyPayload(
+                        isManual: true,
+                        isIgnored: false,
+                        sourceName: "Exophase",
+                        sourceUrl: "https://www.exophase.com/game/pentiment-steam/achievements/",
+                        items: new[]
+                        {
+                            CreateItem("A Fateful Sausage", "1982-12-15T00:00:00+03:00"),
+                            CreateItem("Cookie Master", "2024-12-04T23:42:00-05:00")
+                        }));
+
+                var settings = new PersistedSettings();
+                var importer = CreateImporter(settings, new HashSet<Guid> { gameId }, new HashSet<Guid>());
+
+                var result = importer.Import(tempDir);
+
+                Assert.AreEqual(1, result.Imported);
+
+                var link = GetManualLinks(settings)[gameId];
+                Assert.IsNotNull(link);
+
+                Assert.IsFalse(link.UnlockStates.ContainsKey("A Fateful Sausage"));
+                Assert.IsTrue(link.UnlockStates.ContainsKey("exophase_a_fateful_sausage"));
+                Assert.IsTrue(link.UnlockStates["exophase_a_fateful_sausage"]);
+                Assert.IsFalse(link.UnlockTimes.ContainsKey("exophase_a_fateful_sausage"));
+
+                Assert.IsTrue(link.UnlockStates.ContainsKey("exophase_cookie_master"));
+                Assert.IsTrue(link.UnlockStates["exophase_cookie_master"]);
+                Assert.IsTrue(link.UnlockTimes.ContainsKey("exophase_cookie_master"));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void Import_UsesExophaseNameWhenLegacyApiNameIsBlank()
+        {
+            var gameId = Guid.NewGuid();
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                WriteLegacyFile(
+                    tempDir,
+                    gameId,
+                    CreateLegacyPayload(
+                        isManual: true,
+                        isIgnored: false,
+                        sourceName: "Exophase",
+                        sourceUrl: "https://www.exophase.com/game/baldur-s-gate-3-gog/achievements/",
+                        items: new[]
+                        {
+                            CreateItem("", "1982-12-15T00:00:00", name: "A Grym Fate"),
+                            CreateItem("", "0001-01-01T00:00:00", name: "Absolute Power Corrupts")
+                        }));
+
+                var settings = new PersistedSettings();
+                var importer = CreateImporter(settings, new HashSet<Guid> { gameId }, new HashSet<Guid>());
+
+                var result = importer.Import(tempDir);
+
+                Assert.AreEqual(1, result.Imported);
+
+                var link = GetManualLinks(settings)[gameId];
+                Assert.AreEqual("baldur-s-gate-3-gog", link.SourceGameId);
+                Assert.IsTrue(link.UnlockStates.ContainsKey("exophase_a_grym_fate"));
+                Assert.IsTrue(link.UnlockStates["exophase_a_grym_fate"]);
+                Assert.IsFalse(link.UnlockStates.ContainsKey("exophase_absolute_power_corrupts"));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void Import_UsesResolvedGameIdWhenLegacyGuidIsMissing()
+        {
+            var legacyGameId = Guid.NewGuid();
+            var localGameId = Guid.NewGuid();
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                WriteLegacyFile(
+                    tempDir,
+                    legacyGameId,
+                    CreateLegacyPayload(
+                        isManual: true,
+                        isIgnored: false,
+                        sourceName: "Exophase",
+                        sourceUrl: "https://www.exophase.com/game/baldur-s-gate-3-gog/achievements/",
+                        items: new[] { CreateItem("", "1982-12-15T00:00:00", name: "A Grym Fate") },
+                        gameName: "Baldur's Gate 3",
+                        sourceGameName: "Baldur's Gate 3"));
+
+                var settings = new PersistedSettings();
+                var importer = CreateImporter(
+                    settings,
+                    new HashSet<Guid> { localGameId },
+                    new HashSet<Guid>(),
+                    metadata =>
+                    {
+                        Assert.AreEqual(legacyGameId, metadata.LegacyGameId);
+                        Assert.AreEqual("Baldur's Gate 3", metadata.GameName);
+                        Assert.AreEqual("Baldur's Gate 3", metadata.SourceGameName);
+                        Assert.AreEqual("Exophase", metadata.SourceName);
+                        Assert.AreEqual("baldur-s-gate-3-gog", metadata.SourceGameId);
+                        return localGameId;
+                    });
+
+                var result = importer.Import(tempDir);
+
+                Assert.AreEqual(1, result.Scanned);
+                Assert.AreEqual(1, result.Imported);
+                Assert.AreEqual(0, result.SkippedGameMissing);
+                Assert.AreEqual(localGameId, result.ImportedGameIds[0]);
+                Assert.IsFalse(GetManualLinks(settings).ContainsKey(legacyGameId));
+                Assert.IsTrue(GetManualLinks(settings).ContainsKey(localGameId));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void Import_SkipsNonManualAndIgnored()
         {
             var nonManualGameId = Guid.NewGuid();
@@ -145,6 +333,62 @@ namespace PlayniteAchievements.Services.Tests
             finally
             {
                 DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void Import_SkipsExistingExophaseStoreLinkWithoutMutatingIt()
+        {
+            var gameId = Guid.NewGuid();
+            var tempDir = CreateTempDirectory();
+            var storeDir = CreateTempDirectory();
+
+            try
+            {
+                WriteLegacyFile(
+                    tempDir,
+                    gameId,
+                    CreateLegacyPayload(
+                        isManual: true,
+                        isIgnored: false,
+                        sourceName: "Exophase",
+                        sourceUrl: "https://www.exophase.com/game/test-game-steam/achievements/",
+                        items: new[] { CreateItem("ach") }));
+
+                var settings = new PersistedSettings();
+                ProviderSettingsHelper.Bind(settings);
+
+                var store = new GameCustomDataStore(storeDir);
+                store.Save(gameId, new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ManualLink = new ManualAchievementLink
+                    {
+                        SourceKey = "Exophase",
+                        SourceGameId = "already-linked"
+                    }
+                });
+
+                var importer = new LegacyManualLinkImporter(
+                    settings,
+                    gameIdValue => gameIdValue == gameId,
+                    _ => false,
+                    logger: null,
+                    gameCustomDataStore: store);
+
+                var result = importer.Import(tempDir);
+
+                Assert.AreEqual(0, result.Imported);
+                Assert.AreEqual(1, result.SkippedManualLinkExists);
+                Assert.IsTrue(store.TryLoad(gameId, out var stored));
+                Assert.IsNotNull(stored?.ManualLink);
+                Assert.AreEqual("already-linked", stored.ManualLink.SourceGameId);
+                Assert.IsFalse(stored.ManualLink.AllowUnauthenticatedSchemaFetch.HasValue);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+                DeleteDirectory(storeDir);
             }
         }
 
@@ -456,6 +700,8 @@ namespace PlayniteAchievements.Services.Tests
                         {
                             CreateItem("sentinel_est", "1982-12-15T00:00:00-05:00"),
                             CreateItem("sentinel_utcplus3", "1982-12-15T00:00:00+03:00"),
+                            CreateItem("sentinel_utcshifted", "1982-12-14T21:00:00Z"),
+                            CreateItem("non_sentinel_pre1990", "1982-12-13T00:00:00Z"),
                             CreateItem("valid", "2024-12-04T23:42:00-05:00")
                         }));
 
@@ -472,6 +718,11 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.IsTrue(link.UnlockStates.ContainsKey("sentinel_utcplus3"));
                 Assert.IsTrue(link.UnlockStates["sentinel_utcplus3"]);
                 Assert.IsFalse(link.UnlockTimes.ContainsKey("sentinel_utcplus3"));
+                Assert.IsTrue(link.UnlockStates.ContainsKey("sentinel_utcshifted"));
+                Assert.IsTrue(link.UnlockStates["sentinel_utcshifted"]);
+                Assert.IsFalse(link.UnlockTimes.ContainsKey("sentinel_utcshifted"));
+                Assert.IsFalse(link.UnlockStates.ContainsKey("non_sentinel_pre1990"));
+                Assert.IsFalse(link.UnlockTimes.ContainsKey("non_sentinel_pre1990"));
                 Assert.IsTrue(link.UnlockTimes.ContainsKey("valid"));
                 Assert.IsTrue(link.UnlockStates.ContainsKey("valid"));
                 Assert.IsTrue(link.UnlockStates["valid"]);
@@ -567,14 +818,16 @@ namespace PlayniteAchievements.Services.Tests
         private static LegacyManualLinkImporter CreateImporter(
             PersistedSettings settings,
             HashSet<Guid> existingGames,
-            HashSet<Guid> cachedGames)
+            HashSet<Guid> cachedGames,
+            Func<LegacyManualImportGameMetadata, Guid?> resolveMissingGameId = null)
         {
             ProviderSettingsHelper.Bind(settings);
             return new LegacyManualLinkImporter(
                 settings,
                 gameId => existingGames.Contains(gameId),
                 gameId => cachedGames.Contains(gameId),
-                logger: null);
+                logger: null,
+                resolveMissingGameId: resolveMissingGameId);
         }
 
         private static Dictionary<Guid, ManualAchievementLink> GetManualLinks(PersistedSettings settings)
@@ -609,12 +862,18 @@ namespace PlayniteAchievements.Services.Tests
             string apiName,
             string dateUnlocked = null,
             string urlUnlocked = null,
-            string urlLocked = null)
+            string urlLocked = null,
+            string name = null)
         {
             var item = new JObject
             {
                 ["ApiName"] = apiName
             };
+
+            if (name != null)
+            {
+                item["Name"] = name;
+            }
 
             if (dateUnlocked != null)
             {
@@ -639,7 +898,9 @@ namespace PlayniteAchievements.Services.Tests
             bool isIgnored,
             string sourceName,
             string sourceUrl,
-            IEnumerable<JObject> items)
+            IEnumerable<JObject> items,
+            string gameName = null,
+            string sourceGameName = null)
         {
             var payload = new JObject
             {
@@ -652,6 +913,16 @@ namespace PlayniteAchievements.Services.Tests
                 },
                 ["Items"] = new JArray(items ?? Enumerable.Empty<JObject>())
             };
+
+            if (gameName != null)
+            {
+                payload["Name"] = gameName;
+            }
+
+            if (sourceGameName != null)
+            {
+                ((JObject)payload["SourcesLink"])["GameName"] = sourceGameName;
+            }
 
             return payload.ToString();
         }

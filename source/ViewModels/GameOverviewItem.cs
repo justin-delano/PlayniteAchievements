@@ -1,6 +1,7 @@
 using System;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.ViewModels
 {
@@ -17,6 +18,46 @@ namespace PlayniteAchievements.ViewModels
 
         private string _gameCoverPath;
         public string GameCoverPath { get => _gameCoverPath; set => SetValue(ref _gameCoverPath, value); }
+
+        private string _platformText;
+        public string PlatformText
+        {
+            get => _platformText;
+            set
+            {
+                if (SetValueAndReturn(ref _platformText, value))
+                {
+                    OnPropertyChanged(nameof(SecondaryMetadataText));
+                }
+            }
+        }
+
+        private string _regionText;
+        public string RegionText
+        {
+            get => _regionText;
+            set
+            {
+                if (SetValueAndReturn(ref _regionText, value))
+                {
+                    OnPropertyChanged(nameof(SecondaryMetadataText));
+                }
+            }
+        }
+
+        private ulong _playtimeSeconds;
+        public ulong PlaytimeSeconds
+        {
+            get => _playtimeSeconds;
+            set
+            {
+                if (SetValueAndReturn(ref _playtimeSeconds, value))
+                {
+                    OnPropertyChanged(nameof(PlaytimeText));
+                    OnPropertyChanged(nameof(SecondaryMetadataText));
+                }
+            }
+        }
 
         public int AppId { get; set; } // Stays as AppId is immutable ID
         public Guid? PlayniteGameId { get; set; }
@@ -118,6 +159,13 @@ namespace PlayniteAchievements.ViewModels
             } 
         }
 
+        private DateTime? _lastUnlockUtc;
+        public DateTime? LastUnlockUtc
+        {
+            get => _lastUnlockUtc;
+            set => SetValue(ref _lastUnlockUtc, value);
+        }
+
         private bool _isCompleted;
         public bool IsCompleted { get => _isCompleted; set => SetValue(ref _isCompleted, value); }
 
@@ -137,6 +185,13 @@ namespace PlayniteAchievements.ViewModels
         public int Progression => AchievementCompletionPercentCalculator.ComputeRoundedPercent(UnlockedAchievements, TotalAchievements);
 
         public string ProgressionText => $"{Progression}%";
+
+        public string PlaytimeText => PlayniteGameMetadataFormatter.FormatPlaytime(PlaytimeSeconds);
+
+        public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildSidebarMetadataText(
+            PlatformText,
+            PlaytimeText,
+            RegionText);
 
         public string LastPlayedText => LastPlayed.HasValue
             ? LastPlayed.Value.ToLocalTime().ToString("g")

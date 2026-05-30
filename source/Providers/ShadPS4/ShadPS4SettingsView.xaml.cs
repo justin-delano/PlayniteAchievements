@@ -37,6 +37,9 @@ namespace PlayniteAchievements.Providers.ShadPS4
         {
             _playniteApi = playniteApi;
             InitializeComponent();
+            ConnectionLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_ShadPS4"));
         }
 
         public override void Initialize(IProviderSettings settings)
@@ -81,24 +84,24 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         private void CheckShadPS4Auth()
         {
-            var gameDataPath = _shadps4Settings?.GameDataPath;
-
-            if (string.IsNullOrWhiteSpace(gameDataPath))
+            var configuredPath = _shadps4Settings?.GameDataPath;
+            if (!string.IsNullOrWhiteSpace(ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(configuredPath)) ||
+                ShadPS4PathResolver.HasConfiguredAppDataTrophyData(configuredPath))
             {
-                SetAuthenticated(false);
-                SetAuthStatusByKey("LOCPlayAch_Settings_ShadPS4_NotConfigured");
+                SetAuthenticated(true);
+                SetAuthStatusByKey("LOCPlayAch_Status_Succeeded");
                 return;
             }
 
-            if (System.IO.Directory.Exists(gameDataPath))
+            if (string.IsNullOrWhiteSpace(configuredPath))
             {
-                SetAuthenticated(true);
-                SetAuthStatusByKey("LOCPlayAch_Settings_ShadPS4_Verified");
+                SetAuthenticated(false);
+                SetAuthStatus(string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_NotConfigured"), ResourceProvider.GetString("LOCPlayAch_Provider_ShadPS4")));
             }
             else
             {
                 SetAuthenticated(false);
-                SetAuthStatusByKey("LOCPlayAch_Settings_ShadPS4_FolderNotFound");
+                SetAuthStatusByKey("LOCPlayAch_InvalidPath");
             }
         }
 

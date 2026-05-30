@@ -6,7 +6,9 @@ using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Services.Logging;
@@ -24,6 +26,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly RefreshRuntime _refreshService;
+        private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly ICacheManager _cacheManager;
         private readonly Action _persistSettingsForUi;
         private readonly AchievementOverridesService _achievementOverridesService;
@@ -31,22 +34,26 @@ namespace PlayniteAchievements.Services.UI
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly Action _ensureAchievementResourcesLoaded;
+        private readonly FullscreenControllerNavigationService _fullscreenControllerNavigationService;
 
         public PluginWindowService(
             IPlayniteAPI api,
             ILogger logger,
             RefreshRuntime refreshRuntime,
+            RefreshEntryPoint refreshCoordinator,
             ICacheManager cacheManager,
             Action persistSettingsForUi,
             AchievementOverridesService achievementOverridesService,
             AchievementDataService achievementDataService,
             PlayniteAchievementsSettings settings,
             ManualSourceRegistry manualSourceRegistry,
-            Action ensureAchievementResourcesLoaded)
+            Action ensureAchievementResourcesLoaded,
+            FullscreenControllerNavigationService fullscreenControllerNavigationService)
         {
             _api = api;
             _logger = logger;
-            _refreshService = refreshRuntime;
+            _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
+            _refreshCoordinator = refreshCoordinator ?? throw new ArgumentNullException(nameof(refreshCoordinator));
             _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
             _persistSettingsForUi = persistSettingsForUi ?? throw new ArgumentNullException(nameof(persistSettingsForUi));
             _achievementOverridesService = achievementOverridesService;
@@ -54,6 +61,42 @@ namespace PlayniteAchievements.Services.UI
             _settings = settings;
             _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
             _ensureAchievementResourcesLoaded = ensureAchievementResourcesLoaded;
+            _fullscreenControllerNavigationService = fullscreenControllerNavigationService;
+        }
+
+        private bool DetectFullscreenMode()
+        {
+            try
+            {
+                return _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to check fullscreen mode");
+                return false;
+            }
+        }
+
+        private void ShowWindow(Window window, bool isFullscreen)
+        {
+            if (isFullscreen)
+            {
+                window.Show();
+                try
+                {
+                    window.Topmost = true;
+                    window.Activate();
+                    window.Topmost = false;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to activate window in fullscreen");
+                }
+            }
+            else
+            {
+                window.ShowDialog();
+            }
         }
 
         public void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Action<Guid> openSingleGameAchievementsView, Guid? singleGameRefreshId = null)
@@ -85,6 +128,8 @@ namespace PlayniteAchievements.Services.UI
             Func<Task> refreshTask,
             Action<Guid> openSingleGameAchievementsView)
         {
+            var isFullscreen = DetectFullscreenMode();
+
             var progressWindow = new RefreshProgressControl(
                 _refreshService,
                 _logger,
@@ -104,7 +149,8 @@ namespace PlayniteAchievements.Services.UI
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 progressWindow.WindowTitle,
                 progressWindow,
-                windowOptions
+                windowOptions,
+                isFullscreen
             );
 
             try
@@ -129,16 +175,6 @@ namespace PlayniteAchievements.Services.UI
                 }
             };
 
-            var isFullscreen = false;
-            try
-            {
-                isFullscreen = _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "Failed to check fullscreen mode");
-            }
-
             if (refreshTask != null)
             {
                 Task.Run(async () =>
@@ -154,24 +190,235 @@ namespace PlayniteAchievements.Services.UI
                 });
             }
 
-            if (isFullscreen)
+            ShowWindow(window, isFullscreen);
+        }
+
+        public async Task RunRefreshWithGlobalProgressAsync(
+            RefreshRequest request,
+            string errorLogMessage,
+            bool validateAuthentication,
+            Action<bool> onCompleted = null)
+        {
+            request ??= new RefreshRequest();
+
+            try
             {
-                window.Show();
+                _logger?.Info($"RunRefreshWithGlobalProgressAsync: Starting mode={request.Mode}, singleGameId={request.SingleGameId}, explicitGameCount={request.GameIds?.Count ?? 0}, validateAuthentication={validateAuthentication}");
+                await InvokeOnUiThreadAsync(() => RunRefreshWithGlobalProgressCore(request, errorLogMessage, validateAuthentication, onCompleted)).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, errorLogMessage ?? ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"));
+                SafeInvokeRefreshCompleted(onCompleted, false);
+            }
+        }
+
+        private void RunRefreshWithGlobalProgressCore(
+            RefreshRequest request,
+            string errorLogMessage,
+            bool validateAuthentication,
+            Action<bool> onCompleted)
+        {
+            var initialText = validateAuthentication
+                ? ResourceProvider.GetString("LOCPlayAch_Auth_Checking")
+                : ResourceProvider.GetString("LOCPlayAch_Status_Starting");
+            if (string.IsNullOrWhiteSpace(initialText))
+            {
+                initialText = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
+            }
+
+            var progressOptions = new GlobalProgressOptions(initialText, true)
+            {
+                Cancelable = true,
+                IsIndeterminate = validateAuthentication
+            };
+
+            _api.Dialogs.ActivateGlobalProgress(async progress =>
+            {
+                UpdateGlobalProgress(
+                    progress,
+                    text: initialText,
+                    current: 0,
+                    max: 100,
+                    isIndeterminate: validateAuthentication);
+
+                if (validateAuthentication)
+                {
+                    var providers = await _refreshService
+                        .GetAuthenticatedProvidersOrShowDialogAsync(progress.CancelToken)
+                        .ConfigureAwait(false);
+                    if (providers == null || providers.Count == 0)
+                    {
+                        _logger?.Info("RunRefreshWithGlobalProgressAsync: Authentication preflight found no authenticated providers.");
+                        SafeInvokeRefreshCompleted(onCompleted, false);
+                        return;
+                    }
+
+                    _logger?.Info($"RunRefreshWithGlobalProgressAsync: Authentication preflight completed with {providers.Count} provider(s).");
+                    UpdateGlobalProgress(
+                        progress,
+                        text: ResourceProvider.GetString("LOCPlayAch_Status_Starting"),
+                        current: 0,
+                        max: 100,
+                        isIndeterminate: false);
+                }
+                else
+                {
+                    UpdateGlobalProgress(progress, current: 0, max: 100, isIndeterminate: false);
+                }
+
+                EventHandler<ProgressReport> progressHandler = null;
+                progressHandler = (sender, report) =>
+                {
+                    if (report == null)
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        var percent = report.PercentComplete;
+                        if (percent <= 0 || double.IsNaN(percent))
+                        {
+                            if (report.TotalSteps > 0)
+                            {
+                                percent = (report.CurrentStep * 100.0) / report.TotalSteps;
+                            }
+                            else
+                            {
+                                percent = 0;
+                            }
+                        }
+                        UpdateGlobalProgress(
+                            progress,
+                            text: report.Message,
+                            current: Math.Max(0, Math.Min(100, percent)));
+                    }
+                    catch
+                    {
+                    }
+                };
+
+                _refreshService.RebuildProgress += progressHandler;
+
+                var success = false;
                 try
                 {
-                    window.Topmost = true;
-                    window.Activate();
-                    window.Topmost = false;
+                    await Task.Run(() => _refreshCoordinator.ExecuteAsync(
+                        request,
+                        new RefreshExecutionPolicy
+                        {
+                            ValidateAuthentication = false,
+                            SwallowExceptions = false,
+                            ErrorLogMessage = errorLogMessage,
+                            ExternalCancellationToken = progress.CancelToken
+                        }), progress.CancelToken).ConfigureAwait(false);
+                    success = true;
+                    UpdateGlobalProgress(
+                        progress,
+                        text: ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete"),
+                        current: 100);
+                }
+                catch (OperationCanceledException)
+                {
+                    _refreshService.CancelCurrentRebuild();
+                    UpdateGlobalProgress(progress, text: ResourceProvider.GetString("LOCPlayAch_Status_Canceled"));
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, "Failed to activate window in fullscreen");
+                    _logger?.Error(ex, errorLogMessage ?? ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"));
+                    UpdateGlobalProgress(progress, text: ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"));
                 }
+                finally
+                {
+                    _refreshService.RebuildProgress -= progressHandler;
+                    SafeInvokeRefreshCompleted(onCompleted, success);
+                }
+            }, progressOptions);
+        }
+
+        private void UpdateGlobalProgress(
+            GlobalProgressActionArgs progress,
+            string text = null,
+            double? current = null,
+            double? max = null,
+            bool? isIndeterminate = null)
+        {
+            if (progress == null)
+            {
+                return;
+            }
+
+            Action update = () =>
+            {
+                if (max.HasValue)
+                {
+                    progress.ProgressMaxValue = max.Value;
+                }
+
+                if (current.HasValue)
+                {
+                    progress.CurrentProgressValue = current.Value;
+                }
+
+                if (isIndeterminate.HasValue)
+                {
+                    progress.IsIndeterminate = isIndeterminate.Value;
+                }
+
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    progress.Text = text;
+                }
+            };
+
+            if (progress.MainDispatcher != null)
+            {
+                progress.MainDispatcher.InvokeIfNeeded(update);
             }
             else
             {
-                window.ShowDialog();
+                update();
             }
+        }
+
+        private void SafeInvokeRefreshCompleted(Action<bool> onCompleted, bool success)
+        {
+            if (onCompleted == null)
+            {
+                return;
+            }
+
+            try
+            {
+                onCompleted(success);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Refresh completion callback failed.");
+            }
+        }
+
+        private Task InvokeOnUiThreadAsync(Action action)
+        {
+            if (action == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+            if (dispatcher == null)
+            {
+                throw new InvalidOperationException("UI dispatcher is not available.");
+            }
+
+            if (dispatcher.CheckAccess())
+            {
+                action();
+                return Task.CompletedTask;
+            }
+
+            return dispatcher.InvokeAsync(action, DispatcherPriority.Normal).Task;
         }
 
         private void InvokeOnUiThread(Action action)
@@ -201,6 +448,8 @@ namespace PlayniteAchievements.Services.UI
         {
             try
             {
+                var isFullscreen = DetectFullscreenMode();
+
                 var view = new SingleGameControl(
                     gameId,
                     _refreshService,
@@ -222,7 +471,8 @@ namespace PlayniteAchievements.Services.UI
                 var window = PlayniteUiProvider.CreateExtensionWindow(
                     view.WindowTitle,
                     view,
-                    windowOptions
+                    windowOptions,
+                    isFullscreen
                 );
 
                 window.MinWidth = 450;
@@ -239,34 +489,12 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 window.Closed += (s, ev) => view.Cleanup();
-
-                var isFullscreen = false;
-                try
-                {
-                    isFullscreen = _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "Failed to check fullscreen mode");
-                }
-
                 if (isFullscreen)
                 {
-                    window.Show();
-                    try
-                    {
-                        window.Topmost = true;
-                        window.Activate();
-                        window.Topmost = false;
-                    }
-                    catch
-                    {
-                    }
+                    _fullscreenControllerNavigationService?.RegisterWindow(window, view);
                 }
-                else
-                {
-                    window.ShowDialog();
-                }
+
+                ShowWindow(window, isFullscreen);
             }
             catch (Exception ex)
             {
@@ -330,10 +558,72 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
+        public void OpenDynamicThemeCommandTestView(Guid? gameId = null)
+        {
+            try
+            {
+                Game game = null;
+                if (gameId.HasValue)
+                {
+                    game = _api?.Database?.Games?.Get(gameId.Value);
+                    if (game == null)
+                    {
+                        _api?.Dialogs?.ShowErrorMessage(
+                            ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame"),
+                            ResourceProvider.GetString("LOCPlayAch_Title_PluginName"));
+                        return;
+                    }
+                }
+
+                var view = new Views.ParityTests.DynamicThemeCommandTestView(game);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 1200,
+                    Height = 860
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    gameId.HasValue ? "Dynamic Theme Command Tester" : "Dynamic Theme Command Tester (All Games)",
+                    view,
+                    windowOptions
+                );
+
+                window.MinWidth = 900;
+                window.MinHeight = 640;
+
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch
+                {
+                }
+
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open dynamic theme command test view for gameId={(gameId.HasValue ? gameId.Value.ToString() : "<all>")}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open dynamic command test view: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
         public void OpenGameOptionsView(Guid gameId, GameOptionsTab initialTab)
         {
             try
             {
+                var isFullscreen = DetectFullscreenMode();
+
                 var game = _api?.Database?.Games?.Get(gameId);
                 if (game == null)
                 {
@@ -371,7 +661,8 @@ namespace PlayniteAchievements.Services.UI
                 var window = PlayniteUiProvider.CreateExtensionWindow(
                     view.WindowTitle,
                     view,
-                    windowOptions);
+                    windowOptions,
+                    isFullscreen);
 
                 window.MinWidth = 860;
                 window.MinHeight = 620;
@@ -387,35 +678,12 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 window.Closed += (s, e) => view.Cleanup();
-
-                var isFullscreen = false;
-                try
-                {
-                    isFullscreen = _api?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "Failed to check fullscreen mode");
-                }
-
                 if (isFullscreen)
                 {
-                    window.Show();
-                    try
-                    {
-                        window.Topmost = true;
-                        window.Activate();
-                        window.Topmost = false;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Debug(ex, "Failed to activate Game Options window in fullscreen");
-                    }
+                    _fullscreenControllerNavigationService?.RegisterWindow(window, view);
                 }
-                else
-                {
-                    window.ShowDialog();
-                }
+
+                ShowWindow(window, isFullscreen);
             }
             catch (Exception ex)
             {
@@ -494,25 +762,13 @@ namespace PlayniteAchievements.Services.UI
 
                 void LoadResources()
                 {
-                    if (app.Resources.Contains("BadgeShadow"))
-                    {
-                        return;
-                    }
-
-                    var badgesUri = new Uri("/PlayniteAchievements;component/Resources/RarityBadges.xaml", UriKind.Relative);
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = badgesUri });
-
-                    var trophyUri = new Uri("/PlayniteAchievements;component/Resources/TrophyBadges.xaml", UriKind.Relative);
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = trophyUri });
-
-                    var templatesUri = new Uri("/PlayniteAchievements;component/Resources/AchievementTemplates.xaml", UriKind.Relative);
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = templatesUri });
-
-                    var providerUri = new Uri("/PlayniteAchievements;component/Providers/ProviderIcons.xaml", UriKind.Relative);
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = providerUri });
-
-                    var migrationUri = new Uri("/PlayniteAchievements;component/Resources/MigrationStyles.xaml", UriKind.Relative);
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = migrationUri });
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/RarityBadges.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/TrophyBadges.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/AchievementTemplates.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Providers/ProviderIcons.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/MigrationStyles.xaml");
+                    PercentRarityHelper.ApplyBadgeApplicationResources(
+                        _settings?.Persisted?.UseUniformRarityBadges ?? false);
                 }
 
                 if (app.Dispatcher.CheckAccess())
@@ -521,7 +777,7 @@ namespace PlayniteAchievements.Services.UI
                 }
                 else
                 {
-                    app.Dispatcher.BeginInvoke((Action)LoadResources, DispatcherPriority.Background);
+                    app.Dispatcher.Invoke(LoadResources, DispatcherPriority.Normal);
                 }
             }
             catch (Exception ex)
@@ -529,6 +785,29 @@ namespace PlayniteAchievements.Services.UI
                 _logger.Debug(ex, "Failed to load achievement resources at application level.");
             }
         }
+
+        private static void EnsureMergedDictionaryLoaded(ResourceDictionary resources, string relativeUri)
+        {
+            if (resources == null || string.IsNullOrWhiteSpace(relativeUri))
+            {
+                return;
+            }
+
+            var targetUri = new Uri(relativeUri, UriKind.Relative);
+            foreach (var dictionary in resources.MergedDictionaries)
+            {
+                if (dictionary?.Source == null)
+                {
+                    continue;
+                }
+
+                if (Uri.Compare(dictionary.Source, targetUri, UriComponents.SerializationInfoString, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    return;
+                }
+            }
+
+            resources.MergedDictionaries.Add(new ResourceDictionary { Source = targetUri });
+        }
     }
 }
-

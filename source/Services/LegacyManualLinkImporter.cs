@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Providers.Settings;
 using System;
@@ -35,11 +36,24 @@ namespace PlayniteAchievements.Services
 
     internal sealed class LegacyManualLinkImporter
     {
+        private enum ExistingManualLinkLocation
+        {
+            None,
+            Store,
+            Settings
+        }
+
         private static readonly DateTime MinimumLegacyUnlockUtc =
             new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
         private static readonly DateTime LegacySentinelDate =
             new DateTime(1982, 12, 15);
+
+        private static readonly DateTimeOffset LegacySentinelUtcWindowStart =
+            new DateTimeOffset(1982, 12, 14, 10, 0, 0, TimeSpan.Zero);
+
+        private static readonly DateTimeOffset LegacySentinelUtcWindowEnd =
+            new DateTimeOffset(1982, 12, 15, 14, 0, 0, TimeSpan.Zero);
 
         private static readonly Regex SteamStatsAppIdRegex = new Regex(
             @"/stats/(?<id>\d+)",
@@ -52,6 +66,8 @@ namespace PlayniteAchievements.Services
         private readonly Func<PersistedSettings> _getPersistedSettings;
         private readonly Func<Guid, bool> _gameExists;
         private readonly Func<Guid, bool> _hasCachedProviderData;
+        private readonly Func<LegacyManualImportGameMetadata, Guid?> _resolveMissingGameId;
+        private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly ILogger _logger;
         private readonly IReadOnlyDictionary<string, string> _sourceResolver;
 
@@ -60,13 +76,17 @@ namespace PlayniteAchievements.Services
             Func<Guid, bool> gameExists,
             Func<Guid, bool> hasCachedProviderData,
             ILogger logger = null,
-            IReadOnlyDictionary<string, string> sourceResolver = null)
+            IReadOnlyDictionary<string, string> sourceResolver = null,
+            GameCustomDataStore gameCustomDataStore = null,
+            Func<LegacyManualImportGameMetadata, Guid?> resolveMissingGameId = null)
             : this(
                   () => persistedSettings,
                   gameExists,
                   hasCachedProviderData,
                   logger,
-                  sourceResolver)
+                  sourceResolver,
+                  gameCustomDataStore,
+                  resolveMissingGameId)
         {
         }
 
@@ -75,11 +95,15 @@ namespace PlayniteAchievements.Services
             Func<Guid, bool> gameExists,
             Func<Guid, bool> hasCachedProviderData,
             ILogger logger = null,
-            IReadOnlyDictionary<string, string> sourceResolver = null)
+            IReadOnlyDictionary<string, string> sourceResolver = null,
+            GameCustomDataStore gameCustomDataStore = null,
+            Func<LegacyManualImportGameMetadata, Guid?> resolveMissingGameId = null)
         {
             _getPersistedSettings = getPersistedSettings ?? throw new ArgumentNullException(nameof(getPersistedSettings));
             _gameExists = gameExists ?? throw new ArgumentNullException(nameof(gameExists));
             _hasCachedProviderData = hasCachedProviderData ?? throw new ArgumentNullException(nameof(hasCachedProviderData));
+            _resolveMissingGameId = resolveMissingGameId;
+            _gameCustomDataStore = gameCustomDataStore;
             _logger = logger;
             _sourceResolver = sourceResolver ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -143,13 +167,15 @@ namespace PlayniteAchievements.Services
                         continue;
                     }
 
-                    if (!_gameExists(gameId))
+                    var hasSourceGameId = TryResolveSourceGameId(payload.SourceUrl, payload.Items, out var sourceGameId);
+                    if (!_gameExists(gameId) &&
+                        !TryResolveMissingGameId(gameId, payload, sourceGameId, out gameId))
                     {
                         result.SkippedGameMissing++;
                         continue;
                     }
 
-                    if (manualLinks.TryGetValue(gameId, out var existingLink))
+                    if (TryGetExistingManualLink(gameId, manualLinks, out var existingLink, out var existingLinkLocation))
                     {
                         if (IsValidManualLink(existingLink))
                         {
@@ -158,7 +184,7 @@ namespace PlayniteAchievements.Services
                         }
 
                         // Clean stale/invalid entries so import can recreate a usable link.
-                        manualLinks.Remove(gameId);
+                        RemoveExistingManualLink(gameId, existingLinkLocation, manualLinks);
                     }
 
                     if (_hasCachedProviderData(gameId))
@@ -174,23 +200,25 @@ namespace PlayniteAchievements.Services
                         continue;
                     }
 
-                    if (!TryResolveSourceGameId(payload.SourceUrl, payload.Items, out var sourceGameId))
+                    if (!hasSourceGameId)
                     {
                         result.SkippedUnresolvedSourceGameId++;
                         continue;
                     }
 
                     var nowUtc = DateTime.UtcNow;
-                    BuildUnlockData(payload.Items, out var unlockTimes, out var unlockStates);
-                    manualLinks[gameId] = new ManualAchievementLink
+                    BuildUnlockData(payload.Items, sourceKey, out var unlockTimes, out var unlockStates);
+                    var link = new ManualAchievementLink
                     {
                         SourceKey = sourceKey,
                         SourceGameId = sourceGameId,
                         UnlockTimes = unlockTimes,
                         UnlockStates = unlockStates,
+                        AllowUnauthenticatedSchemaFetch = ShouldAllowUnauthenticatedSchemaFetch(sourceKey),
                         CreatedUtc = nowUtc,
                         LastModifiedUtc = nowUtc
                     };
+                    SaveManualLink(gameId, link, ExistingManualLinkLocation.None, manualLinks);
 
                     result.Imported++;
                     result.ImportedGameIds.Add(gameId);
@@ -204,6 +232,40 @@ namespace PlayniteAchievements.Services
 
             ProviderRegistry.Write(manualSettings, persistToDisk: true);
             return result;
+        }
+
+        private bool TryResolveMissingGameId(
+            Guid legacyGameId,
+            LegacyPayload payload,
+            string sourceGameId,
+            out Guid resolvedGameId)
+        {
+            resolvedGameId = legacyGameId;
+            if (_resolveMissingGameId == null || payload == null)
+            {
+                return false;
+            }
+
+            var metadata = new LegacyManualImportGameMetadata
+            {
+                LegacyGameId = legacyGameId,
+                GameName = payload.GameName,
+                SourceGameName = payload.SourceGameName,
+                SourceName = payload.SourceName,
+                SourceUrl = payload.SourceUrl,
+                SourceGameId = sourceGameId
+            };
+
+            var candidate = _resolveMissingGameId(metadata);
+            if (!candidate.HasValue ||
+                candidate.Value == Guid.Empty ||
+                !_gameExists(candidate.Value))
+            {
+                return false;
+            }
+
+            resolvedGameId = candidate.Value;
+            return true;
         }
 
         private bool TryResolveSourceKey(string sourceName, out string sourceKey)
@@ -225,6 +287,94 @@ namespace PlayniteAchievements.Services
                    !string.IsNullOrWhiteSpace(link.SourceGameId);
         }
 
+        private bool TryGetExistingManualLink(
+            Guid gameId,
+            IReadOnlyDictionary<Guid, ManualAchievementLink> manualLinks,
+            out ManualAchievementLink link,
+            out ExistingManualLinkLocation location)
+        {
+            link = null;
+            location = ExistingManualLinkLocation.None;
+
+            if (_gameCustomDataStore != null &&
+                _gameCustomDataStore.TryLoad(gameId, out var customData) &&
+                customData?.ManualLink != null)
+            {
+                link = customData.ManualLink.Clone();
+                location = ExistingManualLinkLocation.Store;
+                return true;
+            }
+
+            if (manualLinks != null &&
+                manualLinks.TryGetValue(gameId, out var settingsLink) &&
+                settingsLink != null)
+            {
+                link = settingsLink;
+                location = ExistingManualLinkLocation.Settings;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void RemoveExistingManualLink(
+            Guid gameId,
+            ExistingManualLinkLocation location,
+            IDictionary<Guid, ManualAchievementLink> manualLinks)
+        {
+            switch (location)
+            {
+                case ExistingManualLinkLocation.Store:
+                    _gameCustomDataStore?.Update(gameId, customData =>
+                    {
+                        customData.ManualLink = null;
+                    });
+                    break;
+                case ExistingManualLinkLocation.Settings:
+                    manualLinks?.Remove(gameId);
+                    break;
+            }
+        }
+
+        private void SaveManualLink(
+            Guid gameId,
+            ManualAchievementLink link,
+            ExistingManualLinkLocation location,
+            IDictionary<Guid, ManualAchievementLink> manualLinks)
+        {
+            switch (location)
+            {
+                case ExistingManualLinkLocation.Store:
+                    _gameCustomDataStore?.Update(gameId, customData =>
+                    {
+                        customData.ManualLink = link;
+                    });
+                    return;
+                case ExistingManualLinkLocation.Settings:
+                    manualLinks[gameId] = link;
+                    return;
+                default:
+                    if (_gameCustomDataStore != null)
+                    {
+                        _gameCustomDataStore.Update(gameId, customData =>
+                        {
+                            customData.ManualLink = link;
+                        });
+                        return;
+                    }
+
+                    manualLinks[gameId] = link;
+                    return;
+            }
+        }
+
+        private static bool? ShouldAllowUnauthenticatedSchemaFetch(string sourceKey)
+        {
+            return string.Equals(sourceKey, "Exophase", StringComparison.OrdinalIgnoreCase)
+                ? true
+                : (bool?)null;
+        }
+
         private static void IncrementUnsupportedSourceCount(
             LegacyManualImportResult result,
             string sourceName)
@@ -240,11 +390,12 @@ namespace PlayniteAchievements.Services
 
         private static void BuildUnlockData(
             IReadOnlyList<LegacyAchievementItem> items,
+            string sourceKey,
             out Dictionary<string, DateTime?> unlockTimes,
             out Dictionary<string, bool> unlockStates)
         {
-            unlockTimes = new Dictionary<string, DateTime?>();
-            unlockStates = new Dictionary<string, bool>();
+            unlockTimes = new Dictionary<string, DateTime?>(StringComparer.OrdinalIgnoreCase);
+            unlockStates = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             if (items == null)
             {
                 return;
@@ -252,14 +403,14 @@ namespace PlayniteAchievements.Services
 
             foreach (var item in items)
             {
-                if (item == null || string.IsNullOrWhiteSpace(item.ApiName))
+                var apiName = ResolveLegacyAchievementApiName(item, sourceKey);
+                if (string.IsNullOrWhiteSpace(apiName))
                 {
                     continue;
                 }
 
                 if (TryParseLegacyUnlock(item.DateUnlocked, out var unlockUtc))
                 {
-                    var apiName = item.ApiName.Trim();
                     unlockStates[apiName] = true;
                     if (unlockUtc.HasValue)
                     {
@@ -267,6 +418,41 @@ namespace PlayniteAchievements.Services
                     }
                 }
             }
+        }
+
+        private static string ResolveLegacyAchievementApiName(
+            LegacyAchievementItem item,
+            string sourceKey)
+        {
+            if (item == null)
+            {
+                return null;
+            }
+
+            var apiName = item.ApiName;
+            var isExophase = string.Equals(sourceKey, "Exophase", StringComparison.OrdinalIgnoreCase);
+            if (string.IsNullOrWhiteSpace(apiName) && isExophase)
+            {
+                // Exophase achievements in this plugin derive their ApiName from the display title.
+                // Some SuccessStory manual exports have blank ApiName but preserve Name.
+                apiName = item.Name;
+            }
+
+            if (string.IsNullOrWhiteSpace(apiName))
+            {
+                return null;
+            }
+
+            apiName = apiName.Trim();
+            if (!isExophase)
+            {
+                return apiName;
+            }
+
+            var normalizedExophaseApiName = ExophaseApiClient.NormalizeLegacyManualApiName(apiName);
+            return string.IsNullOrWhiteSpace(normalizedExophaseApiName)
+                ? null
+                : normalizedExophaseApiName;
         }
 
         private static bool TryResolveSourceGameId(
@@ -358,14 +544,16 @@ namespace PlayniteAchievements.Services
                 return false;
             }
 
-            // Exophase achievement URLs follow patterns like:
-            // https://www.exophase.com/game/<game-slug>/achievements
-            // Extract just the slug for storage (more stable than full URL)
-            if (url.IndexOf("exophase.com/game/", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                url.IndexOf("/achievements", StringComparison.OrdinalIgnoreCase) >= 0)
+            // Exophase URLs follow patterns like:
+            // https://www.exophase.com/game/<game-slug>/achievements/
+            // https://www.exophase.com/game/<game-slug>/trophies/
+            // Extract just the slug for storage (more stable than full URL).
+            if (url.IndexOf("exophase.com/game/", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                // Extract the slug from the URL
-                var match = Regex.Match(url, @"/game/([^/]+)/achievements", RegexOptions.IgnoreCase);
+                var match = Regex.Match(
+                    url,
+                    @"/game/([^/]+)(?:/(?:achievements|trophies))?/?(?:[?#].*)?$",
+                    RegexOptions.IgnoreCase);
                 if (match.Success && match.Groups.Count > 1)
                 {
                     exophaseId = match.Groups[1].Value;
@@ -391,15 +579,15 @@ namespace PlayniteAchievements.Services
             if (DateTimeOffset.TryParse(
                     value,
                     CultureInfo.InvariantCulture,
-                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    DateTimeStyles.AssumeUniversal,
                     out var dto))
             {
-                var parsedUtc = dto.UtcDateTime;
-                if (dto.DateTime.Date == LegacySentinelDate)
+                if (IsLegacySentinelDate(dto))
                 {
                     return true;
                 }
 
+                var parsedUtc = dto.UtcDateTime;
                 if (parsedUtc < MinimumLegacyUnlockUtc)
                 {
                     return false;
@@ -410,6 +598,22 @@ namespace PlayniteAchievements.Services
             }
 
             return false;
+        }
+
+        private static bool IsLegacySentinelDate(DateTimeOffset dto)
+        {
+            if (dto.Year == LegacySentinelDate.Year &&
+                dto.Month == LegacySentinelDate.Month &&
+                dto.Day == LegacySentinelDate.Day)
+            {
+                return true;
+            }
+
+            // SuccessStory commonly stores manual-only unlocks as a 1982-12-15 local midnight sentinel.
+            // Some legacy exports normalize that value to UTC, which shifts positive-offset users back into 1982-12-14Z.
+            var utc = dto.ToUniversalTime();
+            return utc >= LegacySentinelUtcWindowStart &&
+                   utc <= LegacySentinelUtcWindowEnd;
         }
 
         private static LegacyPayload ParsePayload(string filePath)
@@ -441,6 +645,7 @@ namespace PlayniteAchievements.Services
 
                     items.Add(new LegacyAchievementItem
                     {
+                        Name = itemObject.Value<string>("Name"),
                         ApiName = itemObject.Value<string>("ApiName"),
                         DateUnlocked = itemObject.Value<string>("DateUnlocked"),
                         UrlUnlocked = itemObject.Value<string>("UrlUnlocked"),
@@ -453,6 +658,8 @@ namespace PlayniteAchievements.Services
             {
                 IsManual = root.Value<bool?>("IsManual") == true,
                 IsIgnored = root.Value<bool?>("IsIgnored") == true,
+                GameName = root.Value<string>("Name"),
+                SourceGameName = sourcesLink?.Value<string>("GameName"),
                 SourceName = sourcesLink?.Value<string>("Name"),
                 SourceUrl = sourcesLink?.Value<string>("Url"),
                 Items = items
@@ -463,6 +670,8 @@ namespace PlayniteAchievements.Services
         {
             public bool IsManual { get; set; }
             public bool IsIgnored { get; set; }
+            public string GameName { get; set; }
+            public string SourceGameName { get; set; }
             public string SourceName { get; set; }
             public string SourceUrl { get; set; }
             public List<LegacyAchievementItem> Items { get; set; }
@@ -470,11 +679,22 @@ namespace PlayniteAchievements.Services
 
         private sealed class LegacyAchievementItem
         {
+            public string Name { get; set; }
             public string ApiName { get; set; }
             public string DateUnlocked { get; set; }
             public string UrlUnlocked { get; set; }
             public string UrlLocked { get; set; }
         }
+    }
+
+    internal sealed class LegacyManualImportGameMetadata
+    {
+        public Guid LegacyGameId { get; set; }
+        public string GameName { get; set; }
+        public string SourceGameName { get; set; }
+        public string SourceName { get; set; }
+        public string SourceUrl { get; set; }
+        public string SourceGameId { get; set; }
     }
 }
 

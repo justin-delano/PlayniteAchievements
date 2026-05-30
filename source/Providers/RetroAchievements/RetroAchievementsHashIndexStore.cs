@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 {
     internal sealed class RetroAchievementsHashIndexStore
     {
+        private const int CurrentFormatVersion = 2;
         private const int PageSize = 5000;
 
         private static readonly JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
@@ -73,7 +74,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 }
 
                 var disk = await TryLoadFromDiskAsync(consoleId, cancel).ConfigureAwait(false);
-                if (disk != null && !IsStale(disk.UpdatedUtc) && disk.FormatVersion >= 1)
+                if (disk != null && !IsStale(disk.UpdatedUtc) && disk.FormatVersion >= CurrentFormatVersion)
                 {
                     _logger?.Info($"[RA] Loaded hash index from disk for consoleId={consoleId} with {disk.HashToGameId.Count} hashes (cached at {disk.UpdatedUtc:yyyy-MM-dd HH:mm:ss} UTC).");
                     _memory[consoleId] = new CachedIndex { UpdatedUtc = disk.UpdatedUtc, Index = disk.HashToGameId, Subsets = disk.BaseGameToSubsets };
@@ -243,27 +244,54 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             var subsets = new Dictionary<int, List<RaSubsetEntry>>();
             foreach (var sub in subsetItems)
             {
-                var baseTitle = ExtractBaseTitle(sub.Title);
+                var baseTitle = RetroAchievementsSubsetTitleResolver.ExtractBaseTitle(sub.Title);
                 if (string.IsNullOrWhiteSpace(baseTitle))
-                    continue;
-
-                if (baseTitleToId.TryGetValue(baseTitle, out var baseGameId))
                 {
-                    if (!subsets.TryGetValue(baseGameId, out var list))
-                    {
-                        list = new List<RaSubsetEntry>();
-                        subsets[baseGameId] = list;
-                    }
-                    list.Add(new RaSubsetEntry
-                    {
-                        Id = sub.ID != 0 ? sub.ID : sub.GameID,
-                        Title = sub.Title
-                    });
-                    _logger?.Debug($"[RA] Mapped subset '{sub.Title}' (ID={sub.ID}) to base game ID={baseGameId}");
+                    continue;
+                }
+
+                var mappedBaseGameIds = new HashSet<int>();
+                if (baseTitleToId.TryGetValue(baseTitle, out var directBaseGameId))
+                {
+                    mappedBaseGameIds.Add(directBaseGameId);
                 }
                 else
                 {
-                    _logger?.Debug($"[RA] Could not find base game for subset '{sub.Title}'");
+                    foreach (var alternateBaseTitle in RetroAchievementsSubsetTitleResolver.ExtractAlternateBaseTitleCandidates(baseTitle))
+                    {
+                        if (baseTitleToId.TryGetValue(alternateBaseTitle, out var alternateBaseGameId))
+                        {
+                            mappedBaseGameIds.Add(alternateBaseGameId);
+                        }
+                    }
+                }
+
+                if (mappedBaseGameIds.Count > 0)
+                {
+                    foreach (var baseGameId in mappedBaseGameIds)
+                    {
+                        if (!subsets.TryGetValue(baseGameId, out var list))
+                        {
+                            list = new List<RaSubsetEntry>();
+                            subsets[baseGameId] = list;
+                        }
+
+                        list.Add(new RaSubsetEntry
+                        {
+                            Id = sub.ID != 0 ? sub.ID : sub.GameID,
+                            Title = sub.Title
+                        });
+                    }
+
+                    _logger?.Debug($"[RA] Mapped subset '{sub.Title}' (ID={sub.ID}) to base game ID(s)={string.Join(",", mappedBaseGameIds.OrderBy(id => id))}");
+                }
+                else
+                {
+                    var alternateCandidates = RetroAchievementsSubsetTitleResolver.ExtractAlternateBaseTitleCandidates(baseTitle);
+                    var candidatesForLog = alternateCandidates.Count > 0
+                        ? string.Join(" | ", alternateCandidates)
+                        : baseTitle;
+                    _logger?.Debug($"[RA] Could not find base game for subset '{sub.Title}' (base candidates={candidatesForLog})");
                 }
             }
 
@@ -271,7 +299,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
             return new RaHashIndexCacheFile
             {
-                FormatVersion = 1,
+                FormatVersion = CurrentFormatVersion,
                 UpdatedUtc = DateTime.UtcNow,
                 HashToGameId = index,
                 BaseGameToSubsets = subsets
@@ -293,28 +321,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
             return new List<RaSubsetEntry>();
         }
-
-        internal static string ExtractBaseTitle(string subsetTitle)
-        {
-            if (string.IsNullOrWhiteSpace(subsetTitle))
-                return null;
-
-            // Strip the first bracket-delimited suffix: "[Subset - ...]", "[Bonus]", "[Hub]", etc.
-            var bracketStart = subsetTitle.IndexOf('[');
-            if (bracketStart > 0)
-            {
-                return subsetTitle.Substring(0, bracketStart).Trim();
-            }
-
-            var parenStart = subsetTitle.IndexOf('(');
-            if (parenStart > 0)
-            {
-                return subsetTitle.Substring(0, parenStart).Trim();
-            }
-
-            return null;
-        }
-
         private static bool IsSubsetLikeTitle(string title)
         {
             if (string.IsNullOrWhiteSpace(title))

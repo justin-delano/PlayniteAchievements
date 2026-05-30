@@ -385,7 +385,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
 
         private void UpdateForGame(Guid gameId)
         {
-            var gameData = Plugin?.AchievementDataService?.GetGameAchievementData(gameId);
+            var gameData = Plugin?.AchievementDataService?.GetVisibleGameAchievementData(gameId);
 
             if (gameData == null || !gameData.HasAchievements || (gameData.Achievements?.Count ?? 0) == 0)
             {

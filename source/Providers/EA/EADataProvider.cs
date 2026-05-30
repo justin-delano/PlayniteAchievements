@@ -27,7 +27,7 @@ namespace PlayniteAchievements.Providers.EA
             _ = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
 
             _httpClient = new HttpClient();
-            _sessionManager = new EASessionManager(playniteApi, logger);
+            _sessionManager = new EASessionManager(playniteApi, logger, _httpClient);
 
             var apiClient = new EAApiClient(_httpClient, logger, _sessionManager);
             _scanner = new EAScanner(settings, apiClient, _sessionManager, logger);
@@ -44,7 +44,7 @@ namespace PlayniteAchievements.Providers.EA
 
         public ISessionManager AuthSession => _sessionManager;
 
-        public bool IsCapable(Game game) => IsEaCapable(game);
+        public bool IsCapable(Game game) => EAProviderSupport.IsEaCapable(game, EaPluginId);
 
         public Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
@@ -71,24 +71,6 @@ namespace PlayniteAchievements.Providers.EA
         }
 
         public ProviderSettingsViewBase CreateSettingsView() => new EASettingsView(_sessionManager);
-
-        private static bool IsEaCapable(Game game)
-        {
-            if (game == null)
-            {
-                return false;
-            }
-
-            if (game.PluginId == EaPluginId)
-            {
-                return true;
-            }
-
-            var sourceName = game.Source?.Name?.Trim();
-            return !string.IsNullOrWhiteSpace(sourceName) &&
-                   (string.Equals(sourceName, "EA", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(sourceName, "Origin", StringComparison.OrdinalIgnoreCase));
-        }
 
         private static Guid ResolveEaPluginId()
         {

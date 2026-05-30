@@ -9,14 +9,16 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Playnite.SDK;
+using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class SidebarControl : UserControl, IDisposable
+    public partial class SidebarControl : UserControl, IDisposable, IFullscreenControllerNavigable
     {
         private readonly SidebarViewModel _viewModel;
         private readonly ILogger _logger;
@@ -30,6 +32,7 @@ namespace PlayniteAchievements.Views
         private bool _isActive;
         private Guid? _lastSelectedOverviewGameId;
         private DataGridRow _pendingRightClickRow;
+        private bool _committingOverviewSelection;
 
         // Column persistence state (for GamesOverviewDataGrid only - AchievementDataGridControl handles its own)
         private readonly Dictionary<DataGridColumn, EventHandler> _columnWidthChangedHandlers = new Dictionary<DataGridColumn, EventHandler>();
@@ -55,6 +58,7 @@ namespace PlayniteAchievements.Views
             {
                 ["OverviewGameName"] = 500,
                 ["OverviewLastPlayed"] = 240,
+                ["OverviewPlaytime"] = 170,
                 ["OverviewProgression"] = 360,
                 ["TotalAchievements"] = 180
             };
@@ -99,6 +103,7 @@ namespace PlayniteAchievements.Views
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.SetActive(false);
+            PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
         }
 
         private void InitSaveTimer()
@@ -115,6 +120,35 @@ namespace PlayniteAchievements.Views
             if (_isActive) return;
             _isActive = true;
             _viewModel?.SetActive(true);
+            FocusInitialFullscreenControllerTarget();
+        }
+
+        private void FocusInitialFullscreenControllerTarget()
+        {
+            try
+            {
+                if (_playniteApi?.ApplicationInfo?.Mode != ApplicationMode.Fullscreen)
+                {
+                    return;
+                }
+
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (!_isActive || !IsVisible)
+                    {
+                        return;
+                    }
+
+                    if (!FocusLeftFilterArea())
+                    {
+                        FocusOverviewGrid();
+                    }
+                }), DispatcherPriority.Input);
+            }
+            catch
+            {
+                // Focus seeding is best-effort; activation should not fail if Playnite state is unavailable.
+            }
         }
 
         public void Deactivate()
@@ -138,6 +172,7 @@ namespace PlayniteAchievements.Views
                 {
                     _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
                 }
+                PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
                 FlushPendingUpdates();
                 DetachAllHandlers();
                 _viewModel?.Dispose();
@@ -158,7 +193,15 @@ namespace PlayniteAchievements.Views
             // GameAchievementsGrid uses AchievementDataGridControl with built-in persistence
             ApplyVisibilityToGrids();
             ApplyWidthsToGrids();
+            ResetOverviewSortDirection();
+            ResetAchievementsSortDirection();
             UpdatePieChartLayout();
+        }
+
+        private void Plugin_SettingsSaved(object sender, EventArgs e)
+        {
+            ResetOverviewSortDirection();
+            ResetAchievementsSortDirection();
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -168,6 +211,13 @@ namespace PlayniteAchievements.Views
             if (e.PropertyName == nameof(SidebarViewModel.SelectedGameHasCustomAchievementOrder))
             {
                 ResetAchievementsSortDirection();
+                return;
+            }
+
+            if (e.PropertyName == nameof(SidebarViewModel.OverviewSortPath) ||
+                e.PropertyName == nameof(SidebarViewModel.OverviewSortDirection))
+            {
+                ResetOverviewSortDirection();
                 return;
             }
 
@@ -181,12 +231,15 @@ namespace PlayniteAchievements.Views
                 UpdatePieChartLayout();
             }
 
-            if (e.PropertyName != nameof(SidebarViewModel.IsGameSelected)) return;
+            if (e.PropertyName != nameof(SidebarViewModel.IsGameSelected) &&
+                e.PropertyName != nameof(SidebarViewModel.IsSelectedGameContentReady)) return;
 
             // Defer grid operations to Render priority to batch with visibility change
             // This prevents flicker by ensuring all layout happens in one render pass
             Dispatcher.BeginInvoke(new Action(() =>
             {
+                ResetAchievementsSortDirection();
+
                 if (!_viewModel.IsGameSelected)
                 {
                     ResetRecentAchievementsToDefaultSort();
@@ -422,7 +475,17 @@ namespace PlayniteAchievements.Views
 
             menu.Closed += onClosed;
             menu.PlacementTarget = button;
-            menu.IsOpen = true;
+            menu.Placement = PlacementMode.Bottom;
+            menu.HorizontalOffset = 0;
+            menu.VerticalOffset = 0;
+            if (button.IsKeyboardFocusWithin)
+            {
+                FullscreenControllerNavigationService.OpenContextMenu(button, menu);
+            }
+            else
+            {
+                menu.IsOpen = true;
+            }
         }
 
         private void ClearGameSelection_Click(object sender, RoutedEventArgs e)
@@ -433,6 +496,620 @@ namespace PlayniteAchievements.Views
             }
             _viewModel?.ClearGameSelection();
             _lastSelectedOverviewGameId = null;
+        }
+
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            if (_viewModel == null)
+            {
+                return false;
+            }
+
+            if (FullscreenControllerNavigationService.IsBackInput(input))
+            {
+                return TryHandleControllerBack();
+            }
+
+            if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
+            {
+                return TryHandleControllerSecondaryClick();
+            }
+
+            if (FullscreenControllerNavigationService.IsAcceptInput(input))
+            {
+                return TryHandleControllerActivation();
+            }
+
+            if (input == ControllerInput.DPadUp || input == ControllerInput.LeftStickUp)
+            {
+                return TryHandleControllerUp();
+            }
+
+            if (input == ControllerInput.DPadDown || input == ControllerInput.LeftStickDown)
+            {
+                return TryHandleControllerDown();
+            }
+
+            if (input == ControllerInput.DPadLeft || input == ControllerInput.LeftStickLeft)
+            {
+                return TryHandleControllerLeft();
+            }
+
+            if (input == ControllerInput.DPadRight || input == ControllerInput.LeftStickRight)
+            {
+                return TryHandleControllerRight();
+            }
+
+            return false;
+        }
+
+        private bool TryHandleControllerUp()
+        {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid != null)
+            {
+                if (IsGridColumnHeaderFocused(focusedGrid))
+                {
+                    return FocusFilterAreaForGrid(focusedGrid);
+                }
+
+                if (IsGridAtFirstRow(focusedGrid))
+                {
+                    return FocusColumnHeaderForGrid(focusedGrid) || FocusFilterAreaForGrid(focusedGrid);
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryHandleControllerDown()
+        {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid != null && IsGridColumnHeaderFocused(focusedGrid))
+            {
+                return FullscreenControllerNavigationService.FocusDataGrid(focusedGrid);
+            }
+
+            if (IsKeyboardFocusWithinLeftFilterArea())
+            {
+                return FocusColumnHeaderForGrid(GamesOverviewDataGrid) || FocusOverviewGrid();
+            }
+            if (IsKeyboardFocusWithinRightFilterArea())
+            {
+                var grid = GetActiveRightGrid();
+                return FocusColumnHeaderForGrid(grid) || FocusActiveRightGrid();
+            }
+            return false;
+        }
+
+        private bool TryHandleControllerLeft()
+        {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid != null)
+            {
+                if (ReferenceEquals(focusedGrid, RecentAchievementsDataGrid?.InternalDataGrid) ||
+                    ReferenceEquals(focusedGrid, GameAchievementsGrid?.InternalDataGrid))
+                {
+                    return FocusOverviewGrid(focusedGrid.SelectedIndex);
+                }
+            }
+
+            if (IsKeyboardFocusWithinRightFilterArea())
+            {
+                if (FocusFilterElementByDelta(GetRightFilterControllerElements(), -1))
+                {
+                    return true;
+                }
+
+                return FocusLeftFilterArea(preferLast: true);
+            }
+
+            if (IsKeyboardFocusWithinLeftFilterArea())
+            {
+                return FocusFilterElementByDelta(GetLeftFilterControllerElements(), -1);
+            }
+
+            return false;
+        }
+
+        private bool TryHandleControllerRight()
+        {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid != null)
+            {
+                if (ReferenceEquals(focusedGrid, GamesOverviewDataGrid))
+                {
+                    return FocusActiveRightGrid(focusedGrid.SelectedIndex);
+                }
+            }
+
+            if (IsKeyboardFocusWithinLeftFilterArea())
+            {
+                if (FocusFilterElementByDelta(GetLeftFilterControllerElements(), 1))
+                {
+                    return true;
+                }
+
+                return FocusRightFilterArea();
+            }
+
+            if (IsKeyboardFocusWithinRightFilterArea())
+            {
+                return FocusFilterElementByDelta(GetRightFilterControllerElements(), 1);
+            }
+
+            return false;
+        }
+
+        private bool TryHandleControllerBack()
+        {
+            var command = _viewModel?.CloseViewCommand;
+            if (command == null || !command.CanExecute(null))
+            {
+                return false;
+            }
+
+            command.Execute(null);
+            return true;
+        }
+
+        private bool TryHandleControllerActivation()
+        {
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (IsGridColumnHeaderFocused(focusedGrid))
+            {
+                return ActivateFocusedGridColumnHeader(focusedGrid);
+            }
+
+            if (GamesOverviewDataGrid?.IsKeyboardFocusWithin == true)
+            {
+                return TrySelectFocusedOverviewGame();
+            }
+
+            if (RecentAchievementsDataGrid?.IsKeyboardFocusWithin == true)
+            {
+                return RecentAchievementsDataGrid.ActivateSelectedItem();
+            }
+
+            if (GameAchievementsGrid?.IsKeyboardFocusWithin == true)
+            {
+                return GameAchievementsGrid.ActivateSelectedItem();
+            }
+
+            return FullscreenControllerNavigationService.ActivateFocusedElement();
+        }
+
+        private bool TryHandleControllerSecondaryClick()
+        {
+            if (TryOpenFocusedSelectorContextMenu())
+            {
+                return true;
+            }
+
+            var focusedGrid = GetFocusedSidebarGrid();
+            if (focusedGrid == null)
+            {
+                return false;
+            }
+
+            if (IsGridColumnHeaderFocused(focusedGrid))
+            {
+                return TryOpenColumnVisibilityMenuForController(focusedGrid);
+            }
+
+            return TryOpenSelectedGridRowContextMenu(focusedGrid);
+        }
+
+        private bool FocusOverviewGrid(int? preferredIndex = null)
+        {
+            return FullscreenControllerNavigationService.FocusDataGrid(GamesOverviewDataGrid, preferredIndex);
+        }
+
+        private bool FocusActiveRightGrid(int? preferredIndex = null)
+        {
+            var grid = GetActiveRightGrid();
+            return grid != null && FullscreenControllerNavigationService.FocusDataGrid(grid, preferredIndex);
+        }
+
+        private DataGrid GetActiveRightGrid()
+        {
+            var control = (GameAchievementsGrid?.IsVisible == true && _viewModel?.IsSelectedGameContentReady == true)
+                ? (object)GameAchievementsGrid
+                : (object)RecentAchievementsDataGrid;
+
+            return (control as Controls.AchievementDataGridControl)?.InternalDataGrid;
+        }
+
+        private bool FocusColumnHeaderForGrid(DataGrid grid)
+        {
+            return grid != null && FullscreenControllerNavigationService.FocusDataGridColumnHeader(grid);
+        }
+
+        private bool FocusFilterAreaForGrid(DataGrid grid)
+        {
+            if (ReferenceEquals(grid, GamesOverviewDataGrid))
+            {
+                return FocusLeftFilterArea();
+            }
+            return FocusRightFilterArea();
+        }
+
+        private bool FocusLeftFilterArea(bool preferLast = false)
+        {
+            return FocusFilterArea(GetLeftFilterControllerElements(), preferLast);
+        }
+
+        private bool FocusRightFilterArea(bool preferLast = false)
+        {
+            return FocusFilterArea(GetRightFilterControllerElements(), preferLast);
+        }
+
+        private static bool FocusFilterArea(IList<UIElement> elements, bool preferLast)
+        {
+            if (elements == null || elements.Count == 0)
+            {
+                return false;
+            }
+
+            return FullscreenControllerNavigationService.FocusFirstElement(
+                preferLast ? elements.Reverse().ToArray() : elements);
+        }
+
+        private static bool FocusFilterElementByDelta(IList<UIElement> elements, int delta)
+        {
+            return FullscreenControllerNavigationService.FocusElementByDelta(elements, delta);
+        }
+
+        private bool TryOpenSelectedGridRowContextMenu(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return false;
+            }
+
+            var row = FullscreenControllerNavigationService.GetTargetDataGridRow(grid);
+            if (row == null)
+            {
+                return false;
+            }
+
+            return OpenContextMenuForRow(row, useControllerPlacement: true);
+        }
+
+        private bool TryOpenColumnVisibilityMenuForController(DataGrid grid)
+        {
+            if (grid == null || !IsGridColumnHeaderFocused(grid))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(grid, GamesOverviewDataGrid))
+            {
+                var menu = BuildColumnVisibilityMenu(grid);
+                var header = FullscreenControllerNavigationService.GetFocusedDataGridColumnHeader(grid);
+                return FullscreenControllerNavigationService.OpenContextMenu(header, menu);
+            }
+
+            if (ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid))
+            {
+                return RecentAchievementsDataGrid.OpenColumnVisibilityMenuForController();
+            }
+
+            if (ReferenceEquals(grid, GameAchievementsGrid?.InternalDataGrid))
+            {
+                return GameAchievementsGrid.OpenColumnVisibilityMenuForController();
+            }
+
+            return false;
+        }
+
+        private bool IsGridColumnHeaderFocused(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return false;
+            }
+
+            return FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(grid);
+        }
+
+        private bool ActivateFocusedGridColumnHeader(DataGrid grid)
+        {
+            if (ReferenceEquals(grid, GamesOverviewDataGrid))
+            {
+                return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(grid);
+            }
+
+            if (ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid))
+            {
+                return RecentAchievementsDataGrid.ActivateFocusedColumnHeaderForController();
+            }
+
+            if (ReferenceEquals(grid, GameAchievementsGrid?.InternalDataGrid))
+            {
+                return GameAchievementsGrid.ActivateFocusedColumnHeaderForController();
+            }
+
+            return false;
+        }
+
+        private bool TryOpenFocusedSelectorContextMenu()
+        {
+            var focusedButton = VisualTreeHelpers.FindVisualParent<Button>(
+                                    Keyboard.FocusedElement as DependencyObject)
+                                ?? Keyboard.FocusedElement as Button;
+            if (focusedButton == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(focusedButton, RefreshModeSelectionButton))
+            {
+                RefreshModeSelectionButton_Click(focusedButton, new RoutedEventArgs());
+                return RefreshModeSelectionButton.ContextMenu?.IsOpen == true;
+            }
+
+            if (ReferenceEquals(focusedButton, ProviderFilterSelectionButton))
+            {
+                ProviderFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
+                return ProviderFilterSelectionButton.ContextMenu?.IsOpen == true;
+            }
+
+            if (ReferenceEquals(focusedButton, CompletenessFilterSelectionButton))
+            {
+                CompletenessFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
+                return CompletenessFilterSelectionButton.ContextMenu?.IsOpen == true;
+            }
+
+            if (ReferenceEquals(focusedButton, PlayStatusFilterSelectionButton))
+            {
+                PlayStatusFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
+                return PlayStatusFilterSelectionButton.ContextMenu?.IsOpen == true;
+            }
+
+            if (ReferenceEquals(focusedButton, SelectedGameTypeFilterSelectionButton))
+            {
+                SelectedGameTypeFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
+                return SelectedGameTypeFilterSelectionButton.ContextMenu?.IsOpen == true;
+            }
+
+            if (ReferenceEquals(focusedButton, SelectedGameCategoryFilterSelectionButton))
+            {
+                SelectedGameCategoryFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
+                return SelectedGameCategoryFilterSelectionButton.ContextMenu?.IsOpen == true;
+            }
+
+            return false;
+        }
+
+        private DataGrid GetFocusedSidebarGrid()
+        {
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            var focusedGrid = VisualTreeHelpers.FindVisualParent<DataGrid>(focused)
+                              ?? focused as DataGrid;
+
+            if (IsSidebarGrid(focusedGrid))
+            {
+                return focusedGrid;
+            }
+
+            if (GamesOverviewDataGrid?.IsKeyboardFocusWithin == true)
+            {
+                return GamesOverviewDataGrid;
+            }
+
+            if (RecentAchievementsDataGrid?.IsKeyboardFocusWithin == true)
+            {
+                return RecentAchievementsDataGrid.InternalDataGrid;
+            }
+
+            if (GameAchievementsGrid?.IsKeyboardFocusWithin == true)
+            {
+                return GameAchievementsGrid.InternalDataGrid;
+            }
+
+            return null;
+        }
+
+        private bool IsSidebarGrid(DataGrid grid)
+        {
+            return grid != null &&
+                   (ReferenceEquals(grid, GamesOverviewDataGrid) ||
+                    ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid) ||
+                    ReferenceEquals(grid, GameAchievementsGrid?.InternalDataGrid));
+        }
+
+        private static bool IsGridAtFirstRow(DataGrid grid)
+        {
+            if (grid?.Items == null || grid.Items.Count == 0)
+            {
+                return false;
+            }
+
+            var focusedRow = FullscreenControllerNavigationService.FindAncestor<DataGridRow>(
+                Keyboard.FocusedElement as DependencyObject);
+            if (focusedRow != null &&
+                ReferenceEquals(ItemsControl.ItemsControlFromItemContainer(focusedRow), grid))
+            {
+                return focusedRow.GetIndex() <= 0;
+            }
+
+            return grid.SelectedIndex <= 0;
+        }
+
+        private bool IsKeyboardFocusWithinLeftPane()
+        {
+            return IsKeyboardFocusWithinLeftFilterArea() ||
+                   GamesOverviewDataGrid?.IsKeyboardFocusWithin == true;
+        }
+
+        private bool IsKeyboardFocusWithinRightPane()
+        {
+            return IsKeyboardFocusWithinRightFilterArea() ||
+                   RecentAchievementsDataGrid?.IsKeyboardFocusWithin == true ||
+                   GameAchievementsGrid?.IsKeyboardFocusWithin == true;
+        }
+
+        private bool IsKeyboardFocusWithinLeftFilterArea()
+        {
+            return LeftSearchTextBox?.IsKeyboardFocusWithin == true ||
+                   ClearLeftSearchButton?.IsKeyboardFocusWithin == true ||
+                   ProviderFilterSelectionButton?.IsKeyboardFocusWithin == true ||
+                   CompletenessFilterSelectionButton?.IsKeyboardFocusWithin == true ||
+                   PlayStatusFilterSelectionButton?.IsKeyboardFocusWithin == true;
+        }
+
+        private bool IsKeyboardFocusWithinRightFilterArea()
+        {
+            return RightSearchTextBox?.IsKeyboardFocusWithin == true ||
+                   ClearRightSearchButton?.IsKeyboardFocusWithin == true ||
+                   SelectedGameTypeFilterSelectionButton?.IsKeyboardFocusWithin == true ||
+                   SelectedGameCategoryFilterSelectionButton?.IsKeyboardFocusWithin == true ||
+                   SelectedGameUnlockedFilterCheckBox?.IsKeyboardFocusWithin == true ||
+                   SelectedGameLockedFilterCheckBox?.IsKeyboardFocusWithin == true ||
+                   SelectedGameHiddenFilterCheckBox?.IsKeyboardFocusWithin == true ||
+                   ClearGameSelectionButton?.IsKeyboardFocusWithin == true;
+        }
+
+        private bool IsKeyboardFocusWithinHeaderArea()
+        {
+            return CloseViewButton?.IsKeyboardFocusWithin == true ||
+                   RefreshModeSelectionButton?.IsKeyboardFocusWithin == true ||
+                   RefreshActionButton?.IsKeyboardFocusWithin == true ||
+                   CancelRefreshButton?.IsKeyboardFocusWithin == true;
+        }
+
+        private bool TrySelectFocusedOverviewGame()
+        {
+            var item = GamesOverviewDataGrid?.SelectedItem as GameOverviewItem
+                       ?? GamesOverviewDataGrid?.CurrentItem as GameOverviewItem;
+            if (item == null)
+            {
+                return false;
+            }
+
+            if (IsCommittedOverviewGame(item))
+            {
+                return ClearCommittedOverviewGameSelection();
+            }
+
+            return CommitOverviewGameSelection(item);
+        }
+
+        private bool IsCommittedOverviewGame(GameOverviewItem item)
+        {
+            return item?.PlayniteGameId.HasValue == true &&
+                   _viewModel?.SelectedGame?.PlayniteGameId.HasValue == true &&
+                   item.PlayniteGameId.Value == _viewModel.SelectedGame.PlayniteGameId.Value;
+        }
+
+        private bool CommitOverviewGameSelection(GameOverviewItem item)
+        {
+            if (item == null || _viewModel == null)
+            {
+                return false;
+            }
+
+            var currentGameId = item.PlayniteGameId;
+            var gameChanged = !_lastSelectedOverviewGameId.HasValue ||
+                              currentGameId != _lastSelectedOverviewGameId.Value;
+            var wasGameSelected = _viewModel.IsGameSelected;
+
+            if (!wasGameSelected)
+            {
+                PrecomputeToggleWidths(toGameSelected: true);
+            }
+
+            _committingOverviewSelection = true;
+            try
+            {
+                _viewModel.SelectedGame = item;
+                _lastSelectedOverviewGameId = currentGameId;
+            }
+            finally
+            {
+                _committingOverviewSelection = false;
+            }
+
+            if (gameChanged)
+            {
+                ResetAchievementsSortDirection();
+                ResetAchievementsScrollPosition();
+            }
+
+            return true;
+        }
+
+        private bool ClearCommittedOverviewGameSelection()
+        {
+            if (_viewModel == null)
+            {
+                return false;
+            }
+
+            if (_viewModel.IsGameSelected)
+            {
+                PrecomputeToggleWidths(toGameSelected: false);
+            }
+
+            _committingOverviewSelection = true;
+            try
+            {
+                _viewModel.ClearGameSelection();
+                _lastSelectedOverviewGameId = null;
+            }
+            finally
+            {
+                _committingOverviewSelection = false;
+            }
+
+            return true;
+        }
+
+        private IList<UIElement> GetLeftFilterControllerElements()
+        {
+            return GetVisibleControllerElements(
+                LeftSearchTextBox,
+                ClearLeftSearchButton,
+                ProviderFilterSelectionButton,
+                CompletenessFilterSelectionButton,
+                PlayStatusFilterSelectionButton);
+        }
+
+        private IList<UIElement> GetRightFilterControllerElements()
+        {
+            return GetVisibleControllerElements(
+                RightSearchTextBox,
+                ClearRightSearchButton,
+                SelectedGameTypeFilterSelectionButton,
+                SelectedGameCategoryFilterSelectionButton,
+                SelectedGameUnlockedFilterCheckBox,
+                SelectedGameLockedFilterCheckBox,
+                SelectedGameHiddenFilterCheckBox,
+                ClearGameSelectionButton);
+        }
+
+        private static IList<UIElement> GetVisibleControllerElements(params UIElement[] elements)
+        {
+            return elements
+                .Where(IsControllerElementAvailable)
+                .ToList();
+        }
+
+        private static bool IsControllerElementAvailable(UIElement element)
+        {
+            if (element == null || !element.IsVisible || !element.IsEnabled)
+            {
+                return false;
+            }
+
+            if (element is Button button &&
+                ReferenceEquals(button.Style, button.TryFindResource("ClearSearchButtonStyle")))
+            {
+                return !string.IsNullOrEmpty(button.Tag as string);
+            }
+
+            return true;
         }
 
         private void GamesOverview_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -451,6 +1128,16 @@ namespace PlayniteAchievements.Views
             if (current is DataGridRow row && row.IsSelected)
             {
                 grid.SelectedItem = null;
+                // Ensure the DataGrid clears any remaining selection state and keyboard focus
+                try
+                {
+                    grid.UnselectAll();
+                    Keyboard.ClearFocus();
+                }
+                catch
+                {
+                    // Best-effort: swallow any focus clearing errors to avoid breaking UI
+                }
                 if (_viewModel.IsGameSelected)
                 {
                     PrecomputeToggleWidths(toGameSelected: false);
@@ -467,28 +1154,36 @@ namespace PlayniteAchievements.Views
 
             if (grid.SelectedItem is GameOverviewItem item)
             {
-                var currentGameId = item.PlayniteGameId;
-                var gameChanged = !_lastSelectedOverviewGameId.HasValue ||
-                                  currentGameId != _lastSelectedOverviewGameId.Value;
-                var wasGameSelected = _viewModel.IsGameSelected;
-
-                if (!wasGameSelected)
+                if (ShouldCommitOverviewSelectionFromSelectionChanged())
                 {
-                    PrecomputeToggleWidths(toGameSelected: true);
-                }
-
-                _viewModel.SelectedGame = item;
-                _lastSelectedOverviewGameId = currentGameId;
-
-                if (gameChanged)
-                {
-                    ResetAchievementsSortDirection();
-                    ResetAchievementsScrollPosition();
+                    CommitOverviewGameSelection(item);
                 }
             }
             else
             {
-                _lastSelectedOverviewGameId = null;
+                if (ShouldCommitOverviewSelectionFromSelectionChanged())
+                {
+                    _lastSelectedOverviewGameId = null;
+                }
+            }
+        }
+
+        private bool ShouldCommitOverviewSelectionFromSelectionChanged()
+        {
+            return !_committingOverviewSelection &&
+                   (!IsFullscreenMode() ||
+                    Mouse.LeftButton == MouseButtonState.Pressed);
+        }
+
+        private bool IsFullscreenMode()
+        {
+            try
+            {
+                return _playniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -525,26 +1220,48 @@ namespace PlayniteAchievements.Views
             if (!(sender is DataGrid grid)) return;
 
             var source = e.OriginalSource as DependencyObject;
-            if (VisualTreeHelpers.FindVisualParent<DataGridRow>(source) != null) return;
+            var header = VisualTreeHelpers.FindVisualParent<DataGridColumnHeader>(source);
+            if (header?.Column == null) return;
 
             e.Handled = true;
             var menu = BuildColumnVisibilityMenu(grid);
             if (menu == null || menu.Items.Count == 0) return;
 
-            menu.Placement = PlacementMode.RelativePoint;
-            menu.PlacementTarget = grid;
-            var pos = e.GetPosition(grid);
-            menu.HorizontalOffset = pos.X;
-            menu.VerticalOffset = pos.Y;
+            menu.Placement = PlacementMode.Bottom;
+            menu.PlacementTarget = header;
+            menu.HorizontalOffset = 0;
+            menu.VerticalOffset = 0;
             menu.IsOpen = true;
         }
 
         private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
             if (_viewModel == null) return;
-            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e);
-            if (sortDirection == null) return;
-            _viewModel.SortDataGrid((sender as DataGrid), e.Column.SortMemberPath, sortDirection.Value);
+            e.Handled = true;
+
+            var grid = sender as DataGrid;
+            if (grid == null) return;
+
+            var sortAction = GamesOverviewSortHelper.ResolveGridSortAction(
+                e.Column?.SortMemberPath,
+                _viewModel.OverviewSortPath,
+                _viewModel.OverviewSortDirection,
+                _settings?.Persisted);
+            if (sortAction.Kind == GamesOverviewGridSortActionKind.None)
+            {
+                return;
+            }
+
+            if (sortAction.Kind == GamesOverviewGridSortActionKind.ResetToDefault)
+            {
+                _viewModel.ApplyDefaultOverviewSort();
+            }
+            else if (sortAction.Direction.HasValue)
+            {
+                _viewModel.SortDataGrid(grid, sortAction.SortMemberPath, sortAction.Direction.Value);
+            }
+
+            ResetOverviewSortDirection();
         }
 
         private void GameAchievementsGrid_Sorting(object sender, DataGridSortingEventArgs e)
@@ -555,17 +1272,29 @@ namespace PlayniteAchievements.Views
             var grid = GameAchievementsGrid?.InternalDataGrid;
             if (grid == null) return;
 
-            // Toggle sort direction
-            var currentDirection = e.Column.SortDirection;
-            var newDirection = currentDirection == ListSortDirection.Ascending
-                ? ListSortDirection.Descending
-                : ListSortDirection.Ascending;
+            var sortAction = AchievementSortHelper.ResolveGridSortAction(
+                e.Column?.SortMemberPath,
+                _viewModel.SelectedGameSortPath,
+                _viewModel.SelectedGameSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.SidebarSelectedGame);
+            if (sortAction.Kind == AchievementGridSortActionKind.None)
+            {
+                return;
+            }
 
-            // Update sort indicator via the control
-            GameAchievementsGrid?.SetSortIndicator(e.Column.SortMemberPath, newDirection);
+            if (sortAction.Kind == AchievementGridSortActionKind.ResetToDefault)
+            {
+                _viewModel.ApplyDefaultSelectedGameSort();
+                ClearAchievementsSortIndicators();
+                return;
+            }
+            else if (sortAction.Direction.HasValue)
+            {
+                _viewModel.SortDataGrid(grid, sortAction.SortMemberPath, sortAction.Direction.Value);
+            }
 
-            // Perform the actual sorting
-            _viewModel.SortDataGrid(grid, e.Column.SortMemberPath, newDirection);
+            ResetAchievementsSortDirection();
         }
 
         private void AchievementDataGrid_Sorting(object sender, DataGridSortingEventArgs e)
@@ -577,17 +1306,27 @@ namespace PlayniteAchievements.Views
             var grid = control?.InternalDataGrid;
             if (grid == null) return;
 
-            // Toggle sort direction
-            var currentDirection = e.Column.SortDirection;
-            var newDirection = currentDirection == ListSortDirection.Ascending
-                ? ListSortDirection.Descending
-                : ListSortDirection.Ascending;
+            var sortAction = AchievementSortHelper.ResolveGridSortAction(
+                e.Column?.SortMemberPath,
+                _viewModel.RecentSortPath,
+                _viewModel.RecentSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.SidebarRecentAchievements);
+            if (sortAction.Kind == AchievementGridSortActionKind.None)
+            {
+                return;
+            }
 
-            // Update sort indicator via the control
-            control?.SetSortIndicator(e.Column.SortMemberPath, newDirection);
+            if (sortAction.Kind == AchievementGridSortActionKind.ResetToDefault)
+            {
+                _viewModel.ApplyDefaultRecentSort();
+            }
+            else if (sortAction.Direction.HasValue)
+            {
+                _viewModel.SortDataGrid(grid, sortAction.SortMemberPath, sortAction.Direction.Value);
+            }
 
-            // Perform the actual sorting
-            _viewModel.SortDataGrid(grid, e.Column.SortMemberPath, newDirection);
+            ResetRecentAchievementsSortDirection();
         }
 
         private void OnProviderPieChartSliceClick(object sender, string providerName)
@@ -742,7 +1481,7 @@ namespace PlayniteAchievements.Views
 
         private void QueueWidthUpdate(Dictionary<string, double> map, string key, double width)
         {
-            map[key] = Math.Round(width, 2);
+            map[key] = ColumnWidthNormalization.RoundPixelWidth(width);
             _saveTimer?.Stop();
             _saveTimer?.Start();
         }
@@ -911,7 +1650,7 @@ namespace PlayniteAchievements.Views
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 if (_viewModel == null) return;
-                if (_viewModel.IsGameSelected) return; // GameAchievementsGrid manages itself
+                if (_viewModel.IsSelectedGameContentReady) return; // GameAchievementsGrid manages itself
 
                 if (RecentAchievementsDataGrid.InternalDataGrid == null || !RecentAchievementsDataGrid.InternalDataGrid.IsLoaded ||
                     !RecentAchievementsDataGrid.InternalDataGrid.IsVisible || RecentAchievementsDataGrid.InternalDataGrid.ActualWidth <= 1) return;
@@ -980,7 +1719,7 @@ namespace PlayniteAchievements.Views
                     if (string.IsNullOrWhiteSpace(key)) continue;
                     if (map.TryGetValue(key, out var width) && ColumnWidthNormalization.IsValidWidth(width))
                     {
-                        column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                        column.Width = new DataGridLength(ColumnWidthNormalization.RoundPixelWidth(width), DataGridLengthUnitType.Pixel);
                     }
                 }
             }
@@ -1001,9 +1740,10 @@ namespace PlayniteAchievements.Views
                 {
                     if (column == null || !column.CanUserResize) continue;
                     var colKey = ColumnWidthNormalization.GetColumnKey(column);
-                    if (ColumnWidthNormalization.KeysEqual(colKey, key) && Math.Abs(column.ActualWidth - width) > 0.1)
+                    var roundedWidth = ColumnWidthNormalization.RoundPixelWidth(width);
+                    if (ColumnWidthNormalization.KeysEqual(colKey, key) && Math.Abs(column.ActualWidth - roundedWidth) > 0.1)
                     {
-                        column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                        column.Width = new DataGridLength(roundedWidth, DataGridLengthUnitType.Pixel);
                     }
                 }
             }
@@ -1184,16 +1924,22 @@ namespace PlayniteAchievements.Views
 
         #region Row Context Menu
 
-        private void OpenContextMenuForRow(DataGridRow row)
+        private bool OpenContextMenuForRow(DataGridRow row, bool useControllerPlacement = false)
         {
-            if (row == null || !row.IsLoaded || row.DataContext == null) return;
+            if (row == null || !row.IsLoaded || row.DataContext == null) return false;
 
             var menu = BuildRowContextMenu(row.DataContext);
-            if (menu == null || menu.Items.Count == 0) return;
+            if (menu == null || menu.Items.Count == 0) return false;
 
             row.ContextMenu = menu;
+            if (useControllerPlacement)
+            {
+                return FullscreenControllerNavigationService.OpenContextMenu(row, menu);
+            }
+
             menu.PlacementTarget = row;
             menu.IsOpen = true;
+            return true;
         }
 
         private ContextMenu BuildRowContextMenu(object data)
@@ -1213,7 +1959,7 @@ namespace PlayniteAchievements.Views
             menu.Items.Add(new Separator());
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_GameOptions", () => OpenGameOptions(data)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ClearData", () => ClearGameData(data)));
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ExcludeFromSummaries", () => ExcludeGameFromSummaries(data)));
+            menu.Items.Add(CreateMenuItem("LOCPlayAch_Common_Action_ExcludeFromSummaries", () => ExcludeGameFromSummaries(data)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ExcludeFromRefreshes", () => ExcludeGameFromRefreshes(data, clearDataWhenExcluding: false)));
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData", () => ExcludeGameFromRefreshes(data, clearDataWhenExcluding: true)));
 
@@ -1309,7 +2055,7 @@ namespace PlayniteAchievements.Views
                 }
 
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_SuccessSingle"), game.Name),
+                    ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -1317,7 +2063,7 @@ namespace PlayniteAchievements.Views
             {
                 _logger?.Error(ex, $"Failed to clear data for game '{game.Name}' ({game.Id}).");
                 _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_Failed"), ex.Message),
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
@@ -1386,43 +2132,94 @@ namespace PlayniteAchievements.Views
             }), DispatcherPriority.Loaded);
         }
 
+        private void ClearAchievementsSortIndicators()
+        {
+            var grid = GameAchievementsGrid?.InternalDataGrid;
+            if (grid != null)
+            {
+                foreach (var c in grid.Columns) c.SortDirection = null;
+            }
+
+            GameAchievementsGrid?.SetSortIndicator(null, null);
+        }
+
         private void ResetAchievementsSortDirection()
         {
             var grid = GameAchievementsGrid?.InternalDataGrid;
             if (grid == null) return;
             foreach (var c in grid.Columns) c.SortDirection = null;
 
-            if (_viewModel?.SelectedGameHasCustomAchievementOrder == true)
+            if (_viewModel?.IsGameSelected != true)
+            {
+                GameAchievementsGrid?.SetSortIndicator(null, null);
+                return;
+            }
+
+            AchievementSortHelper.ApplySortIndicator(
+                _viewModel.SelectedGameSortPath,
+                _viewModel.SelectedGameSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.SidebarSelectedGame,
+                (sortPath, sortDirection) => GameAchievementsGrid?.SetSortIndicator(sortPath, sortDirection));
+        }
+
+        private void ResetOverviewSortDirection()
+        {
+            var grid = GamesOverviewDataGrid;
+            if (grid?.Columns == null)
             {
                 return;
             }
 
-            // Use SetSortIndicator on the control for external sorting
-            GameAchievementsGrid?.SetSortIndicator("UnlockTime", ListSortDirection.Descending);
+            foreach (var column in grid.Columns)
+            {
+                column.SortDirection = null;
+            }
+
+            GamesOverviewSortHelper.ApplySortIndicator(
+                _viewModel?.OverviewSortPath,
+                _viewModel?.OverviewSortDirection,
+                _settings?.Persisted,
+                (sortPath, sortDirection) =>
+                {
+                    if (string.IsNullOrWhiteSpace(sortPath) || !sortDirection.HasValue)
+                    {
+                        return;
+                    }
+
+                    var targetColumn = grid.Columns.FirstOrDefault(column => column?.SortMemberPath == sortPath);
+                    if (targetColumn != null)
+                    {
+                        targetColumn.SortDirection = sortDirection;
+                    }
+                });
         }
 
         private void ResetRecentAchievementsSortDirection()
         {
-            if (RecentAchievementsDataGrid == null) return;
-            foreach (var c in RecentAchievementsDataGrid.InternalDataGrid.Columns) c.SortDirection = null;
-            var unlockCol = RecentAchievementsDataGrid.InternalDataGrid.Columns.FirstOrDefault(c => c.SortMemberPath == "UnlockTime");
-            if (unlockCol != null) unlockCol.SortDirection = ListSortDirection.Descending;
+            AchievementSortHelper.ApplySortIndicator(
+                _viewModel?.RecentSortPath,
+                _viewModel?.RecentSortDirection,
+                _settings?.Persisted,
+                AchievementSortSurface.SidebarRecentAchievements,
+                (sortPath, sortDirection) => RecentAchievementsDataGrid?.SetSortIndicator(sortPath, sortDirection));
         }
 
         private void ResetRecentAchievementsToDefaultSort()
         {
             if (_viewModel == null || RecentAchievementsDataGrid == null) return;
-            if (IsRecentDefaultSortApplied()) return;
-            _viewModel.SortDataGrid(RecentAchievementsDataGrid.InternalDataGrid, "UnlockTime", ListSortDirection.Descending);
+
+            if (!IsRecentDefaultSortApplied())
+            {
+                _viewModel.ApplyDefaultRecentSort();
+            }
+
             ResetRecentAchievementsSortDirection();
         }
 
         private bool IsRecentDefaultSortApplied()
         {
-            if (RecentAchievementsDataGrid?.InternalDataGrid.Columns == null) return false;
-            var unlockCol = RecentAchievementsDataGrid.InternalDataGrid.Columns.FirstOrDefault(c => c?.SortMemberPath == "UnlockTime");
-            if (unlockCol?.SortDirection != ListSortDirection.Descending) return false;
-            return RecentAchievementsDataGrid.InternalDataGrid.Columns.All(c => c == unlockCol || c.SortDirection == null);
+            return string.IsNullOrWhiteSpace(_viewModel?.RecentSortPath);
         }
 
         #endregion

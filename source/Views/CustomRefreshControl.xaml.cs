@@ -462,7 +462,7 @@ namespace PlayniteAchievements.Views
 
             var control = new CustomRefreshControl(api, refreshRuntime, persistSettingsForUi, settings, logger);
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                ResourceProvider.GetString("LOCPlayAch_CustomRefresh_WindowTitle"),
+                ResourceProvider.GetString("LOCPlayAch_RefreshMode_Custom"),
                 control,
                 new WindowOptions
                 {
@@ -492,11 +492,11 @@ namespace PlayniteAchievements.Views
         {
             ScopeOptions.Clear();
             ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.All, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_All", "All games") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Installed, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_Installed", "Installed") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Favorites, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_Favorites", "Favorites") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Recent, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_Recent", "Recent") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Installed, DisplayName = L("LOCPlayAch_RefreshModeShort_Installed", "Installed") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Favorites, DisplayName = L("LOCPlayAch_RefreshModeShort_Favorites", "Favorites") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Recent, DisplayName = L("LOCPlayAch_RefreshModeShort_Recent", "Recent") });
             ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.LibrarySelected, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_LibrarySelected", "Library selected") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Missing, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_Missing", "Missing") });
+            ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Missing, DisplayName = L("LOCPlayAch_RefreshModeShort_Missing", "Missing") });
             ScopeOptions.Add(new ScopeOptionItem { Scope = CustomGameScope.Explicit, DisplayName = L("LOCPlayAch_CustomRefresh_Scope_Explicit", "Explicit only") });
         }
 
@@ -506,8 +506,8 @@ namespace PlayniteAchievements.Views
             _providersByKey.Clear();
 
             var readyText = L("LOCPlayAch_CustomRefresh_ProviderStatus_Ready", "Ready");
-            var disabledText = L("LOCPlayAch_CustomRefresh_ProviderStatus_Disabled", "Disabled");
-            var noAuthText = L("LOCPlayAch_CustomRefresh_ProviderStatus_NoAuth", "Not authenticated");
+            var disabledText = L("LOCPlayAch_Common_Status_Disabled", "Disabled");
+            var noAuthText = L("LOCPlayAch_Common_NotAuthenticated", "Not authenticated");
 
             foreach (var provider in _refreshService.Providers)
             {
@@ -711,8 +711,9 @@ namespace PlayniteAchievements.Views
         {
             try
             {
+                var dataService = PlayniteAchievementsPlugin.Instance?.AchievementDataService;
                 return new HashSet<string>(
-                    _refreshService?.Cache?.GetCachedGameIds() ?? new List<string>(),
+                    dataService?.GetCachedGameIds() ?? new List<string>(),
                     StringComparer.OrdinalIgnoreCase);
             }
             catch (Exception ex)
@@ -808,7 +809,7 @@ namespace PlayniteAchievements.Views
                     break;
 
                 case CustomGameScope.Installed:
-                    scopedGames = _gamesById.Values.Where(game => game.IsInstalled);
+                    scopedGames = _gamesById.Values.Where(IsInstalledOrHasOverride);
                     if (!includeUnplayed)
                     {
                         scopedGames = scopedGames.Where(game => game.Playtime > 0);
@@ -854,6 +855,11 @@ namespace PlayniteAchievements.Views
                     break;
             }
 
+            if (ShouldApplyHiddenFilter(SelectedScope))
+            {
+                scopedGames = BulkRefreshGameFilter.ApplyHiddenFilter(scopedGames, _settings?.Persisted);
+            }
+
             var includeIds = GameOptions
                 .Where(option => option.IsIncluded)
                 .Select(option => option.GameId)
@@ -896,7 +902,7 @@ namespace PlayniteAchievements.Views
 
             if (RespectUserExclusions)
             {
-                var excludedByUser = _settings?.Persisted?.ExcludedGameIds;
+                var excludedByUser = GameCustomDataLookup.GetExcludedRefreshGameIds(_settings?.Persisted);
                 if (excludedByUser != null && excludedByUser.Count > 0)
                 {
                     orderedIds = orderedIds
@@ -960,6 +966,28 @@ namespace PlayniteAchievements.Views
             }
 
             return false;
+        }
+
+        private static bool ShouldApplyHiddenFilter(CustomGameScope scope)
+        {
+            switch (scope)
+            {
+                case CustomGameScope.All:
+                case CustomGameScope.Installed:
+                case CustomGameScope.Favorites:
+                case CustomGameScope.Recent:
+                case CustomGameScope.Missing:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool IsInstalledOrHasOverride(Game game)
+        {
+            return game != null &&
+                   (game.IsInstalled ||
+                    GameCustomDataLookup.TryGetProviderOverride(game.Id, out _));
         }
 
         private void RecalculateSummary()
@@ -1276,4 +1304,5 @@ namespace PlayniteAchievements.Views
         }
     }
 }
+
 

@@ -31,13 +31,6 @@
                 </Style.Triggers>
             </Style>
 
-            <!-- Checkbox style for DataGrid -->
-            <Style x:Key="DataGridCheckBoxStyle" TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="Margin" Value="0"/>
-            </Style>
-
             <!-- Clickable cell style for hidden achievements -->
             <Style x:Key="ClickableCellStyle" TargetType="Grid">
                 <Setter Property="Cursor" Value="Arrow"/>
@@ -49,7 +42,7 @@
             </Style>
 
             <!-- Cell style that stretches content to fill cell for clickable areas -->
-            <Style x:Key="StretchCellStyle" TargetType="DataGridCell">
+            <Style x:Key="StretchCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource GameOptionsControllerCellStyle}">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
@@ -119,11 +112,12 @@
                     </Grid.ColumnDefinitions>
 
                     <TextBlock Grid.Column="0"
-                               Text="{DynamicResource LOCPlayAch_ManualAchievements_Source_Label}"
+                               Text="{DynamicResource LOCPlayAch_GameOptions_Manual_Source}"
                                VerticalAlignment="Center"
                                Margin="0,0,8,0"
                                Foreground="{DynamicResource TextBrush}"/>
-                    <ComboBox Grid.Column="1"
+                    <ComboBox x:Name="SourceComboBox"
+                              Grid.Column="1"
                               ItemsSource="{Binding AvailableSources}"
                               SelectedValue="{Binding SelectedSourceKey, Mode=TwoWay}"
                               SelectedValuePath="SourceKey"
@@ -144,7 +138,7 @@
                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                  Style="{StaticResource ClearableSearchTextBoxStyle}"
                                  KeyDown="SearchTextBox_KeyDown"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_ManualAchievements_Search_Placeholder}"
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Left"
                                    Margin="12,0,0,0"
@@ -165,12 +159,14 @@
                                 </Style>
                             </TextBlock.Style>
                         </TextBlock>
-                        <Button Tag="{Binding SearchText}"
+                        <Button x:Name="ClearSearchTextButton"
+                                Tag="{Binding SearchText}"
                                 Click="ClearSearchTextButton_Click"
                                 Style="{StaticResource ClearSearchButtonStyle}"/>
                     </Grid>
 
-                    <Button Grid.Column="1"
+                    <Button x:Name="SearchButton"
+                            Grid.Column="1"
                             Content="{DynamicResource LOCPlayAch_Button_Search}"
                             Command="{Binding SearchCommand}"
                             Padding="12,6"
@@ -184,17 +180,27 @@
                         BorderBrush="Transparent"
                         BorderThickness="0"
                         Margin="0,0,0,12">
-                    <DataGrid ItemsSource="{Binding SearchResults}"
+                    <DataGrid x:Name="SearchResultsDataGrid"
+                              ItemsSource="{Binding SearchResults}"
                               SelectedItem="{Binding SelectedResult, Mode=TwoWay}"
                               AutoGenerateColumns="False"
                               IsReadOnly="True"
                               SelectionMode="Single"
                               SelectionUnit="FullRow"
+                              KeyboardNavigation.DirectionalNavigation="Continue"
                               CanUserAddRows="False"
                               CanUserDeleteRows="False"
+                              CanUserResizeRows="False"
                               CanUserReorderColumns="True"
                               CanUserResizeColumns="True"
                               CanUserSortColumns="True"
+                              RowHeight="76"
+                              EnableRowVirtualization="True"
+                              EnableColumnVirtualization="True"
+                              VirtualizingStackPanel.VirtualizationMode="Recycling"
+                              VirtualizingStackPanel.ScrollUnit="Pixel"
+                              ScrollViewer.CanContentScroll="True"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                               GridLinesVisibility="None"
                               HeadersVisibility="Column"
                               BorderThickness="0"
@@ -203,14 +209,16 @@
                               Foreground="{DynamicResource TextBrush}"
                               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderLeftStyle}"
                               PreviewMouseLeftButtonDown="SearchDataGrid_PreviewMouseLeftButtonDown"
+                              Tag="ControllerCellFocus"
                               MouseDoubleClick="SearchDataGrid_MouseDoubleClick">
                         <DataGrid.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}"/>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource GameOptionsControllerCellStyle}"/>
                         </DataGrid.CellStyle>
 
                         <DataGrid.RowStyle>
-                            <Style TargetType="DataGridRow" BasedOn="{StaticResource AchievementRowStyle}">
+                            <Style TargetType="DataGridRow" BasedOn="{StaticResource GameOptionsDataGridRowStyle}">
                                 <Setter Property="MinHeight" Value="64"/>
+                                <Setter Property="ClipToBounds" Value="True"/>
                             </Style>
                         </DataGrid.RowStyle>
 
@@ -234,25 +242,19 @@
                                                 Binding="{Binding Name}"
                                                 Width="*">
                                 <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedDataGridTextStyle}">
                                         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                                        <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-                                        <Setter Property="TextWrapping" Value="NoWrap"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Column_Platform}"
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Common_Label_Platform}"
                                                 Binding="{Binding Platforms}"
                                                 Width="120"
                                                 Visibility="{Binding DataContext.ShowPlatformColumn, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedDataGridTextStyle}">
                                         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                                        <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="TextWrapping" Value="Wrap"/>
-                                        <Setter Property="MaxHeight" Value="60"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -261,10 +263,8 @@
                                                 Binding="{Binding SourceGameId}"
                                                 Width="*">
                                 <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedDataGridTextStyle}">
                                         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                                        <Setter Property="VerticalAlignment" Value="Center"/>
-                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -314,7 +314,8 @@
                            HorizontalAlignment="Center"
                            Margin="0,8,0,0"/>
 
-                <Button Grid.Row="3"
+                <Button x:Name="RefreshCancelButton"
+                        Grid.Row="3"
                         Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                         Command="{Binding CancelRefreshCommand}"
                         IsEnabled="{Binding CanCancelRefresh}"
@@ -358,9 +359,10 @@
                     <!-- Search filter -->
                     <Grid Grid.Column="0" HorizontalAlignment="Stretch">
                         <Grid>
-                            <TextBox Text="{Binding EditSearchFilter, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                            <TextBox x:Name="EditSearchTextBox"
+                                     Text="{Binding EditSearchFilter, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_ManualAchievements_Edit_SearchPlaceholder}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Common_FilterAchievementsPlaceholder}"
                                        VerticalAlignment="Center"
                                        HorizontalAlignment="Left"
                                        Margin="12,0,0,0"
@@ -381,7 +383,8 @@
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
-                            <Button Tag="{Binding EditSearchFilter}"
+                            <Button x:Name="ClearEditFilterButton"
+                                    Tag="{Binding EditSearchFilter}"
                                     Click="ClearEditFilterButton_Click"
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>
@@ -389,11 +392,13 @@
 
                     <!-- Action buttons -->
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10,0,0,0">
-                        <Button Content="{DynamicResource LOCPlayAch_ManualAchievements_Edit_UnlockAll}"
+                        <Button x:Name="UnlockAllButton"
+                                Content="{DynamicResource LOCPlayAch_Common_SelectAll}"
                                 Command="{Binding UnlockAllCommand}"
                                 Padding="8,4"
                                 Margin="0,0,8,0"/>
-                        <Button Content="{DynamicResource LOCPlayAch_ManualAchievements_Edit_LockAll}"
+                        <Button x:Name="LockAllButton"
+                                Content="{DynamicResource LOCPlayAch_Common_DeselectAll}"
                                 Command="{Binding LockAllCommand}"
                                 Padding="8,4"/>
                     </StackPanel>
@@ -405,11 +410,13 @@
                         BorderBrush="Transparent"
                         BorderThickness="0"
                         Margin="0,0,0,12">
-                    <DataGrid ItemsSource="{Binding FilteredAchievements}"
+                    <DataGrid x:Name="ManualAchievementsDataGrid"
+                              ItemsSource="{Binding FilteredAchievements}"
                               AutoGenerateColumns="False"
                               IsReadOnly="False"
                               SelectionMode="Single"
                               SelectionUnit="FullRow"
+                              KeyboardNavigation.DirectionalNavigation="Continue"
                               HeadersVisibility="Column"
                               GridLinesVisibility="None"
                               RowBackground="Transparent"
@@ -421,35 +428,40 @@
                               CanUserResizeColumns="True"
                               CanUserReorderColumns="False"
                               CanUserSortColumns="True"
+                              RowHeight="112"
                               EnableRowVirtualization="True"
+                              EnableColumnVirtualization="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
                               VirtualizingStackPanel.ScrollUnit="Pixel"
                               ScrollViewer.CanContentScroll="True"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                              ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}">
+                              ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                              Tag="ControllerCellFocus">
                         <DataGrid.CellStyle>
-                            <Style TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}"/>
+                            <Style TargetType="DataGridCell" BasedOn="{StaticResource GameOptionsControllerCellStyle}"/>
                         </DataGrid.CellStyle>
 
                         <DataGrid.RowStyle>
-                            <Style TargetType="DataGridRow" BasedOn="{StaticResource AchievementRowStyle}">
-                                <Setter Property="MinHeight" Value="66"/>
+                            <Style TargetType="DataGridRow" BasedOn="{StaticResource GameOptionsDataGridRowStyle}">
+                                <Setter Property="MinHeight" Value="76"/>
+                                <Setter Property="ClipToBounds" Value="True"/>
                             </Style>
                         </DataGrid.RowStyle>
 
                         <DataGrid.Columns>
                             <!-- Unlocked / locked -->
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Unlocked}"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_Unlocked}"
                                                     Width="80"
                                                     SortMemberPath="IsUnlocked"
                                                     HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
-                                                    CellStyle="{StaticResource AchievementCellStyle}">
+                                                    CellStyle="{StaticResource GameOptionsCheckBoxCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding IsUnlocked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
-                                                  Style="{StaticResource DataGridCheckBoxStyle}"/>
+                                                  Focusable="False"
+                                                  IsTabStop="False"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
@@ -492,11 +504,11 @@
                             </DataGridTemplateColumn>
 
                             <!-- Unlock time set/null + date/time editor -->
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_ManualAchievements_Edit_UnlockTime}"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_UnlockTime}"
                                                     Width="300"
                                                     SortMemberPath="UnlockTime"
                                                     HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
-                                                    CellStyle="{StaticResource AchievementCellStyle}">
+                                                    CellStyle="{StaticResource GameOptionsControllerCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid VerticalAlignment="Center"
@@ -510,7 +522,8 @@
                                                       IsEnabled="{Binding IsUnlocked}"
                                                       HorizontalAlignment="Center"
                                                       VerticalAlignment="Center"
-                                                      Style="{StaticResource DataGridCheckBoxStyle}"/>
+                                                      Focusable="False"
+                                                      IsTabStop="False"/>
                                             <Grid Grid.Column="1"
                                                   Margin="8,0,0,0"
                                                   VerticalAlignment="Center">
@@ -546,7 +559,8 @@
                                                     </TextBox.Style>
                                                 </TextBox>
                                                 <ComboBox ItemsSource="{Binding AvailableTimeModes}"
-                                                          SelectedItem="{Binding SelectedTimeModeText, Mode=TwoWay}"
+                                                          SelectedItem="{Binding SelectedTimeModeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                          SelectionChanged="TimeModeComboBox_SelectionChanged"
                                                           Width="74"
                                                           VerticalContentAlignment="Center"
                                                           Padding="4,0"
@@ -628,7 +642,8 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                VerticalAlignment="Center" />
-                    <Button Content="{DynamicResource LOCPlayAch_GameOptions_Manual_Unlink}"
+                    <Button x:Name="UnlinkButton"
+                            Content="{DynamicResource LOCPlayAch_GameOptions_Manual_Unlink}"
                             Command="{Binding UnlinkCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             Padding="10,5"
                             Margin="12,0,0,0"
@@ -654,13 +669,15 @@
                             Visibility="{Binding DataContext.IsSearchStage,
                                 RelativeSource={RelativeSource AncestorType=UserControl},
                                 Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Next}"
+                    <Button x:Name="NextButton"
+                            Content="{DynamicResource LOCPlayAch_Button_Next}"
                             Click="NextButton_Click"
                             Padding="12,6"
                             MinWidth="80"
                             Margin="0,0,8,0"
                             IsDefault="True"/>
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                    <Button x:Name="SearchCancelButton"
+                            Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                             Click="CancelButton_Click"
                             Padding="12,6"
                             MinWidth="80"
@@ -672,13 +689,15 @@
                             Visibility="{Binding DataContext.IsEditingStage,
                                 RelativeSource={RelativeSource AncestorType=UserControl},
                                 Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Save}"
+                    <Button x:Name="SaveButton"
+                            Content="{DynamicResource LOCPlayAch_Button_Save}"
                             Command="{Binding SaveCommand}"
                             Padding="12,6"
                             MinWidth="80"
                             Margin="0,0,8,0"
                             IsDefault="True"/>
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
+                    <Button x:Name="EditCancelButton"
+                            Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                             Click="CancelButton_Click"
                             Padding="12,6"
                             MinWidth="80"/>
@@ -687,3 +706,4 @@
         </Grid>
     </Grid>
 </UserControl>
+

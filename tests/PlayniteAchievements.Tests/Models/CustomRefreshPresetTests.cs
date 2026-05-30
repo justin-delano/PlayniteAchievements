@@ -145,6 +145,26 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void SettingsExtensions_CopyFromAndClone_PreserveShowSidebarGameMetadata()
+        {
+            var source = new PersistedSettings
+            {
+                ShowSidebarGameMetadata = false
+            };
+
+            var target = new PersistedSettings
+            {
+                ShowSidebarGameMetadata = true
+            };
+
+            target.CopyFrom(source);
+            Assert.IsFalse(target.ShowSidebarGameMetadata);
+
+            var clone = SettingsExtensions.Clone(source);
+            Assert.IsFalse(clone.ShowSidebarGameMetadata);
+        }
+
+        [TestMethod]
         public void PruneUnavailableSelections_RemovesUnavailableProvidersAndMissingGames()
         {
             var validGame = Guid.NewGuid();
@@ -400,6 +420,11 @@ namespace PlayniteAchievements.Models.Tests
             var normalized = AchievementCategoryTypeHelper.Normalize("multiplayer, dlc | base");
             Assert.AreEqual("Base|DLC|Multiplayer", normalized);
             Assert.AreEqual("Base, DLC, Multiplayer", AchievementCategoryTypeHelper.ToDisplayText(normalized));
+
+            var ignoredNormalized = AchievementCategoryTypeHelper.Normalize("ignored|dlc");
+            Assert.AreEqual("DLC|Ignored", ignoredNormalized);
+            Assert.AreEqual("DLC, Ignored", AchievementCategoryTypeHelper.ToDisplayText(ignoredNormalized));
+            Assert.IsTrue(AchievementCategoryTypeHelper.IsIgnored(ignoredNormalized));
         }
 
         [TestMethod]
@@ -410,6 +435,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual("DLC|Multiplayer", AchievementCategoryTypeHelper.Normalize("default|dlc|multiplayer"));
             Assert.AreEqual("Default", AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(null));
             Assert.AreEqual("Label", AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(" Label "));
+            Assert.IsFalse(AchievementCategoryTypeHelper.IsIgnored("DLC|Multiplayer"));
         }
     }
 }

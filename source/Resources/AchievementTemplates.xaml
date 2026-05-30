@@ -16,6 +16,10 @@
     <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
     <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
 
+    <!-- Menu highlight brush used by AchievementMultiSelectMenuItemStyle.
+         Overridden in FullscreenResources.xaml for dark backgrounds. -->
+    <SolidColorBrush x:Key="MenuHighlightBrush" Color="#14000000" />
+
     <!-- =======================
          DATAGRID STYLES
          ======================= -->
@@ -23,6 +27,11 @@
     <!-- Column Header Style with Sort Arrow and Resize Grippers -->
     <Style x:Key="AchievementColumnHeaderStyle" TargetType="DataGridColumnHeader">
         <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Focusable" Value="True"/>
+        <Setter Property="IsTabStop" Value="True"/>
+        <Setter Property="KeyboardNavigation.IsTabStop" Value="True"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Padding" Value="10,6"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -59,6 +68,9 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="#18FFFFFF"/>
                         </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter Property="Background" Value="#20FFFFFF"/>
+                        </Trigger>
                         <Trigger Property="SortDirection" Value="Ascending">
                             <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
                             <Setter TargetName="SortArrow" Property="RenderTransform">
@@ -94,14 +106,20 @@
     <Style x:Key="AchievementCellStyle" TargetType="DataGridCell">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Focusable" Value="True"/>
+        <Setter Property="IsTabStop" Value="True"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Padding" Value="10,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridCell">
                     <Border Background="{TemplateBinding Background}"
-                            Padding="{TemplateBinding Padding}">
-                        <ContentPresenter VerticalAlignment="Center"/>
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <ContentPresenter VerticalAlignment="Stretch"
+                                          HorizontalAlignment="Stretch"/>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -116,6 +134,9 @@
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
                 <Setter Property="Background" Value="#40FFFFFF"/>
             </DataTrigger>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
+                <Setter Property="Background" Value="#30FFFFFF"/>
+            </DataTrigger>
             <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
                 <Setter Property="Padding" Value="8,0"/>
             </DataTrigger>
@@ -126,7 +147,70 @@
                 </MultiDataTrigger.Conditions>
                 <Setter Property="Background" Value="#50FFFFFF"/>
             </MultiDataTrigger>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
+                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
+                </MultiDataTrigger.Conditions>
+                <Setter Property="Background" Value="#45FFFFFF"/>
+            </MultiDataTrigger>
         </Style.Triggers>
+    </Style>
+
+    <Style x:Key="GameOptionsDataGridCellStyle"
+           TargetType="DataGridCell"
+           BasedOn="{StaticResource AchievementCellStyle}">
+    </Style>
+
+    <Style x:Key="GameOptionsControllerCellStyle"
+           TargetType="DataGridCell"
+           BasedOn="{StaticResource GameOptionsDataGridCellStyle}">
+        <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <ContentPresenter VerticalAlignment="Stretch"
+                                          HorizontalAlignment="Stretch"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <MultiDataTrigger>
+                <MultiDataTrigger.Conditions>
+                    <Condition Binding="{Binding RelativeSource={RelativeSource Self}, Path=IsKeyboardFocusWithin}" Value="True"/>
+                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Tag}" Value="PlayniteAchievementsFullscreen"/>
+                </MultiDataTrigger.Conditions>
+                <Setter Property="BorderBrush" Value="{DynamicResource SelectionLightBrush}"/>
+                <Setter Property="BorderThickness" Value="2"/>
+            </MultiDataTrigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="GameOptionsCheckBoxCellStyle"
+           TargetType="DataGridCell"
+           BasedOn="{StaticResource GameOptionsControllerCellStyle}">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- Icon Column Cell Style - centered horizontally for circular achievement icons -->
@@ -135,7 +219,24 @@
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridCell">
                     <Border Background="{TemplateBinding Background}"
-                            Padding="{TemplateBinding Padding}">
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AchievementStatusCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            Padding="0"
+                            ClipToBounds="False"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                 </ControlTemplate>
@@ -148,6 +249,8 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="UseLayoutRounding" Value="True"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="MinHeight" Value="66"/>
@@ -156,6 +259,28 @@
                 <Setter Property="MinHeight" Value="50"/>
             </DataTrigger>
         </Style.Triggers>
+    </Style>
+
+    <Style x:Key="GameOptionsDataGridRowStyle"
+           TargetType="DataGridRow"
+           BasedOn="{StaticResource AchievementRowStyle}">
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="IsTabStop" Value="False"/>
+    </Style>
+
+    <Style x:Key="WrappedDataGridTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="TextTrimming" Value="None"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="WrappedCenteredDataGridTextStyle"
+           TargetType="TextBlock"
+           BasedOn="{StaticResource WrappedDataGridTextStyle}">
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="TextAlignment" Value="Center"/>
     </Style>
 
     <!-- Shared selector button + menu item styles (sidebar/single-game/game-options) -->
@@ -168,7 +293,7 @@
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="Padding" Value="10,4"/>
         <Setter Property="HorizontalContentAlignment" Value="Left"/>
-        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Focusable" Value="True"/>
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -205,6 +330,10 @@
                             <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}"/>
                             <Setter TargetName="Border" Property="Background" Value="#10000000"/>
                         </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource SelectionLightBrush}"/>
+                            <Setter TargetName="Border" Property="Background" Value="#20FFFFFF"/>
+                        </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Border" Property="Background" Value="#18000000"/>
                         </Trigger>
@@ -219,17 +348,6 @@
 
     <Style x:Key="AchievementMultiSelectMenuItemStyle"
            TargetType="MenuItem">
-        <Style.Resources>
-            <Style x:Key="AchievementSelectorMenuCheckBoxStyle"
-                   TargetType="CheckBox"
-                   BasedOn="{StaticResource {x:Type CheckBox}}">
-                <Setter Property="Margin" Value="0"/>
-                <Setter Property="Focusable" Value="False"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="HorizontalAlignment" Value="Left"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-            </Style>
-        </Style.Resources>
         <Setter Property="OverridesDefaultStyle" Value="True"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -251,6 +369,8 @@
                 <ControlTemplate TargetType="MenuItem">
                     <Border x:Name="MenuItemBorder"
                             Background="{TemplateBinding Background}"
+                            BorderBrush="Transparent"
+                            BorderThickness="1"
                             Margin="0,1"
                             CornerRadius="3"
                             SnapsToDevicePixels="True">
@@ -262,8 +382,8 @@
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <CheckBox Grid.Column="0"
-                                      Style="{StaticResource AchievementSelectorMenuCheckBoxStyle}"
                                       Focusable="False"
+                                      IsTabStop="False"
                                       IsHitTestVisible="False"
                                       IsChecked="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}, Mode=OneWay}"/>
 
@@ -280,8 +400,14 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="MenuItemBorder" Property="Background" Value="#14000000"/>
-                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                            <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource MenuHighlightBrush}"/>
+                            <Setter TargetName="MenuItemBorder" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                            <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource MenuHighlightBrush}"/>
+                            <Setter TargetName="MenuItemBorder" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}"/>
+                            <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.55"/>
@@ -298,7 +424,13 @@
 
     <!-- Achievement Status Template: Checkmark (unlocked) or Padlock (locked) -->
     <DataTemplate x:Key="AchievementStatusTemplate">
-        <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Grid Width="36"
+              Height="36"
+              VerticalAlignment="Center"
+              HorizontalAlignment="Center"
+              ClipToBounds="False"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True">
             <TextBlock Text="&#x2713;"
                        FontSize="16"
                        FontWeight="Bold"
@@ -346,16 +478,16 @@
                         <Setter Property="Visibility" Value="Visible"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
-                                <Setter Property="Source" Value="{StaticResource BadgePlatinumHexagon}"/>
+                                <Setter Property="Source" Value="{DynamicResource BadgeRarityUltraRare}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
-                                <Setter Property="Source" Value="{StaticResource BadgeGoldPentagon}"/>
+                                <Setter Property="Source" Value="{DynamicResource BadgeRarityRare}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
-                                <Setter Property="Source" Value="{StaticResource BadgeSilverSquare}"/>
+                                <Setter Property="Source" Value="{DynamicResource BadgeRarityUncommon}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
-                                <Setter Property="Source" Value="{StaticResource BadgeBronzeTriangle}"/>
+                                <Setter Property="Source" Value="{DynamicResource BadgeRarityCommon}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -432,10 +564,15 @@
 
     <!-- Achievement Game Column Template - Icon or Cover with toggle support -->
     <DataTemplate x:Key="AchievementGameColumnTemplate">
-        <Grid VerticalAlignment="Center" HorizontalAlignment="Center">
+        <Grid VerticalAlignment="Center"
+              HorizontalAlignment="Center"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True">
             <Border x:Name="GameImageBorder"
                     CornerRadius="6"
                     RenderOptions.BitmapScalingMode="HighQuality"
+                    UseLayoutRounding="True"
+                    SnapsToDevicePixels="True"
                     ToolTip="{Binding GameName}">
                 <Border.Style>
                     <Style TargetType="Border">
@@ -481,55 +618,97 @@
         </Grid>
     </DataTemplate>
 
-    <!-- Achievement Icon Template - Image with conditional glow -->
+    <!-- Achievement Icon Template - glow is isolated behind an unaffected front icon -->
     <!-- Fits in 78px column with 10px cell padding each side = 58px available -->
     <DataTemplate x:Key="AchievementIconTemplate">
-        <Grid Width="56" Height="72" VerticalAlignment="Center" HorizontalAlignment="Center" ClipToBounds="False">
+        <Grid VerticalAlignment="Center"
+              HorizontalAlignment="Center"
+              ClipToBounds="False"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True">
             <Grid.Style>
                 <Style TargetType="Grid">
-                    <Setter Property="LayoutTransform">
-                        <Setter.Value>
-                            <ScaleTransform ScaleX="1" ScaleY="1"/>
-                        </Setter.Value>
-                    </Setter>
+                    <Setter Property="Width" Value="56"/>
+                    <Setter Property="Height" Value="72"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                            <Setter Property="LayoutTransform">
-                                <Setter.Value>
-                                    <ScaleTransform ScaleX="0.75" ScaleY="0.75"/>
-                                </Setter.Value>
-                            </Setter>
+                            <Setter Property="Width" Value="42"/>
+                            <Setter Property="Height" Value="54"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </Grid.Style>
-            <Image Width="52" Height="52"
-                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                   Stretch="Uniform"
-                   RenderOptions.BitmapScalingMode="Fant"
-                   helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                   helpers:AsyncImage.DecodePixel="128">
-                <Image.Style>
-                    <Style TargetType="Image">
-                        <!-- Minimal invisible shadow ensures clean edge rendering when no rarity glow -->
-                        <Setter Property="Effect">
-                            <Setter.Value>
-                                <DropShadowEffect BlurRadius="1" ShadowDepth="0" Opacity="0.001" Color="White"/>
-                            </Setter.Value>
-                        </Setter>
+            <Grid HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  ClipToBounds="False"
+                  UseLayoutRounding="True"
+                  SnapsToDevicePixels="True">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Width" Value="52"/>
+                        <Setter Property="Height" Value="52"/>
                         <Style.Triggers>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow}" Value="True"/>
-                                </MultiDataTrigger.Conditions>
-                                <!-- Rarity glow overrides invisible shadow -->
-                                <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
-                            </MultiDataTrigger>
+                            <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                <Setter Property="Width" Value="39"/>
+                                <Setter Property="Height" Value="39"/>
+                            </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </Image.Style>
-            </Image>
+                </Grid.Style>
+
+                <Image HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       SnapsToDevicePixels="True"
+                       IsHitTestVisible="False"
+                       helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                       helpers:AsyncImage.DecodePixel="128">
+                    <Image.Style>
+                        <Style TargetType="Image">
+                            <Setter Property="Width" Value="52"/>
+                            <Setter Property="Height" Value="52"/>
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Effect" Value="{x:Null}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                    <Setter Property="Width" Value="39"/>
+                                    <Setter Property="Height" Value="39"/>
+                                </DataTrigger>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                        <Condition Binding="{Binding ShowRarityGlow}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
+
+                <Image HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Stretch="Uniform"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       SnapsToDevicePixels="True"
+                       helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                       helpers:AsyncImage.DecodePixel="128">
+                    <Image.Style>
+                        <Style TargetType="Image">
+                            <Setter Property="Width" Value="52"/>
+                            <Setter Property="Height" Value="52"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                                    <Setter Property="Width" Value="39"/>
+                                    <Setter Property="Height" Value="39"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
+            </Grid>
         </Grid>
     </DataTemplate>
 
@@ -603,6 +782,8 @@
                        Style="{DynamicResource BaseTextBlockStyle}"
                        Foreground="{DynamicResource TextBrush}"
                        Opacity="0.7"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center"
                        Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
             <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}" Margin="4,0">
                 <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
@@ -709,6 +890,10 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
                         </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource SelectionLightBrush}"/>
+                            <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
+                        </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
@@ -759,6 +944,11 @@
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="Chrome" Property="Background" Value="#1E000000"/>
+                            <Setter Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Chrome" Property="Background" Value="#20FFFFFF"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                             <Setter Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">

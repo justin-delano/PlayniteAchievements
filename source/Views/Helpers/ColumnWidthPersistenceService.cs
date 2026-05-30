@@ -338,7 +338,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            _pendingWidthUpdates[key] = Math.Round(width, 2);
+            _pendingWidthUpdates[key] = ColumnWidthNormalization.RoundPixelWidth(width);
             _saveTimer?.Stop();
             _saveTimer?.Start();
         }
@@ -422,12 +422,6 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            if (map == null || map.Count == 0)
-            {
-                NormalizeColumnsToContainer();
-                return;
-            }
-
             foreach (var column in _grid.Columns)
             {
                 var key = GetColumnKey(column);
@@ -440,6 +434,9 @@ namespace PlayniteAchievements.Views.Helpers
                 if (ForcedCollapsedKeys.Contains(key))
                 {
                     column.Visibility = Visibility.Collapsed;
+                    column.MinWidth = 0;
+                    column.MaxWidth = 0;
+                    column.Width = new DataGridLength(0, DataGridLengthUnitType.Pixel);
                     continue;
                 }
 
@@ -449,7 +446,7 @@ namespace PlayniteAchievements.Views.Helpers
                     continue;
                 }
 
-                if (map.TryGetValue(key, out var isVisible))
+                if (map != null && map.TryGetValue(key, out var isVisible))
                 {
                     column.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
                 }
@@ -493,7 +490,7 @@ namespace PlayniteAchievements.Views.Helpers
 
                     if (map.TryGetValue(key, out var width) && IsValidWidth(width))
                     {
-                        column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                        column.Width = new DataGridLength(ColumnWidthNormalization.RoundPixelWidth(width), DataGridLengthUnitType.Pixel);
                     }
                 }
             }
@@ -599,7 +596,9 @@ namespace PlayniteAchievements.Views.Helpers
             normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < keys.Count; i++)
             {
-                normalized[keys[i]] = Math.Max(floorWidths[i], widths[i]);
+                normalized[keys[i]] = Math.Max(
+                    ColumnWidthNormalization.RoundPixelWidth(floorWidths[i]),
+                    ColumnWidthNormalization.RoundPixelWidth(widths[i]));
             }
 
             return true;
@@ -638,7 +637,7 @@ namespace PlayniteAchievements.Views.Helpers
                         continue;
                     }
 
-                    column.Width = new DataGridLength(width, DataGridLengthUnitType.Pixel);
+                    column.Width = new DataGridLength(ColumnWidthNormalization.RoundPixelWidth(width), DataGridLengthUnitType.Pixel);
                 }
             }
             finally
@@ -704,7 +703,7 @@ namespace PlayniteAchievements.Views.Helpers
 
         private double ResolveMinimumColumnWidth(IReadOnlyList<DataGridColumn> columns, double availableWidth)
         {
-            var preferred = Math.Max(1, Math.Round(availableWidth * MinimumColumnWidthRatio, 2));
+            var preferred = ColumnWidthNormalization.RoundPixelWidth(availableWidth * MinimumColumnWidthRatio);
 
             if (!IsValidWidth(availableWidth) || columns == null || columns.Count == 0)
             {

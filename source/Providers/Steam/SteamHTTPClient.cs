@@ -27,12 +27,11 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly SteamSessionManager _sessionManager;
-        private readonly SteamApiClient _steamApiClient;
         private readonly string _failedSteamDateTimesCsvPath;
         private readonly object _failedSteamDateTimesLock = new object();
         private readonly ConcurrentQueue<SteamDatetimeParseFailureEntry> _pendingSteamDatetimeParseFailures =
             new ConcurrentQueue<SteamDatetimeParseFailureEntry>();
-        private readonly CookieContainer _cookieJar = new CookieContainer();
+        private CookieContainer _cookieJar = new CookieContainer();
         private readonly object _cookieLock = new object();
         private readonly object _cookieSyncStateLock = new object();
         private DateTime _lastCefCookieSyncUtc = DateTime.MinValue;
@@ -59,9 +58,6 @@ namespace PlayniteAchievements.Providers.Steam
 
         public HttpClient ApiHttpClient => _apiHttp;
 
-        private readonly ConcurrentDictionary<int, Lazy<Task<bool?>>> _hasAchievementsCache =
-            new ConcurrentDictionary<int, Lazy<Task<bool?>>>();
-
         public SteamHttpClient(IPlayniteAPI api, ILogger logger, SteamSessionManager sessionManager, string pluginUserDataPath)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
@@ -72,7 +68,6 @@ namespace PlayniteAchievements.Providers.Steam
                 : Path.Combine(pluginUserDataPath, FailedSteamDateTimesFileName);
 
             BuildHttpClientsOnce();
-            _steamApiClient = new SteamApiClient(_apiHttp, _logger);
 
             LoadCookiesFromCefIntoJar();
         }
@@ -83,6 +78,19 @@ namespace PlayniteAchievements.Providers.Steam
             _handler?.Dispose();
             _apiHttp?.Dispose();
             _apiHandler?.Dispose();
+        }
+
+        public void ClearInMemoryAuthState()
+        {
+            lock (_cookieLock)
+            {
+                _cookieJar = new CookieContainer();
+            }
+
+            lock (_cookieSyncStateLock)
+            {
+                _lastCefCookieSyncUtc = DateTime.MinValue;
+            }
         }
 
         // ---------------------------------------------------------------------
@@ -167,16 +175,6 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         // ---------------------------------------------------------------------
-        // Steam Web API
-        // ---------------------------------------------------------------------
-
-        public Task<Dictionary<int, int>> GetPlaytimesAsync(
-            string apiKey, string steamId64, bool includePlayedFreeGames = true)
-        {
-            return _steamApiClient.GetOwnedGamesAsync(apiKey, steamId64, includePlayedFreeGames);
-        }
-
-        // ---------------------------------------------------------------------
         // Profile / Achievements
         // ---------------------------------------------------------------------
 
@@ -191,25 +189,6 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64}/stats/{statsKey.Trim()}/?tab=achievements&l={language ?? "english"}", true, ct);
-        }
-
-        // ---------------------------------------------------------------------
-        // Player Summaries
-        // ---------------------------------------------------------------------
-
-        public async Task<List<SteamPlayerSummaries>> GetPlayerSummariesAsync(string apiKey, IEnumerable<ulong> steamIds, CancellationToken ct)
-        {
-            var ids = steamIds?.Where(x => x > 0).Distinct().ToList() ?? new List<ulong>();
-            if (ids.Count == 0) return new List<SteamPlayerSummaries>();
-
-            if (string.IsNullOrWhiteSpace(apiKey))
-            {
-                _logger?.Warn("[SteamAch] An API key is required to fetch Steam friend data.");
-                return new List<SteamPlayerSummaries>();
-            }
-
-            var apiResults = await _steamApiClient.GetPlayerSummariesAsync(apiKey, ids, ct).ConfigureAwait(false);
-            return apiResults ?? new List<SteamPlayerSummaries>();
         }
 
         // ---------------------------------------------------------------------
@@ -515,19 +494,6 @@ namespace PlayniteAchievements.Providers.Steam
                 .FirstOrDefault(line => !string.IsNullOrWhiteSpace(line));
 
             return firstLine ?? raw.Trim();
-        }
-
-        public Task<bool?> GetAppHasAchievementsAsync(string apiKey, int appId, CancellationToken ct)
-        {
-            if (appId <= 0 || string.IsNullOrWhiteSpace(apiKey)) return Task.FromResult<bool?>(false);
-
-            return _hasAchievementsCache.GetOrAdd(appId,
-                new Lazy<Task<bool?>>(() => FetchAppHasAchievementsAsync(apiKey, appId))).Value;
-        }
-
-        private async Task<bool?> FetchAppHasAchievementsAsync(string apiKey, int appId)
-        {
-            return await _steamApiClient.GetSchemaForGameAsync(apiKey, appId).ConfigureAwait(false);
         }
 
         // ---------------------------------------------------------------------

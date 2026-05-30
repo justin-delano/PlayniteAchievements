@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
@@ -79,17 +83,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         // Cache source references to avoid unnecessary cloning when data hasn't changed
         private List<AchievementDisplayItem> _lastAllItems;
         private List<AchievementDetail> _lastAllAchievements;
+        private List<AchievementDetail> _lastSourceAchievements;
 
-        private List<AchievementDisplayItem> _displayItems = new List<AchievementDisplayItem>();
+        private ObservableCollection<AchievementDisplayItem> _displayItems = new ObservableCollection<AchievementDisplayItem>();
         /// <summary>
         /// Gets or sets the display items for the list.
         /// </summary>
-        public List<AchievementDisplayItem> DisplayItems
+        public ObservableCollection<AchievementDisplayItem> DisplayItems
         {
             get => _displayItems;
             protected set
             {
-                _displayItems = value ?? new List<AchievementDisplayItem>();
+                _displayItems = value ?? new ObservableCollection<AchievementDisplayItem>();
             }
         }
 
@@ -166,6 +171,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         {
             _lastAllItems = null;
             _lastAllAchievements = null;
+            _lastSourceAchievements = null;
             base.OnThemeDataOverrideChangedInternal();
         }
 
@@ -175,61 +181,94 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         protected virtual bool FilterAchievement(AchievementDetail achievement) => true;
 
+        protected virtual AchievementSortSurface SortSurface => AchievementSortSurface.CompactList;
+
+        /// <summary>
+        /// Gets the ordered achievement source that should drive the compact list.
+        /// Defaults to the provider/source order list.
+        /// </summary>
+        protected virtual List<AchievementDetail> GetOrderedAchievements(ModernThemeBindings theme)
+        {
+            return AchievementSortHelper.ResolveSelectedGameAchievements(
+                theme,
+                EffectiveSettings?.Persisted,
+                SortSurface);
+        }
+
         /// <summary>
         /// Loads data from modern theme bindings and applies filtering.
         /// </summary>
         protected virtual void LoadData()
         {
             var theme = EffectiveTheme;
+            if (!IsEffectiveModernThemeCurrentForContext())
+            {
+                return;
+            }
+
             if (theme == null || !theme.HasAchievements)
             {
                 _lastAllItems = null;
                 _lastAllAchievements = null;
+                _lastSourceAchievements = null;
                 ClearItems();
                 return;
             }
 
             var allItems = theme.AllAchievementDisplayItems ?? new List<AchievementDisplayItem>();
             var allAchievements = theme.AllAchievements ?? new List<AchievementDetail>();
+            var sourceAchievements = GetOrderedAchievements(theme) ?? new List<AchievementDetail>();
 
             // Skip work if source references haven't changed
-            if (ReferenceEquals(allItems, _lastAllItems) && ReferenceEquals(allAchievements, _lastAllAchievements))
+            if (ReferenceEquals(allItems, _lastAllItems) &&
+                ReferenceEquals(allAchievements, _lastAllAchievements) &&
+                ReferenceEquals(sourceAchievements, _lastSourceAchievements))
             {
                 return;
             }
 
             _lastAllItems = allItems;
             _lastAllAchievements = allAchievements;
+            _lastSourceAchievements = sourceAchievements;
             var revealedKeys = GetRevealedKeys(DisplayItems);
+            var displayItemByAchievement = BuildDisplayItemMap(allAchievements, allItems);
 
             // Build filtered display items
             var displayItems = new List<AchievementDisplayItem>();
 
-            for (int i = 0; i < allAchievements.Count && i < allItems.Count; i++)
+            for (int i = 0; i < sourceAchievements.Count; i++)
             {
-                if (FilterAchievement(allAchievements[i]))
+                var achievement = sourceAchievements[i];
+                if (achievement == null || !FilterAchievement(achievement))
                 {
-                    var clonedItem = allItems[i].Clone();
-                    var key = GetRevealKey(clonedItem);
-                    if (revealedKeys?.Contains(key) == true)
-                    {
-                        clonedItem.IsRevealed = true;
-                    }
-
-                    displayItems.Add(clonedItem);
+                    continue;
                 }
+
+                if (!displayItemByAchievement.TryGetValue(achievement, out var sourceItem) || sourceItem == null)
+                {
+                    continue;
+                }
+
+                var clonedItem = sourceItem.Clone();
+                var key = GetRevealKey(clonedItem);
+                if (revealedKeys?.Contains(key) == true)
+                {
+                    clonedItem.IsRevealed = true;
+                }
+
+                displayItems.Add(clonedItem);
             }
 
             // Apply VisibleCount limit
             if (VisibleCount > 0 && displayItems.Count > VisibleCount)
             {
-                DisplayItems = displayItems.Take(VisibleCount).ToList();
+                SynchronizeDisplayItems(displayItems.Take(VisibleCount).ToList());
                 OverflowCount = displayItems.Count - VisibleCount;
                 HasOverflow = true;
             }
             else
             {
-                DisplayItems = displayItems;
+                SynchronizeDisplayItems(displayItems);
                 OverflowCount = 0;
                 HasOverflow = false;
             }
@@ -245,7 +284,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         {
             _lastAllItems = null;
             _lastAllAchievements = null;
-            DisplayItems = new List<AchievementDisplayItem>();
+            _lastSourceAchievements = null;
+            DisplayItems.Clear();
             OverflowCount = 0;
             HasOverflow = false;
             RefreshItemsSource();
@@ -284,6 +324,32 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
 
             return $"{item.PlayniteGameId:N}|{item.ApiName}|{item.DisplayName}|{item.GameName}";
+        }
+
+        private static Dictionary<AchievementDetail, AchievementDisplayItem> BuildDisplayItemMap(
+            IList<AchievementDetail> achievements,
+            IList<AchievementDisplayItem> items)
+        {
+            var map = new Dictionary<AchievementDetail, AchievementDisplayItem>();
+            if (achievements == null || items == null)
+            {
+                return map;
+            }
+
+            var count = Math.Min(achievements.Count, items.Count);
+            for (int i = 0; i < count; i++)
+            {
+                var achievement = achievements[i];
+                var item = items[i];
+                if (achievement == null || item == null || map.ContainsKey(achievement))
+                {
+                    continue;
+                }
+
+                map.Add(achievement, item);
+            }
+
+            return map;
         }
 
         /// <summary>
@@ -333,8 +399,28 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override bool ShouldHandleThemeDataChange(string propertyName)
         {
             // Refresh when achievement data changes
-            return propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems) ||
-                   propertyName == nameof(ModernThemeBindings.AllAchievements);
+            return propertyName == nameof(ModernThemeBindings.SelectedGameId) ||
+                   propertyName == nameof(ModernThemeBindings.HasAchievements) ||
+                   propertyName == nameof(ModernThemeBindings.AllAchievementDisplayItems) ||
+                   propertyName == nameof(ModernThemeBindings.AllAchievements) ||
+                   AchievementSortHelper.IsSelectedGameAchievementsPropertyName(propertyName);
+        }
+
+        /// <summary>
+        /// Determines whether a settings change should trigger a refresh.
+        /// Responds to sort mode and direction changes so the list reorders live.
+        /// </summary>
+        protected override bool ShouldHandleSettingsDataChange(string propertyName)
+        {
+            return AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactList) ||
+                   AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactUnlockedList) ||
+                   AchievementSortHelper.IsConfiguredDefaultSortPropertyName(
+                       propertyName,
+                       AchievementSortSurface.CompactLockedList);
         }
 
         /// <summary>
@@ -350,13 +436,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         /// </summary>
         public override void GameContextChanged(Game oldContext, Game newContext)
         {
-            // Modern theme bindings are already populated by OnGameSelected in the plugin
-            if (_isLoaded)
-            {
-                LoadData();
-            }
+            UpdateCurrentGameContext(newContext);
+        }
+
+        private void SynchronizeDisplayItems(IList<AchievementDisplayItem> source)
+        {
+            CollectionHelper.SynchronizeReferenceCollectionByPosition(
+                DisplayItems,
+                source,
+                (target, item) => target.UpdateFrom(item));
         }
     }
 }
+
 
 

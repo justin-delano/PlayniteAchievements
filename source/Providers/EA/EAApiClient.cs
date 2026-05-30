@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using System;
 using System.Collections.Generic;
@@ -140,7 +141,9 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
                 if (items == null || items.Count == 0)
                 {
                     _logger?.Debug("[EAApi] No owned games returned from EA API.");
-                    return new List<EaOwnedGame>();
+                    _cachedOwnedGames = new List<EaOwnedGame>();
+                    _cachedTokenForOwnedGames = token;
+                    return _cachedOwnedGames;
                 }
 
                 var result = items
@@ -205,7 +208,9 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
                     Title = a.Name,
                     Description = a.Description,
                     IsUnlocked = a.AwardCount > 0,
-                    UnlockTimeUtc = a.AwardCount > 0 && a.Date != default ? a.Date : (DateTime?)null
+                    UnlockTimeUtc = a.AwardCount > 0 && a.Date != default
+                        ? EAProviderSupport.NormalizeUtc(a.Date)
+                        : null
                 })
                 .Where(a => !string.IsNullOrWhiteSpace(a.AchievementId))
                 .ToList();
@@ -215,28 +220,7 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
 
         public static bool IsTransientError(Exception ex)
         {
-            if (ex is EaTransientException)
-            {
-                return true;
-            }
-
-            if (ex is EaApiHttpException httpEx)
-            {
-                var code = (int)httpEx.StatusCode;
-                return code == 429 || code >= 500;
-            }
-
-            if (ex is TaskCanceledException || ex is TimeoutException)
-            {
-                return true;
-            }
-
-            if (ex is HttpRequestException)
-            {
-                return true;
-            }
-
-            return false;
+            return EAProviderSupport.IsTransientError(ex);
         }
 
         private const string IdentityQueryBody = @"query { me { player { pd psd displayName } } }";
@@ -278,9 +262,39 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
                         throw new EaApiHttpException(statusCode, $"EA API returned HTTP {(int)statusCode}: {responseBody}");
                     }
 
+                    ThrowIfGraphQlErrors(responseBody);
                     return JsonConvert.DeserializeObject<T>(responseBody);
                 }
             }
+        }
+
+        private static void ThrowIfGraphQlErrors(string responseBody)
+        {
+            if (string.IsNullOrWhiteSpace(responseBody))
+            {
+                return;
+            }
+
+            var parsed = JObject.Parse(responseBody);
+            var errors = parsed["errors"] as JArray;
+            if (errors == null || errors.Count == 0)
+            {
+                return;
+            }
+
+            var message = string.Join("; ", errors
+                .Select(error => error?["message"]?.ToString())
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+
+            if (message.IndexOf("auth", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("token", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("forbidden", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("unauthorized", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                throw new EaAuthRequiredException($"EA GraphQL auth error: {message}");
+            }
+
+            throw new EaApiHttpException(HttpStatusCode.OK, $"EA GraphQL error: {message}");
         }
 
         private sealed class GraphQlIdentityResponse
@@ -387,39 +401,5 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
             [JsonProperty("achievements")]
             public List<EaAchievement> AchievementsData { get; set; }
         }
-    }
-
-    public sealed class EaOwnedGame
-    {
-        public string OriginOfferId { get; set; }
-        public string GameSlug { get; set; }
-        public string ProductName { get; set; }
-    }
-
-    public sealed class EaAchievementItem
-    {
-        public string AchievementId { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public DateTime? UnlockTimeUtc { get; set; }
-        public bool IsUnlocked { get; set; }
-    }
-
-    internal sealed class EaAchievement
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; }
-
-        [JsonProperty("name")]
-        public string Name { get; set; }
-
-        [JsonProperty("description")]
-        public string Description { get; set; }
-
-        [JsonProperty("awardCount")]
-        public int AwardCount { get; set; }
-
-        [JsonProperty("date")]
-        public DateTime Date { get; set; }
     }
 }

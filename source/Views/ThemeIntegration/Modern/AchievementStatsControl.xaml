@@ -16,6 +16,16 @@
     </base:ThemeControlBase.Resources>
 
     <StackPanel>
+        <StackPanel.Style>
+            <Style TargetType="StackPanel">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataContext.Persisted.EnableAchievementStatsControl, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
+                                 Value="False">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </StackPanel.Style>
         <!-- UltraRare Row -->
         <Grid>
             <Grid.ColumnDefinitions>
@@ -25,7 +35,7 @@
             </Grid.ColumnDefinitions>
 
             <Image Grid.Column="0"
-                   Source="{StaticResource BadgePlatinumHexagon}"
+                   Source="{DynamicResource BadgeRarityUltraRare}"
                    Width="18" Height="18"
                    Effect="{StaticResource BadgeShadow}"
                    Style="{StaticResource RarityIcon}"
@@ -39,9 +49,9 @@
             <TextBlock Grid.Column="2"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center">
-                <Run Text="{Binding ModernTheme.UltraRare.Unlocked, Mode=OneWay}"/>
+                <Run Text="{Binding UltraRare.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding ModernTheme.UltraRare.Total, Mode=OneWay}"/>
+                <Run Text="{Binding UltraRare.Total, Mode=OneWay}"/>
             </TextBlock>
         </Grid>
 
@@ -54,7 +64,7 @@
             </Grid.ColumnDefinitions>
 
             <Image Grid.Column="0"
-                   Source="{StaticResource BadgeGoldPentagon}"
+                   Source="{DynamicResource BadgeRarityRare}"
                    Width="18" Height="18"
                    Effect="{StaticResource BadgeShadow}"
                    Style="{StaticResource RarityIcon}"
@@ -68,9 +78,9 @@
             <TextBlock Grid.Column="2"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center">
-                <Run Text="{Binding ModernTheme.Rare.Unlocked, Mode=OneWay}"/>
+                <Run Text="{Binding Rare.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding ModernTheme.Rare.Total, Mode=OneWay}"/>
+                <Run Text="{Binding Rare.Total, Mode=OneWay}"/>
             </TextBlock>
         </Grid>
 
@@ -83,7 +93,7 @@
             </Grid.ColumnDefinitions>
 
             <Image Grid.Column="0"
-                   Source="{StaticResource BadgeSilverSquare}"
+                   Source="{DynamicResource BadgeRarityUncommon}"
                    Width="18" Height="18"
                    Effect="{StaticResource BadgeShadow}"
                    Style="{StaticResource RarityIcon}"
@@ -97,9 +107,9 @@
             <TextBlock Grid.Column="2"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center">
-                <Run Text="{Binding ModernTheme.Uncommon.Unlocked, Mode=OneWay}"/>
+                <Run Text="{Binding Uncommon.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding ModernTheme.Uncommon.Total, Mode=OneWay}"/>
+                <Run Text="{Binding Uncommon.Total, Mode=OneWay}"/>
             </TextBlock>
         </Grid>
 
@@ -112,7 +122,7 @@
             </Grid.ColumnDefinitions>
 
             <Image Grid.Column="0"
-                   Source="{StaticResource BadgeBronzeTriangle}"
+                   Source="{DynamicResource BadgeRarityCommon}"
                    Width="18" Height="18"
                    Effect="{StaticResource BadgeShadow}"
                    Style="{StaticResource RarityIcon}"
@@ -126,9 +136,9 @@
             <TextBlock Grid.Column="2"
                        Foreground="{DynamicResource TextBrush}"
                        VerticalAlignment="Center">
-                <Run Text="{Binding ModernTheme.Common.Unlocked, Mode=OneWay}"/>
+                <Run Text="{Binding Common.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
-                <Run Text="{Binding ModernTheme.Common.Total, Mode=OneWay}"/>
+                <Run Text="{Binding Common.Total, Mode=OneWay}"/>
             </TextBlock>
         </Grid>
     </StackPanel>

@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.RPCS3.Models;
 using PlayniteAchievements.Services;
@@ -41,14 +42,16 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly Rpcs3Settings _providerSettings;
         private readonly Rpcs3DataProvider _provider;
         private readonly IPlayniteAPI _playniteApi;
+        private readonly string _pluginUserDataPath;
 
-        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3Settings providerSettings, Rpcs3DataProvider provider = null, IPlayniteAPI playniteApi = null)
+        public Rpcs3Scanner(ILogger logger, PlayniteAchievementsSettings settings, Rpcs3Settings providerSettings, Rpcs3DataProvider provider = null, IPlayniteAPI playniteApi = null, string pluginUserDataPath = null)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _providerSettings = providerSettings ?? throw new ArgumentNullException(nameof(providerSettings));
             _provider = provider;
             _playniteApi = playniteApi;
+            _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -73,13 +76,21 @@ namespace PlayniteAchievements.Providers.RPCS3
                 trophyFolderCache = await BuildTrophyFolderCacheAsync(cancel).ConfigureAwait(false);
             }
 
-            if (trophyFolderCache == null || trophyFolderCache.Count == 0)
+            trophyFolderCache = trophyFolderCache ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            var hasOverrideGames = gamesToRefresh.Any(game =>
+                game != null &&
+                GameCustomDataLookup.TryGetRpcs3MatchIdOverride(game.Id, out _));
+
+            if (trophyFolderCache.Count == 0 && !hasOverrideGames)
             {
                 _logger?.Warn("[RPCS3] No trophy folders found in RPCS3 trophy directory.");
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
             _logger?.Info($"[RPCS3] Scanning {trophyFolderCache.Count} cached trophy folders.");
+
+            var rarityEnricher = await CreateRarityEnricherAsync(cancel).ConfigureAwait(false);
 
             var payload = await ProviderRefreshExecutor.RunProviderGamesAsync(
                 gamesToRefresh,
@@ -90,6 +101,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                 async (game, token) =>
                 {
                     var data = await FetchGameDataAsync(game, trophyFolderCache, token).ConfigureAwait(false);
+                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
                     return new ProviderRefreshExecutor.ProviderGameResult
                     {
                         Data = data
@@ -106,6 +118,32 @@ namespace PlayniteAchievements.Providers.RPCS3
                 cancel).ConfigureAwait(false);
 
             return payload ?? new RebuildPayload { Summary = new RebuildSummary() };
+        }
+
+        private async Task<ExophaseRarityEnricher> CreateRarityEnricherAsync(CancellationToken cancel)
+        {
+            if (_providerSettings?.UseExophaseForRarity != true)
+            {
+                return null;
+            }
+
+            var enricher = new ExophaseRarityEnricher(_playniteApi, _logger, _settings, _pluginUserDataPath);
+            await enricher.InitializeAsync(cancel).ConfigureAwait(false);
+            return enricher;
+        }
+
+        private static async Task EnrichRarityAsync(
+            Game game,
+            GameAchievementData data,
+            ExophaseRarityEnricher rarityEnricher,
+            CancellationToken cancel)
+        {
+            if (rarityEnricher == null || data?.Achievements == null || data.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            await rarityEnricher.EnrichAsync(game, data.Achievements, "ps3", "PSN", cancel).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -373,6 +411,12 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private GameTrophySource FindNpCommIdForGame(Game game, Dictionary<string, string> trophyFolderCache, CancellationToken cancel)
         {
+            if (game != null &&
+                GameCustomDataLookup.TryGetRpcs3MatchIdOverride(game.Id, out var overrideMatchId))
+            {
+                return new GameTrophySource { NpCommId = overrideMatchId, TrpPath = null };
+            }
+
             var rawInstallDir = game?.InstallDirectory;
             var gameDirectory = ExpandGamePath(game, rawInstallDir);
 
@@ -851,6 +895,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return null;
             }
 
+            var candidates = new List<Tuple<string, string>>();
             string bestMatch = null;
             int bestScore = 0;
 
@@ -871,12 +916,22 @@ namespace PlayniteAchievements.Providers.RPCS3
                     continue;
                 }
 
+                if (string.Equals(normalizedGameName, normalizedTitle, StringComparison.OrdinalIgnoreCase))
+                {
+                    return npcommid;
+                }
+
+                candidates.Add(Tuple.Create(npcommid, normalizedTitle));
+            }
+
+            foreach (var candidate in candidates)
+            {
                 // Check if one name contains the other (handles subtitle differences)
-                var score = CalculateNameSimilarity(normalizedGameName, normalizedTitle);
+                var score = CalculateNameSimilarity(normalizedGameName, candidate.Item2);
                 if (score > bestScore && score >= 70) // Require at least 70% similarity
                 {
                     bestScore = score;
-                    bestMatch = npcommid;
+                    bestMatch = candidate.Item1;
                 }
             }
 

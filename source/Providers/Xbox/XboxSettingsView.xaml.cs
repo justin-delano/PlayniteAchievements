@@ -34,24 +34,29 @@ namespace PlayniteAchievements.Providers.Xbox
         {
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             InitializeComponent();
+            ConnectionLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_Xbox"));
+            AuthLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderAuth"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_Xbox"));
         }
 
         public override void Initialize(IProviderSettings settings)
         {
             _xboxSettings = settings as XboxSettings;
             base.Initialize(settings);
-            _ = RefreshAuthStatusAsync();
+            AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
         }
 
         private void UpdateAuthStatus(AuthProbeResult result)
         {
             var isAuthenticated = result?.IsSuccess ?? false;
             IsAuthenticated = isAuthenticated;
-            var providerName = ResourceProvider.GetString("LOCPlayAch_Provider_Xbox");
 
             if (isAuthenticated)
             {
-                AuthStatus = string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_AlreadyAuthenticated"), providerName);
+                AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
                 return;
             }
 
@@ -60,7 +65,7 @@ namespace PlayniteAchievements.Providers.Xbox
                 : null;
 
             AuthStatus = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result?.MessageKey, StringComparison.Ordinal)
-                ? string.Format(ResourceProvider.GetString("LOCPlayAch_Settings_Auth_NotAuthenticated"), providerName)
+                ? ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated")
                 : localized;
         }
 
@@ -78,6 +83,23 @@ namespace PlayniteAchievements.Providers.Xbox
             }
 
             UpdateAuthStatus(result);
+        }
+
+        private async void Auth_Check_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                await RefreshAuthStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Xbox auth check failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
         }
 
         private async void LoginWeb_Click(object sender, RoutedEventArgs e)
@@ -132,3 +154,4 @@ namespace PlayniteAchievements.Providers.Xbox
         }
     }
 }
+

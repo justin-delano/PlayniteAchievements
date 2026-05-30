@@ -1,4 +1,3 @@
-using System.Windows.Controls;
 using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
@@ -27,8 +26,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         {
             if (AchievementsList != null)
             {
-                // Direct reassignment without null first - WPF detects collection changes
-                // and only updates what's needed rather than rebuilding entire visual tree
                 AchievementsList.ItemsSource = DisplayItems;
             }
         }

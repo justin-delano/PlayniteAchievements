@@ -2,8 +2,10 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
@@ -11,7 +13,7 @@ using Playnite.SDK.Models;
 
 namespace PlayniteAchievements.Providers.Steam
 {
-    internal sealed class SteamDataProvider : IDataProvider, IDisposable
+    internal sealed class SteamDataProvider : IDataProvider, IAchievementPageLinkProvider, IDisposable
     {
         internal static readonly Guid SteamPluginId = Guid.Parse("CB91DFC9-B977-43BF-8E70-55F46E410FAB");
 
@@ -37,8 +39,10 @@ namespace PlayniteAchievements.Providers.Steam
 
             // Create Steam-specific dependencies
             _steamClient = new SteamHttpClient(api, logger, _sessionManager, pluginUserDataPath);
+            _sessionManager.SetClearInMemoryAuthState(_steamClient.ClearInMemoryAuthState);
             var steamApiClient = new SteamApiClient(_steamClient.ApiHttpClient, logger);
-            _scanner = new SteamScanner(settings, _providerSettings, _steamClient, _sessionManager, steamApiClient, api, logger);
+            var tokenResolver = new SteamWebApiTokenResolver(_sessionManager, logger);
+            _scanner = new SteamScanner(settings, _steamClient, steamApiClient, tokenResolver, api, logger);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
@@ -51,17 +55,84 @@ namespace PlayniteAchievements.Providers.Steam
         /// AuthSession is the authoritative auth check for runtime flows.
         /// </summary>
         public bool IsAuthenticated =>
-            !string.IsNullOrWhiteSpace(_providerSettings.SteamUserId) &&
-            !string.IsNullOrWhiteSpace(_providerSettings.SteamApiKey);
+            !string.IsNullOrWhiteSpace(_providerSettings.SteamUserId);
 
         public ISessionManager AuthSession => _sessionManager;
 
         public bool IsCapable(Game game) =>
             IsSteamCapable(game);
 
+        public bool CanResolveAchievementPageUrl(AchievementPageLinkContext context)
+        {
+            return TryBuildAchievementPageUrl(context, out _);
+        }
+
+        public Task<string> GetAchievementPageUrlAsync(
+            AchievementPageLinkContext context,
+            CancellationToken cancel)
+        {
+            return Task.FromResult(
+                TryBuildAchievementPageUrl(context, out var url)
+                    ? url
+                    : null);
+        }
+
+        internal static bool TryBuildAchievementPageUrl(
+            AchievementPageLinkContext context,
+            out string url)
+        {
+            url = null;
+            if (!TryResolveSteamAppId(context, out var appId))
+            {
+                return false;
+            }
+
+            url = $"https://steamcommunity.com/stats/{appId.ToString(CultureInfo.InvariantCulture)}/achievements";
+            return true;
+        }
+
         private static bool IsSteamCapable(Game game)
         {
-            return game.PluginId == SteamPluginId;
+            return game != null &&
+                   (game.PluginId == SteamPluginId ||
+                    GameCustomDataLookup.TryGetSteamAppIdOverride(game.Id, out _));
+        }
+
+        private static bool TryResolveSteamAppId(
+            AchievementPageLinkContext context,
+            out int appId)
+        {
+            appId = 0;
+            if (context?.Game != null &&
+                GameCustomDataLookup.TryGetSteamAppIdOverride(context.Game.Id, out appId))
+            {
+                return true;
+            }
+
+            if (string.Equals(context?.ManualLink?.SourceKey, "Steam", StringComparison.OrdinalIgnoreCase) &&
+                TryGetPositiveId(context.ManualLink.SourceGameId, out appId))
+            {
+                return true;
+            }
+
+            var cachedAppId = context?.BestGameData?.AppId ?? 0;
+            if (cachedAppId > 0)
+            {
+                appId = cachedAppId;
+                return true;
+            }
+
+            return TryGetPositiveId(context?.Game?.GameId, out appId);
+        }
+
+        private static bool TryGetPositiveId(string value, out int id)
+        {
+            return int.TryParse(
+                       (value ?? string.Empty).Trim(),
+                       NumberStyles.Integer,
+                       CultureInfo.InvariantCulture,
+                       out id) &&
+                   id > 0;
         }
 
         public Task<RebuildPayload> RefreshAsync(

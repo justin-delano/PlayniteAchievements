@@ -17,8 +17,18 @@
         </ResourceDictionary>
     </base:ThemeControlBase.Resources>
 
-        <Grid ClipToBounds="False"
+    <Grid ClipToBounds="False"
           MinHeight="50">
+        <Grid.Style>
+            <Style TargetType="Grid">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding DataContext.Persisted.EnableAchievementProgressBarControl, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
+                                 Value="False">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Grid.Style>
         <Grid.Resources>
             <Style x:Key="DesktopProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
                 <Setter Property="Height" Value="20"/>
@@ -51,10 +61,10 @@
 
         <!-- Progress bar with percentage overlay -->
         <Grid VerticalAlignment="Center">
-            <ProgressBar Value="{Binding ModernTheme.ProgressPercentage, Mode=OneWay}"
+            <ProgressBar Value="{Binding ProgressPercentage, Mode=OneWay}"
                          Maximum="100"
                          Style="{StaticResource DesktopProgressBarStyle}"/>
-            <TextBlock Text="{Binding ModernTheme.ProgressPercentage, Mode=OneWay, StringFormat={}{0:F0}%}"
+            <TextBlock Text="{Binding ProgressPercentage, Mode=OneWay, StringFormat={}{0:F0}%}"
                        Style="{StaticResource DesktopProgressPercentTextStyle}"
                        TextWrapping="NoWrap"
                        IsHitTestVisible="False"
@@ -72,11 +82,12 @@
                    Source="{StaticResource BadgeCompletedGame}"
                    Style="{StaticResource ProgressFooterCompletedIconStyle}"
                    ToolTip="{DynamicResource LOCPlayAch_Completed}"
-                   Visibility="{Binding ModernTheme.IsCompleted, Converter={StaticResource BoolToVis}}"/>
+                   Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
 
             <shared:RarityBadgesControl x:Name="Badges"
                                         Grid.Column="1"
                                         BadgeSize="14"
+                                        UseUniformRarityBadges="{Binding DataContext.Persisted.UseUniformRarityBadges, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
                                         Margin="8,0,0,0"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Center"/>

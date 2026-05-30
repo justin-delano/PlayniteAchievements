@@ -24,7 +24,6 @@ namespace PlayniteAchievements.Views
     {
         private readonly ILogger _logger;
         private readonly RefreshRuntime _refreshService;
-        private readonly ICacheManager _cacheManager;
         private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly PlayniteAchievementsPlugin _plugin;
         private PlayniteAchievementsSettings _settings;
@@ -125,10 +124,10 @@ namespace PlayniteAchievements.Views
                     }
                     if (!IsEnabled)
                     {
-                        return ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeDisabled");
+                        return ResourceProvider.GetString("LOCPlayAch_Common_Status_Disabled");
                     }
                     return IsAuthenticated
-                        ? ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeReady")
+                        ? ResourceProvider.GetString("LOCPlayAch_CustomRefresh_ProviderStatus_Ready")
                         : ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeSetup");
                 }
             }
@@ -223,7 +222,6 @@ namespace PlayniteAchievements.Views
             IPlayniteAPI api,
             ILogger logger,
             RefreshRuntime refreshRuntime,
-            ICacheManager cacheManager,
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
             PlayniteAchievementsPlugin plugin,
@@ -232,7 +230,6 @@ namespace PlayniteAchievements.Views
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
-            _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
@@ -353,8 +350,8 @@ namespace PlayniteAchievements.Views
             {
                 try
                 {
-                    var cachedIds = _cacheManager.GetCachedGameIds();
-                    return cachedIds != null && cachedIds.Count > 0;
+                    var dataService = _plugin?.AchievementDataService;
+                    return dataService?.HasCachedGameData() == true;
                 }
                 catch (Exception ex)
                 {
@@ -592,6 +589,7 @@ namespace PlayniteAchievements.Views
             {
                 _selectedThemePath = value;
                 OnPropertyChanged(nameof(SelectedThemePath));
+                UpdateThemeMigrationModeButtonState();
             }
         }
 
@@ -672,7 +670,7 @@ namespace PlayniteAchievements.Views
                 _logger.Error(ex, "Failed to execute theme migration command.");
                 _api?.Notifications?.Add(new NotificationMessage(
                     "PlayAch_MigrationError",
-                    $"Theme migration failed: {ex.Message}",
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
                     NotificationType.Error));
             }
         });
@@ -699,7 +697,7 @@ namespace PlayniteAchievements.Views
                 _logger.Error(ex, "Failed to execute full theme migration command.");
                 _api?.Notifications?.Add(new NotificationMessage(
                     "PlayAch_MigrationError",
-                    $"Theme migration failed: {ex.Message}",
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
                     NotificationType.Error));
             }
         });
@@ -727,7 +725,7 @@ namespace PlayniteAchievements.Views
                 _logger.Error(ex, "Failed to execute custom theme migration command.");
                 _api?.Notifications?.Add(new NotificationMessage(
                     "PlayAch_MigrationError",
-                    $"Theme migration failed: {ex.Message}",
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
                     NotificationType.Error));
             }
         });
@@ -778,7 +776,7 @@ namespace PlayniteAchievements.Views
                 _logger.Error(ex, "Failed to execute theme revert command.");
                 _api?.Notifications?.Add(new NotificationMessage(
                     "PlayAch_RevertError",
-                    $"Theme revert failed: {ex.Message}",
+                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
                     NotificationType.Error));
             }
         });
@@ -814,6 +812,7 @@ namespace PlayniteAchievements.Views
                     ShowNoRevertableThemesMessage = true;
                     OnPropertyChanged(nameof(HasThemesToMigrate));
                     OnPropertyChanged(nameof(HasRevertableThemes));
+                    UpdateThemeMigrationModeButtonState();
                     return;
                 }
 
@@ -838,6 +837,7 @@ namespace PlayniteAchievements.Views
                 ShowNoRevertableThemesMessage = _revertableThemes.Count == 0;
                 OnPropertyChanged(nameof(HasThemesToMigrate));
                 OnPropertyChanged(nameof(HasRevertableThemes));
+                UpdateThemeMigrationModeButtonState();
 
                 _logger.Info($"Loaded {_availableThemes.Count} themes that need migrating, {_revertableThemes.Count} themes that can be reverted.");
             }
@@ -928,9 +928,28 @@ namespace PlayniteAchievements.Views
 
         private void UpdateThemeMigrationModeButtonState()
         {
-            if (ThemeMigrationPresetButtons != null && ThemeMigrationCustomExpander != null)
+            var isCustomExpanded = ThemeMigrationCustomExpander?.IsExpanded == true;
+            var isFullscreenTheme = ThemeMigrationService.IsFullscreenThemePath(SelectedThemePath);
+
+            if (isFullscreenTheme && isCustomExpanded)
             {
-                ThemeMigrationPresetButtons.IsEnabled = !ThemeMigrationCustomExpander.IsExpanded;
+                ThemeMigrationCustomExpander.IsExpanded = false;
+                isCustomExpanded = false;
+            }
+
+            if (ThemeMigrationPresetButtons != null)
+            {
+                ThemeMigrationPresetButtons.IsEnabled = HasThemesToMigrate && !isCustomExpanded;
+            }
+
+            if (ThemeMigrationFullButton != null)
+            {
+                ThemeMigrationFullButton.IsEnabled = HasThemesToMigrate && !isCustomExpanded && !isFullscreenTheme;
+            }
+
+            if (ThemeMigrationCustomContainer != null)
+            {
+                ThemeMigrationCustomContainer.IsEnabled = HasThemesToMigrate && !isFullscreenTheme;
             }
         }
 
@@ -945,39 +964,39 @@ namespace PlayniteAchievements.Views
 
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginButton",
-                "LOCPlayAch_ThemeMigration_Custom_Button",
+                "LOCPlayAch_Settings_ButtonPreview",
                 "Button"));
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginChart",
-                "LOCPlayAch_ThemeMigration_Custom_Chart",
+                "LOCPlayAch_Settings_BarChartPreview",
                 "Bar Chart"));
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginCompactList",
-                "LOCPlayAch_ThemeMigration_Custom_CompactList",
+                "LOCPlayAch_Settings_CompactListPreview",
                 "Compact List"));
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginCompactLocked",
-                "LOCPlayAch_ThemeMigration_Custom_CompactLocked",
+                "LOCPlayAch_Settings_CompactLockedListPreview",
                 "Compact Locked List"));
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginCompactUnlocked",
-                "LOCPlayAch_ThemeMigration_Custom_CompactUnlocked",
+                "LOCPlayAch_Settings_CompactUnlockedListPreview",
                 "Compact Unlocked List"));
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginList",
-                "LOCPlayAch_ThemeMigration_Custom_List",
-                "Achievement Grid"));
+                "LOCPlayAch_Settings_AchievementDataGridPreview",
+                "Achievement DataGrid"));
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginProgressBar",
-                "LOCPlayAch_ThemeMigration_Custom_ProgressBar",
+                "LOCPlayAch_Settings_ProgressBarPreview",
                 "Progress Bar"));
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginUserStats",
-                "LOCPlayAch_ThemeMigration_Custom_UserStats",
-                "Stats Panel"));
+                "LOCPlayAch_Settings_StatsPreview",
+                "Stats"));
             _themeMigrationCustomOptions.Add(CreateThemeMigrationControlOption(
                 "PluginViewItem",
-                "LOCPlayAch_ThemeMigration_Custom_ViewItem",
+                "LOCPlayAch_Settings_ViewItemPreview",
                 "View Item"));
         }
 
@@ -1092,6 +1111,7 @@ namespace PlayniteAchievements.Views
         HasData
     }
 }
+
 
 
 

@@ -105,6 +105,9 @@ namespace PlayniteAchievements.Providers
 
         public void BeginEditSession()
         {
+            if (_editSessionActive)
+                return;
+
             _editSessionOriginals.Clear();
             _editSessionCopies.Clear();
             _editSessionActive = true;
@@ -158,7 +161,7 @@ namespace PlayniteAchievements.Providers
                 return null;
 
             if (!_editSessionActive)
-                return GetLiveSettings(providerKey);
+                BeginEditSession();
 
             if (_editSessionCopies.TryGetValue(providerKey, out var existingCopy))
                 return existingCopy;
@@ -198,6 +201,26 @@ namespace PlayniteAchievements.Providers
             if (string.IsNullOrWhiteSpace(providerKey)) return "Unknown";
             var value = ResourceProvider.GetString($"LOCPlayAch_Provider_{providerKey}");
             return string.IsNullOrWhiteSpace(value) ? providerKey : value;
+        }
+
+        public bool TryGetProviderVisuals(string providerKey, out string iconKey, out string colorHex)
+        {
+            iconKey = null;
+            colorHex = null;
+
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return false;
+            }
+
+            if (_providersByKey.TryGetValue(providerKey, out var provider) && provider != null)
+            {
+                iconKey = provider.ProviderIconKey;
+                colorHex = provider.ProviderColorHex;
+                return !string.IsNullOrWhiteSpace(iconKey) || !string.IsNullOrWhiteSpace(colorHex);
+            }
+
+            return false;
         }
 
         // ===================== ENABLED STATE =====================

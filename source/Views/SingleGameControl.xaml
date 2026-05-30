@@ -29,6 +29,14 @@
                 <Setter Property="Padding" Value="12" />
             </Style>
 
+            <Style x:Key="SecondaryMetadataTextStyle" TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                <Setter Property="Opacity" Value="0.6" />
+                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}" />
+                <Setter Property="Margin" Value="0,4,0,0" />
+                <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+            </Style>
+
             <!-- Style for Expander Header ToggleButton -->
             <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">
                 <Setter Property="Background" Value="Transparent"/>
@@ -115,28 +123,34 @@
                 </Border>
                 
                 <!-- Game Info -->
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding GameName}"
-                               FontSize="{DynamicResource FontSize}"
-                               FontWeight="Bold"
-                               Foreground="{DynamicResource TextBrush}"
-                               VerticalAlignment="Center"/>
-                    <TextBlock Margin="8,0,0,0"
-                               VerticalAlignment="Center"
-                               Opacity="0.7"
-                               Foreground="{DynamicResource TextBrush}"
-                               FontSize="{DynamicResource FontSizeSmall}">
-                        <Run Text="("/>
-                        <Run Text="{Binding UnlockedAchievements, Mode=OneWay}"/>
-                        <Run Text="/"/>
-                        <Run Text="{Binding TotalAchievements, Mode=OneWay}"/>
-                        <Run Text=" "/>
-                        <Run Text="{DynamicResource LOCPlayAch_Achievements}"/>
-                        <Run Text=")"/>
-                    </TextBlock>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding GameName}"
+                                   FontSize="{DynamicResource FontSize}"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Margin="8,0,0,0"
+                                   VerticalAlignment="Center"
+                                   Opacity="0.7"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   FontSize="{DynamicResource FontSizeSmall}">
+                            <Run Text="("/>
+                            <Run Text="{Binding UnlockedAchievements, Mode=OneWay}"/>
+                            <Run Text="/"/>
+                            <Run Text="{Binding TotalAchievements, Mode=OneWay}"/>
+                            <Run Text=" "/>
+                            <Run Text="{DynamicResource LOCPlayAch_Achievements}"/>
+                            <Run Text=")"/>
+                        </TextBlock>
 
-                    <Button Content="{DynamicResource LOCPlayAch_Button_Refresh}" Command="{Binding RefreshGameCommand}" Margin="12,0,0,0" VerticalAlignment="Center" />
-                    <TextBlock Text="{Binding RefreshStatusMessage}" VerticalAlignment="Center" Margin="10,0,0,0" Visibility="{Binding IsStatusMessageVisible, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource TextBrush}"/>
+                        <Button x:Name="RefreshGameButton" Content="{DynamicResource LOCPlayAch_Button_Refresh}" Command="{Binding RefreshGameCommand}" Margin="12,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding RefreshStatusMessage}" VerticalAlignment="Center" Margin="10,0,0,0" Visibility="{Binding IsStatusMessageVisible, Converter={StaticResource BoolToVis}}" Foreground="{DynamicResource TextBrush}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="{Binding SecondaryMetadataText}"
+                               Style="{StaticResource SecondaryMetadataTextStyle}"
+                               Visibility="{Binding HasSecondaryMetadataText, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
 
                 <!-- Complete Badge -->
@@ -176,7 +190,8 @@
                 </Grid.RowDefinitions>
 
                 <!-- Stats Header -->
-                <ToggleButton Grid.Row="0"
+                <ToggleButton x:Name="StatsToggleButton"
+                              Grid.Row="0"
                               IsChecked="{Binding IsStatsVisible, Mode=TwoWay}"
                               Style="{StaticResource ExpanderHeaderStyle}">
                     <TextBlock Text="{DynamicResource LOCPlayAch_Section_Stats}"
@@ -219,22 +234,22 @@
 
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_UltraRare}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}">
-                            <Image Source="{StaticResource BadgePlatinumHexagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                            <Image Source="{DynamicResource BadgeRarityUltraRare}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding UltraRareCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Rare}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}">
-                            <Image Source="{StaticResource BadgeGoldPentagon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                            <Image Source="{DynamicResource BadgeRarityRare}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding RareCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Uncommon}" Margin="0,0,12,0" VerticalAlignment="Center"
                                     Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}">
-                            <Image Source="{StaticResource BadgeSilverSquare}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                            <Image Source="{DynamicResource BadgeRarityUncommon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding UncommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}" VerticalAlignment="Center"
                                     Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}">
-                            <Image Source="{StaticResource BadgeBronzeTriangle}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
+                            <Image Source="{DynamicResource BadgeRarityCommon}" Style="{StaticResource RarityIcon}" Effect="{StaticResource BadgeShadow}" Width="18" Height="18"/>
                             <TextBlock Text="{Binding CommonCount}" VerticalAlignment="Center" Style="{DynamicResource BaseTextBlockStyle}" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="4,0,0,0"/>
                         </StackPanel>
                     </StackPanel>
@@ -273,7 +288,8 @@
                 </StackPanel>
 
                 <!-- Timeline Header -->
-                <ToggleButton Grid.Row="4"
+                <ToggleButton x:Name="TimelineToggleButton"
+                              Grid.Row="4"
                               IsChecked="{Binding IsTimelineVisible, Mode=TwoWay}"
                               Style="{StaticResource ExpanderHeaderStyle}">
                     <TextBlock Text="{DynamicResource LOCPlayAch_Section_Timeline}"
@@ -287,27 +303,33 @@
                             Visibility="{Binding IsTimelineVisible, Converter={StaticResource BoolToVis}}">
                     <!-- Time Range Buttons -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="TimeRange"
+                        <RadioButton x:Name="TimelineRangeSevenDaysButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="TimeRange"
                                      Style="{StaticResource TimeRangeButtonStyle}"
                                      IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=SevenDays}"
                                      Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="SevenDays"/>
-                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_14D}" GroupName="TimeRange"
+                        <RadioButton x:Name="TimelineRangeFourteenDaysButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_14D}" GroupName="TimeRange"
                                      Style="{StaticResource TimeRangeButtonStyle}"
                                      IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=FourteenDays}"
                                      Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="FourteenDays"/>
-                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1M}" GroupName="TimeRange"
+                        <RadioButton x:Name="TimelineRangeOneMonthButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_1M}" GroupName="TimeRange"
                                      Style="{StaticResource TimeRangeButtonStyle}"
                                      IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneMonth}"
                                      Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="OneMonth"/>
-                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_3M}" GroupName="TimeRange"
+                        <RadioButton x:Name="TimelineRangeThreeMonthsButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_3M}" GroupName="TimeRange"
                                      Style="{StaticResource TimeRangeButtonStyle}"
                                      IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=ThreeMonths}"
                                      Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="ThreeMonths"/>
-                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_1Y}" GroupName="TimeRange"
+                        <RadioButton x:Name="TimelineRangeOneYearButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_1Y}" GroupName="TimeRange"
                                      Style="{StaticResource TimeRangeButtonStyle}"
                                      IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneYear}"
                                      Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="OneYear"/>
-                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="TimeRange"
+                        <RadioButton x:Name="TimelineRangeAllButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="TimeRange"
                                      Style="{StaticResource TimeRangeButtonStyle}"
                                      IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=All}"
                                      Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="All"/>
@@ -362,7 +384,8 @@
                 </Grid.ColumnDefinitions>
 
                 <Grid Grid.Column="0">
-                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                    <TextBox x:Name="SearchTextBox"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                              Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
                                VerticalAlignment="Center"
@@ -384,7 +407,8 @@
                             </Style>
                         </TextBlock.Style>
                     </TextBlock>
-                    <Button Tag="{Binding SearchText}"
+                    <Button x:Name="ClearSearchButton"
+                            Tag="{Binding SearchText}"
                             Click="ClearSearch_Click"
                             Style="{StaticResource ClearSearchButtonStyle}"/>
                 </Grid>
@@ -421,15 +445,18 @@
                                      ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                     </Button.ContextMenu>
                 </Button>
-                <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Unlocked}"
+                <CheckBox x:Name="ShowUnlockedCheckBox"
+                      Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
                       IsChecked="{Binding ShowUnlocked}"
                       VerticalAlignment="Center"
                       Margin="0,0,8,0"/>
-                <CheckBox Content="{DynamicResource LOCPlayAch_Sidebar_Locked}"
+                <CheckBox x:Name="ShowLockedCheckBox"
+                      Content="{DynamicResource LOCPlayAch_Common_Locked}"
                       IsChecked="{Binding ShowLocked}"
                       VerticalAlignment="Center"
                       Margin="0,0,8,0"/>
-                <CheckBox Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
+                <CheckBox x:Name="ShowHiddenCheckBox"
+                      Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
                       IsChecked="{Binding ShowHidden}"
                       VerticalAlignment="Center"/>
                 </StackPanel>
@@ -475,3 +502,5 @@
                                              Sorting="OnGridSorting"/>
     </Grid>
 </UserControl>
+
+

@@ -1,5 +1,142 @@
 AddonId: PlayniteAchievements
 Packages:
+
+  - Version: 2.3.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-05-30
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.3.0/PlayniteAchievements_2_3_0.pext
+    Changelog:
+    - "Added native support for HoYoverse achievements."
+    - "Improved override system. Steam and RPCS3 overrides are now supported, and multiple Playnite library items can use the same override data."
+    - "Fixed WoW Housing and Delves achievements not showing."
+    - "Fixed issues where PSN was taking priority over RPCS3/ShadPS4."
+    - "Fixed scrolling issues in Game Options tabs."
+    - "(Re-)Added French localization! Thanks to @Mike-Aniki for the contribution!"
+
+
+  - Version: 2.2.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-05-24
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.2.0/PlayniteAchievements_2_2_0.pext
+    Changelog:
+    - "Added native support for World of Warcraft achievements. This now allows for localized achievements that Exophase does not provide. Seeking beta testers for other Battle.net games!"
+    - "Redesigned the platform settings tab."
+    - "Added experimental fullscreen controller support for the Achievement Overview (sidebar), Single Game view, and Game Options window. This is still a work in progress, but should allow for basic navigation and interaction."
+    - "Added a Source Page button in the Game Options Overview tab, which links to the web page where achievement data is sourced for that game."
+    - "Added .cue file support for RetroAchievements."
+    - "Improved Steam authentication."
+    - "Fixed issue where sidebar grids did not take the full window height."
+    - "Fixed issue where RetroAchievements override was not being respected."
+    - "Added German localization! Thanks to @afroemberg for the contribution!"
+
+  - Version: 2.1.5
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-05-16
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.5/PlayniteAchievements_2_1_5.pext
+    Changelog:
+    - "Fixed Steam Authentication issues with Manual Tracking, and improved Manual Tracking performance."
+    - "Fixed World of Warcraft achievement icons not being downloaded from Exophase."
+    - "The fix above should also resolve any StartPage crashes due to missing icons."
+    - "Added better defaults for datagrid sizes (due to performance concerns) and Exohase platform managament (so platforms without native support are automatically captured by Exophase)."
+
+  - Version: 2.1.4
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-05-16
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.4/PlayniteAchievements_2_1_4.pext
+    Changelog:
+    - "Added three-way clicking to datagrids, to allow for easier sorting and filtering. Clicking on a column header will now cycle between ascending, descending, and unsorted states."
+    - "Added SummaryIgnored category type. Now, Ignored achievements will be excluded from all UI, and SummaryIgnored achievements will be excluded from sidebar summaries and pie charts. Full games can still be excluded from refreshes or summaries, and this allows for more granular control."
+    - "Added display option for Uniform Rarity badges, which will use the same badge shape for each rarity tier, but with the existing color schemes."
+    - "Added experimental support for Exophase to supply rarity data for platforms that don't provide it themselves. This is still a work in progress, please provide feedback if you have any issues."
+    - "ShadPS4 will now show achievement data for games without any unlocked achievements."
+    - "Fixed text wrapping in some datagrid columns."
+    - "Fixed many pixel rounding issues in the sidebar, and improved icon quality."
+    - "Fixed integration with fullscreen child windows."
+    - "More legacy manual tracking import fixes."
+    - "Fixed some Steam achievements not showing up when they contained whitespace in the Steam API."
+    - "Added Chinese localization! Thanks to @hugsyf for the contribution!"
+    - "Additional bug fixes and optimizations throughout."
+
+  - Version: 2.1.3
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-04-24
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.3/PlayniteAchievements_2_1_3.pext
+    Changelog:
+    - "Steam authentication fixes."
+    - "Sidebar Games Overview sort options added"
+    - "RetroAchievements subset fix for when multiple games share a subset"
+
+  - Version: 2.1.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-04-14
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.2/PlayniteAchievements_2_1_2.pext
+    Changelog:
+    - "Exophase - Added Apple support."
+    - "Steam - removed need for Web API key."
+    - "ShadPS4 - Improved path handling again"
+    - "PSN - Removed extraneous authentication checks."
+    - "Display - Added new default grid sorting options to Sidebar/Single Game/Theme grids."
+    - "Settings - Hidden games can now be automatically excluded from tracking and refreshes. This reeplaces existing logic tied to Tags."
+    - "Game Options - Added new Ignored category type, which hides achievements from all displays and tracking."
+    - "Fullscreen themes can now implement customized achievement orders."
+    - "Refreshes in fullscreen mode now consistently use Playnite progress bar instead of custom progress bars."
+    - "Another legacy manual import bug fix."
+    - "Additional bug fixes and optimizations throughout."
+
+  - Version: 2.1.1
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-04-14
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.1/PlayniteAchievements_2_1_1.pext
+    Changelog:
+    - "RetroAchievements - Restored option to automatically assign capstones (default: Disabled). A refresh will be required to update these capstones."
+    - "Fix - Capstone completion will now show correctly show in the Sidebar"
+    - "Fix - Made sorting of theme elements (compact lists, datagrids) more consistent."
+    - "Fix - Legacy manual tracking import bug fixes."
+    - "Fix - Adjusted dependencies to better match Playnite's."
+
+  - Version: 2.1.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-04-14
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.0/PlayniteAchievements_2_1_0.pext
+    Changelog:
+    - "Game Options - New Custom Icon support via Game Options, supporting web links, local files, and even GIFs!"
+    - "Game Options - Export/import per-game custom data as .PA files or .PA.ZIP to share your configurations with others."
+    - "Display - Added basic default Fullscreen theme support."
+    - "Display - Added options to disable individual theme elements."
+    - "Display - Added compact list sorting controls (Unlock Time, Rarity)."
+    - "Display - Added option to show platform/playtime/region metadata in sidebar and single-game views."
+    - "Display - Added Show Completion Border option for completed games."
+    - "Display - Added more icon options (download full resolution/compressed, download separate locked icons or greyscale the unlocked icons)"
+    - "Game Options - Added override to download locked icons for specified game"
+    - "Manual Tracking - Exophase manual links no longer require authentication (localized achievements still require Authentication)."
+    - "RetroAchievements - Added experimental EmuLibrary game ID decoding support (including Yuzu mappings)."
+    - "RetroAchievements - Removed automatic capstone assignment."
+    - "RetroAchievements - Added option to disable fuzzy name matching."
+    - "Exophase - Added Google Play and Ubisoft/Uplay support."
+    - "Tagging - Added Customized and Not Customized tag options, which reflect Game Options customization."
+    - "Game Options - Added per-game overrides for Exophase Game ID, Xenia TitleID, and ShadPS4 Match ID."
+    - "Fixed manual tracking AM/PM and 24-hour time parsing."
+    - "Fixed ShadPS4 trophy path detection for newer folder layouts and emulator paths."
+    - "Localization - Massive optimization, and hundreds of strings were removed and consolidated. Hopefully this makes things easier on Crowdin."
+
+  - Version: 2.0.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-03-31
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.0.2/PlayniteAchievements_2_0_2.pext
+    Changelog:
+    - "Fixed some theme bindings"
+    - "Fixed rarity strings in compact achievement lists"
+    - "Fixed another rare crash"
+
+  - Version: 2.0.1
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-03-31
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.0.1/PlayniteAchievements_2_0_1.pext
+    Changelog:
+    - "Fixed issues with saving settings"
+    - "Fixed rare crash"
+
+
   - Version: 2.0.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-03-30
