@@ -293,9 +293,16 @@ namespace PlayniteAchievements.Providers.Xbox
                 }
             }
 
+            if (XboxTitleIdResolver.TryResolveFromGameInstall(game, _logger, out var localTitleId))
+            {
+                return localTitleId;
+            }
+
             // PC games: Use Title Hub API to resolve PFN to titleId
             if (!string.IsNullOrWhiteSpace(game.GameId))
             {
+                _logger?.Debug($"[XboxAch] Falling back to TitleHub PFN lookup for: {game.GameId}");
+
                 try
                 {
                     var titleInfo = await _apiClient.GetTitleInfoByPfnAsync(game.GameId, authData, cancel).ConfigureAwait(false);
@@ -310,6 +317,7 @@ namespace PlayniteAchievements.Providers.Xbox
                 }
             }
 
+            _logger?.Debug($"[XboxAch] All title ID resolution methods failed for game: {game?.Name} (GameId: {game?.GameId}, InstallDirectory: {game?.InstallDirectory})");
             return null;
         }
 
