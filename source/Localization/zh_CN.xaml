@@ -52,7 +52,6 @@
     <sys:String x:Key="LOCPlayAch_Common_None">无</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">未设置覆盖</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">未链接</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Status_OverrideSetValue">覆盖值: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unlocked">已解锁</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">已解锁数量</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">已完成</sys:String>
@@ -109,6 +108,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GooglePlay">Google Play</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Hoyoverse">HoYoverse</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Manual">手动</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_PSN">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
@@ -149,6 +149,8 @@
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">请输入有效的正整数游戏 ID。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">请输入有效的 8 位十六进制 Xenia TitleID。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">请输入有效的 ShadPS4 匹配 ID，例如 CUSA00432 或 NPWR12345_00。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">Please enter a valid RPCS3 trophy NP Comm ID such as NPWR12345_00.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Please enter a valid positive integer Steam AppID.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">刷新单款游戏</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[正在刷新]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">刷新已选游戏</sys:String>
@@ -193,9 +195,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_OpenFolderButton">打开图标文件夹</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_OpenFolderUnavailable">扩展数据路径不可用。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_ValidationError">一个或多个图标值无效。请使用绝对 http:// 或 https:// URL，或复制到插件数据中的管理本地文件。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseHint">勾选以对此游戏强制使用 Exophase。未勾选的游戏如果其平台在“受管平台”中，则会自动使用 Exophase。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugHint">覆盖自动检测的 Exophase 游戏 ID 以链接到特定的 Exophase 游戏。留空则使用自动检测。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugLabel">Exophase 游戏 ID 覆盖</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary_None">未配置手动链接。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning">手动追踪可能会替换来自 {0} 的缓存成就数据。是否继续？</sys:String>
@@ -221,13 +220,17 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsCheckbox">此游戏始终使用独立的未解锁图标</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHeader">独立的未解锁图标</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHint">当提供程序公开独立的未解锁图标时，强制此游戏下载并使用它们。未勾选时，游戏遵循全局设置。更改将在下次刷新此游戏时生效。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaHeader">RetroAchievements 游戏 ID 覆盖</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaHint">输入 RetroAchievements 游戏 ID 以覆盖此游戏的自动匹配。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaNotCapable">RetroAchievements 覆盖对此游戏不可用。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_XeniaHeader">Xenia TitleID 覆盖</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_XeniaHint">输入 Xbox 360 TitleID 以覆盖此游戏的自动匹配。这将强制该游戏由 Xenia 管理。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ShadPS4Header">ShadPS4 匹配 ID 覆盖</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ShadPS4Hint">输入 PS4 Title ID（如 CUSA00432）或奖杯 ID（如 NPWR12345_00）以覆盖此游戏的自动匹配。这将强制该游戏由 ShadPS4 管理。</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderHeader">Provider Override</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderHint">Force this game to use one supported achievement provider, or clear the override to use automatic matching.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderStatusAuto">Override set: {0} (auto-detect)</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderStatusValue">Override set: {0} - {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderInvalid">Select a supported provider override.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Steam">Steam AppID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RetroAchievements">RetroAchievements Game ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_ShadPS4">ShadPS4 Match ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RPCS3">RPCS3 NP Comm ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia">Xenia TitleID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Exophase">Exophase game ID or slug</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader">摘要排除</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">从侧边栏和所有游戏摘要数据中排除此游戏。</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">当前压轴: {0}</sys:String>
@@ -240,9 +243,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable">No source page link is available for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LibrarySource">库来源</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Provider">提供程序</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_RaOverride">RetroAchievements 覆盖</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_XeniaOverride">Xenia TitleID 覆盖</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_ShadPS4Override">ShadPS4 匹配 ID 覆盖</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Excluded">已排除</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromRefreshes">已从批量刷新中排除</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromSummaries">已从摘要中排除</sys:String>
@@ -256,7 +256,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_ManualTracking">手动追踪</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Overrides">覆盖</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Overview">概览</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_UseExophase">对此游戏使用 Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Value_NotAvailable">不可用</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_WindowTitle">游戏选项 - {0}</sys:String>
 
@@ -420,6 +419,26 @@
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">受管平台</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">这些平台上的游戏将使用 Exophase 而非现代提供程序。勾选您希望由 Exophase 管理的平台。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">注意: 对于未勾选平台上的游戏，请使用“游戏选项”单独包含。</sys:String>
+
+    <!-- Provider: HoYoverse -->
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">Enable Genshin Impact</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableHsr">Enable Honkai: Star Rail</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">Enable Zenless Zone Zero</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">Tracker Export Files</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optional public tracker exports used to mark achievements unlocked. Without an export file, refresh still downloads definitions and keeps achievements locked.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">How to Get the JSON</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Prefix">1. Open the </sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter">StarDB achievement importer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Suffix"> and log in.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Prefix">2. Download and run </sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbExporter">stardb-exporter</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Suffix">, then follow its prompts until the export JSON is copied to your clipboard.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step3">3. Save the copied text as a .json file and select it below for the matching game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step4">4. Optionally paste the copied JSON into StarDB too, so your StarDB tracker stays synced.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Note">Supported files: raw stardb-exporter JSON, StarDB JSON, Paimon.moe JSON, SEELIE.me JSON, Star Rail Station .dat, and rng.moe JSON.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_InvalidExportPath">One or more configured export files do not exist.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">No export file configured. Refresh will import locked achievement definitions only.</sys:String>
+
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">将数据库表导出为 CSV 以供调试</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">导出 CSV</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">强制哈希索引重建</sys:String>
