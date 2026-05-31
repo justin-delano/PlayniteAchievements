@@ -20,7 +20,11 @@ namespace PlayniteAchievements.Providers.EA
         private readonly HttpClient _httpClient;
         private EASettings _providerSettings;
 
-        public EADataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
+        public EADataProvider(
+            ILogger logger,
+            PlayniteAchievementsSettings settings,
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath)
         {
             _ = logger ?? throw new ArgumentNullException(nameof(logger));
             _ = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -28,11 +32,17 @@ namespace PlayniteAchievements.Providers.EA
 
             _httpClient = new HttpClient();
             _sessionManager = new EASessionManager(playniteApi, logger, _httpClient);
+            _providerSettings = ProviderRegistry.Settings<EASettings>();
 
             var apiClient = new EAApiClient(_httpClient, logger, _sessionManager);
-            _scanner = new EAScanner(settings, apiClient, _sessionManager, logger);
-
-            _providerSettings = ProviderRegistry.Settings<EASettings>();
+            _scanner = new EAScanner(
+                settings,
+                _providerSettings,
+                apiClient,
+                _sessionManager,
+                logger,
+                playniteApi,
+                pluginUserDataPath);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_EA");

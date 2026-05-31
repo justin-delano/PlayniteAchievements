@@ -157,6 +157,8 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
                     .Where(g => !string.IsNullOrWhiteSpace(g.OriginOfferId))
                     .ToList();
 
+                _logger?.Debug($"[EAApi] Owned games returned {items.Count} item(s); {result.Count} base game offer ID(s) after filtering.");
+
                 _cachedOwnedGames = result;
                 _cachedTokenForOwnedGames = token;
                 return result;
@@ -197,6 +199,7 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
             var achievementSets = response?.Data?.Achievements;
             if (achievementSets == null || achievementSets.Count == 0)
             {
+                _logger?.Debug($"[EAApi] No achievement sets returned for offer ID={offerId}.");
                 return new List<EaAchievementItem>();
             }
 
@@ -214,6 +217,11 @@ query GetAchievements($offerId: String!, $playerPsd: String!, $locale: Locale!) 
                 })
                 .Where(a => !string.IsNullOrWhiteSpace(a.AchievementId))
                 .ToList();
+
+            if (items.Count == 0)
+            {
+                _logger?.Debug($"[EAApi] Achievement sets contained no achievement items for offer ID={offerId}.");
+            }
 
             return items;
         }

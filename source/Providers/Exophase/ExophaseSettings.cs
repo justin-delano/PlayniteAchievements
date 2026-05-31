@@ -18,8 +18,6 @@ namespace PlayniteAchievements.Providers.Exophase
             "ubisoft"
         };
 
-        private const string DeprecatedOriginProviderToken = "origin";
-
         private string _userId;
         private HashSet<string> _managedProviders = CreateDefaultManagedProviders();
         private HashSet<Guid> _includedGames = new HashSet<Guid>();
@@ -40,17 +38,14 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Provider/platform tokens that Exophase should automatically claim.
         /// Games matching these tokens will use Exophase instead of modern providers.
-        /// Valid values: "steam", "psn", "xbox", "gog", "epic", "blizzard", "retro", "android", "apple", "ubisoft".
-        /// The legacy "origin" token is normalized out because native EA is now the default EA provider.
+        /// Valid values: "steam", "psn", "xbox", "gog", "epic", "blizzard", "origin", "retro", "android", "apple", "ubisoft".
         /// </summary>
         public HashSet<string> ManagedProviders
         {
             get => _managedProviders;
             set => SetValue(
                 ref _managedProviders,
-                value != null
-                    ? new HashSet<string>(value, StringComparer.OrdinalIgnoreCase)
-                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+                NormalizeManagedProviders(value));
         }
 
         /// <summary>
@@ -97,13 +92,18 @@ namespace PlayniteAchievements.Providers.Exophase
 
             foreach (var provider in providers)
             {
-                if (string.IsNullOrWhiteSpace(provider) ||
-                    string.Equals(provider.Trim(), DeprecatedOriginProviderToken, StringComparison.OrdinalIgnoreCase))
+                if (string.IsNullOrWhiteSpace(provider))
                 {
                     continue;
                 }
 
-                normalized.Add(provider.Trim());
+                var token = provider.Trim();
+                if (string.Equals(token, "ea", StringComparison.OrdinalIgnoreCase))
+                {
+                    token = "origin";
+                }
+
+                normalized.Add(token);
             }
 
             return normalized;

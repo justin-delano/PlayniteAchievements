@@ -157,6 +157,21 @@
                     </Grid>
                 </StackPanel>
             </Border>
+
+            <Border Style="{StaticResource SectionBorderStyle}"
+                    IsEnabled="{Binding Settings.IsEnabled}"
+                    Margin="0,12,0,0">
+                <StackPanel>
+                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseExophaseForRarity}"
+                              IsChecked="{Binding Settings.UseExophaseForRarity, Mode=TwoWay}"
+                              FontWeight="SemiBold"
+                              FontSize="{DynamicResource FontSize}"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UseExophaseForRarity_Help}"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="24,8,0,0"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </settings:ProviderSettingsViewBase>

@@ -42,13 +42,13 @@ namespace PlayniteAchievements.Providers.Tests
         }
 
         [TestMethod]
-        public void DeserializeFromJson_WhenLegacyOriginManaged_RemovesOrigin()
+        public void DeserializeFromJson_WhenOriginManaged_PreservesOrigin()
         {
             var settings = new ExophaseSettings();
 
             settings.DeserializeFromJson("{\"ManagedProviders\":[\"origin\",\"android\"]}");
 
-            Assert.IsFalse(settings.ManagedProviders.Contains("origin"));
+            Assert.IsTrue(settings.ManagedProviders.Contains("origin"));
             Assert.IsTrue(settings.ManagedProviders.Contains("android"));
         }
 
@@ -100,6 +100,17 @@ namespace PlayniteAchievements.Providers.Tests
             settings.DeserializeFromJson("{\"ManagedProviders\":[\"Steam\"]}");
 
             Assert.IsTrue(settings.ManagedProviders.Contains("steam"));
+        }
+
+        [TestMethod]
+        public void DeserializeFromJson_EaAliasNormalizesToOrigin()
+        {
+            var settings = new ExophaseSettings();
+
+            settings.DeserializeFromJson("{\"ManagedProviders\":[\"ea\"]}");
+
+            Assert.IsTrue(settings.ManagedProviders.Contains("origin"));
+            Assert.IsFalse(settings.ManagedProviders.Contains("ea"));
         }
     }
 }

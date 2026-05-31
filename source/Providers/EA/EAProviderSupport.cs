@@ -65,6 +65,25 @@ namespace PlayniteAchievements.Providers.EA
             return trimmed;
         }
 
+        public static IReadOnlyList<string> BuildOfferIdCandidates(string matchedOfferId, string gameId)
+        {
+            var candidates = new List<string>();
+
+            AddCandidate(candidates, matchedOfferId);
+            AddCandidate(candidates, ExtractOfferIdFromGameId(matchedOfferId));
+
+            var extractedGameId = ExtractOfferIdFromGameId(gameId);
+            AddCandidate(candidates, extractedGameId);
+            AddCandidate(candidates, gameId);
+
+            if (IsUnprefixedOfferId(extractedGameId))
+            {
+                AddCandidate(candidates, "Origin." + extractedGameId);
+            }
+
+            return candidates;
+        }
+
         public static EaOwnedGame MatchGame(IEnumerable<EaOwnedGame> ownedGames, Game game, string gameId)
         {
             var games = ownedGames?.Where(item => item != null).ToList();
@@ -190,6 +209,26 @@ namespace PlayniteAchievements.Providers.EA
             {
                 candidates.Add(value.Trim());
             }
+        }
+
+        private static void AddCandidate(ICollection<string> candidates, string value)
+        {
+            var normalized = value?.Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return;
+            }
+
+            if (!candidates.Any(candidate => string.Equals(candidate, normalized, StringComparison.OrdinalIgnoreCase)))
+            {
+                candidates.Add(normalized);
+            }
+        }
+
+        private static bool IsUnprefixedOfferId(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                value.Trim().StartsWith("OFR.", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string NormalizeText(string value)

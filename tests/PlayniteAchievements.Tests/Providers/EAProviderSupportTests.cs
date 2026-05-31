@@ -43,6 +43,30 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public void BuildOfferIdCandidates_IncludesStrippedAndOriginPrefixedOfferIds()
+        {
+            var candidates = EAProviderSupport.BuildOfferIdCandidates(
+                matchedOfferId: null,
+                gameId: "Origin.OFR.50.0001456");
+
+            CollectionAssert.AreEqual(
+                new[] { "OFR.50.0001456", "Origin.OFR.50.0001456" },
+                new List<string>(candidates));
+        }
+
+        [TestMethod]
+        public void BuildOfferIdCandidates_AddsOriginPrefixForBareOfferId()
+        {
+            var candidates = EAProviderSupport.BuildOfferIdCandidates(
+                matchedOfferId: null,
+                gameId: "OFR.50.0001456");
+
+            CollectionAssert.AreEqual(
+                new[] { "OFR.50.0001456", "Origin.OFR.50.0001456" },
+                new List<string>(candidates));
+        }
+
+        [TestMethod]
         public void MatchGame_MatchesNormalizedOfferIdBeforeFallbacks()
         {
             var ownedGames = new List<EaOwnedGame>

@@ -8,6 +8,7 @@ namespace PlayniteAchievements.Providers.EA
         private string _playerId;
         private string _playerSubId;
         private string _displayName;
+        private bool _useExophaseForRarity;
 
         public override string ProviderKey => "EA";
 
@@ -36,6 +37,15 @@ namespace PlayniteAchievements.Providers.EA
         {
             get => _displayName;
             set => SetValue(ref _displayName, value);
+        }
+
+        /// <summary>
+        /// When true, enriches EA achievement rarity from Exophase after native scanning.
+        /// </summary>
+        public bool UseExophaseForRarity
+        {
+            get => _useExophaseForRarity;
+            set => SetValue(ref _useExophaseForRarity, value);
         }
     }
 }
