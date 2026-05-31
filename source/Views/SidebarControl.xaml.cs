@@ -975,8 +975,7 @@ namespace PlayniteAchievements.Views
         {
             return CloseViewButton?.IsKeyboardFocusWithin == true ||
                    RefreshModeSelectionButton?.IsKeyboardFocusWithin == true ||
-                   RefreshActionButton?.IsKeyboardFocusWithin == true ||
-                   CancelRefreshButton?.IsKeyboardFocusWithin == true;
+                   RefreshActionButton?.IsKeyboardFocusWithin == true;
         }
 
         private bool TrySelectFocusedOverviewGame()

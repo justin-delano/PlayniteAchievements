@@ -60,8 +60,10 @@
     <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophies:</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progress</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Recent Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Collector">Collector Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Collection">Collection Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_HeaderDetailFormat">{0} | {1} | {2}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>

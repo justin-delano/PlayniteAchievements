@@ -76,6 +76,30 @@ namespace PlayniteAchievements.Tests.Models
             Assert.AreEqual("Bronze1", startOfSecondRange.Rank);
         }
 
+        [TestMethod]
+        public void RankPresentation_FormatsTierAndLevelText()
+        {
+            Assert.AreEqual("Bronze 3", AchievementRankPresentation.FormatRank(AchievementRank.Bronze3));
+            Assert.AreEqual("Silver 2", AchievementRankPresentation.FormatRank("Silver2"));
+            Assert.AreEqual("Gold 1", AchievementRankPresentation.FormatRank(AchievementRank.Gold1));
+            Assert.AreEqual("Platinum 3", AchievementRankPresentation.FormatRank("Plat3"));
+            Assert.AreEqual("Platinum", AchievementRankPresentation.FormatRank(AchievementRank.Plat));
+        }
+
+        [TestMethod]
+        public void RankPresentation_MapsTierToRarityBadgeIcon()
+        {
+            Assert.AreEqual("BadgeBronzeTriangle", AchievementRankPresentation.GetBadgeIconKey(AchievementRank.Bronze1));
+            Assert.AreEqual("BadgeSilverSquare", AchievementRankPresentation.GetBadgeIconKey(AchievementRank.Silver1));
+            Assert.AreEqual("BadgeGoldPentagon", AchievementRankPresentation.GetBadgeIconKey(AchievementRank.Gold1));
+            Assert.AreEqual("BadgePlatinumHexagon", AchievementRankPresentation.GetBadgeIconKey(AchievementRank.Plat1));
+
+            Assert.AreEqual("BadgeBronzeHexagon", AchievementRankPresentation.GetBadgeIconKey(AchievementRank.Bronze1, useUniformRarityBadges: true));
+            Assert.AreEqual("BadgeSilverHexagon", AchievementRankPresentation.GetBadgeIconKey(AchievementRank.Silver1, useUniformRarityBadges: true));
+            Assert.AreEqual("BadgeGoldHexagon", AchievementRankPresentation.GetBadgeIconKey(AchievementRank.Gold1, useUniformRarityBadges: true));
+            Assert.AreEqual("BadgePlatinumHexagon", AchievementRankPresentation.GetBadgeIconKey(AchievementRank.Plat, useUniformRarityBadges: true));
+        }
+
         private static AchievementDetail Achievement(
             RarityTier rarity,
             bool unlocked,
