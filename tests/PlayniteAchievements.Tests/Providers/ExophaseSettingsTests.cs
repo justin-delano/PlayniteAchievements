@@ -13,12 +13,13 @@ namespace PlayniteAchievements.Providers.Tests
         {
             var settings = new ExophaseSettings();
 
-            Assert.IsTrue(settings.ManagedProviders.Contains("blizzard"));
             Assert.IsTrue(settings.ManagedProviders.Contains("android"));
             Assert.IsTrue(settings.ManagedProviders.Contains("apple"));
             Assert.IsTrue(settings.ManagedProviders.Contains("ubisoft"));
 
+            Assert.IsFalse(settings.ManagedProviders.Contains("blizzard"));
             Assert.IsFalse(settings.ManagedProviders.Contains("origin"));
+            Assert.IsFalse(settings.ManagedProviders.Contains("ea"));
             Assert.IsFalse(settings.ManagedProviders.Contains("steam"));
             Assert.IsFalse(settings.ManagedProviders.Contains("gog"));
             Assert.IsFalse(settings.ManagedProviders.Contains("epic"));
@@ -34,11 +35,12 @@ namespace PlayniteAchievements.Providers.Tests
 
             settings.DeserializeFromJson("{\"IsEnabled\":true}");
 
-            Assert.IsTrue(settings.ManagedProviders.Contains("blizzard"));
             Assert.IsTrue(settings.ManagedProviders.Contains("android"));
             Assert.IsTrue(settings.ManagedProviders.Contains("apple"));
             Assert.IsTrue(settings.ManagedProviders.Contains("ubisoft"));
+            Assert.IsFalse(settings.ManagedProviders.Contains("blizzard"));
             Assert.IsFalse(settings.ManagedProviders.Contains("origin"));
+            Assert.IsFalse(settings.ManagedProviders.Contains("ea"));
         }
 
         [TestMethod]

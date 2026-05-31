@@ -66,7 +66,7 @@ namespace PlayniteAchievements.Providers.EA
             var rateLimiter = new RateLimiter(
                 _settings.Persisted.ScanDelayMs,
                 _settings.Persisted.MaxRetryAttempts);
-            var rarityEnricher = await CreateRarityEnricherAsync(cancel).ConfigureAwait(false);
+            var metadataEnricher = await CreateMetadataEnricherAsync(cancel).ConfigureAwait(false);
 
             return await ProviderRefreshExecutor.RunProviderGamesAsync(
                 gamesToRefresh,
@@ -84,7 +84,7 @@ namespace PlayniteAchievements.Providers.EA
                         EAApiClient.IsTransientError,
                         token).ConfigureAwait(false);
 
-                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
+                    await EnrichMetadataAsync(game, data, metadataEnricher, token).ConfigureAwait(false);
 
                     return new ProviderRefreshExecutor.ProviderGameResult
                     {
@@ -156,30 +156,36 @@ namespace PlayniteAchievements.Providers.EA
             return EAProviderSupport.MapToGameData(game, items);
         }
 
-        private async Task<ExophaseRarityEnricher> CreateRarityEnricherAsync(CancellationToken cancel)
+        private async Task<ExophaseMetadataEnricher> CreateMetadataEnricherAsync(CancellationToken cancel)
         {
             if (_providerSettings?.UseExophaseForRarity != true)
             {
                 return null;
             }
 
-            var enricher = new ExophaseRarityEnricher(_playniteApi, _logger, _settings, _pluginUserDataPath);
+            var enricher = new ExophaseMetadataEnricher(_playniteApi, _logger, _settings, _pluginUserDataPath);
             await enricher.InitializeAsync(cancel).ConfigureAwait(false);
             return enricher;
         }
 
-        private static async Task EnrichRarityAsync(
+        private static async Task EnrichMetadataAsync(
             Game game,
             GameAchievementData data,
-            ExophaseRarityEnricher rarityEnricher,
+            ExophaseMetadataEnricher metadataEnricher,
             CancellationToken cancel)
         {
-            if (rarityEnricher == null || data?.Achievements == null || data.Achievements.Count == 0)
+            if (metadataEnricher == null || data?.Achievements == null || data.Achievements.Count == 0)
             {
                 return;
             }
 
-            await rarityEnricher.EnrichAsync(game, data.Achievements, "origin", "EA", cancel).ConfigureAwait(false);
+            await metadataEnricher.EnrichAsync(
+                game,
+                data.Achievements,
+                "origin",
+                "EA",
+                cancel,
+                ExophaseMetadataFields.Rarity | ExophaseMetadataFields.IconPaths).ConfigureAwait(false);
         }
     }
 }

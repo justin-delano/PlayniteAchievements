@@ -12,7 +12,6 @@ namespace PlayniteAchievements.Providers.Exophase
     {
         private static readonly string[] DefaultManagedProviderTokens =
         {
-            "blizzard",
             "android",
             "apple",
             "ubisoft"

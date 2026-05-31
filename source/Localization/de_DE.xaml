@@ -471,8 +471,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Manuell &amp; Aggregatoren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Andere</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Verwendet {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForRarity">Exophase für Seltenheit verwenden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForRarity_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill global rarity percentages. Requires Exophase authentication.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Exophase für Seltenheit verwenden</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill global rarity percentages. Requires Exophase authentication.</sys:String>
 
     <!-- Provider: PlayStation -->
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Login (Legacy)</sys:String>
