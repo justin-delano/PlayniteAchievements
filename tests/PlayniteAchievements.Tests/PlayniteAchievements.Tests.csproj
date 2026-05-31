@@ -84,6 +84,9 @@
     <Compile Include="..\..\source\Providers\AchievementPageLinkResolver.cs" Link="Source\Providers\AchievementPageLinkResolver.cs" />
     <Compile Include="..\..\source\Providers\IAchievementPageLinkProvider.cs" Link="Source\Providers\IAchievementPageLinkProvider.cs" />
     <Compile Include="..\..\source\Common\RateLimiter.cs" Link="Source\Common\RateLimiter.cs" />
+    <Compile Include="..\..\source\Providers\EA\EAAuthModels.cs" Link="Source\Providers\EA\EAAuthModels.cs" />
+    <Compile Include="..\..\source\Providers\EA\EAModels.cs" Link="Source\Providers\EA\EAModels.cs" />
+    <Compile Include="..\..\source\Providers\EA\EAProviderSupport.cs" Link="Source\Providers\EA\EAProviderSupport.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetApiClient.cs" Link="Source\Providers\BattleNet\BattleNetApiClient.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetSupport.cs" Link="Source\Providers\BattleNet\BattleNetSupport.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetSettings.cs" Link="Source\Providers\BattleNet\BattleNetSettings.cs" />

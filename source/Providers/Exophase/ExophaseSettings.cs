@@ -13,11 +13,12 @@ namespace PlayniteAchievements.Providers.Exophase
         private static readonly string[] DefaultManagedProviderTokens =
         {
             "blizzard",
-            "origin",
             "android",
             "apple",
             "ubisoft"
         };
+
+        private const string DeprecatedOriginProviderToken = "origin";
 
         private string _userId;
         private HashSet<string> _managedProviders = CreateDefaultManagedProviders();
@@ -39,7 +40,8 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Provider/platform tokens that Exophase should automatically claim.
         /// Games matching these tokens will use Exophase instead of modern providers.
-        /// Valid values: "steam", "psn", "xbox", "gog", "epic", "blizzard", "origin", "retro", "android", "apple", "ubisoft"
+        /// Valid values: "steam", "psn", "xbox", "gog", "epic", "blizzard", "retro", "android", "apple", "ubisoft".
+        /// The legacy "origin" token is normalized out because native EA is now the default EA provider.
         /// </summary>
         public HashSet<string> ManagedProviders
         {
@@ -77,6 +79,34 @@ namespace PlayniteAchievements.Providers.Exophase
         public static HashSet<string> CreateDefaultManagedProviders()
         {
             return new HashSet<string>(DefaultManagedProviderTokens, StringComparer.OrdinalIgnoreCase);
+        }
+
+        public override void DeserializeFromJson(string json)
+        {
+            base.DeserializeFromJson(json);
+            ManagedProviders = _managedProviders;
+        }
+
+        private static HashSet<string> NormalizeManagedProviders(IEnumerable<string> providers)
+        {
+            var normalized = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (providers == null)
+            {
+                return normalized;
+            }
+
+            foreach (var provider in providers)
+            {
+                if (string.IsNullOrWhiteSpace(provider) ||
+                    string.Equals(provider.Trim(), DeprecatedOriginProviderToken, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                normalized.Add(provider.Trim());
+            }
+
+            return normalized;
         }
     }
 }
