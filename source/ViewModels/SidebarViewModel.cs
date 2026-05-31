@@ -54,6 +54,7 @@ namespace PlayniteAchievements.ViewModels
 
         private readonly HashSet<string> _revealedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private SidebarDataSnapshot _latestSnapshot;
+        private bool _hasAppliedSnapshot;
 
         private readonly object _progressLock = new object();
         private DateTime _lastProgressUpdate = DateTime.MinValue;
@@ -783,6 +784,14 @@ namespace PlayniteAchievements.ViewModels
         public bool UseCoverImages => _settings?.Persisted?.UseCoverImages ?? false;
 
         public bool EnableCompactGridMode => _settings?.Persisted?.EnableCompactGridMode ?? false;
+
+        public bool ShowSidebarCollectionScoreCard => _settings?.Persisted?.ShowSidebarCollectionScoreCard ?? true;
+
+        public bool ShowSidebarPrestigeScoreCard => _settings?.Persisted?.ShowSidebarPrestigeScoreCard ?? true;
+
+        public bool ShowSidebarScoreCards => _hasAppliedSnapshot && (ShowSidebarCollectionScoreCard || ShowSidebarPrestigeScoreCard);
+
+        public bool ShowSidebarScoreCardDivider => _hasAppliedSnapshot && ShowSidebarCollectionScoreCard && ShowSidebarPrestigeScoreCard;
 
         public bool ShowSidebarPieCharts =>
             ShowSidebarGamesPieChart ||
@@ -1975,6 +1984,7 @@ namespace PlayniteAchievements.ViewModels
             PrestigeLevel = snapshot.PrestigeLevel;
             PrestigeLevelProgress = snapshot.PrestigeLevelProgress;
             PrestigeRank = snapshot.PrestigeRank;
+            MarkSnapshotApplied();
 
             OnPropertyChanged(nameof(CommonPercentage));
             OnPropertyChanged(nameof(UncommonPercentage));
@@ -2001,6 +2011,18 @@ namespace PlayniteAchievements.ViewModels
 
             GlobalTimeline.SetCounts(timelineCountsToShow);
             SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+        }
+
+        private void MarkSnapshotApplied()
+        {
+            if (_hasAppliedSnapshot)
+            {
+                return;
+            }
+
+            _hasAppliedSnapshot = true;
+            OnPropertyChanged(nameof(ShowSidebarScoreCards));
+            OnPropertyChanged(nameof(ShowSidebarScoreCardDivider));
         }
 
         private void NormalizeScoreSnapshot(SidebarDataSnapshot snapshot)
@@ -2137,6 +2159,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(UseCoverImages));
                 OnPropertyChanged(nameof(EnableCompactGridMode));
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
+                RaiseSidebarScoreCardVisibilityChanged();
                 ApplySidebarPieSmallSliceMode();
                 RaiseSidebarPieChartVisibilityChanged();
                 OnPropertyChanged(nameof(ShowSidebarPiePercentages));
@@ -2163,6 +2186,11 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.IncludeUnplayedGames))
             {
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowSidebarCollectionScoreCard)
+                || propertyName == nameof(PersistedSettings.ShowSidebarPrestigeScoreCard))
+            {
+                RaiseSidebarScoreCardVisibilityChanged();
             }
             else if (propertyName == nameof(PersistedSettings.ShowSidebarPieCharts)
                 || propertyName == nameof(PersistedSettings.ShowSidebarGamesPieChart)
@@ -2222,6 +2250,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 _ = RefreshViewAsync();
             }
+        }
+
+        private void RaiseSidebarScoreCardVisibilityChanged()
+        {
+            OnPropertyChanged(nameof(ShowSidebarCollectionScoreCard));
+            OnPropertyChanged(nameof(ShowSidebarPrestigeScoreCard));
+            OnPropertyChanged(nameof(ShowSidebarScoreCards));
+            OnPropertyChanged(nameof(ShowSidebarScoreCardDivider));
         }
 
         private void RaiseSidebarPieChartVisibilityChanged()

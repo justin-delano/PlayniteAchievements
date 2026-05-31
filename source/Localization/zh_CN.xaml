@@ -547,6 +547,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">在已解锁图标上显示稀有度发光效果</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">显示侧边栏条形图</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">显示游戏平台/运行时间/区域</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Show Collection Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Show Prestige Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarGamesPieChart">显示已完成游戏饼图</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">显示饼图百分比</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">显示平台饼图</sys:String>

@@ -547,6 +547,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Afficher une lueur de rareté sur les icônes débloquées</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Afficher les graphiques en barres dans la barre latérale</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Afficher la plateforme, le temps de jeu et la région</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Show Collection Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Show Prestige Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarGamesPieChart">Afficher le graphique des jeux terminés</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">Afficher les pourcentages des graphiques</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">Afficher le graphique par plateforme</sys:String>

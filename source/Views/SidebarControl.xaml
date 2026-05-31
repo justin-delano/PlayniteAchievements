@@ -639,25 +639,21 @@
                 </StackPanel>
 
                 <!-- Right: Collection and Prestige scores -->
-                <Grid Grid.Row="1"
-                      Grid.Column="1"
-                      HorizontalAlignment="Right"
-                      VerticalAlignment="Center"
-                      Width="640"
-                      MaxWidth="740"
-                      Margin="18,0,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" MinWidth="300"/>
-                        <ColumnDefinition Width="1"/>
-                        <ColumnDefinition Width="*" MinWidth="300"/>
-                    </Grid.ColumnDefinitions>
+                <StackPanel Grid.Row="1"
+                            Grid.Column="1"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            MaxWidth="740"
+                            Margin="18,0,0,0"
+                            Visibility="{Binding ShowSidebarScoreCards, Converter={StaticResource BoolToVis}}">
 
-                    <Border Grid.Column="0"
-                            Margin="0,0,12,0"
+                    <Border Width="300"
                             Style="{StaticResource HeaderScorePanelStyle}"
                             Background="{Binding CollectionScoreAccentBackgroundBrush}"
                             BorderBrush="{Binding CollectionScoreAccentBrush}"
-                            ToolTip="{Binding CollectionScoreDetailText}">
+                            ToolTip="{Binding CollectionScoreDetailText}"
+                            Visibility="{Binding ShowSidebarCollectionScoreCard, Converter={StaticResource BoolToVis}}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -721,19 +717,20 @@
                         </Grid>
                     </Border>
 
-                    <Border Grid.Column="1"
-                            Background="{DynamicResource NormalBorderBrush}"
+                    <Border Background="{DynamicResource NormalBorderBrush}"
                             Opacity="0.55"
                             VerticalAlignment="Center"
+                            Width="1"
                             Height="42"
-                            Margin="0,2"/>
+                            Margin="12,2"
+                            Visibility="{Binding ShowSidebarScoreCardDivider, Converter={StaticResource BoolToVis}}"/>
 
-                    <Border Grid.Column="2"
-                            Margin="12,0,0,0"
+                    <Border Width="300"
                             Style="{StaticResource HeaderScorePanelStyle}"
                             Background="{Binding PrestigeScoreAccentBackgroundBrush}"
                             BorderBrush="{Binding PrestigeScoreAccentBrush}"
-                            ToolTip="{Binding PrestigeScoreDetailText}">
+                            ToolTip="{Binding PrestigeScoreDetailText}"
+                            Visibility="{Binding ShowSidebarPrestigeScoreCard, Converter={StaticResource BoolToVis}}">
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -796,7 +793,7 @@
                             </Grid>
                         </Grid>
                     </Border>
-                </Grid>
+                </StackPanel>
 
             </Grid>
         </Border>
@@ -825,9 +822,9 @@
             <!-- Overview Tab Content -->
             <Grid x:Name="OverviewContent" Visibility="Visible">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" MinWidth="560"/>
+                    <ColumnDefinition x:Name="OverviewLeftColumn" Width="*" MinWidth="560"/>
                     <ColumnDefinition Width="4"/>
-                    <ColumnDefinition Width="*" MinWidth="480"/>
+                    <ColumnDefinition x:Name="OverviewRightColumn" Width="*" MinWidth="480"/>
                 </Grid.ColumnDefinitions>
 
                 <Grid.RowDefinitions>
@@ -1863,6 +1860,7 @@
                     <GridSplitter Grid.Column="1"
                         Grid.RowSpan="3"
                         Style="{StaticResource CenterLineSplitterStyle}"
+                        DragCompleted="OverviewGridSplitter_DragCompleted"
                         Focusable="False"
                         IsTabStop="False"
                         Panel.ZIndex="100"/>

@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
@@ -29,6 +30,7 @@ namespace PlayniteAchievements.Views
         private readonly AchievementOverridesService _achievementOverridesService;
         private readonly AchievementDataService _achievementDataService;
         private readonly IPlayniteAPI _playniteApi;
+        private const double SidebarOverviewColumnRatioChangeThreshold = 0.001d;
         private bool _isActive;
         private Guid? _lastSelectedOverviewGameId;
         private DataGridRow _pendingRightClickRow;
@@ -191,6 +193,7 @@ namespace PlayniteAchievements.Views
             AttachHandlers(GamesOverviewDataGrid);
             // RecentAchievementsDataGrid is now AchievementDataGridControl, uses built-in persistence
             // GameAchievementsGrid uses AchievementDataGridControl with built-in persistence
+            ApplyOverviewColumnRatio();
             ApplyVisibilityToGrids();
             ApplyWidthsToGrids();
             ResetOverviewSortDirection();
@@ -1393,6 +1396,92 @@ namespace PlayniteAchievements.Views
                 ChartsRowGrid.ColumnDefinitions[0].Width = new GridLength(pieWidth, GridUnitType.Star);
                 ChartsRowGrid.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
             }
+        }
+
+        #endregion
+
+        #region Sidebar Layout Persistence
+
+        private void ApplyOverviewColumnRatio()
+        {
+            var ratio = _settings?.Persisted?.SidebarOverviewLeftColumnRatio
+                ?? PersistedSettings.DefaultSidebarOverviewLeftColumnRatio;
+
+            SetOverviewColumnRatio(ratio);
+        }
+
+        private void OverviewGridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
+        {
+            Dispatcher.BeginInvoke(new Action(PersistOverviewColumnRatio), DispatcherPriority.Background);
+        }
+
+        private void PersistOverviewColumnRatio()
+        {
+            if (_settings?.Persisted == null || !TryGetOverviewColumnRatio(out var ratio))
+            {
+                return;
+            }
+
+            ratio = NormalizeOverviewColumnRatio(ratio);
+            if (Math.Abs(_settings.Persisted.SidebarOverviewLeftColumnRatio - ratio) <= SidebarOverviewColumnRatioChangeThreshold)
+            {
+                SetOverviewColumnRatio(ratio);
+                return;
+            }
+
+            _settings.Persisted.SidebarOverviewLeftColumnRatio = ratio;
+            SetOverviewColumnRatio(_settings.Persisted.SidebarOverviewLeftColumnRatio);
+            SaveSettings();
+        }
+
+        private bool TryGetOverviewColumnRatio(out double ratio)
+        {
+            ratio = PersistedSettings.DefaultSidebarOverviewLeftColumnRatio;
+
+            var left = OverviewLeftColumn?.ActualWidth ?? 0;
+            var right = OverviewRightColumn?.ActualWidth ?? 0;
+            if (!ColumnWidthNormalization.IsValidWidth(left) || !ColumnWidthNormalization.IsValidWidth(right))
+            {
+                return false;
+            }
+
+            var combined = left + right;
+            if (!ColumnWidthNormalization.IsValidWidth(combined))
+            {
+                return false;
+            }
+
+            ratio = left / combined;
+            return IsValidOverviewColumnRatio(ratio);
+        }
+
+        private void SetOverviewColumnRatio(double ratio)
+        {
+            if (OverviewLeftColumn == null || OverviewRightColumn == null)
+            {
+                return;
+            }
+
+            ratio = NormalizeOverviewColumnRatio(ratio);
+            OverviewLeftColumn.Width = new GridLength(ratio, GridUnitType.Star);
+            OverviewRightColumn.Width = new GridLength(1d - ratio, GridUnitType.Star);
+        }
+
+        private static double NormalizeOverviewColumnRatio(double ratio)
+        {
+            if (!IsValidOverviewColumnRatio(ratio))
+            {
+                return PersistedSettings.DefaultSidebarOverviewLeftColumnRatio;
+            }
+
+            return Math.Max(
+                PersistedSettings.MinSidebarOverviewLeftColumnRatio,
+                Math.Min(PersistedSettings.MaxSidebarOverviewLeftColumnRatio, ratio));
+        }
+
+        private static bool IsValidOverviewColumnRatio(double ratio)
+        {
+            return !double.IsNaN(ratio) && !double.IsInfinity(ratio) && ratio > 0d && ratio < 1d;
         }
 
         #endregion
