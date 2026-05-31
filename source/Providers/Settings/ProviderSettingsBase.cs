@@ -11,6 +11,11 @@ namespace PlayniteAchievements.Providers.Settings
     /// </summary>
     public abstract class ProviderSettingsBase : IProviderSettings
     {
+        private static readonly JsonSerializerSettings PopulateSettings = new JsonSerializerSettings
+        {
+            ObjectCreationHandling = ObjectCreationHandling.Replace
+        };
+
         private bool _isEnabled = true;
 
         /// <inheritdoc />
@@ -57,7 +62,7 @@ namespace PlayniteAchievements.Providers.Settings
         {
             if (!string.IsNullOrEmpty(json))
             {
-                JsonConvert.PopulateObject(json, this);
+                JsonConvert.PopulateObject(json, this, PopulateSettings);
             }
         }
 

@@ -44,7 +44,11 @@ namespace PlayniteAchievements.Providers.Exophase
         public HashSet<string> ManagedProviders
         {
             get => _managedProviders;
-            set => SetValue(ref _managedProviders, value ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+            set => SetValue(
+                ref _managedProviders,
+                value != null
+                    ? new HashSet<string>(value, StringComparer.OrdinalIgnoreCase)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase));
         }
 
         /// <summary>
