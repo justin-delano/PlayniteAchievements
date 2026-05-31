@@ -14,6 +14,7 @@ using System.Windows.Media.Media3D;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Sidebar;
@@ -854,6 +855,98 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _globalProgression, value);
         }
 
+        private int _collectorScore;
+        public int CollectorScore
+        {
+            get => _collectorScore;
+            private set
+            {
+                if (SetValueAndReturn(ref _collectorScore, value))
+                {
+                    OnPropertyChanged(nameof(CollectorScoreText));
+                }
+            }
+        }
+
+        private int _collectorLevel;
+        public int CollectorLevel
+        {
+            get => _collectorLevel;
+            private set
+            {
+                if (SetValueAndReturn(ref _collectorLevel, value))
+                {
+                    OnPropertyChanged(nameof(CollectorLevelText));
+                }
+            }
+        }
+
+        private double _collectorLevelProgress;
+        public double CollectorLevelProgress
+        {
+            get => _collectorLevelProgress;
+            private set => SetValue(ref _collectorLevelProgress, value);
+        }
+
+        private string _collectorRank = "Bronze1";
+        public string CollectorRank
+        {
+            get => _collectorRank;
+            private set => SetValue(ref _collectorRank, value ?? "Bronze1");
+        }
+
+        private int _prestigeScore;
+        public int PrestigeScore
+        {
+            get => _prestigeScore;
+            private set
+            {
+                if (SetValueAndReturn(ref _prestigeScore, value))
+                {
+                    OnPropertyChanged(nameof(PrestigeScoreText));
+                }
+            }
+        }
+
+        private int _prestigeLevel;
+        public int PrestigeLevel
+        {
+            get => _prestigeLevel;
+            private set
+            {
+                if (SetValueAndReturn(ref _prestigeLevel, value))
+                {
+                    OnPropertyChanged(nameof(PrestigeLevelText));
+                }
+            }
+        }
+
+        private double _prestigeLevelProgress;
+        public double PrestigeLevelProgress
+        {
+            get => _prestigeLevelProgress;
+            private set => SetValue(ref _prestigeLevelProgress, value);
+        }
+
+        private string _prestigeRank = "Bronze1";
+        public string PrestigeRank
+        {
+            get => _prestigeRank;
+            private set => SetValue(ref _prestigeRank, value ?? "Bronze1");
+        }
+
+        public string CollectorScoreLabel => L("LOCPlayAch_Score_Collector", "Collector Score");
+
+        public string PrestigeScoreLabel => L("LOCPlayAch_Score_Prestige", "Prestige Score");
+
+        public string CollectorScoreText => CollectorScore.ToString("N0");
+
+        public string PrestigeScoreText => PrestigeScore.ToString("N0");
+
+        public string CollectorLevelText => string.Format(L("LOCPlayAch_Score_LevelFormat", "Lv {0}"), CollectorLevel);
+
+        public string PrestigeLevelText => string.Format(L("LOCPlayAch_Score_LevelFormat", "Lv {0}"), PrestigeLevel);
+
         private GameOverviewItem _displayedSelectedGame;
         public GameOverviewItem DisplayedSelectedGame => _displayedSelectedGame;
 
@@ -1470,6 +1563,11 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
+            if (IsTransientRebuildSnapshot(snapshot))
+            {
+                return;
+            }
+
             _selectedGamePipeline.InvalidateAll();
 
             _latestSnapshot = snapshot;
@@ -1514,6 +1612,17 @@ namespace PlayniteAchievements.ViewModels
             UpdateFilteredStatus();
         }
 
+        private bool IsTransientRebuildSnapshot(SidebarDataSnapshot snapshot)
+        {
+            if (!_refreshService.IsRebuilding || snapshot?.GamesOverview == null)
+            {
+                return false;
+            }
+
+            var currentCount = _allGamesOverview?.Count ?? 0;
+            return currentCount > 0 && snapshot.GamesOverview.Count < currentCount;
+        }
+
         private void SetRecentAchievementsSource(
             List<AchievementDisplayItem> recentAchievements)
         {
@@ -1537,13 +1646,19 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
-            _allGamesOverview.RemoveAll(g => g?.PlayniteGameId == gameId);
-            _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
-            _selectedGamePipeline.Invalidate(gameId);
-
             if (fragment == null)
             {
+                if (_refreshService.IsRebuilding &&
+                    _allGamesOverview.Any(g => g?.PlayniteGameId == gameId))
+                {
+                    return true;
+                }
+
+                _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
+                _allGamesOverview.RemoveAll(g => g?.PlayniteGameId == gameId);
+                _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
+                _selectedGamePipeline.Invalidate(gameId);
+
                 if (SelectedGame?.PlayniteGameId == gameId)
                 {
                     SelectedGame = null;
@@ -1551,6 +1666,11 @@ namespace PlayniteAchievements.ViewModels
 
                 return true;
             }
+
+            _allAchievements.RemoveAll(a => a?.PlayniteGameId == gameId);
+            _allGamesOverview.RemoveAll(g => g?.PlayniteGameId == gameId);
+            _allRecentAchievements.RemoveAll(r => r?.PlayniteGameId == gameId);
+            _selectedGamePipeline.Invalidate(gameId);
 
             if (fragment.Achievements != null && fragment.Achievements.Count > 0)
             {
@@ -1663,8 +1783,43 @@ namespace PlayniteAchievements.ViewModels
             snapshot.TotalUncommonPossible = snapshot.GamesOverview.Sum(g => g?.TotalUncommonPossible ?? 0);
             snapshot.TotalRarePossible = snapshot.GamesOverview.Sum(g => g?.TotalRarePossible ?? 0);
             snapshot.TotalUltraRarePossible = snapshot.GamesOverview.Sum(g => g?.TotalUltraRarePossible ?? 0);
+            ApplyScoreSnapshotFromCounts(snapshot);
 
             return snapshot;
+        }
+
+        private static void ApplyScoreSnapshotFromCounts(SidebarDataSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            var scoreSnapshot = AchievementScoreCalculator.CalculateModernScoresFromCounts(
+                snapshot.TotalCommon,
+                snapshot.TotalUncommon,
+                snapshot.TotalRare,
+                snapshot.TotalUltraRare);
+
+            snapshot.CollectorScore = scoreSnapshot.CollectorScore;
+            snapshot.CollectorLevel = GetDisplayLevel(scoreSnapshot.CollectorLevel);
+            snapshot.CollectorLevelProgress = scoreSnapshot.CollectorLevel?.LevelProgress ?? 0;
+            snapshot.CollectorRank = scoreSnapshot.CollectorLevel?.Rank ?? "Bronze1";
+
+            snapshot.PrestigeScore = scoreSnapshot.PrestigeScore;
+            snapshot.PrestigeLevel = GetDisplayLevel(scoreSnapshot.PrestigeLevel);
+            snapshot.PrestigeLevelProgress = scoreSnapshot.PrestigeLevel?.LevelProgress ?? 0;
+            snapshot.PrestigeRank = scoreSnapshot.PrestigeLevel?.Rank ?? "Bronze1";
+        }
+
+        private static int GetDisplayLevel(AchievementLevelSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return 0;
+            }
+
+            return snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level;
         }
 
         private void ApplyOverviewSummaryFromSnapshot(SidebarDataSnapshot snapshot)
@@ -1679,6 +1834,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
+            NormalizeScoreSnapshot(snapshot);
             _latestSnapshot = snapshot;
             if (updateProviderFilterOptions)
             {
@@ -1699,6 +1855,14 @@ namespace PlayniteAchievements.ViewModels
             TotalUltraRare = snapshot.TotalUltraRare;
             CompletedGames = snapshot.CompletedGames;
             GlobalProgression = snapshot.GlobalProgressionPercent;
+            CollectorScore = snapshot.CollectorScore;
+            CollectorLevel = snapshot.CollectorLevel;
+            CollectorLevelProgress = snapshot.CollectorLevelProgress;
+            CollectorRank = snapshot.CollectorRank;
+            PrestigeScore = snapshot.PrestigeScore;
+            PrestigeLevel = snapshot.PrestigeLevel;
+            PrestigeLevelProgress = snapshot.PrestigeLevelProgress;
+            PrestigeRank = snapshot.PrestigeRank;
 
             OnPropertyChanged(nameof(CommonPercentage));
             OnPropertyChanged(nameof(UncommonPercentage));
@@ -1725,6 +1889,34 @@ namespace PlayniteAchievements.ViewModels
 
             GlobalTimeline.SetCounts(timelineCountsToShow);
             SelectedGameTimeline.SetCounts(selectedTimelineCounts);
+        }
+
+        private void NormalizeScoreSnapshot(SidebarDataSnapshot snapshot)
+        {
+            if (snapshot == null || snapshot.CollectorScore > 0 || snapshot.PrestigeScore > 0)
+            {
+                return;
+            }
+
+            if (snapshot.TotalUnlocked > 0)
+            {
+                ApplyScoreSnapshotFromCounts(snapshot);
+                return;
+            }
+
+            if (!IsRefreshing || (CollectorScore <= 0 && PrestigeScore <= 0))
+            {
+                return;
+            }
+
+            snapshot.CollectorScore = CollectorScore;
+            snapshot.CollectorLevel = CollectorLevel;
+            snapshot.CollectorLevelProgress = CollectorLevelProgress;
+            snapshot.CollectorRank = CollectorRank;
+            snapshot.PrestigeScore = PrestigeScore;
+            snapshot.PrestigeLevel = PrestigeLevel;
+            snapshot.PrestigeLevelProgress = PrestigeLevelProgress;
+            snapshot.PrestigeRank = PrestigeRank;
         }
 
         private void UpdateProviderFilterOptions(List<GameOverviewItem> games)
@@ -3434,7 +3626,19 @@ namespace PlayniteAchievements.ViewModels
         private static string L(string key, string fallback)
         {
             var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return fallback;
+            }
+
+            if (value.Length > 4 &&
+                value.StartsWith("<!", StringComparison.Ordinal) &&
+                value.EndsWith("!>", StringComparison.Ordinal))
+            {
+                return fallback;
+            }
+
+            return value;
         }
 
         public void Dispose()

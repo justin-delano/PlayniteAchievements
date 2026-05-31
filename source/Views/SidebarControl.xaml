@@ -819,12 +819,74 @@
                             Padding="16,10,16,10"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,1,1">
-                        <StackPanel Orientation="Horizontal">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_GamesOverview}"
                                        Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="Bold"
-                                       Foreground="{DynamicResource TextBrush}"/>
-                        </StackPanel>
+                                       Foreground="{DynamicResource TextBrush}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Grid.Column="1"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Margin="16,0,0,0">
+                                <StackPanel MinWidth="96">
+                                    <TextBlock Text="{Binding CollectorScoreLabel}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               Opacity="0.65"
+                                               TextAlignment="Right"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding CollectorScoreText}"
+                                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding CollectorLevelText}"
+                                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                                   FontSize="{DynamicResource FontSizeSmall}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Opacity="0.65"
+                                                   Margin="8,1,0,0"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <Border Width="1"
+                                        Height="26"
+                                        Background="{DynamicResource NormalBorderBrush}"
+                                        Opacity="0.45"
+                                        Margin="12,0"/>
+                                <StackPanel MinWidth="96">
+                                    <TextBlock Text="{Binding PrestigeScoreLabel}"
+                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               FontSize="{DynamicResource FontSizeSmall}"
+                                               Foreground="{DynamicResource TextBrush}"
+                                               Opacity="0.65"
+                                               TextAlignment="Right"
+                                               TextTrimming="CharacterEllipsis"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <TextBlock Text="{Binding PrestigeScoreText}"
+                                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding PrestigeLevelText}"
+                                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                                   FontSize="{DynamicResource FontSizeSmall}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Opacity="0.65"
+                                                   Margin="8,1,0,0"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
                     <!-- LEFT: Games List -->

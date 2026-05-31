@@ -5,6 +5,7 @@ using System.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
@@ -198,6 +199,7 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.TotalUncommonPossible = totalUncommonPossible;
             snapshot.TotalRarePossible = totalRarePossible;
             snapshot.TotalUltraRarePossible = totalUltraRarePossible;
+            ApplyScoreSnapshotFromCounts(snapshot);
 
             return snapshot;
         }
@@ -334,8 +336,51 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.GlobalProgressionPercent = snapshot.TotalAchievements > 0
                 ? (double)snapshot.TotalUnlocked / snapshot.TotalAchievements * 100
                 : 0;
+            ApplyScoreSnapshotFromCounts(snapshot);
 
             return snapshot;
+        }
+
+        private static void ApplyScoreSnapshotFromCounts(SidebarDataSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return;
+            }
+
+            ApplyScoreSnapshot(snapshot, AchievementScoreCalculator.CalculateModernScoresFromCounts(
+                snapshot.TotalCommon,
+                snapshot.TotalUncommon,
+                snapshot.TotalRare,
+                snapshot.TotalUltraRare));
+        }
+
+        private static void ApplyScoreSnapshot(SidebarDataSnapshot snapshot, AchievementScoreSnapshot scoreSnapshot)
+        {
+            if (snapshot == null || scoreSnapshot == null)
+            {
+                return;
+            }
+
+            snapshot.CollectorScore = scoreSnapshot.CollectorScore;
+            snapshot.CollectorLevel = GetDisplayLevel(scoreSnapshot.CollectorLevel);
+            snapshot.CollectorLevelProgress = scoreSnapshot.CollectorLevel?.LevelProgress ?? 0;
+            snapshot.CollectorRank = scoreSnapshot.CollectorLevel?.Rank ?? "Bronze1";
+
+            snapshot.PrestigeScore = scoreSnapshot.PrestigeScore;
+            snapshot.PrestigeLevel = GetDisplayLevel(scoreSnapshot.PrestigeLevel);
+            snapshot.PrestigeLevelProgress = scoreSnapshot.PrestigeLevel?.LevelProgress ?? 0;
+            snapshot.PrestigeRank = scoreSnapshot.PrestigeLevel?.Rank ?? "Bronze1";
+        }
+
+        private static int GetDisplayLevel(AchievementLevelSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return 0;
+            }
+
+            return snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level;
         }
 
         public SidebarGameFragment BuildGameFragment(
