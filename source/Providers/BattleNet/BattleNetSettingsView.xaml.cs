@@ -1,18 +1,21 @@
 using System;
 using System.ComponentModel;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.BattleNet.Models;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
-    public partial class BattleNetSettingsView : ProviderSettingsViewBase
+    public partial class BattleNetSettingsView : ProviderSettingsViewBase, IAuthRefreshable
     {
         private static readonly ILogger Logger = PluginLogger.GetLogger(nameof(BattleNetSettingsView));
         private readonly BattleNetApiClient _apiClient;
+        private readonly BattleNetSessionManager _sessionManager;
         private readonly ILogger _logger;
         private BattleNetSettings _battleNetSettings;
 
@@ -52,11 +55,39 @@ namespace PlayniteAchievements.Providers.BattleNet
             set => SetValue(Sc2StatusProperty, value);
         }
 
+        public static readonly DependencyProperty AuthBusyProperty =
+            DependencyProperty.Register(nameof(AuthBusy), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
+
+        public bool AuthBusy
+        {
+            get => (bool)GetValue(AuthBusyProperty);
+            set => SetValue(AuthBusyProperty, value);
+        }
+
+        public static readonly DependencyProperty IsOAuthAuthenticatedProperty =
+            DependencyProperty.Register(nameof(IsOAuthAuthenticated), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
+
+        public bool IsOAuthAuthenticated
+        {
+            get => (bool)GetValue(IsOAuthAuthenticatedProperty);
+            set => SetValue(IsOAuthAuthenticatedProperty, value);
+        }
+
+        public static readonly DependencyProperty AuthStatusProperty =
+            DependencyProperty.Register(nameof(AuthStatus), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
+
+        public string AuthStatus
+        {
+            get => (string)GetValue(AuthStatusProperty);
+            set => SetValue(AuthStatusProperty, value);
+        }
+
         public new BattleNetSettings Settings => _battleNetSettings;
 
-        public BattleNetSettingsView(BattleNetApiClient apiClient, ILogger logger)
+        public BattleNetSettingsView(BattleNetApiClient apiClient, BattleNetSessionManager sessionManager, ILogger logger)
         {
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _logger = logger ?? Logger;
             InitializeComponent();
         }
@@ -79,11 +110,13 @@ namespace PlayniteAchievements.Providers.BattleNet
             {
                 _battleNetSettings.PropertyChanged += BattleNetSettings_PropertyChanged;
                 ClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
+                WowClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
             }
 
             LoadWowRegions();
             UpdateWowStatus();
             UpdateSc2Status();
+            AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
         }
 
         private void BattleNetSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -92,6 +125,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             {
                 case nameof(BattleNetSettings.BattleNetClientId):
                 case nameof(BattleNetSettings.BattleNetClientSecret):
+                case nameof(BattleNetSettings.BattleNetRedirectUri):
                 case nameof(BattleNetSettings.Sc2RegionId):
                 case nameof(BattleNetSettings.Sc2RealmId):
                 case nameof(BattleNetSettings.Sc2ProfileId):
@@ -141,6 +175,149 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             _battleNetSettings.BattleNetClientSecret = ClientSecretBox.Password;
+            if (!string.Equals(WowClientSecretBox.Password, ClientSecretBox.Password, StringComparison.Ordinal))
+            {
+                WowClientSecretBox.Password = ClientSecretBox.Password;
+            }
+        }
+
+        private void WowClientSecret_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_battleNetSettings == null)
+            {
+                return;
+            }
+
+            _battleNetSettings.BattleNetClientSecret = WowClientSecretBox.Password;
+            if (!string.Equals(ClientSecretBox.Password, WowClientSecretBox.Password, StringComparison.Ordinal))
+            {
+                ClientSecretBox.Password = WowClientSecretBox.Password;
+            }
+        }
+
+        public async Task RefreshAuthStatusAsync()
+        {
+            PersistCurrentSettingsForAuth();
+
+            AuthProbeResult result;
+            try
+            {
+                result = await _sessionManager.ProbeAuthStateAsync(CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug(ex, "Battle.net auth probe failed during settings refresh.");
+                result = AuthProbeResult.ProbeFailed();
+            }
+
+            UpdateAuthStatus(result);
+        }
+
+        private void UpdateAuthStatus(AuthProbeResult result)
+        {
+            IsOAuthAuthenticated = result?.IsSuccess ?? false;
+            if (IsOAuthAuthenticated)
+            {
+                var settings = ProviderRegistry.Settings<BattleNetSettings>();
+                var authenticatedText = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
+                var authenticatedAsFormat = ResourceProvider.GetString("LOCPlayAch_Auth_AuthenticatedAs");
+                AuthStatus = string.IsNullOrWhiteSpace(settings.BattleNetBattleTag) ||
+                    string.IsNullOrWhiteSpace(authenticatedAsFormat) ||
+                    string.Equals(authenticatedAsFormat, "LOCPlayAch_Auth_AuthenticatedAs", StringComparison.Ordinal)
+                    ? authenticatedText
+                    : string.Format(authenticatedAsFormat, settings.BattleNetBattleTag);
+                return;
+            }
+
+            var localized = !string.IsNullOrWhiteSpace(result?.MessageKey)
+                ? ResourceProvider.GetString(result.MessageKey)
+                : null;
+            AuthStatus = string.IsNullOrWhiteSpace(localized) || string.Equals(localized, result?.MessageKey, StringComparison.Ordinal)
+                ? ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated")
+                : localized;
+        }
+
+        private async void Auth_Check_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                await RefreshAuthStatusAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Battle.net auth check failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private async void LoginWeb_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                PersistCurrentSettingsForAuth();
+                var result = await _sessionManager.AuthenticateInteractiveAsync(forceInteractive: true, CancellationToken.None);
+                if (result.IsSuccess)
+                {
+                    await RefreshAuthStatusAsync();
+                    PlayniteAchievementsPlugin.NotifySettingsSaved();
+                }
+                else
+                {
+                    UpdateAuthStatus(result);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Battle.net web login failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private async void Logout_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                _sessionManager.ClearSession();
+                await RefreshAuthStatusAsync();
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Battle.net logout failed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private void PersistCurrentSettingsForAuth()
+        {
+            if (_battleNetSettings != null)
+            {
+                ProviderRegistry.Write(_battleNetSettings, persistToDisk: true);
+            }
+        }
+
+        private void SetAuthBusy(bool busy)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                AuthBusy = busy;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => AuthBusy = busy));
+            }
         }
 
         private void LoadWowRegions()

@@ -1,3 +1,4 @@
+using System;
 using PlayniteAchievements.Providers.Settings;
 
 namespace PlayniteAchievements.Providers.BattleNet
@@ -8,12 +9,20 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private string _battleNetClientId;
         private string _battleNetClientSecret;
+        private string _battleNetRedirectUri = "https://localhost";
+        private string _battleNetAccessToken;
+        private string _battleNetRefreshToken;
+        private string _battleNetTokenType;
+        private DateTime _battleNetTokenExpiryUtc;
+        private string _battleNetAccountId;
+        private string _battleNetBattleTag;
         private int _sc2RegionId = 1;
         private int _sc2RealmId = 1;
         private int _sc2ProfileId;
         private string _wowRegion;
         private string _wowRealmSlug;
         private string _wowCharacter;
+        private bool _wowAggregateAccountCharacters = true;
 
         public string BattleNetClientId
         {
@@ -25,6 +34,48 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             get => _battleNetClientSecret;
             set => SetValue(ref _battleNetClientSecret, value);
+        }
+
+        public string BattleNetRedirectUri
+        {
+            get => _battleNetRedirectUri;
+            set => SetValue(ref _battleNetRedirectUri, value);
+        }
+
+        public string BattleNetAccessToken
+        {
+            get => _battleNetAccessToken;
+            set => SetValue(ref _battleNetAccessToken, value);
+        }
+
+        public string BattleNetRefreshToken
+        {
+            get => _battleNetRefreshToken;
+            set => SetValue(ref _battleNetRefreshToken, value);
+        }
+
+        public string BattleNetTokenType
+        {
+            get => _battleNetTokenType;
+            set => SetValue(ref _battleNetTokenType, value);
+        }
+
+        public DateTime BattleNetTokenExpiryUtc
+        {
+            get => _battleNetTokenExpiryUtc;
+            set => SetValue(ref _battleNetTokenExpiryUtc, value);
+        }
+
+        public string BattleNetAccountId
+        {
+            get => _battleNetAccountId;
+            set => SetValue(ref _battleNetAccountId, value);
+        }
+
+        public string BattleNetBattleTag
+        {
+            get => _battleNetBattleTag;
+            set => SetValue(ref _battleNetBattleTag, value);
         }
 
         public int Sc2RegionId
@@ -61,6 +112,12 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             get => _wowCharacter;
             set => SetValue(ref _wowCharacter, value);
+        }
+
+        public bool WowAggregateAccountCharacters
+        {
+            get => _wowAggregateAccountCharacters;
+            set => SetValue(ref _wowAggregateAccountCharacters, value);
         }
     }
 }

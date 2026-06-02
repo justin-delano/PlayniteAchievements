@@ -15,6 +15,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         internal static readonly Guid BattleNetPluginId = BattleNetGameSupport.BattleNetPluginId;
 
         private readonly BattleNetApiClient _apiClient;
+        private readonly BattleNetSessionManager _sessionManager;
         private readonly BattleNetScanner _scanner;
         private readonly ILogger _logger;
         private BattleNetSettings _providerSettings;
@@ -26,7 +27,8 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             _logger = logger;
             _apiClient = new BattleNetApiClient(logger);
-            _scanner = new BattleNetScanner(_apiClient, settings, logger);
+            _sessionManager = new BattleNetSessionManager(playniteApi, _apiClient, logger);
+            _scanner = new BattleNetScanner(_apiClient, _sessionManager, settings, logger);
             _providerSettings = ProviderRegistry.Settings<BattleNetSettings>();
         }
 
@@ -67,7 +69,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         public ProviderSettingsViewBase CreateSettingsView()
         {
-            return new BattleNetSettingsView(_apiClient, _logger);
+            return new BattleNetSettingsView(_apiClient, _sessionManager, _logger);
         }
 
         public void Dispose()

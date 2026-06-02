@@ -9,6 +9,9 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.BattleNet;
 using PlayniteAchievements.Providers.BattleNet.Models;
 
@@ -111,7 +114,7 @@ namespace PlayniteAchievements.Tests.Providers
             };
 
             Assert.IsTrue(BattleNetGameSupport.IsSupported(BattleNetGame("World of Warcraft"), settings));
-            Assert.IsTrue(BattleNetGameSupport.IsSupported(BattleNetGame("StarCraft II"), settings));
+            Assert.IsFalse(BattleNetGameSupport.IsSupported(BattleNetGame("StarCraft II"), settings));
             Assert.IsFalse(BattleNetGameSupport.IsSupported(BattleNetGame("Overwatch 2"), settings));
             Assert.IsFalse(BattleNetGameSupport.IsSupported(BattleNetGame("Diablo IV"), settings));
             Assert.IsFalse(BattleNetGameSupport.IsSupported(BattleNetGame("Warcraft III: Reforged"), settings));
@@ -164,6 +167,87 @@ namespace PlayniteAchievements.Tests.Providers
             Assert.AreEqual("token-value", handler.Requests[2].AuthorizationParameter);
         }
 
+        [TestMethod]
+        public async Task WowApiClient_UsesOfficialCharacterAchievementsEndpoint()
+        {
+            var handler = new RecordingHandler();
+            using (var httpClient = new HttpClient(handler))
+            using (var client = new BattleNetApiClient(new NullLogger(), httpClient))
+            {
+                var response = await client.GetWowOfficialCharacterAchievementsAsync(
+                    "us",
+                    "Dalaran",
+                    "Noshotz",
+                    "en_US",
+                    "wow-token",
+                    CancellationToken.None);
+
+                Assert.AreEqual(2, response.Achievements.Count);
+                Assert.AreEqual(1, response.Achievements[0].AchievementId);
+                Assert.AreEqual(1710000000000L, response.Achievements[0].CompletedTimestamp);
+            }
+
+            Assert.AreEqual(1, handler.Requests.Count);
+            Assert.AreEqual("https://us.api.blizzard.com/profile/wow/character/dalaran/noshotz/achievements?namespace=profile-us&locale=en_US", handler.Requests[0].RequestUri.ToString());
+            Assert.AreEqual("Bearer", handler.Requests[0].AuthorizationScheme);
+            Assert.AreEqual("wow-token", handler.Requests[0].AuthorizationParameter);
+        }
+
+        [TestMethod]
+        public async Task WowMerge_UsesCompletedTimestampAndAddsEarnedHiddenAchievements()
+        {
+            var settingsRoot = new PlayniteAchievementsSettings();
+            var registry = new ProviderRegistry(settingsRoot, new[] { "BattleNet" }, new NullLogger());
+            var battleNetSettings = registry.GetSettings<BattleNetSettings>();
+            battleNetSettings.WowRegion = "us";
+            battleNetSettings.WowRealmSlug = "dalaran";
+            battleNetSettings.WowCharacter = "Noshotz";
+            battleNetSettings.BattleNetClientId = "client-id";
+            battleNetSettings.BattleNetClientSecret = "client-secret";
+            battleNetSettings.WowAggregateAccountCharacters = false;
+            registry.Save(battleNetSettings);
+
+            var achievements = new List<AchievementDetail>
+            {
+                new AchievementDetail
+                {
+                    ApiName = "1",
+                    DisplayName = "Account Wide Existing",
+                    ProviderKey = "BattleNet",
+                    Unlocked = false
+                }
+            };
+
+            var handler = new RecordingHandler();
+            using (var httpClient = new HttpClient(handler))
+            using (var client = new BattleNetApiClient(new NullLogger(), httpClient))
+            {
+                var strategy = new WowGameStrategy(client, null, new NullLogger());
+                var stats = await strategy.MergeOfficialAchievementDataAsync(
+                    achievements,
+                    battleNetSettings,
+                    "en-US",
+                    CancellationToken.None);
+
+                Assert.AreEqual(1, stats.FetchedCharacters);
+                Assert.AreEqual(2, stats.CompletionCount);
+                Assert.AreEqual(2, stats.UpdatedCount);
+                Assert.AreEqual(1, stats.AddedCount);
+            }
+
+            var existing = achievements.Single(item => item.ApiName == "1");
+            Assert.IsTrue(existing.Unlocked);
+            Assert.AreEqual(DateTimeOffset.FromUnixTimeMilliseconds(1710000000000L).UtcDateTime, existing.UnlockTimeUtc);
+
+            var hiddenEarned = achievements.Single(item => item.ApiName == "3");
+            Assert.IsTrue(hiddenEarned.Unlocked);
+            Assert.AreEqual("Hidden Earned", hiddenEarned.DisplayName);
+            Assert.AreEqual("Earned but not in the public web list.", hiddenEarned.Description);
+            Assert.AreEqual("https://render.worldofwarcraft.test/icon.jpg", hiddenEarned.UnlockedIconPath);
+            Assert.AreEqual(10, hiddenEarned.Points);
+            Assert.AreEqual("Feats of Strength", hiddenEarned.Category);
+        }
+
         private static Game BattleNetGame(string name)
         {
             return new Game
@@ -207,6 +291,54 @@ namespace PlayniteAchievements.Tests.Providers
                     request.RequestUri.ToString() == "https://eu.api.blizzard.com/sc2/legacy/profile/2/1/987654?locale=de_DE")
                 {
                     return JsonResponse(@"{""summary"":{""id"":""987654"",""displayName"":""Tester"",""totalAchievementPoints"":10},""earnedAchievements"":[{""achievementId"":""ach-1"",""completionDate"":""1710000000"",""isComplete"":true}]}");
+                }
+
+                if (request.Method == HttpMethod.Post &&
+                    request.RequestUri.ToString() == "https://us.battle.net/oauth/token" &&
+                    recorded.Body == "grant_type=client_credentials")
+                {
+                    return JsonResponse(@"{""access_token"":""wow-token"",""token_type"":""bearer"",""expires_in"":3600}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/profile/wow/character/dalaran/noshotz/achievements?namespace=profile-us&locale=en_US")
+                {
+                    return JsonResponse(@"
+{
+  ""achievements"": [
+    {
+      ""id"": 1,
+      ""achievement"": { ""id"": 1, ""name"": ""Account Wide Existing"", ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/1?namespace=static-us"" } },
+      ""criteria"": { ""id"": 11, ""is_completed"": false },
+      ""completed_timestamp"": 1710000000000
+    },
+    {
+      ""id"": 3,
+      ""achievement"": { ""id"": 3, ""name"": ""Hidden Earned"", ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/3?namespace=static-us"" } },
+      ""completed_timestamp"": 1710000100000
+    }
+  ]
+}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement/3?namespace=static-us&locale=en_US")
+                {
+                    return JsonResponse(@"
+{
+  ""id"": 3,
+  ""name"": ""Hidden Earned"",
+  ""description"": ""Earned but not in the public web list."",
+  ""points"": 10,
+  ""category"": { ""id"": 81, ""name"": ""Feats of Strength"" },
+  ""media"": { ""href"": ""https://us.api.blizzard.com/data/wow/media/achievement/3?namespace=static-us"" }
+}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/media/achievement/3?namespace=static-us")
+                {
+                    return JsonResponse(@"{""assets"":[{""key"":""icon"",""value"":""https://render.worldofwarcraft.test/icon.jpg""}]}");
                 }
 
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
