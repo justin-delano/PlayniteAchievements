@@ -60,6 +60,11 @@
     <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophées :</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progression</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Succès récents</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Collection">Collection Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_HeaderDetailFormat">{0} | {1} | {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Bronze</sys:String>
@@ -490,8 +495,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Manual &amp; Aggregators</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Other</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Uses {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForRarity">Use Exophase for Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForRarity_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill global rarity percentages. Requires Exophase authentication.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill missing metadata. Requires Exophase authentication.</sys:String>
 
     <!-- Provider: PlayStation -->
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Connexion (Legacy)</sys:String>
@@ -566,6 +571,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Afficher une lueur de rareté sur les icônes débloquées</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Afficher les graphiques en barres dans la barre latérale</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Afficher la plateforme, le temps de jeu et la région</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Show Collection Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Show Prestige Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarGamesPieChart">Afficher le graphique des jeux terminés</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">Afficher les pourcentages des graphiques</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">Afficher le graphique par plateforme</sys:String>
