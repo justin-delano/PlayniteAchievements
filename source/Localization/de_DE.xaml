@@ -60,11 +60,11 @@
     <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophäen:</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Fortschritt</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Neueste Erfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Collection">Collection Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Collection">Sammelwertung</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_HeaderDetailFormat">{0} | {1} | {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestige Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Stufe {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} Punkte</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestigewertung</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unbekanntes Spiel</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Bronze</sys:String>
@@ -152,7 +152,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">Erfolgsübersicht</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInSidebar">Spiel in Seitenleiste öffnen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Bitte eine gültige Spiel-ID in Form einer positiven Ganzzahl eingeben.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Bitte eine gültige Xenia-TitleID in Form eines achtstelligen Hexadezimalwerts eingeben.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Bitte eine gültige Xenia-Title-ID in Form eines achtstelligen Hexadezimalwerts eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Bitte eine gültige ShadPS4-Match-ID (wie z.B. &quot;CUSA00432&quot; oder &quot;NPWR12345_00&quot;) eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">Please enter a valid RPCS3 trophy NP Comm ID such as NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Please enter a valid positive integer Steam AppID.</sys:String>
@@ -230,11 +230,11 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderStatusAuto">Override set: {0} (auto-detect)</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderStatusValue">Override set: {0} - {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderInvalid">Select a supported provider override.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Steam">Steam AppID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Steam">Steam App ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RetroAchievements">RetroAchievements Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_ShadPS4">ShadPS4 Match ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RPCS3">RPCS3 NP Comm ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia">Xenia TitleID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia">Xenia Title ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Exophase">Exophase game ID or slug</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader">Zusammenfassungsausschluss</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">Exclude this game from sidebar and all-games summary data.</sys:String>
@@ -317,7 +317,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_CustomRefresh_PresetsHeader">Voreinstellungen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ProvidersHeader">Plattformen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ProviderStatus_Ready">Bereit</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_RespectExclusions">Respect user exclusions</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_RespectExclusions">Benutzerausschlüsse berücksichtigen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_All">Alle Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_Explicit">Explicit only</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_LibrarySelected">Bibliothek ausgewählt</sys:String>
