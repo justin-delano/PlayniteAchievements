@@ -295,7 +295,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 _currentSortPath,
                 _currentSortDirection,
                 EffectiveSettings?.Persisted,
-                AchievementSortSurface.AchievementDataGrid);
+                AchievementSortSurface.AchievementDataGrid,
+                e.Column?.SortDirection);
             if (sortAction.Kind == AchievementGridSortActionKind.None)
             {
                 return;
@@ -339,6 +340,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private void ResetToDefaultSort()
         {
             ResetSortState();
+            _lastOrderedAchievements = null;
             LoadData(useSourceOrder: true);
         }
 

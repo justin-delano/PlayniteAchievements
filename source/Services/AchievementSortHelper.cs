@@ -177,39 +177,54 @@ namespace PlayniteAchievements.Services
             string currentSortPath,
             ListSortDirection? currentSortDirection,
             PersistedSettings settings,
-            AchievementSortSurface surface)
+            AchievementSortSurface surface,
+            ListSortDirection? visibleSortDirection = null)
         {
             if (string.IsNullOrWhiteSpace(clickedSortMemberPath))
             {
                 return AchievementGridSortAction.None();
             }
 
-            var cycleDirections = GetCycleDirections();
+            var configuredSort = GetConfiguredDefaultSort(settings, surface);
+            var isConfiguredDefaultColumn =
+                !configuredSort.PreservesSourceOrder &&
+                string.Equals(configuredSort.SortMemberPath, clickedSortMemberPath, StringComparison.Ordinal);
 
             if (!currentSortDirection.HasValue ||
                 !string.Equals(currentSortPath, clickedSortMemberPath, StringComparison.Ordinal))
             {
-                return AchievementGridSortAction.ApplySort(clickedSortMemberPath, cycleDirections[0]);
+                if (isConfiguredDefaultColumn)
+                {
+                    var direction = visibleSortDirection == configuredSort.Direction
+                        ? GetOppositeDirection(configuredSort.Direction)
+                        : configuredSort.Direction;
+
+                    return AchievementGridSortAction.ApplySort(clickedSortMemberPath, direction);
+                }
+
+                var initialCycleDirections = GetCycleDirections();
+                return AchievementGridSortAction.ApplySort(clickedSortMemberPath, initialCycleDirections[0]);
             }
 
+            if (isConfiguredDefaultColumn)
+            {
+                return currentSortDirection.Value == configuredSort.Direction
+                    ? AchievementGridSortAction.ApplySort(
+                        clickedSortMemberPath,
+                        GetOppositeDirection(configuredSort.Direction))
+                    : AchievementGridSortAction.ResetToDefault();
+            }
+
+            var cycleDirections = GetCycleDirections();
             var currentDirectionIndex = cycleDirections.IndexOf(currentSortDirection.Value);
             if (currentDirectionIndex < 0 || currentDirectionIndex == cycleDirections.Count - 1)
             {
                 return AchievementGridSortAction.ResetToDefault();
             }
 
-            var nextDirection = cycleDirections[currentDirectionIndex + 1];
-            var configuredSort = GetConfiguredDefaultSort(settings, surface);
-            if (!configuredSort.PreservesSourceOrder &&
-                string.Equals(configuredSort.SortMemberPath, clickedSortMemberPath, StringComparison.Ordinal) &&
-                configuredSort.Direction == nextDirection)
-            {
-                return AchievementGridSortAction.ResetToDefault();
-            }
-
             return AchievementGridSortAction.ApplySort(
                 clickedSortMemberPath,
-                nextDirection);
+                cycleDirections[currentDirectionIndex + 1]);
         }
 
         public static List<AchievementDetail> ResolveSelectedGameAchievements(
@@ -627,6 +642,13 @@ namespace PlayniteAchievements.Services
                 ListSortDirection.Ascending,
                 ListSortDirection.Descending
             };
+        }
+
+        private static ListSortDirection GetOppositeDirection(ListSortDirection direction)
+        {
+            return direction == ListSortDirection.Ascending
+                ? ListSortDirection.Descending
+                : ListSortDirection.Ascending;
         }
 
         public static int GetTrophyRank(string trophyType)
