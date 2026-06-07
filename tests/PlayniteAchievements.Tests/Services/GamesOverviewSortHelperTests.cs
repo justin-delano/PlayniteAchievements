@@ -231,13 +231,65 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsNull(indicatorDirection);
         }
 
+        [TestMethod]
+        public void TrySortItems_CollectionScore_UsesEarnedScore()
+        {
+            var items = new List<GameOverviewItem>
+            {
+                CreateItem("Alpha", collectionScore: 120),
+                CreateItem("Beta", collectionScore: 420),
+                CreateItem("Gamma", collectionScore: 240)
+            };
+            string currentSortPath = null;
+            var currentSortDirection = ListSortDirection.Ascending;
+
+            var sorted = GamesOverviewSortHelper.TrySortItems(
+                items,
+                nameof(GameOverviewItem.CollectionScore),
+                ListSortDirection.Descending,
+                ref currentSortPath,
+                ref currentSortDirection);
+
+            Assert.IsTrue(sorted);
+            CollectionAssert.AreEqual(
+                new[] { "Beta", "Gamma", "Alpha" },
+                items.Select(item => item.GameName).ToArray());
+        }
+
+        [TestMethod]
+        public void TrySortItems_PrestigeScore_UsesEarnedScore()
+        {
+            var items = new List<GameOverviewItem>
+            {
+                CreateItem("Alpha", prestigeScore: 900),
+                CreateItem("Beta", prestigeScore: 50),
+                CreateItem("Gamma", prestigeScore: 300)
+            };
+            string currentSortPath = null;
+            var currentSortDirection = ListSortDirection.Descending;
+
+            var sorted = GamesOverviewSortHelper.TrySortItems(
+                items,
+                nameof(GameOverviewItem.PrestigeScore),
+                ListSortDirection.Ascending,
+                ref currentSortPath,
+                ref currentSortDirection);
+
+            Assert.IsTrue(sorted);
+            CollectionAssert.AreEqual(
+                new[] { "Beta", "Gamma", "Alpha" },
+                items.Select(item => item.GameName).ToArray());
+        }
+
         private static GameOverviewItem CreateItem(
             string gameName,
             string sortingName = null,
             DateTime? lastUnlockUtc = null,
             DateTime? lastPlayed = null,
             int totalAchievements = 10,
-            int unlockedAchievements = 5)
+            int unlockedAchievements = 5,
+            int collectionScore = 0,
+            int prestigeScore = 0)
         {
             return new GameOverviewItem
             {
@@ -247,6 +299,8 @@ namespace PlayniteAchievements.Services.Tests
                 LastPlayed = lastPlayed,
                 TotalAchievements = totalAchievements,
                 UnlockedAchievements = unlockedAchievements,
+                CollectionScore = collectionScore,
+                PrestigeScore = prestigeScore,
                 AppId = Math.Abs(gameName.GetHashCode())
             };
         }

@@ -525,6 +525,12 @@ namespace PlayniteAchievements.Services
                 "RaritySortValue" => ApplyDirection(
                     (a, b) => a.RaritySortValue.CompareTo(b.RaritySortValue),
                     direction),
+                "CollectionScore" => ApplyDirection(
+                    (a, b) => a.CollectionScore.CompareTo(b.CollectionScore),
+                    direction),
+                "PrestigeScore" => ApplyDirection(
+                    (a, b) => a.PrestigeScore.CompareTo(b.PrestigeScore),
+                    direction),
                 "Points" => ApplyDirection(
                     (a, b) => a.Points.CompareTo(b.Points),
                     direction),

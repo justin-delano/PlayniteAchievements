@@ -874,6 +874,14 @@ namespace PlayniteAchievements.Services
 
         public int UnlockedAchievements { get; set; }
 
+        public int CollectionScore { get; set; }
+
+        public int CollectionScoreTotal { get; set; }
+
+        public int PrestigeScore { get; set; }
+
+        public int PrestigeScoreTotal { get; set; }
+
         public int CommonCount { get; set; }
 
         public int UncommonCount { get; set; }

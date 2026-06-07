@@ -74,11 +74,13 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">Name</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Playtime">Playtime</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Trophy">Trophy</sys:String>

@@ -961,7 +961,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.BronzeTrophies = library.BronzeTrophies;
             _settings.LegacyTheme.Level = library.Level;
             _settings.LegacyTheme.LevelProgress = library.LevelProgress;
-            _settings.LegacyTheme.Rank = !string.IsNullOrWhiteSpace(library.Rank) ? library.Rank : "Bronze1";
+            _settings.LegacyTheme.Rank = !string.IsNullOrWhiteSpace(library.Rank) ? library.Rank : "Bronze5";
 
             _settings.LegacyTheme.AllGamesWithAchievements = ProjectGameSummaries(library.AllGamesWithAchievements);
             _settings.PlatinumGames = ProjectGameSummaries(library.PlatinumGames);
@@ -974,7 +974,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.LegacyTheme.GSScore = library.TotalTrophies > 0 ? library.Score.ToString("N0") : "0";
             _settings.LegacyTheme.GSLevel = library.TotalTrophies > 0 ? library.Level.ToString() : "0";
             _settings.LegacyTheme.GSLevelProgress = library.TotalTrophies > 0 ? library.LevelProgress : 0;
-            _settings.LegacyTheme.GSRank = library.TotalTrophies > 0 && !string.IsNullOrWhiteSpace(library.Rank) ? library.Rank : "Bronze1";
+            _settings.LegacyTheme.GSRank = library.TotalTrophies > 0 && !string.IsNullOrWhiteSpace(library.Rank) ? library.Rank : "Bronze5";
 
             var shouldUpdateHeavyLists = library.HeavyListsBuilt || !library.HasData;
             if (shouldUpdateHeavyLists)

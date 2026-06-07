@@ -37,6 +37,8 @@ namespace PlayniteAchievements.Views.Controls
                 ["CategoryType"] = 210,
                 ["CategoryLabel"] = 210,
                 ["Rarity"] = 170,
+                ["CollectionScore"] = 110,
+                ["PrestigeScore"] = 110,
                 ["Points"] = 100
             };
 

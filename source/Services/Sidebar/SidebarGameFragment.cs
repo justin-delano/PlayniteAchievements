@@ -19,6 +19,14 @@ namespace PlayniteAchievements.Services.Sidebar
         public int TotalAchievements { get; set; }
         public int UnlockedAchievements { get; set; }
 
+        public int CollectionScore { get; set; }
+
+        public int CollectionScoreTotal { get; set; }
+
+        public int PrestigeScore { get; set; }
+
+        public int PrestigeScoreTotal { get; set; }
+
         // Unlocked rarity counts
         public int CommonCount { get; set; }
         public int UncommonCount { get; set; }

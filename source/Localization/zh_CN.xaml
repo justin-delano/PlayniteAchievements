@@ -74,11 +74,13 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Achievement">成就</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">游戏</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">最近运行</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">名称</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Playtime">运行时间</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Points">点数</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">稀有度</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">总计</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Trophy">奖杯</sys:String>

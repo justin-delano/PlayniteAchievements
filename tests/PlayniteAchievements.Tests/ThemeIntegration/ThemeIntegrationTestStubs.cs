@@ -120,6 +120,12 @@ namespace PlayniteAchievements.Models.Achievements
                     : band + 999_999;
             }
         }
+
+        public int CollectionScore =>
+            PlayniteAchievements.Models.Achievements.Scoring.AchievementScoreCalculator.GetCollectionValue(Rarity);
+
+        public int PrestigeScore =>
+            PlayniteAchievements.Models.Achievements.Scoring.AchievementScoreCalculator.GetPrestigeValue(GlobalPercentUnlocked, Rarity);
     }
 
     public sealed class GameAchievementData
@@ -254,6 +260,10 @@ namespace PlayniteAchievements.ViewModels
             = PlayniteAchievements.Models.Achievements.RarityTier.Common;
 
         public double RaritySortValue { get; set; }
+
+        public int CollectionScore { get; set; }
+
+        public int PrestigeScore { get; set; }
 
         public int? PointsValue { get; set; }
 

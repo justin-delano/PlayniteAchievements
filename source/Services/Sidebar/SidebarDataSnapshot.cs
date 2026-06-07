@@ -27,11 +27,11 @@ namespace PlayniteAchievements.Services.Sidebar
         public int CollectorScore { get; set; }
         public int CollectorLevel { get; set; }
         public double CollectorLevelProgress { get; set; }
-        public string CollectorRank { get; set; } = "Bronze1";
+        public string CollectorRank { get; set; } = "Bronze5";
         public int PrestigeScore { get; set; }
         public int PrestigeLevel { get; set; }
         public double PrestigeLevelProgress { get; set; }
-        public string PrestigeRank { get; set; } = "Bronze1";
+        public string PrestigeRank { get; set; } = "Bronze5";
 
         /// <summary>
         /// Unlocked achievements per provider (for provider distribution pie chart).

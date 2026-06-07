@@ -168,6 +168,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(RarityPercentValue));
                     OnPropertyChanged(nameof(Percent));
                     OnPropertyChanged(nameof(RaritySortValue));
+                    OnPropertyChanged(nameof(PrestigeScore));
                 }
             }
         }
@@ -200,6 +201,8 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(RarityDetailText));
                     OnPropertyChanged(nameof(GamerScore));
                     OnPropertyChanged(nameof(RaritySortValue));
+                    OnPropertyChanged(nameof(CollectionScore));
+                    OnPropertyChanged(nameof(PrestigeScore));
                 }
             }
         }
@@ -738,6 +741,10 @@ namespace PlayniteAchievements.ViewModels
 
         public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
 
+        public int CollectionScore => _source?.CollectionScore ?? 0;
+
+        public int PrestigeScore => _source?.PrestigeScore ?? 0;
+
         private static string DefaultIcon => AchievementIconResolver.GetDefaultIcon();
 
         /// <summary>
@@ -1051,6 +1058,8 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(RarityPercentValue));
             OnPropertyChanged(nameof(Percent));
             OnPropertyChanged(nameof(RaritySortValue));
+            OnPropertyChanged(nameof(CollectionScore));
+            OnPropertyChanged(nameof(PrestigeScore));
             OnPropertyChanged(nameof(Rarity));
             OnPropertyChanged(nameof(GamerScore));
             OnPropertyChanged(nameof(Unlocked));

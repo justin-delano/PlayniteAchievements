@@ -286,6 +286,59 @@ namespace PlayniteAchievements.Services.Tests
                 items.Select(item => item.DisplayName).ToArray());
         }
 
+        [TestMethod]
+        public void CollectionScore_SortsByComputedColumnValue()
+        {
+            var items = new List<AchievementDisplayItem>
+            {
+                CreateItem("Low", DateTime.UtcNow, raritySortValue: 80, trophyType: "bronze", points: 10, collectionScore: 15),
+                CreateItem("High", DateTime.UtcNow, raritySortValue: 10, trophyType: "gold", points: 10, collectionScore: 180)
+            };
+
+            string sortPath = null;
+            ListSortDirection? sortDirection = null;
+
+            var handled = AchievementSortHelper.TrySortItems(
+                items,
+                "CollectionScore",
+                ListSortDirection.Descending,
+                AchievementSortScope.GameAchievements,
+                ref sortPath,
+                ref sortDirection);
+
+            Assert.IsTrue(handled);
+            CollectionAssert.AreEqual(
+                new[] { "High", "Low" },
+                items.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void PrestigeScore_SortsByComputedColumnValue()
+        {
+            var items = new List<AchievementDisplayItem>
+            {
+                CreateItem("Mid", DateTime.UtcNow, raritySortValue: 40, trophyType: "silver", points: 10, prestigeScore: 75),
+                CreateItem("Low", DateTime.UtcNow, raritySortValue: 80, trophyType: "bronze", points: 10, prestigeScore: 30),
+                CreateItem("High", DateTime.UtcNow, raritySortValue: 10, trophyType: "gold", points: 10, prestigeScore: 250)
+            };
+
+            string sortPath = null;
+            ListSortDirection? sortDirection = null;
+
+            var handled = AchievementSortHelper.TrySortItems(
+                items,
+                "PrestigeScore",
+                ListSortDirection.Ascending,
+                AchievementSortScope.GameAchievements,
+                ref sortPath,
+                ref sortDirection);
+
+            Assert.IsTrue(handled);
+            CollectionAssert.AreEqual(
+                new[] { "Low", "Mid", "High" },
+                items.Select(item => item.DisplayName).ToArray());
+        }
+
         private static AchievementDisplayItem CreateItem(
             string displayName,
             DateTime unlockTimeUtc,
@@ -293,7 +346,9 @@ namespace PlayniteAchievements.Services.Tests
             string trophyType,
             int points,
             Guid? gameId = null,
-            string gameName = "Test Game")
+            string gameName = "Test Game",
+            int collectionScore = 0,
+            int prestigeScore = 0)
         {
             return new AchievementDisplayItem
             {
@@ -305,6 +360,8 @@ namespace PlayniteAchievements.Services.Tests
                 RaritySortValue = raritySortValue,
                 TrophyType = trophyType,
                 PointsValue = points,
+                CollectionScore = collectionScore,
+                PrestigeScore = prestigeScore,
                 Unlocked = true
             };
         }

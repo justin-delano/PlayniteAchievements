@@ -2,6 +2,7 @@ using System;
 using System.Runtime.Serialization;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Achievements.Scoring;
 
 namespace PlayniteAchievements.Models.Achievements
 {
@@ -137,6 +138,12 @@ namespace PlayniteAchievements.Models.Achievements
 
         [IgnoreDataMember]
         public double RaritySortValue => AchievementRarityResolver.GetSortValue(GlobalPercentUnlocked, Rarity);
+
+        [IgnoreDataMember]
+        public int CollectionScore => AchievementScoreCalculator.GetCollectionValue(Rarity);
+
+        [IgnoreDataMember]
+        public int PrestigeScore => AchievementScoreCalculator.GetPrestigeValue(this);
 
         [IgnoreDataMember]
         public DateTime? DateUnlocked

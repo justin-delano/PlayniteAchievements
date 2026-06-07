@@ -151,6 +151,28 @@
             <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
                                     CellTemplate="{StaticResource AchievementRarityTemplate}"/>
 
+            <DataGridTemplateColumn Width="110" MinWidth="90" Header="{DynamicResource LOCPlayAch_Column_CollectionScore}" SortMemberPath="CollectionScore" helpers:ColumnVisibilityHelper.ColumnKey="CollectionScore">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding CollectionScore, StringFormat={}{0:N0}}"
+                                   Style="{StaticResource WrappedCenteredDataGridTextStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Opacity="0.7"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
+            <DataGridTemplateColumn Width="110" MinWidth="90" Header="{DynamicResource LOCPlayAch_Column_PrestigeScore}" SortMemberPath="PrestigeScore" helpers:ColumnVisibilityHelper.ColumnKey="PrestigeScore">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding PrestigeScore, StringFormat={}{0:N0}}"
+                                   Style="{StaticResource WrappedCenteredDataGridTextStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   Opacity="0.7"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
             <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points" helpers:ColumnVisibilityHelper.ColumnKey="Points"
                                     CellTemplate="{StaticResource AchievementPointsTemplate}"/>
         </DataGrid.Columns>

@@ -62,7 +62,9 @@ namespace PlayniteAchievements.Views
                 ["OverviewLastPlayed"] = 240,
                 ["OverviewPlaytime"] = 170,
                 ["OverviewProgression"] = 360,
-                ["TotalAchievements"] = 180
+                ["TotalAchievements"] = 180,
+                ["OverviewCollectionScore"] = 180,
+                ["OverviewPrestigeScore"] = 180
             };
 
         public SidebarControl()
@@ -115,6 +117,46 @@ namespace PlayniteAchievements.Views
                 Interval = TimeSpan.FromMilliseconds(350)
             };
             _saveTimer.Tick += SaveTimer_Tick;
+        }
+
+        private void ScoreInfoButton_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+
+            var dialog = new ScoreInfoDialog();
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                L("LOCPlayAch_Score_Info_WindowTitle", "Collection and Prestige Scores"),
+                dialog,
+                new WindowOptions
+                {
+                    Width = 700,
+                    Height = 800,
+                    CanBeResizable = true,
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true
+                });
+
+            dialog.RequestClose += (s, args) => window.Close();
+            window.ShowDialog();
+        }
+
+        private static string L(string key, string fallback)
+        {
+            var value = ResourceProvider.GetString(key);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return fallback;
+            }
+
+            if (value.Length > 4 &&
+                value.StartsWith("<!", StringComparison.Ordinal) &&
+                value.EndsWith("!>", StringComparison.Ordinal))
+            {
+                return fallback;
+            }
+
+            return value;
         }
 
         public void Activate()
@@ -1978,6 +2020,7 @@ namespace PlayniteAchievements.Views
             {
                 PersistVisibility(_settings?.Persisted?.GamesOverviewColumnVisibility, key, isVisible);
                 NormalizeGridColumns(GamesOverviewDataGrid);
+                GamesOverviewDataGrid.Items.Refresh();
             }
             else if (grid == RecentAchievementsDataGrid.InternalDataGrid)
             {

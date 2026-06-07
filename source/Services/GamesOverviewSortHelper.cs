@@ -281,6 +281,16 @@ namespace PlayniteAchievements.Services
                     b,
                     sortMemberPath,
                     CompareInt(a?.UnlockedAchievements ?? 0, b?.UnlockedAchievements ?? 0, direction)),
+                nameof(GameOverviewItem.CollectionScore) => (a, b) => CompareWithTieBreakers(
+                    a,
+                    b,
+                    sortMemberPath,
+                    CompareInt(a?.CollectionScore ?? 0, b?.CollectionScore ?? 0, direction)),
+                nameof(GameOverviewItem.PrestigeScore) => (a, b) => CompareWithTieBreakers(
+                    a,
+                    b,
+                    sortMemberPath,
+                    CompareInt(a?.PrestigeScore ?? 0, b?.PrestigeScore ?? 0, direction)),
                 "SortingName" => (a, b) => CompareWithTieBreakers(
                     a,
                     b,

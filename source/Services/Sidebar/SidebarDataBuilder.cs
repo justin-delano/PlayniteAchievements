@@ -89,6 +89,8 @@ namespace PlayniteAchievements.Services.Sidebar
             int rareCount = 0;
             int ultraRareCount = 0;
             int completedGames = 0;
+            int collectionScore = 0;
+            int prestigeScore = 0;
 
             var unlockedByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             var totalByProvider = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -140,6 +142,8 @@ namespace PlayniteAchievements.Services.Sidebar
                 uncommonCount += fragment.UncommonCount;
                 rareCount += fragment.RareCount;
                 ultraRareCount += fragment.UltraRareCount;
+                collectionScore = AddClamped(collectionScore, fragment.CollectionScore);
+                prestigeScore = AddClamped(prestigeScore, fragment.PrestigeScore);
                 if (fragment.IsCompleted)
                 {
                     completedGames++;
@@ -199,7 +203,7 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.TotalUncommonPossible = totalUncommonPossible;
             snapshot.TotalRarePossible = totalRarePossible;
             snapshot.TotalUltraRarePossible = totalUltraRarePossible;
-            ApplyScoreSnapshotFromCounts(snapshot);
+            ApplyScoreSnapshotFromValues(snapshot, collectionScore, prestigeScore);
 
             return snapshot;
         }
@@ -277,6 +281,10 @@ namespace PlayniteAchievements.Services.Sidebar
                     UncommonCount = game.UncommonCount,
                     RareCount = game.RareCount,
                     UltraRareCount = game.UltraRareCount,
+                    CollectionScore = game.CollectionScore,
+                    PrestigeScore = game.PrestigeScore,
+                    CollectionScoreTotal = game.CollectionScoreTotal,
+                    PrestigeScoreTotal = game.PrestigeScoreTotal,
                     TotalCommonPossible = game.TotalCommonPossible,
                     TotalUncommonPossible = game.TotalUncommonPossible,
                     TotalRarePossible = game.TotalRarePossible,
@@ -303,6 +311,8 @@ namespace PlayniteAchievements.Services.Sidebar
                 snapshot.TotalUncommon += game.UncommonCount;
                 snapshot.TotalRare += game.RareCount;
                 snapshot.TotalUltraRare += game.UltraRareCount;
+                snapshot.CollectorScore = AddClamped(snapshot.CollectorScore, game.CollectionScore);
+                snapshot.PrestigeScore = AddClamped(snapshot.PrestigeScore, game.PrestigeScore);
                 snapshot.TotalCommonPossible += game.TotalCommonPossible;
                 snapshot.TotalUncommonPossible += game.TotalUncommonPossible;
                 snapshot.TotalRarePossible += game.TotalRarePossible;
@@ -336,23 +346,24 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.GlobalProgressionPercent = snapshot.TotalAchievements > 0
                 ? (double)snapshot.TotalUnlocked / snapshot.TotalAchievements * 100
                 : 0;
-            ApplyScoreSnapshotFromCounts(snapshot);
+            ApplyScoreSnapshotFromValues(snapshot, snapshot.CollectorScore, snapshot.PrestigeScore);
 
             return snapshot;
         }
 
-        private static void ApplyScoreSnapshotFromCounts(SidebarDataSnapshot snapshot)
+        private static void ApplyScoreSnapshotFromValues(
+            SidebarDataSnapshot snapshot,
+            int collectionScore,
+            int prestigeScore)
         {
             if (snapshot == null)
             {
                 return;
             }
 
-            ApplyScoreSnapshot(snapshot, AchievementScoreCalculator.CalculateModernScoresFromCounts(
-                snapshot.TotalCommon,
-                snapshot.TotalUncommon,
-                snapshot.TotalRare,
-                snapshot.TotalUltraRare));
+            ApplyScoreSnapshot(snapshot, AchievementScoreCalculator.CreateModernScoreSnapshot(
+                collectionScore,
+                prestigeScore));
         }
 
         private static void ApplyScoreSnapshot(SidebarDataSnapshot snapshot, AchievementScoreSnapshot scoreSnapshot)
@@ -365,12 +376,12 @@ namespace PlayniteAchievements.Services.Sidebar
             snapshot.CollectorScore = scoreSnapshot.CollectorScore;
             snapshot.CollectorLevel = GetDisplayLevel(scoreSnapshot.CollectorLevel);
             snapshot.CollectorLevelProgress = scoreSnapshot.CollectorLevel?.LevelProgress ?? 0;
-            snapshot.CollectorRank = scoreSnapshot.CollectorLevel?.Rank ?? "Bronze1";
+            snapshot.CollectorRank = scoreSnapshot.CollectorLevel?.Rank ?? "Bronze5";
 
             snapshot.PrestigeScore = scoreSnapshot.PrestigeScore;
             snapshot.PrestigeLevel = GetDisplayLevel(scoreSnapshot.PrestigeLevel);
             snapshot.PrestigeLevelProgress = scoreSnapshot.PrestigeLevel?.LevelProgress ?? 0;
-            snapshot.PrestigeRank = scoreSnapshot.PrestigeLevel?.Rank ?? "Bronze1";
+            snapshot.PrestigeRank = scoreSnapshot.PrestigeLevel?.Rank ?? "Bronze5";
         }
 
         private static int GetDisplayLevel(AchievementLevelSnapshot snapshot)
@@ -461,6 +472,10 @@ namespace PlayniteAchievements.Services.Sidebar
             int gameTrophyGoldTotal = 0;
             int gameTrophySilverTotal = 0;
             int gameTrophyBronzeTotal = 0;
+            int gameCollectionScore = 0;
+            int gamePrestigeScore = 0;
+            int gameCollectionScoreTotal = 0;
+            int gamePrestigeScoreTotal = 0;
             DateTime? lastUnlockUtc = null;
 
             for (var i = 0; i < achievements.Count; i++)
@@ -487,6 +502,8 @@ namespace PlayniteAchievements.Services.Sidebar
                 }
 
                 AchievementDisplayItem.AccumulateRarity(ach, ref gameTotalCommon, ref gameTotalUncommon, ref gameTotalRare, ref gameTotalUltraRare);
+                gameCollectionScoreTotal = AddClamped(gameCollectionScoreTotal, ach.CollectionScore);
+                gamePrestigeScoreTotal = AddClamped(gamePrestigeScoreTotal, ach.PrestigeScore);
                 AchievementDisplayItem.AccumulateTrophy(
                     ach,
                     ref gameTrophyPlatinumTotal,
@@ -501,6 +518,9 @@ namespace PlayniteAchievements.Services.Sidebar
                     AchievementDisplayItem.AccumulateRarity(ach, ref gameCommon, ref gameUncommon, ref gameRare, ref gameUltraRare);
 
                     AchievementDisplayItem.AccumulateTrophy(ach, ref gameTrophyPlatinum, ref gameTrophyGold, ref gameTrophySilver, ref gameTrophyBronze);
+
+                    gameCollectionScore = AddClamped(gameCollectionScore, ach.CollectionScore);
+                    gamePrestigeScore = AddClamped(gamePrestigeScore, ach.PrestigeScore);
 
                     if (ach.UnlockTimeUtc.HasValue)
                     {
@@ -545,6 +565,10 @@ namespace PlayniteAchievements.Services.Sidebar
             fragment.TrophyGoldTotal = gameTrophyGoldTotal;
             fragment.TrophySilverTotal = gameTrophySilverTotal;
             fragment.TrophyBronzeTotal = gameTrophyBronzeTotal;
+            fragment.CollectionScore = gameCollectionScore;
+            fragment.PrestigeScore = gamePrestigeScore;
+            fragment.CollectionScoreTotal = gameCollectionScoreTotal;
+            fragment.PrestigeScoreTotal = gamePrestigeScoreTotal;
 
             fragment.TotalCommonPossible = gameTotalCommon;
             fragment.TotalUncommonPossible = gameTotalUncommon;
@@ -570,6 +594,10 @@ namespace PlayniteAchievements.Services.Sidebar
                 UncommonCount = gameUncommon,
                 RareCount = gameRare,
                 UltraRareCount = gameUltraRare,
+                CollectionScore = gameCollectionScore,
+                PrestigeScore = gamePrestigeScore,
+                CollectionScoreTotal = gameCollectionScoreTotal,
+                PrestigeScoreTotal = gamePrestigeScoreTotal,
                 TotalCommonPossible = gameTotalCommon,
                 TotalUncommonPossible = gameTotalUncommon,
                 TotalRarePossible = gameTotalRare,
@@ -848,6 +876,21 @@ namespace PlayniteAchievements.Services.Sidebar
             {
                 dict[date] = count;
             }
+        }
+
+        private static int AddClamped(int current, int value)
+        {
+            if (value <= 0)
+            {
+                return current;
+            }
+
+            if (current > int.MaxValue - value)
+            {
+                return int.MaxValue;
+            }
+
+            return current + value;
         }
     }
 }

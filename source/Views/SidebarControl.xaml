@@ -27,6 +27,7 @@
             <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
             <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
             <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
+            <converters:DataGridCompletedBorderThicknessConverter x:Key="OverviewCompletedBorderThickness"/>
 
             <!-- Shared LegendItem DataTemplate for all pie charts -->
             <DataTemplate x:Key="LegendItemTemplate">
@@ -86,6 +87,48 @@
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style x:Key="ScoreInfoButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Width" Value="18"/>
+                <Setter Property="Height" Value="18"/>
+                <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Opacity" Value="0.72"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="ToolTip" Value="{DynamicResource LOCPlayAch_Score_Info_ButtonTooltip}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="border"
+                                    Width="{TemplateBinding Width}"
+                                    Height="{TemplateBinding Height}"
+                                    CornerRadius="9"
+                                    Background="{TemplateBinding Background}">
+                                <TextBlock Text="{TemplateBinding Content}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           FontFamily="{TemplateBinding FontFamily}"
+                                           FontSize="{TemplateBinding FontSize}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#22FFFFFF"/>
+                                    <Setter Property="Opacity" Value="1"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="border" Property="Background" Value="#22FFFFFF"/>
+                                    <Setter Property="Opacity" Value="1"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -652,8 +695,70 @@
                             Style="{StaticResource HeaderScorePanelStyle}"
                             Background="{Binding CollectionScoreAccentBackgroundBrush}"
                             BorderBrush="{Binding CollectionScoreAccentBrush}"
-                            ToolTip="{Binding CollectionScoreDetailText}"
                             Visibility="{Binding ShowSidebarCollectionScoreCard, Converter={StaticResource BoolToVis}}">
+                        <Border.ToolTip>
+                            <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                     Placement="Bottom"
+                                     HasDropShadow="True">
+                                <Border Background="{DynamicResource ControlBackgroundBrush}"
+                                        BorderBrush="{Binding CollectionScoreAccentBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="12"
+                                        MinWidth="260">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,5">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ScoreTooltipCurrentLevelLabel}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.7"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding CollectionCurrentLevelPointsText}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       FontWeight="SemiBold"/>
+                                        </Grid>
+                                        <Grid Margin="0,0,0,5">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ScoreTooltipPointsBeforeNextLabel}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.7"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding CollectionPointsUntilNextLevelText}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       FontWeight="SemiBold"/>
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ScoreTooltipNextTierLabel}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.7"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding CollectionNextTierThresholdText}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{Binding CollectionScoreAccentBrush}"
+                                                       FontWeight="SemiBold"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </ToolTip>
+                        </Border.ToolTip>
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -664,18 +769,33 @@
                                 <ColumnDefinition Width="44"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="1"
-                                       Text="{Binding CollectionScoreLabel}"
-                                       Style="{StaticResource HeaderScoreLabelTextStyle}"
-                                       TextAlignment="Left"
-                                       HorizontalAlignment="Stretch"/>
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="1"
-                                       Text="{Binding CollectionLevelText}"
-                                       Style="{StaticResource HeaderScoreMetricTextStyle}"
-                                       TextAlignment="Right"
-                                       HorizontalAlignment="Right"/>
+                            <Grid Grid.Row="0"
+                                  Grid.Column="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding CollectionScoreLabel}"
+                                           Style="{StaticResource HeaderScoreLabelTextStyle}"
+                                           TextAlignment="Left"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxWidth="132"
+                                           VerticalAlignment="Center"/>
+                                <Button Grid.Column="1"
+                                        Content="&#xE946;"
+                                        Style="{StaticResource ScoreInfoButtonStyle}"
+                                        Click="ScoreInfoButton_Click"
+                                        Margin="5,0,0,0"
+                                        VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3"
+                                           Text="{Binding CollectionScorePointsText}"
+                                           Style="{StaticResource HeaderScoreMetricTextStyle}"
+                                           TextAlignment="Right"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
                             <Image Grid.Row="0"
                                    Grid.RowSpan="3"
                                    Grid.Column="0"
@@ -708,8 +828,9 @@
                                            TextAlignment="Left"
                                            HorizontalAlignment="Stretch"/>
                                 <TextBlock Grid.Column="1"
-                                           Text="{Binding CollectionScorePointsText}"
-                                           Style="{StaticResource HeaderScoreMetricTextStyle}"
+                                           Text="{Binding CollectionLevelText}"
+                                           Style="{StaticResource HeaderScoreTierTextStyle}"
+                                           Foreground="{Binding CollectionScoreAccentBrush}"
                                            TextAlignment="Left"
                                            MaxWidth="150"
                                            Margin="10,1,0,0"/>
@@ -729,8 +850,70 @@
                             Style="{StaticResource HeaderScorePanelStyle}"
                             Background="{Binding PrestigeScoreAccentBackgroundBrush}"
                             BorderBrush="{Binding PrestigeScoreAccentBrush}"
-                            ToolTip="{Binding PrestigeScoreDetailText}"
                             Visibility="{Binding ShowSidebarPrestigeScoreCard, Converter={StaticResource BoolToVis}}">
+                        <Border.ToolTip>
+                            <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
+                                     Placement="Bottom"
+                                     HasDropShadow="True">
+                                <Border Background="{DynamicResource ControlBackgroundBrush}"
+                                        BorderBrush="{Binding PrestigeScoreAccentBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        Padding="12"
+                                        MinWidth="260">
+                                    <StackPanel>
+                                        <Grid Margin="0,0,0,5">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ScoreTooltipCurrentLevelLabel}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.7"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding PrestigeCurrentLevelPointsText}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       FontWeight="SemiBold"/>
+                                        </Grid>
+                                        <Grid Margin="0,0,0,5">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ScoreTooltipPointsBeforeNextLabel}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.7"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding PrestigePointsUntilNextLevelText}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       FontWeight="SemiBold"/>
+                                        </Grid>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{Binding ScoreTooltipNextTierLabel}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Opacity="0.7"/>
+                                            <TextBlock Grid.Column="1"
+                                                       Text="{Binding PrestigeNextTierThresholdText}"
+                                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                                       Foreground="{Binding PrestigeScoreAccentBrush}"
+                                                       FontWeight="SemiBold"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </ToolTip>
+                        </Border.ToolTip>
                         <Grid>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -751,18 +934,33 @@
                                    Source="{Binding PrestigeScoreBadgeIconKey, Converter={StaticResource ResourceKeyToImage}}"
                                    Effect="{StaticResource BadgeShadow}"
                                    Style="{StaticResource RarityIcon}"/>
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="1"
-                                       Text="{Binding PrestigeScoreLabel}"
-                                       Style="{StaticResource HeaderScoreLabelTextStyle}"
-                                       TextAlignment="Left"
-                                       HorizontalAlignment="Stretch"/>
-                            <TextBlock Grid.Row="0"
-                                       Grid.Column="1"
-                                       Text="{Binding PrestigeLevelText}"
-                                       Style="{StaticResource HeaderScoreMetricTextStyle}"
-                                       TextAlignment="Right"
-                                       HorizontalAlignment="Right"/>
+                            <Grid Grid.Row="0"
+                                  Grid.Column="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding PrestigeScoreLabel}"
+                                           Style="{StaticResource HeaderScoreLabelTextStyle}"
+                                           TextAlignment="Left"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxWidth="132"
+                                           VerticalAlignment="Center"/>
+                                <Button Grid.Column="1"
+                                        Content="&#xE946;"
+                                        Style="{StaticResource ScoreInfoButtonStyle}"
+                                        Click="ScoreInfoButton_Click"
+                                        Margin="5,0,0,0"
+                                        VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="3"
+                                           Text="{Binding PrestigeScorePointsText}"
+                                           Style="{StaticResource HeaderScoreMetricTextStyle}"
+                                           TextAlignment="Right"
+                                           HorizontalAlignment="Right"/>
+                            </Grid>
                             <ProgressBar Grid.Row="1"
                                          Grid.Column="1"
                                          Value="{Binding PrestigeLevelProgress, Mode=OneWay}"
@@ -785,8 +983,9 @@
                                            TextAlignment="Left"
                                            HorizontalAlignment="Stretch"/>
                                 <TextBlock Grid.Column="1"
-                                           Text="{Binding PrestigeScorePointsText}"
-                                           Style="{StaticResource HeaderScoreMetricTextStyle}"
+                                           Text="{Binding PrestigeLevelText}"
+                                           Style="{StaticResource HeaderScoreTierTextStyle}"
+                                           Foreground="{Binding PrestigeScoreAccentBrush}"
                                            TextAlignment="Left"
                                            MaxWidth="150"
                                            Margin="10,1,0,0"/>
@@ -1096,7 +1295,13 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
-                                            <Border BorderBrush="#2196F3" BorderThickness="2,2,0,2">
+                                            <Border BorderBrush="#2196F3">
+                                                <Border.BorderThickness>
+                                                    <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                    </MultiBinding>
+                                                </Border.BorderThickness>
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -1124,7 +1329,13 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
-                                            <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2">
+                                            <Border BorderBrush="#2196F3">
+                                                <Border.BorderThickness>
+                                                    <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                    </MultiBinding>
+                                                </Border.BorderThickness>
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -1170,7 +1381,13 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
-                                            <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2">
+                                            <Border BorderBrush="#2196F3">
+                                                <Border.BorderThickness>
+                                                    <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                    </MultiBinding>
+                                                </Border.BorderThickness>
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
@@ -1205,8 +1422,14 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
-                                            <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2">
-                                                <Border.Style>
+                                                <Border BorderBrush="#2196F3">
+                                                    <Border.BorderThickness>
+                                                        <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                        </MultiBinding>
+                                                    </Border.BorderThickness>
+                                                    <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
@@ -1239,8 +1462,14 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
-                                            <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2">
-                                                <Border.Style>
+                                                <Border BorderBrush="#2196F3">
+                                                    <Border.BorderThickness>
+                                                        <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                        </MultiBinding>
+                                                    </Border.BorderThickness>
+                                                    <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                         <Style.Triggers>
@@ -1273,7 +1502,13 @@
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid>
-                                                <Border BorderBrush="#2196F3" BorderThickness="0,2,0,2">
+                                                <Border BorderBrush="#2196F3">
+                                                    <Border.BorderThickness>
+                                                        <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                        </MultiBinding>
+                                                    </Border.BorderThickness>
                                                     <Border.Style>
                                                         <Style TargetType="Border">
                                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -1405,7 +1640,13 @@
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Grid>
-                                                <Border BorderBrush="#2196F3" BorderThickness="0,2,2,2" Margin="0,0,1,0">
+                                                <Border BorderBrush="#2196F3">
+                                                    <Border.BorderThickness>
+                                                        <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                        </MultiBinding>
+                                                    </Border.BorderThickness>
                                                     <Border.Style>
                                                         <Style TargetType="Border">
                                                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -1431,6 +1672,90 @@
                                                     <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
                                                     <Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
                                                 </TextBlock>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Collection Score -->
+                                <DataGridTemplateColumn Width="*"
+                                                        Header="{DynamicResource LOCPlayAch_Column_CollectionScore}"
+                                                        SortMemberPath="CollectionScore"
+                                                        helpers:ColumnVisibilityHelper.ColumnKey="OverviewCollectionScore">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Border BorderBrush="#2196F3">
+                                                    <Border.BorderThickness>
+                                                        <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                        </MultiBinding>
+                                                    </Border.BorderThickness>
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                                        <Condition Binding="{Binding DataContext.ShowCompletionBorder, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True"/>
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                </Border>
+                                                <TextBlock VerticalAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           Text="{Binding CollectionScoreFractionText, Mode=OneWay}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+
+                                <!-- Prestige Score -->
+                                <DataGridTemplateColumn Width="*"
+                                                        Header="{DynamicResource LOCPlayAch_Column_PrestigeScore}"
+                                                        SortMemberPath="PrestigeScore"
+                                                        helpers:ColumnVisibilityHelper.ColumnKey="OverviewPrestigeScore">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <Grid>
+                                                <Border BorderBrush="#2196F3">
+                                                    <Border.BorderThickness>
+                                                        <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
+                                                        </MultiBinding>
+                                                    </Border.BorderThickness>
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <MultiDataTrigger>
+                                                                    <MultiDataTrigger.Conditions>
+                                                                        <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                                        <Condition Binding="{Binding DataContext.ShowCompletionBorder, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True"/>
+                                                                    </MultiDataTrigger.Conditions>
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </MultiDataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                </Border>
+                                                <TextBlock VerticalAlignment="Center"
+                                                           HorizontalAlignment="Center"
+                                                           Style="{DynamicResource BaseTextBlockStyle}"
+                                                           Foreground="{DynamicResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           TextAlignment="Center"
+                                                           Text="{Binding PrestigeScoreFractionText, Mode=OneWay}"/>
                                             </Grid>
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>

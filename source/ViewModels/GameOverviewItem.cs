@@ -104,6 +104,58 @@ namespace PlayniteAchievements.ViewModels
         private int _ultraRareCount;
         public int UltraRareCount { get => _ultraRareCount; set => SetValue(ref _ultraRareCount, value); }
 
+        private int _collectionScore;
+        public int CollectionScore
+        {
+            get => _collectionScore;
+            set
+            {
+                if (SetValueAndReturn(ref _collectionScore, value))
+                {
+                    OnPropertyChanged(nameof(CollectionScoreFractionText));
+                }
+            }
+        }
+
+        private int _collectionScoreTotal;
+        public int CollectionScoreTotal
+        {
+            get => _collectionScoreTotal;
+            set
+            {
+                if (SetValueAndReturn(ref _collectionScoreTotal, value))
+                {
+                    OnPropertyChanged(nameof(CollectionScoreFractionText));
+                }
+            }
+        }
+
+        private int _prestigeScore;
+        public int PrestigeScore
+        {
+            get => _prestigeScore;
+            set
+            {
+                if (SetValueAndReturn(ref _prestigeScore, value))
+                {
+                    OnPropertyChanged(nameof(PrestigeScoreFractionText));
+                }
+            }
+        }
+
+        private int _prestigeScoreTotal;
+        public int PrestigeScoreTotal
+        {
+            get => _prestigeScoreTotal;
+            set
+            {
+                if (SetValueAndReturn(ref _prestigeScoreTotal, value))
+                {
+                    OnPropertyChanged(nameof(PrestigeScoreFractionText));
+                }
+            }
+        }
+
         // Total rarity counts (including locked achievements)
         public int TotalCommonPossible { get; set; }
         public int TotalUncommonPossible { get; set; }
@@ -186,6 +238,10 @@ namespace PlayniteAchievements.ViewModels
 
         public string ProgressionText => $"{Progression}%";
 
+        public string CollectionScoreFractionText => FormatScoreFraction(CollectionScore, CollectionScoreTotal);
+
+        public string PrestigeScoreFractionText => FormatScoreFraction(PrestigeScore, PrestigeScoreTotal);
+
         public string PlaytimeText => PlayniteGameMetadataFormatter.FormatPlaytime(PlaytimeSeconds);
 
         public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildSidebarMetadataText(
@@ -196,5 +252,10 @@ namespace PlayniteAchievements.ViewModels
         public string LastPlayedText => LastPlayed.HasValue
             ? LastPlayed.Value.ToLocalTime().ToString("g")
             : "";
+
+        private static string FormatScoreFraction(int earned, int total)
+        {
+            return $"{Math.Max(0, earned):N0} / {Math.Max(0, total):N0}";
+        }
     }
 }

@@ -65,6 +65,21 @@
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestige Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_CurrentLevel">Current level</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">Max level reached</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextTier">Next tier</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextTierRemainingFormat">{0} points until {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_PointsBeforeNext">Before next level</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_Title">Score System</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">Collection and Prestige Scores</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_CollectionTitle">Collection Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">Collection Score rewards total achievement collecting. Each unlocked achievement gives fixed points from its rarity tier.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeTitle">Prestige Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Prestige Score rewards rare achievement collecting. Rare achievements are worth many more points than common achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">Levels and tiers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_LevelsBody">Collection and Prestige scores each contribute to a Tier and Level. The first tier is Bronze V, followed by Bronze IV, and continues through Silver, Gold, Platinum, and Master tiers until Master I. Earning 10 levels advances you to the next tier.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_ButtonTooltip">Score system info</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tier_Master">Master</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Unknown Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Bronze</sys:String>
@@ -78,11 +93,13 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">Name</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Playtime">Playtime</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Trophy">Trophy</sys:String>
