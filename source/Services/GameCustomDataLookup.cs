@@ -32,6 +32,12 @@ namespace PlayniteAchievements.Services
 
         public Dictionary<string, string> AchievementCategoryTypeOverrides { get; set; } =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        public HashSet<string> FilteredAchievementApiNames { get; set; } =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public HashSet<string> SummaryFilteredAchievementApiNames { get; set; } =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 
     internal sealed class ResolvedSidebarGameCustomData
@@ -105,7 +111,13 @@ namespace PlayniteAchievements.Services
                                         : fallbackSettings?.AchievementCategoryTypeOverrides != null &&
                                             fallbackSettings.AchievementCategoryTypeOverrides.TryGetValue(gameId, out var configuredCategoryTypeOverrides)
                                                 ? CloneStringMap(configuredCategoryTypeOverrides)
-                                                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                                                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+                FilteredAchievementApiNames = hasCustomData
+                    ? CloneApiNameSet(customData?.FilteredAchievementApiNames)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                SummaryFilteredAchievementApiNames = hasCustomData
+                    ? CloneApiNameSet(customData?.SummaryFilteredAchievementApiNames)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             };
 
             return resolved;
@@ -277,6 +289,22 @@ namespace PlayniteAchievements.Services
             GameCustomDataStore store = null)
         {
             return ResolveGameCustomData(gameId, fallbackSettings, store).AchievementCategoryTypeOverrides;
+        }
+
+        public static HashSet<string> GetFilteredAchievementApiNames(
+            Guid gameId,
+            PersistedSettings fallbackSettings = null,
+            GameCustomDataStore store = null)
+        {
+            return ResolveGameCustomData(gameId, fallbackSettings, store).FilteredAchievementApiNames;
+        }
+
+        public static HashSet<string> GetSummaryFilteredAchievementApiNames(
+            Guid gameId,
+            PersistedSettings fallbackSettings = null,
+            GameCustomDataStore store = null)
+        {
+            return ResolveGameCustomData(gameId, fallbackSettings, store).SummaryFilteredAchievementApiNames;
         }
 
         public static Dictionary<string, string> GetAchievementUnlockedIconOverrides(
@@ -555,6 +583,26 @@ namespace PlayniteAchievements.Services
             }
 
             return map;
+        }
+
+        private static HashSet<string> CloneApiNameSet(IEnumerable<string> source)
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (source == null)
+            {
+                return set;
+            }
+
+            foreach (var value in source)
+            {
+                var normalized = NormalizeValue(value);
+                if (!string.IsNullOrWhiteSpace(normalized))
+                {
+                    set.Add(normalized);
+                }
+            }
+
+            return set;
         }
 
         private static bool TryGetPositiveId(string value, out int id)

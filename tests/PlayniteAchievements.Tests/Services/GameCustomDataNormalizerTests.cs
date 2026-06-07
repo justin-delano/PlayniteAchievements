@@ -51,6 +51,14 @@ namespace PlayniteAchievements.Services.Tests
                 },
                 new GameCustomDataFile
                 {
+                    FilteredAchievementApiNames = new List<string> { "ach_one" }
+                },
+                new GameCustomDataFile
+                {
+                    SummaryFilteredAchievementApiNames = new List<string> { "ach_one" }
+                },
+                new GameCustomDataFile
+                {
                     AchievementUnlockedIconOverrides = new Dictionary<string, string>
                     {
                         ["ach_one"] = "https://example.com/unlocked.png"
@@ -113,9 +121,41 @@ namespace PlayniteAchievements.Services.Tests
                 },
                 gameId);
 
-            Assert.AreEqual(2, normalized.SchemaVersion);
+            Assert.AreEqual(3, normalized.SchemaVersion);
             AssertProviderOverride(normalized, "Steam", "480");
             AssertLegacyProviderFieldsCleared(normalized);
+        }
+
+        [TestMethod]
+        public void NormalizeInternal_ExtractsLegacyFilterCategoryTypes()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    FilteredAchievementApiNames = new List<string> { "existing_filtered" },
+                    SummaryFilteredAchievementApiNames = new List<string> { "existing_summary" },
+                    AchievementCategoryTypeOverrides = new Dictionary<string, string>
+                    {
+                        ["ach_filtered"] = "dlc | ignored",
+                        ["ach_summary"] = "summary ignored",
+                        ["ach_both"] = "ignored | summaryignored",
+                        ["ach_normal"] = "base | stackable"
+                    }
+                },
+                gameId);
+
+            CollectionAssert.AreEquivalent(
+                new[] { "existing_filtered", "ach_filtered", "ach_both" },
+                normalized.FilteredAchievementApiNames);
+            CollectionAssert.AreEquivalent(
+                new[] { "existing_summary", "ach_summary" },
+                normalized.SummaryFilteredAchievementApiNames);
+            Assert.AreEqual("DLC", normalized.AchievementCategoryTypeOverrides["ach_filtered"]);
+            Assert.AreEqual("Base|Stackable", normalized.AchievementCategoryTypeOverrides["ach_normal"]);
+            Assert.IsFalse(normalized.AchievementCategoryTypeOverrides.ContainsKey("ach_summary"));
+            Assert.IsFalse(normalized.AchievementCategoryTypeOverrides.ContainsKey("ach_both"));
         }
 
         [TestMethod]

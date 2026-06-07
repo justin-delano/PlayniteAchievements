@@ -120,12 +120,6 @@
                                Opacity="0.75"
                                TextWrapping="Wrap"
                                Margin="0,6,0,0" />
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Category_IgnoredHint}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.68"
-                               FontSize="{DynamicResource FontSizeSmall}"
-                               TextWrapping="Wrap"
-                               Margin="0,6,0,0" />
                 </StackPanel>
                 <Button x:Name="ResetCategoryButton"
                         Grid.Column="1"

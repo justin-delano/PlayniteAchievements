@@ -24,7 +24,7 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public sealed class GameCustomDataFile
     {
-        public int SchemaVersion { get; set; } = 2;
+        public int SchemaVersion { get; set; } = 3;
 
         public Guid PlayniteGameId { get; set; }
 
@@ -41,6 +41,10 @@ namespace PlayniteAchievements.Models.Settings
         public Dictionary<string, string> AchievementCategoryOverrides { get; set; }
 
         public Dictionary<string, string> AchievementCategoryTypeOverrides { get; set; }
+
+        public List<string> FilteredAchievementApiNames { get; set; }
+
+        public List<string> SummaryFilteredAchievementApiNames { get; set; }
 
         public Dictionary<string, string> AchievementUnlockedIconOverrides { get; set; }
 
@@ -79,6 +83,12 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                FilteredAchievementApiNames = FilteredAchievementApiNames != null
+                    ? new List<string>(FilteredAchievementApiNames)
+                    : null,
+                SummaryFilteredAchievementApiNames = SummaryFilteredAchievementApiNames != null
+                    ? new List<string>(SummaryFilteredAchievementApiNames)
+                    : null,
                 AchievementUnlockedIconOverrides = AchievementUnlockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
@@ -112,6 +122,12 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                FilteredAchievementApiNames = FilteredAchievementApiNames != null
+                    ? new List<string>(FilteredAchievementApiNames)
+                    : null,
+                SummaryFilteredAchievementApiNames = SummaryFilteredAchievementApiNames != null
+                    ? new List<string>(SummaryFilteredAchievementApiNames)
+                    : null,
                 AchievementUnlockedIconOverrides = AchievementUnlockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
@@ -136,7 +152,7 @@ namespace PlayniteAchievements.Models.Settings
         {
             return new GameCustomDataFile
             {
-                SchemaVersion = portable?.SchemaVersion > 0 ? portable.SchemaVersion : 2,
+                SchemaVersion = portable?.SchemaVersion > 0 ? portable.SchemaVersion : 3,
                 PlayniteGameId = playniteGameId,
                 ExcludedFromRefreshes = excludedFromRefreshes,
                 ExcludedFromSummaries = excludedFromSummaries,
@@ -150,6 +166,12 @@ namespace PlayniteAchievements.Models.Settings
                     : null,
                 AchievementCategoryTypeOverrides = portable?.AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(portable.AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
+                    : null,
+                FilteredAchievementApiNames = portable?.FilteredAchievementApiNames != null
+                    ? new List<string>(portable.FilteredAchievementApiNames)
+                    : null,
+                SummaryFilteredAchievementApiNames = portable?.SummaryFilteredAchievementApiNames != null
+                    ? new List<string>(portable.SummaryFilteredAchievementApiNames)
                     : null,
                 AchievementUnlockedIconOverrides = portable?.AchievementUnlockedIconOverrides != null
                     ? new Dictionary<string, string>(portable.AchievementUnlockedIconOverrides, StringComparer.OrdinalIgnoreCase)

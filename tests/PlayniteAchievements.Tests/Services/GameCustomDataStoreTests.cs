@@ -245,6 +245,33 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Save_FilterListsOnly_AreVisibleCustomization()
+        {
+            var tempDir = CreateTempDirectory();
+            var gameId = Guid.NewGuid();
+
+            try
+            {
+                var store = new GameCustomDataStore(tempDir);
+                store.Save(gameId, new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    FilteredAchievementApiNames = new List<string> { " ach_one ", "ACH_ONE" },
+                    SummaryFilteredAchievementApiNames = new List<string> { " ach_two " }
+                });
+
+                Assert.IsTrue(store.TryLoad(gameId, out var loaded));
+                CollectionAssert.AreEqual(new[] { "ach_one" }, loaded.FilteredAchievementApiNames);
+                CollectionAssert.AreEqual(new[] { "ach_two" }, loaded.SummaryFilteredAchievementApiNames);
+                Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(loaded));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void TryGetSteamAppIdOverride_ReadsCanonicalProviderOverride()
         {
             var tempDir = CreateTempDirectory();
@@ -794,7 +821,8 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         [legacyOnlyGameId.ToString("D")] = new JObject
                         {
-                            ["ach_one"] = "dlc | single player | dlc"
+                            ["ach_one"] = "dlc | single player | ignored | dlc",
+                            ["ach_two"] = "summary ignored"
                         }
                     }
                 };
@@ -877,6 +905,8 @@ namespace PlayniteAchievements.Services.Tests
                 CollectionAssert.AreEqual(new[] { "ach_one", "ach_two" }, legacyOnly.AchievementOrder);
                 Assert.AreEqual("Main", legacyOnly.AchievementCategoryOverrides["ach_one"]);
                 Assert.AreEqual("DLC|Singleplayer", legacyOnly.AchievementCategoryTypeOverrides["ach_one"]);
+                CollectionAssert.AreEqual(new[] { "ach_one" }, legacyOnly.FilteredAchievementApiNames);
+                CollectionAssert.AreEqual(new[] { "ach_two" }, legacyOnly.SummaryFilteredAchievementApiNames);
                 AssertProviderOverride(legacyOnly, "RetroAchievements", "333");
                 Assert.IsNotNull(legacyOnly.ManualLink);
                 Assert.AreEqual("Steam", legacyOnly.ManualLink.SourceKey);

@@ -164,6 +164,7 @@ namespace PlayniteAchievements.ViewModels
                     (value == GameOptionsTab.Capstones ||
                      value == GameOptionsTab.AchievementOrder ||
                      value == GameOptionsTab.Category ||
+                     value == GameOptionsTab.Filters ||
                      value == GameOptionsTab.CustomIcons))
                 {
                     return;
@@ -680,6 +681,7 @@ namespace PlayniteAchievements.ViewModels
                     (SelectedTab == GameOptionsTab.Capstones ||
                      SelectedTab == GameOptionsTab.AchievementOrder ||
                      SelectedTab == GameOptionsTab.Category ||
+                     SelectedTab == GameOptionsTab.Filters ||
                      SelectedTab == GameOptionsTab.CustomIcons))
                 {
                     SelectedTab = GameOptionsTab.Overview;

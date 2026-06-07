@@ -28,6 +28,7 @@ namespace PlayniteAchievements.Views
             GameOptionsTab.ManualTracking,
             GameOptionsTab.Capstones,
             GameOptionsTab.Category,
+            GameOptionsTab.Filters,
             GameOptionsTab.AchievementOrder,
             GameOptionsTab.CustomIcons,
             GameOptionsTab.Overrides
@@ -49,16 +50,19 @@ namespace PlayniteAchievements.Views
         private GameOptionsManualTrackingTab _manualControl;
         private GameOptionsAchievementOrderTab _achievementOrderControl;
         private GameOptionsCategoryTab _categoryControl;
+        private GameOptionsFiltersTab _filtersControl;
         private GameOptionsAchievementIconsTab _achievementIconsControl;
         private ManualAchievementsViewModel _manualViewModel;
         private GameOptionsAchievementOrderViewModel _achievementOrderViewModel;
         private GameOptionsCategoryViewModel _categoryViewModel;
+        private GameOptionsFiltersViewModel _filtersViewModel;
         private GameOptionsAchievementIconsViewModel _achievementIconsViewModel;
         private bool _manualStartAtEditing;
         private bool _manualRefreshPending;
         private bool _capstoneRefreshPending;
         private bool _achievementOrderRefreshPending;
         private bool _categoryRefreshPending;
+        private bool _filtersRefreshPending;
         private bool _achievementIconsRefreshPending;
         private bool _ensureTabContentQueued;
 
@@ -144,6 +148,7 @@ namespace PlayniteAchievements.Views
             CleanupManual();
             CleanupAchievementOrder();
             CleanupCategory();
+            CleanupFilters();
             CleanupAchievementIcons();
         }
 
@@ -252,6 +257,20 @@ namespace PlayniteAchievements.Views
                     }
 
                     _categoryRefreshPending = false;
+                }
+            }
+            else if (_viewModel.SelectedTab == GameOptionsTab.Filters)
+            {
+                var hadFiltersControl = _filtersControl != null;
+                EnsureFiltersControl(forceRecreate: false);
+                if (_filtersRefreshPending)
+                {
+                    if (hadFiltersControl)
+                    {
+                        _filtersControl?.RefreshData();
+                    }
+
+                    _filtersRefreshPending = false;
                 }
             }
             else if (_viewModel.SelectedTab == GameOptionsTab.CustomIcons)
@@ -425,6 +444,7 @@ namespace PlayniteAchievements.Views
                     ManualTrackingTabButton,
                     CapstonesTabButton,
                     CategoryTabButton,
+                    FiltersTabButton,
                     AchievementOrderTabButton,
                     CustomIconsTabButton,
                     OverridesTabButton
@@ -471,6 +491,8 @@ namespace PlayniteAchievements.Views
                     return _capstoneControl?.GetControllerElements() ?? new List<UIElement>();
                 case GameOptionsTab.Category:
                     return _categoryControl?.GetControllerElements() ?? new List<UIElement>();
+                case GameOptionsTab.Filters:
+                    return _filtersControl?.GetControllerElements() ?? new List<UIElement>();
                 case GameOptionsTab.AchievementOrder:
                     return _achievementOrderControl?.GetControllerElements() ?? new List<UIElement>();
                 case GameOptionsTab.CustomIcons:
@@ -523,6 +545,8 @@ namespace PlayniteAchievements.Views
                     return _manualControl?.HandleFullscreenControllerInput(input) == true;
                 case GameOptionsTab.Category:
                     return _categoryControl?.HandleFullscreenControllerInput(input) == true;
+                case GameOptionsTab.Filters:
+                    return _filtersControl?.HandleFullscreenControllerInput(input) == true;
                 case GameOptionsTab.Capstones:
                     return _capstoneControl?.HandleFullscreenControllerInput(input) == true;
                 case GameOptionsTab.AchievementOrder:
@@ -547,6 +571,7 @@ namespace PlayniteAchievements.Views
                     return _viewModel.ShowManualTrackingTab;
                 case GameOptionsTab.Capstones:
                 case GameOptionsTab.Category:
+                case GameOptionsTab.Filters:
                 case GameOptionsTab.AchievementOrder:
                 case GameOptionsTab.CustomIcons:
                     return _viewModel.HasCapstoneData;
@@ -755,6 +780,25 @@ namespace PlayniteAchievements.Views
             CategoryHost.Content = _categoryControl;
         }
 
+        private void EnsureFiltersControl(bool forceRecreate)
+        {
+            if (_filtersControl != null && !forceRecreate)
+            {
+                return;
+            }
+
+            CleanupFilters();
+
+            _filtersViewModel = new GameOptionsFiltersViewModel(
+                _viewModel.GameId,
+                _achievementOverridesService,
+                _gameDataSnapshotProvider,
+                _settings,
+                _logger);
+            _filtersControl = new GameOptionsFiltersTab(_filtersViewModel);
+            FiltersHost.Content = _filtersControl;
+        }
+
         private void EnsureAchievementIconsControl(bool forceRecreate)
         {
             if (_achievementIconsControl != null && !forceRecreate)
@@ -835,6 +879,7 @@ namespace PlayniteAchievements.Views
             _manualRefreshPending = true;
             _achievementOrderRefreshPending = true;
             _categoryRefreshPending = true;
+            _filtersRefreshPending = true;
             _achievementIconsRefreshPending = true;
 
             if (refreshCapstone)
@@ -852,6 +897,7 @@ namespace PlayniteAchievements.Views
             _capstoneRefreshPending = true;
             _achievementOrderRefreshPending = true;
             _categoryRefreshPending = true;
+            _filtersRefreshPending = true;
             _achievementIconsRefreshPending = true;
             EnsureSelectedTabContent();
         }
@@ -903,6 +949,17 @@ namespace PlayniteAchievements.Views
             if (CategoryHost != null)
             {
                 CategoryHost.Content = null;
+            }
+        }
+
+        private void CleanupFilters()
+        {
+            _filtersControl = null;
+            _filtersViewModel = null;
+
+            if (FiltersHost != null)
+            {
+                FiltersHost.Content = null;
             }
         }
 

@@ -52,6 +52,20 @@ namespace PlayniteAchievements.Models.Achievements
         public bool IsCapstone { get; set; }
 
         /// <summary>
+        /// Runtime-only user filter flag. Filtered achievements are hidden from
+        /// achievement views and removed from counts.
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsFiltered { get; set; }
+
+        /// <summary>
+        /// Runtime-only user filter flag. Summary-filtered achievements stay visible
+        /// in achievement views but are removed from summary surfaces.
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsFilteredFromSummaries { get; set; }
+
+        /// <summary>
         /// Playnite Game reference for theme bindings.
         /// Populated during snapshot building for all-games views.
         /// Not persisted to cache.

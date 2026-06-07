@@ -77,6 +77,10 @@ namespace PlayniteAchievements.Models.Achievements
 
         public bool IsCapstone { get; set; }
 
+        public bool IsFiltered { get; set; }
+
+        public bool IsFilteredFromSummaries { get; set; }
+
         public DateTime? UnlockTimeUtc { get; set; }
 
         public double? GlobalPercentUnlocked { get; set; }

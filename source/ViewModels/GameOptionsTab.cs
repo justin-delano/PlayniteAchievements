@@ -8,6 +8,7 @@ namespace PlayniteAchievements.ViewModels
         ManualTracking,
         AchievementOrder,
         Category,
+        Filters,
         CustomIcons
     }
 }

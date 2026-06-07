@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
@@ -172,7 +172,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Filter_Label">按分类标签过滤</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Filter_Type">按分类类型过滤</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Hint">为此游戏的成就设置分类。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Category_IgnoredHint">类型为“已忽略”的成就在所有界面元素中都会被隐藏。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_InputPlaceholder">已选成就的分类标签</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_RenameDialog_Hint">选择现有标签并提供新的标签文本。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_RenameDialog_NoLabels">没有可重命名的分类标签。</sys:String>
@@ -186,8 +185,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Multiplayer">多人</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Singleplayer">单人</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Stackable">可堆叠</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Ignored">已忽略</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_SummaryIgnored">Summary Ignored</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_TypeSelectorLabel">分类类型</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_Header">自定义成就图标</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_Hint">为此游戏的成就设置可选的已解锁和未解锁图像覆盖。支持拖入浏览器链接、拖入本地图像文件或浏览文件。本地图像将立即复制到插件管理的存储中。</sys:String>
@@ -195,6 +192,13 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_OpenFolderButton">打开图标文件夹</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_OpenFolderUnavailable">扩展数据路径不可用。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_ValidationError">一个或多个图标值无效。请使用绝对 http:// 或 https:// URL，或复制到插件数据中的管理本地文件。</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilteredOut">Filtered Out</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilteredOutOfSummaries">Filtered Out of Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilterOut">Filter Out</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilterOutOfSummaries">Filter Out of Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Header">Filters</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Unfiltered">Unfiltered</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseHint">勾选以对此游戏强制使用 Exophase。未勾选的游戏如果其平台在“受管平台”中，则会自动使用 Exophase。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugHint">覆盖自动检测的 Exophase 游戏 ID 以链接到特定的 Exophase 游戏。留空则使用自动检测。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugLabel">Exophase 游戏 ID 覆盖</sys:String>
@@ -255,6 +259,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Capstones">压轴</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Category">分类</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_CustomIcons">图标</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Filters">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_ManualTracking">手动追踪</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Overrides">覆盖</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Overview">概览</sys:String>

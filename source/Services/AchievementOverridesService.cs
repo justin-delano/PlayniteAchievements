@@ -104,6 +104,24 @@ namespace PlayniteAchievements.Services
             _notifyCacheInvalidated(true);
         }
 
+        public void SetAchievementFilters(
+            Guid gameId,
+            IEnumerable<string> filteredAchievementApiNames,
+            IEnumerable<string> summaryFilteredAchievementApiNames)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            _gameCustomDataStore.Update(gameId, customData =>
+            {
+                customData.FilteredAchievementApiNames = CopyApiNames(filteredAchievementApiNames);
+                customData.SummaryFilteredAchievementApiNames = CopyApiNames(summaryFilteredAchievementApiNames);
+            });
+            _notifyCacheInvalidated(true);
+        }
+
         public void SetAchievementIconOverrides(
             Guid gameId,
             IReadOnlyDictionary<string, string> unlockedIconOverrides,
@@ -263,6 +281,29 @@ namespace PlayniteAchievements.Services
             }
 
             return copy;
+        }
+
+        private static List<string> CopyApiNames(IEnumerable<string> values)
+        {
+            if (values == null)
+            {
+                return null;
+            }
+
+            var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var value in values)
+            {
+                var normalized = (value ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
+                {
+                    continue;
+                }
+
+                result.Add(normalized);
+            }
+
+            return result.Count > 0 ? result : null;
         }
     }
 }
