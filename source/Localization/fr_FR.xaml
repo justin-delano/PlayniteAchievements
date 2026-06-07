@@ -4,7 +4,7 @@
     <!-- ================================================================= -->
     <!-- 01 Plugin Titles -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_PluginName">Succès Playnite</sys:String>
     <sys:String x:Key="LOCPlayAch_Title_Refresh">Actualisation de Playnite Achievements</sys:String>
 
     <!-- ================================================================= -->
@@ -60,11 +60,11 @@
     <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophées :</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progression</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Succès récents</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Collection">Collection Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Collection">Score de collection</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_HeaderDetailFormat">{0} | {1} | {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Nv {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestige Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Prestige">Score de prestige</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Bronze</sys:String>
@@ -155,7 +155,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Veuillez saisir un TitleID Xenia valide de 8 caractères hexadécimaux.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Veuillez saisir un identifiant ShadPS4 valide, tel que CUSA00432 ou NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">Please enter a valid RPCS3 trophy NP Comm ID such as NPWR12345_00.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Please enter a valid positive integer Steam AppID.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Veuillez saisir un identifiant de jeu valide (nombre entier positif).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Actualiser ce jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Actualisation en cours]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Actualiser les jeux sélectionnés</sys:String>
@@ -183,7 +183,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_RenameDialog_NoLabels">Aucun libellé de catégorie disponible à renommer.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_RenameDialog_Title">Renommer un libellé de catégorie</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Base">Jeu de base</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Collectable">Collectable</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Collectable">Collectible</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Default">Par défaut</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Difficulty">Difficulté</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_DLC">DLC</sys:String>
@@ -192,7 +192,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Singleplayer">Solo</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Stackable">Empilable</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Ignored">Ignoré</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_SummaryIgnored">Summary Ignored</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_SummaryIgnored">Résumé ignorer</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_TypeSelectorLabel">Type de catégorie</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_Header">Icônes de succès personnalisées</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_Hint">Définissez des remplacements d'images pour les états déverrouillé et verrouillé de ce jeu. Vous pouvez glisser-déposer des liens web, des fichiers locaux ou sélectionner un fichier. Les images locales sont immédiatement copiées dans le stockage du plugin.</sys:String>
