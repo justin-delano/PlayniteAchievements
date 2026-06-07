@@ -382,7 +382,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Kompakte Liste</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Kompakte Liste gesperrter Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Kompakte Liste freigeschalteter Erfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements Settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite-Achievement-Einstellungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">Seitenleiste</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Enable archive scanning (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableCompactGridMode">Kompakten Tabellenmodus einschalten</sys:String>
@@ -495,7 +495,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Manuell &amp; Aggregatoren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Andere</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Verwendet {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Exophase für Metadaten verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill missing metadata. Requires Exophase authentication.</sys:String>
 
     <!-- Provider: PlayStation -->
@@ -555,7 +555,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Neueste Spiele zur Aktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Alle Schlagworte entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next sidebar open.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Reset Landing Page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Startseite zurücksetzen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Beschreibung verborgener Erfolge enthüllen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Symbol verborgener Erfolge enthüllen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">Titel verborgener Erfolge enthüllen</sys:String>
@@ -570,8 +570,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(verborgener Erfolg)&quot; anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten bei freigeschalteten Symbolen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Show Sidebar Bar Charts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Show Game Platform/Playtime/Region</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Show Collection Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform/Spielzeit/Region anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Sammelwertungskarte anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Show Prestige Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarGamesPieChart">Kreisdiagramm für vervollständigte Spiele anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">Prozentwerte auf Kreisdiagrammen anzeigen</sys:String>
