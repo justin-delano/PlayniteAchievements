@@ -165,6 +165,7 @@ namespace PlayniteAchievements.ViewModels
                      value == GameOptionsTab.AchievementOrder ||
                      value == GameOptionsTab.Category ||
                      value == GameOptionsTab.Filters ||
+                     value == GameOptionsTab.Notes ||
                      value == GameOptionsTab.CustomIcons))
                 {
                     return;

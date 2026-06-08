@@ -768,6 +768,11 @@ namespace PlayniteAchievements.Services
                     recent.CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(categoryTypeOverride);
                 }
 
+                recent.AchievementNote = resolved.AchievementNotes != null &&
+                                         resolved.AchievementNotes.TryGetValue(apiName, out var note)
+                    ? note
+                    : null;
+
                 var unlockedOverride = AchievementIconOverrideHelper.GetOverrideValue(customization.UnlockedIconOverrides, apiName);
                 if (!string.IsNullOrWhiteSpace(unlockedOverride))
                 {

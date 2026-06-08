@@ -29,6 +29,7 @@ namespace PlayniteAchievements.Views
             GameOptionsTab.Capstones,
             GameOptionsTab.Category,
             GameOptionsTab.Filters,
+            GameOptionsTab.Notes,
             GameOptionsTab.AchievementOrder,
             GameOptionsTab.CustomIcons,
             GameOptionsTab.Overrides
@@ -51,11 +52,13 @@ namespace PlayniteAchievements.Views
         private GameOptionsAchievementOrderTab _achievementOrderControl;
         private GameOptionsCategoryTab _categoryControl;
         private GameOptionsFiltersTab _filtersControl;
+        private GameOptionsNotesTab _notesControl;
         private GameOptionsAchievementIconsTab _achievementIconsControl;
         private ManualAchievementsViewModel _manualViewModel;
         private GameOptionsAchievementOrderViewModel _achievementOrderViewModel;
         private GameOptionsCategoryViewModel _categoryViewModel;
         private GameOptionsFiltersViewModel _filtersViewModel;
+        private GameOptionsNotesViewModel _notesViewModel;
         private GameOptionsAchievementIconsViewModel _achievementIconsViewModel;
         private bool _manualStartAtEditing;
         private bool _manualRefreshPending;
@@ -63,6 +66,7 @@ namespace PlayniteAchievements.Views
         private bool _achievementOrderRefreshPending;
         private bool _categoryRefreshPending;
         private bool _filtersRefreshPending;
+        private bool _notesRefreshPending;
         private bool _achievementIconsRefreshPending;
         private bool _ensureTabContentQueued;
 
@@ -149,6 +153,7 @@ namespace PlayniteAchievements.Views
             CleanupAchievementOrder();
             CleanupCategory();
             CleanupFilters();
+            CleanupNotes();
             CleanupAchievementIcons();
         }
 
@@ -271,6 +276,20 @@ namespace PlayniteAchievements.Views
                     }
 
                     _filtersRefreshPending = false;
+                }
+            }
+            else if (_viewModel.SelectedTab == GameOptionsTab.Notes)
+            {
+                var hadNotesControl = _notesControl != null;
+                EnsureNotesControl(forceRecreate: false);
+                if (_notesRefreshPending)
+                {
+                    if (hadNotesControl)
+                    {
+                        _notesControl?.RefreshData();
+                    }
+
+                    _notesRefreshPending = false;
                 }
             }
             else if (_viewModel.SelectedTab == GameOptionsTab.CustomIcons)
@@ -445,6 +464,7 @@ namespace PlayniteAchievements.Views
                     CapstonesTabButton,
                     CategoryTabButton,
                     FiltersTabButton,
+                    NotesTabButton,
                     AchievementOrderTabButton,
                     CustomIconsTabButton,
                     OverridesTabButton
@@ -493,6 +513,8 @@ namespace PlayniteAchievements.Views
                     return _categoryControl?.GetControllerElements() ?? new List<UIElement>();
                 case GameOptionsTab.Filters:
                     return _filtersControl?.GetControllerElements() ?? new List<UIElement>();
+                case GameOptionsTab.Notes:
+                    return _notesControl?.GetControllerElements() ?? new List<UIElement>();
                 case GameOptionsTab.AchievementOrder:
                     return _achievementOrderControl?.GetControllerElements() ?? new List<UIElement>();
                 case GameOptionsTab.CustomIcons:
@@ -547,6 +569,8 @@ namespace PlayniteAchievements.Views
                     return _categoryControl?.HandleFullscreenControllerInput(input) == true;
                 case GameOptionsTab.Filters:
                     return _filtersControl?.HandleFullscreenControllerInput(input) == true;
+                case GameOptionsTab.Notes:
+                    return _notesControl?.HandleFullscreenControllerInput(input) == true;
                 case GameOptionsTab.Capstones:
                     return _capstoneControl?.HandleFullscreenControllerInput(input) == true;
                 case GameOptionsTab.AchievementOrder:
@@ -572,6 +596,7 @@ namespace PlayniteAchievements.Views
                 case GameOptionsTab.Capstones:
                 case GameOptionsTab.Category:
                 case GameOptionsTab.Filters:
+                case GameOptionsTab.Notes:
                 case GameOptionsTab.AchievementOrder:
                 case GameOptionsTab.CustomIcons:
                     return _viewModel.HasCapstoneData;
@@ -799,6 +824,25 @@ namespace PlayniteAchievements.Views
             FiltersHost.Content = _filtersControl;
         }
 
+        private void EnsureNotesControl(bool forceRecreate)
+        {
+            if (_notesControl != null && !forceRecreate)
+            {
+                return;
+            }
+
+            CleanupNotes();
+
+            _notesViewModel = new GameOptionsNotesViewModel(
+                _viewModel.GameId,
+                _achievementOverridesService,
+                _gameDataSnapshotProvider,
+                _settings,
+                _logger);
+            _notesControl = new GameOptionsNotesTab(_notesViewModel);
+            NotesHost.Content = _notesControl;
+        }
+
         private void EnsureAchievementIconsControl(bool forceRecreate)
         {
             if (_achievementIconsControl != null && !forceRecreate)
@@ -880,6 +924,7 @@ namespace PlayniteAchievements.Views
             _achievementOrderRefreshPending = true;
             _categoryRefreshPending = true;
             _filtersRefreshPending = true;
+            _notesRefreshPending = true;
             _achievementIconsRefreshPending = true;
 
             if (refreshCapstone)
@@ -898,6 +943,7 @@ namespace PlayniteAchievements.Views
             _achievementOrderRefreshPending = true;
             _categoryRefreshPending = true;
             _filtersRefreshPending = true;
+            _notesRefreshPending = true;
             _achievementIconsRefreshPending = true;
             EnsureSelectedTabContent();
         }
@@ -960,6 +1006,17 @@ namespace PlayniteAchievements.Views
             if (FiltersHost != null)
             {
                 FiltersHost.Content = null;
+            }
+        }
+
+        private void CleanupNotes()
+        {
+            _notesControl = null;
+            _notesViewModel = null;
+
+            if (NotesHost != null)
+            {
+                NotesHost.Content = null;
             }
         }
 

@@ -9,7 +9,7 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public sealed class GameCustomDataPortableFile
     {
-        public int SchemaVersion { get; set; } = 3;
+        public int SchemaVersion { get; set; } = 4;
 
         public Guid PlayniteGameId { get; set; }
 
@@ -30,6 +30,8 @@ namespace PlayniteAchievements.Models.Settings
         public Dictionary<string, string> AchievementUnlockedIconOverrides { get; set; }
 
         public Dictionary<string, string> AchievementLockedIconOverrides { get; set; }
+
+        public Dictionary<string, string> AchievementNotes { get; set; }
 
         public int? RetroAchievementsGameIdOverride { get; set; }
 
@@ -73,6 +75,9 @@ namespace PlayniteAchievements.Models.Settings
                     : null,
                 AchievementLockedIconOverrides = AchievementLockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementLockedIconOverrides, StringComparer.OrdinalIgnoreCase)
+                    : null,
+                AchievementNotes = AchievementNotes != null
+                    ? new Dictionary<string, string>(AchievementNotes, StringComparer.OrdinalIgnoreCase)
                     : null,
                 RetroAchievementsGameIdOverride = RetroAchievementsGameIdOverride,
                 XeniaTitleIdOverride = XeniaTitleIdOverride,

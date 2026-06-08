@@ -1,8 +1,11 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Hydration;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace PlayniteAchievements.Services.Tests
 {
@@ -71,6 +74,13 @@ namespace PlayniteAchievements.Services.Tests
                         ["ach_one"] = "https://example.com/locked.png"
                     }
                 },
+                new GameCustomDataFile
+                {
+                    AchievementNotes = new Dictionary<string, string>
+                    {
+                        ["ach_one"] = "Use this route"
+                    }
+                },
                 new GameCustomDataFile { RetroAchievementsGameIdOverride = 42 },
                 new GameCustomDataFile { XeniaTitleIdOverride = "4d5307e6" },
                 new GameCustomDataFile { ShadPS4MatchIdOverride = "npwr12345_00" },
@@ -121,9 +131,93 @@ namespace PlayniteAchievements.Services.Tests
                 },
                 gameId);
 
-            Assert.AreEqual(3, normalized.SchemaVersion);
+            Assert.AreEqual(4, normalized.SchemaVersion);
             AssertProviderOverride(normalized, "Steam", "480");
             AssertLegacyProviderFieldsCleared(normalized);
+        }
+
+        [TestMethod]
+        public void NormalizeInternal_AchievementNotes_NormalizesAndCapsValues()
+        {
+            var gameId = Guid.NewGuid();
+            var longNote = new string('x', AchievementNoteHelper.MaxNoteLength + 50);
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    AchievementNotes = new Dictionary<string, string>
+                    {
+                        [" ach_one "] = " first note ",
+                        ["ACH_ONE"] = " second note\r\nline ",
+                        ["blank"] = " ",
+                        [" "] = "ignored",
+                        ["ach_long"] = longNote
+                    }
+                },
+                gameId);
+
+            Assert.AreEqual(2, normalized.AchievementNotes.Count);
+            Assert.AreEqual("second note\nline", normalized.AchievementNotes["ach_one"]);
+            Assert.AreEqual(AchievementNoteHelper.MaxNoteLength, normalized.AchievementNotes["ach_long"].Length);
+            Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(normalized));
+        }
+
+        [TestMethod]
+        public void GameCustomDataFiles_CloneAndPortableRoundTrip_DeepCopyAchievementNotes()
+        {
+            var gameId = Guid.NewGuid();
+            var internalData = new GameCustomDataFile
+            {
+                PlayniteGameId = gameId,
+                AchievementNotes = new Dictionary<string, string>
+                {
+                    ["ach_one"] = "note one"
+                }
+            };
+
+            var internalClone = internalData.Clone();
+            internalClone.AchievementNotes["ach_one"] = "changed";
+            Assert.AreEqual("note one", internalData.AchievementNotes["ach_one"]);
+
+            var portable = internalData.ToPortable();
+            portable.AchievementNotes["ach_one"] = "portable changed";
+            Assert.AreEqual("note one", internalData.AchievementNotes["ach_one"]);
+
+            var portableClone = portable.Clone();
+            portableClone.AchievementNotes["ach_one"] = "clone changed";
+            Assert.AreEqual("portable changed", portable.AchievementNotes["ach_one"]);
+
+            var imported = GameCustomDataFile.FromPortable(portable, Guid.NewGuid(), false, false);
+            imported.AchievementNotes["ach_one"] = "import changed";
+            Assert.AreEqual("portable changed", portable.AchievementNotes["ach_one"]);
+        }
+
+        [TestMethod]
+        public void AchievementDetailHydrator_AppliesNotesWithoutChangingCountsOrFilters()
+        {
+            var gameId = Guid.NewGuid();
+            var details = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "ach_one", Unlocked = true },
+                new AchievementDetail { ApiName = "ach_two", Unlocked = false }
+            };
+            var customData = new ResolvedGameCustomData
+            {
+                AchievementNotes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["ACH_ONE"] = "route note"
+                }
+            };
+
+            var hydrator = new AchievementDetailHydrator(new PersistedSettings());
+            hydrator.HydrateAllWithCapstoneOverride(details, gameId, "Steam", customData);
+
+            Assert.AreEqual("route note", details[0].AchievementNote);
+            Assert.IsNull(details[1].AchievementNote);
+            Assert.AreEqual(2, details.Count);
+            Assert.AreEqual(1, details.Count(a => a.Unlocked));
+            Assert.IsFalse(details.Any(a => a.IsFiltered));
+            Assert.IsFalse(details.Any(a => a.IsFilteredFromSummaries));
         }
 
         [TestMethod]

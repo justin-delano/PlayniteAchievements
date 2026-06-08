@@ -24,7 +24,7 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public sealed class GameCustomDataFile
     {
-        public int SchemaVersion { get; set; } = 3;
+        public int SchemaVersion { get; set; } = 4;
 
         public Guid PlayniteGameId { get; set; }
 
@@ -49,6 +49,8 @@ namespace PlayniteAchievements.Models.Settings
         public Dictionary<string, string> AchievementUnlockedIconOverrides { get; set; }
 
         public Dictionary<string, string> AchievementLockedIconOverrides { get; set; }
+
+        public Dictionary<string, string> AchievementNotes { get; set; }
 
         public int? RetroAchievementsGameIdOverride { get; set; }
 
@@ -95,6 +97,9 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementLockedIconOverrides = AchievementLockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementLockedIconOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementNotes = AchievementNotes != null
+                    ? new Dictionary<string, string>(AchievementNotes, StringComparer.OrdinalIgnoreCase)
+                    : null,
                 RetroAchievementsGameIdOverride = RetroAchievementsGameIdOverride,
                 XeniaTitleIdOverride = XeniaTitleIdOverride,
                 ShadPS4MatchIdOverride = ShadPS4MatchIdOverride,
@@ -134,6 +139,9 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementLockedIconOverrides = AchievementLockedIconOverrides != null
                     ? new Dictionary<string, string>(AchievementLockedIconOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementNotes = AchievementNotes != null
+                    ? new Dictionary<string, string>(AchievementNotes, StringComparer.OrdinalIgnoreCase)
+                    : null,
                 RetroAchievementsGameIdOverride = RetroAchievementsGameIdOverride,
                 XeniaTitleIdOverride = XeniaTitleIdOverride,
                 ShadPS4MatchIdOverride = ShadPS4MatchIdOverride,
@@ -152,7 +160,7 @@ namespace PlayniteAchievements.Models.Settings
         {
             return new GameCustomDataFile
             {
-                SchemaVersion = portable?.SchemaVersion > 0 ? portable.SchemaVersion : 3,
+                SchemaVersion = portable?.SchemaVersion > 0 ? portable.SchemaVersion : 4,
                 PlayniteGameId = playniteGameId,
                 ExcludedFromRefreshes = excludedFromRefreshes,
                 ExcludedFromSummaries = excludedFromSummaries,
@@ -178,6 +186,9 @@ namespace PlayniteAchievements.Models.Settings
                     : null,
                 AchievementLockedIconOverrides = portable?.AchievementLockedIconOverrides != null
                     ? new Dictionary<string, string>(portable.AchievementLockedIconOverrides, StringComparer.OrdinalIgnoreCase)
+                    : null,
+                AchievementNotes = portable?.AchievementNotes != null
+                    ? new Dictionary<string, string>(portable.AchievementNotes, StringComparer.OrdinalIgnoreCase)
                     : null,
                 RetroAchievementsGameIdOverride = portable?.RetroAchievementsGameIdOverride,
                 XeniaTitleIdOverride = portable?.XeniaTitleIdOverride,

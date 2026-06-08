@@ -48,6 +48,10 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         ["ach_one"] = " "
                     },
+                    AchievementNotes = new Dictionary<string, string>
+                    {
+                        ["ach_one"] = " "
+                    },
                     UseSeparateLockedIconsOverride = false,
                     ForceUseExophase = false
                 });
@@ -272,6 +276,41 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Save_AchievementNotesOnly_AreNormalizedAndVisibleCustomization()
+        {
+            var tempDir = CreateTempDirectory();
+            var gameId = Guid.NewGuid();
+            var longNote = new string('x', AchievementNoteHelper.MaxNoteLength + 20);
+
+            try
+            {
+                var store = new GameCustomDataStore(tempDir);
+                store.Save(gameId, new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    AchievementNotes = new Dictionary<string, string>
+                    {
+                        [" ach_one "] = " first note ",
+                        ["ACH_ONE"] = " second note\r\nline ",
+                        ["ach_empty"] = " ",
+                        [" ach_long "] = longNote
+                    }
+                });
+
+                Assert.IsTrue(store.TryLoad(gameId, out var loaded));
+                Assert.AreEqual(2, loaded.AchievementNotes.Count);
+                Assert.AreEqual("second note\nline", loaded.AchievementNotes["ach_one"]);
+                Assert.AreEqual(AchievementNoteHelper.MaxNoteLength, loaded.AchievementNotes["ach_long"].Length);
+                Assert.AreEqual("second note\nline", GameCustomDataLookup.GetAchievementNote(gameId, "ACH_ONE", store: store));
+                Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(loaded));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void TryGetSteamAppIdOverride_ReadsCanonicalProviderOverride()
         {
             var tempDir = CreateTempDirectory();
@@ -326,6 +365,10 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         ["ach_one"] = " https://example.com/locked.png "
                     },
+                    AchievementNotes = new Dictionary<string, string>
+                    {
+                        [" ach_one "] = " remember this "
+                    },
                     ProviderOverride = new ProviderOverrideData
                     {
                         ProviderKey = "Steam",
@@ -346,8 +389,10 @@ namespace PlayniteAchievements.Services.Tests
                 CollectionAssert.AreEqual(new[] { "ach_one", "ach_two" }, portable.AchievementOrder);
                 Assert.AreEqual("https://example.com/unlocked.png", portable.AchievementUnlockedIconOverrides["ach_one"]);
                 Assert.AreEqual("https://example.com/locked.png", portable.AchievementLockedIconOverrides["ach_one"]);
+                Assert.AreEqual("remember this", portable.AchievementNotes["ach_one"]);
                 Assert.AreEqual(1, portable.AchievementUnlockedIconOverrides.Count);
                 Assert.AreEqual(1, portable.AchievementLockedIconOverrides.Count);
+                Assert.AreEqual(1, portable.AchievementNotes.Count);
                 AssertProviderOverride(portable, "Steam", "480");
                 Assert.IsTrue(portable.UseSeparateLockedIconsOverride == true);
             }
@@ -427,6 +472,10 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         [apiName] = "https://example.com/locked.png"
                     },
+                    AchievementNotes = new Dictionary<string, string>
+                    {
+                        [apiName] = "portable note"
+                    },
                     ProviderOverride = new ProviderOverrideData
                     {
                         ProviderKey = "Steam",
@@ -442,6 +491,7 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreEqual(1, result.OmittedLocalIconOverrideCount);
                 Assert.IsNull(portable.AchievementUnlockedIconOverrides);
                 Assert.AreEqual("https://example.com/locked.png", portable.AchievementLockedIconOverrides[apiName]);
+                Assert.AreEqual("portable note", portable.AchievementNotes[apiName]);
                 AssertProviderOverride(portable, "Steam", "480");
             }
             finally
@@ -518,6 +568,10 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         [apiName] = lockedManagedPath
                     },
+                    AchievementNotes = new Dictionary<string, string>
+                    {
+                        [apiName] = "package note"
+                    },
                     ProviderOverride = new ProviderOverrideData
                     {
                         ProviderKey = "Steam",
@@ -540,6 +594,7 @@ namespace PlayniteAchievements.Services.Tests
                         var portable = JsonConvert.DeserializeObject<GameCustomDataPortableFile>(reader.ReadToEnd());
                         Assert.AreEqual("images/" + fileStem + ".png", portable.AchievementUnlockedIconOverrides[apiName]);
                         Assert.AreEqual("images/" + fileStem + ".locked.png", portable.AchievementLockedIconOverrides[apiName]);
+                        Assert.AreEqual("package note", portable.AchievementNotes[apiName]);
                         AssertProviderOverride(portable, "Steam", "480");
                     }
                 }
@@ -550,6 +605,7 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.IsFalse(importResult.HasIgnoredPackageImages);
                 Assert.IsTrue(imported.AchievementUnlockedIconOverrides[apiName].EndsWith(Path.Combine("icon_cache", importedGameId.ToString("D"), "custom", fileStem + ".png")));
                 Assert.IsTrue(imported.AchievementLockedIconOverrides[apiName].EndsWith(Path.Combine("icon_cache", importedGameId.ToString("D"), "custom", fileStem + ".locked.png")));
+                Assert.AreEqual("package note", imported.AchievementNotes[apiName]);
                 Assert.IsTrue(File.Exists(imported.AchievementUnlockedIconOverrides[apiName]));
                 Assert.IsTrue(File.Exists(imported.AchievementLockedIconOverrides[apiName]));
                 AssertProviderOverride(imported, "Steam", "480");
@@ -600,6 +656,10 @@ namespace PlayniteAchievements.Services.Tests
                             {
                                 ["ach_one"] = " https://example.com/new-locked.png "
                             },
+                            AchievementNotes = new Dictionary<string, string>
+                            {
+                                [" ach_one "] = " imported note "
+                            },
                             ProviderOverride = new ProviderOverrideData
                             {
                                 ProviderKey = "Steam",
@@ -616,6 +676,7 @@ namespace PlayniteAchievements.Services.Tests
                 Assert.AreEqual("imported-capstone", imported.ManualCapstoneApiName);
                 Assert.AreEqual("https://example.com/new-unlocked.png", imported.AchievementUnlockedIconOverrides["ach_one"]);
                 Assert.AreEqual("https://example.com/new-locked.png", imported.AchievementLockedIconOverrides["ach_one"]);
+                Assert.AreEqual("imported note", imported.AchievementNotes["ach_one"]);
                 AssertProviderOverride(imported, "Steam", "480");
                 Assert.IsNull(imported.UseSeparateLockedIconsOverride);
             }

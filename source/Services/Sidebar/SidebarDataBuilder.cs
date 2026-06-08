@@ -685,6 +685,7 @@ namespace PlayniteAchievements.Services.Sidebar
                     TrophyType = recent.TrophyType,
                     Hidden = recent.Hidden,
                     IsCapstone = recent.IsCapstone,
+                    AchievementNote = recent.AchievementNote,
                     ProviderKey = recent.ProviderKey,
                     GlobalPercentUnlocked = recent.GlobalPercentUnlocked,
                     Rarity = recent.Rarity,

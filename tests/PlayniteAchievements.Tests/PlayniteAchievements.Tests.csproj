@@ -57,10 +57,12 @@
     <Compile Include="..\..\source\Services\GameCustomDataStore.cs" Link="Source\Services\GameCustomDataStore.cs" />
     <Compile Include="..\..\source\Services\GameCustomDataLookup.cs" Link="Source\Services\GameCustomDataLookup.cs" />
     <Compile Include="..\..\source\Services\AchievementIconOverrideHelper.cs" Link="Source\Services\AchievementIconOverrideHelper.cs" />
+    <Compile Include="..\..\source\Services\AchievementNoteHelper.cs" Link="Source\Services\AchievementNoteHelper.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataLegacyMigration.cs" Link="Source\Services\GameCustomData\GameCustomDataLegacyMigration.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataNormalizer.cs" Link="Source\Services\GameCustomData\GameCustomDataNormalizer.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataRepository.cs" Link="Source\Services\GameCustomData\GameCustomDataRepository.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataRuntimeProjector.cs" Link="Source\Services\GameCustomData\GameCustomDataRuntimeProjector.cs" />
+    <Compile Include="..\..\source\Services\Hydration\AchievementDetailHydrator.cs" Link="Source\Services\Hydration\AchievementDetailHydrator.cs" />
     <Compile Include="..\..\source\Services\Images\AchievementIconCachePathBuilder.cs" Link="Source\Services\Images\AchievementIconCachePathBuilder.cs" />
     <Compile Include="..\..\source\Services\Images\DiskImageService.cs" Link="Source\Services\Images\DiskImageService.cs" />
     <Compile Include="..\..\source\Services\Images\ManagedCustomIconService.cs" Link="Source\Services\Images\ManagedCustomIconService.cs" />

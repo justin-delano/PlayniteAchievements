@@ -262,6 +262,22 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public string AchievementNote
+        {
+            get => _source?.AchievementNote;
+            set
+            {
+                SetSourceValue(
+                    source => source.AchievementNote,
+                    (source, next) => source.AchievementNote = next,
+                    AchievementNoteHelper.NormalizeNote(value),
+                    nameof(AchievementNote),
+                    nameof(HasAchievementNote));
+            }
+        }
+
+        public bool HasAchievementNote => !string.IsNullOrWhiteSpace(AchievementNote);
+
         // Hidden achievement visibility settings
         private bool _showHiddenIcon;
         public bool ShowHiddenIcon
@@ -1066,6 +1082,8 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(Hidden));
             OnPropertyChanged(nameof(IsUnlock));
             OnPropertyChanged(nameof(ApiName));
+            OnPropertyChanged(nameof(AchievementNote));
+            OnPropertyChanged(nameof(HasAchievementNote));
             OnPropertyChanged(nameof(ProgressNum));
             OnPropertyChanged(nameof(ProgressDenom));
             OnPropertyChanged(nameof(HasProgress));

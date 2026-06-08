@@ -66,6 +66,12 @@ namespace PlayniteAchievements.Models.Achievements
         public bool IsFilteredFromSummaries { get; set; }
 
         /// <summary>
+        /// Runtime-only user note stored in per-game custom data.
+        /// </summary>
+        [IgnoreDataMember]
+        public string AchievementNote { get; set; }
+
+        /// <summary>
         /// Playnite Game reference for theme bindings.
         /// Populated during snapshot building for all-games views.
         /// Not persisted to cache.

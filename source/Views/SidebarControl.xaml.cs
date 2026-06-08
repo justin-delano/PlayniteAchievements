@@ -1241,7 +1241,7 @@ namespace PlayniteAchievements.Views
 
         private void DataGridRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is DataGridRow row)
+            if (TryResolveContextMenuRow(sender, e, out var row))
             {
                 e.Handled = true;
                 _pendingRightClickRow = row;
@@ -1250,13 +1250,21 @@ namespace PlayniteAchievements.Views
 
         private void DataGridRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (sender is DataGridRow row)
+            if (TryResolveContextMenuRow(sender, e, out var row))
             {
                 e.Handled = true;
                 var targetRow = _pendingRightClickRow ?? row;
                 _pendingRightClickRow = null;
                 OpenContextMenuForRow(targetRow);
             }
+        }
+
+        private static bool TryResolveContextMenuRow(object sender, MouseButtonEventArgs e, out DataGridRow row)
+        {
+            row = sender as DataGridRow
+                  ?? e?.Source as DataGridRow
+                  ?? VisualTreeHelpers.FindVisualParent<DataGridRow>(e?.OriginalSource as DependencyObject);
+            return row != null;
         }
 
         private void DataGridColumnMenu_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
@@ -2114,6 +2122,11 @@ namespace PlayniteAchievements.Views
             }
             menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_OpenGameInLibrary",
                 () => ExecuteCommand(_viewModel?.OpenGameInLibraryCommand, data)));
+            AchievementRowOptionsMenuBuilder.AppendAchievementOptions(
+                menu,
+                data,
+                this,
+                RefreshView);
             return menu;
         }
 

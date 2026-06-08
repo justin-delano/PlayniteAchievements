@@ -10,7 +10,7 @@ namespace PlayniteAchievements.Services
 {
     internal static class GameCustomDataNormalizer
     {
-        internal const int CurrentSchemaVersion = 3;
+        internal const int CurrentSchemaVersion = 4;
 
         private sealed class LegacyFilterExtractionResult
         {
@@ -63,6 +63,7 @@ namespace PlayniteAchievements.Services
                 extractedFilters.SummaryFilteredAchievementApiNames);
             normalized.AchievementUnlockedIconOverrides = NormalizeIconOverrides(normalized.AchievementUnlockedIconOverrides);
             normalized.AchievementLockedIconOverrides = NormalizeIconOverrides(normalized.AchievementLockedIconOverrides);
+            normalized.AchievementNotes = AchievementNoteHelper.NormalizeNoteMap(normalized.AchievementNotes);
             normalized.ManualLink = NormalizeManualLink(normalized.ManualLink);
             return normalized;
         }
@@ -93,6 +94,7 @@ namespace PlayniteAchievements.Services
             normalized.SummaryFilteredAchievementApiNames = NormalizeAchievementApiNameList(normalized.SummaryFilteredAchievementApiNames);
             normalized.AchievementUnlockedIconOverrides = NormalizeIconOverrides(normalized.AchievementUnlockedIconOverrides);
             normalized.AchievementLockedIconOverrides = NormalizeIconOverrides(normalized.AchievementLockedIconOverrides);
+            normalized.AchievementNotes = AchievementNoteHelper.NormalizeNoteMap(normalized.AchievementNotes);
             normalized.ManualLink = NormalizeManualLink(normalized.ManualLink);
             return normalized;
         }
@@ -115,6 +117,7 @@ namespace PlayniteAchievements.Services
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
                    (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
+                   (data.AchievementNotes != null && data.AchievementNotes.Count > 0) ||
                    data.ProviderOverride != null ||
                    (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
                    !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
@@ -145,6 +148,7 @@ namespace PlayniteAchievements.Services
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
                    (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
+                   (data.AchievementNotes != null && data.AchievementNotes.Count > 0) ||
                    data.ProviderOverride != null ||
                    (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
                    !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
@@ -170,6 +174,7 @@ namespace PlayniteAchievements.Services
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
                    (data.AchievementLockedIconOverrides != null && data.AchievementLockedIconOverrides.Count > 0) ||
+                   (data.AchievementNotes != null && data.AchievementNotes.Count > 0) ||
                    data.ProviderOverride != null ||
                    (data.RetroAchievementsGameIdOverride.HasValue && data.RetroAchievementsGameIdOverride.Value > 0) ||
                    !string.IsNullOrWhiteSpace(data.XeniaTitleIdOverride) ||
@@ -235,6 +240,11 @@ namespace PlayniteAchievements.Services
                     ? new Dictionary<string, string>(existing.AchievementLockedIconOverrides, StringComparer.OrdinalIgnoreCase)
                     : legacy.AchievementLockedIconOverrides != null && legacy.AchievementLockedIconOverrides.Count > 0
                         ? new Dictionary<string, string>(legacy.AchievementLockedIconOverrides, StringComparer.OrdinalIgnoreCase)
+                        : null,
+                AchievementNotes = existing.AchievementNotes != null && existing.AchievementNotes.Count > 0
+                    ? new Dictionary<string, string>(existing.AchievementNotes, StringComparer.OrdinalIgnoreCase)
+                    : legacy.AchievementNotes != null && legacy.AchievementNotes.Count > 0
+                        ? new Dictionary<string, string>(legacy.AchievementNotes, StringComparer.OrdinalIgnoreCase)
                         : null,
                 ProviderOverride = ResolveEffectiveProviderOverride(existing) ??
                     ResolveEffectiveProviderOverride(legacy),

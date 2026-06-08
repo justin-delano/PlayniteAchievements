@@ -499,7 +499,9 @@
                                              RevealCommand="{Binding RevealAchievementCommand}"
                                              ColumnSettingsKey="SingleGame"
                                              UseExternalSorting="True"
-                                             Sorting="OnGridSorting"/>
+                                             Sorting="OnGridSorting"
+                                             RowPreviewMouseRightButtonDown="AchievementRow_PreviewMouseRightButtonDown"
+                                             RowPreviewMouseRightButtonUp="AchievementRow_PreviewMouseRightButtonUp"/>
     </Grid>
 </UserControl>
 

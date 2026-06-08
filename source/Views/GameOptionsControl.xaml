@@ -122,6 +122,11 @@
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Filters}" />
+                    <RadioButton x:Name="NotesTabButton"
+                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_Notes}"
+                                 Style="{StaticResource NavTabRadioStyle}"
+                                 Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
+                                 IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Notes}" />
                     <RadioButton x:Name="AchievementOrderTabButton"
                                  Content="{DynamicResource LOCPlayAch_GameOptions_Tab_AchievementOrder}"
                                  Style="{StaticResource NavTabRadioStyle}"
@@ -252,6 +257,20 @@
                         </Style>
                     </Grid.Style>
                     <ContentControl x:Name="FiltersHost" />
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="{x:Type Grid}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedTab}" Value="Notes">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <ContentControl x:Name="NotesHost" />
                 </Grid>
 
                 <Grid>

@@ -21,6 +21,7 @@ namespace PlayniteAchievements.Views
     {
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private DataGridRow _pendingRightClickRow;
 
         public SingleGameControl()
         {
@@ -158,7 +159,8 @@ namespace PlayniteAchievements.Views
             {
                 return TryOpenFocusedSelectorContextMenu() ||
                        (AchievementsDataGridControl?.IsColumnHeaderFocusedForController() == true &&
-                        AchievementsDataGridControl.OpenColumnVisibilityMenuForController());
+                        AchievementsDataGridControl.OpenColumnVisibilityMenuForController()) ||
+                       TryOpenSelectedAchievementContextMenu();
             }
 
             if (FullscreenControllerNavigationService.IsAcceptInput(input))
@@ -177,6 +179,82 @@ namespace PlayniteAchievements.Views
             }
 
             return false;
+        }
+
+        private void AchievementRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                _pendingRightClickRow = row;
+            }
+        }
+
+        private void AchievementRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                var targetRow = _pendingRightClickRow ?? row;
+                _pendingRightClickRow = null;
+                OpenContextMenuForRow(targetRow);
+            }
+        }
+
+        private static bool TryResolveContextMenuRow(object sender, MouseButtonEventArgs e, out DataGridRow row)
+        {
+            row = sender as DataGridRow
+                  ?? e?.Source as DataGridRow
+                  ?? VisualTreeHelpers.FindVisualParent<DataGridRow>(e?.OriginalSource as DependencyObject);
+            return row != null;
+        }
+
+        private bool TryOpenSelectedAchievementContextMenu()
+        {
+            var row = FullscreenControllerNavigationService.GetTargetDataGridRow(
+                AchievementsDataGridControl?.InternalDataGrid);
+            if (row == null)
+            {
+                return false;
+            }
+
+            return OpenContextMenuForRow(row, useControllerPlacement: true);
+        }
+
+        private bool OpenContextMenuForRow(DataGridRow row, bool useControllerPlacement = false)
+        {
+            if (row == null || !row.IsLoaded || row.DataContext == null)
+            {
+                return false;
+            }
+
+            var menu = new ContextMenu();
+            AchievementRowOptionsMenuBuilder.AppendAchievementOptions(
+                menu,
+                row.DataContext,
+                this,
+                RefreshAfterRowOptionsChanged);
+            if (menu.Items.Count == 0)
+            {
+                return false;
+            }
+
+            row.ContextMenu = menu;
+            if (useControllerPlacement)
+            {
+                return FullscreenControllerNavigationService.OpenContextMenu(row, menu);
+            }
+
+            menu.PlacementTarget = row;
+            menu.IsOpen = true;
+            return true;
+        }
+
+        private void RefreshAfterRowOptionsChanged()
+        {
+            RefreshView();
+            AchievementsDataGridControl?.Refresh();
+            UpdateDefaultSortIndicator();
         }
 
         private bool TryOpenFocusedSelectorContextMenu()

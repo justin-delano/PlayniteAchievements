@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
@@ -34,6 +35,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         // Sort state tracking
         private string _currentSortPath;
         private ListSortDirection? _currentSortDirection;
+        private DataGridRow _pendingRightClickRow;
 
         /// <summary>
         /// Identifies the DisplayItems dependency property.
@@ -310,6 +312,65 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             {
                 ApplySorting(sortAction.SortMemberPath, sortAction.Direction.Value);
             }
+        }
+
+        private void AchievementsGrid_RowPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                _pendingRightClickRow = row;
+            }
+        }
+
+        private void AchievementsGrid_RowPreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                var targetRow = _pendingRightClickRow ?? row;
+                _pendingRightClickRow = null;
+                OpenContextMenuForRow(targetRow);
+            }
+        }
+
+        private static bool TryResolveContextMenuRow(object sender, MouseButtonEventArgs e, out DataGridRow row)
+        {
+            row = sender as DataGridRow
+                  ?? e?.Source as DataGridRow
+                  ?? VisualTreeHelpers.FindVisualParent<DataGridRow>(e?.OriginalSource as DependencyObject);
+            return row != null;
+        }
+
+        private bool OpenContextMenuForRow(DataGridRow row)
+        {
+            if (row == null || !row.IsLoaded || row.DataContext == null)
+            {
+                return false;
+            }
+
+            var menu = new ContextMenu();
+            AchievementRowOptionsMenuBuilder.AppendAchievementOptions(
+                menu,
+                row.DataContext,
+                this,
+                RefreshAfterRowOptionsChanged);
+            if (menu.Items.Count == 0)
+            {
+                return false;
+            }
+
+            row.ContextMenu = menu;
+            menu.PlacementTarget = row;
+            menu.IsOpen = true;
+            return true;
+        }
+
+        private void RefreshAfterRowOptionsChanged()
+        {
+            _lastSourceItems = null;
+            _lastOrderedAchievements = null;
+            LoadData();
         }
 
         private void ApplySorting(string sortMemberPath, ListSortDirection direction)

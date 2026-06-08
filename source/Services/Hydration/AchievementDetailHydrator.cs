@@ -50,6 +50,9 @@ namespace PlayniteAchievements.Services.Hydration
             var summaryFilteredApiNames = customData.SummaryFilteredAchievementApiNames ??
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+            var achievementNotes = customData.AchievementNotes ??
+                new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var detail in details)
             {
                 if (detail == null)
@@ -96,6 +99,10 @@ namespace PlayniteAchievements.Services.Hydration
                 detail.IsFiltered = !string.IsNullOrWhiteSpace(apiName) && filteredApiNames.Contains(apiName);
                 detail.IsFilteredFromSummaries = !string.IsNullOrWhiteSpace(apiName) &&
                                                  summaryFilteredApiNames.Contains(apiName);
+                detail.AchievementNote = !string.IsNullOrWhiteSpace(apiName) &&
+                                         achievementNotes.TryGetValue(apiName, out var note)
+                    ? note
+                    : null;
             }
         }
 

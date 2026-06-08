@@ -81,6 +81,8 @@ namespace PlayniteAchievements.Models.Achievements
 
         public bool IsFilteredFromSummaries { get; set; }
 
+        public string AchievementNote { get; set; }
+
         public DateTime? UnlockTimeUtc { get; set; }
 
         public double? GlobalPercentUnlocked { get; set; }

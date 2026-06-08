@@ -38,6 +38,9 @@ namespace PlayniteAchievements.Services
 
         public HashSet<string> SummaryFilteredAchievementApiNames { get; set; } =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public Dictionary<string, string> AchievementNotes { get; set; } =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
     internal sealed class ResolvedSidebarGameCustomData
@@ -117,7 +120,10 @@ namespace PlayniteAchievements.Services
                     : new HashSet<string>(StringComparer.OrdinalIgnoreCase),
                 SummaryFilteredAchievementApiNames = hasCustomData
                     ? CloneApiNameSet(customData?.SummaryFilteredAchievementApiNames)
-                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                    : new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                AchievementNotes = hasCustomData
+                    ? CloneNoteMap(customData?.AchievementNotes)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             };
 
             return resolved;
@@ -305,6 +311,32 @@ namespace PlayniteAchievements.Services
             GameCustomDataStore store = null)
         {
             return ResolveGameCustomData(gameId, fallbackSettings, store).SummaryFilteredAchievementApiNames;
+        }
+
+        public static Dictionary<string, string> GetAchievementNotes(
+            Guid gameId,
+            PersistedSettings fallbackSettings = null,
+            GameCustomDataStore store = null)
+        {
+            return ResolveGameCustomData(gameId, fallbackSettings, store).AchievementNotes;
+        }
+
+        public static string GetAchievementNote(
+            Guid gameId,
+            string apiName,
+            PersistedSettings fallbackSettings = null,
+            GameCustomDataStore store = null)
+        {
+            var normalizedApiName = NormalizeValue(apiName);
+            if (string.IsNullOrWhiteSpace(normalizedApiName))
+            {
+                return null;
+            }
+
+            var notes = GetAchievementNotes(gameId, fallbackSettings, store);
+            return notes != null && notes.TryGetValue(normalizedApiName, out var note)
+                ? note
+                : null;
         }
 
         public static Dictionary<string, string> GetAchievementUnlockedIconOverrides(
@@ -603,6 +635,29 @@ namespace PlayniteAchievements.Services
             }
 
             return set;
+        }
+
+        private static Dictionary<string, string> CloneNoteMap(IReadOnlyDictionary<string, string> source)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (source == null)
+            {
+                return map;
+            }
+
+            foreach (var pair in source)
+            {
+                var key = NormalizeValue(pair.Key);
+                var value = AchievementNoteHelper.NormalizeNote(pair.Value);
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                map[key] = value;
+            }
+
+            return map;
         }
 
         private static bool TryGetPositiveId(string value, out int id)

@@ -235,6 +235,21 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _categoryLabel, value);
         }
 
+        private string _achievementNote;
+        public string AchievementNote
+        {
+            get => _achievementNote;
+            set
+            {
+                if (SetValueAndReturn(ref _achievementNote, AchievementNoteHelper.NormalizeNote(value)))
+                {
+                    OnPropertyChanged(nameof(HasAchievementNote));
+                }
+            }
+        }
+
+        public bool HasAchievementNote => !string.IsNullOrWhiteSpace(AchievementNote);
+
         /// <summary>
         /// True if this achievement has PlayStation trophy type data.
         /// </summary>
@@ -279,6 +294,7 @@ namespace PlayniteAchievements.ViewModels
             TrophyType = other.TrophyType;
             CategoryType = other.CategoryType;
             CategoryLabel = other.CategoryLabel;
+            AchievementNote = other.AchievementNote;
         }
     }
 }

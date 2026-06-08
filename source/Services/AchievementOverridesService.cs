@@ -122,6 +122,40 @@ namespace PlayniteAchievements.Services
             _notifyCacheInvalidated(true);
         }
 
+        public void SetAchievementNote(Guid gameId, string achievementApiName, string note)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var apiName = AchievementNoteHelper.NormalizeApiName(achievementApiName);
+            if (string.IsNullOrWhiteSpace(apiName))
+            {
+                return;
+            }
+
+            var normalizedNote = AchievementNoteHelper.NormalizeNote(note);
+            _gameCustomDataStore.Update(gameId, customData =>
+            {
+                var notes = customData.AchievementNotes != null
+                    ? new Dictionary<string, string>(customData.AchievementNotes, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                if (string.IsNullOrWhiteSpace(normalizedNote))
+                {
+                    notes.Remove(apiName);
+                }
+                else
+                {
+                    notes[apiName] = normalizedNote;
+                }
+
+                customData.AchievementNotes = notes.Count > 0 ? notes : null;
+            });
+            _notifyCacheInvalidated(true);
+        }
+
         public void SetAchievementIconOverrides(
             Guid gameId,
             IReadOnlyDictionary<string, string> unlockedIconOverrides,

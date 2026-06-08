@@ -11,6 +11,7 @@
     <!-- 02 Core and Common Text -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Actions">Actions</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Exclude from Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Include in Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddType">Add Type</sys:String>
@@ -54,6 +55,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Not linked</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unlocked">Unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Unlocked Count</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_View">View</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">Completed</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Counts">{0}/{1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Rarity">Rarity:</sys:String>
@@ -161,6 +163,8 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Exclude from Refreshes and Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Exclude this Game and Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Please enter an Exophase game ID.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_EditCategories">Edit Categories</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Filters">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Game Options</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Include this Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">Include in Refreshes</sys:String>
@@ -176,7 +180,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Single Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone Achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_TestModernControls">Test Modern Theme Controls</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements">Unlink Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for &quot;{0}&quot;?
@@ -221,6 +225,13 @@ This will remove the manual achievement link, delete all manually set unlock tim
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Header">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Unfiltered">Unfiltered</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_HasNote">Note added</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Header">Achievement Notes</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Hint">Add personal notes for this game's achievements. Formatting supports **bold**, *italic*, and __underline__ markers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_NoNote">No note</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Note">Note</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithNotes">With Notes</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithoutNotes">Without Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary_None">No manual link configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning">Manual tracking can replace cached achievement data from {0}. Continue?</sys:String>
@@ -281,10 +292,18 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_CustomIcons">Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Filters">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_ManualTracking">Manual Tracking</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Notes">Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Overrides">Overrides</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Overview">Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Value_NotAvailable">N/A</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_WindowTitle">Game Options - {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Bold">Bold</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_CharacterCountFormat">{0} / {1} characters</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_EditTitle">Edit Note</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Italic">Italic</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Preview">Preview</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Underline">Underline</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_ViewTitle">View Note</sys:String>
 
     <!-- ================================================================= -->
     <!-- 08 Manual Tracking and Linking -->
