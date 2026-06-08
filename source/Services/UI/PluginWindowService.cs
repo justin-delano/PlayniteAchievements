@@ -23,6 +23,9 @@ namespace PlayniteAchievements.Services.UI
     /// </summary>
     internal class PluginWindowService
     {
+        private const string SingleGameWindowPlacementKey = "SingleGameAchievements";
+        private const string GameOptionsWindowPlacementKey = "GameOptions";
+
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
         private readonly RefreshRuntime _refreshService;
@@ -97,6 +100,21 @@ namespace PlayniteAchievements.Services.UI
             {
                 window.ShowDialog();
             }
+        }
+
+        private void AttachWindowPlacement(Window window, string key, bool isFullscreen)
+        {
+            if (isFullscreen)
+            {
+                return;
+            }
+
+            WindowPlacementPersistenceService.Attach(
+                window,
+                _settings?.Persisted,
+                _persistSettingsForUi,
+                key,
+                _logger);
         }
 
         public void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Action<Guid> openSingleGameAchievementsView, Guid? singleGameRefreshId = null)
@@ -477,6 +495,7 @@ namespace PlayniteAchievements.Services.UI
 
                 window.MinWidth = 450;
                 window.MinHeight = 500;
+                AttachWindowPlacement(window, SingleGameWindowPlacementKey, isFullscreen);
                 try
                 {
                     if (window.Owner == null)
@@ -666,6 +685,7 @@ namespace PlayniteAchievements.Services.UI
 
                 window.MinWidth = 860;
                 window.MinHeight = 620;
+                AttachWindowPlacement(window, GameOptionsWindowPlacementKey, isFullscreen);
                 try
                 {
                     if (window.Owner == null)

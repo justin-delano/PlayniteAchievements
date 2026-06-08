@@ -11,6 +11,8 @@ namespace PlayniteAchievements.Views
 {
     public class PlayniteAchievementsTopPanelItem : TopPanelItem
     {
+        private const string OverviewWindowPlacementKey = "Overview";
+
         public PlayniteAchievementsTopPanelItem(
             IPlayniteAPI api,
             ILogger logger,
@@ -39,6 +41,12 @@ namespace PlayniteAchievements.Views
                 };
 
                 var window = PlayniteUiProvider.CreateExtensionWindow(Title, view, windowOptions);
+                WindowPlacementPersistenceService.Attach(
+                    window,
+                    settings?.Persisted,
+                    persistSettingsForUi,
+                    OverviewWindowPlacementKey,
+                    logger);
 
                 // Activate the sidebar control when the window loads
                 window.Loaded += (s, e) => view.Activate();

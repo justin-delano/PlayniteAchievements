@@ -135,7 +135,7 @@
             <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Common_Label_Category}" SortMemberPath="CategoryLabel" helpers:ColumnVisibilityHelper.ColumnKey="CategoryLabel">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding CategoryLabel}"
+                        <TextBlock Text="{Binding CategoryLabelDisplay}"
                                    Style="{StaticResource WrappedCenteredDataGridTextStyle}"
                                    Foreground="{DynamicResource TextBrush}"
                                    Opacity="0.7"/>

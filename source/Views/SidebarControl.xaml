@@ -266,6 +266,48 @@
                 <Setter Property="BorderThickness" Value="1"/>
             </Style>
 
+            <Style x:Key="HeaderScoreTooltipBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="{DynamicResource PopupBackgroundBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="CornerRadius" Value="8"/>
+                <Setter Property="Padding" Value="12"/>
+                <Setter Property="Width" Value="300"/>
+                <Setter Property="MaxWidth" Value="300"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+            </Style>
+
+            <Style x:Key="HeaderScoreTooltipTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="FontWeight" Value="ExtraBold"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+            </Style>
+
+            <Style x:Key="HeaderScoreTooltipMetaStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
+                <Setter Property="Opacity" Value="0.72"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            </Style>
+
+            <Style x:Key="HeaderScoreTooltipLineBorderStyle" TargetType="Border">
+                <Setter Property="Background" Value="#14FFFFFF"/>
+                <Setter Property="CornerRadius" Value="4"/>
+                <Setter Property="Padding" Value="8,5"/>
+                <Setter Property="Margin" Value="0,4,0,0"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            </Style>
+
+            <Style x:Key="HeaderScoreTooltipLineTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSizeLarge}"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="HorizontalAlignment" Value="Center"/>
+                <Setter Property="TextAlignment" Value="Center"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+            </Style>
+
             <!-- Game name button style with hover effect -->
             <Style x:Key="GameNameButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
@@ -699,62 +741,57 @@
                         <Border.ToolTip>
                             <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
                                      Placement="Bottom"
+                                     HorizontalOffset="0"
+                                     VerticalOffset="4"
+                                     Width="300"
+                                     Padding="0"
+                                     BorderThickness="0"
+                                     Background="{DynamicResource PopupBackgroundBrush}"
+                                     HorizontalContentAlignment="Stretch"
                                      HasDropShadow="True">
-                                <Border Background="{DynamicResource ControlBackgroundBrush}"
-                                        BorderBrush="{Binding CollectionScoreAccentBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="6"
-                                        Padding="12"
-                                        MinWidth="260">
+                                <Border Style="{StaticResource HeaderScoreTooltipBorderStyle}"
+                                        BorderBrush="{Binding CollectionScoreAccentBrush}">
                                     <StackPanel>
-                                        <Grid Margin="0,0,0,5">
+                                        <!-- <Grid Margin="0,0,0,10">
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38"/>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{Binding ScoreTooltipCurrentLevelLabel}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.7"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding CollectionCurrentLevelPointsText}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontWeight="SemiBold"/>
-                                        </Grid>
-                                        <Grid Margin="0,0,0,5">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{Binding ScoreTooltipPointsBeforeNextLabel}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.7"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding CollectionPointsUntilNextLevelText}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontWeight="SemiBold"/>
-                                        </Grid>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{Binding ScoreTooltipNextTierLabel}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.7"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding CollectionNextTierThresholdText}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{Binding CollectionScoreAccentBrush}"
-                                                       FontWeight="SemiBold"/>
-                                        </Grid>
+                                            <Image Grid.Column="0"
+                                                   Width="28"
+                                                   Height="28"
+                                                   VerticalAlignment="Center"
+                                                   Source="{Binding CollectionScoreBadgeIconKey, Converter={StaticResource ResourceKeyToImage}}"
+                                                   Effect="{StaticResource BadgeShadow}"
+                                                   Style="{StaticResource RarityIcon}"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding CollectionScoreLabel}"
+                                                           Style="{StaticResource HeaderScoreTooltipTitleStyle}"/>
+                                                <TextBlock Style="{StaticResource HeaderScoreTooltipMetaStyle}">
+                                                    <Run Text="{Binding CollectionTierText, Mode=OneWay}"/>
+                                                    <Run Text=" | "/>
+                                                    <Run Text="{Binding CollectionLevelText, Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </StackPanel>
+                                        </Grid> -->
+                                        <!-- <ProgressBar Value="{Binding CollectorLevelProgress, Mode=OneWay}"
+                                                     Style="{StaticResource HeaderScoreProgressBarStyle}"
+                                                     BorderBrush="{Binding CollectionScoreAccentBrush}"
+                                                     Foreground="{Binding CollectionScoreAccentBrush}"
+                                                     Margin="0,0,0,8"/> -->
+                                        <Border Style="{StaticResource HeaderScoreTooltipLineBorderStyle}">
+                                            <TextBlock Text="{Binding CollectionCurrentLevelPointsText}"
+                                                       Style="{StaticResource HeaderScoreTooltipLineTextStyle}"/>
+                                        </Border>
+                                        <Border Style="{StaticResource HeaderScoreTooltipLineBorderStyle}">
+                                            <TextBlock Text="{Binding CollectionPointsUntilNextLevelText}"
+                                                       Style="{StaticResource HeaderScoreTooltipLineTextStyle}"/>
+                                        </Border>
+                                        <Border Style="{StaticResource HeaderScoreTooltipLineBorderStyle}">
+                                            <TextBlock Text="{Binding CollectionNextTierThresholdText}"
+                                                       Style="{StaticResource HeaderScoreTooltipLineTextStyle}"
+                                                       Foreground="{Binding CollectionNextTierAccentBrush}"/>
+                                        </Border>
                                     </StackPanel>
                                 </Border>
                             </ToolTip>
@@ -854,62 +891,57 @@
                         <Border.ToolTip>
                             <ToolTip DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}"
                                      Placement="Bottom"
+                                     HorizontalOffset="0"
+                                     VerticalOffset="4"
+                                     Width="300"
+                                     Padding="0"
+                                     BorderThickness="0"
+                                     Background="{DynamicResource PopupBackgroundBrush}"
+                                     HorizontalContentAlignment="Stretch"
                                      HasDropShadow="True">
-                                <Border Background="{DynamicResource ControlBackgroundBrush}"
-                                        BorderBrush="{Binding PrestigeScoreAccentBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="6"
-                                        Padding="12"
-                                        MinWidth="260">
+                                <Border Style="{StaticResource HeaderScoreTooltipBorderStyle}"
+                                        BorderBrush="{Binding PrestigeScoreAccentBrush}">
                                     <StackPanel>
-                                        <Grid Margin="0,0,0,5">
-                                            <Grid.ColumnDefinitions>
+                                        <!-- <Grid Margin="0,0,0,10"> -->
+                                            <!-- <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="38"/>
                                                 <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{Binding ScoreTooltipCurrentLevelLabel}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.7"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding PrestigeCurrentLevelPointsText}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontWeight="SemiBold"/>
+                                            <Image Grid.Column="0"
+                                                   Width="28"
+                                                   Height="28"
+                                                   VerticalAlignment="Center"
+                                                   Source="{Binding PrestigeScoreBadgeIconKey, Converter={StaticResource ResourceKeyToImage}}"
+                                                   Effect="{StaticResource BadgeShadow}"
+                                                   Style="{StaticResource RarityIcon}"/>
+                                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding PrestigeScoreLabel}"
+                                                           Style="{StaticResource HeaderScoreTooltipTitleStyle}"/>
+                                                <TextBlock Style="{StaticResource HeaderScoreTooltipMetaStyle}">
+                                                    <Run Text="{Binding PrestigeTierText, Mode=OneWay}"/>
+                                                    <Run Text=" | "/>
+                                                    <Run Text="{Binding PrestigeLevelText, Mode=OneWay}"/>
+                                                </TextBlock>
+                                            </StackPanel>
                                         </Grid>
-                                        <Grid Margin="0,0,0,5">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{Binding ScoreTooltipPointsBeforeNextLabel}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.7"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding PrestigePointsUntilNextLevelText}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontWeight="SemiBold"/>
-                                        </Grid>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{Binding ScoreTooltipNextTierLabel}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       Opacity="0.7"/>
-                                            <TextBlock Grid.Column="1"
-                                                       Text="{Binding PrestigeNextTierThresholdText}"
-                                                       Style="{DynamicResource BaseTextBlockStyle}"
-                                                       Foreground="{Binding PrestigeScoreAccentBrush}"
-                                                       FontWeight="SemiBold"/>
-                                        </Grid>
+                                        <ProgressBar Value="{Binding PrestigeLevelProgress, Mode=OneWay}"
+                                                     Style="{StaticResource HeaderScoreProgressBarStyle}"
+                                                     BorderBrush="{Binding PrestigeScoreAccentBrush}"
+                                                     Foreground="{Binding PrestigeScoreAccentBrush}"
+                                                     Margin="0,0,0,8"/> -->
+                                        <Border Style="{StaticResource HeaderScoreTooltipLineBorderStyle}">
+                                            <TextBlock Text="{Binding PrestigeCurrentLevelPointsText}"
+                                                       Style="{StaticResource HeaderScoreTooltipLineTextStyle}"/>
+                                        </Border>
+                                        <Border Style="{StaticResource HeaderScoreTooltipLineBorderStyle}">
+                                            <TextBlock Text="{Binding PrestigePointsUntilNextLevelText}"
+                                                       Style="{StaticResource HeaderScoreTooltipLineTextStyle}"/>
+                                        </Border>
+                                        <Border Style="{StaticResource HeaderScoreTooltipLineBorderStyle}">
+                                            <TextBlock Text="{Binding PrestigeNextTierThresholdText}"
+                                                       Style="{StaticResource HeaderScoreTooltipLineTextStyle}"
+                                                       Foreground="{Binding PrestigeNextTierAccentBrush}"/>
+                                        </Border>
                                     </StackPanel>
                                 </Border>
                             </ToolTip>

@@ -126,6 +126,13 @@ namespace PlayniteAchievements.Models.Settings
                 ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             target.SidebarOverviewLeftColumnRatio = source.SidebarOverviewLeftColumnRatio;
+            target.WindowPlacements = source.WindowPlacements != null
+                ? source.WindowPlacements.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value?.Clone(),
+                    StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
+            target.SidebarTimelineRange = source.SidebarTimelineRange;
 
             // General Settings
             target.FirstTimeSetupCompleted = source.FirstTimeSetupCompleted;

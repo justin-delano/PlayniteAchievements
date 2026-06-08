@@ -67,11 +67,9 @@
     <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Lv {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Prestige">Prestige Score</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Tooltip_CurrentLevel">Current level</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">Max level reached</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextTier">Next tier</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextTierRemainingFormat">{0} points until {1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Tooltip_PointsBeforeNext">Before next level</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{0} until {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextTierLineFormat">{0} until {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_Title">Score System</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">Collection and Prestige Scores</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_CollectionTitle">Collection Score</sys:String>
@@ -163,7 +161,6 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Exclude from Refreshes and Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Exclude this Game and Clear Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Please enter an Exophase game ID.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_EditCategories">Edit Categories</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Filters">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Game Options</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Include this Game</sys:String>

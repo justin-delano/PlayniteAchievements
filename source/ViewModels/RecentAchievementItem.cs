@@ -232,8 +232,16 @@ namespace PlayniteAchievements.ViewModels
         public string CategoryLabel
         {
             get => _categoryLabel;
-            set => SetValue(ref _categoryLabel, value);
+            set
+            {
+                if (SetValueAndReturn(ref _categoryLabel, value))
+                {
+                    OnPropertyChanged(nameof(CategoryLabelDisplay));
+                }
+            }
         }
+
+        public string CategoryLabelDisplay => AchievementCategoryTypeHelper.ToCategoryLabelDisplayText(CategoryLabel);
 
         private string _achievementNote;
         public string AchievementNote

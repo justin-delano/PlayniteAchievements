@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Playnite.SDK;
 
 namespace PlayniteAchievements.Services
 {
@@ -124,6 +125,20 @@ namespace PlayniteAchievements.Services
         {
             var values = ParseValues(NormalizeOrDefault(rawValue));
             return values.Count == 0 ? DefaultCategoryType : string.Join(", ", values);
+        }
+
+        public static string ToCategoryLabelDisplayText(string rawValue)
+        {
+            var label = NormalizeCategoryOrDefault(rawValue);
+            return string.Equals(label, DefaultCategoryLabel, StringComparison.OrdinalIgnoreCase)
+                ? L("LOCPlayAch_Common_Default", DefaultCategoryLabel)
+                : label;
+        }
+
+        private static string L(string key, string fallback)
+        {
+            var value = ResourceProvider.GetString(key);
+            return string.IsNullOrWhiteSpace(value) ? fallback : value;
         }
 
         private static bool TryCanonicalize(string rawValue, out string canonical)

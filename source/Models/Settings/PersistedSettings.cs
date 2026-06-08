@@ -90,6 +90,9 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _gamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private double _sidebarOverviewLeftColumnRatio = DefaultSidebarOverviewLeftColumnRatio;
+        private Dictionary<string, WindowPlacementState> _windowPlacements =
+            new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
+        private TimelineRange _sidebarTimelineRange = TimelineRange.OneYear;
         private bool _firstTimeSetupCompleted = false;
         private bool _seenThemeMigration = false;
         private HashSet<Guid> _excludedGameIds = new HashSet<Guid>();
@@ -1023,6 +1026,41 @@ namespace PlayniteAchievements.Models.Settings
             }
         }
 
+        /// <summary>
+        /// Saved bounds for plugin-owned windows keyed by stable window name.
+        /// </summary>
+        public Dictionary<string, WindowPlacementState> WindowPlacements
+        {
+            get => _windowPlacements;
+            set
+            {
+                var normalized = new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        var key = (pair.Key ?? string.Empty).Trim();
+                        var placement = pair.Value;
+                        if (!string.IsNullOrWhiteSpace(key) && placement?.IsValid() == true)
+                        {
+                            normalized[key] = placement.Clone();
+                        }
+                    }
+                }
+
+                SetValue(ref _windowPlacements, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Last selected range for the sidebar achievements-over-time chart.
+        /// </summary>
+        public TimelineRange SidebarTimelineRange
+        {
+            get => _sidebarTimelineRange;
+            set => SetValue(ref _sidebarTimelineRange, value);
+        }
+
         #endregion
 
         #region General Settings
@@ -1280,6 +1318,13 @@ namespace PlayniteAchievements.Models.Settings
                     ? new Dictionary<string, double>(this.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
                 SidebarOverviewLeftColumnRatio = this.SidebarOverviewLeftColumnRatio,
+                WindowPlacements = this.WindowPlacements != null
+                    ? this.WindowPlacements.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Clone(),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase),
+                SidebarTimelineRange = this.SidebarTimelineRange,
 
                 // General Settings
                 FirstTimeSetupCompleted = this.FirstTimeSetupCompleted,

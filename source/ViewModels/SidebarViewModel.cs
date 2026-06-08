@@ -71,6 +71,7 @@ namespace PlayniteAchievements.ViewModels
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
         private System.Windows.Threading.DispatcherTimer _progressHideTimer;
         private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
+        private bool _isApplyingTimelineRange;
         private bool _showCompletedProgress;
         private bool _refreshInitiated;
         private bool _selectedGameLoadInProgress;
@@ -161,6 +162,7 @@ namespace PlayniteAchievements.ViewModels
 
             GlobalTimeline = new TimelineViewModel();
             SelectedGameTimeline = new TimelineViewModel();
+            InitializeTimelineRangePersistence();
 
             GamesPieChart = new PieChartViewModel
             {
@@ -223,6 +225,77 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
+        }
+
+        private void InitializeTimelineRangePersistence()
+        {
+            ApplySavedTimelineRange();
+            if (GlobalTimeline != null)
+            {
+                GlobalTimeline.PropertyChanged += Timeline_PropertyChanged;
+            }
+
+            if (SelectedGameTimeline != null)
+            {
+                SelectedGameTimeline.PropertyChanged += Timeline_PropertyChanged;
+            }
+        }
+
+        private void Timeline_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (_isApplyingTimelineRange ||
+                e?.PropertyName != nameof(TimelineViewModel.TimelineRange) ||
+                !(sender is TimelineViewModel timeline))
+            {
+                return;
+            }
+
+            try
+            {
+                _isApplyingTimelineRange = true;
+                if (!ReferenceEquals(timeline, GlobalTimeline) && GlobalTimeline != null)
+                {
+                    GlobalTimeline.TimelineRange = timeline.TimelineRange;
+                }
+
+                if (!ReferenceEquals(timeline, SelectedGameTimeline) && SelectedGameTimeline != null)
+                {
+                    SelectedGameTimeline.TimelineRange = timeline.TimelineRange;
+                }
+
+                if (_settings?.Persisted != null &&
+                    _settings.Persisted.SidebarTimelineRange != timeline.TimelineRange)
+                {
+                    _settings.Persisted.SidebarTimelineRange = timeline.TimelineRange;
+                    _persistSettingsForUi?.Invoke();
+                }
+            }
+            finally
+            {
+                _isApplyingTimelineRange = false;
+            }
+        }
+
+        private void ApplySavedTimelineRange()
+        {
+            var range = _settings?.Persisted?.SidebarTimelineRange ?? TimelineRange.OneYear;
+            try
+            {
+                _isApplyingTimelineRange = true;
+                if (GlobalTimeline != null && GlobalTimeline.TimelineRange != range)
+                {
+                    GlobalTimeline.TimelineRange = range;
+                }
+
+                if (SelectedGameTimeline != null && SelectedGameTimeline.TimelineRange != range)
+                {
+                    SelectedGameTimeline.TimelineRange = range;
+                }
+            }
+            finally
+            {
+                _isApplyingTimelineRange = false;
+            }
         }
 
         private void CloseFullscreenWindow()
@@ -1031,18 +1104,6 @@ namespace PlayniteAchievements.ViewModels
             PrestigeLevelText,
             PrestigeScorePointsText);
 
-        public string ScoreTooltipCurrentLevelLabel => L(
-            "LOCPlayAch_Score_Tooltip_CurrentLevel",
-            "Current level");
-
-        public string ScoreTooltipPointsBeforeNextLabel => L(
-            "LOCPlayAch_Score_Tooltip_PointsBeforeNext",
-            "Before next level");
-
-        public string ScoreTooltipNextTierLabel => L(
-            "LOCPlayAch_Score_Tooltip_NextTier",
-            "Next tier");
-
         public string CollectionCurrentLevelPointsText => FormatCurrentLevelPoints(
             AchievementLevelCalculator.CalculateModern(CollectorScore));
 
@@ -1071,9 +1132,17 @@ namespace PlayniteAchievements.ViewModels
 
         public Brush CollectionScoreAccentBrush => GetScoreAccentBrush(CollectorRank);
 
+        public Brush CollectionNextTierAccentBrush => GetNextTierAccentBrush(
+            AchievementLevelCalculator.CalculateModern(CollectorScore),
+            CollectorRank);
+
         public Brush CollectionScoreAccentBackgroundBrush => GetScoreAccentBackgroundBrush(CollectorRank);
 
         public Brush PrestigeScoreAccentBrush => GetScoreAccentBrush(PrestigeRank);
+
+        public Brush PrestigeNextTierAccentBrush => GetNextTierAccentBrush(
+            AchievementLevelCalculator.CalculateModern(PrestigeScore),
+            PrestigeRank);
 
         public Brush PrestigeScoreAccentBackgroundBrush => GetScoreAccentBackgroundBrush(PrestigeRank);
 
@@ -1082,6 +1151,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(CollectionCurrentLevelPointsText));
             OnPropertyChanged(nameof(CollectionPointsUntilNextLevelText));
             OnPropertyChanged(nameof(CollectionNextTierThresholdText));
+            OnPropertyChanged(nameof(CollectionNextTierAccentBrush));
         }
 
         private void RaisePrestigeScoreTooltipChanged()
@@ -1089,16 +1159,18 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(PrestigeCurrentLevelPointsText));
             OnPropertyChanged(nameof(PrestigePointsUntilNextLevelText));
             OnPropertyChanged(nameof(PrestigeNextTierThresholdText));
+            OnPropertyChanged(nameof(PrestigeNextTierAccentBrush));
         }
 
         private string FormatCurrentLevelPoints(AchievementLevelSnapshot snapshot)
         {
+            var progressLabel = L("LOCPlayAch_Progress", "Progress");
             if (snapshot == null || snapshot.CurrentLevelTotalPoints <= 0)
             {
-                return "0 / 0";
+                return $"{progressLabel}: 0/0";
             }
 
-            return $"{snapshot.CurrentLevelPoints:N0} / {snapshot.CurrentLevelTotalPoints:N0}";
+            return $"{progressLabel}: {snapshot.CurrentLevelPoints:N0}/{snapshot.CurrentLevelTotalPoints:N0}";
         }
 
         private string FormatPointsUntilNextLevel(AchievementLevelSnapshot snapshot)
@@ -1108,7 +1180,10 @@ namespace PlayniteAchievements.ViewModels
                 return L("LOCPlayAch_Score_Tooltip_MaxLevel", "Max level reached");
             }
 
-            return $"{Math.Max(0, snapshot?.PointsUntilNextLevel ?? 0):N0}";
+            return string.Format(
+                L("LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat", "{0} until {1}"),
+                Math.Max(0, snapshot?.PointsUntilNextLevel ?? 0).ToString("N0"),
+                FormatNextLevel(snapshot));
         }
 
         private string FormatNextTierThreshold(AchievementLevelSnapshot snapshot)
@@ -1120,9 +1195,19 @@ namespace PlayniteAchievements.ViewModels
 
             var nextTier = AchievementRankPresentation.FormatRank(snapshot.NextRank);
             return string.Format(
-                L("LOCPlayAch_Score_Tooltip_NextTierRemainingFormat", "{0} points until {1}"),
+                L("LOCPlayAch_Score_Tooltip_NextTierLineFormat", "{0} until {1}"),
                 Math.Max(0, snapshot.PointsUntilNextRank).ToString("N0"),
                 nextTier);
+        }
+
+        private string FormatNextLevel(AchievementLevelSnapshot snapshot)
+        {
+            var currentLevel = snapshot == null
+                ? 0
+                : (snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level);
+            return string.Format(
+                L("LOCPlayAch_Score_LevelFormat", "Lv {0}"),
+                Math.Max(0, currentLevel + 1));
         }
 
         private GameOverviewItem _displayedSelectedGame;
@@ -1915,7 +2000,12 @@ namespace PlayniteAchievements.ViewModels
                     continue;
                 }
 
-                var date = item.UnlockTime.Date;
+                if (!item.UnlockTimeUtc.HasValue)
+                {
+                    continue;
+                }
+
+                var date = DateTimeUtilities.AsUtcKind(item.UnlockTimeUtc.Value).Date;
                 if (snapshot.GlobalUnlockCountsByDate.TryGetValue(date, out var existing))
                 {
                     snapshot.GlobalUnlockCountsByDate[date] = existing + 1;
@@ -2271,6 +2361,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
                 OnPropertyChanged(nameof(CollectionScoreBadgeIconKey));
                 OnPropertyChanged(nameof(PrestigeScoreBadgeIconKey));
+                ApplySavedTimelineRange();
                 _ = RefreshViewAsync();
                 ApplyLeftFilters();
                 UpdateAggregatePieCharts();
@@ -2329,6 +2420,10 @@ namespace PlayniteAchievements.ViewModels
             {
                 ApplySidebarPieSmallSliceMode();
                 UpdateAggregatePieCharts();
+            }
+            else if (propertyName == nameof(PersistedSettings.SidebarTimelineRange))
+            {
+                ApplySavedTimelineRange();
             }
             else if (GamesOverviewSortHelper.IsConfiguredDefaultSortPropertyName(propertyName))
             {
@@ -3914,6 +4009,13 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private static Brush GetNextTierAccentBrush(AchievementLevelSnapshot snapshot, string fallbackRank)
+        {
+            return GetScoreAccentBrush(string.IsNullOrWhiteSpace(snapshot?.NextRank)
+                ? fallbackRank
+                : snapshot.NextRank);
+        }
+
         private static Brush GetScoreAccentBackgroundBrush(string rank)
         {
             switch (AchievementRankPresentation.GetRarityTier(rank))
@@ -3950,6 +4052,14 @@ namespace PlayniteAchievements.ViewModels
                 _refreshService.RebuildProgress -= OnRebuildProgress;
                 _refreshService.CacheDeltaUpdated -= OnCacheDeltaUpdated;
                 _refreshService.CacheInvalidated -= OnCacheInvalidated;
+            }
+            if (GlobalTimeline != null)
+            {
+                GlobalTimeline.PropertyChanged -= Timeline_PropertyChanged;
+            }
+            if (SelectedGameTimeline != null)
+            {
+                SelectedGameTimeline.PropertyChanged -= Timeline_PropertyChanged;
             }
             if (_settings != null)
             {

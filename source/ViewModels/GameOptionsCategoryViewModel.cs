@@ -711,7 +711,7 @@ namespace PlayniteAchievements.ViewModels
                     StringComparer.OrdinalIgnoreCase);
                 filtered = filtered.Where(a =>
                     selectedCategorySet.Contains(
-                        AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryDisplay)));
+                        AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.Category)));
             }
 
             CollectionHelper.SynchronizeCollection(AchievementRows, filtered.ToList());
@@ -894,7 +894,11 @@ namespace PlayniteAchievements.ViewModels
         public string Category
         {
             get => CategoryLabel;
-            set => CategoryLabel = value;
+            set
+            {
+                CategoryLabel = value;
+                OnPropertyChanged(nameof(CategoryDisplay));
+            }
         }
 
         public bool IsSelected
@@ -903,7 +907,7 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _isSelected, value);
         }
 
-        public string CategoryDisplay => AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(Category);
+        public string CategoryDisplay => AchievementCategoryTypeHelper.ToCategoryLabelDisplayText(Category);
     }
 
     public sealed class CategoryTypeSelectionOption : ObservableObject

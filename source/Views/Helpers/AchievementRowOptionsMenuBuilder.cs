@@ -87,7 +87,7 @@ namespace PlayniteAchievements.Views.Helpers
         {
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_Menu_EditCategories", "Edit Categories")
+                Header = L(resourceOwner, "LOCPlayAch_GameOptions_Tab_Category", "Categories")
             };
 
             var addTypeMenu = new MenuItem
