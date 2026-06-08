@@ -571,8 +571,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten bei freigeschalteten Symbolen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Show Sidebar Bar Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform/Spielzeit/Region anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Sammelwertungskarte anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Show Prestige Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Kachel für Sammelwertung anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Kachel für Prestigewertung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarGamesPieChart">Kreisdiagramm für vervollständigte Spiele anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">Prozentwerte auf Kreisdiagrammen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">Kreisdiagramm für Plattformen anzeigen</sys:String>
