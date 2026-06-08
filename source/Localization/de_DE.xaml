@@ -42,12 +42,12 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Keine Erfolge gefunden</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Nicht authentifiziert</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Bezeichnung umbenennen...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Bezeichnung ändern...</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Ausgewählte zurücksetzen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_RevertChanges">Änderungen widerrufen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectAll">Alle auswählen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">Bezeichnung festlegen...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Status_Disabled">Ausgeschaltet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Status_Disabled">Deaktiviert</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Linked">Verknüpft</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_None">Keine</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">Keine Übersteuerung festgelegt</sys:String>
@@ -161,7 +161,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Ausgewählte Spiele aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Vollendungserfolg festlegen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_TestModernControls">Moderne Design-Steuerung testen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements">Unlink Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements">Erfolgsverknüpfung aufheben</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Unlink achievements for &quot;{0}&quot;?
 
 This will remove the manual achievement link, delete all manually set unlock times, and clear cached data for this game immediately.</sys:String>
@@ -242,7 +242,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Lege einen Erfolg als Vollendungserfolg fest. Die Freischaltung eines Vollendungserfolgs wird das Spiel als vervollständigt markieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Capstone">Aktueller Vollendungserfolg</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Completion">Vervollständigung</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_GameId">Playnite-Spiel-ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_GameId">Playnite Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LastUpdatedLocal">Zuletzt aktualisiert (lokal)</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_OpenAchievementPage">Quellseite</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable">No source page link is available for this game.</sys:String>
@@ -308,7 +308,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Load">Laden</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_LoadPrunedSummary">Preset loaded with adjustments: removed {0} unavailable platforms(s) and {1} missing game reference(s).</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_MaxReached">Es können bis zu {0} Voreinstellungen gespeichert werden.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">Name für Voreinstellungen eingeben (1-64 Zeichen).</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">Bezeichnung für Voreinstellungen eingeben (1-64 Zeichen).</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogTitle">Benutzerdefinierte Aktualisierungsvoreinstellung speichern</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameInvalid">Preset name must be between 1 and {0} characters.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption"></sys:String>
@@ -360,7 +360,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} Erfolge ({1} freigeschaltet) aus {2} Spielen</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Aktualisiere Zwischenspeicher...</sys:String>
     <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Aktualisiere Erfolge für {0} ({1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithIcons">Aktualisiere Erfolge für {0} ({1}) - Herunterladen der Symbole {2}/{3}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithIcons">Aktualisiere Erfolge für {0} ({1}) - Download der Symbole {2}/{3}</sys:String>
 
     <!-- ================================================================= -->
     <!-- 10 Settings -->
@@ -566,10 +566,10 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_SortBy">Sortierung nach</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Sortierrichtung wechseln</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the active column header again to return to this default sort.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Show Completion Border</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Komplettierungsumrandung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(verborgener Erfolg)&quot; anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten bei freigeschalteten Symbolen anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Show Sidebar Bar Charts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Diagramme in Seitenleiste anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform/Spielzeit/Region anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Kachel für Sammelwertung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Kachel für Prestigewertung anzeigen</sys:String>
@@ -657,7 +657,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Landing_BeginRefresh">Aktualisierung starten</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_EnableProvider">Einschalten</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Found your existing achievement data</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_HasDataFound">Bestehende Erfolgsdaten gefunden</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">We found your existing achievement data. Continue to the achievements view to start tracking.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Willkommen zurück</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Language">Erfolgssprache</sys:String>
