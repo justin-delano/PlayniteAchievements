@@ -39,7 +39,7 @@
     <sys:String x:Key="LOCPlayAch_Common_NewLabel">Neue Bezeichnung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NoCachedAchievementsForGame">Keine zwischengespeicherten Erfolge für dieses Spiel vorhanden.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessage">This game has no achievements tracked yet. Click the Refresh button to check for achievement data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">This game may not support achievements, or achievements may not be available for this platform.</sys:String>
+    <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Keine Unterstützung von Erfolgen durch dieses Spiel oder seiner Plattform.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Keine Erfolge gefunden</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Nicht authentifiziert</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Bezeichnung ändern...</sys:String>
@@ -220,16 +220,16 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ExportPaOmittedLocalIcons">.PA export omitted {0} local image override(s). Use .PA.ZIP to export full image sets.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ImportIgnoredPackageImages">Ignored {0} image file(s) because their file names did not match this game's achievement API names.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ImportPortableButton">.PA/.PA.ZIP importieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusOverride">Enabled via override</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusSettings">Enabled via settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusOverride">Durch Übersteuerung aktiviert</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusSettings">Durch Einstellungen aktiviert</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsCheckbox">Immer separate Sperrsymbole für dieses Spiel verwenden</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHeader">Separate Locked Icons</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHeader">Separate Sperrsymbole</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHint">Force this game to download and use separate locked icons when providers expose them. When unchecked, the game follows the global setting. Changes apply on the next refresh for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderHeader">Übersteuerung des Anbieters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderHint">Force this game to use one supported achievement provider, or clear the override to use automatic matching.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderStatusAuto">Übersteuerung gesetzt: {0} (automatische Erkennung)</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderStatusValue">Übersteuerung gesetzt: {0} - {1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderInvalid">Select a supported provider override.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderInvalid">Unterstütze Übersteuerung des Anbieters auswählen.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Steam">Steam App ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RetroAchievements">RetroAchievements Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_ShadPS4">ShadPS4 Match ID</sys:String>
@@ -245,7 +245,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_GameId">Playnite Game ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LastUpdatedLocal">Zuletzt aktualisiert (lokal)</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_OpenAchievementPage">Quellseite</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable">No source page link is available for this game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable">Kein Quellseitenlink für dieses Spiel verfügbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LibrarySource">Quellbibliothek</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Provider">Anbieter</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Excluded">Ausgeschlossen</sys:String>
@@ -296,7 +296,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ExcludeHeader">Spiel-IDs ausschließen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ExecutionHeader">Ausführung</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ForceIncludeBypass">Explicit includes bypass user exclusions</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Header">Build a one-time custom refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Header">Einmalige benutzerdefinierte Aktualisierung durchführen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_IncludeHeader">Spiel-IDs einschließen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_InvalidRecentLimit">Recent limit override must be a positive number.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_MenuItem">Benutzerdefinierte Aktualisierung...</sys:String>
@@ -328,7 +328,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseParallelOverride">Übersteuerung der parallelen Plattformausführung</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseRecentLimit">Override recent limit</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonOpenGame">Spiel öffnen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">You can still check progress in the sidebar.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">Der Fortschritt kann weiterhin in der Seitenleiste eingesehen werden.</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Custom">Benutzerdefinierte Aktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Favoriten aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Vollständige Aktualisierung</sys:String>
@@ -634,8 +634,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AllLegacy">Alles traditionell</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AllModern">Alles modern</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} has been automatically updated for PlayniteAchievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">Bitte Playnite für Anwendung der Änderungen neu starten.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedMessage">{0} wurde automatisch für Playnite Achievements aktualisiert.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedRestart">Bitte Playnite zur Anwendung der Änderungen neu starten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_AutoMigratedTitle">Design automatisch migriert</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Custom">Benutzerdefiniert</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Description">Ein Playnite-Design von SuccessStory nach Playnite Achievements migrieren.</sys:String>
@@ -645,8 +645,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_ThemeMigration_MigrationLimited">Begrenzte Migration</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeLegacy">Traditionell</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_ModeModern">Modern</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">No themes found with backups that can be reverted.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">No themes found that need migrating. Themes with SuccessStory references will appear here.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoRevertableThemes">Keine Designs mit Sicherungen zum Wiederherstellen gefunden.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ThemeMigration_NoThemesMessage">Keine Designs mit Migrationsbedarf gefunden. Designs mit Verweisen auf SuccessStory werden hier gelistet.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RestartRequired">Bitte Playnite für Anwendung der Design-Anpassungen neu starten.</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_Revert">Design zurücksetzen</sys:String>
     <sys:String x:Key="LOCPlayAch_ThemeMigration_RevertButton">Zurücksetzen</sys:String>
