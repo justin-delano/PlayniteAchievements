@@ -65,6 +65,9 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showTopMenuBarButton = true;
         private bool _showCompactListRarityBar = true;
         private bool _showCompletionBorder = true;
+        private bool _showOverviewGridColumnHeaders = true;
+        private bool _showAchievementGridColumnHeaders = true;
+        private bool _showDesktopThemeAchievementGridColumnHeaders = true;
         private bool _enableAchievementCompactListControl = true;
         private bool _enableAchievementDataGridControl = true;
         private bool _enableAchievementCompactUnlockedListControl = true;
@@ -83,16 +86,24 @@ namespace PlayniteAchievements.Models.Settings
         private List<CustomRefreshPreset> _customRefreshPresets = new List<CustomRefreshPreset>();
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _dataGridColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _sidebarAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _sidebarGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _sidebarGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _singleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _desktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _gamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _gamesOverviewColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _startPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _startPageAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _startPageAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _startPageGamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _startPageGamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _startPageGamesOverviewColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private double _sidebarOverviewLeftColumnRatio = DefaultSidebarOverviewLeftColumnRatio;
         private Dictionary<string, WindowPlacementState> _windowPlacements =
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
@@ -532,6 +543,33 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// When true, shows column headers in games overview grids.
+        /// </summary>
+        public bool ShowOverviewGridColumnHeaders
+        {
+            get => _showOverviewGridColumnHeaders;
+            set => SetValue(ref _showOverviewGridColumnHeaders, value);
+        }
+
+        /// <summary>
+        /// When true, shows column headers in sidebar achievement grids.
+        /// </summary>
+        public bool ShowAchievementGridColumnHeaders
+        {
+            get => _showAchievementGridColumnHeaders;
+            set => SetValue(ref _showAchievementGridColumnHeaders, value);
+        }
+
+        /// <summary>
+        /// When true, shows column headers in desktop theme achievement grids.
+        /// </summary>
+        public bool ShowDesktopThemeAchievementGridColumnHeaders
+        {
+            get => _showDesktopThemeAchievementGridColumnHeaders;
+            set => SetValue(ref _showDesktopThemeAchievementGridColumnHeaders, value);
+        }
+
+        /// <summary>
         /// When true, enables the modern compact list control.
         /// </summary>
         public bool EnableAchievementCompactListControl
@@ -859,6 +897,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Legacy shared order storage for achievement DataGrid columns.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> DataGridColumnOrder
+        {
+            get => _dataGridColumnOrder;
+            set => SetValue(ref _dataGridColumnOrder, NormalizeColumnOrder(value));
+        }
+
+        /// <summary>
         /// Persisted widths for sidebar achievement columns (recent + selected game panels).
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
@@ -884,6 +932,16 @@ namespace PlayniteAchievements.Models.Settings
 
                 SetValue(ref _sidebarAchievementColumnWidths, normalized);
             }
+        }
+
+        /// <summary>
+        /// Persisted order for sidebar recent achievement columns.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> SidebarAchievementColumnOrder
+        {
+            get => _sidebarAchievementColumnOrder;
+            set => SetValue(ref _sidebarAchievementColumnOrder, NormalizeColumnOrder(value));
         }
 
         /// <summary>
@@ -915,6 +973,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted order for sidebar selected game achievement columns.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> SidebarGameColumnOrder
+        {
+            get => _sidebarGameColumnOrder;
+            set => SetValue(ref _sidebarGameColumnOrder, NormalizeColumnOrder(value));
+        }
+
+        /// <summary>
         /// Persisted widths for the single-game achievement columns.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
@@ -943,6 +1011,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted order for the single-game achievement columns.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> SingleGameColumnOrder
+        {
+            get => _singleGameColumnOrder;
+            set => SetValue(ref _singleGameColumnOrder, NormalizeColumnOrder(value));
+        }
+
+        /// <summary>
         /// Persisted widths for desktop theme integration achievement columns.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
@@ -968,6 +1046,16 @@ namespace PlayniteAchievements.Models.Settings
 
                 SetValue(ref _desktopThemeColumnWidths, normalized);
             }
+        }
+
+        /// <summary>
+        /// Persisted order for desktop theme integration achievement columns.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> DesktopThemeColumnOrder
+        {
+            get => _desktopThemeColumnOrder;
+            set => SetValue(ref _desktopThemeColumnOrder, NormalizeColumnOrder(value));
         }
 
         /// <summary>
@@ -1015,6 +1103,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted order for games overview columns in the sidebar.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> GamesOverviewColumnOrder
+        {
+            get => _gamesOverviewColumnOrder;
+            set => SetValue(ref _gamesOverviewColumnOrder, NormalizeColumnOrder(value));
+        }
+
+        /// <summary>
         /// Persisted visibility state for StartPage achievement grid columns.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
@@ -1059,6 +1157,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted order for StartPage achievement grid columns.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> StartPageAchievementColumnOrder
+        {
+            get => _startPageAchievementColumnOrder;
+            set => SetValue(ref _startPageAchievementColumnOrder, NormalizeColumnOrder(value));
+        }
+
+        /// <summary>
         /// Persisted visibility state for StartPage games overview grid columns.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
@@ -1100,6 +1208,16 @@ namespace PlayniteAchievements.Models.Settings
 
                 SetValue(ref _startPageGamesOverviewColumnWidths, normalized);
             }
+        }
+
+        /// <summary>
+        /// Persisted order for StartPage games overview grid columns.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> StartPageGamesOverviewColumnOrder
+        {
+            get => _startPageGamesOverviewColumnOrder;
+            set => SetValue(ref _startPageGamesOverviewColumnOrder, NormalizeColumnOrder(value));
         }
 
         /// <summary>
@@ -1354,6 +1472,9 @@ namespace PlayniteAchievements.Models.Settings
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ShowCompletionBorder = this.ShowCompletionBorder,
+                ShowOverviewGridColumnHeaders = this.ShowOverviewGridColumnHeaders,
+                ShowAchievementGridColumnHeaders = this.ShowAchievementGridColumnHeaders,
+                ShowDesktopThemeAchievementGridColumnHeaders = this.ShowDesktopThemeAchievementGridColumnHeaders,
                 EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
                 EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,
@@ -1391,36 +1512,60 @@ namespace PlayniteAchievements.Models.Settings
                 DataGridColumnWidths = this.DataGridColumnWidths != null
                     ? new Dictionary<string, double>(this.DataGridColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                DataGridColumnOrder = this.DataGridColumnOrder != null
+                    ? new Dictionary<string, int>(this.DataGridColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 SidebarAchievementColumnWidths = this.SidebarAchievementColumnWidths != null
                     ? new Dictionary<string, double>(this.SidebarAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SidebarAchievementColumnOrder = this.SidebarAchievementColumnOrder != null
+                    ? new Dictionary<string, int>(this.SidebarAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 SidebarGameColumnWidths = this.SidebarGameColumnWidths != null
                     ? new Dictionary<string, double>(this.SidebarGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SidebarGameColumnOrder = this.SidebarGameColumnOrder != null
+                    ? new Dictionary<string, int>(this.SidebarGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 SingleGameColumnWidths = this.SingleGameColumnWidths != null
                     ? new Dictionary<string, double>(this.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                SingleGameColumnOrder = this.SingleGameColumnOrder != null
+                    ? new Dictionary<string, int>(this.SingleGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 DesktopThemeColumnWidths = this.DesktopThemeColumnWidths != null
                     ? new Dictionary<string, double>(this.DesktopThemeColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                DesktopThemeColumnOrder = this.DesktopThemeColumnOrder != null
+                    ? new Dictionary<string, int>(this.DesktopThemeColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 GamesOverviewColumnVisibility = this.GamesOverviewColumnVisibility != null
                     ? new Dictionary<string, bool>(this.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
                 GamesOverviewColumnWidths = this.GamesOverviewColumnWidths != null
                     ? new Dictionary<string, double>(this.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                GamesOverviewColumnOrder = this.GamesOverviewColumnOrder != null
+                    ? new Dictionary<string, int>(this.GamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 StartPageAchievementColumnVisibility = this.StartPageAchievementColumnVisibility != null
                     ? new Dictionary<string, bool>(this.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
                 StartPageAchievementColumnWidths = this.StartPageAchievementColumnWidths != null
                     ? new Dictionary<string, double>(this.StartPageAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                StartPageAchievementColumnOrder = this.StartPageAchievementColumnOrder != null
+                    ? new Dictionary<string, int>(this.StartPageAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 StartPageGamesOverviewColumnVisibility = this.StartPageGamesOverviewColumnVisibility != null
                     ? new Dictionary<string, bool>(this.StartPageGamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
                 StartPageGamesOverviewColumnWidths = this.StartPageGamesOverviewColumnWidths != null
                     ? new Dictionary<string, double>(this.StartPageGamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                StartPageGamesOverviewColumnOrder = this.StartPageGamesOverviewColumnOrder != null
+                    ? new Dictionary<string, int>(this.StartPageGamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 SidebarOverviewLeftColumnRatio = this.SidebarOverviewLeftColumnRatio,
                 WindowPlacements = this.WindowPlacements != null
                     ? this.WindowPlacements.ToDictionary(
@@ -1491,6 +1636,26 @@ namespace PlayniteAchievements.Models.Settings
         private static string NormalizePath(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static Dictionary<string, int> NormalizeColumnOrder(Dictionary<string, int> value)
+        {
+            var normalized = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (value == null)
+            {
+                return normalized;
+            }
+
+            foreach (var pair in value)
+            {
+                var key = (pair.Key ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(key) && pair.Value >= 0)
+                {
+                    normalized[key] = pair.Value;
+                }
+            }
+
+            return normalized;
         }
 
         private static Dictionary<Guid, List<string>> NormalizeAchievementOrderOverrides(

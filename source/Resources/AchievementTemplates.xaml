@@ -502,6 +502,33 @@
         </StackPanel>
     </DataTemplate>
 
+    <DataTemplate x:Key="AchievementRarityTierTemplate">
+        <Image Width="20" Height="20"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"
+               Effect="{StaticResource BadgeShadow}">
+            <Image.Style>
+                <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
+                    <Setter Property="Visibility" Value="Visible"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
+                            <Setter Property="Source" Value="{DynamicResource BadgeRarityUltraRare}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
+                            <Setter Property="Source" Value="{DynamicResource BadgeRarityRare}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
+                            <Setter Property="Source" Value="{DynamicResource BadgeRarityUncommon}"/>
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
+                            <Setter Property="Source" Value="{DynamicResource BadgeRarityCommon}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Image.Style>
+        </Image>
+    </DataTemplate>
+
     <!-- Achievement Trophy Template -->
     <DataTemplate x:Key="AchievementTrophyTemplate">
         <Grid VerticalAlignment="Center" HorizontalAlignment="Center">

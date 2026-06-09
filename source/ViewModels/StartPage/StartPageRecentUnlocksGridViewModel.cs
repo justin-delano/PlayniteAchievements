@@ -22,12 +22,15 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public bool UseCoverImages => PersistedSettings?.UseCoverImages ?? true;
 
+        public bool ShowColumnHeaders => PersistedSettings?.ShowAchievementGridColumnHeaders ?? true;
+
         protected override void ApplySnapshot(SidebarDataSnapshot snapshot)
         {
             Items.ReplaceAll(StartPageWidgetProjection.ProjectRecentUnlocks(
                 snapshot?.RecentAchievements,
                 PersistedSettings));
             OnPropertyChanged(nameof(UseCoverImages));
+            OnPropertyChanged(nameof(ShowColumnHeaders));
         }
 
         protected override void OnPersistedSettingsChanged(string propertyName)
@@ -36,6 +39,12 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 propertyName == nameof(PersistedSettings.UseCoverImages))
             {
                 OnPropertyChanged(nameof(UseCoverImages));
+            }
+
+            if (string.IsNullOrEmpty(propertyName) ||
+                propertyName == nameof(PersistedSettings.ShowAchievementGridColumnHeaders))
+            {
+                OnPropertyChanged(nameof(ShowColumnHeaders));
             }
         }
     }

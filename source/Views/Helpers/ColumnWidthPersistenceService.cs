@@ -25,10 +25,15 @@ namespace PlayniteAchievements.Views.Helpers
         private readonly Action _saveSettings;
         private readonly IReadOnlyDictionary<string, double> _defaultWidthSeeds;
         private readonly Dictionary<DataGridColumn, EventHandler> _columnWidthChangedHandlers = new Dictionary<DataGridColumn, EventHandler>();
+        private readonly Dictionary<DataGridColumn, EventHandler> _columnDisplayIndexChangedHandlers = new Dictionary<DataGridColumn, EventHandler>();
         private readonly Dictionary<string, double> _pendingWidthUpdates = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private readonly Func<Dictionary<string, int>> _getOrder;
+        private readonly Action<Dictionary<string, int>> _setOrder;
         private DispatcherTimer _saveTimer;
         private bool _isApplyingWidths;
+        private bool _isApplyingOrder;
         private bool _isResizeInProgress;
+        private bool _isColumnOrderSaveQueued;
         private string _lastResizedColumnKey;
         private bool _shouldRescaleAllOnInitialLoad;
         private bool _isAttached;
@@ -68,7 +73,9 @@ namespace PlayniteAchievements.Views.Helpers
             Func<Dictionary<string, bool>> getVisibility,
             Action<Dictionary<string, bool>> setVisibility,
             Action saveSettings,
-            IReadOnlyDictionary<string, double> defaultWidthSeeds = null)
+            IReadOnlyDictionary<string, double> defaultWidthSeeds = null,
+            Func<Dictionary<string, int>> getOrder = null,
+            Action<Dictionary<string, int>> setOrder = null)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _logger = logger;
@@ -78,6 +85,8 @@ namespace PlayniteAchievements.Views.Helpers
             _setVisibility = setVisibility;
             _saveSettings = saveSettings;
             _defaultWidthSeeds = defaultWidthSeeds ?? new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            _getOrder = getOrder;
+            _setOrder = setOrder;
         }
 
         /// <summary>
@@ -94,7 +103,9 @@ namespace PlayniteAchievements.Views.Helpers
             InitializeTimer();
             EnsureDefaultSeeds();
             AttachWidthChangeHandlers();
+            AttachDisplayIndexChangeHandlers();
             AttachNormalizationHandlers();
+            ApplyPersistedOrder();
             ApplyPersistedVisibility();
             ApplyPersistedWidths();
         }
@@ -116,7 +127,13 @@ namespace PlayniteAchievements.Views.Helpers
                 TryDetachWidthChangedHandler(pair.Key, pair.Value);
             }
 
+            foreach (var pair in _columnDisplayIndexChangedHandlers.ToList())
+            {
+                TryDetachDisplayIndexChangedHandler(pair.Key, pair.Value);
+            }
+
             _columnWidthChangedHandlers.Clear();
+            _columnDisplayIndexChangedHandlers.Clear();
             _pendingWidthUpdates.Clear();
             DetachNormalizationHandlers();
 
@@ -141,6 +158,7 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             ApplyPersistedVisibility();
+            ApplyPersistedOrder();
             ApplyPersistedWidths();
         }
 
@@ -172,6 +190,48 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 AttachWidthChangedHandler(column);
             }
+        }
+
+        private void AttachDisplayIndexChangeHandlers()
+        {
+            if (_grid == null)
+            {
+                return;
+            }
+
+            foreach (var column in _grid.Columns)
+            {
+                AttachDisplayIndexChangedHandler(column);
+            }
+        }
+
+        private void AttachDisplayIndexChangedHandler(DataGridColumn column)
+        {
+            if (column == null || _columnDisplayIndexChangedHandlers.ContainsKey(column))
+            {
+                return;
+            }
+
+            var descriptor = DependencyPropertyDescriptor.FromProperty(DataGridColumn.DisplayIndexProperty, typeof(DataGridColumn));
+            if (descriptor == null)
+            {
+                return;
+            }
+
+            EventHandler handler = (_, __) => OnColumnDisplayIndexChanged();
+            descriptor.AddValueChanged(column, handler);
+            _columnDisplayIndexChangedHandlers[column] = handler;
+        }
+
+        private void TryDetachDisplayIndexChangedHandler(DataGridColumn column, EventHandler handler)
+        {
+            if (column == null || handler == null)
+            {
+                return;
+            }
+
+            var descriptor = DependencyPropertyDescriptor.FromProperty(DataGridColumn.DisplayIndexProperty, typeof(DataGridColumn));
+            descriptor?.RemoveValueChanged(column, handler);
         }
 
         private void AttachWidthChangedHandler(DataGridColumn column)
@@ -331,6 +391,69 @@ namespace PlayniteAchievements.Views.Helpers
             QueueWidthUpdate(key, width);
         }
 
+        private void OnColumnDisplayIndexChanged()
+        {
+            if (_isApplyingOrder || _grid == null || _getOrder == null || _setOrder == null)
+            {
+                return;
+            }
+
+            QueueColumnOrderSave();
+        }
+
+        private void QueueColumnOrderSave()
+        {
+            if (_isColumnOrderSaveQueued || _grid == null)
+            {
+                return;
+            }
+
+            _isColumnOrderSaveQueued = true;
+            _grid.Dispatcher.BeginInvoke(
+                new Action(() =>
+                {
+                    _isColumnOrderSaveQueued = false;
+                    PersistCurrentColumnOrder();
+                }),
+                DispatcherPriority.Background);
+        }
+
+        private void PersistCurrentColumnOrder()
+        {
+            if (_grid == null || _getOrder == null || _setOrder == null || _isApplyingOrder)
+            {
+                return;
+            }
+
+            var map = _getOrder.Invoke();
+            if (map == null)
+            {
+                map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var changed = false;
+            foreach (var column in _grid.Columns)
+            {
+                var key = GetColumnKey(column);
+                if (string.IsNullOrWhiteSpace(key) || column.DisplayIndex < 0)
+                {
+                    continue;
+                }
+
+                if (!map.TryGetValue(key, out var existing) || existing != column.DisplayIndex)
+                {
+                    map[key] = column.DisplayIndex;
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                _setOrder.Invoke(map);
+                _saveSettings?.Invoke();
+            }
+        }
+
         private void QueueWidthUpdate(string key, double width)
         {
             if (string.IsNullOrWhiteSpace(key) || !IsValidWidth(width))
@@ -455,6 +578,61 @@ namespace PlayniteAchievements.Views.Helpers
             NormalizeColumnsToContainer();
         }
 
+        private void ApplyPersistedOrder()
+        {
+            var map = _getOrder?.Invoke();
+            if (_grid == null || map == null || map.Count == 0)
+            {
+                return;
+            }
+
+            var orderedColumns = _grid.Columns
+                .Where(column => column != null)
+                .Select(column => new
+                {
+                    Column = column,
+                    Key = GetColumnKey(column),
+                    OriginalDisplayIndex = column.DisplayIndex
+                })
+                .Select(entry => new
+                {
+                    entry.Column,
+                    entry.OriginalDisplayIndex,
+                    SavedDisplayIndex = !string.IsNullOrWhiteSpace(entry.Key) && map.TryGetValue(entry.Key, out var displayIndex)
+                        ? Math.Max(0, displayIndex)
+                        : int.MaxValue
+                })
+                .OrderBy(entry => entry.SavedDisplayIndex)
+                .ThenBy(entry => entry.OriginalDisplayIndex)
+                .ToList();
+
+            if (orderedColumns.Count == 0)
+            {
+                return;
+            }
+
+            _isApplyingOrder = true;
+            try
+            {
+                for (var index = 0; index < orderedColumns.Count; index++)
+                {
+                    var column = orderedColumns[index].Column;
+                    if (column.DisplayIndex != index)
+                    {
+                        column.DisplayIndex = index;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to apply persisted column order.");
+            }
+            finally
+            {
+                _isApplyingOrder = false;
+            }
+        }
+
         private void ApplyPersistedWidths()
         {
             EnsureDefaultSeeds();
@@ -526,6 +704,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var visibleColumns = _grid.Columns
                 .Where(c => c != null && c.Visibility == Visibility.Visible)
+                .OrderBy(c => c.DisplayIndex)
                 .ToList();
             if (visibleColumns.Count == 0)
             {
@@ -994,7 +1173,9 @@ namespace PlayniteAchievements.Views.Helpers
 
             var menu = new ContextMenu();
 
-            foreach (var column in _grid.Columns)
+            foreach (var column in _grid.Columns
+                         .Where(c => c != null)
+                         .OrderBy(c => c.DisplayIndex))
             {
                 var key = GetColumnKey(column);
                 // Skip columns that are excluded from visibility toggle

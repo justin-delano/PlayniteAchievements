@@ -12,6 +12,7 @@
                                                EnableCompactGridMode="{Binding EnableCompactGridMode}"
                                                ShowGameMetadata="{Binding ShowGameMetadata}"
                                                ShowCompletionBorder="{Binding ShowCompletionBorder}"
+                                               ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                                ColumnSettingsKey="StartPageOverview"
                                                RowPreviewMouseRightButtonDown="GridRow_PreviewMouseRightButtonDown"
                                                RowPreviewMouseRightButtonUp="GridRow_PreviewMouseRightButtonUp"/>

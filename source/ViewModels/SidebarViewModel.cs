@@ -888,6 +888,10 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowCompletionBorder => _settings?.Persisted?.ShowCompletionBorder ?? true;
 
+        public bool ShowOverviewGridColumnHeaders => _settings?.Persisted?.ShowOverviewGridColumnHeaders ?? true;
+
+        public bool ShowAchievementGridColumnHeaders => _settings?.Persisted?.ShowAchievementGridColumnHeaders ?? true;
+
         public bool UseUniformRarityBadges => _settings?.Persisted?.UseUniformRarityBadges ?? false;
 
         private int _totalGamesOverview;
@@ -2358,6 +2362,8 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowSidebarBarCharts));
                 OnPropertyChanged(nameof(ShowSidebarGameMetadata));
                 OnPropertyChanged(nameof(ShowCompletionBorder));
+                OnPropertyChanged(nameof(ShowOverviewGridColumnHeaders));
+                OnPropertyChanged(nameof(ShowAchievementGridColumnHeaders));
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
                 OnPropertyChanged(nameof(CollectionScoreBadgeIconKey));
                 OnPropertyChanged(nameof(PrestigeScoreBadgeIconKey));
@@ -2408,6 +2414,14 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.ShowCompletionBorder))
             {
                 OnPropertyChanged(nameof(ShowCompletionBorder));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewGridColumnHeaders))
+            {
+                OnPropertyChanged(nameof(ShowOverviewGridColumnHeaders));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowAchievementGridColumnHeaders))
+            {
+                OnPropertyChanged(nameof(ShowAchievementGridColumnHeaders));
             }
             else if (propertyName == nameof(PersistedSettings.UseUniformRarityBadges))
             {

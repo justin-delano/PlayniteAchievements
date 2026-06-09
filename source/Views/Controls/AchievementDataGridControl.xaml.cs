@@ -33,10 +33,13 @@ namespace PlayniteAchievements.Views.Controls
             {
                 ["Game"] = 64,
                 ["Achievement"] = 460,
+                ["Title"] = 260,
                 ["UnlockDate"] = 240,
                 ["CategoryType"] = 210,
                 ["CategoryLabel"] = 210,
                 ["Rarity"] = 170,
+                ["RarityTier"] = 90,
+                ["RarityPercent"] = 120,
                 ["CollectionScore"] = 110,
                 ["PrestigeScore"] = 110,
                 ["Points"] = 100
@@ -230,6 +233,16 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(AllowColumnVisibilityMenuProperty, value);
         }
 
+        public static readonly DependencyProperty ShowColumnHeadersProperty =
+            DependencyProperty.Register(nameof(ShowColumnHeaders), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(true, OnShowColumnHeadersChanged));
+
+        public bool ShowColumnHeaders
+        {
+            get => (bool)GetValue(ShowColumnHeadersProperty);
+            set => SetValue(ShowColumnHeadersProperty, value);
+        }
+
         /// <summary>
         /// Occurs when a column header is clicked for sorting.
         /// Subscribe to handle sorting externally when UseExternalSorting is true.
@@ -273,6 +286,7 @@ namespace PlayniteAchievements.Views.Controls
             InitializeComponent();
             DataContextChanged += OnDataContextChanged;
             Unloaded += OnUnloaded;
+            UpdateColumnHeadersVisibility();
         }
 
         private static void OnColumnVisibilityChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -305,6 +319,24 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        private static void OnShowColumnHeadersChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.UpdateColumnHeadersVisibility();
+            }
+        }
+
+        private void UpdateColumnHeadersVisibility()
+        {
+            if (AchievementsDataGrid != null)
+            {
+                AchievementsDataGrid.HeadersVisibility = ShowColumnHeaders
+                    ? DataGridHeadersVisibility.Column
+                    : DataGridHeadersVisibility.None;
+            }
+        }
+
         private static void SetFixedColumnVisibility(DataGridColumn column, bool isVisible, double width)
         {
             if (column == null)
@@ -333,6 +365,7 @@ namespace PlayniteAchievements.Views.Controls
             AttachSettingsSubscriptions();
             UpdateCompactMode();
             UpdateColumnVisibility();
+            UpdateColumnHeadersVisibility();
 
             if (_isAttached)
             {
@@ -471,7 +504,15 @@ namespace PlayniteAchievements.Views.Controls
                         SavePluginSettings(settings);
                     }
                 },
-                DefaultColumnWidthSeeds);
+                DefaultColumnWidthSeeds,
+                getOrder: () => GetOrderMap(settings),
+                setOrder: map =>
+                {
+                    if (AllowLayoutPersistence)
+                    {
+                        SetOrderByKey(settings, map);
+                    }
+                });
 
             // Force collapse Game column when not shown (prevents flicker by applying during persistence)
             // Also exclude from visibility toggle menu
@@ -535,6 +576,17 @@ namespace PlayniteAchievements.Views.Controls
             return new Dictionary<string, bool>(map, StringComparer.OrdinalIgnoreCase);
         }
 
+        private Dictionary<string, int> GetOrderMap(PlayniteAchievementsSettings settings)
+        {
+            var map = GetOrderByKey(settings);
+            if (AllowLayoutPersistence || map == null)
+            {
+                return map;
+            }
+
+            return new Dictionary<string, int>(map, StringComparer.OrdinalIgnoreCase);
+        }
+
         private Dictionary<string, bool> GetVisibilityByKey(PlayniteAchievementsSettings settings)
         {
             if (settings?.Persisted == null)
@@ -585,6 +637,54 @@ namespace PlayniteAchievements.Views.Controls
                 "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnWidths,
                 _ => settings.Persisted.SingleGameColumnWidths
             };
+        }
+
+        private Dictionary<string, int> GetOrderByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            return ColumnSettingsKey switch
+            {
+                "DesktopTheme" => settings.Persisted.DesktopThemeColumnOrder,
+                "SingleGame" => settings.Persisted.SingleGameColumnOrder,
+                "Sidebar" => settings.Persisted.SidebarAchievementColumnOrder,
+                "SidebarGame" => settings.Persisted.SidebarGameColumnOrder,
+                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnOrder,
+                _ => settings.Persisted.SingleGameColumnOrder
+            };
+        }
+
+        private void SetOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            switch (ColumnSettingsKey)
+            {
+                case "DesktopTheme":
+                    settings.Persisted.DesktopThemeColumnOrder = map;
+                    break;
+                case "SingleGame":
+                    settings.Persisted.SingleGameColumnOrder = map;
+                    break;
+                case "Sidebar":
+                    settings.Persisted.SidebarAchievementColumnOrder = map;
+                    break;
+                case "SidebarGame":
+                    settings.Persisted.SidebarGameColumnOrder = map;
+                    break;
+                case "StartPageAchievements":
+                    settings.Persisted.StartPageAchievementColumnOrder = map;
+                    break;
+                default:
+                    settings.Persisted.SingleGameColumnOrder = map;
+                    break;
+            }
         }
 
         private void SetWidthsByKey(PlayniteAchievementsSettings settings, Dictionary<string, double> map)

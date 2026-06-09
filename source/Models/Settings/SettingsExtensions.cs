@@ -82,6 +82,10 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowSidebarGameMetadata = source.ShowSidebarGameMetadata;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
+            target.ShowCompletionBorder = source.ShowCompletionBorder;
+            target.ShowOverviewGridColumnHeaders = source.ShowOverviewGridColumnHeaders;
+            target.ShowAchievementGridColumnHeaders = source.ShowAchievementGridColumnHeaders;
+            target.ShowDesktopThemeAchievementGridColumnHeaders = source.ShowDesktopThemeAchievementGridColumnHeaders;
             target.EnableCompactGridMode = source.EnableCompactGridMode;
             target.CompactListSortMode = source.CompactListSortMode;
             target.CompactListSortDescending = source.CompactListSortDescending;
@@ -107,36 +111,60 @@ namespace PlayniteAchievements.Models.Settings
             target.DataGridColumnWidths = source.DataGridColumnWidths != null
                 ? new Dictionary<string, double>(source.DataGridColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.DataGridColumnOrder = source.DataGridColumnOrder != null
+                ? new Dictionary<string, int>(source.DataGridColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             target.SidebarAchievementColumnWidths = source.SidebarAchievementColumnWidths != null
                 ? new Dictionary<string, double>(source.SidebarAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.SidebarAchievementColumnOrder = source.SidebarAchievementColumnOrder != null
+                ? new Dictionary<string, int>(source.SidebarAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             target.SidebarGameColumnWidths = source.SidebarGameColumnWidths != null
                 ? new Dictionary<string, double>(source.SidebarGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.SidebarGameColumnOrder = source.SidebarGameColumnOrder != null
+                ? new Dictionary<string, int>(source.SidebarGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             target.SingleGameColumnWidths = source.SingleGameColumnWidths != null
                 ? new Dictionary<string, double>(source.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.SingleGameColumnOrder = source.SingleGameColumnOrder != null
+                ? new Dictionary<string, int>(source.SingleGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             target.DesktopThemeColumnWidths = source.DesktopThemeColumnWidths != null
                 ? new Dictionary<string, double>(source.DesktopThemeColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.DesktopThemeColumnOrder = source.DesktopThemeColumnOrder != null
+                ? new Dictionary<string, int>(source.DesktopThemeColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             target.GamesOverviewColumnVisibility = source.GamesOverviewColumnVisibility != null
                 ? new Dictionary<string, bool>(source.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             target.GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
                 ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.GamesOverviewColumnOrder = source.GamesOverviewColumnOrder != null
+                ? new Dictionary<string, int>(source.GamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             target.StartPageAchievementColumnVisibility = source.StartPageAchievementColumnVisibility != null
                 ? new Dictionary<string, bool>(source.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             target.StartPageAchievementColumnWidths = source.StartPageAchievementColumnWidths != null
                 ? new Dictionary<string, double>(source.StartPageAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.StartPageAchievementColumnOrder = source.StartPageAchievementColumnOrder != null
+                ? new Dictionary<string, int>(source.StartPageAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             target.StartPageGamesOverviewColumnVisibility = source.StartPageGamesOverviewColumnVisibility != null
                 ? new Dictionary<string, bool>(source.StartPageGamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             target.StartPageGamesOverviewColumnWidths = source.StartPageGamesOverviewColumnWidths != null
                 ? new Dictionary<string, double>(source.StartPageGamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.StartPageGamesOverviewColumnOrder = source.StartPageGamesOverviewColumnOrder != null
+                ? new Dictionary<string, int>(source.StartPageGamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             target.SidebarOverviewLeftColumnRatio = source.SidebarOverviewLeftColumnRatio;
             target.WindowPlacements = source.WindowPlacements != null
                 ? source.WindowPlacements.ToDictionary(

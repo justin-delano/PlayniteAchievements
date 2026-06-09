@@ -126,6 +126,19 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(ColumnSettingsKeyProperty, value);
         }
 
+        public static readonly DependencyProperty ShowColumnHeadersProperty =
+            DependencyProperty.Register(
+                nameof(ShowColumnHeaders),
+                typeof(bool),
+                typeof(GamesOverviewDataGridControl),
+                new PropertyMetadata(true, OnShowColumnHeadersChanged));
+
+        public bool ShowColumnHeaders
+        {
+            get => (bool)GetValue(ShowColumnHeadersProperty);
+            set => SetValue(ShowColumnHeadersProperty, value);
+        }
+
         public event SelectionChangedEventHandler SelectionChanged;
 
         public event EventHandler<DataGridSortingEventArgs> Sorting;
@@ -172,6 +185,7 @@ namespace PlayniteAchievements.Views.Controls
         public GamesOverviewDataGridControl()
         {
             InitializeComponent();
+            UpdateColumnHeadersVisibility();
         }
 
         public DataGrid InternalDataGrid => GamesOverviewDataGrid;
@@ -189,6 +203,8 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
+            UpdateColumnHeadersVisibility();
+
             _columnPersistence = new ColumnWidthPersistenceService(
                 GamesOverviewDataGrid,
                 Logger,
@@ -197,9 +213,29 @@ namespace PlayniteAchievements.Views.Controls
                 () => GetVisibilityByKey(settings),
                 map => SetVisibilityByKey(settings, map),
                 () => SavePluginSettings(settings),
-                DefaultWidthSeeds);
+                DefaultWidthSeeds,
+                getOrder: () => GetOrderByKey(settings),
+                setOrder: map => SetOrderByKey(settings, map));
             _columnPersistence.Attach();
             _isAttached = true;
+        }
+
+        private static void OnShowColumnHeadersChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is GamesOverviewDataGridControl control)
+            {
+                control.UpdateColumnHeadersVisibility();
+            }
+        }
+
+        private void UpdateColumnHeadersVisibility()
+        {
+            if (GamesOverviewDataGrid != null)
+            {
+                GamesOverviewDataGrid.HeadersVisibility = ShowColumnHeaders
+                    ? DataGridHeadersVisibility.Column
+                    : DataGridHeadersVisibility.None;
+            }
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
@@ -233,6 +269,35 @@ namespace PlayniteAchievements.Views.Controls
             else
             {
                 settings.Persisted.GamesOverviewColumnWidths = map;
+            }
+        }
+
+        private Dictionary<string, int> GetOrderByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            return IsStartPageScope()
+                ? settings.Persisted.StartPageGamesOverviewColumnOrder
+                : settings.Persisted.GamesOverviewColumnOrder;
+        }
+
+        private void SetOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            if (IsStartPageScope())
+            {
+                settings.Persisted.StartPageGamesOverviewColumnOrder = map;
+            }
+            else
+            {
+                settings.Persisted.GamesOverviewColumnOrder = map;
             }
         }
 

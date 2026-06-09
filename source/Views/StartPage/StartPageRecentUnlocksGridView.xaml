@@ -9,6 +9,7 @@
                                              x:Name="RecentUnlocksGrid"
                                              ShowGameColumn="True"
                                              UseCoverImages="{Binding UseCoverImages}"
+                                             ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                              AllowLayoutPersistence="True"
                                              AllowColumnVisibilityMenu="True"
                                              ColumnSettingsKey="StartPageAchievements"

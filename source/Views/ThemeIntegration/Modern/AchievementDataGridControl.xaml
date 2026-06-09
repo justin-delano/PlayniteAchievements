@@ -12,6 +12,7 @@
     <controls:AchievementDataGridControl x:Name="AchievementsGrid"
                                          ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=modern:AchievementDataGridControl}}"
                                          ColumnSettingsKey="DesktopTheme"
+                                         ShowColumnHeaders="{Binding DataContext.Persisted.ShowDesktopThemeAchievementGridColumnHeaders, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
                                          UseExternalSorting="True"
                                          Sorting="AchievementsGrid_Sorting"
                                          RowPreviewMouseRightButtonDown="AchievementsGrid_RowPreviewMouseRightButtonDown"

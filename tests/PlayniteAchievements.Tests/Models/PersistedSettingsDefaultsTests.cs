@@ -36,6 +36,16 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsColumnHeadersVisible()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsTrue(settings.ShowOverviewGridColumnHeaders);
+            Assert.IsTrue(settings.ShowAchievementGridColumnHeaders);
+            Assert.IsTrue(settings.ShowDesktopThemeAchievementGridColumnHeaders);
+        }
+
+        [TestMethod]
         public void SidebarOverviewColumnRatio_ClampsInvalidValues()
         {
             var settings = new PersistedSettings();
@@ -89,6 +99,71 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsFalse(clone.ShowSidebarPrestigeScoreCard);
             Assert.IsFalse(target.ShowSidebarCollectionScoreCard);
             Assert.IsFalse(target.ShowSidebarPrestigeScoreCard);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveColumnHeaderVisibilityAndColumnOrder()
+        {
+            var source = new PersistedSettings
+            {
+                ShowOverviewGridColumnHeaders = false,
+                ShowAchievementGridColumnHeaders = false,
+                ShowDesktopThemeAchievementGridColumnHeaders = false,
+                SidebarAchievementColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                {
+                    ["Title"] = 2
+                },
+                SidebarGameColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                {
+                    ["Rarity"] = 3
+                },
+                SingleGameColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                {
+                    ["Achievement"] = 1
+                },
+                DesktopThemeColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                {
+                    ["Points"] = 4
+                },
+                GamesOverviewColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                {
+                    ["OverviewGameName"] = 1
+                },
+                DataGridColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                {
+                    ["Legacy"] = 5
+                }
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsFalse(clone.ShowOverviewGridColumnHeaders);
+            Assert.IsFalse(clone.ShowAchievementGridColumnHeaders);
+            Assert.IsFalse(clone.ShowDesktopThemeAchievementGridColumnHeaders);
+            Assert.IsFalse(target.ShowOverviewGridColumnHeaders);
+            Assert.IsFalse(target.ShowAchievementGridColumnHeaders);
+            Assert.IsFalse(target.ShowDesktopThemeAchievementGridColumnHeaders);
+
+            Assert.AreEqual(2, clone.SidebarAchievementColumnOrder["Title"]);
+            Assert.AreEqual(3, clone.SidebarGameColumnOrder["Rarity"]);
+            Assert.AreEqual(1, clone.SingleGameColumnOrder["Achievement"]);
+            Assert.AreEqual(4, clone.DesktopThemeColumnOrder["Points"]);
+            Assert.AreEqual(1, clone.GamesOverviewColumnOrder["OverviewGameName"]);
+            Assert.AreEqual(5, clone.DataGridColumnOrder["Legacy"]);
+
+            Assert.AreEqual(2, target.SidebarAchievementColumnOrder["Title"]);
+            Assert.AreEqual(3, target.SidebarGameColumnOrder["Rarity"]);
+            Assert.AreEqual(1, target.SingleGameColumnOrder["Achievement"]);
+            Assert.AreEqual(4, target.DesktopThemeColumnOrder["Points"]);
+            Assert.AreEqual(1, target.GamesOverviewColumnOrder["OverviewGameName"]);
+            Assert.AreEqual(5, target.DataGridColumnOrder["Legacy"]);
+
+            Assert.AreNotSame(source.SidebarAchievementColumnOrder, clone.SidebarAchievementColumnOrder);
+            Assert.AreNotSame(source.SidebarGameColumnOrder, target.SidebarGameColumnOrder);
+            Assert.AreNotSame(source.DesktopThemeColumnOrder, clone.DesktopThemeColumnOrder);
+            Assert.AreNotSame(source.GamesOverviewColumnOrder, target.GamesOverviewColumnOrder);
         }
     }
 }

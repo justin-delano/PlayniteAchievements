@@ -39,7 +39,7 @@
               CanUserDeleteRows="False"
               CanUserResizeRows="False"
               CanUserResizeColumns="True"
-              CanUserReorderColumns="False"
+              CanUserReorderColumns="True"
               CanUserSortColumns="True"
               EnableRowVirtualization="True"
               VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -107,6 +107,38 @@
             <!-- Achievement Info -->
             <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName" helpers:ColumnVisibilityHelper.ColumnKey="Achievement"
                                     CellTemplate="{StaticResource AchievementInfoTemplate}"/>
+
+            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Title}" SortMemberPath="DisplayName" helpers:ColumnVisibilityHelper.ColumnKey="Title"
+                                    Visibility="Collapsed">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                                    <Setter Property="Opacity" Value="0.7"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                            <Setter Property="Opacity" Value="1"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
+                                            <Setter Property="FontStyle" Value="Italic"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
+                            <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
+                                 FontStyle="Italic"
+                                 FontSize="{DynamicResource FontSizeSmall}"
+                                 Foreground="{DynamicResource TextBrushDarker}"/>
+                        </TextBlock>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
             
             <!-- Game Column - shown in sidebar recent achievements -->
             <DataGridTemplateColumn x:Name="GameColumn"
@@ -150,6 +182,23 @@
             <!-- Rarity -->
             <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
                                     CellTemplate="{StaticResource AchievementRarityTemplate}"/>
+
+            <DataGridTemplateColumn Width="90" MinWidth="70" Header="{DynamicResource LOCPlayAch_Column_RarityTier}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityTier"
+                                    Visibility="Collapsed"
+                                    CellTemplate="{StaticResource AchievementRarityTierTemplate}"/>
+
+            <DataGridTemplateColumn Width="120" MinWidth="90" Header="{DynamicResource LOCPlayAch_Column_RarityPercent}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityPercent"
+                                    Visibility="Collapsed">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding GlobalPercentText}"
+                                   Style="{StaticResource WrappedCenteredDataGridTextStyle}"
+                                   Foreground="{DynamicResource TextBrush}"
+                                   FontWeight="SemiBold"
+                                   Opacity="0.8"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
 
             <DataGridTemplateColumn Width="110" MinWidth="90" Header="{DynamicResource LOCPlayAch_Column_CollectionScore}" SortMemberPath="CollectionScore" helpers:ColumnVisibilityHelper.ColumnKey="CollectionScore">
                 <DataGridTemplateColumn.CellTemplate>

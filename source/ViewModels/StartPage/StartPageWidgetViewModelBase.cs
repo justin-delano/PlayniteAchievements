@@ -103,8 +103,12 @@ namespace PlayniteAchievements.ViewModels.StartPage
             {
                 case nameof(PersistedSettings.StartPageAchievementColumnVisibility):
                 case nameof(PersistedSettings.StartPageAchievementColumnWidths):
+                case nameof(PersistedSettings.StartPageAchievementColumnOrder):
                 case nameof(PersistedSettings.StartPageGamesOverviewColumnVisibility):
                 case nameof(PersistedSettings.StartPageGamesOverviewColumnWidths):
+                case nameof(PersistedSettings.StartPageGamesOverviewColumnOrder):
+                case nameof(PersistedSettings.ShowOverviewGridColumnHeaders):
+                case nameof(PersistedSettings.ShowAchievementGridColumnHeaders):
                     return false;
                 default:
                     return true;

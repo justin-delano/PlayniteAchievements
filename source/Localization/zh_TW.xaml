@@ -82,6 +82,9 @@
     <sys:String x:Key="LOCPlayAch_Column_Points">點數</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">稀有度</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Title">Title</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_RarityTier">Rarity Tier</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_RarityPercent">Rarity Percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">總計</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Trophy">獎盃</sys:String>
 
@@ -562,6 +565,9 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarRarityPieChart">顯示稀有度圓餅圖</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarTrophyPieChart">顯示獎盃圓餅圖</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">顯示頂部功能表列按鈕</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGridColumnHeaders">Show Overview Grid Column Headers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Desktop Theme Achievement Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">單款遊戲檢視網格</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">檢視成就視窗</sys:String>
