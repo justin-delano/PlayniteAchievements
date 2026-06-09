@@ -449,7 +449,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Neuerstellung des Hash-Index erzwingen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Maximales Alter des Hash-Index (in Tagen)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Sichtbarkeit verborgener Erfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Control which elements of hidden achievements are obscured before you reveal them.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Steuert, welche Elemente versteckter Erfolge verborgen bleiben, bis sie manuell enthüllt werden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Stunden zwischen Aktualisierungen:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearAllDescription">Sämtliche zwischengespeicherte Erfolgssymboldateien entfernen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IconCache_ClearCompressedDescription">Nur optimierte 128-Pixel-Symboldateien entfernen</sys:String>
@@ -468,7 +468,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Language">Sprache</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LanguageHint">Die Sprache für Erfolgstexte. Die Plattformen werden diese Sprache verwenden, sofern unterstützt. Ansonsten wird Englisch als Fallback verwendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements">Sichtbarkeit gesperrter Erfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements_Description">Control how locked achievement icons are displayed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements_Description">Darstellung der Symbole gesperrter Erfolge.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Description">Tools for clearing cached plugin data and opening support or debugging utilities.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">Wartung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Benachrichtigungen bei Abschluss/Fehler von Aktualisierungen</sys:String>
@@ -499,7 +499,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill missing metadata. Requires Exophase authentication.</sys:String>
 
     <!-- Provider: PlayStation -->
-    <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Login (Legacy)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Anmeldung (traditionell)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1">Bei PlayStation.com anmelden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step1Note">(&quot;Diesem Browser vertrauen&quot; auswählen)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Psn_Step2">Sony-SSO-Cookie-Seite öffnen</sys:String>
@@ -517,13 +517,13 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio weights points by achievement rarity, giving harder achievements more value.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Points">Standardpunkte</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Scaled">TrueRatio (Scaled)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaEnableFuzzyNameMatching">Enable fuzzy name matching</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaEnableFuzzyNameMatching">Unscharfe Namensübereinstimmung aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">Fetch RetroAchievements subsets</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableAutomaticCapstoneAssignment">Automatically assign capstone from win condition</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">Seltenheitsstatistik</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Zwanglos (Softcore)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Combined">Übergreifend (zwanglos + Hardcore)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Controls how rarity percentages are calculated. Changing this requires a refresh to update cached values.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Softcore (zwanglos)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Combined">Übergreifend (Softcore + Hardcore)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Steuert die Berechnung der Seltenheitsprozentwerte. Die Änderung erfordert eine Aktualisierung der zwischengespeicherten Werte.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
 
     <!-- Provider: Steam -->
