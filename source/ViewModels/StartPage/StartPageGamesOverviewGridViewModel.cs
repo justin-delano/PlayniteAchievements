@@ -24,6 +24,10 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public bool UseCoverImages => PersistedSettings?.UseCoverImages ?? true;
 
+        public bool EnableCompactGridMode => PersistedSettings?.EnableCompactGridMode ?? false;
+
+        public bool ShowCompletionBorder => PersistedSettings?.ShowCompletionBorder ?? true;
+
         protected override void ApplySnapshot(SidebarDataSnapshot snapshot)
         {
             Items.ReplaceAll(StartPageWidgetProjection.ProjectGamesOverview(
@@ -31,6 +35,8 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 PersistedSettings));
             OnPropertyChanged(nameof(ShowGameMetadata));
             OnPropertyChanged(nameof(UseCoverImages));
+            OnPropertyChanged(nameof(EnableCompactGridMode));
+            OnPropertyChanged(nameof(ShowCompletionBorder));
         }
 
         protected override void OnPersistedSettingsChanged(string propertyName)
@@ -45,6 +51,18 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 propertyName == nameof(PersistedSettings.UseCoverImages))
             {
                 OnPropertyChanged(nameof(UseCoverImages));
+            }
+
+            if (string.IsNullOrEmpty(propertyName) ||
+                propertyName == nameof(PersistedSettings.EnableCompactGridMode))
+            {
+                OnPropertyChanged(nameof(EnableCompactGridMode));
+            }
+
+            if (string.IsNullOrEmpty(propertyName) ||
+                propertyName == nameof(PersistedSettings.ShowCompletionBorder))
+            {
+                OnPropertyChanged(nameof(ShowCompletionBorder));
             }
         }
     }

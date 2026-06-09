@@ -35,6 +35,7 @@ namespace PlayniteAchievements.Views
         private Guid? _lastSelectedOverviewGameId;
         private DataGridRow _pendingRightClickRow;
         private bool _committingOverviewSelection;
+        private DataGrid GamesOverviewDataGrid => GamesOverviewDataGridControl?.InternalDataGrid;
 
         // Column persistence state (for GamesOverviewDataGrid only - AchievementDataGridControl handles its own)
         private readonly Dictionary<DataGridColumn, EventHandler> _columnWidthChangedHandlers = new Dictionary<DataGridColumn, EventHandler>();
@@ -219,6 +220,7 @@ namespace PlayniteAchievements.Views
                 PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
                 FlushPendingUpdates();
                 DetachAllHandlers();
+                GamesOverviewDataGridControl?.Dispose();
                 _viewModel?.Dispose();
             }
             catch (Exception ex)
@@ -232,12 +234,10 @@ namespace PlayniteAchievements.Views
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             EnsureDefaultSeeds();
-            AttachHandlers(GamesOverviewDataGrid);
             // RecentAchievementsDataGrid is now AchievementDataGridControl, uses built-in persistence
             // GameAchievementsGrid uses AchievementDataGridControl with built-in persistence
+            GamesOverviewDataGridControl?.Refresh();
             ApplyOverviewColumnRatio();
-            ApplyVisibilityToGrids();
-            ApplyWidthsToGrids();
             ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
             UpdatePieChartLayout();
@@ -830,9 +830,7 @@ namespace PlayniteAchievements.Views
 
             if (ReferenceEquals(grid, GamesOverviewDataGrid))
             {
-                var menu = BuildColumnVisibilityMenu(grid);
-                var header = FullscreenControllerNavigationService.GetFocusedDataGridColumnHeader(grid);
-                return FullscreenControllerNavigationService.OpenContextMenu(header, menu);
+                return GamesOverviewDataGridControl?.OpenColumnVisibilityMenuForController() == true;
             }
 
             if (ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid))
@@ -862,7 +860,7 @@ namespace PlayniteAchievements.Views
         {
             if (ReferenceEquals(grid, GamesOverviewDataGrid))
             {
-                return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(grid);
+                return GamesOverviewDataGridControl?.ActivateFocusedColumnHeaderForController() == true;
             }
 
             if (ReferenceEquals(grid, RecentAchievementsDataGrid?.InternalDataGrid))
@@ -1158,7 +1156,12 @@ namespace PlayniteAchievements.Views
 
         private void GamesOverview_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (_viewModel == null || !(sender is DataGrid grid)) return;
+            if (_viewModel == null) return;
+
+            var grid = sender as DataGrid
+                       ?? (sender as Controls.GamesOverviewDataGridControl)?.InternalDataGrid
+                       ?? GamesOverviewDataGrid;
+            if (grid == null) return;
 
             var hitTestResult = VisualTreeHelper.HitTest(grid, e.GetPosition(grid));
             if (hitTestResult == null) return;
@@ -2311,34 +2314,16 @@ namespace PlayniteAchievements.Views
 
         private void ResetOverviewSortDirection()
         {
-            var grid = GamesOverviewDataGrid;
-            if (grid?.Columns == null)
+            if (GamesOverviewDataGridControl == null)
             {
                 return;
-            }
-
-            foreach (var column in grid.Columns)
-            {
-                column.SortDirection = null;
             }
 
             GamesOverviewSortHelper.ApplySortIndicator(
                 _viewModel?.OverviewSortPath,
                 _viewModel?.OverviewSortDirection,
                 _settings?.Persisted,
-                (sortPath, sortDirection) =>
-                {
-                    if (string.IsNullOrWhiteSpace(sortPath) || !sortDirection.HasValue)
-                    {
-                        return;
-                    }
-
-                    var targetColumn = grid.Columns.FirstOrDefault(column => column?.SortMemberPath == sortPath);
-                    if (targetColumn != null)
-                    {
-                        targetColumn.SortDirection = sortDirection;
-                    }
-                });
+                (sortPath, sortDirection) => GamesOverviewDataGridControl.SetSortIndicator(sortPath, sortDirection));
         }
 
         private void ResetRecentAchievementsSortDirection()
