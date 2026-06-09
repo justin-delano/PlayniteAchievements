@@ -125,6 +125,18 @@ namespace PlayniteAchievements.Models.Settings
             target.GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
                 ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.StartPageAchievementColumnVisibility = source.StartPageAchievementColumnVisibility != null
+                ? new Dictionary<string, bool>(source.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.StartPageAchievementColumnWidths = source.StartPageAchievementColumnWidths != null
+                ? new Dictionary<string, double>(source.StartPageAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.StartPageGamesOverviewColumnVisibility = source.StartPageGamesOverviewColumnVisibility != null
+                ? new Dictionary<string, bool>(source.StartPageGamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.StartPageGamesOverviewColumnWidths = source.StartPageGamesOverviewColumnWidths != null
+                ? new Dictionary<string, double>(source.StartPageGamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             target.SidebarOverviewLeftColumnRatio = source.SidebarOverviewLeftColumnRatio;
             target.WindowPlacements = source.WindowPlacements != null
                 ? source.WindowPlacements.ToDictionary(

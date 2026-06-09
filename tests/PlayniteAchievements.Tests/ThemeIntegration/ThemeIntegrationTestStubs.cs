@@ -343,6 +343,34 @@ namespace PlayniteAchievements.ViewModels
         {
         }
 
+        public AchievementDisplayItem Clone()
+        {
+            return new AchievementDisplayItem
+            {
+                DisplayName = DisplayName,
+                Description = Description,
+                SortingName = SortingName,
+                GameName = GameName,
+                PlayniteGameId = PlayniteGameId,
+                ApiName = ApiName,
+                TrophyType = TrophyType,
+                CategoryType = CategoryType,
+                CategoryLabel = CategoryLabel,
+                Hidden = Hidden,
+                Unlocked = Unlocked,
+                UnlockTimeUtc = UnlockTimeUtc,
+                GlobalPercentUnlocked = GlobalPercentUnlocked,
+                Rarity = Rarity,
+                RaritySortValue = RaritySortValue,
+                CollectionScore = CollectionScore,
+                PrestigeScore = PrestigeScore,
+                PointsValue = PointsValue,
+                ProgressNum = ProgressNum,
+                ProgressDenom = ProgressDenom,
+                ShowHiddenSuffix = ShowHiddenSuffix
+            };
+        }
+
         public void UpdateFrom(
             PlayniteAchievements.Models.Achievements.AchievementDetail source,
             string gameName,

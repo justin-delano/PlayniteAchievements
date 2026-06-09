@@ -461,7 +461,7 @@ namespace PlayniteAchievements.Views.Controls
                 {
                     if (AllowLayoutPersistence)
                     {
-                        settings.Persisted.DataGridColumnVisibility = map;
+                        SetVisibilityByKey(settings, map);
                     }
                 },
                 () =>
@@ -526,13 +526,47 @@ namespace PlayniteAchievements.Views.Controls
 
         private Dictionary<string, bool> GetVisibilityMap(PlayniteAchievementsSettings settings)
         {
-            var map = settings?.Persisted?.DataGridColumnVisibility;
+            var map = GetVisibilityByKey(settings);
             if (AllowLayoutPersistence || map == null)
             {
                 return map;
             }
 
             return new Dictionary<string, bool>(map, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private Dictionary<string, bool> GetVisibilityByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            switch (ColumnSettingsKey)
+            {
+                case "StartPageAchievements":
+                    return settings.Persisted.StartPageAchievementColumnVisibility;
+                default:
+                    return settings.Persisted.DataGridColumnVisibility;
+            }
+        }
+
+        private void SetVisibilityByKey(PlayniteAchievementsSettings settings, Dictionary<string, bool> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            switch (ColumnSettingsKey)
+            {
+                case "StartPageAchievements":
+                    settings.Persisted.StartPageAchievementColumnVisibility = map;
+                    break;
+                default:
+                    settings.Persisted.DataGridColumnVisibility = map;
+                    break;
+            }
         }
 
         private Dictionary<string, double> GetWidthsByKey(PlayniteAchievementsSettings settings)
@@ -548,6 +582,7 @@ namespace PlayniteAchievements.Views.Controls
                 "SingleGame" => settings.Persisted.SingleGameColumnWidths,
                 "Sidebar" => settings.Persisted.SidebarAchievementColumnWidths,
                 "SidebarGame" => settings.Persisted.SidebarGameColumnWidths,
+                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnWidths,
                 _ => settings.Persisted.SingleGameColumnWidths
             };
         }
@@ -572,6 +607,9 @@ namespace PlayniteAchievements.Views.Controls
                     break;
                 case "SidebarGame":
                     settings.Persisted.SidebarGameColumnWidths = map;
+                    break;
+                case "StartPageAchievements":
+                    settings.Persisted.StartPageAchievementColumnWidths = map;
                     break;
                 default:
                     settings.Persisted.SingleGameColumnWidths = map;

@@ -229,6 +229,7 @@ namespace PlayniteAchievements
                     _cacheManager.CacheInvalidated += (_, __) =>
                     {
                         try { _imageService?.Clear(); } catch { }
+                        InvalidateStartPageData();
                     };
                     _achievementOverridesService = new AchievementOverridesService(
                         _gameCustomDataStore,
@@ -483,6 +484,7 @@ namespace PlayniteAchievements
                     _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
             }
 
+            InvalidateStartPageData();
             _tagSyncService?.HandlePersistedSettingsPropertyChanged(e);
         }
 
@@ -525,6 +527,7 @@ namespace PlayniteAchievements
             try { _fullscreenControllerNavigationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenControllerNavigationService"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
+            DisposeStartPageViews();
 
             // Shutdown logging system
             try { PluginLogger.Shutdown(); } catch (Exception ex) { System.Diagnostics.Trace.TraceError($"Failed to shutdown logger: {ex}"); }
@@ -652,6 +655,8 @@ namespace PlayniteAchievements
             {
                 _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={e.PlayniteGameId}.");
             }
+
+            InvalidateStartPageData();
         }
 
         private void OnAchievementGameRefreshed(Guid gameId)
@@ -661,6 +666,8 @@ namespace PlayniteAchievements
             {
                 _tagSyncService.SyncTagsForGames(new List<Guid> { gameId });
             }
+
+            InvalidateStartPageData();
         }
 
         private void HandleRefreshAuthNotifications(RebuildPayload payload)

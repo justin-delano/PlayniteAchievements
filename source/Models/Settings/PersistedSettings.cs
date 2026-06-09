@@ -89,6 +89,10 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _gamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, bool> _startPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _startPageAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, bool> _startPageGamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _startPageGamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private double _sidebarOverviewLeftColumnRatio = DefaultSidebarOverviewLeftColumnRatio;
         private Dictionary<string, WindowPlacementState> _windowPlacements =
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
@@ -1011,6 +1015,94 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted visibility state for StartPage achievement grid columns.
+        /// Key is a stable column identifier, value indicates whether the column is visible.
+        /// </summary>
+        public Dictionary<string, bool> StartPageAchievementColumnVisibility
+        {
+            get => _startPageAchievementColumnVisibility;
+            set
+            {
+                var normalized = value != null
+                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                SetValue(ref _startPageAchievementColumnVisibility, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted widths for StartPage achievement grid columns.
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> StartPageAchievementColumnWidths
+        {
+            get => _startPageAchievementColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _startPageAchievementColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted visibility state for StartPage games overview grid columns.
+        /// Key is a stable column identifier, value indicates whether the column is visible.
+        /// </summary>
+        public Dictionary<string, bool> StartPageGamesOverviewColumnVisibility
+        {
+            get => _startPageGamesOverviewColumnVisibility;
+            set
+            {
+                var normalized = value != null
+                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                SetValue(ref _startPageGamesOverviewColumnVisibility, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted widths for StartPage games overview grid columns.
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> StartPageGamesOverviewColumnWidths
+        {
+            get => _startPageGamesOverviewColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _startPageGamesOverviewColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
         /// Persisted sidebar overview splitter position. Represents left column width
         /// as a ratio of the combined left and right overview columns.
         /// </summary>
@@ -1316,6 +1408,18 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
                 GamesOverviewColumnWidths = this.GamesOverviewColumnWidths != null
                     ? new Dictionary<string, double>(this.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                StartPageAchievementColumnVisibility = this.StartPageAchievementColumnVisibility != null
+                    ? new Dictionary<string, bool>(this.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
+                StartPageAchievementColumnWidths = this.StartPageAchievementColumnWidths != null
+                    ? new Dictionary<string, double>(this.StartPageAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                StartPageGamesOverviewColumnVisibility = this.StartPageGamesOverviewColumnVisibility != null
+                    ? new Dictionary<string, bool>(this.StartPageGamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
+                StartPageGamesOverviewColumnWidths = this.StartPageGamesOverviewColumnWidths != null
+                    ? new Dictionary<string, double>(this.StartPageGamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
                 SidebarOverviewLeftColumnRatio = this.SidebarOverviewLeftColumnRatio,
                 WindowPlacements = this.WindowPlacements != null
