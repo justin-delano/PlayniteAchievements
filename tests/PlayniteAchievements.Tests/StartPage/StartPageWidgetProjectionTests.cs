@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Tests.StartPage
     public class StartPageWidgetProjectionTests
     {
         [TestMethod]
-        public void ProjectGamesOverview_UsesMainSettingsSortAndDefaultLimit()
+        public void ProjectGamesOverview_UsesStartPageSettingsSortAndDefaultLimit()
         {
             var items = Enumerable.Range(0, 30)
                 .Select(index => new GameOverviewItem
@@ -24,9 +24,11 @@ namespace PlayniteAchievements.Tests.StartPage
                 .ToList();
             var settings = new PersistedSettings
             {
-                GamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock,
-                GamesOverviewGridSortDescending = true
+                GamesOverviewGridSortMode = GamesOverviewSortMode.Alphabetical,
+                GamesOverviewGridSortDescending = false
             };
+            settings.StartPageGamesOverviewGrid.SortMode = GamesOverviewSortMode.RecentUnlock;
+            settings.StartPageGamesOverviewGrid.SortDescending = true;
 
             var result = StartPageWidgetProjection.ProjectGamesOverview(items, settings);
 
@@ -36,7 +38,7 @@ namespace PlayniteAchievements.Tests.StartPage
         }
 
         [TestMethod]
-        public void ProjectGamesOverview_UsesAlphabeticalSortFromMainSettings()
+        public void ProjectGamesOverview_UsesAlphabeticalSortFromStartPageSettings()
         {
             var items = new[]
             {
@@ -45,9 +47,11 @@ namespace PlayniteAchievements.Tests.StartPage
             };
             var settings = new PersistedSettings
             {
-                GamesOverviewGridSortMode = GamesOverviewSortMode.Alphabetical,
-                GamesOverviewGridSortDescending = false
+                GamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock,
+                GamesOverviewGridSortDescending = true
             };
+            settings.StartPageGamesOverviewGrid.SortMode = GamesOverviewSortMode.Alphabetical;
+            settings.StartPageGamesOverviewGrid.SortDescending = false;
 
             var result = StartPageWidgetProjection.ProjectGamesOverview(items, settings, rowLimit: 10);
 
@@ -56,7 +60,56 @@ namespace PlayniteAchievements.Tests.StartPage
         }
 
         [TestMethod]
-        public void ProjectRecentUnlocks_UsesMainRecentSortAndDefaultLimit()
+        public void ProjectGamesOverview_UsesExplicitSettingsLimit()
+        {
+            var items = Enumerable.Range(0, 10)
+                .Select(index => new GameOverviewItem
+                {
+                    GameName = $"Game {index:D2}",
+                    SortingName = $"Game {index:D2}"
+                })
+                .ToList();
+            var settings = new PersistedSettings
+            {
+                GamesOverviewGridSortMode = GamesOverviewSortMode.Alphabetical,
+                GamesOverviewGridSortDescending = false
+            };
+            settings.StartPageGamesOverviewGrid.MaxRows = 3;
+            settings.StartPageGamesOverviewGrid.SortMode = GamesOverviewSortMode.Alphabetical;
+            settings.StartPageGamesOverviewGrid.SortDescending = false;
+
+            var result = StartPageWidgetProjection.ProjectGamesOverview(items, settings);
+
+            Assert.AreEqual(3, result.Count);
+            Assert.AreEqual("Game 00", result[0].GameName);
+            Assert.AreEqual("Game 02", result[2].GameName);
+        }
+
+        [TestMethod]
+        public void ProjectGamesOverview_NullSettingsLimitIsUnlimited()
+        {
+            var items = Enumerable.Range(0, 30)
+                .Select(index => new GameOverviewItem
+                {
+                    GameName = $"Game {index:D2}",
+                    SortingName = $"Game {index:D2}"
+                })
+                .ToList();
+            var settings = new PersistedSettings
+            {
+                StartPageGamesOverviewGrid =
+                {
+                    MaxRows = null
+                }
+            };
+
+            var result = StartPageWidgetProjection.ProjectGamesOverview(items, settings);
+
+            Assert.AreEqual(30, result.Count);
+        }
+
+        [TestMethod]
+        public void ProjectRecentUnlocks_UsesStartPageRecentSortAndDefaultLimit()
         {
             var items = Enumerable.Range(0, 30)
                 .Select(index => new AchievementDisplayItem
@@ -74,6 +127,67 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreEqual("Achievement 29", result[0].DisplayName);
             Assert.AreEqual("Achievement 05", result[result.Count - 1].DisplayName);
             Assert.AreNotSame(items[0], result.Last());
+        }
+
+        [TestMethod]
+        public void ProjectRecentUnlocks_UsesStartPageRecentSortSettings()
+        {
+            var items = new[]
+            {
+                new AchievementDisplayItem
+                {
+                    DisplayName = "Common",
+                    GameName = "Game",
+                    UnlockTimeUtc = new DateTime(2026, 1, 1).AddMinutes(2),
+                    RaritySortValue = 80
+                },
+                new AchievementDisplayItem
+                {
+                    DisplayName = "Rare",
+                    GameName = "Game",
+                    UnlockTimeUtc = new DateTime(2026, 1, 1).AddMinutes(1),
+                    RaritySortValue = 5
+                }
+            };
+            var settings = new PersistedSettings();
+            settings.StartPageRecentUnlocksGrid.SortMode = CompactListSortMode.Rarity;
+            settings.StartPageRecentUnlocksGrid.SortDescending = false;
+
+            var result = StartPageWidgetProjection.ProjectRecentUnlocks(items, settings);
+
+            Assert.AreEqual("Rare", result[0].DisplayName);
+            Assert.AreEqual("Common", result[1].DisplayName);
+        }
+
+        [TestMethod]
+        public void ProjectRecentUnlocks_UsesExplicitAndNullSettingsLimits()
+        {
+            var items = Enumerable.Range(0, 12)
+                .Select(index => new AchievementDisplayItem
+                {
+                    DisplayName = $"Achievement {index:D2}",
+                    GameName = "Game",
+                    UnlockTimeUtc = new DateTime(2026, 1, 1).AddMinutes(index)
+                })
+                .ToList();
+            var settings = new PersistedSettings
+            {
+                StartPageRecentUnlocksGrid =
+                {
+                    MaxRows = 4
+                }
+            };
+
+            var limited = StartPageWidgetProjection.ProjectRecentUnlocks(items, settings);
+
+            Assert.AreEqual(4, limited.Count);
+            Assert.AreEqual("Achievement 11", limited[0].DisplayName);
+            Assert.AreEqual("Achievement 08", limited[3].DisplayName);
+
+            settings.StartPageRecentUnlocksGrid.MaxRows = null;
+            var unlimited = StartPageWidgetProjection.ProjectRecentUnlocks(items, settings);
+
+            Assert.AreEqual(12, unlimited.Count);
         }
     }
 }

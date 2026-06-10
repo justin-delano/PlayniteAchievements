@@ -892,6 +892,12 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowAchievementGridColumnHeaders => _settings?.Persisted?.ShowAchievementGridColumnHeaders ?? true;
 
+        public double? SidebarOverviewGridRowHeight => _settings?.Persisted?.SidebarOverviewGridRowHeight;
+
+        public double? SidebarRecentAchievementsGridRowHeight => _settings?.Persisted?.SidebarRecentAchievementsGridRowHeight;
+
+        public double? SidebarSelectedGameGridRowHeight => _settings?.Persisted?.SidebarSelectedGameGridRowHeight;
+
         public bool UseUniformRarityBadges => _settings?.Persisted?.UseUniformRarityBadges ?? false;
 
         private int _totalGamesOverview;
@@ -1893,14 +1899,7 @@ namespace PlayniteAchievements.ViewModels
             ApplyLeftFilters();
             UpdateAggregatePieCharts();
 
-            if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-            {
-                bulk.ReplaceAll(_filteredRecentAchievements);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
-            }
+            SyncRecentAchievementsDisplay();
 
             RefreshSelectedGameHeaderCounts();
             UpdateFilteredStatus();
@@ -2364,6 +2363,9 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowCompletionBorder));
                 OnPropertyChanged(nameof(ShowOverviewGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowAchievementGridColumnHeaders));
+                OnPropertyChanged(nameof(SidebarOverviewGridRowHeight));
+                OnPropertyChanged(nameof(SidebarRecentAchievementsGridRowHeight));
+                OnPropertyChanged(nameof(SidebarSelectedGameGridRowHeight));
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
                 OnPropertyChanged(nameof(CollectionScoreBadgeIconKey));
                 OnPropertyChanged(nameof(PrestigeScoreBadgeIconKey));
@@ -2422,6 +2424,30 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.ShowAchievementGridColumnHeaders))
             {
                 OnPropertyChanged(nameof(ShowAchievementGridColumnHeaders));
+            }
+            else if (propertyName == nameof(PersistedSettings.SidebarOverviewGridRowHeight))
+            {
+                OnPropertyChanged(nameof(SidebarOverviewGridRowHeight));
+            }
+            else if (propertyName == nameof(PersistedSettings.SidebarRecentAchievementsGridRowHeight))
+            {
+                OnPropertyChanged(nameof(SidebarRecentAchievementsGridRowHeight));
+            }
+            else if (propertyName == nameof(PersistedSettings.SidebarSelectedGameGridRowHeight))
+            {
+                OnPropertyChanged(nameof(SidebarSelectedGameGridRowHeight));
+            }
+            else if (propertyName == nameof(PersistedSettings.SidebarOverviewGridMaxRows))
+            {
+                SyncGamesOverviewDisplay();
+            }
+            else if (propertyName == nameof(PersistedSettings.SidebarRecentAchievementsGridMaxRows))
+            {
+                SyncRecentAchievementsDisplay();
+            }
+            else if (propertyName == nameof(PersistedSettings.SidebarSelectedGameGridMaxRows))
+            {
+                SyncSelectedGameAchievementsDisplay();
             }
             else if (propertyName == nameof(PersistedSettings.UseUniformRarityBadges))
             {
@@ -2896,6 +2922,54 @@ namespace PlayniteAchievements.ViewModels
 
         // LoadOverviewData removed: overview and recent lists are built via SidebarDataBuilder snapshots.
 
+        private void SyncGamesOverviewDisplay()
+        {
+            var displayItems = DisplayGridRowLimitHelper.Limit(
+                _filteredGamesOverview,
+                _settings?.Persisted?.SidebarOverviewGridMaxRows);
+
+            if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulk)
+            {
+                bulk.ReplaceAll(displayItems);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(GamesOverview, displayItems);
+            }
+        }
+
+        private void SyncRecentAchievementsDisplay()
+        {
+            var displayItems = DisplayGridRowLimitHelper.Limit(
+                _filteredRecentAchievements,
+                _settings?.Persisted?.SidebarRecentAchievementsGridMaxRows);
+
+            if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+            {
+                bulk.ReplaceAll(displayItems);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(RecentAchievements, displayItems);
+            }
+        }
+
+        private void SyncSelectedGameAchievementsDisplay()
+        {
+            var displayItems = DisplayGridRowLimitHelper.Limit(
+                _filteredSelectedGameAchievements,
+                _settings?.Persisted?.SidebarSelectedGameGridMaxRows);
+
+            if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
+            {
+                bulk.ReplaceAll(displayItems);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(SelectedGameAchievements, displayItems);
+            }
+        }
+
         private void ApplyLeftFilters()
         {
             // Preserve selection across filter updates
@@ -2974,14 +3048,7 @@ namespace PlayniteAchievements.ViewModels
             else
             {
                 GamesOverviewSortHelper.SortByConfiguredDefault(_filteredGamesOverview, _settings?.Persisted);
-                if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulk)
-                {
-                    bulk.ReplaceAll(_filteredGamesOverview);
-                }
-                else
-                {
-                    CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
-                }
+                SyncGamesOverviewDisplay();
             }
             RecalculateOverviewStats();
 
@@ -3491,25 +3558,11 @@ namespace PlayniteAchievements.ViewModels
                         AchievementSortScope.GameAchievements,
                         stableOrder: AchievementSortHelper.CreateStableOrderMap(_filteredSelectedGameAchievements));
 
-                    if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-                    {
-                        bulk.ReplaceAll(_filteredSelectedGameAchievements);
-                    }
-                    else
-                    {
-                        CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
-                    }
+                    SyncSelectedGameAchievementsDisplay();
                 }
                 else
                 {
-                    if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-                    {
-                        bulk.ReplaceAll(_filteredSelectedGameAchievements);
-                    }
-                    else
-                    {
-                        CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
-                    }
+                    SyncSelectedGameAchievementsDisplay();
                 }
             }
             else
@@ -3524,14 +3577,7 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
-                    if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-                    {
-                        bulk.ReplaceAll(_filteredRecentAchievements);
-                    }
-                    else
-                    {
-                        CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
-                    }
+                    SyncRecentAchievementsDisplay();
                 }
             }
 
@@ -3725,14 +3771,7 @@ namespace PlayniteAchievements.ViewModels
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
                 UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
-                if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-                {
-                    bulk.ReplaceAll(_filteredSelectedGameAchievements);
-                }
-                else
-                {
-                    CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
-                }
+                SyncSelectedGameAchievementsDisplay();
                 // Restore global timeline to show all games
                 GlobalTimeline.SetCounts(_latestSnapshot?.GlobalUnlockCountsByDate);
                 RefreshSelectedGameHeaderCounts();
@@ -3903,14 +3942,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            if (GamesOverview is BulkObservableCollection<GameOverviewItem> bulkOverview2)
-            {
-                bulkOverview2.ReplaceAll(_filteredGamesOverview);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(GamesOverview, _filteredGamesOverview);
-            }
+            SyncGamesOverviewDisplay();
         }
 
         private void SortRecentAchievements(string sortMemberPath, ListSortDirection direction)
@@ -3932,14 +3964,7 @@ namespace PlayniteAchievements.ViewModels
                 _recentSortDirection = recentSortDirection.Value;
             }
 
-            if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulkRecent2)
-            {
-                bulkRecent2.ReplaceAll(_filteredRecentAchievements);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(RecentAchievements, _filteredRecentAchievements);
-            }
+            SyncRecentAchievementsDisplay();
         }
 
         private void SortSelectedGameAchievements(string sortMemberPath, ListSortDirection direction)
@@ -3980,14 +4005,7 @@ namespace PlayniteAchievements.ViewModels
                 ref selectedSortDirection,
                 sortedAllOrder);
 
-            if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulkSelected2)
-            {
-                bulkSelected2.ReplaceAll(_filteredSelectedGameAchievements);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(SelectedGameAchievements, _filteredSelectedGameAchievements);
-            }
+            SyncSelectedGameAchievementsDisplay();
         }
 
         private static string L(string key, string fallback)

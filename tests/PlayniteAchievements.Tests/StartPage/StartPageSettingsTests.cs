@@ -63,5 +63,61 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreNotSame(source.StartPageGamesOverviewColumnWidths, copy.StartPageGamesOverviewColumnWidths);
             Assert.AreNotSame(source.StartPageGamesOverviewColumnOrder, copy.StartPageGamesOverviewColumnOrder);
         }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveStartPageWidgetSettings()
+        {
+            var source = new PersistedSettings();
+            source.StartPageGamesOverviewGrid.UseCoverImages = false;
+            source.StartPageGamesOverviewGrid.ShowGameMetadata = false;
+            source.StartPageGamesOverviewGrid.EnableCompactGridMode = true;
+            source.StartPageGamesOverviewGrid.ShowCompletionBorder = false;
+            source.StartPageGamesOverviewGrid.ShowColumnHeaders = false;
+            source.StartPageGamesOverviewGrid.RowHeight = 72d;
+            source.StartPageGamesOverviewGrid.MaxRows = 11;
+            source.StartPageGamesOverviewGrid.SortMode = GamesOverviewSortMode.Alphabetical;
+            source.StartPageGamesOverviewGrid.SortDescending = false;
+
+            source.StartPageRecentUnlocksGrid.UseCoverImages = false;
+            source.StartPageRecentUnlocksGrid.ShowColumnHeaders = false;
+            source.StartPageRecentUnlocksGrid.RowHeight = 84d;
+            source.StartPageRecentUnlocksGrid.MaxRows = 12;
+            source.StartPageRecentUnlocksGrid.SortMode = CompactListSortMode.Rarity;
+            source.StartPageRecentUnlocksGrid.SortDescending = false;
+
+            source.StartPagePieCharts.ShowCenterPercentage = false;
+            source.StartPagePieCharts.SmallSliceMode = SidebarPieSmallSliceMode.Hide;
+
+            var clone = source.Clone();
+            var copy = new PersistedSettings();
+            copy.CopyFrom(source);
+
+            Assert.IsFalse(clone.StartPageGamesOverviewGrid.UseCoverImages);
+            Assert.IsFalse(clone.StartPageGamesOverviewGrid.ShowGameMetadata);
+            Assert.IsTrue(clone.StartPageGamesOverviewGrid.EnableCompactGridMode);
+            Assert.IsFalse(clone.StartPageGamesOverviewGrid.ShowCompletionBorder);
+            Assert.IsFalse(clone.StartPageGamesOverviewGrid.ShowColumnHeaders);
+            Assert.AreEqual(72d, clone.StartPageGamesOverviewGrid.RowHeight);
+            Assert.AreEqual(11, clone.StartPageGamesOverviewGrid.MaxRows);
+            Assert.AreEqual(GamesOverviewSortMode.Alphabetical, clone.StartPageGamesOverviewGrid.SortMode);
+            Assert.IsFalse(clone.StartPageGamesOverviewGrid.SortDescending);
+
+            Assert.IsFalse(copy.StartPageRecentUnlocksGrid.UseCoverImages);
+            Assert.IsFalse(copy.StartPageRecentUnlocksGrid.ShowColumnHeaders);
+            Assert.AreEqual(84d, copy.StartPageRecentUnlocksGrid.RowHeight);
+            Assert.AreEqual(12, copy.StartPageRecentUnlocksGrid.MaxRows);
+            Assert.AreEqual(CompactListSortMode.Rarity, copy.StartPageRecentUnlocksGrid.SortMode);
+            Assert.IsFalse(copy.StartPageRecentUnlocksGrid.SortDescending);
+
+            Assert.IsFalse(clone.StartPagePieCharts.ShowCenterPercentage);
+            Assert.AreEqual(SidebarPieSmallSliceMode.Hide, clone.StartPagePieCharts.SmallSliceMode);
+            Assert.IsFalse(copy.StartPagePieCharts.ShowCenterPercentage);
+            Assert.AreEqual(SidebarPieSmallSliceMode.Hide, copy.StartPagePieCharts.SmallSliceMode);
+
+            Assert.AreNotSame(source.StartPageGamesOverviewGrid, clone.StartPageGamesOverviewGrid);
+            Assert.AreNotSame(source.StartPageRecentUnlocksGrid, copy.StartPageRecentUnlocksGrid);
+            Assert.AreNotSame(source.StartPagePieCharts, clone.StartPagePieCharts);
+            Assert.AreNotSame(source.StartPagePieCharts, copy.StartPagePieCharts);
+        }
     }
 }

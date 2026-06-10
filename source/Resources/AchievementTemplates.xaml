@@ -15,6 +15,7 @@
     <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility"/>
     <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
     <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
+    <converters:ImageFitDimensionConverter x:Key="ImageFitDimension"/>
 
     <!-- Menu highlight brush used by AchievementMultiSelectMenuItemStyle.
          Overridden in FullscreenResources.xaml for dark backgrounds. -->
@@ -215,6 +216,7 @@
 
     <!-- Icon Column Cell Style - centered horizontally for circular achievement icons -->
     <Style x:Key="AchievementIconCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}">
+        <Setter Property="Padding" Value="0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridCell">
@@ -591,151 +593,104 @@
 
     <!-- Achievement Game Column Template - Icon or Cover with toggle support -->
     <DataTemplate x:Key="AchievementGameColumnTemplate">
-        <Grid VerticalAlignment="Center"
-              HorizontalAlignment="Center"
-              UseLayoutRounding="True"
-              SnapsToDevicePixels="True">
-            <Border x:Name="GameImageBorder"
-                    CornerRadius="6"
-                    RenderOptions.BitmapScalingMode="HighQuality"
-                    UseLayoutRounding="True"
-                    SnapsToDevicePixels="True"
-                    ToolTip="{Binding GameName}">
-                <Border.Style>
-                    <Style TargetType="Border">
-                        <!-- Default: Icon mode (44x44 square) -->
-                        <Setter Property="Width" Value="44"/>
-                        <Setter Property="Height" Value="44"/>
-                        <Setter Property="Background">
-                            <Setter.Value>
-                                <ImageBrush Stretch="UniformToFill"
-                                            helpers:AsyncImage.Uri="{Binding GameIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                                            helpers:AsyncImage.DecodePixel="96"/>
-                            </Setter.Value>
-                        </Setter>
-                        <Style.Triggers>
-                            <!-- Cover mode (40x60 portrait) when UseCoverImages is true on ancestor -->
-                            <DataTrigger Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                                <Setter Property="Width" Value="40"/>
-                                <Setter Property="Height" Value="60"/>
-                                <Setter Property="Background">
-                                    <Setter.Value>
-                                        <ImageBrush Stretch="UniformToFill"
-                                                    helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
-                                                    helpers:AsyncImage.DecodePixel="128"/>
-                                    </Setter.Value>
-                                </Setter>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                                <Setter Property="Width" Value="36"/>
-                                <Setter Property="Height" Value="36"/>
-                            </DataTrigger>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True"/>
-                                    <Condition Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True"/>
-                                </MultiDataTrigger.Conditions>
-                                <Setter Property="Width" Value="32"/>
-                                <Setter Property="Height" Value="48"/>
-                            </MultiDataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Border.Style>
-            </Border>
-        </Grid>
-    </DataTemplate>
-
-    <!-- Achievement Icon Template - glow is isolated behind an unaffected front icon -->
-    <!-- Fits in 78px column with 10px cell padding each side = 58px available -->
-    <DataTemplate x:Key="AchievementIconTemplate">
-        <Grid VerticalAlignment="Center"
-              HorizontalAlignment="Center"
-              ClipToBounds="False"
-              UseLayoutRounding="True"
-              SnapsToDevicePixels="True">
-            <Grid.Style>
-                <Style TargetType="Grid">
-                    <Setter Property="Width" Value="56"/>
-                    <Setter Property="Height" Value="72"/>
+        <Border CornerRadius="5"
+                ClipToBounds="True"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                RenderOptions.BitmapScalingMode="HighQuality"
+                UseLayoutRounding="True"
+                SnapsToDevicePixels="True"
+                ToolTip="{Binding GameName}">
+            <Border.Width>
+                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,width,4,8,12">
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType=controls:AchievementDataGridControl}" Path="UseCoverImages"/>
+                </MultiBinding>
+            </Border.Width>
+            <Border.Height>
+                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,height,4,8,12">
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType=controls:AchievementDataGridControl}" Path="UseCoverImages"/>
+                </MultiBinding>
+            </Border.Height>
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background">
+                        <Setter.Value>
+                            <ImageBrush Stretch="Uniform"
+                                        helpers:AsyncImage.Uri="{Binding GameIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
+                                        helpers:AsyncImage.DecodePixel="96"/>
+                        </Setter.Value>
+                    </Setter>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                            <Setter Property="Width" Value="42"/>
-                            <Setter Property="Height" Value="54"/>
+                        <DataTrigger Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
+                            <Setter Property="Background">
+                                <Setter.Value>
+                                    <ImageBrush Stretch="Uniform"
+                                                helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
+                                                helpers:AsyncImage.DecodePixel="128"/>
+                                </Setter.Value>
+                            </Setter>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
-            </Grid.Style>
-            <Grid HorizontalAlignment="Center"
-                  VerticalAlignment="Center"
-                  ClipToBounds="False"
-                  UseLayoutRounding="True"
-                  SnapsToDevicePixels="True">
-                <Grid.Style>
-                    <Style TargetType="Grid">
-                        <Setter Property="Width" Value="52"/>
-                        <Setter Property="Height" Value="52"/>
+            </Border.Style>
+        </Border>
+    </DataTemplate>
+
+    <!-- Achievement Icon Template - glow is isolated behind an unaffected front icon -->
+    <DataTemplate x:Key="AchievementIconTemplate">
+        <Grid HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              ClipToBounds="False"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True">
+            <Grid.Width>
+                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,width,4,8,12">
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                </MultiBinding>
+            </Grid.Width>
+            <Grid.Height>
+                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,height,4,8,12">
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                </MultiBinding>
+            </Grid.Height>
+
+            <Image Stretch="Uniform"
+                   Margin="2"
+                   RenderOptions.BitmapScalingMode="HighQuality"
+                   SnapsToDevicePixels="True"
+                   IsHitTestVisible="False"
+                   helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                   helpers:AsyncImage.DecodePixel="128">
+                <Image.Style>
+                    <Style TargetType="Image">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Setter Property="Effect" Value="{x:Null}"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                                <Setter Property="Width" Value="39"/>
-                                <Setter Property="Height" Value="39"/>
-                            </DataTrigger>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
-                </Grid.Style>
+                </Image.Style>
+            </Image>
 
-                <Image HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="Uniform"
-                       RenderOptions.BitmapScalingMode="HighQuality"
-                       SnapsToDevicePixels="True"
-                       IsHitTestVisible="False"
-                       helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                       helpers:AsyncImage.DecodePixel="128">
-                    <Image.Style>
-                        <Style TargetType="Image">
-                            <Setter Property="Width" Value="52"/>
-                            <Setter Property="Height" Value="52"/>
-                            <Setter Property="Visibility" Value="Collapsed"/>
-                            <Setter Property="Effect" Value="{x:Null}"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                                    <Setter Property="Width" Value="39"/>
-                                    <Setter Property="Height" Value="39"/>
-                                </DataTrigger>
-                                <MultiDataTrigger>
-                                    <MultiDataTrigger.Conditions>
-                                        <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                        <Condition Binding="{Binding ShowRarityGlow}" Value="True"/>
-                                    </MultiDataTrigger.Conditions>
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
-                                </MultiDataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Image.Style>
-                </Image>
-
-                <Image HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Stretch="Uniform"
-                       RenderOptions.BitmapScalingMode="HighQuality"
-                       SnapsToDevicePixels="True"
-                       helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                       helpers:AsyncImage.DecodePixel="128">
-                    <Image.Style>
-                        <Style TargetType="Image">
-                            <Setter Property="Width" Value="52"/>
-                            <Setter Property="Height" Value="52"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                                    <Setter Property="Width" Value="39"/>
-                                    <Setter Property="Height" Value="39"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </Image.Style>
-                </Image>
-            </Grid>
+            <Image Stretch="Uniform"
+                   Margin="2"
+                   RenderOptions.BitmapScalingMode="HighQuality"
+                   SnapsToDevicePixels="True"
+                   helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                   helpers:AsyncImage.DecodePixel="128"/>
         </Grid>
     </DataTemplate>
 

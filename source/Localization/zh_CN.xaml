@@ -82,7 +82,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Points">点数</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">稀有度</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Title">Title</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_AchievementName">Title</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_RarityTier">Rarity Tier</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_RarityPercent">Rarity Percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">总计</sys:String>
@@ -463,6 +463,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_OpenDataFolderButton">打开文件夹</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PieChartPreview">饼图</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">像素 (留空 = 无限制)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">Row Height</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">Max Rows</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SidebarRecentAchievementsGrid">Sidebar Recent Achievements Grid</sys:String>
+
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">保留原始分辨率的成就图标</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">以原始分辨率保存缓存图标，而不是使用优化的 128px 缓存模式。这将占用更多磁盘空间。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">进度条</sys:String>

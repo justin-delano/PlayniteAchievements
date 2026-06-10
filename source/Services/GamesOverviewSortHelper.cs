@@ -146,6 +146,12 @@ namespace PlayniteAchievements.Services
             Sort(items, configuredSort.SortMemberPath, configuredSort.Direction);
         }
 
+        public static void Sort(List<GameOverviewItem> items, GamesOverviewSortMode mode, ListSortDirection direction)
+        {
+            var sort = new GamesOverviewSortSpec(mode, direction);
+            Sort(items, sort.SortMemberPath, sort.Direction);
+        }
+
         internal static GamesOverviewGridSortAction ResolveGridSortAction(
             string clickedSortMemberPath,
             string currentSortPath,

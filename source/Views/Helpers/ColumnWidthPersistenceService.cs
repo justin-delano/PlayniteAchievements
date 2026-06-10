@@ -916,7 +916,7 @@ namespace PlayniteAchievements.Views.Helpers
                     continue;
                 }
 
-                var resolved = ResolveColumnMinWidth(column, minimumWidth);
+                var resolved = ColumnWidthNormalization.ResolveColumnMinimumWidth(column, minimumWidth);
                 result[column] = resolved;
 
                 if (Math.Abs(column.MinWidth - resolved) > 0.2)
@@ -935,25 +935,6 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             return result;
-        }
-
-        private double ResolveColumnMinWidth(DataGridColumn column, double fallback)
-        {
-            if (column != null && !column.CanUserResize)
-            {
-                if (IsValidWidth(column.MinWidth))
-                {
-                    return column.MinWidth;
-                }
-
-                var current = GetCurrentWidth(column);
-                if (IsValidWidth(current))
-                {
-                    return current;
-                }
-            }
-
-            return fallback;
         }
 
         private double ResolveColumnMaxWidth(DataGridColumn column, double fallback)

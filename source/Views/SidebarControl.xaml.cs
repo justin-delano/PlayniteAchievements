@@ -1780,7 +1780,9 @@ namespace PlayniteAchievements.Views
             {
                 var key = ColumnWidthNormalization.GetColumnKey(column);
                 if (string.IsNullOrWhiteSpace(key)) continue;
-                captured[key] = Math.Max(minColWidth, ColumnWidthNormalization.GetCurrentWidth(column));
+
+                var columnMinWidth = ColumnWidthNormalization.ResolveColumnMinimumWidth(column, minColWidth);
+                captured[key] = Math.Max(columnMinWidth, ColumnWidthNormalization.GetCurrentWidth(column));
             }
 
             return captured;

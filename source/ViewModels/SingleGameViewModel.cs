@@ -33,6 +33,7 @@ namespace PlayniteAchievements.ViewModels
 
         // Search and filter state
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
+        private List<AchievementDisplayItem> _filteredAchievements = new List<AchievementDisplayItem>();
         private string _searchText = string.Empty;
         private bool _showUnlocked = true;
         private bool _showLocked = true;
@@ -363,6 +364,8 @@ namespace PlayniteAchievements.ViewModels
             string.IsNullOrWhiteSpace(_currentSortPath)
                 ? (ListSortDirection?)null
                 : _currentSortDirection;
+
+        public double? SingleGameGridRowHeight => _settings?.Persisted?.SingleGameGridRowHeight;
 
         public string SearchText
         {
@@ -811,6 +814,8 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 ApplyAppearanceSettingsToAchievements();
+                OnPropertyChanged(nameof(SingleGameGridRowHeight));
+                ApplySearchFilter(skipDefaultSort: CurrentSortDirection.HasValue);
             }
         }
 
@@ -819,6 +824,18 @@ namespace PlayniteAchievements.ViewModels
             if (AchievementDisplayItem.IsAppearanceSettingPropertyName(e?.PropertyName))
             {
                 ApplyAppearanceSettingsToAchievements();
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.SingleGameGridRowHeight))
+            {
+                OnPropertyChanged(nameof(SingleGameGridRowHeight));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.SingleGameGridMaxRows))
+            {
+                SyncAchievementsDisplay();
                 return;
             }
 
@@ -880,7 +897,7 @@ namespace PlayniteAchievements.ViewModels
 
         public void SortDataGrid(string sortMemberPath, ListSortDirection direction)
         {
-            var items = Achievements.ToList();
+            var items = _filteredAchievements.ToList();
             var currentSortDirection = (ListSortDirection?)_currentSortDirection;
             if (!AchievementSortHelper.TrySortItems(
                     items,
@@ -898,7 +915,8 @@ namespace PlayniteAchievements.ViewModels
                 _currentSortDirection = currentSortDirection.Value;
             }
 
-            CollectionHelper.SynchronizeCollection(Achievements, items);
+            _filteredAchievements = items;
+            SyncAchievementsDisplay();
         }
 
         public void ResetSortToDefault()
@@ -977,8 +995,17 @@ namespace PlayniteAchievements.ViewModels
                         stableOrder: AchievementSortHelper.CreateStableOrderMap(filteredItems));
                 }
 
-                CollectionHelper.SynchronizeCollection(Achievements, filteredItems);
+                _filteredAchievements = filteredItems;
+                SyncAchievementsDisplay();
             });
+        }
+
+        private void SyncAchievementsDisplay()
+        {
+            var displayItems = DisplayGridRowLimitHelper.Limit(
+                _filteredAchievements,
+                _settings?.Persisted?.SingleGameGridMaxRows);
+            CollectionHelper.SynchronizeCollection(Achievements, displayItems);
         }
 
         public void ClearSearch()

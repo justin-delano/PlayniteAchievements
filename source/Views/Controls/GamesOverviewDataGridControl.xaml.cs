@@ -26,7 +26,9 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly IReadOnlyDictionary<string, double> DefaultWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
+                ["Cover"] = 92,
                 ["OverviewGameName"] = 500,
+                ["OverviewPlatform"] = 40,
                 ["OverviewLastPlayed"] = 240,
                 ["OverviewPlaytime"] = 170,
                 ["OverviewProgression"] = 360,
@@ -79,12 +81,25 @@ namespace PlayniteAchievements.Views.Controls
                 nameof(EnableCompactGridMode),
                 typeof(bool),
                 typeof(GamesOverviewDataGridControl),
-                new PropertyMetadata(false));
+                new PropertyMetadata(false, OnRowSizingChanged));
 
         public bool EnableCompactGridMode
         {
             get => (bool)GetValue(EnableCompactGridModeProperty);
             set => SetValue(EnableCompactGridModeProperty, value);
+        }
+
+        public static readonly DependencyProperty FixedRowHeightProperty =
+            DependencyProperty.Register(
+                nameof(FixedRowHeight),
+                typeof(double?),
+                typeof(GamesOverviewDataGridControl),
+                new PropertyMetadata(null, OnRowSizingChanged));
+
+        public double? FixedRowHeight
+        {
+            get => (double?)GetValue(FixedRowHeightProperty);
+            set => SetValue(FixedRowHeightProperty, value);
         }
 
         public static readonly DependencyProperty ShowGameMetadataProperty =
@@ -204,6 +219,7 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             UpdateColumnHeadersVisibility();
+            UpdateRealizedRowHeights();
 
             _columnPersistence = new ColumnWidthPersistenceService(
                 GamesOverviewDataGrid,
@@ -241,6 +257,68 @@ namespace PlayniteAchievements.Views.Controls
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             Dispose();
+        }
+
+        private static void OnRowSizingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is GamesOverviewDataGridControl control)
+            {
+                control.UpdateRealizedRowHeights();
+            }
+        }
+
+        private void GamesOverviewDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            ApplyFixedRowHeight(e.Row);
+        }
+
+        private void UpdateRealizedRowHeights()
+        {
+            if (GamesOverviewDataGrid == null)
+            {
+                return;
+            }
+
+            foreach (var item in GamesOverviewDataGrid.Items)
+            {
+                if (GamesOverviewDataGrid.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
+                {
+                    ApplyFixedRowHeight(row);
+                }
+            }
+        }
+
+        private void ApplyFixedRowHeight(DataGridRow row)
+        {
+            if (row == null)
+            {
+                return;
+            }
+
+            var fixedHeight = ResolveFixedRowHeight();
+            if (fixedHeight.HasValue)
+            {
+                row.Height = fixedHeight.Value;
+                row.MinHeight = fixedHeight.Value;
+                return;
+            }
+
+            row.ClearValue(FrameworkElement.HeightProperty);
+            row.ClearValue(FrameworkElement.MinHeightProperty);
+        }
+
+        private double? ResolveFixedRowHeight()
+        {
+            var height = FixedRowHeight;
+            if (!height.HasValue ||
+                double.IsNaN(height.Value) ||
+                double.IsInfinity(height.Value) ||
+                height.Value <= 0)
+            {
+                return null;
+            }
+
+            return Math.Max(PersistedSettings.MinimumGridRowHeight, height.Value);
         }
 
         private Dictionary<string, double> GetWidthsByKey(PlayniteAchievementsSettings settings)

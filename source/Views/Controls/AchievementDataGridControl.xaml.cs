@@ -31,6 +31,7 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly IReadOnlyDictionary<string, double> DefaultColumnWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
+                ["Icon"] = 78,
                 ["Game"] = 64,
                 ["Achievement"] = 460,
                 ["Title"] = 260,
@@ -188,7 +189,7 @@ namespace PlayniteAchievements.Views.Controls
         /// </summary>
         public static readonly DependencyProperty IsCompactModeProperty =
             DependencyProperty.Register(nameof(IsCompactMode), typeof(bool),
-                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnRowSizingChanged));
 
         /// <summary>
         /// Gets or sets whether compact row sizing is enabled.
@@ -197,6 +198,23 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(IsCompactModeProperty);
             set => SetValue(IsCompactModeProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the FixedRowHeight dependency property.
+        /// Null or NaN keeps the existing automatic row sizing.
+        /// </summary>
+        public static readonly DependencyProperty FixedRowHeightProperty =
+            DependencyProperty.Register(nameof(FixedRowHeight), typeof(double?),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, OnRowSizingChanged));
+
+        /// <summary>
+        /// Gets or sets a fixed DataGrid row height. Null keeps automatic sizing.
+        /// </summary>
+        public double? FixedRowHeight
+        {
+            get => (double?)GetValue(FixedRowHeightProperty);
+            set => SetValue(FixedRowHeightProperty, value);
         }
 
         /// <summary>
@@ -315,7 +333,7 @@ namespace PlayniteAchievements.Views.Controls
             var gameColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "GameColumn") as DataGridTemplateColumn;
             if (gameColumn != null)
             {
-                SetFixedColumnVisibility(gameColumn, ShowGameColumn, 64);
+                SetResizableColumnVisibility(gameColumn, ShowGameColumn, 64);
             }
         }
 
@@ -360,12 +378,47 @@ namespace PlayniteAchievements.Views.Controls
             column.Width = new DataGridLength(0, DataGridLengthUnitType.Pixel);
         }
 
+        private static void SetResizableColumnVisibility(DataGridColumn column, bool isVisible, double defaultWidth)
+        {
+            if (column == null)
+            {
+                return;
+            }
+
+            if (isVisible)
+            {
+                column.Visibility = Visibility.Visible;
+                column.MinWidth = 22;
+                column.MaxWidth = double.PositiveInfinity;
+                if (column.Width.IsAbsolute && column.Width.Value <= 0)
+                {
+                    column.Width = new DataGridLength(defaultWidth, DataGridLengthUnitType.Pixel);
+                }
+
+                return;
+            }
+
+            column.Visibility = Visibility.Collapsed;
+            column.MinWidth = 0;
+            column.MaxWidth = 0;
+            column.Width = new DataGridLength(0, DataGridLengthUnitType.Pixel);
+        }
+
+        private static void OnRowSizingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.UpdateRealizedRowHeights();
+            }
+        }
+
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             AttachSettingsSubscriptions();
             UpdateCompactMode();
             UpdateColumnVisibility();
             UpdateColumnHeadersVisibility();
+            UpdateRealizedRowHeights();
 
             if (_isAttached)
             {
@@ -381,11 +434,66 @@ namespace PlayniteAchievements.Views.Controls
         {
             AttachSettingsSubscriptions();
             UpdateCompactMode();
+            UpdateRealizedRowHeights();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             DetachSettingsSubscriptions();
+        }
+
+        private void AchievementsDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
+        {
+            ApplyFixedRowHeight(e.Row);
+        }
+
+        private void UpdateRealizedRowHeights()
+        {
+            if (AchievementsDataGrid == null)
+            {
+                return;
+            }
+
+            foreach (var item in AchievementsDataGrid.Items)
+            {
+                if (AchievementsDataGrid.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
+                {
+                    ApplyFixedRowHeight(row);
+                }
+            }
+        }
+
+        private void ApplyFixedRowHeight(DataGridRow row)
+        {
+            if (row == null)
+            {
+                return;
+            }
+
+            var fixedHeight = ResolveFixedRowHeight();
+            if (fixedHeight.HasValue)
+            {
+                row.Height = fixedHeight.Value;
+                row.MinHeight = fixedHeight.Value;
+                return;
+            }
+
+            row.ClearValue(FrameworkElement.HeightProperty);
+            row.ClearValue(FrameworkElement.MinHeightProperty);
+        }
+
+        private double? ResolveFixedRowHeight()
+        {
+            var height = FixedRowHeight;
+            if (!height.HasValue ||
+                double.IsNaN(height.Value) ||
+                double.IsInfinity(height.Value) ||
+                height.Value <= 0)
+            {
+                return null;
+            }
+
+            return Math.Max(PersistedSettings.MinimumGridRowHeight, height.Value);
         }
 
         private void AttachSettingsSubscriptions()

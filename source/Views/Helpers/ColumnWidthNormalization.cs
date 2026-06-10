@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -14,6 +15,9 @@ namespace PlayniteAchievements.Views.Helpers
     {
         private const double MinimumColumnWidthRatio = 0.1;
         private const double WidthNormalizationSafetyPadding = 1.0;
+
+        private static readonly ConditionalWeakTable<DataGridColumn, ConfiguredColumnMinWidth> ConfiguredMinWidths =
+            new ConditionalWeakTable<DataGridColumn, ConfiguredColumnMinWidth>();
 
         public static bool IsValidWidth(double width)
         {
@@ -185,13 +189,19 @@ namespace PlayniteAchievements.Views.Helpers
 
         public static double ResolveColumnMinimumWidth(DataGridColumn column, double fallbackMinWidth)
         {
-            if (column != null && !column.CanUserResize)
+            if (column == null)
             {
-                if (IsValidWidth(column.MinWidth))
-                {
-                    return column.MinWidth;
-                }
+                return fallbackMinWidth;
+            }
 
+            var configuredMinWidth = GetConfiguredMinimumWidth(column);
+            if (configuredMinWidth.HasValue)
+            {
+                return configuredMinWidth.Value;
+            }
+
+            if (!column.CanUserResize)
+            {
                 var currentWidth = GetCurrentWidth(column);
                 if (IsValidWidth(currentWidth))
                 {
@@ -200,6 +210,32 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             return fallbackMinWidth;
+        }
+
+        private static double? GetConfiguredMinimumWidth(DataGridColumn column)
+        {
+            if (column == null)
+            {
+                return null;
+            }
+
+            if (!ConfiguredMinWidths.TryGetValue(column, out var stored))
+            {
+                var localValue = column.ReadLocalValue(DataGridColumn.MinWidthProperty);
+                var configured = localValue is double width && IsValidWidth(width)
+                    ? width
+                    : double.NaN;
+
+                stored = new ConfiguredColumnMinWidth { Value = configured };
+                ConfiguredMinWidths.Add(column, stored);
+            }
+
+            return IsValidWidth(stored.Value) ? stored.Value : (double?)null;
+        }
+
+        private sealed class ConfiguredColumnMinWidth
+        {
+            public double Value { get; set; }
         }
 
         public static double ResolveFixedColumnMaximumWidth(DataGridColumn column, double fallbackWidth)

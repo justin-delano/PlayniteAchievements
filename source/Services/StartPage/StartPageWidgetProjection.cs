@@ -10,35 +10,45 @@ namespace PlayniteAchievements.Services.StartPage
     public static class StartPageWidgetProjection
     {
         public const int DefaultGridRowLimit = 25;
-        public const int MaxGridRowLimit = 500;
 
         public static List<GameOverviewItem> ProjectGamesOverview(
             IEnumerable<GameOverviewItem> items,
             PersistedSettings settings,
-            int rowLimit = DefaultGridRowLimit)
+            int? rowLimit = null)
         {
+            var widgetSettings = settings?.StartPageGamesOverviewGrid ?? new StartPageGamesOverviewGridSettings();
             var list = (items ?? Enumerable.Empty<GameOverviewItem>())
                 .Where(item => item != null)
                 .ToList();
 
-            GamesOverviewSortHelper.SortByConfiguredDefault(list, settings);
+            GamesOverviewSortHelper.Sort(
+                list,
+                widgetSettings.SortMode,
+                widgetSettings.SortDescending
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending);
 
-            return TakeLimited(list, rowLimit);
+            return DisplayGridRowLimitHelper.Limit(
+                list,
+                rowLimit ?? widgetSettings.MaxRows);
         }
 
         public static List<AchievementDisplayItem> ProjectRecentUnlocks(
             IEnumerable<AchievementDisplayItem> items,
             PersistedSettings settings,
-            int rowLimit = DefaultGridRowLimit)
+            int? rowLimit = null)
         {
+            var widgetSettings = settings?.StartPageRecentUnlocksGrid ?? new StartPageRecentUnlocksGridSettings();
             var list = (items ?? Enumerable.Empty<AchievementDisplayItem>())
                 .Where(item => item != null)
                 .Select(item => item.Clone())
                 .ToList();
 
-            var sort = AchievementSortHelper.GetConfiguredDefaultSort(
-                settings,
-                AchievementSortSurface.SidebarRecentAchievements);
+            var sort = new AchievementSortSpec(
+                widgetSettings.SortMode,
+                widgetSettings.SortDescending
+                    ? ListSortDirection.Descending
+                    : ListSortDirection.Ascending);
 
             if (!sort.PreservesSourceOrder)
             {
@@ -53,7 +63,9 @@ namespace PlayniteAchievements.Services.StartPage
                 }
             }
 
-            return TakeLimited(list, rowLimit);
+            return DisplayGridRowLimitHelper.Limit(
+                list,
+                rowLimit ?? widgetSettings.MaxRows);
         }
 
         public static string NormalizeProviderKey(string providerKey)
@@ -63,15 +75,5 @@ namespace PlayniteAchievements.Services.StartPage
                 : providerKey.Trim();
         }
 
-        private static List<T> TakeLimited<T>(List<T> list, int rowLimit)
-        {
-            var limit = Math.Max(1, Math.Min(MaxGridRowLimit, rowLimit));
-            if (list.Count <= limit)
-            {
-                return list;
-            }
-
-            return list.Take(limit).ToList();
-        }
     }
 }

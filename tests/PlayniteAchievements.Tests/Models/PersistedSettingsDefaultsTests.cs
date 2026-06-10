@@ -46,6 +46,58 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsGridLayoutSettings()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsNull(settings.SingleGameGridRowHeight);
+            Assert.IsNull(settings.SidebarOverviewGridRowHeight);
+            Assert.IsNull(settings.SidebarRecentAchievementsGridRowHeight);
+            Assert.IsNull(settings.SidebarSelectedGameGridRowHeight);
+            Assert.IsNull(settings.StartPageGamesOverviewGridRowHeight);
+            Assert.IsNull(settings.StartPageRecentAchievementsGridRowHeight);
+            Assert.IsNull(settings.DesktopThemeAchievementGridRowHeight);
+
+            Assert.IsNull(settings.SingleGameGridMaxRows);
+            Assert.IsNull(settings.SidebarOverviewGridMaxRows);
+            Assert.IsNull(settings.SidebarRecentAchievementsGridMaxRows);
+            Assert.IsNull(settings.SidebarSelectedGameGridMaxRows);
+            Assert.AreEqual(PersistedSettings.DefaultStartPageGridMaxRows, settings.StartPageGamesOverviewGridMaxRows);
+            Assert.AreEqual(PersistedSettings.DefaultStartPageGridMaxRows, settings.StartPageRecentAchievementsGridMaxRows);
+            Assert.IsNull(settings.DesktopThemeAchievementGridMaxRows);
+        }
+
+        [TestMethod]
+        public void GridLayoutSettings_NormalizeInvalidValues()
+        {
+            var settings = new PersistedSettings();
+
+            settings.SingleGameGridRowHeight = 12d;
+            Assert.AreEqual(PersistedSettings.MinimumGridRowHeight, settings.SingleGameGridRowHeight);
+
+            settings.SingleGameGridRowHeight = 64d;
+            Assert.AreEqual(64d, settings.SingleGameGridRowHeight);
+
+            settings.SingleGameGridRowHeight = 0d;
+            Assert.IsNull(settings.SingleGameGridRowHeight);
+
+            settings.SingleGameGridRowHeight = double.NaN;
+            Assert.IsNull(settings.SingleGameGridRowHeight);
+
+            settings.SingleGameGridRowHeight = double.PositiveInfinity;
+            Assert.IsNull(settings.SingleGameGridRowHeight);
+
+            settings.SingleGameGridMaxRows = 0;
+            Assert.IsNull(settings.SingleGameGridMaxRows);
+
+            settings.SingleGameGridMaxRows = -4;
+            Assert.IsNull(settings.SingleGameGridMaxRows);
+
+            settings.SingleGameGridMaxRows = 1;
+            Assert.AreEqual(1, settings.SingleGameGridMaxRows);
+        }
+
+        [TestMethod]
         public void SidebarOverviewColumnRatio_ClampsInvalidValues()
         {
             var settings = new PersistedSettings();
@@ -164,6 +216,62 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreNotSame(source.SidebarGameColumnOrder, target.SidebarGameColumnOrder);
             Assert.AreNotSame(source.DesktopThemeColumnOrder, clone.DesktopThemeColumnOrder);
             Assert.AreNotSame(source.GamesOverviewColumnOrder, target.GamesOverviewColumnOrder);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveGridLayoutSettings()
+        {
+            var source = new PersistedSettings
+            {
+                SingleGameGridRowHeight = 72d,
+                SidebarOverviewGridRowHeight = 84d,
+                SidebarRecentAchievementsGridRowHeight = 96d,
+                SidebarSelectedGameGridRowHeight = 108d,
+                StartPageGamesOverviewGridRowHeight = 120d,
+                StartPageRecentAchievementsGridRowHeight = 132d,
+                DesktopThemeAchievementGridRowHeight = 144d,
+                SingleGameGridMaxRows = 2,
+                SidebarOverviewGridMaxRows = 3,
+                SidebarRecentAchievementsGridMaxRows = 4,
+                SidebarSelectedGameGridMaxRows = 5,
+                StartPageGamesOverviewGridMaxRows = 6,
+                StartPageRecentAchievementsGridMaxRows = 7,
+                DesktopThemeAchievementGridMaxRows = 8
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.AreEqual(72d, clone.SingleGameGridRowHeight);
+            Assert.AreEqual(84d, clone.SidebarOverviewGridRowHeight);
+            Assert.AreEqual(96d, clone.SidebarRecentAchievementsGridRowHeight);
+            Assert.AreEqual(108d, clone.SidebarSelectedGameGridRowHeight);
+            Assert.AreEqual(120d, clone.StartPageGamesOverviewGridRowHeight);
+            Assert.AreEqual(132d, clone.StartPageRecentAchievementsGridRowHeight);
+            Assert.AreEqual(144d, clone.DesktopThemeAchievementGridRowHeight);
+            Assert.AreEqual(2, clone.SingleGameGridMaxRows);
+            Assert.AreEqual(3, clone.SidebarOverviewGridMaxRows);
+            Assert.AreEqual(4, clone.SidebarRecentAchievementsGridMaxRows);
+            Assert.AreEqual(5, clone.SidebarSelectedGameGridMaxRows);
+            Assert.AreEqual(6, clone.StartPageGamesOverviewGridMaxRows);
+            Assert.AreEqual(7, clone.StartPageRecentAchievementsGridMaxRows);
+            Assert.AreEqual(8, clone.DesktopThemeAchievementGridMaxRows);
+
+            Assert.AreEqual(clone.SingleGameGridRowHeight, target.SingleGameGridRowHeight);
+            Assert.AreEqual(clone.SidebarOverviewGridRowHeight, target.SidebarOverviewGridRowHeight);
+            Assert.AreEqual(clone.SidebarRecentAchievementsGridRowHeight, target.SidebarRecentAchievementsGridRowHeight);
+            Assert.AreEqual(clone.SidebarSelectedGameGridRowHeight, target.SidebarSelectedGameGridRowHeight);
+            Assert.AreEqual(clone.StartPageGamesOverviewGridRowHeight, target.StartPageGamesOverviewGridRowHeight);
+            Assert.AreEqual(clone.StartPageRecentAchievementsGridRowHeight, target.StartPageRecentAchievementsGridRowHeight);
+            Assert.AreEqual(clone.DesktopThemeAchievementGridRowHeight, target.DesktopThemeAchievementGridRowHeight);
+            Assert.AreEqual(clone.SingleGameGridMaxRows, target.SingleGameGridMaxRows);
+            Assert.AreEqual(clone.SidebarOverviewGridMaxRows, target.SidebarOverviewGridMaxRows);
+            Assert.AreEqual(clone.SidebarRecentAchievementsGridMaxRows, target.SidebarRecentAchievementsGridMaxRows);
+            Assert.AreEqual(clone.SidebarSelectedGameGridMaxRows, target.SidebarSelectedGameGridMaxRows);
+            Assert.AreEqual(clone.StartPageGamesOverviewGridMaxRows, target.StartPageGamesOverviewGridMaxRows);
+            Assert.AreEqual(clone.StartPageRecentAchievementsGridMaxRows, target.StartPageRecentAchievementsGridMaxRows);
+            Assert.AreEqual(clone.DesktopThemeAchievementGridMaxRows, target.DesktopThemeAchievementGridMaxRows);
         }
     }
 }

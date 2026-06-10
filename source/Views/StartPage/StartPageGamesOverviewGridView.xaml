@@ -13,6 +13,7 @@
                                                ShowGameMetadata="{Binding ShowGameMetadata}"
                                                ShowCompletionBorder="{Binding ShowCompletionBorder}"
                                                ShowColumnHeaders="{Binding ShowColumnHeaders}"
+                                               FixedRowHeight="{Binding RowHeight}"
                                                ColumnSettingsKey="StartPageOverview"
                                                RowPreviewMouseRightButtonDown="GridRow_PreviewMouseRightButtonDown"
                                                RowPreviewMouseRightButtonUp="GridRow_PreviewMouseRightButtonUp"/>

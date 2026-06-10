@@ -28,11 +28,14 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public PieChartViewModel Chart { get; } = new PieChartViewModel();
 
-        public bool ShowCenterPercentage => PersistedSettings?.ShowSidebarPiePercentages ?? true;
+        private StartPagePieWidgetSettings WidgetSettings =>
+            PersistedSettings?.StartPagePieCharts ?? new StartPagePieWidgetSettings();
+
+        public bool ShowCenterPercentage => WidgetSettings.ShowCenterPercentage;
 
         protected override void ApplySnapshot(SidebarDataSnapshot snapshot)
         {
-            Chart.SmallSliceMode = PersistedSettings?.SidebarPieSmallSliceMode ?? SidebarPieSmallSliceMode.Round;
+            Chart.SmallSliceMode = WidgetSettings.SmallSliceMode;
 
             switch (_widgetKind)
             {
@@ -56,10 +59,46 @@ namespace PlayniteAchievements.ViewModels.StartPage
         protected override void OnPersistedSettingsChanged(string propertyName)
         {
             if (string.IsNullOrEmpty(propertyName) ||
-                propertyName == nameof(PersistedSettings.ShowSidebarPiePercentages))
+                IsWidgetSettingsProperty(propertyName, nameof(StartPagePieWidgetSettings.ShowCenterPercentage)))
             {
                 OnPropertyChanged(nameof(ShowCenterPercentage));
             }
+        }
+
+        protected override bool ShouldRefreshForPersistedSettingsChanged(string propertyName)
+        {
+            if (IsWidgetSettingsProperty(propertyName, nameof(StartPagePieWidgetSettings.SmallSliceMode)))
+            {
+                return true;
+            }
+
+            if (IsWidgetSettingsProperty(propertyName))
+            {
+                return false;
+            }
+
+            return base.ShouldRefreshForPersistedSettingsChanged(propertyName);
+        }
+
+        private bool IsWidgetSettingsProperty(string propertyName, string childPropertyName = null)
+        {
+            if (string.IsNullOrEmpty(propertyName))
+            {
+                return true;
+            }
+
+            var parentPropertyName = nameof(PersistedSettings.StartPagePieCharts);
+            var prefix = parentPropertyName + ".";
+            if (!propertyName.StartsWith(prefix))
+            {
+                return propertyName == parentPropertyName;
+            }
+
+            return string.IsNullOrEmpty(childPropertyName) ||
+                   string.Equals(
+                       propertyName.Substring(prefix.Length),
+                       childPropertyName,
+                       StringComparison.Ordinal);
         }
 
         private void ApplyCompletedGames(SidebarDataSnapshot snapshot)
@@ -77,14 +116,16 @@ namespace PlayniteAchievements.ViewModels.StartPage
             var unlockedByProvider = snapshot?.UnlockedByProvider ?? BuildProviderUnlockedCounts(games);
             var totalByProvider = snapshot?.TotalByProvider ?? BuildProviderTotalCounts(games);
             var totalLocked = snapshot?.TotalLocked ?? Math.Max(0, totalByProvider.Values.Sum() - unlockedByProvider.Values.Sum());
+            var providerLookup = BuildProviderLookup(games);
+            var providerDisplayNames = BuildProviderDisplayNames(games);
 
             Chart.SetProviderData(
                 unlockedByProvider,
                 totalByProvider,
                 totalLocked,
                 L("LOCPlayAch_Common_Locked", "Locked"),
-                BuildProviderLookup(games),
-                BuildProviderDisplayNames(games));
+                providerLookup,
+                providerDisplayNames);
         }
 
         private void ApplyRarity(SidebarDataSnapshot snapshot)

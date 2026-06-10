@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -20,12 +21,16 @@ namespace PlayniteAchievements.Models.Settings
     public class PersistedSettings : ObservableObject
     {
         public const double DefaultAchievementDataGridMaxHeight = 600d;
+        public const double MinimumGridRowHeight = 32d;
+        public const int DefaultStartPageGridMaxRows = 25;
+        public const int MinimumGridMaxRows = 1;
         public const double DefaultSidebarOverviewLeftColumnRatio = 0.5d;
         public const double MinSidebarOverviewLeftColumnRatio = 0.01d;
         public const double MaxSidebarOverviewLeftColumnRatio = 0.99d;
 
         public PersistedSettings()
         {
+            AttachStartPageSettingsHandlers();
         }
 
         #region Backing Fields
@@ -80,6 +85,22 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableAchievementBarChartControl = true;
         private bool _enableCompactGridMode = false;
         private double? _achievementDataGridMaxHeight = DefaultAchievementDataGridMaxHeight;
+        private double? _singleGameGridRowHeight;
+        private double? _sidebarOverviewGridRowHeight;
+        private double? _sidebarRecentAchievementsGridRowHeight;
+        private double? _sidebarSelectedGameGridRowHeight;
+        private double? _desktopThemeAchievementGridRowHeight;
+        private int? _singleGameGridMaxRows;
+        private int? _sidebarOverviewGridMaxRows;
+        private int? _sidebarRecentAchievementsGridMaxRows;
+        private int? _sidebarSelectedGameGridMaxRows;
+        private int? _desktopThemeAchievementGridMaxRows;
+        private StartPageGamesOverviewGridSettings _startPageGamesOverviewGrid =
+            new StartPageGamesOverviewGridSettings();
+        private StartPageRecentUnlocksGridSettings _startPageRecentUnlocksGrid =
+            new StartPageRecentUnlocksGridSettings();
+        private StartPagePieWidgetSettings _startPagePieCharts =
+            new StartPagePieWidgetSettings();
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -814,6 +835,177 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Fixed row height for the single-game achievement grid (null = automatic).
+        /// </summary>
+        public double? SingleGameGridRowHeight
+        {
+            get => _singleGameGridRowHeight;
+            set => SetValue(ref _singleGameGridRowHeight, NormalizeGridRowHeight(value));
+        }
+
+        /// <summary>
+        /// Fixed row height for the sidebar games overview grid (null = automatic).
+        /// </summary>
+        public double? SidebarOverviewGridRowHeight
+        {
+            get => _sidebarOverviewGridRowHeight;
+            set => SetValue(ref _sidebarOverviewGridRowHeight, NormalizeGridRowHeight(value));
+        }
+
+        /// <summary>
+        /// Fixed row height for the sidebar recent achievements grid (null = automatic).
+        /// </summary>
+        public double? SidebarRecentAchievementsGridRowHeight
+        {
+            get => _sidebarRecentAchievementsGridRowHeight;
+            set => SetValue(ref _sidebarRecentAchievementsGridRowHeight, NormalizeGridRowHeight(value));
+        }
+
+        /// <summary>
+        /// Fixed row height for the sidebar selected-game achievement grid (null = automatic).
+        /// </summary>
+        public double? SidebarSelectedGameGridRowHeight
+        {
+            get => _sidebarSelectedGameGridRowHeight;
+            set => SetValue(ref _sidebarSelectedGameGridRowHeight, NormalizeGridRowHeight(value));
+        }
+
+        /// <summary>
+        /// Fixed row height for the Start Page games overview grid (null = automatic).
+        /// </summary>
+        public double? StartPageGamesOverviewGridRowHeight
+        {
+            get => StartPageGamesOverviewGrid.RowHeight;
+            set => StartPageGamesOverviewGrid.RowHeight = value;
+        }
+
+        /// <summary>
+        /// Fixed row height for the Start Page recent unlocks grid (null = automatic).
+        /// </summary>
+        public double? StartPageRecentAchievementsGridRowHeight
+        {
+            get => StartPageRecentUnlocksGrid.RowHeight;
+            set => StartPageRecentUnlocksGrid.RowHeight = value;
+        }
+
+        /// <summary>
+        /// Fixed row height for the desktop theme achievement grid (null = automatic).
+        /// </summary>
+        public double? DesktopThemeAchievementGridRowHeight
+        {
+            get => _desktopThemeAchievementGridRowHeight;
+            set => SetValue(ref _desktopThemeAchievementGridRowHeight, NormalizeGridRowHeight(value));
+        }
+
+        /// <summary>
+        /// Maximum rendered rows for the single-game achievement grid (null = unlimited).
+        /// </summary>
+        public int? SingleGameGridMaxRows
+        {
+            get => _singleGameGridMaxRows;
+            set => SetValue(ref _singleGameGridMaxRows, NormalizeGridMaxRows(value));
+        }
+
+        /// <summary>
+        /// Maximum rendered rows for the sidebar games overview grid (null = unlimited).
+        /// </summary>
+        public int? SidebarOverviewGridMaxRows
+        {
+            get => _sidebarOverviewGridMaxRows;
+            set => SetValue(ref _sidebarOverviewGridMaxRows, NormalizeGridMaxRows(value));
+        }
+
+        /// <summary>
+        /// Maximum rendered rows for the sidebar recent achievements grid (null = unlimited).
+        /// </summary>
+        public int? SidebarRecentAchievementsGridMaxRows
+        {
+            get => _sidebarRecentAchievementsGridMaxRows;
+            set => SetValue(ref _sidebarRecentAchievementsGridMaxRows, NormalizeGridMaxRows(value));
+        }
+
+        /// <summary>
+        /// Maximum rendered rows for the sidebar selected-game achievement grid (null = unlimited).
+        /// </summary>
+        public int? SidebarSelectedGameGridMaxRows
+        {
+            get => _sidebarSelectedGameGridMaxRows;
+            set => SetValue(ref _sidebarSelectedGameGridMaxRows, NormalizeGridMaxRows(value));
+        }
+
+        /// <summary>
+        /// Maximum rendered rows for the Start Page games overview grid (null = unlimited).
+        /// Defaults to 25 to preserve the previous Start Page behavior.
+        /// </summary>
+        public int? StartPageGamesOverviewGridMaxRows
+        {
+            get => StartPageGamesOverviewGrid.MaxRows;
+            set => StartPageGamesOverviewGrid.MaxRows = value;
+        }
+
+        /// <summary>
+        /// Maximum rendered rows for the Start Page recent unlocks grid (null = unlimited).
+        /// Defaults to 25 to preserve the previous Start Page behavior.
+        /// </summary>
+        public int? StartPageRecentAchievementsGridMaxRows
+        {
+            get => StartPageRecentUnlocksGrid.MaxRows;
+            set => StartPageRecentUnlocksGrid.MaxRows = value;
+        }
+
+        /// <summary>
+        /// Maximum rendered rows for the desktop theme achievement grid (null = unlimited).
+        /// </summary>
+        public int? DesktopThemeAchievementGridMaxRows
+        {
+            get => _desktopThemeAchievementGridMaxRows;
+            set => SetValue(ref _desktopThemeAchievementGridMaxRows, NormalizeGridMaxRows(value));
+        }
+
+        public StartPageGamesOverviewGridSettings StartPageGamesOverviewGrid
+        {
+            get => _startPageGamesOverviewGrid ?? (_startPageGamesOverviewGrid = AttachStartPageSettings(
+                new StartPageGamesOverviewGridSettings()));
+            set
+            {
+                var normalized = value ?? new StartPageGamesOverviewGridSettings();
+                if (ReferenceEquals(_startPageGamesOverviewGrid, normalized))
+                {
+                    return;
+                }
+
+                DetachStartPageSettings(_startPageGamesOverviewGrid);
+                _startPageGamesOverviewGrid = AttachStartPageSettings(normalized);
+                OnPropertyChanged();
+            }
+        }
+
+        public StartPageRecentUnlocksGridSettings StartPageRecentUnlocksGrid
+        {
+            get => _startPageRecentUnlocksGrid ?? (_startPageRecentUnlocksGrid = AttachStartPageSettings(
+                new StartPageRecentUnlocksGridSettings()));
+            set
+            {
+                var normalized = value ?? new StartPageRecentUnlocksGridSettings();
+                if (ReferenceEquals(_startPageRecentUnlocksGrid, normalized))
+                {
+                    return;
+                }
+
+                DetachStartPageSettings(_startPageRecentUnlocksGrid);
+                _startPageRecentUnlocksGrid = AttachStartPageSettings(normalized);
+                OnPropertyChanged();
+            }
+        }
+
+        public StartPagePieWidgetSettings StartPagePieCharts
+        {
+            get => _startPagePieCharts ?? (_startPagePieCharts = AttachStartPageSettings(
+                new StartPagePieWidgetSettings()));
+            set => SetStartPagePieSettings(ref _startPagePieCharts, value, nameof(StartPagePieCharts));
+        }
+
+        /// <summary>
         /// When true, providers execute concurrently during refresh runs.
         /// Disable to force deterministic sequential provider execution.
         /// </summary>
@@ -1407,6 +1599,114 @@ namespace PlayniteAchievements.Models.Settings
 
         #endregion
 
+        #region StartPage Settings Helpers
+
+        private void SetStartPagePieSettings(
+            ref StartPagePieWidgetSettings field,
+            StartPagePieWidgetSettings value,
+            string propertyName)
+        {
+            var normalized = value ?? new StartPagePieWidgetSettings();
+            if (ReferenceEquals(field, normalized))
+            {
+                return;
+            }
+
+            DetachStartPageSettings(field);
+            field = AttachStartPageSettings(normalized);
+            OnPropertyChanged(propertyName);
+        }
+
+        private void AttachStartPageSettingsHandlers()
+        {
+            _startPageGamesOverviewGrid = AttachStartPageSettings(
+                _startPageGamesOverviewGrid ?? new StartPageGamesOverviewGridSettings());
+            _startPageRecentUnlocksGrid = AttachStartPageSettings(
+                _startPageRecentUnlocksGrid ?? new StartPageRecentUnlocksGridSettings());
+            _startPagePieCharts = AttachStartPageSettings(
+                _startPagePieCharts ?? new StartPagePieWidgetSettings());
+        }
+
+        private T AttachStartPageSettings<T>(T settings)
+            where T : ObservableObject
+        {
+            if (settings != null)
+            {
+                settings.PropertyChanged -= StartPageSettings_PropertyChanged;
+                settings.PropertyChanged += StartPageSettings_PropertyChanged;
+            }
+
+            return settings;
+        }
+
+        private void DetachStartPageSettings(ObservableObject settings)
+        {
+            if (settings != null)
+            {
+                settings.PropertyChanged -= StartPageSettings_PropertyChanged;
+            }
+        }
+
+        private void StartPageSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var childPropertyName = e?.PropertyName;
+            if (ReferenceEquals(sender, _startPageGamesOverviewGrid))
+            {
+                RaiseStartPageSettingsChanged(nameof(StartPageGamesOverviewGrid), childPropertyName);
+                RaiseLegacyStartPageGridPropertyChanged(
+                    childPropertyName,
+                    nameof(StartPageGamesOverviewGridRowHeight),
+                    nameof(StartPageGamesOverviewGridMaxRows));
+                return;
+            }
+
+            if (ReferenceEquals(sender, _startPageRecentUnlocksGrid))
+            {
+                RaiseStartPageSettingsChanged(nameof(StartPageRecentUnlocksGrid), childPropertyName);
+                RaiseLegacyStartPageGridPropertyChanged(
+                    childPropertyName,
+                    nameof(StartPageRecentAchievementsGridRowHeight),
+                    nameof(StartPageRecentAchievementsGridMaxRows));
+                return;
+            }
+
+            if (ReferenceEquals(sender, _startPagePieCharts))
+            {
+                RaiseStartPageSettingsChanged(nameof(StartPagePieCharts), childPropertyName);
+            }
+        }
+
+        private void RaiseStartPageSettingsChanged(string parentPropertyName, string childPropertyName)
+        {
+            if (string.IsNullOrWhiteSpace(parentPropertyName))
+            {
+                return;
+            }
+
+            OnPropertyChanged(parentPropertyName);
+            if (!string.IsNullOrWhiteSpace(childPropertyName))
+            {
+                OnPropertyChanged($"{parentPropertyName}.{childPropertyName}");
+            }
+        }
+
+        private void RaiseLegacyStartPageGridPropertyChanged(
+            string childPropertyName,
+            string rowHeightPropertyName,
+            string maxRowsPropertyName)
+        {
+            if (string.Equals(childPropertyName, nameof(StartPageGamesOverviewGridSettings.RowHeight), StringComparison.Ordinal))
+            {
+                OnPropertyChanged(rowHeightPropertyName);
+            }
+            else if (string.Equals(childPropertyName, nameof(StartPageGamesOverviewGridSettings.MaxRows), StringComparison.Ordinal))
+            {
+                OnPropertyChanged(maxRowsPropertyName);
+            }
+        }
+
+        #endregion
+
         #region Clone Method
 
         /// <summary>
@@ -1501,6 +1801,26 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementDataGridSortMode = this.AchievementDataGridSortMode,
                 AchievementDataGridSortDescending = this.AchievementDataGridSortDescending,
                 AchievementDataGridMaxHeight = this.AchievementDataGridMaxHeight,
+                SingleGameGridRowHeight = this.SingleGameGridRowHeight,
+                SidebarOverviewGridRowHeight = this.SidebarOverviewGridRowHeight,
+                SidebarRecentAchievementsGridRowHeight = this.SidebarRecentAchievementsGridRowHeight,
+                SidebarSelectedGameGridRowHeight = this.SidebarSelectedGameGridRowHeight,
+                StartPageGamesOverviewGridRowHeight = this.StartPageGamesOverviewGridRowHeight,
+                StartPageRecentAchievementsGridRowHeight = this.StartPageRecentAchievementsGridRowHeight,
+                DesktopThemeAchievementGridRowHeight = this.DesktopThemeAchievementGridRowHeight,
+                SingleGameGridMaxRows = this.SingleGameGridMaxRows,
+                SidebarOverviewGridMaxRows = this.SidebarOverviewGridMaxRows,
+                SidebarRecentAchievementsGridMaxRows = this.SidebarRecentAchievementsGridMaxRows,
+                SidebarSelectedGameGridMaxRows = this.SidebarSelectedGameGridMaxRows,
+                StartPageGamesOverviewGridMaxRows = this.StartPageGamesOverviewGridMaxRows,
+                StartPageRecentAchievementsGridMaxRows = this.StartPageRecentAchievementsGridMaxRows,
+                DesktopThemeAchievementGridMaxRows = this.DesktopThemeAchievementGridMaxRows,
+                StartPageGamesOverviewGrid = this.StartPageGamesOverviewGrid?.Clone() ??
+                    new StartPageGamesOverviewGridSettings(),
+                StartPageRecentUnlocksGrid = this.StartPageRecentUnlocksGrid?.Clone() ??
+                    new StartPageRecentUnlocksGridSettings(),
+                StartPagePieCharts = this.StartPagePieCharts?.Clone() ??
+                    new StartPagePieWidgetSettings(),
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
@@ -1631,6 +1951,29 @@ namespace PlayniteAchievements.Models.Settings
                 // Tagging Settings
                 TaggingSettings = this.TaggingSettings?.Clone() ?? new TaggingSettings()
             };
+        }
+
+        public static double? NormalizeGridRowHeight(double? value)
+        {
+            if (!value.HasValue ||
+                double.IsNaN(value.Value) ||
+                double.IsInfinity(value.Value) ||
+                value.Value <= 0)
+            {
+                return null;
+            }
+
+            return Math.Max(MinimumGridRowHeight, value.Value);
+        }
+
+        public static int? NormalizeGridMaxRows(int? value)
+        {
+            if (!value.HasValue || value.Value <= 0)
+            {
+                return null;
+            }
+
+            return Math.Max(MinimumGridMaxRows, value.Value);
         }
 
         private static string NormalizePath(string value)

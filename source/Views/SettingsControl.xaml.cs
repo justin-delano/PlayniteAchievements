@@ -1318,6 +1318,15 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void ToggleStartPageGamesOverviewGridSortDescending(object sender, RoutedEventArgs e)
+        {
+            var settings = _settingsViewModel?.Settings?.Persisted?.StartPageGamesOverviewGrid;
+            if (settings != null)
+            {
+                settings.SortDescending = !settings.SortDescending;
+            }
+        }
+
         private void ToggleSidebarSelectedGameGridSortDescending(object sender, RoutedEventArgs e)
         {
             var persisted = _settingsViewModel?.Settings?.Persisted;
@@ -1333,6 +1342,15 @@ namespace PlayniteAchievements.Views
             if (persisted != null)
             {
                 persisted.SingleGameGridSortDescending = !persisted.SingleGameGridSortDescending;
+            }
+        }
+
+        private void ToggleStartPageRecentUnlocksGridSortDescending(object sender, RoutedEventArgs e)
+        {
+            var settings = _settingsViewModel?.Settings?.Persisted?.StartPageRecentUnlocksGrid;
+            if (settings != null)
+            {
+                settings.SortDescending = !settings.SortDescending;
             }
         }
 

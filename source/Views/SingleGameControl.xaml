@@ -498,6 +498,7 @@
                                              ItemsSource="{Binding Achievements}"
                                              RevealCommand="{Binding RevealAchievementCommand}"
                                              ColumnSettingsKey="SingleGame"
+                                             FixedRowHeight="{Binding SingleGameGridRowHeight}"
                                              UseExternalSorting="True"
                                              Sorting="OnGridSorting"
                                              RowPreviewMouseRightButtonDown="AchievementRow_PreviewMouseRightButtonDown"

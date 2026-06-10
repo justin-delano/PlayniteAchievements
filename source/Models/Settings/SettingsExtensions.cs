@@ -93,6 +93,8 @@ namespace PlayniteAchievements.Models.Settings
             target.CompactUnlockedListSortDescending = source.CompactUnlockedListSortDescending;
             target.CompactLockedListSortMode = source.CompactLockedListSortMode;
             target.CompactLockedListSortDescending = source.CompactLockedListSortDescending;
+            target.GamesOverviewGridSortMode = source.GamesOverviewGridSortMode;
+            target.GamesOverviewGridSortDescending = source.GamesOverviewGridSortDescending;
             target.SidebarSelectedGameGridSortMode = source.SidebarSelectedGameGridSortMode;
             target.SidebarSelectedGameGridSortDescending = source.SidebarSelectedGameGridSortDescending;
             target.SingleGameGridSortMode = source.SingleGameGridSortMode;
@@ -100,6 +102,26 @@ namespace PlayniteAchievements.Models.Settings
             target.AchievementDataGridSortMode = source.AchievementDataGridSortMode;
             target.AchievementDataGridSortDescending = source.AchievementDataGridSortDescending;
             target.AchievementDataGridMaxHeight = source.AchievementDataGridMaxHeight;
+            target.SingleGameGridRowHeight = source.SingleGameGridRowHeight;
+            target.SidebarOverviewGridRowHeight = source.SidebarOverviewGridRowHeight;
+            target.SidebarRecentAchievementsGridRowHeight = source.SidebarRecentAchievementsGridRowHeight;
+            target.SidebarSelectedGameGridRowHeight = source.SidebarSelectedGameGridRowHeight;
+            target.StartPageGamesOverviewGridRowHeight = source.StartPageGamesOverviewGridRowHeight;
+            target.StartPageRecentAchievementsGridRowHeight = source.StartPageRecentAchievementsGridRowHeight;
+            target.DesktopThemeAchievementGridRowHeight = source.DesktopThemeAchievementGridRowHeight;
+            target.SingleGameGridMaxRows = source.SingleGameGridMaxRows;
+            target.SidebarOverviewGridMaxRows = source.SidebarOverviewGridMaxRows;
+            target.SidebarRecentAchievementsGridMaxRows = source.SidebarRecentAchievementsGridMaxRows;
+            target.SidebarSelectedGameGridMaxRows = source.SidebarSelectedGameGridMaxRows;
+            target.StartPageGamesOverviewGridMaxRows = source.StartPageGamesOverviewGridMaxRows;
+            target.StartPageRecentAchievementsGridMaxRows = source.StartPageRecentAchievementsGridMaxRows;
+            target.DesktopThemeAchievementGridMaxRows = source.DesktopThemeAchievementGridMaxRows;
+            target.StartPageGamesOverviewGrid = source.StartPageGamesOverviewGrid?.Clone() ??
+                new StartPageGamesOverviewGridSettings();
+            target.StartPageRecentUnlocksGrid = source.StartPageRecentUnlocksGrid?.Clone() ??
+                new StartPageRecentUnlocksGridSettings();
+            target.StartPagePieCharts = source.StartPagePieCharts?.Clone() ??
+                new StartPagePieWidgetSettings();
             target.EnableParallelProviderRefresh = source.EnableParallelProviderRefresh;
             target.ScanDelayMs = source.ScanDelayMs;
             target.MaxRetryAttempts = source.MaxRetryAttempts;
