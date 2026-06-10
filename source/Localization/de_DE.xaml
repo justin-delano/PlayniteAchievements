@@ -590,7 +590,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round">Runden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round_Description">Segmente unter 5 % auf 5 % aufrunden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Statistik</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Anzeige</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Darstellung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Spiele automatisch mit Schlagworten basierend auf den Erfolgsstatus versehen. Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingHeader">Schlagworte</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingSection">Schlagwortkonfiguration</sys:String>
@@ -733,7 +733,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Gruppierung nach Freischaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_NoLockedAchievements">Keine gesperrten Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">Keine freigeschalteten Erfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tooltip_RightClickShowHide">Rechtsklick zum anzeigen/verbergen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tooltip_RightClickShowHide">Rechtsklick zum anzeigen/ausblenden</sys:String>
 
     <!-- ================================================================= -->
     <!-- 99 Legacy SuccessStory Compatibility -->
