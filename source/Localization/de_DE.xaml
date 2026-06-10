@@ -569,7 +569,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Komplettierungsumrandung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(verborgener Erfolg)&quot; anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten bei freigeschalteten Symbolen anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Diagramme in Seitenleiste anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Histogramm für Erfolge anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform/Spielzeit/Region anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Kachel für Sammelwertung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Kachel für Prestigewertung anzeigen</sys:String>
