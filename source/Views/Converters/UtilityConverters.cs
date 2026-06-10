@@ -308,7 +308,7 @@ namespace PlayniteAchievements.Views.Converters
     }
 
     /// <summary>
-    /// Sizes an image uniformly inside the current DataGrid row height and cell width.
+    /// Sizes image cells from the available column width. Platform badges keep row-aware uniform sizing.
     /// ConverterParameter: mode,dimension,horizontalPadding,verticalPadding,fallbackSize.
     /// mode is icon, cover, platform, or auto. dimension is width or height.
     /// </summary>
@@ -334,7 +334,10 @@ namespace PlayniteAchievements.Views.Converters
             var availableHeight = rowHeight.HasValue
                 ? Math.Max(1d, rowHeight.Value - verticalPadding)
                 : fallbackSize / aspectRatio;
-            var height = Math.Min(availableHeight, availableWidth / aspectRatio);
+            var fitWidth = mode == "icon" || mode == "cover" || mode == "auto";
+            var height = fitWidth
+                ? availableWidth / aspectRatio
+                : Math.Min(availableHeight, availableWidth / aspectRatio);
             if (double.IsNaN(height) || double.IsInfinity(height) || height <= 0)
             {
                 height = fallbackSize / aspectRatio;

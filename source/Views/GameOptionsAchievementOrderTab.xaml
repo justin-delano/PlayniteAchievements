@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              mc:Ignorable="d"
              Loaded="Control_Loaded"
@@ -20,12 +21,14 @@
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility" />
 
             <DataTemplate x:Key="OrderAchievementInfoTemplate">
-                <StackPanel VerticalAlignment="Center"
+                <StackPanel VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                            HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                             Background="Transparent"
                             Margin="12,10">
                     <TextBlock FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
-                               TextWrapping="Wrap">
+                               TextWrapping="Wrap"
+                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="FontSize" Value="{DynamicResource FontSize}" />
@@ -51,6 +54,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
+                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                                TextTrimming="CharacterEllipsis"
                                MaxHeight="44"
                                Margin="0,3,0,0">
@@ -69,7 +73,8 @@
                                FontSize="{DynamicResource FontSizeSmall}"
                                Opacity="0.58"
                                Margin="0,4,0,0"
-                               TextWrapping="Wrap" />
+                               TextWrapping="Wrap"
+                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}" />
                 </StackPanel>
             </DataTemplate>
         </ResourceDictionary>
@@ -141,7 +146,7 @@
                   CanUserResizeColumns="True"
                   CanUserReorderColumns="False"
                   CanUserSortColumns="False"
-                  RowHeight="112"
+                  RowHeight="100"
                   EnableRowVirtualization="True"
                   EnableColumnVirtualization="True"
                   VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -149,6 +154,7 @@
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                  helpers:DataGridAlignmentBehavior.IsEnabled="True"
                   Tag="ControllerCellFocus"
                   AllowDrop="True"
                   PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown"
@@ -166,7 +172,7 @@
 
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow" BasedOn="{StaticResource GameOptionsDataGridRowStyle}">
-                    <Setter Property="MinHeight" Value="76" />
+                    <Setter Property="MinHeight" Value="64" />
                     <Setter Property="ClipToBounds" Value="True" />
                     <Setter Property="Cursor" Value="Arrow" />
                     <Style.Triggers>
@@ -203,9 +209,11 @@
                 </DataGridTemplateColumn>
 
                 <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserResize="False"
+                                        CellStyle="{StaticResource GameOptionsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementStatusTemplate}" />
 
-                <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False"
+                <DataGridTemplateColumn Width="64" MinWidth="64" MaxWidth="64" CanUserResize="False"
+                                        CellStyle="{StaticResource GameOptionsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementIconTemplate}" />
 
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}"

@@ -73,6 +73,9 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewGridColumnHeaders = true;
         private bool _showAchievementGridColumnHeaders = true;
         private bool _showDesktopThemeAchievementGridColumnHeaders = true;
+        private GridAlignment _gridColumnHeaderAlignment = GridAlignment.Center;
+        private GridAlignment _gridCellAlignment = GridAlignment.Left;
+        private GridVerticalAlignment _gridCellVerticalAlignment = GridVerticalAlignment.Center;
         private bool _enableAchievementCompactListControl = true;
         private bool _enableAchievementDataGridControl = true;
         private bool _enableAchievementCompactUnlockedListControl = true;
@@ -83,7 +86,6 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableAchievementViewItemControl = true;
         private bool _enableAchievementPieChartControl = true;
         private bool _enableAchievementBarChartControl = true;
-        private bool _enableCompactGridMode = false;
         private double? _achievementDataGridMaxHeight = DefaultAchievementDataGridMaxHeight;
         private double? _singleGameGridRowHeight;
         private double? _sidebarOverviewGridRowHeight;
@@ -591,6 +593,33 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Horizontal alignment for text shown in DataGrid column headers.
+        /// </summary>
+        public GridAlignment GridColumnHeaderAlignment
+        {
+            get => _gridColumnHeaderAlignment;
+            set => SetValue(ref _gridColumnHeaderAlignment, value);
+        }
+
+        /// <summary>
+        /// Horizontal alignment for textual DataGrid cell content.
+        /// </summary>
+        public GridAlignment GridCellAlignment
+        {
+            get => _gridCellAlignment;
+            set => SetValue(ref _gridCellAlignment, value);
+        }
+
+        /// <summary>
+        /// Vertical alignment for DataGrid cell content.
+        /// </summary>
+        public GridVerticalAlignment GridCellVerticalAlignment
+        {
+            get => _gridCellVerticalAlignment;
+            set => SetValue(ref _gridCellVerticalAlignment, value);
+        }
+
+        /// <summary>
         /// When true, enables the modern compact list control.
         /// </summary>
         public bool EnableAchievementCompactListControl
@@ -678,15 +707,6 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _enableAchievementBarChartControl;
             set => SetValue(ref _enableAchievementBarChartControl, value);
-        }
-
-        /// <summary>
-        /// When true, shared achievement DataGrid rows use a tighter compact layout.
-        /// </summary>
-        public bool EnableCompactGridMode
-        {
-            get => _enableCompactGridMode;
-            set => SetValue(ref _enableCompactGridMode, value);
         }
 
         /// <summary>
@@ -1775,6 +1795,9 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewGridColumnHeaders = this.ShowOverviewGridColumnHeaders,
                 ShowAchievementGridColumnHeaders = this.ShowAchievementGridColumnHeaders,
                 ShowDesktopThemeAchievementGridColumnHeaders = this.ShowDesktopThemeAchievementGridColumnHeaders,
+                GridColumnHeaderAlignment = this.GridColumnHeaderAlignment,
+                GridCellAlignment = this.GridCellAlignment,
+                GridCellVerticalAlignment = this.GridCellVerticalAlignment,
                 EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
                 EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,
@@ -1785,7 +1808,6 @@ namespace PlayniteAchievements.Models.Settings
                 EnableAchievementViewItemControl = this.EnableAchievementViewItemControl,
                 EnableAchievementPieChartControl = this.EnableAchievementPieChartControl,
                 EnableAchievementBarChartControl = this.EnableAchievementBarChartControl,
-                EnableCompactGridMode = this.EnableCompactGridMode,
                 CompactListSortMode = this.CompactListSortMode,
                 CompactListSortDescending = this.CompactListSortDescending,
                 CompactUnlockedListSortMode = this.CompactUnlockedListSortMode,

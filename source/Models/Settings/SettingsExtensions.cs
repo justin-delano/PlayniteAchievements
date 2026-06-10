@@ -86,7 +86,9 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowOverviewGridColumnHeaders = source.ShowOverviewGridColumnHeaders;
             target.ShowAchievementGridColumnHeaders = source.ShowAchievementGridColumnHeaders;
             target.ShowDesktopThemeAchievementGridColumnHeaders = source.ShowDesktopThemeAchievementGridColumnHeaders;
-            target.EnableCompactGridMode = source.EnableCompactGridMode;
+            target.GridColumnHeaderAlignment = source.GridColumnHeaderAlignment;
+            target.GridCellAlignment = source.GridCellAlignment;
+            target.GridCellVerticalAlignment = source.GridCellVerticalAlignment;
             target.CompactListSortMode = source.CompactListSortMode;
             target.CompactListSortDescending = source.CompactListSortDescending;
             target.CompactUnlockedListSortMode = source.CompactUnlockedListSortMode;

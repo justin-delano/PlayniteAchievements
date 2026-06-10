@@ -6,7 +6,6 @@ namespace PlayniteAchievements.Models.Settings
     {
         private bool _showGameMetadata = true;
         private bool _useCoverImages = true;
-        private bool _enableCompactGridMode;
         private bool _showCompletionBorder = true;
         private bool _showColumnHeaders = true;
         private double? _rowHeight;
@@ -24,12 +23,6 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _useCoverImages;
             set => SetValue(ref _useCoverImages, value);
-        }
-
-        public bool EnableCompactGridMode
-        {
-            get => _enableCompactGridMode;
-            set => SetValue(ref _enableCompactGridMode, value);
         }
 
         public bool ShowCompletionBorder
@@ -74,7 +67,6 @@ namespace PlayniteAchievements.Models.Settings
             {
                 ShowGameMetadata = ShowGameMetadata,
                 UseCoverImages = UseCoverImages,
-                EnableCompactGridMode = EnableCompactGridMode,
                 ShowCompletionBorder = ShowCompletionBorder,
                 ShowColumnHeaders = ShowColumnHeaders,
                 RowHeight = RowHeight,

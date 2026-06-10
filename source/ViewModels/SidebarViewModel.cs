@@ -856,8 +856,6 @@ namespace PlayniteAchievements.ViewModels
 
         public bool UseCoverImages => _settings?.Persisted?.UseCoverImages ?? false;
 
-        public bool EnableCompactGridMode => _settings?.Persisted?.EnableCompactGridMode ?? false;
-
         public bool ShowSidebarCollectionScoreCard => _settings?.Persisted?.ShowSidebarCollectionScoreCard ?? true;
 
         public bool ShowSidebarPrestigeScoreCard => _settings?.Persisted?.ShowSidebarPrestigeScoreCard ?? true;
@@ -2352,7 +2350,6 @@ namespace PlayniteAchievements.ViewModels
             if (string.IsNullOrWhiteSpace(propertyName))
             {
                 OnPropertyChanged(nameof(UseCoverImages));
-                OnPropertyChanged(nameof(EnableCompactGridMode));
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
                 RaiseSidebarScoreCardVisibilityChanged();
                 ApplySidebarPieSmallSliceMode();
@@ -2379,10 +2376,6 @@ namespace PlayniteAchievements.ViewModels
             if (propertyName == nameof(PersistedSettings.UseCoverImages))
             {
                 OnPropertyChanged(nameof(UseCoverImages));
-            }
-            else if (propertyName == nameof(PersistedSettings.EnableCompactGridMode))
-            {
-                OnPropertyChanged(nameof(EnableCompactGridMode));
             }
             else if (propertyName == nameof(PersistedSettings.IncludeUnplayedGames))
             {

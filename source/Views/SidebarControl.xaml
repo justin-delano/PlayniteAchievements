@@ -392,20 +392,6 @@
                             </Setter.Value>
                         </Setter>
                     </DataTrigger>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Width" Value="48"/>
-                        <Setter Property="Height" Value="48"/>
-                        <Setter Property="Margin" Value="4,4"/>
-                    </DataTrigger>
-                    <MultiDataTrigger>
-                        <MultiDataTrigger.Conditions>
-                            <Condition Binding="{Binding DataContext.UseCoverImages, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True"/>
-                            <Condition Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True"/>
-                        </MultiDataTrigger.Conditions>
-                        <Setter Property="Width" Value="48"/>
-                        <Setter Property="Height" Value="68"/>
-                        <Setter Property="Margin" Value="4,4"/>
-                    </MultiDataTrigger>
                 </Style.Triggers>
             </Style>
 
@@ -470,11 +456,6 @@
                 <Setter Property="MinHeight" Value="112"/>
                 <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
                 <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="MinHeight" Value="80"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewGameNameTextStyle" TargetType="TextBlock">
@@ -482,11 +463,6 @@
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewGameMetadataTextStyle" TargetType="TextBlock">
@@ -495,11 +471,6 @@
                 <Setter Property="Opacity" Value="0.6"/>
                 <Setter Property="Margin" Value="0,4,0,0"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Margin" Value="0,2,0,0"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProviderIconStyle" TargetType="Image">
@@ -510,31 +481,15 @@
                 <Setter Property="UseLayoutRounding" Value="True"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Width" Value="24"/>
-                        <Setter Property="Height" Value="24"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressContainerStyle" TargetType="Grid">
                 <Setter Property="Margin" Value="2,4,10,4"/>
                 <Setter Property="VerticalAlignment" Value="Stretch"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Margin" Value="2,1,6,1"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
                 <Setter Property="Height" Value="22"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Height" Value="16"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressPercentTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
@@ -544,11 +499,6 @@
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="TextAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="0"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressMetaRowStyle" TargetType="StackPanel">
@@ -558,35 +508,19 @@
             </Style>
 
             <Style x:Key="OverviewProgressFooterStyle" TargetType="Grid">
-                <Setter Property="VerticalAlignment" Value="Bottom"/>
-                <Setter Property="Margin" Value="0,0,4,16"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Margin" Value="0,0,2,10"/>
-                    </DataTrigger>
-                </Style.Triggers>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="Margin" Value="0,10,4,0"/>
             </Style>
 
             <Style x:Key="OverviewMiniBadgeItemStyle" TargetType="StackPanel">
                 <Setter Property="Orientation" Value="Horizontal"/>
                 <Setter Property="Margin" Value="4,0"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Margin" Value="2,0"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewMiniBadgeImageStyle" TargetType="Image" BasedOn="{StaticResource RarityIcon}">
                 <Setter Property="Effect" Value="{StaticResource BadgeShadow}"/>
                 <Setter Property="Width" Value="18"/>
                 <Setter Property="Height" Value="18"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Width" Value="14"/>
-                        <Setter Property="Height" Value="14"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewMiniBadgeTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
@@ -595,23 +529,12 @@
                 <Setter Property="Foreground" Value="White"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="3,0,0,0"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="FontSize" Value="10"/>
-                        <Setter Property="Margin" Value="2,0,0,0"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewCompletedFooterIconStyle" TargetType="Image" BasedOn="{StaticResource OverviewMiniBadgeImageStyle}">
                 <Setter Property="HorizontalAlignment" Value="Left"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="4,0,0,0"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Margin" Value="2,0,0,0"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="CenterLineSplitterStyle" TargetType="GridSplitter">
@@ -1231,7 +1154,6 @@
                                                                 ItemsSource="{Binding GamesOverview}"
                                                                 SelectedItem="{Binding SelectedGame, Mode=OneWay}"
                                                                 UseCoverImages="{Binding UseCoverImages}"
-                                                                EnableCompactGridMode="{Binding EnableCompactGridMode}"
                                                                 ShowGameMetadata="{Binding ShowSidebarGameMetadata}"
                                                                 ShowCompletionBorder="{Binding ShowCompletionBorder}"
                                                                 ShowColumnHeaders="{Binding ShowOverviewGridColumnHeaders}"

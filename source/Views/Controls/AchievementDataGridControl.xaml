@@ -52,6 +52,7 @@
               UseLayoutRounding="True"
               SnapsToDevicePixels="True"
               Tag="ControllerCellFocus"
+              helpers:DataGridAlignmentBehavior.IsEnabled="True"
               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
               PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
 
@@ -81,11 +82,6 @@
                 <EventSetter Event="PreviewMouseLeftButtonDown" Handler="AchievementRow_PreviewMouseLeftButtonDown"/>
                 <EventSetter Event="PreviewMouseRightButtonDown" Handler="AchievementRow_PreviewMouseRightButtonDown"/>
                 <EventSetter Event="PreviewMouseRightButtonUp" Handler="AchievementRow_PreviewMouseRightButtonUp"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                        <Setter Property="MinHeight" Value="56"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
         </DataGrid.RowStyle>
 
@@ -116,12 +112,14 @@
                         <TextBlock FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextBrush}"
                                    TextWrapping="Wrap"
-                                   VerticalAlignment="Center">
+                                   VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                                    <Setter Property="Opacity" Value="0.7"/>
-                                    <Style.Triggers>
+                                     <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                                     <Setter Property="Opacity" Value="0.7"/>
+                                     <Setter Property="TextAlignment"
+                                             Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding Unlocked}" Value="True">
                                             <Setter Property="Opacity" Value="1"/>
                                         </DataTrigger>

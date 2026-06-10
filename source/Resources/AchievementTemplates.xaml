@@ -34,7 +34,8 @@
         <Setter Property="UseLayoutRounding" Value="True"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
         <Setter Property="Padding" Value="10,6"/>
-        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment"
+                Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.HeaderHorizontalAlignment)}"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -69,6 +70,9 @@
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="#18FFFFFF"/>
                         </Trigger>
+                        <Trigger Property="HorizontalContentAlignment" Value="Right">
+                            <Setter Property="Padding" Value="10,6,26,6"/>
+                        </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter Property="Background" Value="#20FFFFFF"/>
                         </Trigger>
@@ -100,7 +104,6 @@
     <Style x:Key="AchievementColumnHeaderLeftStyle"
            TargetType="DataGridColumnHeader"
            BasedOn="{StaticResource AchievementColumnHeaderStyle}">
-        <Setter Property="HorizontalContentAlignment" Value="Left"/>
     </Style>
 
     <!-- DataGrid Cell Style -->
@@ -112,14 +115,14 @@
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="UseLayoutRounding" Value="True"/>
         <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <Setter Property="Padding" Value="10,0"/>
+        <Setter Property="Padding" Value="10,6"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridCell">
                     <Border Background="{TemplateBinding Background}"
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
-                        <ContentPresenter VerticalAlignment="Stretch"
+                        <ContentPresenter VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                                           HorizontalAlignment="Stretch"/>
                     </Border>
                 </ControlTemplate>
@@ -137,9 +140,6 @@
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
                 <Setter Property="Background" Value="#30FFFFFF"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                <Setter Property="Padding" Value="8,0"/>
             </DataTrigger>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
@@ -176,7 +176,7 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Padding="{TemplateBinding Padding}"
                             SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
-                        <ContentPresenter VerticalAlignment="Stretch"
+                        <ContentPresenter VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                                           HorizontalAlignment="Stretch"/>
                     </Border>
                 </ControlTemplate>
@@ -192,6 +192,26 @@
                 <Setter Property="BorderThickness" Value="2"/>
             </MultiDataTrigger>
         </Style.Triggers>
+    </Style>
+
+    <Style x:Key="GameOptionsIconCellStyle"
+           TargetType="DataGridCell"
+           BasedOn="{StaticResource GameOptionsControllerCellStyle}">
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="DataGridCell">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="GameOptionsCheckBoxCellStyle"
@@ -256,11 +276,6 @@
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="MinHeight" Value="66"/>
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                <Setter Property="MinHeight" Value="50"/>
-            </DataTrigger>
-        </Style.Triggers>
     </Style>
 
     <Style x:Key="GameOptionsDataGridRowStyle"
@@ -275,14 +290,17 @@
            BasedOn="{StaticResource {x:Type TextBlock}}">
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="TextTrimming" Value="None"/>
-        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment"
+                Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
+        <Setter Property="HorizontalAlignment"
+                Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"/>
+        <Setter Property="TextAlignment"
+                Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
     </Style>
 
     <Style x:Key="WrappedCenteredDataGridTextStyle"
            TargetType="TextBlock"
            BasedOn="{StaticResource WrappedDataGridTextStyle}">
-        <Setter Property="HorizontalAlignment" Value="Center"/>
-        <Setter Property="TextAlignment" Value="Center"/>
     </Style>
 
     <!-- Shared selector button + menu item styles (sidebar/single-game/game-options) -->
@@ -471,7 +489,9 @@
 
     <!-- Achievement Rarity Template -->
     <DataTemplate x:Key="AchievementRarityTemplate">
-        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                    HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}">
             <Image Width="16" Height="16" Margin="0,0,4,0"
                    Effect="{StaticResource BadgeShadow}"
                    VerticalAlignment="Center">
@@ -582,8 +602,9 @@
     <!-- Achievement Points Template -->
     <DataTemplate x:Key="AchievementPointsTemplate">
         <TextBlock Text="{Binding PointsText}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
+                   HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                   VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                   TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                    Style="{DynamicResource BaseTextBlockStyle}"
                    FontSize="{DynamicResource FontSizeSmall}"
                    FontWeight="SemiBold"
@@ -696,20 +717,16 @@
 
     <!-- Achievement Info Template with Hidden Styling -->
     <DataTemplate x:Key="AchievementInfoTemplate">
-        <StackPanel VerticalAlignment="Center" Background="Transparent">
+        <StackPanel VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}" Background="Transparent">
             <StackPanel.Style>
                 <Style TargetType="StackPanel">
                     <Setter Property="Margin" Value="12,10"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                            <Setter Property="Margin" Value="8,6"/>
-                        </DataTrigger>
-                    </Style.Triggers>
                 </Style>
             </StackPanel.Style>
             <TextBlock FontWeight="SemiBold"
                        Foreground="{DynamicResource TextBrush}"
-                       TextWrapping="Wrap">
+                       TextWrapping="Wrap"
+                       TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
@@ -735,7 +752,8 @@
                        Foreground="{DynamicResource TextBrush}"
                        Opacity="0.7"
                        TextWrapping="Wrap"
-                       TextTrimming="CharacterEllipsis">
+                       TextTrimming="CharacterEllipsis"
+                       TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
                         <Setter Property="Margin" Value="0,3,0,0"/>
@@ -743,10 +761,6 @@
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
                                 <Setter Property="FontStyle" Value="Italic"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                                <Setter Property="Margin" Value="0,1,0,0"/>
-                                <Setter Property="MaxHeight" Value="32"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -759,13 +773,13 @@
     <DataTemplate x:Key="AchievementUnlockDateTemplate">
         <Grid>
             <TextBlock Text="{Binding UnlockTimeText}"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
+                       HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                       VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                        Style="{DynamicResource BaseTextBlockStyle}"
                        Foreground="{DynamicResource TextBrush}"
                        Opacity="0.7"
                        TextWrapping="Wrap"
-                       TextAlignment="Center"
+                       TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                        Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
             <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}" Margin="4,0">
                 <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
@@ -776,11 +790,6 @@
                     <ProgressBar.Style>
                         <Style TargetType="ProgressBar">
                             <Setter Property="Height" Value="18"/>
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding IsCompactMode, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True">
-                                    <Setter Property="Height" Value="14"/>
-                                </DataTrigger>
-                            </Style.Triggers>
                         </Style>
                     </ProgressBar.Style>
                 </ProgressBar>

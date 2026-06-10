@@ -46,6 +46,16 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsGridAlignmentSettings()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.AreEqual(GridAlignment.Center, settings.GridColumnHeaderAlignment);
+            Assert.AreEqual(GridAlignment.Left, settings.GridCellAlignment);
+            Assert.AreEqual(GridVerticalAlignment.Center, settings.GridCellVerticalAlignment);
+        }
+
+        [TestMethod]
         public void Constructor_DefaultsGridLayoutSettings()
         {
             var settings = new PersistedSettings();
@@ -161,6 +171,9 @@ namespace PlayniteAchievements.Models.Tests
                 ShowOverviewGridColumnHeaders = false,
                 ShowAchievementGridColumnHeaders = false,
                 ShowDesktopThemeAchievementGridColumnHeaders = false,
+                GridColumnHeaderAlignment = GridAlignment.Right,
+                GridCellAlignment = GridAlignment.Center,
+                GridCellVerticalAlignment = GridVerticalAlignment.Bottom,
                 SidebarAchievementColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
                     ["Title"] = 2
@@ -197,6 +210,12 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsFalse(target.ShowOverviewGridColumnHeaders);
             Assert.IsFalse(target.ShowAchievementGridColumnHeaders);
             Assert.IsFalse(target.ShowDesktopThemeAchievementGridColumnHeaders);
+            Assert.AreEqual(GridAlignment.Right, clone.GridColumnHeaderAlignment);
+            Assert.AreEqual(GridAlignment.Center, clone.GridCellAlignment);
+            Assert.AreEqual(GridVerticalAlignment.Bottom, clone.GridCellVerticalAlignment);
+            Assert.AreEqual(GridAlignment.Right, target.GridColumnHeaderAlignment);
+            Assert.AreEqual(GridAlignment.Center, target.GridCellAlignment);
+            Assert.AreEqual(GridVerticalAlignment.Bottom, target.GridCellVerticalAlignment);
 
             Assert.AreEqual(2, clone.SidebarAchievementColumnOrder["Title"]);
             Assert.AreEqual(3, clone.SidebarGameColumnOrder["Rarity"]);

@@ -329,7 +329,7 @@
                                             Margin="8,0,0,0">
                                         <Image Width="30"
                                                Height="30"
-                                               Stretch="UniformToFill"
+                                              Stretch="Uniform"
                                                helpers:AsyncImage.Uri="{Binding UnlockedPreviewPath}"
                                                helpers:AsyncImage.DecodePixel="72" />
                                     </Border>
@@ -399,7 +399,7 @@
                                             Margin="8,0,0,0">
                                         <Image Width="30"
                                                Height="30"
-                                               Stretch="UniformToFill"
+                                              Stretch="Uniform"
                                                helpers:AsyncImage.Uri="{Binding LockedPreviewPath}"
                                                helpers:AsyncImage.DecodePixel="72" />
                                     </Border>

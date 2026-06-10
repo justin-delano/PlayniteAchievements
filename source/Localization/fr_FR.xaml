@@ -391,7 +391,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Description">Paramètres de Playnite Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">Barre latérale</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Activer l'analyse des archives (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableCompactGridMode">Activer le mode grille compacte</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Activer le hachage des disques (pour les consoles à disque)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">Activer les notifications du plugin</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">Activer l'actualisation parallèle des plateformes</sys:String>
@@ -465,6 +464,15 @@
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">pixels (vide = illimité)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">Row Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">Max Rows</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridColumnHeaderAlignment">Grid Column Header Alignment</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridCellAlignment">Grid Cell Alignment</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridCellVerticalAlignment">Grid Cell Vertical Alignment</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Left">Left</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Center">Center</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Right">Right</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Top">Top</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Center">Center</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Bottom">Bottom</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SidebarRecentAchievementsGrid">Sidebar Recent Achievements Grid</sys:String>

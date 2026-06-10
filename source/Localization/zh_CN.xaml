@@ -391,7 +391,6 @@
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements 设置</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">侧边栏</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">启用存档扫描 (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableCompactGridMode">启用紧凑网格模式</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">启用光盘哈希 (针对基于光盘的主机)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">启用插件通知</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">启用并行平台刷新</sys:String>
@@ -465,6 +464,15 @@
     <sys:String x:Key="LOCPlayAch_Settings_PixelsUnit">像素 (留空 = 无限制)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridRowHeight">Row Height</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridMaxRows">Max Rows</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridColumnHeaderAlignment">Grid Column Header Alignment</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridCellAlignment">Grid Cell Alignment</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridCellVerticalAlignment">Grid Cell Vertical Alignment</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Left">Left</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Center">Center</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Right">Right</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Top">Top</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Center">Center</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Bottom">Bottom</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SidebarRecentAchievementsGrid">Sidebar Recent Achievements Grid</sys:String>

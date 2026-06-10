@@ -27,8 +27,6 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public bool UseCoverImages => WidgetSettings.UseCoverImages;
 
-        public bool EnableCompactGridMode => WidgetSettings.EnableCompactGridMode;
-
         public bool ShowCompletionBorder => WidgetSettings.ShowCompletionBorder;
 
         public bool ShowColumnHeaders => WidgetSettings.ShowColumnHeaders;
@@ -42,7 +40,6 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 PersistedSettings));
             OnPropertyChanged(nameof(ShowGameMetadata));
             OnPropertyChanged(nameof(UseCoverImages));
-            OnPropertyChanged(nameof(EnableCompactGridMode));
             OnPropertyChanged(nameof(ShowCompletionBorder));
             OnPropertyChanged(nameof(ShowColumnHeaders));
             OnPropertyChanged(nameof(RowHeight));
@@ -60,12 +57,6 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.UseCoverImages)))
             {
                 OnPropertyChanged(nameof(UseCoverImages));
-            }
-
-            if (string.IsNullOrEmpty(propertyName) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.EnableCompactGridMode)))
-            {
-                OnPropertyChanged(nameof(EnableCompactGridMode));
             }
 
             if (string.IsNullOrEmpty(propertyName) ||

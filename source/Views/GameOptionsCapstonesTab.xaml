@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              mc:Ignorable="d"
              d:DesignHeight="640" d:DesignWidth="760">
 
@@ -101,13 +102,14 @@
                   CanUserResizeColumns="True"
                   CanUserReorderColumns="False"
                   CanUserSortColumns="True"
-                  RowHeight="96"
+                  RowHeight="88"
                   EnableRowVirtualization="True"
                   VirtualizingStackPanel.VirtualizationMode="Recycling"
                   VirtualizingStackPanel.ScrollUnit="Pixel"
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                  helpers:DataGridAlignmentBehavior.IsEnabled="True"
                   Tag="ControllerCellFocus"
                   PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown"
                   Sorting="DataGrid_Sorting">
@@ -118,7 +120,7 @@
 
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow" BasedOn="{StaticResource GameOptionsDataGridRowStyle}">
-                    <Setter Property="MinHeight" Value="76"/>
+                    <Setter Property="MinHeight" Value="64"/>
                     <Setter Property="ClipToBounds" Value="True"/>
                 </Style>
             </DataGrid.RowStyle>
@@ -144,7 +146,8 @@
                 </DataGridTemplateColumn>
 
                 <!-- Current capstone badge -->
-                <DataGridTemplateColumn Width="34" MinWidth="34" MaxWidth="34" CanUserSort="False" CanUserResize="False">
+                <DataGridTemplateColumn Width="34" MinWidth="34" MaxWidth="34" CanUserSort="False" CanUserResize="False"
+                                        CellStyle="{StaticResource GameOptionsIconCellStyle}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Image Source="{StaticResource BadgeCompletedGame}"
@@ -161,9 +164,11 @@
 
                 <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
                 <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserSort="False" CanUserResize="False"
+                                        CellStyle="{StaticResource GameOptionsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementStatusTemplate}"/>
 
-                <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserSort="False" CanUserResize="False"
+                <DataGridTemplateColumn Width="64" MinWidth="64" MaxWidth="64" CanUserSort="False" CanUserResize="False"
+                                        CellStyle="{StaticResource GameOptionsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementIconTemplate}"/>
 
                 <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}"

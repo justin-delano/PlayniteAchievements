@@ -194,7 +194,7 @@
                               CanUserReorderColumns="True"
                               CanUserResizeColumns="True"
                               CanUserSortColumns="True"
-                              RowHeight="76"
+                              RowHeight="68"
                               EnableRowVirtualization="True"
                               EnableColumnVirtualization="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -208,6 +208,7 @@
                               RowBackground="Transparent"
                               Foreground="{DynamicResource TextBrush}"
                               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderLeftStyle}"
+                              helpers:DataGridAlignmentBehavior.IsEnabled="True"
                               PreviewMouseLeftButtonDown="SearchDataGrid_PreviewMouseLeftButtonDown"
                               Tag="ControllerCellFocus"
                               MouseDoubleClick="SearchDataGrid_MouseDoubleClick">
@@ -223,13 +224,14 @@
                         </DataGrid.RowStyle>
 
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="" Width="92" IsReadOnly="True">
+                            <DataGridTemplateColumn Header="" Width="80" IsReadOnly="True"
+                                                    CellStyle="{StaticResource GameOptionsIconCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid HorizontalAlignment="Center"
                                               VerticalAlignment="Center"
-                                              Width="84"
-                                              Height="52">
+                                              Width="72"
+                                              Height="44">
                                             <Image Source="{Binding IconUrl}"
                                                    Stretch="Uniform"
                                                    RenderOptions.BitmapScalingMode="HighQuality"/>
@@ -428,7 +430,7 @@
                               CanUserResizeColumns="True"
                               CanUserReorderColumns="False"
                               CanUserSortColumns="True"
-                              RowHeight="112"
+                              RowHeight="100"
                               EnableRowVirtualization="True"
                               EnableColumnVirtualization="True"
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -436,6 +438,7 @@
                               ScrollViewer.CanContentScroll="True"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                              helpers:DataGridAlignmentBehavior.IsEnabled="True"
                               Tag="ControllerCellFocus">
                         <DataGrid.CellStyle>
                             <Style TargetType="DataGridCell" BasedOn="{StaticResource GameOptionsControllerCellStyle}"/>
@@ -443,7 +446,7 @@
 
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow" BasedOn="{StaticResource GameOptionsDataGridRowStyle}">
-                                <Setter Property="MinHeight" Value="76"/>
+                                <Setter Property="MinHeight" Value="64"/>
                                 <Setter Property="ClipToBounds" Value="True"/>
                             </Style>
                         </DataGrid.RowStyle>
@@ -466,10 +469,11 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTemplateColumn Width="78"
-                                                    MinWidth="78"
-                                                    MaxWidth="78"
-                                                    CanUserResize="False">
+                            <DataGridTemplateColumn Width="64"
+                                                    MinWidth="64"
+                                                    MaxWidth="64"
+                                                    CanUserResize="False"
+                                                    CellStyle="{StaticResource GameOptionsIconCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid HorizontalAlignment="Stretch"

@@ -25,8 +25,6 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly ILogger Logger = LogManager.GetLogger();
         private ColumnWidthPersistenceService _columnPersistence;
         private bool _isAttached;
-        private PlayniteAchievementsSettings _settingsSource;
-        private PersistedSettings _persistedSettingsSource;
 
         private static readonly IReadOnlyDictionary<string, double> DefaultColumnWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
@@ -181,23 +179,6 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (double)GetValue(DataGridMaxHeightProperty);
             set => SetValue(DataGridMaxHeightProperty, value);
-        }
-
-        /// <summary>
-        /// Identifies the IsCompactMode dependency property.
-        /// When true, the shared DataGrid applies tighter row sizing.
-        /// </summary>
-        public static readonly DependencyProperty IsCompactModeProperty =
-            DependencyProperty.Register(nameof(IsCompactMode), typeof(bool),
-                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnRowSizingChanged));
-
-        /// <summary>
-        /// Gets or sets whether compact row sizing is enabled.
-        /// </summary>
-        public bool IsCompactMode
-        {
-            get => (bool)GetValue(IsCompactModeProperty);
-            set => SetValue(IsCompactModeProperty, value);
         }
 
         /// <summary>
@@ -414,8 +395,6 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            AttachSettingsSubscriptions();
-            UpdateCompactMode();
             UpdateColumnVisibility();
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
@@ -432,14 +411,11 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
         {
-            AttachSettingsSubscriptions();
-            UpdateCompactMode();
             UpdateRealizedRowHeights();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            DetachSettingsSubscriptions();
         }
 
         private void AchievementsDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
@@ -494,88 +470,6 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return Math.Max(PersistedSettings.MinimumGridRowHeight, height.Value);
-        }
-
-        private void AttachSettingsSubscriptions()
-        {
-            var settings = ResolveSettingsSource();
-            var persisted = settings?.Persisted;
-
-            if (ReferenceEquals(settings, _settingsSource) &&
-                ReferenceEquals(persisted, _persistedSettingsSource))
-            {
-                return;
-            }
-
-            DetachSettingsSubscriptions();
-
-            _settingsSource = settings;
-            _persistedSettingsSource = persisted;
-
-            if (_settingsSource != null)
-            {
-                _settingsSource.PropertyChanged += SettingsSource_PropertyChanged;
-            }
-
-            if (_persistedSettingsSource != null)
-            {
-                _persistedSettingsSource.PropertyChanged += PersistedSettingsSource_PropertyChanged;
-            }
-        }
-
-        private void DetachSettingsSubscriptions()
-        {
-            if (_settingsSource != null)
-            {
-                _settingsSource.PropertyChanged -= SettingsSource_PropertyChanged;
-            }
-
-            if (_persistedSettingsSource != null)
-            {
-                _persistedSettingsSource.PropertyChanged -= PersistedSettingsSource_PropertyChanged;
-            }
-
-            _settingsSource = null;
-            _persistedSettingsSource = null;
-        }
-
-        private PlayniteAchievementsSettings ResolveSettingsSource()
-        {
-            if (DataContext is PlayniteAchievementsSettings settings)
-            {
-                return settings;
-            }
-
-            if (DataContext is ThemePreviewContext previewContext)
-            {
-                return previewContext.Settings;
-            }
-
-            return PlayniteAchievementsPlugin.Instance?.Settings;
-        }
-
-        private void SettingsSource_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(e?.PropertyName) ||
-                e.PropertyName == nameof(PlayniteAchievementsSettings.Persisted))
-            {
-                AttachSettingsSubscriptions();
-                UpdateCompactMode();
-            }
-        }
-
-        private void PersistedSettingsSource_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(e?.PropertyName) ||
-                e.PropertyName == nameof(PersistedSettings.EnableCompactGridMode))
-            {
-                UpdateCompactMode();
-            }
-        }
-
-        private void UpdateCompactMode()
-        {
-            IsCompactMode = _persistedSettingsSource?.EnableCompactGridMode ?? false;
         }
 
         private void AttachColumnPersistence()
@@ -1066,8 +960,6 @@ namespace PlayniteAchievements.Views.Controls
 
         public void Dispose()
         {
-            DetachSettingsSubscriptions();
-
             if (!_isAttached)
             {
                 return;

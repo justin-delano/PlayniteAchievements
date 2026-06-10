@@ -9,7 +9,6 @@
         <controls:GamesOverviewDataGridControl x:Name="GamesOverviewGrid"
                                                ItemsSource="{Binding Items}"
                                                UseCoverImages="{Binding UseCoverImages}"
-                                               EnableCompactGridMode="{Binding EnableCompactGridMode}"
                                                ShowGameMetadata="{Binding ShowGameMetadata}"
                                                ShowCompletionBorder="{Binding ShowCompletionBorder}"
                                                ShowColumnHeaders="{Binding ShowColumnHeaders}"

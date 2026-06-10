@@ -70,7 +70,6 @@ namespace PlayniteAchievements.Tests.StartPage
             var source = new PersistedSettings();
             source.StartPageGamesOverviewGrid.UseCoverImages = false;
             source.StartPageGamesOverviewGrid.ShowGameMetadata = false;
-            source.StartPageGamesOverviewGrid.EnableCompactGridMode = true;
             source.StartPageGamesOverviewGrid.ShowCompletionBorder = false;
             source.StartPageGamesOverviewGrid.ShowColumnHeaders = false;
             source.StartPageGamesOverviewGrid.RowHeight = 72d;
@@ -94,7 +93,6 @@ namespace PlayniteAchievements.Tests.StartPage
 
             Assert.IsFalse(clone.StartPageGamesOverviewGrid.UseCoverImages);
             Assert.IsFalse(clone.StartPageGamesOverviewGrid.ShowGameMetadata);
-            Assert.IsTrue(clone.StartPageGamesOverviewGrid.EnableCompactGridMode);
             Assert.IsFalse(clone.StartPageGamesOverviewGrid.ShowCompletionBorder);
             Assert.IsFalse(clone.StartPageGamesOverviewGrid.ShowColumnHeaders);
             Assert.AreEqual(72d, clone.StartPageGamesOverviewGrid.RowHeight);

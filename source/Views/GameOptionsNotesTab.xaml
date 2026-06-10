@@ -20,10 +20,14 @@
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility" />
 
             <DataTemplate x:Key="NotesAchievementInfoTemplate">
-                <StackPanel Margin="12,10" VerticalAlignment="Center" Background="Transparent">
+                <StackPanel Margin="12,10"
+                            VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                            HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                            Background="Transparent">
                     <TextBlock FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
-                               TextWrapping="Wrap">
+                               TextWrapping="Wrap"
+                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
@@ -49,6 +53,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
+                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                                MaxHeight="44"
                                TextTrimming="CharacterEllipsis"
                                Margin="0,3,0,0">
@@ -67,6 +72,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.58"
                                TextWrapping="Wrap"
+                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                                Margin="0,4,0,0" />
                 </StackPanel>
             </DataTemplate>
@@ -176,7 +182,7 @@
                   CanUserResizeColumns="True"
                   CanUserReorderColumns="False"
                   CanUserSortColumns="False"
-                  RowHeight="116"
+                  RowHeight="104"
                   EnableRowVirtualization="True"
                   EnableColumnVirtualization="True"
                   VirtualizingStackPanel.VirtualizationMode="Recycling"
@@ -184,6 +190,7 @@
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                   ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                  helpers:DataGridAlignmentBehavior.IsEnabled="True"
                   Tag="ControllerCellFocus"
                   PreviewMouseLeftButtonDown="NotesDataGrid_PreviewMouseLeftButtonDown">
 
@@ -193,16 +200,18 @@
 
             <DataGrid.RowStyle>
                 <Style TargetType="DataGridRow" BasedOn="{StaticResource GameOptionsDataGridRowStyle}">
-                    <Setter Property="MinHeight" Value="80" />
+                    <Setter Property="MinHeight" Value="68" />
                     <Setter Property="ClipToBounds" Value="True" />
                 </Style>
             </DataGrid.RowStyle>
 
             <DataGrid.Columns>
                 <DataGridTemplateColumn Width="36" MinWidth="36" MaxWidth="36" CanUserResize="False"
+                                        CellStyle="{StaticResource GameOptionsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementStatusTemplate}" />
 
-                <DataGridTemplateColumn Width="78" MinWidth="78" MaxWidth="78" CanUserResize="False"
+                <DataGridTemplateColumn Width="64" MinWidth="64" MaxWidth="64" CanUserResize="False"
+                                        CellStyle="{StaticResource GameOptionsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementIconTemplate}" />
 
                 <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Achievement}"
@@ -211,11 +220,14 @@
                 <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_GameOptions_Notes_Note}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Margin="8,8" VerticalAlignment="Center">
+                            <StackPanel Margin="8,8"
+                                        VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                        HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}">
                                 <TextBlock Text="{Binding NoteStatusText}"
                                            Foreground="{DynamicResource TextBrush}"
                                            FontWeight="SemiBold"
-                                           Opacity="0.85" />
+                                           Opacity="0.85"
+                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}" />
                                 <Border Background="#08000000"
                                         BorderBrush="{DynamicResource NormalBorderBrush}"
                                         BorderThickness="1"
@@ -232,6 +244,7 @@
                                                    Foreground="{DynamicResource TextBrush}"
                                                    Opacity="0.68"
                                                    TextWrapping="Wrap"
+                                                   TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                                                    Padding="0,0,8,0" />
                                     </ScrollViewer>
                                 </Border>

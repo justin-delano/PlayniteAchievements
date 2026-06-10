@@ -76,19 +76,6 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(UseCoverImagesProperty, value);
         }
 
-        public static readonly DependencyProperty EnableCompactGridModeProperty =
-            DependencyProperty.Register(
-                nameof(EnableCompactGridMode),
-                typeof(bool),
-                typeof(GamesOverviewDataGridControl),
-                new PropertyMetadata(false, OnRowSizingChanged));
-
-        public bool EnableCompactGridMode
-        {
-            get => (bool)GetValue(EnableCompactGridModeProperty);
-            set => SetValue(EnableCompactGridModeProperty, value);
-        }
-
         public static readonly DependencyProperty FixedRowHeightProperty =
             DependencyProperty.Register(
                 nameof(FixedRowHeight),

@@ -21,6 +21,7 @@
                 <Setter Property="Focusable" Value="False"/>
                 <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                 <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="Padding" Value="10,6"/>
                 <Setter Property="UseLayoutRounding" Value="True"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="Template">
@@ -57,6 +58,7 @@
                                                   ContentStringFormat="{TemplateBinding ContentStringFormat}"
                                                   HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                                   VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  Margin="{TemplateBinding Padding}"
                                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
                             </Grid>
                         </ControlTemplate>
@@ -140,6 +142,12 @@
                 </Style.Triggers>
             </Style>
 
+            <Style x:Key="GamesOverviewImageCellStyle"
+                   TargetType="DataGridCell"
+                   BasedOn="{StaticResource GamesOverviewDataGridCellStyle}">
+                <Setter Property="Padding" Value="0"/>
+            </Style>
+
             <Style x:Key="GamesOverviewDataGridRowStyle" TargetType="DataGridRow">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
@@ -152,11 +160,6 @@
                 <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridRow_PreviewMouseLeftButtonDown"/>
                 <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
                 <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="MinHeight" Value="80"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewGameNameTextStyle" TargetType="TextBlock">
@@ -164,11 +167,8 @@
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                    </DataTrigger>
-                </Style.Triggers>
+                <Setter Property="TextAlignment"
+                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
             </Style>
 
             <Style x:Key="OverviewGameMetadataTextStyle" TargetType="TextBlock">
@@ -177,11 +177,8 @@
                 <Setter Property="Opacity" Value="0.6"/>
                 <Setter Property="Margin" Value="0,4,0,0"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="Margin" Value="0,2,0,0"/>
-                    </DataTrigger>
-                </Style.Triggers>
+                <Setter Property="TextAlignment"
+                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
             </Style>
 
             <Style x:Key="OverviewProviderIconStyle" TargetType="Image">
@@ -192,31 +189,15 @@
                 <Setter Property="UseLayoutRounding" Value="True"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="Width" Value="24"/>
-                        <Setter Property="Height" Value="24"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressContainerStyle" TargetType="Grid">
                 <Setter Property="Margin" Value="2,4,10,4"/>
                 <Setter Property="VerticalAlignment" Value="Stretch"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="Margin" Value="2,1,6,1"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
                 <Setter Property="Height" Value="22"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="Height" Value="16"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressPercentTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
@@ -226,11 +207,6 @@
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="TextAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="0"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressMetaRowStyle" TargetType="StackPanel">
@@ -240,35 +216,19 @@
             </Style>
 
             <Style x:Key="OverviewProgressFooterStyle" TargetType="Grid">
-                <Setter Property="VerticalAlignment" Value="Bottom"/>
-                <Setter Property="Margin" Value="0,0,4,16"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="Margin" Value="0,0,2,10"/>
-                    </DataTrigger>
-                </Style.Triggers>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="Margin" Value="0,10,4,0"/>
             </Style>
 
             <Style x:Key="OverviewMiniBadgeItemStyle" TargetType="StackPanel">
                 <Setter Property="Orientation" Value="Horizontal"/>
                 <Setter Property="Margin" Value="4,0"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="Margin" Value="2,0"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewMiniBadgeImageStyle" TargetType="Image" BasedOn="{StaticResource RarityIcon}">
                 <Setter Property="Effect" Value="{StaticResource BadgeShadow}"/>
                 <Setter Property="Width" Value="18"/>
                 <Setter Property="Height" Value="18"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="Width" Value="14"/>
-                        <Setter Property="Height" Value="14"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewMiniBadgeTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
@@ -277,23 +237,12 @@
                 <Setter Property="Foreground" Value="White"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="3,0,0,0"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="FontSize" Value="10"/>
-                        <Setter Property="Margin" Value="2,0,0,0"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewCompletedFooterIconStyle" TargetType="Image" BasedOn="{StaticResource OverviewMiniBadgeImageStyle}">
                 <Setter Property="HorizontalAlignment" Value="Left"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="4,0,0,0"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EnableCompactGridMode, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}}" Value="True">
-                        <Setter Property="Margin" Value="2,0,0,0"/>
-                    </DataTrigger>
-                </Style.Triggers>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -329,6 +278,7 @@
               UseLayoutRounding="True"
               SnapsToDevicePixels="True"
               Tag="ControllerCellFocus"
+              helpers:DataGridAlignmentBehavior.IsEnabled="True"
               PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
         <DataGrid.CellStyle>
             <Style TargetType="DataGridCell"
@@ -339,22 +289,26 @@
                    BasedOn="{StaticResource GamesOverviewDataGridRowStyle}"/>
         </DataGrid.RowStyle>
         <DataGrid.Columns>
-            <DataGridTemplateColumn Width="92" MinWidth="22" CanUserResize="True" Header="" helpers:ColumnVisibilityHelper.ColumnKey="Cover">
+            <DataGridTemplateColumn Width="92" MinWidth="22" CanUserResize="True" Header=""
+                                    CellStyle="{StaticResource GamesOverviewImageCellStyle}"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="Cover">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
+                                        Padding="4,0"
+                                        helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center">
                             <Grid>
                                 <Border CornerRadius="6" VerticalAlignment="Center"
                                         Style="{StaticResource GameImageBorderStyle}">
                                     <Border.Width>
-                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,width,4,8,12">
+                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,width,12,8,12">
                                             <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
                                             <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
                                             <Binding RelativeSource="{RelativeSource AncestorType=controls:GamesOverviewDataGridControl}" Path="UseCoverImages"/>
                                         </MultiBinding>
                                     </Border.Width>
                                     <Border.Height>
-                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,height,4,8,12">
+                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,height,12,8,12">
                                             <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
                                             <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
                                             <Binding RelativeSource="{RelativeSource AncestorType=controls:GamesOverviewDataGridControl}" Path="UseCoverImages"/>
@@ -372,14 +326,14 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <StackPanel VerticalAlignment="Center"
-                                            HorizontalAlignment="Left"
+                                <StackPanel VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                            HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                             Margin="0,0,8,0">
                                     <TextBlock Text="{Binding GameName}"
-                                               HorizontalAlignment="Left"
+                                               HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                                Style="{StaticResource OverviewGameNameTextStyle}"/>
                                     <TextBlock Text="{Binding SecondaryMetadataText}"
-                                               HorizontalAlignment="Left"
+                                               HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                                Style="{StaticResource OverviewGameMetadataTextStyle}"
                                                Visibility="{Binding ShowGameMetadata, RelativeSource={RelativeSource AncestorType=controls:GamesOverviewDataGridControl}, Converter={StaticResource BoolToVis}}"/>
                                 </StackPanel>
@@ -393,6 +347,7 @@
                                     Header="{DynamicResource LOCPlayAch_Common_Label_Platform}"
                                     CanUserResize="True"
                                     CanUserSort="False"
+                                    CellStyle="{StaticResource GamesOverviewImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="OverviewPlatform">
                 <DataGridTemplateColumn.HeaderTemplate>
                     <DataTemplate>
@@ -401,7 +356,9 @@
                 </DataGridTemplateColumn.HeaderTemplate>
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
+                                        Padding="0"
+                                        helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center">
                             <Grid>
                                 <Image ToolTip="{Binding Provider}"
                                        Style="{StaticResource OverviewProviderIconStyle}">
@@ -436,13 +393,13 @@
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
                                 <TextBlock Text="{Binding LastPlayedText}"
-                                           VerticalAlignment="Center"
-                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
                                            TextWrapping="Wrap"
-                                           TextAlignment="Center"/>
+                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
                             </Grid>
                         </ContentControl>
                     </DataTemplate>
@@ -455,13 +412,13 @@
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
                                 <TextBlock Text="{Binding PlaytimeText}"
-                                           VerticalAlignment="Center"
-                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
                                            TextWrapping="Wrap"
-                                           TextAlignment="Center"/>
+                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
                             </Grid>
                         </ContentControl>
                     </DataTemplate>
@@ -474,67 +431,69 @@
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
                                 <Grid Style="{StaticResource OverviewProgressContainerStyle}">
-                                    <Grid VerticalAlignment="Center">
-                                        <ProgressBar Value="{Binding Progression, Mode=OneWay}"
-                                                     Style="{StaticResource OverviewProgressBarStyle}"/>
-                                        <TextBlock Text="{Binding ProgressionText}"
-                                                   Style="{StaticResource OverviewProgressPercentTextStyle}"/>
-                                    </Grid>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <Grid>
+                                            <ProgressBar Value="{Binding Progression, Mode=OneWay}"
+                                                         Style="{StaticResource OverviewProgressBarStyle}"/>
+                                            <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextStyle}"/>
+                                        </Grid>
     
-                                    <Grid Style="{StaticResource OverviewProgressFooterStyle}">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
+                                        <Grid Style="{StaticResource OverviewProgressFooterStyle}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
     
-                                        <Image Grid.Column="0"
-                                               Source="{StaticResource BadgeCompletedGame}"
-                                               Style="{StaticResource OverviewCompletedFooterIconStyle}"
-                                               ToolTip="{DynamicResource LOCPlayAch_Completed}"
-                                               Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
+                                            <Image Grid.Column="0"
+                                                   Source="{StaticResource BadgeCompletedGame}"
+                                                   Style="{StaticResource OverviewCompletedFooterIconStyle}"
+                                                   ToolTip="{DynamicResource LOCPlayAch_Completed}"
+                                                   Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
     
-                                        <StackPanel Grid.Column="1"
-                                                    Style="{StaticResource OverviewProgressMetaRowStyle}"
-                                                    Visibility="{Binding HasTrophyTypes, Converter={StaticResource InverseBoolToVis}}">
-                                            <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}" ToolTip="Ultra Rare">
-                                                <Image Source="{DynamicResource BadgeRarityUltraRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                <TextBlock Text="{Binding UltraRareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                            <StackPanel Grid.Column="1"
+                                                        Style="{StaticResource OverviewProgressMetaRowStyle}"
+                                                        Visibility="{Binding HasTrophyTypes, Converter={StaticResource InverseBoolToVis}}">
+                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}" ToolTip="Ultra Rare">
+                                                    <Image Source="{DynamicResource BadgeRarityUltraRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                                                    <TextBlock Text="{Binding UltraRareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                                </StackPanel>
+                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}" ToolTip="Rare">
+                                                    <Image Source="{DynamicResource BadgeRarityRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                                                    <TextBlock Text="{Binding RareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                                </StackPanel>
+                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}" ToolTip="Uncommon">
+                                                    <Image Source="{DynamicResource BadgeRarityUncommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                                                    <TextBlock Text="{Binding UncommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                                </StackPanel>
+                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}" ToolTip="Common">
+                                                    <Image Source="{DynamicResource BadgeRarityCommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                                                    <TextBlock Text="{Binding CommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                                </StackPanel>
                                             </StackPanel>
-                                            <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}" ToolTip="Rare">
-                                                <Image Source="{DynamicResource BadgeRarityRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                <TextBlock Text="{Binding RareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                            </StackPanel>
-                                            <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}" ToolTip="Uncommon">
-                                                <Image Source="{DynamicResource BadgeRarityUncommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                <TextBlock Text="{Binding UncommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                            </StackPanel>
-                                            <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}" ToolTip="Common">
-                                                <Image Source="{DynamicResource BadgeRarityCommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                <TextBlock Text="{Binding CommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                            </StackPanel>
-                                        </StackPanel>
     
-                                        <StackPanel Grid.Column="1"
-                                                    Style="{StaticResource OverviewProgressMetaRowStyle}"
-                                                    Visibility="{Binding HasTrophyTypes, Converter={StaticResource BoolToVis}}">
-                                            <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}" ToolTip="Platinum">
-                                                <Image Source="{StaticResource TrophyPlatinum}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                <TextBlock Text="{Binding TrophyPlatinumCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                            <StackPanel Grid.Column="1"
+                                                        Style="{StaticResource OverviewProgressMetaRowStyle}"
+                                                        Visibility="{Binding HasTrophyTypes, Converter={StaticResource BoolToVis}}">
+                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}" ToolTip="Platinum">
+                                                    <Image Source="{StaticResource TrophyPlatinum}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                                                    <TextBlock Text="{Binding TrophyPlatinumCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                                </StackPanel>
+                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}" ToolTip="Gold">
+                                                    <Image Source="{StaticResource TrophyGold}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                                                    <TextBlock Text="{Binding TrophyGoldCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                                </StackPanel>
+                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}" ToolTip="Silver">
+                                                    <Image Source="{StaticResource TrophySilver}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                                                    <TextBlock Text="{Binding TrophySilverCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                                </StackPanel>
+                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}" ToolTip="Bronze">
+                                                    <Image Source="{StaticResource TrophyBronze}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                                                    <TextBlock Text="{Binding TrophyBronzeCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                                                </StackPanel>
                                             </StackPanel>
-                                            <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}" ToolTip="Gold">
-                                                <Image Source="{StaticResource TrophyGold}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                <TextBlock Text="{Binding TrophyGoldCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                            </StackPanel>
-                                            <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}" ToolTip="Silver">
-                                                <Image Source="{StaticResource TrophySilver}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                <TextBlock Text="{Binding TrophySilverCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                            </StackPanel>
-                                            <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}" ToolTip="Bronze">
-                                                <Image Source="{StaticResource TrophyBronze}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                <TextBlock Text="{Binding TrophyBronzeCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                    </Grid>
+                                        </Grid>
+                                    </StackPanel>
                                 </Grid>
                             </Grid>
                         </ContentControl>
@@ -547,12 +506,12 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <TextBlock VerticalAlignment="Center"
-                                           HorizontalAlignment="Center"
+                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="Center">
+                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
                                     <Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/>
                                     <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
                                     <Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
@@ -568,12 +527,12 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <TextBlock VerticalAlignment="Center"
-                                           HorizontalAlignment="Center"
+                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="Center"
+                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                                            Text="{Binding CollectionScoreFractionText, Mode=OneWay}"/>
                             </Grid>
                         </ContentControl>
@@ -586,12 +545,12 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <TextBlock VerticalAlignment="Center"
-                                           HorizontalAlignment="Center"
+                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="Center"
+                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                                            Text="{Binding PrestigeScoreFractionText, Mode=OneWay}"/>
                             </Grid>
                         </ContentControl>

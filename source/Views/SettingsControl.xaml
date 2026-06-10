@@ -985,12 +985,45 @@
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Common_General}"
                                                    Style="{StaticResource SubSectionHeaderStyle}"
                                                    Margin="0,0,0,10"/>
-                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableCompactGridMode}"
-                                                   IsChecked="{Binding Persisted.EnableCompactGridMode}"
-                                                   Margin="0,0,0,8"/>
-                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
-                                                   IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
-                                                   Margin="0,0,0,8"/>
+                                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridColumnHeaderAlignment}"
+                                                        VerticalAlignment="Center"/>
+                                             <ComboBox SelectedValue="{Binding Persisted.GridColumnHeaderAlignment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       SelectedValuePath="Tag"
+                                                       MinWidth="140"
+                                                       Margin="8,0,0,0">
+                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}" Tag="{x:Static settings:GridAlignment.Left}"/>
+                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Center}" Tag="{x:Static settings:GridAlignment.Center}"/>
+                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}" Tag="{x:Static settings:GridAlignment.Right}"/>
+                                             </ComboBox>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                              <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridCellAlignment}"
+                                                         VerticalAlignment="Center"/>
+                                             <ComboBox SelectedValue="{Binding Persisted.GridCellAlignment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                       SelectedValuePath="Tag"
+                                                       MinWidth="140"
+                                                       Margin="8,0,0,0">
+                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}" Tag="{x:Static settings:GridAlignment.Left}"/>
+                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Center}" Tag="{x:Static settings:GridAlignment.Center}"/>
+                                                  <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}" Tag="{x:Static settings:GridAlignment.Right}"/>
+                                              </ComboBox>
+                                          </StackPanel>
+                                          <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                              <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridCellVerticalAlignment}"
+                                                         VerticalAlignment="Center"/>
+                                              <ComboBox SelectedValue="{Binding Persisted.GridCellVerticalAlignment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                        SelectedValuePath="Tag"
+                                                        MinWidth="140"
+                                                        Margin="8,0,0,0">
+                                                  <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Top}" Tag="{x:Static settings:GridVerticalAlignment.Top}"/>
+                                                  <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Center}" Tag="{x:Static settings:GridVerticalAlignment.Center}"/>
+                                                  <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Bottom}" Tag="{x:Static settings:GridVerticalAlignment.Bottom}"/>
+                                              </ComboBox>
+                                          </StackPanel>
+                                          <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
+                                                    IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
+                                                    Margin="0,0,0,8"/>
                                          <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseUniformRarityBadges}"
                                                    IsChecked="{Binding Persisted.UseUniformRarityBadges}"/>
                                      </StackPanel>
@@ -1311,9 +1344,6 @@
                                                   Margin="0,0,0,8"/>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion}"
                                                   IsChecked="{Binding Persisted.StartPageGamesOverviewGrid.ShowGameMetadata}"
-                                                  Margin="0,0,0,8"/>
-                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableCompactGridMode}"
-                                                  IsChecked="{Binding Persisted.StartPageGamesOverviewGrid.EnableCompactGridMode}"
                                                   Margin="0,0,0,8"/>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
                                                   IsChecked="{Binding Persisted.StartPageGamesOverviewGrid.ShowCompletionBorder}"
