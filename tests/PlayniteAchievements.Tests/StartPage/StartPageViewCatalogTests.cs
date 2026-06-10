@@ -9,11 +9,11 @@ namespace PlayniteAchievements.Tests.StartPage
     public class StartPageViewCatalogTests
     {
         [TestMethod]
-        public void Views_RegisterSixWidgetsWithExistingLocalizationKeys()
+        public void Views_RegisterEightWidgetsWithExistingLocalizationKeys()
         {
             var views = StartPageViewCatalog.Views;
 
-            Assert.AreEqual(6, views.Count);
+            Assert.AreEqual(8, views.Count);
             CollectionAssert.AreEquivalent(
                 new[]
                 {
@@ -22,7 +22,9 @@ namespace PlayniteAchievements.Tests.StartPage
                     StartPageWidgetKind.CompletedGamesPie,
                     StartPageWidgetKind.ProviderPie,
                     StartPageWidgetKind.RarityPie,
-                    StartPageWidgetKind.TrophyPie
+                    StartPageWidgetKind.TrophyPie,
+                    StartPageWidgetKind.CollectionScoreCard,
+                    StartPageWidgetKind.PrestigeScoreCard
                 },
                 views.Select(view => view.WidgetKind).ToArray());
 

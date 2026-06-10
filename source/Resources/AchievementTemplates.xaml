@@ -718,11 +718,6 @@
     <!-- Achievement Info Template with Hidden Styling -->
     <DataTemplate x:Key="AchievementInfoTemplate">
         <StackPanel VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}" Background="Transparent">
-            <StackPanel.Style>
-                <Style TargetType="StackPanel">
-                    <Setter Property="Margin" Value="12,10"/>
-                </Style>
-            </StackPanel.Style>
             <TextBlock FontWeight="SemiBold"
                        Foreground="{DynamicResource TextBrush}"
                        TextWrapping="Wrap"

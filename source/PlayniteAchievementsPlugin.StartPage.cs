@@ -110,6 +110,9 @@ namespace PlayniteAchievements
                 case StartPageWidgetKind.RarityPie:
                 case StartPageWidgetKind.TrophyPie:
                     return new StartPagePieWidgetViewModel(widgetKind, coordinator, Settings, _logger);
+                case StartPageWidgetKind.CollectionScoreCard:
+                case StartPageWidgetKind.PrestigeScoreCard:
+                    return new StartPageScoreCardWidgetViewModel(widgetKind, coordinator, Settings, _logger);
                 default:
                     return null;
             }
@@ -128,6 +131,9 @@ namespace PlayniteAchievements
                 case StartPageWidgetKind.RarityPie:
                 case StartPageWidgetKind.TrophyPie:
                     return new StartPagePieWidgetView();
+                case StartPageWidgetKind.CollectionScoreCard:
+                case StartPageWidgetKind.PrestigeScoreCard:
+                    return new StartPageScoreCardWidgetView();
                 default:
                     return null;
             }

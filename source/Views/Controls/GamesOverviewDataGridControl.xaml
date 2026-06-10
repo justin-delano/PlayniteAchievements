@@ -217,7 +217,7 @@
 
             <Style x:Key="OverviewProgressFooterStyle" TargetType="Grid">
                 <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                <Setter Property="Margin" Value="0,10,4,0"/>
+                <Setter Property="Margin" Value="0,6,4,0"/>
             </Style>
 
             <Style x:Key="OverviewMiniBadgeItemStyle" TargetType="StackPanel">

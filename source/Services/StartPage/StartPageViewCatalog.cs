@@ -24,6 +24,8 @@ namespace PlayniteAchievements.Services.StartPage
         public const string ProviderPieViewId = "PlayniteAchievements_ProviderPie";
         public const string RarityPieViewId = "PlayniteAchievements_RarityPie";
         public const string TrophyPieViewId = "PlayniteAchievements_TrophyPie";
+        public const string CollectionScoreCardViewId = "PlayniteAchievements_CollectionScoreCard";
+        public const string PrestigeScoreCardViewId = "PlayniteAchievements_PrestigeScoreCard";
 
         private static readonly IReadOnlyList<StartPageViewDefinition> ViewDefinitions =
             new List<StartPageViewDefinition>
@@ -68,6 +70,20 @@ namespace PlayniteAchievements.Services.StartPage
                     ViewId = TrophyPieViewId,
                     WidgetKind = StartPageWidgetKind.TrophyPie,
                     NameKey = "LOCPlayAch_Sidebar_TrophyPieChart",
+                    DescriptionKey = null
+                },
+                new StartPageViewDefinition
+                {
+                    ViewId = CollectionScoreCardViewId,
+                    WidgetKind = StartPageWidgetKind.CollectionScoreCard,
+                    NameKey = "LOCPlayAch_Score_Collection",
+                    DescriptionKey = null
+                },
+                new StartPageViewDefinition
+                {
+                    ViewId = PrestigeScoreCardViewId,
+                    WidgetKind = StartPageWidgetKind.PrestigeScoreCard,
+                    NameKey = "LOCPlayAch_Score_Prestige",
                     DescriptionKey = null
                 }
             };

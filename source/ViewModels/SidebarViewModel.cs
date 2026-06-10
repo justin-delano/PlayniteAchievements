@@ -60,14 +60,6 @@ namespace PlayniteAchievements.ViewModels
         private DateTime _lastProgressUpdate = DateTime.MinValue;
         private static readonly TimeSpan ProgressMinInterval = TimeSpan.FromMilliseconds(50);
         private const int ContextualPieSeriesCount = 5;
-        private static readonly Brush BronzeScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xD6, 0x8A, 0x45));
-        private static readonly Brush SilverScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xD7, 0xE1, 0xEC));
-        private static readonly Brush GoldScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xFF, 0xD4, 0x57));
-        private static readonly Brush PlatinumScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0x84, 0xD8, 0xFF));
-        private static readonly Brush BronzeScoreBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x26, 0xD6, 0x8A, 0x45));
-        private static readonly Brush SilverScoreBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x24, 0xD7, 0xE1, 0xEC));
-        private static readonly Brush GoldScoreBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x24, 0xFF, 0xD4, 0x57));
-        private static readonly Brush PlatinumScoreBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x24, 0x84, 0xD8, 0xFF));
         private System.Windows.Threading.DispatcherTimer _refreshDebounceTimer;
         private System.Windows.Threading.DispatcherTimer _progressHideTimer;
         private System.Windows.Threading.DispatcherTimer _deltaBatchTimer;
@@ -864,6 +856,10 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowSidebarScoreCardDivider => _hasAppliedSnapshot && ShowSidebarCollectionScoreCard && ShowSidebarPrestigeScoreCard;
 
+        public ScoreCardViewModel CollectionScoreCard { get; } = new ScoreCardViewModel(ScoreCardType.Collection);
+
+        public ScoreCardViewModel PrestigeScoreCard { get; } = new ScoreCardViewModel(ScoreCardType.Prestige);
+
         public bool ShowSidebarPieCharts =>
             ShowSidebarGamesPieChart ||
             ShowSidebarProviderPieChart ||
@@ -965,32 +961,14 @@ namespace PlayniteAchievements.ViewModels
         public int CollectorScore
         {
             get => _collectorScore;
-            private set
-            {
-                if (SetValueAndReturn(ref _collectorScore, value))
-                {
-                    OnPropertyChanged(nameof(CollectorScoreText));
-                    OnPropertyChanged(nameof(CollectionScorePointsText));
-                    OnPropertyChanged(nameof(CollectionScoreDetailText));
-                    RaiseCollectionScoreTooltipChanged();
-                }
-            }
+            private set => SetValue(ref _collectorScore, value);
         }
 
         private int _collectorLevel;
         public int CollectorLevel
         {
             get => _collectorLevel;
-            private set
-            {
-                if (SetValueAndReturn(ref _collectorLevel, value))
-                {
-                    OnPropertyChanged(nameof(CollectorLevelText));
-                    OnPropertyChanged(nameof(CollectionLevelText));
-                    OnPropertyChanged(nameof(CollectionScoreDetailText));
-                    RaiseCollectionScoreTooltipChanged();
-                }
-            }
+            private set => SetValue(ref _collectorLevel, value);
         }
 
         private double _collectorLevelProgress;
@@ -1004,49 +982,21 @@ namespace PlayniteAchievements.ViewModels
         public string CollectorRank
         {
             get => _collectorRank;
-            private set
-            {
-                if (SetValueAndReturn(ref _collectorRank, value ?? "Bronze5"))
-                {
-                    OnPropertyChanged(nameof(CollectionTierText));
-                    OnPropertyChanged(nameof(CollectionScoreDetailText));
-                    OnPropertyChanged(nameof(CollectionScoreBadgeIconKey));
-                    OnPropertyChanged(nameof(CollectionScoreAccentBrush));
-                    OnPropertyChanged(nameof(CollectionScoreAccentBackgroundBrush));
-                    RaiseCollectionScoreTooltipChanged();
-                }
-            }
+            private set => SetValue(ref _collectorRank, value ?? "Bronze5");
         }
 
         private int _prestigeScore;
         public int PrestigeScore
         {
             get => _prestigeScore;
-            private set
-            {
-                if (SetValueAndReturn(ref _prestigeScore, value))
-                {
-                    OnPropertyChanged(nameof(PrestigeScoreText));
-                    OnPropertyChanged(nameof(PrestigeScorePointsText));
-                    OnPropertyChanged(nameof(PrestigeScoreDetailText));
-                    RaisePrestigeScoreTooltipChanged();
-                }
-            }
+            private set => SetValue(ref _prestigeScore, value);
         }
 
         private int _prestigeLevel;
         public int PrestigeLevel
         {
             get => _prestigeLevel;
-            private set
-            {
-                if (SetValueAndReturn(ref _prestigeLevel, value))
-                {
-                    OnPropertyChanged(nameof(PrestigeLevelText));
-                    OnPropertyChanged(nameof(PrestigeScoreDetailText));
-                    RaisePrestigeScoreTooltipChanged();
-                }
-            }
+            private set => SetValue(ref _prestigeLevel, value);
         }
 
         private double _prestigeLevelProgress;
@@ -1060,162 +1010,7 @@ namespace PlayniteAchievements.ViewModels
         public string PrestigeRank
         {
             get => _prestigeRank;
-            private set
-            {
-                if (SetValueAndReturn(ref _prestigeRank, value ?? "Bronze5"))
-                {
-                    OnPropertyChanged(nameof(PrestigeTierText));
-                    OnPropertyChanged(nameof(PrestigeScoreDetailText));
-                    OnPropertyChanged(nameof(PrestigeScoreBadgeIconKey));
-                    OnPropertyChanged(nameof(PrestigeScoreAccentBrush));
-                    OnPropertyChanged(nameof(PrestigeScoreAccentBackgroundBrush));
-                    RaisePrestigeScoreTooltipChanged();
-                }
-            }
-        }
-
-        public string CollectionScoreLabel => L("LOCPlayAch_Score_Collection", "Collection Score");
-
-        public string PrestigeScoreLabel => L("LOCPlayAch_Score_Prestige", "Prestige Score");
-
-        public string CollectorScoreText => CollectorScore.ToString("N0");
-
-        public string PrestigeScoreText => PrestigeScore.ToString("N0");
-
-        public string CollectionScorePointsText => string.Format(
-            L("LOCPlayAch_Score_PointsFormat", "{0} pts"),
-            CollectorScoreText);
-
-        public string PrestigeScorePointsText => string.Format(
-            L("LOCPlayAch_Score_PointsFormat", "{0} pts"),
-            PrestigeScoreText);
-
-        public string CollectorLevelText => string.Format(L("LOCPlayAch_Score_LevelFormat", "Lv {0}"), CollectorLevel);
-
-        public string PrestigeLevelText => string.Format(L("LOCPlayAch_Score_LevelFormat", "Lv {0}"), PrestigeLevel);
-
-        public string CollectionLevelText => CollectorLevelText;
-
-        public string CollectionTierText => AchievementRankPresentation.FormatRank(CollectorRank);
-
-        public string PrestigeTierText => AchievementRankPresentation.FormatRank(PrestigeRank);
-
-        public string CollectionScoreDetailText => string.Format(
-            L("LOCPlayAch_Score_HeaderDetailFormat", "{0} | {1} | {2}"),
-            CollectionTierText,
-            CollectionLevelText,
-            CollectionScorePointsText);
-
-        public string PrestigeScoreDetailText => string.Format(
-            L("LOCPlayAch_Score_HeaderDetailFormat", "{0} | {1} | {2}"),
-            PrestigeTierText,
-            PrestigeLevelText,
-            PrestigeScorePointsText);
-
-        public string CollectionCurrentLevelPointsText => FormatCurrentLevelPoints(
-            AchievementLevelCalculator.CalculateModern(CollectorScore));
-
-        public string CollectionPointsUntilNextLevelText => FormatPointsUntilNextLevel(
-            AchievementLevelCalculator.CalculateModern(CollectorScore));
-
-        public string CollectionNextTierThresholdText => FormatNextTierThreshold(
-            AchievementLevelCalculator.CalculateModern(CollectorScore));
-
-        public string PrestigeCurrentLevelPointsText => FormatCurrentLevelPoints(
-            AchievementLevelCalculator.CalculateModern(PrestigeScore));
-
-        public string PrestigePointsUntilNextLevelText => FormatPointsUntilNextLevel(
-            AchievementLevelCalculator.CalculateModern(PrestigeScore));
-
-        public string PrestigeNextTierThresholdText => FormatNextTierThreshold(
-            AchievementLevelCalculator.CalculateModern(PrestigeScore));
-
-        public string CollectionScoreBadgeIconKey => AchievementRankPresentation.GetBadgeIconKey(
-            CollectorRank,
-            UseUniformRarityBadges);
-
-        public string PrestigeScoreBadgeIconKey => AchievementRankPresentation.GetBadgeIconKey(
-            PrestigeRank,
-            UseUniformRarityBadges);
-
-        public Brush CollectionScoreAccentBrush => GetScoreAccentBrush(CollectorRank);
-
-        public Brush CollectionNextTierAccentBrush => GetNextTierAccentBrush(
-            AchievementLevelCalculator.CalculateModern(CollectorScore),
-            CollectorRank);
-
-        public Brush CollectionScoreAccentBackgroundBrush => GetScoreAccentBackgroundBrush(CollectorRank);
-
-        public Brush PrestigeScoreAccentBrush => GetScoreAccentBrush(PrestigeRank);
-
-        public Brush PrestigeNextTierAccentBrush => GetNextTierAccentBrush(
-            AchievementLevelCalculator.CalculateModern(PrestigeScore),
-            PrestigeRank);
-
-        public Brush PrestigeScoreAccentBackgroundBrush => GetScoreAccentBackgroundBrush(PrestigeRank);
-
-        private void RaiseCollectionScoreTooltipChanged()
-        {
-            OnPropertyChanged(nameof(CollectionCurrentLevelPointsText));
-            OnPropertyChanged(nameof(CollectionPointsUntilNextLevelText));
-            OnPropertyChanged(nameof(CollectionNextTierThresholdText));
-            OnPropertyChanged(nameof(CollectionNextTierAccentBrush));
-        }
-
-        private void RaisePrestigeScoreTooltipChanged()
-        {
-            OnPropertyChanged(nameof(PrestigeCurrentLevelPointsText));
-            OnPropertyChanged(nameof(PrestigePointsUntilNextLevelText));
-            OnPropertyChanged(nameof(PrestigeNextTierThresholdText));
-            OnPropertyChanged(nameof(PrestigeNextTierAccentBrush));
-        }
-
-        private string FormatCurrentLevelPoints(AchievementLevelSnapshot snapshot)
-        {
-            var progressLabel = L("LOCPlayAch_Progress", "Progress");
-            if (snapshot == null || snapshot.CurrentLevelTotalPoints <= 0)
-            {
-                return $"{progressLabel}: 0/0";
-            }
-
-            return $"{progressLabel}: {snapshot.CurrentLevelPoints:N0}/{snapshot.CurrentLevelTotalPoints:N0}";
-        }
-
-        private string FormatPointsUntilNextLevel(AchievementLevelSnapshot snapshot)
-        {
-            if (snapshot?.IsMaxLevel == true)
-            {
-                return L("LOCPlayAch_Score_Tooltip_MaxLevel", "Max level reached");
-            }
-
-            return string.Format(
-                L("LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat", "{0} until {1}"),
-                Math.Max(0, snapshot?.PointsUntilNextLevel ?? 0).ToString("N0"),
-                FormatNextLevel(snapshot));
-        }
-
-        private string FormatNextTierThreshold(AchievementLevelSnapshot snapshot)
-        {
-            if (snapshot?.IsMaxLevel == true || string.IsNullOrWhiteSpace(snapshot.NextRank))
-            {
-                return L("LOCPlayAch_Score_Tooltip_MaxLevel", "Max level reached");
-            }
-
-            var nextTier = AchievementRankPresentation.FormatRank(snapshot.NextRank);
-            return string.Format(
-                L("LOCPlayAch_Score_Tooltip_NextTierLineFormat", "{0} until {1}"),
-                Math.Max(0, snapshot.PointsUntilNextRank).ToString("N0"),
-                nextTier);
-        }
-
-        private string FormatNextLevel(AchievementLevelSnapshot snapshot)
-        {
-            var currentLevel = snapshot == null
-                ? 0
-                : (snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level);
-            return string.Format(
-                L("LOCPlayAch_Score_LevelFormat", "Lv {0}"),
-                Math.Max(0, currentLevel + 1));
+            private set => SetValue(ref _prestigeRank, value ?? "Bronze5");
         }
 
         private GameOverviewItem _displayedSelectedGame;
@@ -2162,6 +1957,7 @@ namespace PlayniteAchievements.ViewModels
             PrestigeLevel = snapshot.PrestigeLevel;
             PrestigeLevelProgress = snapshot.PrestigeLevelProgress;
             PrestigeRank = snapshot.PrestigeRank;
+            ApplyScoreCards();
             MarkSnapshotApplied();
 
             OnPropertyChanged(nameof(CommonPercentage));
@@ -2201,6 +1997,23 @@ namespace PlayniteAchievements.ViewModels
             _hasAppliedSnapshot = true;
             OnPropertyChanged(nameof(ShowSidebarScoreCards));
             OnPropertyChanged(nameof(ShowSidebarScoreCardDivider));
+        }
+
+        private void ApplyScoreCards()
+        {
+            var useUniformRarityBadges = UseUniformRarityBadges;
+            CollectionScoreCard.Apply(
+                CollectorScore,
+                CollectorLevel,
+                CollectorLevelProgress,
+                CollectorRank,
+                useUniformRarityBadges);
+            PrestigeScoreCard.Apply(
+                PrestigeScore,
+                PrestigeLevel,
+                PrestigeLevelProgress,
+                PrestigeRank,
+                useUniformRarityBadges);
         }
 
         private void NormalizeScoreSnapshot(SidebarDataSnapshot snapshot)
@@ -2364,8 +2177,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(SidebarRecentAchievementsGridRowHeight));
                 OnPropertyChanged(nameof(SidebarSelectedGameGridRowHeight));
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
-                OnPropertyChanged(nameof(CollectionScoreBadgeIconKey));
-                OnPropertyChanged(nameof(PrestigeScoreBadgeIconKey));
+                ApplyScoreCards();
                 ApplySavedTimelineRange();
                 _ = RefreshViewAsync();
                 ApplyLeftFilters();
@@ -2445,8 +2257,7 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.UseUniformRarityBadges))
             {
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
-                OnPropertyChanged(nameof(CollectionScoreBadgeIconKey));
-                OnPropertyChanged(nameof(PrestigeScoreBadgeIconKey));
+                ApplyScoreCards();
                 UpdateAggregatePieCharts();
             }
             else if (propertyName == nameof(PersistedSettings.SidebarPieSmallSliceMode))
@@ -4017,50 +3828,6 @@ namespace PlayniteAchievements.ViewModels
             }
 
             return value;
-        }
-
-        private static Brush GetScoreAccentBrush(string rank)
-        {
-            switch (AchievementRankPresentation.GetRarityTier(rank))
-            {
-                case RarityTier.UltraRare:
-                    return PlatinumScoreAccentBrush;
-                case RarityTier.Rare:
-                    return GoldScoreAccentBrush;
-                case RarityTier.Uncommon:
-                    return SilverScoreAccentBrush;
-                default:
-                    return BronzeScoreAccentBrush;
-            }
-        }
-
-        private static Brush GetNextTierAccentBrush(AchievementLevelSnapshot snapshot, string fallbackRank)
-        {
-            return GetScoreAccentBrush(string.IsNullOrWhiteSpace(snapshot?.NextRank)
-                ? fallbackRank
-                : snapshot.NextRank);
-        }
-
-        private static Brush GetScoreAccentBackgroundBrush(string rank)
-        {
-            switch (AchievementRankPresentation.GetRarityTier(rank))
-            {
-                case RarityTier.UltraRare:
-                    return PlatinumScoreBackgroundBrush;
-                case RarityTier.Rare:
-                    return GoldScoreBackgroundBrush;
-                case RarityTier.Uncommon:
-                    return SilverScoreBackgroundBrush;
-                default:
-                    return BronzeScoreBackgroundBrush;
-            }
-        }
-
-        private static Brush CreateFrozenBrush(Color color)
-        {
-            var brush = new SolidColorBrush(color);
-            brush.Freeze();
-            return brush;
         }
 
         public void Dispose()
