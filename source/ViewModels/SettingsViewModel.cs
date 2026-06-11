@@ -80,7 +80,8 @@ namespace PlayniteAchievements.ViewModels
                 // Read raw JSON and run migration
                 var rawJson = File.ReadAllText(settingsFilePath);
                 var migratedJson = ProviderSettingsMigration.MigrateFromJson(rawJson);
-                var fullyMigratedJson = GameCustomDataStore.MigrateLegacyConfig(migratedJson);
+                var overviewMigratedJson = OverviewSettingsMigration.MigrateFromJson(migratedJson);
+                var fullyMigratedJson = GameCustomDataStore.MigrateLegacyConfig(overviewMigratedJson);
 
                 // If migration changed the JSON, save the migrated version
                 if (fullyMigratedJson != rawJson)

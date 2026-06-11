@@ -354,7 +354,7 @@ namespace PlayniteAchievements
             }
         }
 
-        // === Sidebar ===
+        // === Overview ===
 
         public override IEnumerable<SidebarItem> GetSidebarItems()
         {
@@ -362,11 +362,11 @@ namespace PlayniteAchievements
             {
                 Title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 Type = SiderbarItemType.View,
-                Icon = GetSidebarIcon(),
+                Icon = GetOverviewIcon(),
                 Opened = () =>
                 {
-                    return new SidebarHostControl(
-                        () => new SidebarControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings),
+                    return new OverviewHostControl(
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings),
                         _logger,
                         PlayniteApi,
                         _refreshService,
@@ -375,7 +375,7 @@ namespace PlayniteAchievements
             };
         }
 
-        private TextBlock GetSidebarIcon()
+        private TextBlock GetOverviewIcon()
         {
             var tb = new TextBlock
             {

@@ -140,7 +140,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
             
-            <!-- Game Column - shown in sidebar recent achievements -->
+            <!-- Game Column - shown in overview recent achievements -->
             <DataGridTemplateColumn x:Name="GameColumn"
                                     Width="64" MinWidth="22" CanUserResize="True"
                                     Header="{DynamicResource LOCPlayAch_Column_Game}"

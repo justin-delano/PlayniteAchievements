@@ -24,9 +24,9 @@ namespace PlayniteAchievements.Models.Settings
         public const double MinimumGridRowHeight = 32d;
         public const int DefaultStartPageGridMaxRows = 25;
         public const int MinimumGridMaxRows = 1;
-        public const double DefaultSidebarOverviewLeftColumnRatio = 0.5d;
-        public const double MinSidebarOverviewLeftColumnRatio = 0.01d;
-        public const double MaxSidebarOverviewLeftColumnRatio = 0.99d;
+        public const double DefaultOverviewLeftColumnRatio = 0.5d;
+        public const double MinOverviewLeftColumnRatio = 0.01d;
+        public const double MaxOverviewLeftColumnRatio = 0.99d;
 
         public PersistedSettings()
         {
@@ -55,22 +55,22 @@ namespace PlayniteAchievements.Models.Settings
         private bool _useUniformRarityBadges = false;
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
-        private bool _showSidebarCollectionScoreCard = true;
-        private bool _showSidebarPrestigeScoreCard = true;
-        private bool _showSidebarPieCharts = true;
-        private bool _showSidebarGamesPieChart = true;
-        private bool _showSidebarProviderPieChart = true;
-        private bool _showSidebarRarityPieChart = true;
-        private bool _showSidebarTrophyPieChart = true;
-        private bool _showSidebarPiePercentages = true;
-        private SidebarPieSmallSliceMode _sidebarPieSmallSliceMode = SidebarPieSmallSliceMode.Round;
-        private bool _sidebarPieChartVisibilityInitializedFromIndividualSettings;
-        private bool _showSidebarBarCharts = true;
-        private bool _showSidebarGameMetadata = true;
+        private bool _showOverviewCollectionScoreCard = true;
+        private bool _showOverviewPrestigeScoreCard = true;
+        private bool _showOverviewPieCharts = true;
+        private bool _showOverviewGamesPieChart = true;
+        private bool _showOverviewProviderPieChart = true;
+        private bool _showOverviewRarityPieChart = true;
+        private bool _showOverviewTrophyPieChart = true;
+        private bool _showOverviewPiePercentages = true;
+        private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
+        private bool _overviewPieChartVisibilityInitializedFromIndividualSettings;
+        private bool _showOverviewBarCharts = true;
+        private bool _showOverviewGameMetadata = true;
         private bool _showTopMenuBarButton = true;
         private bool _showCompactListRarityBar = true;
         private bool _showCompletionBorder = true;
-        private bool _showOverviewGridColumnHeaders = true;
+        private bool _showGameSummariesGridColumnHeaders = true;
         private bool _showAchievementGridColumnHeaders = true;
         private bool _showDesktopThemeAchievementGridColumnHeaders = true;
         private GridAlignment _gridColumnHeaderAlignment = GridAlignment.Center;
@@ -88,17 +88,17 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableAchievementBarChartControl = true;
         private double? _achievementDataGridMaxHeight = DefaultAchievementDataGridMaxHeight;
         private double? _singleGameGridRowHeight;
-        private double? _sidebarOverviewGridRowHeight;
-        private double? _sidebarRecentAchievementsGridRowHeight;
-        private double? _sidebarSelectedGameGridRowHeight;
+        private double? _overviewGameSummariesGridRowHeight;
+        private double? _overviewRecentAchievementsGridRowHeight;
+        private double? _overviewSelectedGameGridRowHeight;
         private double? _desktopThemeAchievementGridRowHeight;
         private int? _singleGameGridMaxRows;
-        private int? _sidebarOverviewGridMaxRows;
-        private int? _sidebarRecentAchievementsGridMaxRows;
-        private int? _sidebarSelectedGameGridMaxRows;
+        private int? _overviewGameSummariesGridMaxRows;
+        private int? _overviewRecentAchievementsGridMaxRows;
+        private int? _overviewSelectedGameGridMaxRows;
         private int? _desktopThemeAchievementGridMaxRows;
-        private StartPageGamesOverviewGridSettings _startPageGamesOverviewGrid =
-            new StartPageGamesOverviewGridSettings();
+        private StartPageGameSummariesGridSettings _startPageGameSummariesGrid =
+            new StartPageGameSummariesGridSettings();
         private StartPageRecentUnlocksGridSettings _startPageRecentUnlocksGrid =
             new StartPageRecentUnlocksGridSettings();
         private StartPagePieWidgetSettings _startPagePieCharts =
@@ -110,34 +110,34 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _dataGridColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _sidebarAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _sidebarAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _sidebarAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _sidebarGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _sidebarGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _sidebarGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _overviewAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _overviewAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _overviewAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _overviewGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _overviewGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _overviewGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _singleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _singleGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _desktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _desktopThemeColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, bool> _gamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _gamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _gamesOverviewColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _gamesOverviewColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, bool> _gameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _gameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _gameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _gameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _startPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _startPageAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _startPageAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _startPageAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, bool> _startPageGamesOverviewColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, double> _startPageGamesOverviewColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, int> _startPageGamesOverviewColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _startPageGamesOverviewColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-        private double _sidebarOverviewLeftColumnRatio = DefaultSidebarOverviewLeftColumnRatio;
+        private Dictionary<string, bool> _startPageGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _startPageGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _startPageGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _startPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private double _overviewLeftColumnRatio = DefaultOverviewLeftColumnRatio;
         private Dictionary<string, WindowPlacementState> _windowPlacements =
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
-        private TimelineRange _sidebarTimelineRange = TimelineRange.OneYear;
+        private TimelineRange _overviewTimelineRange = TimelineRange.OneYear;
         private bool _firstTimeSetupCompleted = false;
         private bool _seenThemeMigration = false;
         private HashSet<Guid> _excludedGameIds = new HashSet<Guid>();
@@ -156,10 +156,10 @@ namespace PlayniteAchievements.Models.Settings
         private bool _compactUnlockedListSortDescending = false;
         private CompactListSortMode _compactLockedListSortMode = CompactListSortMode.None;
         private bool _compactLockedListSortDescending = false;
-        private GamesOverviewSortMode _gamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock;
-        private bool _gamesOverviewGridSortDescending = true;
-        private CompactListSortMode _sidebarSelectedGameGridSortMode = CompactListSortMode.UnlockTime;
-        private bool _sidebarSelectedGameGridSortDescending = true;
+        private GameSummariesSortMode _gameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock;
+        private bool _gameSummariesGridSortDescending = true;
+        private CompactListSortMode _overviewSelectedGameGridSortMode = CompactListSortMode.UnlockTime;
+        private bool _overviewSelectedGameGridSortDescending = true;
         private CompactListSortMode _singleGameGridSortMode = CompactListSortMode.UnlockTime;
         private bool _singleGameGridSortDescending = true;
         private CompactListSortMode _achievementDataGridSortMode = CompactListSortMode.UnlockTime;
@@ -412,137 +412,137 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, shows the collection score card in the sidebar header.
+        /// When true, shows the collection score card in the overview header.
         /// </summary>
-        public bool ShowSidebarCollectionScoreCard
+        public bool ShowOverviewCollectionScoreCard
         {
-            get => _showSidebarCollectionScoreCard;
-            set => SetValue(ref _showSidebarCollectionScoreCard, value);
+            get => _showOverviewCollectionScoreCard;
+            set => SetValue(ref _showOverviewCollectionScoreCard, value);
         }
 
         /// <summary>
-        /// When true, shows the prestige score card in the sidebar header.
+        /// When true, shows the prestige score card in the overview header.
         /// </summary>
-        public bool ShowSidebarPrestigeScoreCard
+        public bool ShowOverviewPrestigeScoreCard
         {
-            get => _showSidebarPrestigeScoreCard;
-            set => SetValue(ref _showSidebarPrestigeScoreCard, value);
+            get => _showOverviewPrestigeScoreCard;
+            set => SetValue(ref _showOverviewPrestigeScoreCard, value);
         }
 
         /// <summary>
-        /// Legacy aggregate toggle for sidebar pie charts.
+        /// Legacy aggregate toggle for overview pie charts.
         /// New builds use per-chart visibility settings, but this is preserved for migration.
         /// </summary>
-        public bool ShowSidebarPieCharts
+        public bool ShowOverviewPieCharts
         {
-            get => _showSidebarPieCharts;
+            get => _showOverviewPieCharts;
             set
             {
-                if (_showSidebarPieCharts == value)
+                if (_showOverviewPieCharts == value)
                 {
                     return;
                 }
 
-                SetValue(ref _showSidebarPieCharts, value);
-                if (_sidebarPieChartVisibilityInitializedFromIndividualSettings)
+                SetValue(ref _showOverviewPieCharts, value);
+                if (_overviewPieChartVisibilityInitializedFromIndividualSettings)
                 {
                     return;
                 }
 
-                ShowSidebarGamesPieChart = value;
-                ShowSidebarProviderPieChart = value;
-                ShowSidebarRarityPieChart = value;
-                ShowSidebarTrophyPieChart = value;
+                ShowOverviewGamesPieChart = value;
+                ShowOverviewProviderPieChart = value;
+                ShowOverviewRarityPieChart = value;
+                ShowOverviewTrophyPieChart = value;
             }
         }
 
         /// <summary>
-        /// When true, shows the completed-games pie chart in the sidebar.
+        /// When true, shows the completed-games pie chart in the overview.
         /// </summary>
-        public bool ShowSidebarGamesPieChart
+        public bool ShowOverviewGamesPieChart
         {
-            get => _showSidebarGamesPieChart;
+            get => _showOverviewGamesPieChart;
             set
             {
-                _sidebarPieChartVisibilityInitializedFromIndividualSettings = true;
-                SetValue(ref _showSidebarGamesPieChart, value);
+                _overviewPieChartVisibilityInitializedFromIndividualSettings = true;
+                SetValue(ref _showOverviewGamesPieChart, value);
             }
         }
 
         /// <summary>
-        /// When true, shows the platform/provider pie chart in the sidebar.
+        /// When true, shows the platform/provider pie chart in the overview.
         /// </summary>
-        public bool ShowSidebarProviderPieChart
+        public bool ShowOverviewProviderPieChart
         {
-            get => _showSidebarProviderPieChart;
+            get => _showOverviewProviderPieChart;
             set
             {
-                _sidebarPieChartVisibilityInitializedFromIndividualSettings = true;
-                SetValue(ref _showSidebarProviderPieChart, value);
+                _overviewPieChartVisibilityInitializedFromIndividualSettings = true;
+                SetValue(ref _showOverviewProviderPieChart, value);
             }
         }
 
         /// <summary>
-        /// When true, shows the rarity pie chart in the sidebar.
+        /// When true, shows the rarity pie chart in the overview.
         /// </summary>
-        public bool ShowSidebarRarityPieChart
+        public bool ShowOverviewRarityPieChart
         {
-            get => _showSidebarRarityPieChart;
+            get => _showOverviewRarityPieChart;
             set
             {
-                _sidebarPieChartVisibilityInitializedFromIndividualSettings = true;
-                SetValue(ref _showSidebarRarityPieChart, value);
+                _overviewPieChartVisibilityInitializedFromIndividualSettings = true;
+                SetValue(ref _showOverviewRarityPieChart, value);
             }
         }
 
         /// <summary>
-        /// When true, shows the trophy pie chart in the sidebar.
+        /// When true, shows the trophy pie chart in the overview.
         /// </summary>
-        public bool ShowSidebarTrophyPieChart
+        public bool ShowOverviewTrophyPieChart
         {
-            get => _showSidebarTrophyPieChart;
+            get => _showOverviewTrophyPieChart;
             set
             {
-                _sidebarPieChartVisibilityInitializedFromIndividualSettings = true;
-                SetValue(ref _showSidebarTrophyPieChart, value);
+                _overviewPieChartVisibilityInitializedFromIndividualSettings = true;
+                SetValue(ref _showOverviewTrophyPieChart, value);
             }
         }
 
         /// <summary>
-        /// When true, shows the center percentage text on sidebar pie charts.
+        /// When true, shows the center percentage text on overview pie charts.
         /// </summary>
-        public bool ShowSidebarPiePercentages
+        public bool ShowOverviewPiePercentages
         {
-            get => _showSidebarPiePercentages;
-            set => SetValue(ref _showSidebarPiePercentages, value);
+            get => _showOverviewPiePercentages;
+            set => SetValue(ref _showOverviewPiePercentages, value);
         }
 
         /// <summary>
-        /// Determines how sidebar pie charts handle slices below five percent.
+        /// Determines how overview pie charts handle slices below five percent.
         /// </summary>
-        public SidebarPieSmallSliceMode SidebarPieSmallSliceMode
+        public OverviewPieSmallSliceMode OverviewPieSmallSliceMode
         {
-            get => _sidebarPieSmallSliceMode;
-            set => SetValue(ref _sidebarPieSmallSliceMode, value);
+            get => _overviewPieSmallSliceMode;
+            set => SetValue(ref _overviewPieSmallSliceMode, value);
         }
 
         /// <summary>
-        /// When true, shows the timeline bar chart at the bottom of the right sidebar.
+        /// When true, shows the timeline bar chart at the bottom of the right overview.
         /// When false, the achievements list takes the full space.
         /// </summary>
-        public bool ShowSidebarBarCharts
+        public bool ShowOverviewBarCharts
         {
-            get => _showSidebarBarCharts;
-            set => SetValue(ref _showSidebarBarCharts, value);
+            get => _showOverviewBarCharts;
+            set => SetValue(ref _showOverviewBarCharts, value);
         }
 
         /// <summary>
-        /// When true, shows platform/playtime/region metadata under game names in the sidebar games overview.
+        /// When true, shows platform/playtime/region metadata under game names in the overview game summaries.
         /// </summary>
-        public bool ShowSidebarGameMetadata
+        public bool ShowOverviewGameMetadata
         {
-            get => _showSidebarGameMetadata;
-            set => SetValue(ref _showSidebarGameMetadata, value);
+            get => _showOverviewGameMetadata;
+            set => SetValue(ref _showOverviewGameMetadata, value);
         }
 
         /// <summary>
@@ -564,7 +564,7 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, completed games display a blue border in the games overview.
+        /// When true, completed games display a blue border in the game summaries.
         /// </summary>
         public bool ShowCompletionBorder
         {
@@ -573,16 +573,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, shows column headers in games overview grids.
+        /// When true, shows column headers in game summaries grids.
         /// </summary>
-        public bool ShowOverviewGridColumnHeaders
+        public bool ShowGameSummariesGridColumnHeaders
         {
-            get => _showOverviewGridColumnHeaders;
-            set => SetValue(ref _showOverviewGridColumnHeaders, value);
+            get => _showGameSummariesGridColumnHeaders;
+            set => SetValue(ref _showGameSummariesGridColumnHeaders, value);
         }
 
         /// <summary>
-        /// When true, shows column headers in sidebar achievement grids.
+        /// When true, shows column headers in overview achievement grids.
         /// </summary>
         public bool ShowAchievementGridColumnHeaders
         {
@@ -774,41 +774,41 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Sort mode for the sidebar games overview grid.
+        /// Sort mode for the overview game summaries grid.
         /// </summary>
-        public GamesOverviewSortMode GamesOverviewGridSortMode
+        public GameSummariesSortMode GameSummariesGridSortMode
         {
-            get => _gamesOverviewGridSortMode;
-            set => SetValue(ref _gamesOverviewGridSortMode, value);
+            get => _gameSummariesGridSortMode;
+            set => SetValue(ref _gameSummariesGridSortMode, value);
         }
 
         /// <summary>
-        /// When true, reverses the configured sort direction for the sidebar games overview grid.
+        /// When true, reverses the configured sort direction for the overview game summaries grid.
         /// </summary>
-        public bool GamesOverviewGridSortDescending
+        public bool GameSummariesGridSortDescending
         {
-            get => _gamesOverviewGridSortDescending;
-            set => SetValue(ref _gamesOverviewGridSortDescending, value);
+            get => _gameSummariesGridSortDescending;
+            set => SetValue(ref _gameSummariesGridSortDescending, value);
         }
 
         /// <summary>
-        /// Sort mode for the sidebar selected-game grid.
+        /// Sort mode for the overview selected-game grid.
         /// None preserves custom order when configured, otherwise provider order.
         /// </summary>
-        public CompactListSortMode SidebarSelectedGameGridSortMode
+        public CompactListSortMode OverviewSelectedGameGridSortMode
         {
-            get => _sidebarSelectedGameGridSortMode;
-            set => SetValue(ref _sidebarSelectedGameGridSortMode, value);
+            get => _overviewSelectedGameGridSortMode;
+            set => SetValue(ref _overviewSelectedGameGridSortMode, value);
         }
 
         /// <summary>
-        /// When true, reverses the configured sort direction for the sidebar selected-game grid.
-        /// Ignored when SidebarSelectedGameGridSortMode is None.
+        /// When true, reverses the configured sort direction for the overview selected-game grid.
+        /// Ignored when OverviewSelectedGameGridSortMode is None.
         /// </summary>
-        public bool SidebarSelectedGameGridSortDescending
+        public bool OverviewSelectedGameGridSortDescending
         {
-            get => _sidebarSelectedGameGridSortDescending;
-            set => SetValue(ref _sidebarSelectedGameGridSortDescending, value);
+            get => _overviewSelectedGameGridSortDescending;
+            set => SetValue(ref _overviewSelectedGameGridSortDescending, value);
         }
 
         /// <summary>
@@ -871,39 +871,39 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Fixed row height for the sidebar games overview grid (null = automatic).
+        /// Fixed row height for the overview game summaries grid (null = automatic).
         /// </summary>
-        public double? SidebarOverviewGridRowHeight
+        public double? OverviewGameSummariesGridRowHeight
         {
-            get => _sidebarOverviewGridRowHeight;
-            set => SetValue(ref _sidebarOverviewGridRowHeight, NormalizeGridRowHeight(value));
+            get => _overviewGameSummariesGridRowHeight;
+            set => SetValue(ref _overviewGameSummariesGridRowHeight, NormalizeGridRowHeight(value));
         }
 
         /// <summary>
-        /// Fixed row height for the sidebar recent achievements grid (null = automatic).
+        /// Fixed row height for the overview recent achievements grid (null = automatic).
         /// </summary>
-        public double? SidebarRecentAchievementsGridRowHeight
+        public double? OverviewRecentAchievementsGridRowHeight
         {
-            get => _sidebarRecentAchievementsGridRowHeight;
-            set => SetValue(ref _sidebarRecentAchievementsGridRowHeight, NormalizeGridRowHeight(value));
+            get => _overviewRecentAchievementsGridRowHeight;
+            set => SetValue(ref _overviewRecentAchievementsGridRowHeight, NormalizeGridRowHeight(value));
         }
 
         /// <summary>
-        /// Fixed row height for the sidebar selected-game achievement grid (null = automatic).
+        /// Fixed row height for the overview selected-game achievement grid (null = automatic).
         /// </summary>
-        public double? SidebarSelectedGameGridRowHeight
+        public double? OverviewSelectedGameGridRowHeight
         {
-            get => _sidebarSelectedGameGridRowHeight;
-            set => SetValue(ref _sidebarSelectedGameGridRowHeight, NormalizeGridRowHeight(value));
+            get => _overviewSelectedGameGridRowHeight;
+            set => SetValue(ref _overviewSelectedGameGridRowHeight, NormalizeGridRowHeight(value));
         }
 
         /// <summary>
-        /// Fixed row height for the Start Page games overview grid (null = automatic).
+        /// Fixed row height for the Start Page game summaries grid (null = automatic).
         /// </summary>
-        public double? StartPageGamesOverviewGridRowHeight
+        public double? StartPageGameSummariesGridRowHeight
         {
-            get => StartPageGamesOverviewGrid.RowHeight;
-            set => StartPageGamesOverviewGrid.RowHeight = value;
+            get => StartPageGameSummariesGrid.RowHeight;
+            set => StartPageGameSummariesGrid.RowHeight = value;
         }
 
         /// <summary>
@@ -934,40 +934,40 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Maximum rendered rows for the sidebar games overview grid (null = unlimited).
+        /// Maximum rendered rows for the overview game summaries grid (null = unlimited).
         /// </summary>
-        public int? SidebarOverviewGridMaxRows
+        public int? OverviewGameSummariesGridMaxRows
         {
-            get => _sidebarOverviewGridMaxRows;
-            set => SetValue(ref _sidebarOverviewGridMaxRows, NormalizeGridMaxRows(value));
+            get => _overviewGameSummariesGridMaxRows;
+            set => SetValue(ref _overviewGameSummariesGridMaxRows, NormalizeGridMaxRows(value));
         }
 
         /// <summary>
-        /// Maximum rendered rows for the sidebar recent achievements grid (null = unlimited).
+        /// Maximum rendered rows for the overview recent achievements grid (null = unlimited).
         /// </summary>
-        public int? SidebarRecentAchievementsGridMaxRows
+        public int? OverviewRecentAchievementsGridMaxRows
         {
-            get => _sidebarRecentAchievementsGridMaxRows;
-            set => SetValue(ref _sidebarRecentAchievementsGridMaxRows, NormalizeGridMaxRows(value));
+            get => _overviewRecentAchievementsGridMaxRows;
+            set => SetValue(ref _overviewRecentAchievementsGridMaxRows, NormalizeGridMaxRows(value));
         }
 
         /// <summary>
-        /// Maximum rendered rows for the sidebar selected-game achievement grid (null = unlimited).
+        /// Maximum rendered rows for the overview selected-game achievement grid (null = unlimited).
         /// </summary>
-        public int? SidebarSelectedGameGridMaxRows
+        public int? OverviewSelectedGameGridMaxRows
         {
-            get => _sidebarSelectedGameGridMaxRows;
-            set => SetValue(ref _sidebarSelectedGameGridMaxRows, NormalizeGridMaxRows(value));
+            get => _overviewSelectedGameGridMaxRows;
+            set => SetValue(ref _overviewSelectedGameGridMaxRows, NormalizeGridMaxRows(value));
         }
 
         /// <summary>
-        /// Maximum rendered rows for the Start Page games overview grid (null = unlimited).
+        /// Maximum rendered rows for the Start Page game summaries grid (null = unlimited).
         /// Defaults to 25 to preserve the previous Start Page behavior.
         /// </summary>
-        public int? StartPageGamesOverviewGridMaxRows
+        public int? StartPageGameSummariesGridMaxRows
         {
-            get => StartPageGamesOverviewGrid.MaxRows;
-            set => StartPageGamesOverviewGrid.MaxRows = value;
+            get => StartPageGameSummariesGrid.MaxRows;
+            set => StartPageGameSummariesGrid.MaxRows = value;
         }
 
         /// <summary>
@@ -989,20 +989,20 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _desktopThemeAchievementGridMaxRows, NormalizeGridMaxRows(value));
         }
 
-        public StartPageGamesOverviewGridSettings StartPageGamesOverviewGrid
+        public StartPageGameSummariesGridSettings StartPageGameSummariesGrid
         {
-            get => _startPageGamesOverviewGrid ?? (_startPageGamesOverviewGrid = AttachStartPageSettings(
-                new StartPageGamesOverviewGridSettings()));
+            get => _startPageGameSummariesGrid ?? (_startPageGameSummariesGrid = AttachStartPageSettings(
+                new StartPageGameSummariesGridSettings()));
             set
             {
-                var normalized = value ?? new StartPageGamesOverviewGridSettings();
-                if (ReferenceEquals(_startPageGamesOverviewGrid, normalized))
+                var normalized = value ?? new StartPageGameSummariesGridSettings();
+                if (ReferenceEquals(_startPageGameSummariesGrid, normalized))
                 {
                     return;
                 }
 
-                DetachStartPageSettings(_startPageGamesOverviewGrid);
-                _startPageGamesOverviewGrid = AttachStartPageSettings(normalized);
+                DetachStartPageSettings(_startPageGameSummariesGrid);
+                _startPageGameSummariesGrid = AttachStartPageSettings(normalized);
                 OnPropertyChanged();
             }
         }
@@ -1126,12 +1126,12 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Persisted widths for sidebar achievement columns (recent + selected game panels).
+        /// Persisted widths for overview achievement columns (recent + selected game panels).
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
-        public Dictionary<string, double> SidebarAchievementColumnWidths
+        public Dictionary<string, double> OverviewRecentAchievementColumnWidths
         {
-            get => _sidebarAchievementColumnWidths;
+            get => _overviewAchievementColumnWidths;
             set
             {
                 var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -1149,37 +1149,37 @@ namespace PlayniteAchievements.Models.Settings
                     }
                 }
 
-                SetValue(ref _sidebarAchievementColumnWidths, normalized);
+                SetValue(ref _overviewAchievementColumnWidths, normalized);
             }
         }
 
         /// <summary>
-        /// Persisted order for sidebar recent achievement columns.
+        /// Persisted order for overview recent achievement columns.
         /// Key is a stable column identifier, value is DisplayIndex.
         /// </summary>
-        public Dictionary<string, int> SidebarAchievementColumnOrder
+        public Dictionary<string, int> OverviewRecentAchievementColumnOrder
         {
-            get => _sidebarAchievementColumnOrder;
-            set => SetValue(ref _sidebarAchievementColumnOrder, NormalizeColumnOrder(value));
+            get => _overviewAchievementColumnOrder;
+            set => SetValue(ref _overviewAchievementColumnOrder, NormalizeColumnOrder(value));
         }
 
         /// <summary>
-        /// Persisted cell text alignment overrides for sidebar recent achievement columns.
+        /// Persisted cell text alignment overrides for overview recent achievement columns.
         /// Missing keys inherit the global GridCellAlignment setting.
         /// </summary>
-        public Dictionary<string, GridAlignment> SidebarAchievementColumnAlignments
+        public Dictionary<string, GridAlignment> OverviewRecentAchievementColumnAlignments
         {
-            get => _sidebarAchievementColumnAlignments;
-            set => SetValue(ref _sidebarAchievementColumnAlignments, NormalizeColumnAlignments(value));
+            get => _overviewAchievementColumnAlignments;
+            set => SetValue(ref _overviewAchievementColumnAlignments, NormalizeColumnAlignments(value));
         }
 
         /// <summary>
-        /// Persisted widths for the sidebar selected game achievement columns.
+        /// Persisted widths for the overview selected game achievement columns.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
-        public Dictionary<string, double> SidebarGameColumnWidths
+        public Dictionary<string, double> OverviewSelectedGameAchievementColumnWidths
         {
-            get => _sidebarGameColumnWidths;
+            get => _overviewGameColumnWidths;
             set
             {
                 var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -1197,28 +1197,28 @@ namespace PlayniteAchievements.Models.Settings
                     }
                 }
 
-                SetValue(ref _sidebarGameColumnWidths, normalized);
+                SetValue(ref _overviewGameColumnWidths, normalized);
             }
         }
 
         /// <summary>
-        /// Persisted order for sidebar selected game achievement columns.
+        /// Persisted order for overview selected game achievement columns.
         /// Key is a stable column identifier, value is DisplayIndex.
         /// </summary>
-        public Dictionary<string, int> SidebarGameColumnOrder
+        public Dictionary<string, int> OverviewSelectedGameAchievementColumnOrder
         {
-            get => _sidebarGameColumnOrder;
-            set => SetValue(ref _sidebarGameColumnOrder, NormalizeColumnOrder(value));
+            get => _overviewGameColumnOrder;
+            set => SetValue(ref _overviewGameColumnOrder, NormalizeColumnOrder(value));
         }
 
         /// <summary>
-        /// Persisted cell text alignment overrides for sidebar selected-game achievement columns.
+        /// Persisted cell text alignment overrides for overview selected-game achievement columns.
         /// Missing keys inherit the global GridCellAlignment setting.
         /// </summary>
-        public Dictionary<string, GridAlignment> SidebarGameColumnAlignments
+        public Dictionary<string, GridAlignment> OverviewSelectedGameAchievementColumnAlignments
         {
-            get => _sidebarGameColumnAlignments;
-            set => SetValue(ref _sidebarGameColumnAlignments, NormalizeColumnAlignments(value));
+            get => _overviewGameColumnAlignments;
+            set => SetValue(ref _overviewGameColumnAlignments, NormalizeColumnAlignments(value));
         }
 
         /// <summary>
@@ -1318,28 +1318,28 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Persisted visibility state for games overview columns in the sidebar.
+        /// Persisted visibility state for game summaries columns in the overview.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
-        public Dictionary<string, bool> GamesOverviewColumnVisibility
+        public Dictionary<string, bool> GameSummariesColumnVisibility
         {
-            get => _gamesOverviewColumnVisibility;
+            get => _gameSummariesColumnVisibility;
             set
             {
                 var normalized = value != null
                     ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _gamesOverviewColumnVisibility, normalized);
+                SetValue(ref _gameSummariesColumnVisibility, normalized);
             }
         }
 
         /// <summary>
-        /// Persisted widths for games overview columns in the sidebar.
+        /// Persisted widths for game summaries columns in the overview.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
-        public Dictionary<string, double> GamesOverviewColumnWidths
+        public Dictionary<string, double> GameSummariesColumnWidths
         {
-            get => _gamesOverviewColumnWidths;
+            get => _gameSummariesColumnWidths;
             set
             {
                 var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -1357,28 +1357,28 @@ namespace PlayniteAchievements.Models.Settings
                     }
                 }
 
-                SetValue(ref _gamesOverviewColumnWidths, normalized);
+                SetValue(ref _gameSummariesColumnWidths, normalized);
             }
         }
 
         /// <summary>
-        /// Persisted order for games overview columns in the sidebar.
+        /// Persisted order for game summaries columns in the overview.
         /// Key is a stable column identifier, value is DisplayIndex.
         /// </summary>
-        public Dictionary<string, int> GamesOverviewColumnOrder
+        public Dictionary<string, int> GameSummariesColumnOrder
         {
-            get => _gamesOverviewColumnOrder;
-            set => SetValue(ref _gamesOverviewColumnOrder, NormalizeColumnOrder(value));
+            get => _gameSummariesColumnOrder;
+            set => SetValue(ref _gameSummariesColumnOrder, NormalizeColumnOrder(value));
         }
 
         /// <summary>
-        /// Persisted cell text alignment overrides for games overview columns in the sidebar.
+        /// Persisted cell text alignment overrides for game summaries columns in the overview.
         /// Missing keys inherit the global GridCellAlignment setting.
         /// </summary>
-        public Dictionary<string, GridAlignment> GamesOverviewColumnAlignments
+        public Dictionary<string, GridAlignment> GameSummariesColumnAlignments
         {
-            get => _gamesOverviewColumnAlignments;
-            set => SetValue(ref _gamesOverviewColumnAlignments, NormalizeColumnAlignments(value));
+            get => _gameSummariesColumnAlignments;
+            set => SetValue(ref _gameSummariesColumnAlignments, NormalizeColumnAlignments(value));
         }
 
         /// <summary>
@@ -1446,28 +1446,28 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Persisted visibility state for StartPage games overview grid columns.
+        /// Persisted visibility state for StartPage game summaries grid columns.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
-        public Dictionary<string, bool> StartPageGamesOverviewColumnVisibility
+        public Dictionary<string, bool> StartPageGameSummariesColumnVisibility
         {
-            get => _startPageGamesOverviewColumnVisibility;
+            get => _startPageGameSummariesColumnVisibility;
             set
             {
                 var normalized = value != null
                     ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                SetValue(ref _startPageGamesOverviewColumnVisibility, normalized);
+                SetValue(ref _startPageGameSummariesColumnVisibility, normalized);
             }
         }
 
         /// <summary>
-        /// Persisted widths for StartPage games overview grid columns.
+        /// Persisted widths for StartPage game summaries grid columns.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
-        public Dictionary<string, double> StartPageGamesOverviewColumnWidths
+        public Dictionary<string, double> StartPageGameSummariesColumnWidths
         {
-            get => _startPageGamesOverviewColumnWidths;
+            get => _startPageGameSummariesColumnWidths;
             set
             {
                 var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -1485,43 +1485,43 @@ namespace PlayniteAchievements.Models.Settings
                     }
                 }
 
-                SetValue(ref _startPageGamesOverviewColumnWidths, normalized);
+                SetValue(ref _startPageGameSummariesColumnWidths, normalized);
             }
         }
 
         /// <summary>
-        /// Persisted order for StartPage games overview grid columns.
+        /// Persisted order for StartPage game summaries grid columns.
         /// Key is a stable column identifier, value is DisplayIndex.
         /// </summary>
-        public Dictionary<string, int> StartPageGamesOverviewColumnOrder
+        public Dictionary<string, int> StartPageGameSummariesColumnOrder
         {
-            get => _startPageGamesOverviewColumnOrder;
-            set => SetValue(ref _startPageGamesOverviewColumnOrder, NormalizeColumnOrder(value));
+            get => _startPageGameSummariesColumnOrder;
+            set => SetValue(ref _startPageGameSummariesColumnOrder, NormalizeColumnOrder(value));
         }
 
         /// <summary>
-        /// Persisted cell text alignment overrides for StartPage games overview grid columns.
+        /// Persisted cell text alignment overrides for StartPage game summaries grid columns.
         /// Missing keys inherit the global GridCellAlignment setting.
         /// </summary>
-        public Dictionary<string, GridAlignment> StartPageGamesOverviewColumnAlignments
+        public Dictionary<string, GridAlignment> StartPageGameSummariesColumnAlignments
         {
-            get => _startPageGamesOverviewColumnAlignments;
-            set => SetValue(ref _startPageGamesOverviewColumnAlignments, NormalizeColumnAlignments(value));
+            get => _startPageGameSummariesColumnAlignments;
+            set => SetValue(ref _startPageGameSummariesColumnAlignments, NormalizeColumnAlignments(value));
         }
 
         /// <summary>
-        /// Persisted sidebar overview splitter position. Represents left column width
+        /// Persisted overview splitter position. Represents left column width
         /// as a ratio of the combined left and right overview columns.
         /// </summary>
-        public double SidebarOverviewLeftColumnRatio
+        public double OverviewLeftColumnRatio
         {
-            get => _sidebarOverviewLeftColumnRatio;
+            get => _overviewLeftColumnRatio;
             set
             {
                 var normalized = double.IsNaN(value) || double.IsInfinity(value)
-                    ? DefaultSidebarOverviewLeftColumnRatio
-                    : Math.Max(MinSidebarOverviewLeftColumnRatio, Math.Min(MaxSidebarOverviewLeftColumnRatio, value));
-                SetValue(ref _sidebarOverviewLeftColumnRatio, normalized);
+                    ? DefaultOverviewLeftColumnRatio
+                    : Math.Max(MinOverviewLeftColumnRatio, Math.Min(MaxOverviewLeftColumnRatio, value));
+                SetValue(ref _overviewLeftColumnRatio, normalized);
             }
         }
 
@@ -1552,12 +1552,12 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Last selected range for the sidebar achievements-over-time chart.
+        /// Last selected range for the overview achievements-over-time chart.
         /// </summary>
-        public TimelineRange SidebarTimelineRange
+        public TimelineRange OverviewTimelineRange
         {
-            get => _sidebarTimelineRange;
-            set => SetValue(ref _sidebarTimelineRange, value);
+            get => _overviewTimelineRange;
+            set => SetValue(ref _overviewTimelineRange, value);
         }
 
         #endregion
@@ -1566,7 +1566,7 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// Indicates whether the user has completed the first-time setup flow.
-        /// When false, the sidebar shows a landing page guiding users through initial configuration.
+        /// When false, the overview shows a landing page guiding users through initial configuration.
         /// </summary>
         public bool FirstTimeSetupCompleted
         {
@@ -1576,7 +1576,7 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// Indicates whether the user has seen the theme migration landing page.
-        /// When false, the sidebar always shows the landing page to promote theme migration.
+        /// When false, the overview always shows the landing page to promote theme migration.
         /// </summary>
         public bool SeenThemeMigration
         {
@@ -1716,8 +1716,8 @@ namespace PlayniteAchievements.Models.Settings
 
         private void AttachStartPageSettingsHandlers()
         {
-            _startPageGamesOverviewGrid = AttachStartPageSettings(
-                _startPageGamesOverviewGrid ?? new StartPageGamesOverviewGridSettings());
+            _startPageGameSummariesGrid = AttachStartPageSettings(
+                _startPageGameSummariesGrid ?? new StartPageGameSummariesGridSettings());
             _startPageRecentUnlocksGrid = AttachStartPageSettings(
                 _startPageRecentUnlocksGrid ?? new StartPageRecentUnlocksGridSettings());
             _startPagePieCharts = AttachStartPageSettings(
@@ -1747,13 +1747,13 @@ namespace PlayniteAchievements.Models.Settings
         private void StartPageSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             var childPropertyName = e?.PropertyName;
-            if (ReferenceEquals(sender, _startPageGamesOverviewGrid))
+            if (ReferenceEquals(sender, _startPageGameSummariesGrid))
             {
-                RaiseStartPageSettingsChanged(nameof(StartPageGamesOverviewGrid), childPropertyName);
+                RaiseStartPageSettingsChanged(nameof(StartPageGameSummariesGrid), childPropertyName);
                 RaiseLegacyStartPageGridPropertyChanged(
                     childPropertyName,
-                    nameof(StartPageGamesOverviewGridRowHeight),
-                    nameof(StartPageGamesOverviewGridMaxRows));
+                    nameof(StartPageGameSummariesGridRowHeight),
+                    nameof(StartPageGameSummariesGridMaxRows));
                 return;
             }
 
@@ -1792,11 +1792,11 @@ namespace PlayniteAchievements.Models.Settings
             string rowHeightPropertyName,
             string maxRowsPropertyName)
         {
-            if (string.Equals(childPropertyName, nameof(StartPageGamesOverviewGridSettings.RowHeight), StringComparison.Ordinal))
+            if (string.Equals(childPropertyName, nameof(StartPageGameSummariesGridSettings.RowHeight), StringComparison.Ordinal))
             {
                 OnPropertyChanged(rowHeightPropertyName);
             }
-            else if (string.Equals(childPropertyName, nameof(StartPageGamesOverviewGridSettings.MaxRows), StringComparison.Ordinal))
+            else if (string.Equals(childPropertyName, nameof(StartPageGameSummariesGridSettings.MaxRows), StringComparison.Ordinal))
             {
                 OnPropertyChanged(maxRowsPropertyName);
             }
@@ -1855,21 +1855,21 @@ namespace PlayniteAchievements.Models.Settings
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
-                ShowSidebarCollectionScoreCard = this.ShowSidebarCollectionScoreCard,
-                ShowSidebarPrestigeScoreCard = this.ShowSidebarPrestigeScoreCard,
-                ShowSidebarPieCharts = this.ShowSidebarPieCharts,
-                ShowSidebarGamesPieChart = this.ShowSidebarGamesPieChart,
-                ShowSidebarProviderPieChart = this.ShowSidebarProviderPieChart,
-                ShowSidebarRarityPieChart = this.ShowSidebarRarityPieChart,
-                ShowSidebarTrophyPieChart = this.ShowSidebarTrophyPieChart,
-                ShowSidebarPiePercentages = this.ShowSidebarPiePercentages,
-                SidebarPieSmallSliceMode = this.SidebarPieSmallSliceMode,
-                ShowSidebarBarCharts = this.ShowSidebarBarCharts,
-                ShowSidebarGameMetadata = this.ShowSidebarGameMetadata,
+                ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
+                ShowOverviewPrestigeScoreCard = this.ShowOverviewPrestigeScoreCard,
+                ShowOverviewPieCharts = this.ShowOverviewPieCharts,
+                ShowOverviewGamesPieChart = this.ShowOverviewGamesPieChart,
+                ShowOverviewProviderPieChart = this.ShowOverviewProviderPieChart,
+                ShowOverviewRarityPieChart = this.ShowOverviewRarityPieChart,
+                ShowOverviewTrophyPieChart = this.ShowOverviewTrophyPieChart,
+                ShowOverviewPiePercentages = this.ShowOverviewPiePercentages,
+                OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
+                ShowOverviewBarCharts = this.ShowOverviewBarCharts,
+                ShowOverviewGameMetadata = this.ShowOverviewGameMetadata,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ShowCompletionBorder = this.ShowCompletionBorder,
-                ShowOverviewGridColumnHeaders = this.ShowOverviewGridColumnHeaders,
+                ShowGameSummariesGridColumnHeaders = this.ShowGameSummariesGridColumnHeaders,
                 ShowAchievementGridColumnHeaders = this.ShowAchievementGridColumnHeaders,
                 ShowDesktopThemeAchievementGridColumnHeaders = this.ShowDesktopThemeAchievementGridColumnHeaders,
                 GridColumnHeaderAlignment = this.GridColumnHeaderAlignment,
@@ -1891,31 +1891,31 @@ namespace PlayniteAchievements.Models.Settings
                 CompactUnlockedListSortDescending = this.CompactUnlockedListSortDescending,
                 CompactLockedListSortMode = this.CompactLockedListSortMode,
                 CompactLockedListSortDescending = this.CompactLockedListSortDescending,
-                GamesOverviewGridSortMode = this.GamesOverviewGridSortMode,
-                GamesOverviewGridSortDescending = this.GamesOverviewGridSortDescending,
-                SidebarSelectedGameGridSortMode = this.SidebarSelectedGameGridSortMode,
-                SidebarSelectedGameGridSortDescending = this.SidebarSelectedGameGridSortDescending,
+                GameSummariesGridSortMode = this.GameSummariesGridSortMode,
+                GameSummariesGridSortDescending = this.GameSummariesGridSortDescending,
+                OverviewSelectedGameGridSortMode = this.OverviewSelectedGameGridSortMode,
+                OverviewSelectedGameGridSortDescending = this.OverviewSelectedGameGridSortDescending,
                 SingleGameGridSortMode = this.SingleGameGridSortMode,
                 SingleGameGridSortDescending = this.SingleGameGridSortDescending,
                 AchievementDataGridSortMode = this.AchievementDataGridSortMode,
                 AchievementDataGridSortDescending = this.AchievementDataGridSortDescending,
                 AchievementDataGridMaxHeight = this.AchievementDataGridMaxHeight,
                 SingleGameGridRowHeight = this.SingleGameGridRowHeight,
-                SidebarOverviewGridRowHeight = this.SidebarOverviewGridRowHeight,
-                SidebarRecentAchievementsGridRowHeight = this.SidebarRecentAchievementsGridRowHeight,
-                SidebarSelectedGameGridRowHeight = this.SidebarSelectedGameGridRowHeight,
-                StartPageGamesOverviewGridRowHeight = this.StartPageGamesOverviewGridRowHeight,
+                OverviewGameSummariesGridRowHeight = this.OverviewGameSummariesGridRowHeight,
+                OverviewRecentAchievementsGridRowHeight = this.OverviewRecentAchievementsGridRowHeight,
+                OverviewSelectedGameGridRowHeight = this.OverviewSelectedGameGridRowHeight,
+                StartPageGameSummariesGridRowHeight = this.StartPageGameSummariesGridRowHeight,
                 StartPageRecentAchievementsGridRowHeight = this.StartPageRecentAchievementsGridRowHeight,
                 DesktopThemeAchievementGridRowHeight = this.DesktopThemeAchievementGridRowHeight,
                 SingleGameGridMaxRows = this.SingleGameGridMaxRows,
-                SidebarOverviewGridMaxRows = this.SidebarOverviewGridMaxRows,
-                SidebarRecentAchievementsGridMaxRows = this.SidebarRecentAchievementsGridMaxRows,
-                SidebarSelectedGameGridMaxRows = this.SidebarSelectedGameGridMaxRows,
-                StartPageGamesOverviewGridMaxRows = this.StartPageGamesOverviewGridMaxRows,
+                OverviewGameSummariesGridMaxRows = this.OverviewGameSummariesGridMaxRows,
+                OverviewRecentAchievementsGridMaxRows = this.OverviewRecentAchievementsGridMaxRows,
+                OverviewSelectedGameGridMaxRows = this.OverviewSelectedGameGridMaxRows,
+                StartPageGameSummariesGridMaxRows = this.StartPageGameSummariesGridMaxRows,
                 StartPageRecentAchievementsGridMaxRows = this.StartPageRecentAchievementsGridMaxRows,
                 DesktopThemeAchievementGridMaxRows = this.DesktopThemeAchievementGridMaxRows,
-                StartPageGamesOverviewGrid = this.StartPageGamesOverviewGrid?.Clone() ??
-                    new StartPageGamesOverviewGridSettings(),
+                StartPageGameSummariesGrid = this.StartPageGameSummariesGrid?.Clone() ??
+                    new StartPageGameSummariesGridSettings(),
                 StartPageRecentUnlocksGrid = this.StartPageRecentUnlocksGrid?.Clone() ??
                     new StartPageRecentUnlocksGridSettings(),
                 StartPagePieCharts = this.StartPagePieCharts?.Clone() ??
@@ -1934,23 +1934,23 @@ namespace PlayniteAchievements.Models.Settings
                 DataGridColumnOrder = this.DataGridColumnOrder != null
                     ? new Dictionary<string, int>(this.DataGridColumnOrder, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                SidebarAchievementColumnWidths = this.SidebarAchievementColumnWidths != null
-                    ? new Dictionary<string, double>(this.SidebarAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                OverviewRecentAchievementColumnWidths = this.OverviewRecentAchievementColumnWidths != null
+                    ? new Dictionary<string, double>(this.OverviewRecentAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                SidebarAchievementColumnOrder = this.SidebarAchievementColumnOrder != null
-                    ? new Dictionary<string, int>(this.SidebarAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                OverviewRecentAchievementColumnOrder = this.OverviewRecentAchievementColumnOrder != null
+                    ? new Dictionary<string, int>(this.OverviewRecentAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                SidebarAchievementColumnAlignments = this.SidebarAchievementColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.SidebarAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                OverviewRecentAchievementColumnAlignments = this.OverviewRecentAchievementColumnAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.OverviewRecentAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                SidebarGameColumnWidths = this.SidebarGameColumnWidths != null
-                    ? new Dictionary<string, double>(this.SidebarGameColumnWidths, StringComparer.OrdinalIgnoreCase)
+                OverviewSelectedGameAchievementColumnWidths = this.OverviewSelectedGameAchievementColumnWidths != null
+                    ? new Dictionary<string, double>(this.OverviewSelectedGameAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                SidebarGameColumnOrder = this.SidebarGameColumnOrder != null
-                    ? new Dictionary<string, int>(this.SidebarGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+                OverviewSelectedGameAchievementColumnOrder = this.OverviewSelectedGameAchievementColumnOrder != null
+                    ? new Dictionary<string, int>(this.OverviewSelectedGameAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                SidebarGameColumnAlignments = this.SidebarGameColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.SidebarGameColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                OverviewSelectedGameAchievementColumnAlignments = this.OverviewSelectedGameAchievementColumnAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.OverviewSelectedGameAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 SingleGameColumnWidths = this.SingleGameColumnWidths != null
                     ? new Dictionary<string, double>(this.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
@@ -1970,17 +1970,17 @@ namespace PlayniteAchievements.Models.Settings
                 DesktopThemeColumnAlignments = this.DesktopThemeColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.DesktopThemeColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                GamesOverviewColumnVisibility = this.GamesOverviewColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                GameSummariesColumnVisibility = this.GameSummariesColumnVisibility != null
+                    ? new Dictionary<string, bool>(this.GameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                GamesOverviewColumnWidths = this.GamesOverviewColumnWidths != null
-                    ? new Dictionary<string, double>(this.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+                GameSummariesColumnWidths = this.GameSummariesColumnWidths != null
+                    ? new Dictionary<string, double>(this.GameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                GamesOverviewColumnOrder = this.GamesOverviewColumnOrder != null
-                    ? new Dictionary<string, int>(this.GamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+                GameSummariesColumnOrder = this.GameSummariesColumnOrder != null
+                    ? new Dictionary<string, int>(this.GameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                GamesOverviewColumnAlignments = this.GamesOverviewColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.GamesOverviewColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                GameSummariesColumnAlignments = this.GameSummariesColumnAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.GameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 StartPageAchievementColumnVisibility = this.StartPageAchievementColumnVisibility != null
                     ? new Dictionary<string, bool>(this.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
@@ -1994,26 +1994,26 @@ namespace PlayniteAchievements.Models.Settings
                 StartPageAchievementColumnAlignments = this.StartPageAchievementColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.StartPageAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                StartPageGamesOverviewColumnVisibility = this.StartPageGamesOverviewColumnVisibility != null
-                    ? new Dictionary<string, bool>(this.StartPageGamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                StartPageGameSummariesColumnVisibility = this.StartPageGameSummariesColumnVisibility != null
+                    ? new Dictionary<string, bool>(this.StartPageGameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
-                StartPageGamesOverviewColumnWidths = this.StartPageGamesOverviewColumnWidths != null
-                    ? new Dictionary<string, double>(this.StartPageGamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+                StartPageGameSummariesColumnWidths = this.StartPageGameSummariesColumnWidths != null
+                    ? new Dictionary<string, double>(this.StartPageGameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
-                StartPageGamesOverviewColumnOrder = this.StartPageGamesOverviewColumnOrder != null
-                    ? new Dictionary<string, int>(this.StartPageGamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+                StartPageGameSummariesColumnOrder = this.StartPageGameSummariesColumnOrder != null
+                    ? new Dictionary<string, int>(this.StartPageGameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
-                StartPageGamesOverviewColumnAlignments = this.StartPageGamesOverviewColumnAlignments != null
-                    ? new Dictionary<string, GridAlignment>(this.StartPageGamesOverviewColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                StartPageGameSummariesColumnAlignments = this.StartPageGameSummariesColumnAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.StartPageGameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
-                SidebarOverviewLeftColumnRatio = this.SidebarOverviewLeftColumnRatio,
+                OverviewLeftColumnRatio = this.OverviewLeftColumnRatio,
                 WindowPlacements = this.WindowPlacements != null
                     ? this.WindowPlacements.ToDictionary(
                         kvp => kvp.Key,
                         kvp => kvp.Value?.Clone(),
                         StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase),
-                SidebarTimelineRange = this.SidebarTimelineRange,
+                OverviewTimelineRange = this.OverviewTimelineRange,
 
                 // General Settings
                 FirstTimeSetupCompleted = this.FirstTimeSetupCompleted,

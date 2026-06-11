@@ -7,7 +7,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Services.Sidebar;
+using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.StartPage;
 using StartPage.SDK;
 
@@ -91,7 +91,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
             }
         }
 
-        protected abstract void ApplySnapshot(SidebarDataSnapshot snapshot);
+        protected abstract void ApplySnapshot(OverviewDataSnapshot snapshot);
 
         protected virtual void OnPersistedSettingsChanged(string propertyName)
         {
@@ -105,13 +105,13 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 case nameof(PersistedSettings.StartPageAchievementColumnWidths):
                 case nameof(PersistedSettings.StartPageAchievementColumnOrder):
                 case nameof(PersistedSettings.StartPageAchievementColumnAlignments):
-                case nameof(PersistedSettings.StartPageGamesOverviewColumnVisibility):
-                case nameof(PersistedSettings.StartPageGamesOverviewColumnWidths):
-                case nameof(PersistedSettings.StartPageGamesOverviewColumnOrder):
-                case nameof(PersistedSettings.StartPageGamesOverviewColumnAlignments):
-                case nameof(PersistedSettings.ShowOverviewGridColumnHeaders):
+                case nameof(PersistedSettings.StartPageGameSummariesColumnVisibility):
+                case nameof(PersistedSettings.StartPageGameSummariesColumnWidths):
+                case nameof(PersistedSettings.StartPageGameSummariesColumnOrder):
+                case nameof(PersistedSettings.StartPageGameSummariesColumnAlignments):
+                case nameof(PersistedSettings.ShowGameSummariesGridColumnHeaders):
                 case nameof(PersistedSettings.ShowAchievementGridColumnHeaders):
-                case nameof(PersistedSettings.StartPageGamesOverviewGridRowHeight):
+                case nameof(PersistedSettings.StartPageGameSummariesGridRowHeight):
                 case nameof(PersistedSettings.StartPageRecentAchievementsGridRowHeight):
                     return false;
                 default:

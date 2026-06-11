@@ -2,14 +2,14 @@ using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Services.Sidebar;
+using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.StartPage;
 
 namespace PlayniteAchievements.ViewModels.StartPage
 {
-    public sealed class StartPageGamesOverviewGridViewModel : StartPageWidgetViewModelBase
+    public sealed class StartPageGameSummariesGridViewModel : StartPageWidgetViewModelBase
     {
-        public StartPageGamesOverviewGridViewModel(
+        public StartPageGameSummariesGridViewModel(
             StartPageDataCoordinator dataCoordinator,
             PlayniteAchievementsSettings settings,
             ILogger logger)
@@ -17,11 +17,11 @@ namespace PlayniteAchievements.ViewModels.StartPage
         {
         }
 
-        public BulkObservableCollection<GameOverviewItem> Items { get; } =
-            new BulkObservableCollection<GameOverviewItem>();
+        public BulkObservableCollection<GameSummaryItem> Items { get; } =
+            new BulkObservableCollection<GameSummaryItem>();
 
-        private StartPageGamesOverviewGridSettings WidgetSettings =>
-            PersistedSettings?.StartPageGamesOverviewGrid ?? new StartPageGamesOverviewGridSettings();
+        private StartPageGameSummariesGridSettings WidgetSettings =>
+            PersistedSettings?.StartPageGameSummariesGrid ?? new StartPageGameSummariesGridSettings();
 
         public bool ShowGameMetadata => WidgetSettings.ShowGameMetadata;
 
@@ -33,10 +33,10 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public double? RowHeight => WidgetSettings.RowHeight;
 
-        protected override void ApplySnapshot(SidebarDataSnapshot snapshot)
+        protected override void ApplySnapshot(OverviewDataSnapshot snapshot)
         {
-            Items.ReplaceAll(StartPageWidgetProjection.ProjectGamesOverview(
-                snapshot?.GamesOverview,
+            Items.ReplaceAll(StartPageWidgetProjection.ProjectGameSummaries(
+                snapshot?.GameSummaries,
                 PersistedSettings));
             OnPropertyChanged(nameof(ShowGameMetadata));
             OnPropertyChanged(nameof(UseCoverImages));
@@ -48,32 +48,32 @@ namespace PlayniteAchievements.ViewModels.StartPage
         protected override void OnPersistedSettingsChanged(string propertyName)
         {
             if (string.IsNullOrEmpty(propertyName) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.ShowGameMetadata)))
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.ShowGameMetadata)))
             {
                 OnPropertyChanged(nameof(ShowGameMetadata));
             }
 
             if (string.IsNullOrEmpty(propertyName) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.UseCoverImages)))
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.UseCoverImages)))
             {
                 OnPropertyChanged(nameof(UseCoverImages));
             }
 
             if (string.IsNullOrEmpty(propertyName) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.ShowCompletionBorder)))
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.ShowCompletionBorder)))
             {
                 OnPropertyChanged(nameof(ShowCompletionBorder));
             }
 
             if (string.IsNullOrEmpty(propertyName) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.ShowColumnHeaders)))
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.ShowColumnHeaders)))
             {
                 OnPropertyChanged(nameof(ShowColumnHeaders));
             }
 
             if (string.IsNullOrEmpty(propertyName) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.RowHeight)) ||
-                propertyName == nameof(PersistedSettings.StartPageGamesOverviewGridRowHeight))
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.RowHeight)) ||
+                propertyName == nameof(PersistedSettings.StartPageGameSummariesGridRowHeight))
             {
                 OnPropertyChanged(nameof(RowHeight));
             }
@@ -81,10 +81,10 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         protected override bool ShouldRefreshForPersistedSettingsChanged(string propertyName)
         {
-            if (IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.SortMode)) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.SortDescending)) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGamesOverviewGridSettings.MaxRows)) ||
-                propertyName == nameof(PersistedSettings.StartPageGamesOverviewGridMaxRows))
+            if (IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.SortMode)) ||
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.SortDescending)) ||
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.MaxRows)) ||
+                propertyName == nameof(PersistedSettings.StartPageGameSummariesGridMaxRows))
             {
                 return true;
             }
@@ -104,10 +104,10 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 return true;
             }
 
-            const string prefix = nameof(PersistedSettings.StartPageGamesOverviewGrid) + ".";
+            const string prefix = nameof(PersistedSettings.StartPageGameSummariesGrid) + ".";
             if (!propertyName.StartsWith(prefix))
             {
-                return propertyName == nameof(PersistedSettings.StartPageGamesOverviewGrid);
+                return propertyName == nameof(PersistedSettings.StartPageGameSummariesGrid);
             }
 
             return string.IsNullOrEmpty(childPropertyName) ||

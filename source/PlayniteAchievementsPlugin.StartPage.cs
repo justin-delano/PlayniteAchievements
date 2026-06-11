@@ -101,8 +101,8 @@ namespace PlayniteAchievements
         {
             switch (widgetKind)
             {
-                case StartPageWidgetKind.GamesOverviewGrid:
-                    return new StartPageGamesOverviewGridViewModel(coordinator, Settings, _logger);
+                case StartPageWidgetKind.GameSummariesGrid:
+                    return new StartPageGameSummariesGridViewModel(coordinator, Settings, _logger);
                 case StartPageWidgetKind.RecentUnlocksGrid:
                     return new StartPageRecentUnlocksGridViewModel(coordinator, Settings, _logger);
                 case StartPageWidgetKind.CompletedGamesPie:
@@ -122,8 +122,8 @@ namespace PlayniteAchievements
         {
             switch (widgetKind)
             {
-                case StartPageWidgetKind.GamesOverviewGrid:
-                    return new StartPageGamesOverviewGridView();
+                case StartPageWidgetKind.GameSummariesGrid:
+                    return new StartPageGameSummariesGridView();
                 case StartPageWidgetKind.RecentUnlocksGrid:
                     return new StartPageRecentUnlocksGridView();
                 case StartPageWidgetKind.CompletedGamesPie:
@@ -223,7 +223,7 @@ namespace PlayniteAchievements
                 return menu;
             }
 
-            if (data is GameOverviewItem)
+            if (data is GameSummaryItem)
             {
                 AddStartPageGameRowMenuItems(menu, gameId, resourceOwner);
                 return menu;
@@ -334,7 +334,7 @@ namespace PlayniteAchievements
         {
             switch (data)
             {
-                case GameOverviewItem game when game.PlayniteGameId.HasValue:
+                case GameSummaryItem game when game.PlayniteGameId.HasValue:
                     gameId = game.PlayniteGameId.Value;
                     return true;
                 case AchievementDisplayItem achievement when achievement.PlayniteGameId.HasValue:

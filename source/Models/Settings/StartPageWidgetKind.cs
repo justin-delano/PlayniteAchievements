@@ -2,7 +2,7 @@ namespace PlayniteAchievements.Models.Settings
 {
     public enum StartPageWidgetKind
     {
-        GamesOverviewGrid = 0,
+        GameSummariesGrid = 0,
         RecentUnlocksGrid = 1,
         CompletedGamesPie = 2,
         ProviderPie = 3,

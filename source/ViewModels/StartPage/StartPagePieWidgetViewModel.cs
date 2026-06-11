@@ -5,7 +5,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.StartPage;
-using PlayniteAchievements.Services.Sidebar;
+using PlayniteAchievements.Services.Overview;
 
 namespace PlayniteAchievements.ViewModels.StartPage
 {
@@ -33,7 +33,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public bool ShowCenterPercentage => WidgetSettings.ShowCenterPercentage;
 
-        protected override void ApplySnapshot(SidebarDataSnapshot snapshot)
+        protected override void ApplySnapshot(OverviewDataSnapshot snapshot)
         {
             Chart.SmallSliceMode = WidgetSettings.SmallSliceMode;
 
@@ -101,18 +101,18 @@ namespace PlayniteAchievements.ViewModels.StartPage
                        StringComparison.Ordinal);
         }
 
-        private void ApplyCompletedGames(SidebarDataSnapshot snapshot)
+        private void ApplyCompletedGames(OverviewDataSnapshot snapshot)
         {
             Chart.SetGameData(
                 snapshot?.TotalGames ?? 0,
                 snapshot?.CompletedGames ?? 0,
                 L("LOCPlayAch_Filter_Complete", "Complete"),
-                L("LOCPlayAch_Sidebar_Incomplete", "Incomplete"));
+                L("LOCPlayAch_Overview_Incomplete", "Incomplete"));
         }
 
-        private void ApplyProvider(SidebarDataSnapshot snapshot)
+        private void ApplyProvider(OverviewDataSnapshot snapshot)
         {
-            var games = snapshot?.GamesOverview ?? new List<GameOverviewItem>();
+            var games = snapshot?.GameSummaries ?? new List<GameSummaryItem>();
             var unlockedByProvider = snapshot?.UnlockedByProvider ?? BuildProviderUnlockedCounts(games);
             var totalByProvider = snapshot?.TotalByProvider ?? BuildProviderTotalCounts(games);
             var totalLocked = snapshot?.TotalLocked ?? Math.Max(0, totalByProvider.Values.Sum() - unlockedByProvider.Values.Sum());
@@ -128,7 +128,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 providerDisplayNames);
         }
 
-        private void ApplyRarity(SidebarDataSnapshot snapshot)
+        private void ApplyRarity(OverviewDataSnapshot snapshot)
         {
             Chart.SetRarityData(
                 snapshot?.TotalCommon ?? 0,
@@ -148,9 +148,9 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 PersistedSettings?.UseUniformRarityBadges ?? false);
         }
 
-        private void ApplyTrophy(SidebarDataSnapshot snapshot)
+        private void ApplyTrophy(OverviewDataSnapshot snapshot)
         {
-            var games = snapshot?.GamesOverview ?? new List<GameOverviewItem>();
+            var games = snapshot?.GameSummaries ?? new List<GameSummaryItem>();
             Chart.SetTrophyData(
                 games.Sum(game => game?.TrophyPlatinumCount ?? 0),
                 games.Sum(game => game?.TrophyGoldCount ?? 0),
@@ -167,22 +167,22 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 L("LOCPlayAch_Common_Locked", "Locked"));
         }
 
-        private static Dictionary<string, int> BuildProviderUnlockedCounts(IEnumerable<GameOverviewItem> games)
+        private static Dictionary<string, int> BuildProviderUnlockedCounts(IEnumerable<GameSummaryItem> games)
         {
             return BuildProviderCounts(games, game => game?.UnlockedAchievements ?? 0);
         }
 
-        private static Dictionary<string, int> BuildProviderTotalCounts(IEnumerable<GameOverviewItem> games)
+        private static Dictionary<string, int> BuildProviderTotalCounts(IEnumerable<GameSummaryItem> games)
         {
             return BuildProviderCounts(games, game => game?.TotalAchievements ?? 0);
         }
 
         private static Dictionary<string, int> BuildProviderCounts(
-            IEnumerable<GameOverviewItem> games,
-            Func<GameOverviewItem, int> selector)
+            IEnumerable<GameSummaryItem> games,
+            Func<GameSummaryItem, int> selector)
         {
             var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            foreach (var game in games ?? Enumerable.Empty<GameOverviewItem>())
+            foreach (var game in games ?? Enumerable.Empty<GameSummaryItem>())
             {
                 var providerKey = StartPageWidgetProjection.NormalizeProviderKey(game?.ProviderKey);
                 counts[providerKey] = counts.TryGetValue(providerKey, out var current)
@@ -194,10 +194,10 @@ namespace PlayniteAchievements.ViewModels.StartPage
         }
 
         private static Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup(
-            IEnumerable<GameOverviewItem> games)
+            IEnumerable<GameSummaryItem> games)
         {
             var lookup = new Dictionary<string, (string iconKey, string colorHex)>(StringComparer.OrdinalIgnoreCase);
-            foreach (var game in games ?? Enumerable.Empty<GameOverviewItem>())
+            foreach (var game in games ?? Enumerable.Empty<GameSummaryItem>())
             {
                 var providerKey = StartPageWidgetProjection.NormalizeProviderKey(game?.ProviderKey);
                 if (!lookup.ContainsKey(providerKey))
@@ -209,10 +209,10 @@ namespace PlayniteAchievements.ViewModels.StartPage
             return lookup;
         }
 
-        private static Dictionary<string, string> BuildProviderDisplayNames(IEnumerable<GameOverviewItem> games)
+        private static Dictionary<string, string> BuildProviderDisplayNames(IEnumerable<GameSummaryItem> games)
         {
             var names = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var game in games ?? Enumerable.Empty<GameOverviewItem>())
+            foreach (var game in games ?? Enumerable.Empty<GameSummaryItem>())
             {
                 var providerKey = StartPageWidgetProjection.NormalizeProviderKey(game?.ProviderKey);
                 if (!names.ContainsKey(providerKey))
@@ -230,10 +230,10 @@ namespace PlayniteAchievements.ViewModels.StartPage
         {
             return widgetKind switch
             {
-                StartPageWidgetKind.CompletedGamesPie => L("LOCPlayAch_Sidebar_GamesPieChart", "Completed Games"),
-                StartPageWidgetKind.ProviderPie => L("LOCPlayAch_Sidebar_ProviderDistribution", "Achievements by Platform"),
-                StartPageWidgetKind.RarityPie => L("LOCPlayAch_Sidebar_RarityPieChart", "Achievements by Rarity"),
-                StartPageWidgetKind.TrophyPie => L("LOCPlayAch_Sidebar_TrophyPieChart", "Achievements by Trophy"),
+                StartPageWidgetKind.CompletedGamesPie => L("LOCPlayAch_Overview_GamesPieChart", "Completed Games"),
+                StartPageWidgetKind.ProviderPie => L("LOCPlayAch_Overview_ProviderDistribution", "Achievements by Platform"),
+                StartPageWidgetKind.RarityPie => L("LOCPlayAch_Overview_RarityPieChart", "Achievements by Rarity"),
+                StartPageWidgetKind.TrophyPie => L("LOCPlayAch_Overview_TrophyPieChart", "Achievements by Trophy"),
                 _ => string.Empty
             };
         }

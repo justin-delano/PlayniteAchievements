@@ -2,7 +2,7 @@ using PlayniteAchievements.Common;
 
 namespace PlayniteAchievements.Models.Settings
 {
-    public sealed class StartPageGamesOverviewGridSettings : ObservableObject
+    public sealed class StartPageGameSummariesGridSettings : ObservableObject
     {
         private bool _showGameMetadata = true;
         private bool _useCoverImages = true;
@@ -10,7 +10,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showColumnHeaders = true;
         private double? _rowHeight;
         private int? _maxRows = PersistedSettings.DefaultStartPageGridMaxRows;
-        private GamesOverviewSortMode _sortMode = GamesOverviewSortMode.RecentUnlock;
+        private GameSummariesSortMode _sortMode = GameSummariesSortMode.RecentUnlock;
         private bool _sortDescending = true;
 
         public bool ShowGameMetadata
@@ -49,7 +49,7 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _maxRows, PersistedSettings.NormalizeGridMaxRows(value));
         }
 
-        public GamesOverviewSortMode SortMode
+        public GameSummariesSortMode SortMode
         {
             get => _sortMode;
             set => SetValue(ref _sortMode, value);
@@ -61,9 +61,9 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _sortDescending, value);
         }
 
-        public StartPageGamesOverviewGridSettings Clone()
+        public StartPageGameSummariesGridSettings Clone()
         {
-            return new StartPageGamesOverviewGridSettings
+            return new StartPageGameSummariesGridSettings
             {
                 ShowGameMetadata = ShowGameMetadata,
                 UseCoverImages = UseCoverImages,
@@ -139,7 +139,7 @@ namespace PlayniteAchievements.Models.Settings
     public sealed class StartPagePieWidgetSettings : ObservableObject
     {
         private bool _showCenterPercentage = true;
-        private SidebarPieSmallSliceMode _smallSliceMode = SidebarPieSmallSliceMode.Round;
+        private OverviewPieSmallSliceMode _smallSliceMode = OverviewPieSmallSliceMode.Round;
 
         public bool ShowCenterPercentage
         {
@@ -147,7 +147,7 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _showCenterPercentage, value);
         }
 
-        public SidebarPieSmallSliceMode SmallSliceMode
+        public OverviewPieSmallSliceMode SmallSliceMode
         {
             get => _smallSliceMode;
             set => SetValue(ref _smallSliceMode, value);

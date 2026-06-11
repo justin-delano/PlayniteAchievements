@@ -17,7 +17,7 @@ namespace PlayniteAchievements.Tests.StartPage
             CollectionAssert.AreEquivalent(
                 new[]
                 {
-                    StartPageWidgetKind.GamesOverviewGrid,
+                    StartPageWidgetKind.GameSummariesGrid,
                     StartPageWidgetKind.RecentUnlocksGrid,
                     StartPageWidgetKind.CompletedGamesPie,
                     StartPageWidgetKind.ProviderPie,
@@ -40,6 +40,20 @@ namespace PlayniteAchievements.Tests.StartPage
 
             Assert.IsFalse(found);
             Assert.IsNull(definition);
+        }
+
+        [TestMethod]
+        public void TryGetDefinition_AcceptsLegacyGamesOverviewViewId()
+        {
+            var found = StartPageViewCatalog.TryGetDefinition(
+                StartPageViewCatalog.LegacyGamesOverviewGridViewId,
+                out var definition);
+
+            Assert.IsTrue(found);
+            Assert.AreEqual(StartPageViewCatalog.GameSummariesGridViewId, definition.ViewId);
+            Assert.AreEqual(StartPageWidgetKind.GameSummariesGrid, definition.WidgetKind);
+            Assert.IsFalse(StartPageViewCatalog.Views.Any(view =>
+                view.ViewId == StartPageViewCatalog.LegacyGamesOverviewGridViewId));
         }
     }
 }

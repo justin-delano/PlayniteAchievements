@@ -1,4 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.SidebarHostControl"
+<UserControl x:Class="PlayniteAchievements.Views.OverviewHostControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,7 +9,7 @@
     <Grid>
         <ContentPresenter x:Name="PART_Content" />
 
-        <!-- Lightweight placeholder shown until the real sidebar is created -->
+        <!-- Lightweight placeholder shown until the real overview is created -->
         <Border x:Name="PART_Loading"
                 Background="Transparent"
                 Padding="12">

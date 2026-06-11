@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using PlayniteAchievements.ViewModels;
 
-namespace PlayniteAchievements.Services.Sidebar
+namespace PlayniteAchievements.Services.Overview
 {
-    public sealed class SidebarDataSnapshot
+    public sealed class OverviewDataSnapshot
     {
         public List<AchievementDisplayItem> Achievements { get; set; } = new List<AchievementDisplayItem>();
-        public List<GameOverviewItem> GamesOverview { get; set; } = new List<GameOverviewItem>();
+        public List<GameSummaryItem> GameSummaries { get; set; } = new List<GameSummaryItem>();
         public List<AchievementDisplayItem> RecentAchievements { get; set; } = new List<AchievementDisplayItem>();
         public Dictionary<DateTime, int> GlobalUnlockCountsByDate { get; set; } =
             new Dictionary<DateTime, int>();

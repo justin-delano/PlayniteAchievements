@@ -655,8 +655,10 @@ namespace PlayniteAchievements.Views.Controls
             {
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnWidths,
                 "SingleGame" => settings.Persisted.SingleGameColumnWidths,
-                "Sidebar" => settings.Persisted.SidebarAchievementColumnWidths,
-                "SidebarGame" => settings.Persisted.SidebarGameColumnWidths,
+                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnWidths,
+                "Overview" => settings.Persisted.OverviewRecentAchievementColumnWidths,
+                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnWidths,
+                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnWidths,
                 "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnWidths,
                 _ => settings.Persisted.SingleGameColumnWidths
             };
@@ -673,8 +675,10 @@ namespace PlayniteAchievements.Views.Controls
             {
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnOrder,
                 "SingleGame" => settings.Persisted.SingleGameColumnOrder,
-                "Sidebar" => settings.Persisted.SidebarAchievementColumnOrder,
-                "SidebarGame" => settings.Persisted.SidebarGameColumnOrder,
+                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnOrder,
+                "Overview" => settings.Persisted.OverviewRecentAchievementColumnOrder,
+                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnOrder,
+                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnOrder,
                 "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnOrder,
                 _ => settings.Persisted.SingleGameColumnOrder
             };
@@ -691,8 +695,10 @@ namespace PlayniteAchievements.Views.Controls
             {
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnAlignments,
                 "SingleGame" => settings.Persisted.SingleGameColumnAlignments,
-                "Sidebar" => settings.Persisted.SidebarAchievementColumnAlignments,
-                "SidebarGame" => settings.Persisted.SidebarGameColumnAlignments,
+                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnAlignments,
+                "Overview" => settings.Persisted.OverviewRecentAchievementColumnAlignments,
+                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnAlignments,
+                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnAlignments,
                 "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnAlignments,
                 _ => settings.Persisted.SingleGameColumnAlignments
             };
@@ -713,11 +719,13 @@ namespace PlayniteAchievements.Views.Controls
                 case "SingleGame":
                     settings.Persisted.SingleGameColumnOrder = map;
                     break;
-                case "Sidebar":
-                    settings.Persisted.SidebarAchievementColumnOrder = map;
+                case "OverviewRecentAchievements":
+                case "Overview":
+                    settings.Persisted.OverviewRecentAchievementColumnOrder = map;
                     break;
-                case "SidebarGame":
-                    settings.Persisted.SidebarGameColumnOrder = map;
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                    settings.Persisted.OverviewSelectedGameAchievementColumnOrder = map;
                     break;
                 case "StartPageAchievements":
                     settings.Persisted.StartPageAchievementColumnOrder = map;
@@ -743,11 +751,13 @@ namespace PlayniteAchievements.Views.Controls
                 case "SingleGame":
                     settings.Persisted.SingleGameColumnAlignments = map;
                     break;
-                case "Sidebar":
-                    settings.Persisted.SidebarAchievementColumnAlignments = map;
+                case "OverviewRecentAchievements":
+                case "Overview":
+                    settings.Persisted.OverviewRecentAchievementColumnAlignments = map;
                     break;
-                case "SidebarGame":
-                    settings.Persisted.SidebarGameColumnAlignments = map;
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                    settings.Persisted.OverviewSelectedGameAchievementColumnAlignments = map;
                     break;
                 case "StartPageAchievements":
                     settings.Persisted.StartPageAchievementColumnAlignments = map;
@@ -773,11 +783,13 @@ namespace PlayniteAchievements.Views.Controls
                 case "SingleGame":
                     settings.Persisted.SingleGameColumnWidths = map;
                     break;
-                case "Sidebar":
-                    settings.Persisted.SidebarAchievementColumnWidths = map;
+                case "OverviewRecentAchievements":
+                case "Overview":
+                    settings.Persisted.OverviewRecentAchievementColumnWidths = map;
                     break;
-                case "SidebarGame":
-                    settings.Persisted.SidebarGameColumnWidths = map;
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                    settings.Persisted.OverviewSelectedGameAchievementColumnWidths = map;
                     break;
                 case "StartPageAchievements":
                     settings.Persisted.StartPageAchievementColumnWidths = map;

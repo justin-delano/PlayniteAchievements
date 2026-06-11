@@ -17,7 +17,7 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Controls
 {
-    public partial class GamesOverviewDataGridControl : UserControl, IDisposable
+    public partial class GameSummariesGridControl : UserControl, IDisposable
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
         private ColumnWidthPersistenceService _columnPersistence;
@@ -27,39 +27,39 @@ namespace PlayniteAchievements.Views.Controls
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Cover"] = 92,
-                ["OverviewGameName"] = 500,
-                ["OverviewPlatform"] = 40,
-                ["OverviewLastPlayed"] = 240,
-                ["OverviewPlaytime"] = 170,
-                ["OverviewProgression"] = 360,
+                ["GameSummaryName"] = 500,
+                ["GameSummaryPlatform"] = 40,
+                ["GameSummaryLastPlayed"] = 240,
+                ["GameSummaryPlaytime"] = 170,
+                ["GameSummaryProgression"] = 360,
                 ["TotalAchievements"] = 180,
-                ["OverviewCollectionScore"] = 180,
-                ["OverviewPrestigeScore"] = 180
+                ["GameSummaryCollectionScore"] = 180,
+                ["GameSummaryPrestigeScore"] = 180
             };
 
         public static readonly DependencyProperty ItemsSourceProperty =
             DependencyProperty.Register(
                 nameof(ItemsSource),
-                typeof(IEnumerable<GameOverviewItem>),
-                typeof(GamesOverviewDataGridControl),
+                typeof(IEnumerable<GameSummaryItem>),
+                typeof(GameSummariesGridControl),
                 new PropertyMetadata(null));
 
-        public IEnumerable<GameOverviewItem> ItemsSource
+        public IEnumerable<GameSummaryItem> ItemsSource
         {
-            get => (IEnumerable<GameOverviewItem>)GetValue(ItemsSourceProperty);
+            get => (IEnumerable<GameSummaryItem>)GetValue(ItemsSourceProperty);
             set => SetValue(ItemsSourceProperty, value);
         }
 
         public static readonly DependencyProperty SelectedItemProperty =
             DependencyProperty.Register(
                 nameof(SelectedItem),
-                typeof(GameOverviewItem),
-                typeof(GamesOverviewDataGridControl),
+                typeof(GameSummaryItem),
+                typeof(GameSummariesGridControl),
                 new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
-        public GameOverviewItem SelectedItem
+        public GameSummaryItem SelectedItem
         {
-            get => (GameOverviewItem)GetValue(SelectedItemProperty);
+            get => (GameSummaryItem)GetValue(SelectedItemProperty);
             set => SetValue(SelectedItemProperty, value);
         }
 
@@ -67,7 +67,7 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(
                 nameof(UseCoverImages),
                 typeof(bool),
-                typeof(GamesOverviewDataGridControl),
+                typeof(GameSummariesGridControl),
                 new PropertyMetadata(false));
 
         public bool UseCoverImages
@@ -80,7 +80,7 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(
                 nameof(FixedRowHeight),
                 typeof(double?),
-                typeof(GamesOverviewDataGridControl),
+                typeof(GameSummariesGridControl),
                 new PropertyMetadata(null, OnRowSizingChanged));
 
         public double? FixedRowHeight
@@ -93,7 +93,7 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(
                 nameof(ShowGameMetadata),
                 typeof(bool),
-                typeof(GamesOverviewDataGridControl),
+                typeof(GameSummariesGridControl),
                 new PropertyMetadata(true));
 
         public bool ShowGameMetadata
@@ -106,7 +106,7 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(
                 nameof(ShowCompletionBorder),
                 typeof(bool),
-                typeof(GamesOverviewDataGridControl),
+                typeof(GameSummariesGridControl),
                 new PropertyMetadata(true));
 
         public bool ShowCompletionBorder
@@ -119,8 +119,8 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(
                 nameof(ColumnSettingsKey),
                 typeof(string),
-                typeof(GamesOverviewDataGridControl),
-                new PropertyMetadata("SidebarOverview"));
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata("OverviewGameSummaries"));
 
         public string ColumnSettingsKey
         {
@@ -132,7 +132,7 @@ namespace PlayniteAchievements.Views.Controls
             DependencyProperty.Register(
                 nameof(ShowColumnHeaders),
                 typeof(bool),
-                typeof(GamesOverviewDataGridControl),
+                typeof(GameSummariesGridControl),
                 new PropertyMetadata(true, OnShowColumnHeadersChanged));
 
         public bool ShowColumnHeaders
@@ -150,7 +150,7 @@ namespace PlayniteAchievements.Views.Controls
                 nameof(RowPreviewMouseLeftButtonDown),
                 RoutingStrategy.Bubble,
                 typeof(MouseButtonEventHandler),
-                typeof(GamesOverviewDataGridControl));
+                typeof(GameSummariesGridControl));
 
         public event MouseButtonEventHandler RowPreviewMouseLeftButtonDown
         {
@@ -163,7 +163,7 @@ namespace PlayniteAchievements.Views.Controls
                 nameof(RowPreviewMouseRightButtonDown),
                 RoutingStrategy.Bubble,
                 typeof(MouseButtonEventHandler),
-                typeof(GamesOverviewDataGridControl));
+                typeof(GameSummariesGridControl));
 
         public event MouseButtonEventHandler RowPreviewMouseRightButtonDown
         {
@@ -176,7 +176,7 @@ namespace PlayniteAchievements.Views.Controls
                 nameof(RowPreviewMouseRightButtonUp),
                 RoutingStrategy.Bubble,
                 typeof(MouseButtonEventHandler),
-                typeof(GamesOverviewDataGridControl));
+                typeof(GameSummariesGridControl));
 
         public event MouseButtonEventHandler RowPreviewMouseRightButtonUp
         {
@@ -184,13 +184,13 @@ namespace PlayniteAchievements.Views.Controls
             remove => RemoveHandler(RowPreviewMouseRightButtonUpEvent, value);
         }
 
-        public GamesOverviewDataGridControl()
+        public GameSummariesGridControl()
         {
             InitializeComponent();
             UpdateColumnHeadersVisibility();
         }
 
-        public DataGrid InternalDataGrid => GamesOverviewDataGrid;
+        public DataGrid InternalDataGrid => GameSummariesGrid;
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
@@ -200,7 +200,7 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             var settings = PlayniteAchievementsPlugin.Instance?.Settings;
-            if (settings?.Persisted == null || GamesOverviewDataGrid == null)
+            if (settings?.Persisted == null || GameSummariesGrid == null)
             {
                 return;
             }
@@ -209,11 +209,11 @@ namespace PlayniteAchievements.Views.Controls
             UpdateRealizedRowHeights();
 
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(
-                GamesOverviewDataGrid,
+                GameSummariesGrid,
                 () => GetAlignmentsByKey(settings));
 
             _columnPersistence = new ColumnWidthPersistenceService(
-                GamesOverviewDataGrid,
+                GameSummariesGrid,
                 Logger,
                 () => GetWidthsByKey(settings),
                 map => SetWidthsByKey(settings, map),
@@ -226,14 +226,14 @@ namespace PlayniteAchievements.Views.Controls
                 getCellAlignments: () => GetAlignmentsByKey(settings),
                 setCellAlignments: map => SetAlignmentsByKey(settings, map),
                 getDefaultCellAlignment: () => settings.Persisted?.GridCellAlignment ?? GridAlignment.Left,
-                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GamesOverviewDataGrid));
+                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GameSummariesGrid));
             _columnPersistence.Attach();
             _isAttached = true;
         }
 
         private static void OnShowColumnHeadersChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is GamesOverviewDataGridControl control)
+            if (d is GameSummariesGridControl control)
             {
                 control.UpdateColumnHeadersVisibility();
             }
@@ -241,9 +241,9 @@ namespace PlayniteAchievements.Views.Controls
 
         private void UpdateColumnHeadersVisibility()
         {
-            if (GamesOverviewDataGrid != null)
+            if (GameSummariesGrid != null)
             {
-                GamesOverviewDataGrid.HeadersVisibility = ShowColumnHeaders
+                GameSummariesGrid.HeadersVisibility = ShowColumnHeaders
                     ? DataGridHeadersVisibility.Column
                     : DataGridHeadersVisibility.None;
             }
@@ -256,27 +256,27 @@ namespace PlayniteAchievements.Views.Controls
 
         private static void OnRowSizingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is GamesOverviewDataGridControl control)
+            if (d is GameSummariesGridControl control)
             {
                 control.UpdateRealizedRowHeights();
             }
         }
 
-        private void GamesOverviewDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
+        private void GameSummariesGrid_LoadingRow(object sender, DataGridRowEventArgs e)
         {
             ApplyFixedRowHeight(e.Row);
         }
 
         private void UpdateRealizedRowHeights()
         {
-            if (GamesOverviewDataGrid == null)
+            if (GameSummariesGrid == null)
             {
                 return;
             }
 
-            foreach (var item in GamesOverviewDataGrid.Items)
+            foreach (var item in GameSummariesGrid.Items)
             {
-                if (GamesOverviewDataGrid.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
+                if (GameSummariesGrid.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
                 {
                     ApplyFixedRowHeight(row);
                 }
@@ -324,8 +324,8 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return IsStartPageScope()
-                ? settings.Persisted.StartPageGamesOverviewColumnWidths
-                : settings.Persisted.GamesOverviewColumnWidths;
+                ? settings.Persisted.StartPageGameSummariesColumnWidths
+                : settings.Persisted.GameSummariesColumnWidths;
         }
 
         private void SetWidthsByKey(PlayniteAchievementsSettings settings, Dictionary<string, double> map)
@@ -337,11 +337,11 @@ namespace PlayniteAchievements.Views.Controls
 
             if (IsStartPageScope())
             {
-                settings.Persisted.StartPageGamesOverviewColumnWidths = map;
+                settings.Persisted.StartPageGameSummariesColumnWidths = map;
             }
             else
             {
-                settings.Persisted.GamesOverviewColumnWidths = map;
+                settings.Persisted.GameSummariesColumnWidths = map;
             }
         }
 
@@ -353,8 +353,8 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return IsStartPageScope()
-                ? settings.Persisted.StartPageGamesOverviewColumnOrder
-                : settings.Persisted.GamesOverviewColumnOrder;
+                ? settings.Persisted.StartPageGameSummariesColumnOrder
+                : settings.Persisted.GameSummariesColumnOrder;
         }
 
         private void SetOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
@@ -366,11 +366,11 @@ namespace PlayniteAchievements.Views.Controls
 
             if (IsStartPageScope())
             {
-                settings.Persisted.StartPageGamesOverviewColumnOrder = map;
+                settings.Persisted.StartPageGameSummariesColumnOrder = map;
             }
             else
             {
-                settings.Persisted.GamesOverviewColumnOrder = map;
+                settings.Persisted.GameSummariesColumnOrder = map;
             }
         }
 
@@ -382,8 +382,8 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return IsStartPageScope()
-                ? settings.Persisted.StartPageGamesOverviewColumnVisibility
-                : settings.Persisted.GamesOverviewColumnVisibility;
+                ? settings.Persisted.StartPageGameSummariesColumnVisibility
+                : settings.Persisted.GameSummariesColumnVisibility;
         }
 
         private void SetVisibilityByKey(PlayniteAchievementsSettings settings, Dictionary<string, bool> map)
@@ -395,11 +395,11 @@ namespace PlayniteAchievements.Views.Controls
 
             if (IsStartPageScope())
             {
-                settings.Persisted.StartPageGamesOverviewColumnVisibility = map;
+                settings.Persisted.StartPageGameSummariesColumnVisibility = map;
             }
             else
             {
-                settings.Persisted.GamesOverviewColumnVisibility = map;
+                settings.Persisted.GameSummariesColumnVisibility = map;
             }
         }
 
@@ -411,8 +411,8 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return IsStartPageScope()
-                ? settings.Persisted.StartPageGamesOverviewColumnAlignments
-                : settings.Persisted.GamesOverviewColumnAlignments;
+                ? settings.Persisted.StartPageGameSummariesColumnAlignments
+                : settings.Persisted.GameSummariesColumnAlignments;
         }
 
         private void SetAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
@@ -424,17 +424,18 @@ namespace PlayniteAchievements.Views.Controls
 
             if (IsStartPageScope())
             {
-                settings.Persisted.StartPageGamesOverviewColumnAlignments = map;
+                settings.Persisted.StartPageGameSummariesColumnAlignments = map;
             }
             else
             {
-                settings.Persisted.GamesOverviewColumnAlignments = map;
+                settings.Persisted.GameSummariesColumnAlignments = map;
             }
         }
 
         private bool IsStartPageScope()
         {
-            return string.Equals(ColumnSettingsKey, "StartPageOverview", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(ColumnSettingsKey, "StartPageGameSummaries", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(ColumnSettingsKey, "StartPageOverview", StringComparison.OrdinalIgnoreCase);
         }
 
         private static void SavePluginSettings(PlayniteAchievementsSettings settings)
@@ -451,7 +452,7 @@ namespace PlayniteAchievements.Views.Controls
             }
             catch (Exception ex)
             {
-                Logger.Warn(ex, "Failed to persist games overview column settings.");
+                Logger.Warn(ex, "Failed to persist game summaries column settings.");
             }
         }
 
@@ -527,26 +528,26 @@ namespace PlayniteAchievements.Views.Controls
 
         public bool OpenColumnVisibilityMenuForController()
         {
-            var header = FullscreenControllerNavigationService.GetFocusedDataGridColumnHeader(GamesOverviewDataGrid);
+            var header = FullscreenControllerNavigationService.GetFocusedDataGridColumnHeader(GameSummariesGrid);
             if (header == null)
             {
                 return false;
             }
 
             return OpenColumnVisibilityMenu(
-                GamesOverviewDataGrid,
+                GameSummariesGrid,
                 header,
                 useControllerPlacement: true);
         }
 
         public bool IsColumnHeaderFocusedForController()
         {
-            return FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(GamesOverviewDataGrid);
+            return FullscreenControllerNavigationService.IsFocusWithinDataGridColumnHeader(GameSummariesGrid);
         }
 
         public bool ActivateFocusedColumnHeaderForController()
         {
-            return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(GamesOverviewDataGrid);
+            return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(GameSummariesGrid);
         }
 
         private bool OpenColumnVisibilityMenu(DataGrid grid, FrameworkElement owner, bool useControllerPlacement)
@@ -577,12 +578,12 @@ namespace PlayniteAchievements.Views.Controls
 
         public void SetSortIndicator(string sortMemberPath, ListSortDirection? direction)
         {
-            if (GamesOverviewDataGrid?.Columns == null)
+            if (GameSummariesGrid?.Columns == null)
             {
                 return;
             }
 
-            foreach (var column in GamesOverviewDataGrid.Columns)
+            foreach (var column in GameSummariesGrid.Columns)
             {
                 column.SortDirection = null;
             }
@@ -592,7 +593,7 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            var targetColumn = GamesOverviewDataGrid.Columns
+            var targetColumn = GameSummariesGrid.Columns
                 .FirstOrDefault(column => string.Equals(column?.SortMemberPath, sortMemberPath, StringComparison.Ordinal));
             if (targetColumn != null)
             {
@@ -614,7 +615,7 @@ namespace PlayniteAchievements.Views.Controls
 
             _columnPersistence?.Dispose();
             _columnPersistence = null;
-            DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(GamesOverviewDataGrid, null);
+            DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(GameSummariesGrid, null);
             _isAttached = false;
         }
     }

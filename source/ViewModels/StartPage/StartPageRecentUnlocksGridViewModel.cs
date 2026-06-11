@@ -2,7 +2,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Services.Sidebar;
+using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.StartPage;
 
 namespace PlayniteAchievements.ViewModels.StartPage
@@ -29,7 +29,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public double? RowHeight => WidgetSettings.RowHeight;
 
-        protected override void ApplySnapshot(SidebarDataSnapshot snapshot)
+        protected override void ApplySnapshot(OverviewDataSnapshot snapshot)
         {
             Items.ReplaceAll(StartPageWidgetProjection.ProjectRecentUnlocks(
                 snapshot?.RecentAchievements,

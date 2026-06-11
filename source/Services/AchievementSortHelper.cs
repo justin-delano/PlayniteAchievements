@@ -20,8 +20,8 @@ namespace PlayniteAchievements.Services
         CompactList,
         CompactUnlockedList,
         CompactLockedList,
-        SidebarSelectedGame,
-        SidebarRecentAchievements,
+        OverviewSelectedGame,
+        OverviewRecentAchievements,
         SingleGame,
         AchievementDataGrid
     }
@@ -113,8 +113,8 @@ namespace PlayniteAchievements.Services
             {
                 return surface switch
                 {
-                    AchievementSortSurface.SidebarSelectedGame => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
-                    AchievementSortSurface.SidebarRecentAchievements => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
+                    AchievementSortSurface.OverviewSelectedGame => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
+                    AchievementSortSurface.OverviewRecentAchievements => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
                     AchievementSortSurface.SingleGame => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
                     AchievementSortSurface.AchievementDataGrid => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
                     _ => new AchievementSortSpec(CompactListSortMode.None, ListSortDirection.Ascending)
@@ -132,10 +132,10 @@ namespace PlayniteAchievements.Services
                 AchievementSortSurface.CompactLockedList => new AchievementSortSpec(
                     settings.CompactLockedListSortMode,
                     settings.CompactLockedListSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
-                AchievementSortSurface.SidebarSelectedGame => new AchievementSortSpec(
-                    settings.SidebarSelectedGameGridSortMode,
-                    settings.SidebarSelectedGameGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
-                AchievementSortSurface.SidebarRecentAchievements => new AchievementSortSpec(
+                AchievementSortSurface.OverviewSelectedGame => new AchievementSortSpec(
+                    settings.OverviewSelectedGameGridSortMode,
+                    settings.OverviewSelectedGameGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
+                AchievementSortSurface.OverviewRecentAchievements => new AchievementSortSpec(
                     CompactListSortMode.UnlockTime,
                     ListSortDirection.Descending),
                 AchievementSortSurface.SingleGame => new AchievementSortSpec(
@@ -370,10 +370,10 @@ namespace PlayniteAchievements.Services
                 AchievementSortSurface.CompactLockedList =>
                     propertyName == nameof(PersistedSettings.CompactLockedListSortMode) ||
                     propertyName == nameof(PersistedSettings.CompactLockedListSortDescending),
-                AchievementSortSurface.SidebarSelectedGame =>
-                    propertyName == nameof(PersistedSettings.SidebarSelectedGameGridSortMode) ||
-                    propertyName == nameof(PersistedSettings.SidebarSelectedGameGridSortDescending),
-                AchievementSortSurface.SidebarRecentAchievements => false,
+                AchievementSortSurface.OverviewSelectedGame =>
+                    propertyName == nameof(PersistedSettings.OverviewSelectedGameGridSortMode) ||
+                    propertyName == nameof(PersistedSettings.OverviewSelectedGameGridSortDescending),
+                AchievementSortSurface.OverviewRecentAchievements => false,
                 AchievementSortSurface.SingleGame =>
                     propertyName == nameof(PersistedSettings.SingleGameGridSortMode) ||
                     propertyName == nameof(PersistedSettings.SingleGameGridSortDescending),

@@ -1,9 +1,9 @@
 namespace PlayniteAchievements.Models.Settings
 {
     /// <summary>
-    /// Controls how sidebar pie charts handle slices smaller than five percent.
+    /// Controls how overview pie charts handle slices smaller than five percent.
     /// </summary>
-    public enum SidebarPieSmallSliceMode
+    public enum OverviewPieSmallSliceMode
     {
         Round = 0,
         Exact = 1,

@@ -266,21 +266,21 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void ResolveGridSortAction_SidebarRecentDefaultOnSameColumn_CyclesAscendingThenReset()
+        public void ResolveGridSortAction_OverviewRecentDefaultOnSameColumn_CyclesAscendingThenReset()
         {
             var first = AchievementSortHelper.ResolveGridSortAction(
                 "UnlockTime",
                 currentSortPath: null,
                 currentSortDirection: null,
                 settings: new PersistedSettings(),
-                AchievementSortSurface.SidebarRecentAchievements,
+                AchievementSortSurface.OverviewRecentAchievements,
                 visibleSortDirection: ListSortDirection.Descending);
             var second = AchievementSortHelper.ResolveGridSortAction(
                 "UnlockTime",
                 first.SortMemberPath,
                 first.Direction,
                 settings: new PersistedSettings(),
-                AchievementSortSurface.SidebarRecentAchievements,
+                AchievementSortSurface.OverviewRecentAchievements,
                 visibleSortDirection: first.Direction);
 
             Assert.AreEqual(AchievementGridSortActionKind.ApplySort, first.Kind);
@@ -369,10 +369,10 @@ namespace PlayniteAchievements.Services.Tests
                 items,
                 new PersistedSettings
                 {
-                    SidebarSelectedGameGridSortMode = CompactListSortMode.None,
-                    SidebarSelectedGameGridSortDescending = false
+                    OverviewSelectedGameGridSortMode = CompactListSortMode.None,
+                    OverviewSelectedGameGridSortDescending = false
                 },
-                AchievementSortSurface.SidebarSelectedGame,
+                AchievementSortSurface.OverviewSelectedGame,
                 AchievementSortScope.GameAchievements);
 
             CollectionAssert.AreEqual(

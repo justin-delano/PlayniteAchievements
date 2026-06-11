@@ -19,7 +19,7 @@ Achievement tracking for Playnite across Steam, RetroAchievements, GOG, Epic, PS
 </p>
 
 <p align="center">
-  <img src="Images/sidebar-view1.png" alt="Sidebar overview" width="900">
+  <img src="Images/overview-view1.png" alt="Overview overview" width="900">
 </p>
 
 ## Why Switch From Legacy
@@ -27,7 +27,7 @@ Achievement tracking for Playnite across Steam, RetroAchievements, GOG, Epic, PS
 | Area | Legacy | PlayniteAchievements |
 | --- | --- | --- |
 | Theme integration | Legacy bindings | Legacy + modern bindings, Theme Migration, backup, revert |
-| Views | Plugin window, one-game view | Sidebar, selected-game drilldown, top-panel popout |
+| Views | Plugin window, one-game view | Overview, selected-game drilldown, top-panel popout |
 | Charts and layout | Main plugin charts | Contextual pie charts, timeline, trophy charts, resizable/hideable grid columns |
 | Refresh | Recent / installed / full style passes | Background refresh, single-game refresh, Custom Refresh, presets, include/exclude targeting |
 | Per-game control | Separate fixes | One Game Options window: manual tracking, capstones, categories, order, exclusions, RA / Exophase overrides |
@@ -51,7 +51,7 @@ Docs: [Provider setup in the wiki](https://github.com/justin-delano/PlayniteAchi
 
 | Area | What you can do |
 | --- | --- |
-| Sidebar | Drill into one game, filter by provider/completion/category/type, and use contextual pie charts plus timeline data |
+| Overview | Drill into one game, filter by provider/completion/category/type, and use contextual pie charts plus timeline data |
 | Refresh | Run quick refreshes or save a Custom Refresh preset with exact providers and game scope |
 | Game Options | Fix one game's provider, add manual tracking, set capstones, categories, order, and exclusions |
 | Library | Sync Playnite tags, set completion status, open a top-panel popout, clear cache, export CSV, and open logs |
@@ -60,13 +60,13 @@ Docs: [Settings and library tools](https://github.com/justin-delano/PlayniteAchi
 
 ## Views, Filters, and Refresh Workflows
 
-- Sidebar filters by provider, completion state, game type, and category
+- Overview filters by provider, completion state, game type, and category
 - Pie charts change with the selected game where that context makes sense
 - Refresh modes include recent, installed, favorites, full, single-game, and background updates
 - Custom Refresh adds platform pickers, scope rules, include/exclude lists, overrides, and saved presets
-- The top menu button can open the sidebar popout window
+- The top menu button can open the overview popout window
 
-<img src="Images/sidebar-view2.png" alt="Sidebar single-game view" width="900">
+<img src="Images/overview-view2.png" alt="Overview single-game view" width="900">
 
 > Screenshot placeholder: [custom-refresh-dialog]
 
@@ -116,7 +116,7 @@ Docs: [Theme migration in the wiki](https://github.com/justin-delano/PlayniteAch
 2. Install it from Playnite's addon browser or drag the file into Playnite.
 3. Open `Settings -> Extensions -> Playnite Achievements`.
 4. Enable the providers you want and finish their setup.
-5. Open the sidebar or top panel entry and run your first refresh.
+5. Open the overview or top panel entry and run your first refresh.
 
 If you are importing manual links from a legacy setup, do that first from the Manual tab. If you are moving a theme over, open Theme Migration before you start editing files by hand.
 

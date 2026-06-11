@@ -11,17 +11,17 @@ namespace PlayniteAchievements.Services.StartPage
     {
         public const int DefaultGridRowLimit = 25;
 
-        public static List<GameOverviewItem> ProjectGamesOverview(
-            IEnumerable<GameOverviewItem> items,
+        public static List<GameSummaryItem> ProjectGameSummaries(
+            IEnumerable<GameSummaryItem> items,
             PersistedSettings settings,
             int? rowLimit = null)
         {
-            var widgetSettings = settings?.StartPageGamesOverviewGrid ?? new StartPageGamesOverviewGridSettings();
-            var list = (items ?? Enumerable.Empty<GameOverviewItem>())
+            var widgetSettings = settings?.StartPageGameSummariesGrid ?? new StartPageGameSummariesGridSettings();
+            var list = (items ?? Enumerable.Empty<GameSummaryItem>())
                 .Where(item => item != null)
                 .ToList();
 
-            GamesOverviewSortHelper.Sort(
+            GameSummariesSortHelper.Sort(
                 list,
                 widgetSettings.SortMode,
                 widgetSettings.SortDescending

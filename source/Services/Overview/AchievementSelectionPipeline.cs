@@ -6,7 +6,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 
-namespace PlayniteAchievements.Services.Sidebar
+namespace PlayniteAchievements.Services.Overview
 {
     internal sealed class AchievementSelectionPipeline
     {

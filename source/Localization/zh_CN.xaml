@@ -150,7 +150,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">包含在刷新中并刷新已选游戏</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">在库中打开游戏</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">成就概览</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_OpenGameInSidebar">在侧边栏中打开游戏</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">Open Game in Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">请输入有效的正整数游戏 ID。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">请输入有效的 8 位十六进制 Xenia TitleID。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">请输入有效的 ShadPS4 匹配 ID，例如 CUSA00432 或 NPWR12345_00。</sys:String>
@@ -238,7 +238,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ShadPS4Header">ShadPS4 匹配 ID 覆盖</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ShadPS4Hint">输入 PS4 Title ID（如 CUSA00432）或奖杯 ID（如 NPWR12345_00）以覆盖此游戏的自动匹配。这将强制该游戏由 ShadPS4 管理。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader">摘要排除</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">从侧边栏和所有游戏摘要数据中排除此游戏。</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">当前压轴: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">选择一个成就作为此游戏的“压轴”。解锁压轴成就后，游戏将被标记为已完成。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Capstone">当前压轴</sys:String>
@@ -334,7 +334,7 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseParallelOverride">覆盖并行平台执行</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseRecentLimit">覆盖“最近”限制</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonOpenGame">打开游戏</sys:String>
-    <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">您仍可以在侧边栏查看进度。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">You can still check progress in the overview.</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Custom">自定义刷新</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">刷新收藏</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Full">全量刷新</sys:String>
@@ -389,16 +389,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">紧凑未解锁列表</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">紧凑已解锁列表</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements 设置</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">侧边栏</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSection">Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSubtitle">Shared display defaults and achievement visibility</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSubtitle">Sidebar layout, charts, and grids</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSubtitle">Overview layout, charts, and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySubtitle">Single-game window and theme controls</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSubtitle">StartPage widgets and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarLayout">Sidebar Layout</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarCharts">Sidebar Charts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Overview Layout</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Overview Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">Desktop Theme Integration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">启用存档扫描 (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">启用光盘哈希 (针对基于光盘的主机)</sys:String>
@@ -485,13 +485,13 @@
     <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Bottom">Bottom</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarRecentAchievementsGrid">Sidebar Recent Achievements Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Overview Recent Achievements Grid</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">保留原始分辨率的成就图标</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">以原始分辨率保存缓存图标，而不是使用优化的 128px 缓存模式。这将占用更多磁盘空间。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">进度条</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GamesOverviewGridSort">侧边栏游戏概览网格</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">侧边栏已选游戏网格</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameSummariesGridSort">Overview Game Summaries Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Overview Selected Game Grid</sys:String>
 
     <!-- Provider: Shared -->
     <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">{0} 认证</sys:String>
@@ -564,7 +564,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Description">仅刷新您最近运行的且有成就的游戏。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">要刷新的最近游戏数量</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">移除所有标签</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">在下次打开侧边栏时再次显示首次设置引导页面。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next overview open.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">重置引导页面</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">揭开隐藏描述</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">揭开隐藏图标</sys:String>
@@ -579,29 +579,29 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">显示完成边框</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">显示 (隐藏成就) 后缀</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">在已解锁图标上显示稀有度发光效果</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">显示侧边栏条形图</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Show Overview Bar Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">显示游戏平台/运行时间/区域</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Show Collection Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Show Prestige Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarGamesPieChart">显示已完成游戏饼图</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">显示饼图百分比</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">显示平台饼图</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarRarityPieChart">显示稀有度饼图</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarTrophyPieChart">显示奖杯饼图</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Show Completed Games Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPiePercentages">Show Pie Percentages</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewProviderPieChart">Show Platform Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewRarityPieChart">Show Rarity Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewTrophyPieChart">Show Trophy Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">显示顶部菜单栏按钮</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGridColumnHeaders">Show Overview Grid Column Headers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Game Summaries Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Desktop Theme Achievement Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">单款游戏视图网格</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">查看成就窗口</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode">小切片处理</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact">精确</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact_Description">显示精确的切片大小。为了减少重叠，占比低于 5% 的切片将隐藏径向图标。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Hide_Description">从侧边栏饼图中隐藏占比低于 5% 的切片。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Note">中心百分比始终使用精确计数，因此当切片被隐藏或舍入时，可能与可见饼图有所不同。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round">舍入</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round_Description">将占比低于 5% 的切片向上舍入为 5%。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Small Slice Handling</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exact</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description">Shows exact slice sizes. Radial icons are hidden for slices under 5% to reduce overlaps.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description">Hides slices under 5% from the overview pie.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Note">The center percentage always uses exact counts, so it may differ from the visible pie when slices are hidden or rounded.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Round</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round_Description">Rounds slices under 5% up to 5%.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">统计</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">显示</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">根据成就状态自动为游戏添加标签。标签可用于过滤和组织您的库。</sys:String>
@@ -624,7 +624,7 @@
     <sys:String x:Key="LOCPlayAch_Auth_TemporaryFailure">认证检查失败。请重试。</sys:String>
 
     <!-- ================================================================= -->
-    <!-- 12 Sidebar and Filters -->
+    <!-- 12 Overview and Filters -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">搜索成就</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Complete">已完成</sys:String>
@@ -635,12 +635,12 @@
     <sys:String x:Key="LOCPlayAch_Filter_Played">已游玩</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_PlayStatusSelectorPlaceholder">游玩状态</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">未游玩</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_GamesOverview">游戏概览</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">已完成游戏</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_Incomplete">未完成</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">各平台成就分布</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">各稀有度成就分布</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_TrophyPieChart">各奖杯成就分布</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Game Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Completed Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Incomplete</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Achievements by Platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Achievements by Rarity</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Achievements by Trophy</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->

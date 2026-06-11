@@ -43,7 +43,7 @@ namespace PlayniteAchievements.Services
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
     }
 
-    internal sealed class ResolvedSidebarGameCustomData
+    internal sealed class ResolvedOverviewGameCustomData
     {
         public bool ExcludedFromSummaries { get; set; }
 
@@ -52,13 +52,13 @@ namespace PlayniteAchievements.Services
 
     internal static class GameCustomDataLookup
     {
-        public static ResolvedSidebarGameCustomData ResolveSidebarGameCustomData(
+        public static ResolvedOverviewGameCustomData ResolveOverviewGameCustomData(
             Guid gameId,
             PersistedSettings fallbackSettings = null,
             GameCustomDataStore store = null)
         {
             var resolved = ResolveGameCustomData(gameId, fallbackSettings, store);
-            return new ResolvedSidebarGameCustomData
+            return new ResolvedOverviewGameCustomData
             {
                 ExcludedFromSummaries = resolved.ExcludedFromSummaries,
                 UseSeparateLockedIcons = resolved.UseSeparateLockedIcons

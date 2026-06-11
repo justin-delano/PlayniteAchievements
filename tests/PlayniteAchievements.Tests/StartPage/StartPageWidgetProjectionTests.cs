@@ -11,10 +11,10 @@ namespace PlayniteAchievements.Tests.StartPage
     public class StartPageWidgetProjectionTests
     {
         [TestMethod]
-        public void ProjectGamesOverview_UsesStartPageSettingsSortAndDefaultLimit()
+        public void ProjectGameSummaries_UsesStartPageSettingsSortAndDefaultLimit()
         {
             var items = Enumerable.Range(0, 30)
-                .Select(index => new GameOverviewItem
+                .Select(index => new GameSummaryItem
                 {
                     GameName = $"Game {index:D2}",
                     SortingName = $"Game {index:D2}",
@@ -24,13 +24,13 @@ namespace PlayniteAchievements.Tests.StartPage
                 .ToList();
             var settings = new PersistedSettings
             {
-                GamesOverviewGridSortMode = GamesOverviewSortMode.Alphabetical,
-                GamesOverviewGridSortDescending = false
+                GameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
+                GameSummariesGridSortDescending = false
             };
-            settings.StartPageGamesOverviewGrid.SortMode = GamesOverviewSortMode.RecentUnlock;
-            settings.StartPageGamesOverviewGrid.SortDescending = true;
+            settings.StartPageGameSummariesGrid.SortMode = GameSummariesSortMode.RecentUnlock;
+            settings.StartPageGameSummariesGrid.SortDescending = true;
 
-            var result = StartPageWidgetProjection.ProjectGamesOverview(items, settings);
+            var result = StartPageWidgetProjection.ProjectGameSummaries(items, settings);
 
             Assert.AreEqual(StartPageWidgetProjection.DefaultGridRowLimit, result.Count);
             Assert.AreEqual("Game 29", result[0].GameName);
@@ -38,32 +38,32 @@ namespace PlayniteAchievements.Tests.StartPage
         }
 
         [TestMethod]
-        public void ProjectGamesOverview_UsesAlphabeticalSortFromStartPageSettings()
+        public void ProjectGameSummaries_UsesAlphabeticalSortFromStartPageSettings()
         {
             var items = new[]
             {
-                new GameOverviewItem { GameName = "Zed", SortingName = "Zed" },
-                new GameOverviewItem { GameName = "Alpha", SortingName = "Alpha" }
+                new GameSummaryItem { GameName = "Zed", SortingName = "Zed" },
+                new GameSummaryItem { GameName = "Alpha", SortingName = "Alpha" }
             };
             var settings = new PersistedSettings
             {
-                GamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock,
-                GamesOverviewGridSortDescending = true
+                GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                GameSummariesGridSortDescending = true
             };
-            settings.StartPageGamesOverviewGrid.SortMode = GamesOverviewSortMode.Alphabetical;
-            settings.StartPageGamesOverviewGrid.SortDescending = false;
+            settings.StartPageGameSummariesGrid.SortMode = GameSummariesSortMode.Alphabetical;
+            settings.StartPageGameSummariesGrid.SortDescending = false;
 
-            var result = StartPageWidgetProjection.ProjectGamesOverview(items, settings, rowLimit: 10);
+            var result = StartPageWidgetProjection.ProjectGameSummaries(items, settings, rowLimit: 10);
 
             Assert.AreEqual("Alpha", result[0].GameName);
             Assert.AreEqual("Zed", result[1].GameName);
         }
 
         [TestMethod]
-        public void ProjectGamesOverview_UsesExplicitSettingsLimit()
+        public void ProjectGameSummaries_UsesExplicitSettingsLimit()
         {
             var items = Enumerable.Range(0, 10)
-                .Select(index => new GameOverviewItem
+                .Select(index => new GameSummaryItem
                 {
                     GameName = $"Game {index:D2}",
                     SortingName = $"Game {index:D2}"
@@ -71,14 +71,14 @@ namespace PlayniteAchievements.Tests.StartPage
                 .ToList();
             var settings = new PersistedSettings
             {
-                GamesOverviewGridSortMode = GamesOverviewSortMode.Alphabetical,
-                GamesOverviewGridSortDescending = false
+                GameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
+                GameSummariesGridSortDescending = false
             };
-            settings.StartPageGamesOverviewGrid.MaxRows = 3;
-            settings.StartPageGamesOverviewGrid.SortMode = GamesOverviewSortMode.Alphabetical;
-            settings.StartPageGamesOverviewGrid.SortDescending = false;
+            settings.StartPageGameSummariesGrid.MaxRows = 3;
+            settings.StartPageGameSummariesGrid.SortMode = GameSummariesSortMode.Alphabetical;
+            settings.StartPageGameSummariesGrid.SortDescending = false;
 
-            var result = StartPageWidgetProjection.ProjectGamesOverview(items, settings);
+            var result = StartPageWidgetProjection.ProjectGameSummaries(items, settings);
 
             Assert.AreEqual(3, result.Count);
             Assert.AreEqual("Game 00", result[0].GameName);
@@ -86,10 +86,10 @@ namespace PlayniteAchievements.Tests.StartPage
         }
 
         [TestMethod]
-        public void ProjectGamesOverview_NullSettingsLimitIsUnlimited()
+        public void ProjectGameSummaries_NullSettingsLimitIsUnlimited()
         {
             var items = Enumerable.Range(0, 30)
-                .Select(index => new GameOverviewItem
+                .Select(index => new GameSummaryItem
                 {
                     GameName = $"Game {index:D2}",
                     SortingName = $"Game {index:D2}"
@@ -97,13 +97,13 @@ namespace PlayniteAchievements.Tests.StartPage
                 .ToList();
             var settings = new PersistedSettings
             {
-                StartPageGamesOverviewGrid =
+                StartPageGameSummariesGrid =
                 {
                     MaxRows = null
                 }
             };
 
-            var result = StartPageWidgetProjection.ProjectGamesOverview(items, settings);
+            var result = StartPageWidgetProjection.ProjectGameSummaries(items, settings);
 
             Assert.AreEqual(30, result.Count);
         }

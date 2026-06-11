@@ -4,7 +4,7 @@ using System.Linq;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 
-namespace PlayniteAchievements.Services.Sidebar
+namespace PlayniteAchievements.Services.Overview
 {
     internal sealed class SelectedGameFilterOptions
     {
@@ -17,7 +17,7 @@ namespace PlayniteAchievements.Services.Sidebar
         public bool CategorySelectionPruned { get; set; }
     }
 
-    internal static class SidebarAchievementFilters
+    internal static class OverviewAchievementFilters
     {
         public static SelectedGameFilterOptions BuildSelectedGameFilterOptions(
             IEnumerable<AchievementDisplayItem> source,

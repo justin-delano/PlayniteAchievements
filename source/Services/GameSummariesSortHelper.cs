@@ -6,50 +6,50 @@ using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Services
 {
-    public readonly struct GamesOverviewSortSpec
+    public readonly struct GameSummariesSortSpec
     {
-        public GamesOverviewSortSpec(GamesOverviewSortMode mode, ListSortDirection direction)
+        public GameSummariesSortSpec(GameSummariesSortMode mode, ListSortDirection direction)
         {
             Mode = mode;
             Direction = direction;
         }
 
-        public GamesOverviewSortMode Mode { get; }
+        public GameSummariesSortMode Mode { get; }
 
         public ListSortDirection Direction { get; }
 
         public string SortMemberPath => Mode switch
         {
-            GamesOverviewSortMode.RecentUnlock => nameof(GameOverviewItem.LastUnlockUtc),
-            GamesOverviewSortMode.LastPlayed => nameof(GameOverviewItem.LastPlayed),
-            GamesOverviewSortMode.TotalAchievements => nameof(GameOverviewItem.TotalAchievements),
-            GamesOverviewSortMode.Progress => nameof(GameOverviewItem.Progression),
-            GamesOverviewSortMode.Alphabetical => "SortingName",
-            _ => nameof(GameOverviewItem.LastUnlockUtc)
+            GameSummariesSortMode.RecentUnlock => nameof(GameSummaryItem.LastUnlockUtc),
+            GameSummariesSortMode.LastPlayed => nameof(GameSummaryItem.LastPlayed),
+            GameSummariesSortMode.TotalAchievements => nameof(GameSummaryItem.TotalAchievements),
+            GameSummariesSortMode.Progress => nameof(GameSummaryItem.Progression),
+            GameSummariesSortMode.Alphabetical => "SortingName",
+            _ => nameof(GameSummaryItem.LastUnlockUtc)
         };
 
         public string IndicatorSortMemberPath => Mode switch
         {
-            GamesOverviewSortMode.RecentUnlock => null,
-            GamesOverviewSortMode.LastPlayed => nameof(GameOverviewItem.LastPlayed),
-            GamesOverviewSortMode.TotalAchievements => nameof(GameOverviewItem.TotalAchievements),
-            GamesOverviewSortMode.Progress => nameof(GameOverviewItem.Progression),
-            GamesOverviewSortMode.Alphabetical => "SortingName",
+            GameSummariesSortMode.RecentUnlock => null,
+            GameSummariesSortMode.LastPlayed => nameof(GameSummaryItem.LastPlayed),
+            GameSummariesSortMode.TotalAchievements => nameof(GameSummaryItem.TotalAchievements),
+            GameSummariesSortMode.Progress => nameof(GameSummaryItem.Progression),
+            GameSummariesSortMode.Alphabetical => "SortingName",
             _ => null
         };
     }
 
-    internal enum GamesOverviewGridSortActionKind
+    internal enum GameSummariesGridSortActionKind
     {
         None,
         ApplySort,
         ResetToDefault
     }
 
-    internal readonly struct GamesOverviewGridSortAction
+    internal readonly struct GameSummariesGridSortAction
     {
-        private GamesOverviewGridSortAction(
-            GamesOverviewGridSortActionKind kind,
+        private GameSummariesGridSortAction(
+            GameSummariesGridSortActionKind kind,
             string sortMemberPath,
             ListSortDirection? direction)
         {
@@ -58,61 +58,61 @@ namespace PlayniteAchievements.Services
             Direction = direction;
         }
 
-        public GamesOverviewGridSortActionKind Kind { get; }
+        public GameSummariesGridSortActionKind Kind { get; }
 
         public string SortMemberPath { get; }
 
         public ListSortDirection? Direction { get; }
 
-        public static GamesOverviewGridSortAction None()
+        public static GameSummariesGridSortAction None()
         {
-            return new GamesOverviewGridSortAction(
-                GamesOverviewGridSortActionKind.None,
+            return new GameSummariesGridSortAction(
+                GameSummariesGridSortActionKind.None,
                 null,
                 null);
         }
 
-        public static GamesOverviewGridSortAction ApplySort(
+        public static GameSummariesGridSortAction ApplySort(
             string sortMemberPath,
             ListSortDirection direction)
         {
-            return new GamesOverviewGridSortAction(
-                GamesOverviewGridSortActionKind.ApplySort,
+            return new GameSummariesGridSortAction(
+                GameSummariesGridSortActionKind.ApplySort,
                 sortMemberPath,
                 direction);
         }
 
-        public static GamesOverviewGridSortAction ResetToDefault()
+        public static GameSummariesGridSortAction ResetToDefault()
         {
-            return new GamesOverviewGridSortAction(
-                GamesOverviewGridSortActionKind.ResetToDefault,
+            return new GameSummariesGridSortAction(
+                GameSummariesGridSortActionKind.ResetToDefault,
                 null,
                 null);
         }
     }
 
-    public static class GamesOverviewSortHelper
+    public static class GameSummariesSortHelper
     {
-        public static GamesOverviewSortSpec GetConfiguredDefaultSort(PersistedSettings settings)
+        public static GameSummariesSortSpec GetConfiguredDefaultSort(PersistedSettings settings)
         {
             if (settings == null)
             {
-                return new GamesOverviewSortSpec(
-                    GamesOverviewSortMode.RecentUnlock,
+                return new GameSummariesSortSpec(
+                    GameSummariesSortMode.RecentUnlock,
                     ListSortDirection.Descending);
             }
 
-            return new GamesOverviewSortSpec(
-                settings.GamesOverviewGridSortMode,
-                settings.GamesOverviewGridSortDescending
+            return new GameSummariesSortSpec(
+                settings.GameSummariesGridSortMode,
+                settings.GameSummariesGridSortDescending
                     ? ListSortDirection.Descending
                     : ListSortDirection.Ascending);
         }
 
         public static bool IsConfiguredDefaultSortPropertyName(string propertyName)
         {
-            return propertyName == nameof(PersistedSettings.GamesOverviewGridSortMode) ||
-                   propertyName == nameof(PersistedSettings.GamesOverviewGridSortDescending);
+            return propertyName == nameof(PersistedSettings.GameSummariesGridSortMode) ||
+                   propertyName == nameof(PersistedSettings.GameSummariesGridSortDescending);
         }
 
         public static void ApplySortIndicator(
@@ -140,19 +140,19 @@ namespace PlayniteAchievements.Services
                     : configuredSort.Direction);
         }
 
-        public static void SortByConfiguredDefault(List<GameOverviewItem> items, PersistedSettings settings)
+        public static void SortByConfiguredDefault(List<GameSummaryItem> items, PersistedSettings settings)
         {
             var configuredSort = GetConfiguredDefaultSort(settings);
             Sort(items, configuredSort.SortMemberPath, configuredSort.Direction);
         }
 
-        public static void Sort(List<GameOverviewItem> items, GamesOverviewSortMode mode, ListSortDirection direction)
+        public static void Sort(List<GameSummaryItem> items, GameSummariesSortMode mode, ListSortDirection direction)
         {
-            var sort = new GamesOverviewSortSpec(mode, direction);
+            var sort = new GameSummariesSortSpec(mode, direction);
             Sort(items, sort.SortMemberPath, sort.Direction);
         }
 
-        internal static GamesOverviewGridSortAction ResolveGridSortAction(
+        internal static GameSummariesGridSortAction ResolveGridSortAction(
             string clickedSortMemberPath,
             string currentSortPath,
             ListSortDirection? currentSortDirection,
@@ -160,35 +160,35 @@ namespace PlayniteAchievements.Services
         {
             if (string.IsNullOrWhiteSpace(clickedSortMemberPath))
             {
-                return GamesOverviewGridSortAction.None();
+                return GameSummariesGridSortAction.None();
             }
 
             var configuredSort = GetConfiguredDefaultSort(settings);
             var cycleDirections = GetCycleDirections(clickedSortMemberPath, configuredSort);
             if (cycleDirections.Count == 0)
             {
-                return GamesOverviewGridSortAction.ResetToDefault();
+                return GameSummariesGridSortAction.ResetToDefault();
             }
 
             if (!currentSortDirection.HasValue ||
                 !string.Equals(currentSortPath, clickedSortMemberPath, StringComparison.Ordinal))
             {
-                return GamesOverviewGridSortAction.ApplySort(clickedSortMemberPath, cycleDirections[0]);
+                return GameSummariesGridSortAction.ApplySort(clickedSortMemberPath, cycleDirections[0]);
             }
 
             var currentDirectionIndex = cycleDirections.IndexOf(currentSortDirection.Value);
             if (currentDirectionIndex < 0 || currentDirectionIndex == cycleDirections.Count - 1)
             {
-                return GamesOverviewGridSortAction.ResetToDefault();
+                return GameSummariesGridSortAction.ResetToDefault();
             }
 
-            return GamesOverviewGridSortAction.ApplySort(
+            return GameSummariesGridSortAction.ApplySort(
                 clickedSortMemberPath,
                 cycleDirections[currentDirectionIndex + 1]);
         }
 
         public static bool TrySortItems(
-            List<GameOverviewItem> items,
+            List<GameSummaryItem> items,
             string sortMemberPath,
             ListSortDirection direction,
             ref string currentSortPath,
@@ -217,7 +217,7 @@ namespace PlayniteAchievements.Services
         }
 
         private static bool TryReverse(
-            List<GameOverviewItem> items,
+            List<GameSummaryItem> items,
             string sortMemberPath,
             ListSortDirection direction,
             ref string currentSortPath,
@@ -237,7 +237,7 @@ namespace PlayniteAchievements.Services
 
         private static List<ListSortDirection> GetCycleDirections(
             string clickedSortMemberPath,
-            GamesOverviewSortSpec configuredSort)
+            GameSummariesSortSpec configuredSort)
         {
             var directions = new List<ListSortDirection>
             {
@@ -253,46 +253,46 @@ namespace PlayniteAchievements.Services
             return directions;
         }
 
-        private static Comparison<GameOverviewItem> CreateComparison(string sortMemberPath, ListSortDirection direction)
+        private static Comparison<GameSummaryItem> CreateComparison(string sortMemberPath, ListSortDirection direction)
         {
             return sortMemberPath switch
             {
-                nameof(GameOverviewItem.LastUnlockUtc) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.LastUnlockUtc) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
                     CompareDateTime(a?.LastUnlockUtc, b?.LastUnlockUtc, direction)),
-                nameof(GameOverviewItem.LastPlayed) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.LastPlayed) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
                     CompareDateTime(a?.LastPlayed, b?.LastPlayed, direction)),
-                nameof(GameOverviewItem.TotalAchievements) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.TotalAchievements) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
                     CompareInt(a?.TotalAchievements ?? 0, b?.TotalAchievements ?? 0, direction)),
-                nameof(GameOverviewItem.Progression) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.Progression) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
                     CompareInt(a?.Progression ?? 0, b?.Progression ?? 0, direction)),
-                nameof(GameOverviewItem.PlaytimeSeconds) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.PlaytimeSeconds) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
                     CompareULong(a?.PlaytimeSeconds ?? 0, b?.PlaytimeSeconds ?? 0, direction)),
-                nameof(GameOverviewItem.UnlockedAchievements) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.UnlockedAchievements) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
                     CompareInt(a?.UnlockedAchievements ?? 0, b?.UnlockedAchievements ?? 0, direction)),
-                nameof(GameOverviewItem.CollectionScore) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.CollectionScore) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
                     CompareInt(a?.CollectionScore ?? 0, b?.CollectionScore ?? 0, direction)),
-                nameof(GameOverviewItem.PrestigeScore) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.PrestigeScore) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
@@ -302,7 +302,7 @@ namespace PlayniteAchievements.Services
                     b,
                     sortMemberPath,
                     CompareString(GetSortingName(a), GetSortingName(b), direction)),
-                nameof(GameOverviewItem.GameName) => (a, b) => CompareWithTieBreakers(
+                nameof(GameSummaryItem.GameName) => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
                     sortMemberPath,
@@ -320,8 +320,8 @@ namespace PlayniteAchievements.Services
         }
 
         private static int CompareWithTieBreakers(
-            GameOverviewItem a,
-            GameOverviewItem b,
+            GameSummaryItem a,
+            GameSummaryItem b,
             string primarySortMemberPath,
             int primaryComparison)
         {
@@ -345,7 +345,7 @@ namespace PlayniteAchievements.Services
                 return primaryComparison;
             }
 
-            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.LastUnlockUtc), StringComparison.Ordinal))
+            if (!string.Equals(primarySortMemberPath, nameof(GameSummaryItem.LastUnlockUtc), StringComparison.Ordinal))
             {
                 var comparison = CompareDateTime(a.LastUnlockUtc, b.LastUnlockUtc, ListSortDirection.Descending);
                 if (comparison != 0)
@@ -354,7 +354,7 @@ namespace PlayniteAchievements.Services
                 }
             }
 
-            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.LastPlayed), StringComparison.Ordinal))
+            if (!string.Equals(primarySortMemberPath, nameof(GameSummaryItem.LastPlayed), StringComparison.Ordinal))
             {
                 var comparison = CompareDateTime(a.LastPlayed, b.LastPlayed, ListSortDirection.Descending);
                 if (comparison != 0)
@@ -363,7 +363,7 @@ namespace PlayniteAchievements.Services
                 }
             }
 
-            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.Progression), StringComparison.Ordinal))
+            if (!string.Equals(primarySortMemberPath, nameof(GameSummaryItem.Progression), StringComparison.Ordinal))
             {
                 var comparison = CompareInt(a.Progression, b.Progression, ListSortDirection.Descending);
                 if (comparison != 0)
@@ -372,7 +372,7 @@ namespace PlayniteAchievements.Services
                 }
             }
 
-            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.TotalAchievements), StringComparison.Ordinal))
+            if (!string.Equals(primarySortMemberPath, nameof(GameSummaryItem.TotalAchievements), StringComparison.Ordinal))
             {
                 var comparison = CompareInt(a.TotalAchievements, b.TotalAchievements, ListSortDirection.Descending);
                 if (comparison != 0)
@@ -381,7 +381,7 @@ namespace PlayniteAchievements.Services
                 }
             }
 
-            if (!string.Equals(primarySortMemberPath, nameof(GameOverviewItem.PlaytimeSeconds), StringComparison.Ordinal))
+            if (!string.Equals(primarySortMemberPath, nameof(GameSummaryItem.PlaytimeSeconds), StringComparison.Ordinal))
             {
                 var comparison = CompareULong(a.PlaytimeSeconds, b.PlaytimeSeconds, ListSortDirection.Descending);
                 if (comparison != 0)
@@ -391,7 +391,7 @@ namespace PlayniteAchievements.Services
             }
 
             if (!string.Equals(primarySortMemberPath, "SortingName", StringComparison.Ordinal) &&
-                !string.Equals(primarySortMemberPath, nameof(GameOverviewItem.GameName), StringComparison.Ordinal))
+                !string.Equals(primarySortMemberPath, nameof(GameSummaryItem.GameName), StringComparison.Ordinal))
             {
                 var comparison = CompareString(GetSortingName(a), GetSortingName(b), ListSortDirection.Ascending);
                 if (comparison != 0)
@@ -418,14 +418,14 @@ namespace PlayniteAchievements.Services
                 ListSortDirection.Ascending);
         }
 
-        private static string GetSortingName(GameOverviewItem item)
+        private static string GetSortingName(GameSummaryItem item)
         {
             return string.IsNullOrWhiteSpace(item?.SortingName)
                 ? item?.GameName ?? string.Empty
                 : item.SortingName;
         }
 
-        private static string GetPrimaryTrophyType(GameOverviewItem item)
+        private static string GetPrimaryTrophyType(GameSummaryItem item)
         {
             if (item == null)
             {
@@ -479,7 +479,7 @@ namespace PlayniteAchievements.Services
             return direction == ListSortDirection.Ascending ? comparison : -comparison;
         }
 
-        private static void Sort(List<GameOverviewItem> items, string sortMemberPath, ListSortDirection direction)
+        private static void Sort(List<GameSummaryItem> items, string sortMemberPath, ListSortDirection direction)
         {
             if (items == null)
             {

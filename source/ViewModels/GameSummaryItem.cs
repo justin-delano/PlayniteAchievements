@@ -5,7 +5,7 @@ using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public class GameOverviewItem : ObservableObject
+    public class GameSummaryItem : ObservableObject
     {
         private string _gameName;
         public string GameName { get => _gameName; set => SetValue(ref _gameName, value); }
@@ -244,7 +244,7 @@ namespace PlayniteAchievements.ViewModels
 
         public string PlaytimeText => PlayniteGameMetadataFormatter.FormatPlaytime(PlaytimeSeconds);
 
-        public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildSidebarMetadataText(
+        public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildOverviewMetadataText(
             PlatformText,
             PlaytimeText,
             RegionText);

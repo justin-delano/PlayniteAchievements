@@ -6,7 +6,7 @@ using PlayniteAchievements.Models.Achievements;
 namespace PlayniteAchievements.Models.ThemeIntegration
 {
     /// <summary>
-    /// Summary of achievement progress for a single game, used in all-games overview displays.
+    /// Summary of achievement progress for a single game, used in library overview displays.
     /// Represents a "trophy card" showing progress, trophy counts, and metadata for one game.
     /// </summary>
     public sealed class GameAchievementSummary : ObservableObject

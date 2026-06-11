@@ -145,23 +145,23 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
-        public void SettingsExtensions_CopyFromAndClone_PreserveShowSidebarGameMetadata()
+        public void SettingsExtensions_CopyFromAndClone_PreserveShowOverviewGameMetadata()
         {
             var source = new PersistedSettings
             {
-                ShowSidebarGameMetadata = false
+                ShowOverviewGameMetadata = false
             };
 
             var target = new PersistedSettings
             {
-                ShowSidebarGameMetadata = true
+                ShowOverviewGameMetadata = true
             };
 
             target.CopyFrom(source);
-            Assert.IsFalse(target.ShowSidebarGameMetadata);
+            Assert.IsFalse(target.ShowOverviewGameMetadata);
 
             var clone = SettingsExtensions.Clone(source);
-            Assert.IsFalse(clone.ShowSidebarGameMetadata);
+            Assert.IsFalse(clone.ShowOverviewGameMetadata);
         }
 
         [TestMethod]

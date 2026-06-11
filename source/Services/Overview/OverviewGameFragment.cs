@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using PlayniteAchievements.ViewModels;
 
-namespace PlayniteAchievements.Services.Sidebar
+namespace PlayniteAchievements.Services.Overview
 {
-    public sealed class SidebarGameFragment
+    public sealed class OverviewGameFragment
     {
         public string CacheKey { get; set; }
         public Guid? PlayniteGameId { get; set; }
@@ -13,7 +13,7 @@ namespace PlayniteAchievements.Services.Sidebar
 
         public List<AchievementDisplayItem> Achievements { get; set; } = new List<AchievementDisplayItem>();
         public List<AchievementDisplayItem> RecentAchievements { get; set; } = new List<AchievementDisplayItem>();
-        public GameOverviewItem GameOverview { get; set; }
+        public GameSummaryItem GameSummary { get; set; }
         public Dictionary<DateTime, int> UnlockCountsByDate { get; set; } = new Dictionary<DateTime, int>();
 
         public int TotalAchievements { get; set; }

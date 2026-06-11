@@ -496,7 +496,7 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Path to the game's icon image.
-        /// Used by the Game column in sidebar recent achievements.
+        /// Used by the Game column in overview recent achievements.
         /// </summary>
         public string GameIconPath
         {
@@ -506,7 +506,7 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Path to the game's cover image.
-        /// Used by the Game column in sidebar recent achievements when UseCoverImages is true.
+        /// Used by the Game column in overview recent achievements when UseCoverImages is true.
         /// </summary>
         public string GameCoverPath
         {

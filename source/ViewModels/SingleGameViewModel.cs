@@ -345,7 +345,7 @@ namespace PlayniteAchievements.ViewModels
 
         public bool HasAchievements => TotalAchievements > 0;
 
-        public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildSidebarMetadataText(
+        public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildOverviewMetadataText(
             PlatformText,
             PlaytimeText,
             RegionText);

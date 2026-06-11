@@ -7,17 +7,17 @@ using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
 #endif
-using PlayniteAchievements.Services.Sidebar;
+using PlayniteAchievements.Services.Overview;
 
 namespace PlayniteAchievements.Services.StartPage
 {
     public sealed class StartPageDataCoordinator : IDisposable
     {
         private readonly object _syncRoot = new object();
-        private readonly Func<SidebarDataSnapshot> _snapshotFactory;
+        private readonly Func<OverviewDataSnapshot> _snapshotFactory;
         private readonly ILogger _logger;
-        private SidebarDataSnapshot _snapshot;
-        private Task<SidebarDataSnapshot> _buildTask;
+        private OverviewDataSnapshot _snapshot;
+        private Task<OverviewDataSnapshot> _buildTask;
         private bool _invalidated = true;
         private bool _disposed;
 
@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Services.StartPage
             : this(
                 () =>
                 {
-                    var builder = new SidebarDataBuilder(
+                    var builder = new OverviewDataBuilder(
                         achievementDataService,
                         providers,
                         playniteApi,
@@ -46,7 +46,7 @@ namespace PlayniteAchievements.Services.StartPage
         }
 #endif
 
-        public StartPageDataCoordinator(Func<SidebarDataSnapshot> snapshotFactory, ILogger logger = null)
+        public StartPageDataCoordinator(Func<OverviewDataSnapshot> snapshotFactory, ILogger logger = null)
         {
             _snapshotFactory = snapshotFactory ?? throw new ArgumentNullException(nameof(snapshotFactory));
             _logger = logger;
@@ -64,16 +64,16 @@ namespace PlayniteAchievements.Services.StartPage
             SnapshotInvalidated?.Invoke(this, EventArgs.Empty);
         }
 
-        public Task<SidebarDataSnapshot> GetSnapshotAsync(CancellationToken cancel)
+        public Task<OverviewDataSnapshot> GetSnapshotAsync(CancellationToken cancel)
         {
             return GetSnapshotAsync(forceRefresh: false, cancel);
         }
 
-        public async Task<SidebarDataSnapshot> GetSnapshotAsync(bool forceRefresh, CancellationToken cancel)
+        public async Task<OverviewDataSnapshot> GetSnapshotAsync(bool forceRefresh, CancellationToken cancel)
         {
             cancel.ThrowIfCancellationRequested();
 
-            Task<SidebarDataSnapshot> task;
+            Task<OverviewDataSnapshot> task;
             lock (_syncRoot)
             {
                 ThrowIfDisposed();
@@ -101,12 +101,12 @@ namespace PlayniteAchievements.Services.StartPage
             {
                 if (ReferenceEquals(_buildTask, task))
                 {
-                    _snapshot = snapshot ?? new SidebarDataSnapshot();
+                    _snapshot = snapshot ?? new OverviewDataSnapshot();
                     _invalidated = false;
                     _buildTask = null;
                 }
 
-                return _snapshot ?? snapshot ?? new SidebarDataSnapshot();
+                return _snapshot ?? snapshot ?? new OverviewDataSnapshot();
             }
         }
 
@@ -120,16 +120,16 @@ namespace PlayniteAchievements.Services.StartPage
             }
         }
 
-        private SidebarDataSnapshot BuildSnapshot()
+        private OverviewDataSnapshot BuildSnapshot()
         {
             try
             {
-                return _snapshotFactory() ?? new SidebarDataSnapshot();
+                return _snapshotFactory() ?? new OverviewDataSnapshot();
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to build StartPage achievement snapshot.");
-                return new SidebarDataSnapshot();
+                return new OverviewDataSnapshot();
             }
         }
 

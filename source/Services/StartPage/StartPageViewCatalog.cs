@@ -18,7 +18,8 @@ namespace PlayniteAchievements.Services.StartPage
 
     public static class StartPageViewCatalog
     {
-        public const string GamesOverviewGridViewId = "PlayniteAchievements_GamesOverviewGrid";
+        public const string GameSummariesGridViewId = "PlayniteAchievements_GameSummariesGrid";
+        public const string LegacyGamesOverviewGridViewId = "PlayniteAchievements_GamesOverviewGrid";
         public const string RecentUnlocksGridViewId = "PlayniteAchievements_RecentUnlocksGrid";
         public const string CompletedGamesPieViewId = "PlayniteAchievements_CompletedGamesPie";
         public const string ProviderPieViewId = "PlayniteAchievements_ProviderPie";
@@ -32,9 +33,9 @@ namespace PlayniteAchievements.Services.StartPage
             {
                 new StartPageViewDefinition
                 {
-                    ViewId = GamesOverviewGridViewId,
-                    WidgetKind = StartPageWidgetKind.GamesOverviewGrid,
-                    NameKey = "LOCPlayAch_Sidebar_GamesOverview",
+                    ViewId = GameSummariesGridViewId,
+                    WidgetKind = StartPageWidgetKind.GameSummariesGrid,
+                    NameKey = "LOCPlayAch_Overview_GameSummaries",
                     DescriptionKey = null
                 },
                 new StartPageViewDefinition
@@ -48,28 +49,28 @@ namespace PlayniteAchievements.Services.StartPage
                 {
                     ViewId = CompletedGamesPieViewId,
                     WidgetKind = StartPageWidgetKind.CompletedGamesPie,
-                    NameKey = "LOCPlayAch_Sidebar_GamesPieChart",
+                    NameKey = "LOCPlayAch_Overview_GamesPieChart",
                     DescriptionKey = null
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = ProviderPieViewId,
                     WidgetKind = StartPageWidgetKind.ProviderPie,
-                    NameKey = "LOCPlayAch_Sidebar_ProviderDistribution",
+                    NameKey = "LOCPlayAch_Overview_ProviderDistribution",
                     DescriptionKey = null
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = RarityPieViewId,
                     WidgetKind = StartPageWidgetKind.RarityPie,
-                    NameKey = "LOCPlayAch_Sidebar_RarityPieChart",
+                    NameKey = "LOCPlayAch_Overview_RarityPieChart",
                     DescriptionKey = null
                 },
                 new StartPageViewDefinition
                 {
                     ViewId = TrophyPieViewId,
                     WidgetKind = StartPageWidgetKind.TrophyPie,
-                    NameKey = "LOCPlayAch_Sidebar_TrophyPieChart",
+                    NameKey = "LOCPlayAch_Overview_TrophyPieChart",
                     DescriptionKey = null
                 },
                 new StartPageViewDefinition
@@ -94,6 +95,13 @@ namespace PlayniteAchievements.Services.StartPage
         {
             definition = ViewDefinitions.FirstOrDefault(view =>
                 string.Equals(view.ViewId, viewId, StringComparison.Ordinal));
+            if (definition == null &&
+                string.Equals(viewId, LegacyGamesOverviewGridViewId, StringComparison.Ordinal))
+            {
+                definition = ViewDefinitions.FirstOrDefault(view =>
+                    string.Equals(view.ViewId, GameSummariesGridViewId, StringComparison.Ordinal));
+            }
+
             return definition != null;
         }
     }

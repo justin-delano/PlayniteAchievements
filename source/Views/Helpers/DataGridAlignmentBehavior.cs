@@ -494,13 +494,13 @@ namespace PlayniteAchievements.Views.Helpers
 
             private static bool IsColumnCellAlignmentProperty(string propertyName)
             {
-                return propertyName == nameof(PersistedSettings.SidebarAchievementColumnAlignments) ||
-                       propertyName == nameof(PersistedSettings.SidebarGameColumnAlignments) ||
+                return propertyName == nameof(PersistedSettings.OverviewRecentAchievementColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.OverviewSelectedGameAchievementColumnAlignments) ||
                        propertyName == nameof(PersistedSettings.SingleGameColumnAlignments) ||
                        propertyName == nameof(PersistedSettings.DesktopThemeColumnAlignments) ||
-                       propertyName == nameof(PersistedSettings.GamesOverviewColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.GameSummariesColumnAlignments) ||
                        propertyName == nameof(PersistedSettings.StartPageAchievementColumnAlignments) ||
-                       propertyName == nameof(PersistedSettings.StartPageGamesOverviewColumnAlignments);
+                       propertyName == nameof(PersistedSettings.StartPageGameSummariesColumnAlignments);
             }
 
             private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent)

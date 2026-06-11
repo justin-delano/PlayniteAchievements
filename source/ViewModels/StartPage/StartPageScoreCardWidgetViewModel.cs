@@ -2,7 +2,7 @@ using System;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
-using PlayniteAchievements.Services.Sidebar;
+using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.StartPage;
 
 namespace PlayniteAchievements.ViewModels.StartPage
@@ -32,7 +32,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public ScoreCardViewModel ScoreCard { get; }
 
-        protected override void ApplySnapshot(SidebarDataSnapshot snapshot)
+        protected override void ApplySnapshot(OverviewDataSnapshot snapshot)
         {
             var useUniformRarityBadges = PersistedSettings?.UseUniformRarityBadges ?? false;
             if (_widgetKind == StartPageWidgetKind.CollectionScoreCard)

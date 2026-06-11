@@ -73,10 +73,10 @@ namespace PlayniteAchievements.Services.Hydration
         }
 
         /// <summary>
-        /// Hydrates sidebar-relevant runtime properties and applies capstone overlays
+        /// Hydrates overview-relevant runtime properties and applies capstone overlays
         /// needed for completion calculations.
         /// </summary>
-        public void HydrateForSidebar(GameAchievementData data)
+        public void HydrateForOverview(GameAchievementData data)
         {
             if (data?.PlayniteGameId == null)
             {
@@ -119,9 +119,9 @@ namespace PlayniteAchievements.Services.Hydration
         }
 
         /// <summary>
-        /// Hydrates multiple GameAchievementData instances for sidebar use only.
+        /// Hydrates multiple GameAchievementData instances for overview use only.
         /// </summary>
-        public void HydrateAllForSidebar(IEnumerable<GameAchievementData> games)
+        public void HydrateAllForOverview(IEnumerable<GameAchievementData> games)
         {
             if (games == null)
             {
@@ -130,7 +130,7 @@ namespace PlayniteAchievements.Services.Hydration
 
             foreach (var game in games)
             {
-                HydrateForSidebar(game);
+                HydrateForOverview(game);
             }
         }
 

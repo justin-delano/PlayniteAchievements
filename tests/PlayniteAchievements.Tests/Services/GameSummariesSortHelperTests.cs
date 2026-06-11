@@ -10,24 +10,24 @@ using PlayniteAchievements.ViewModels;
 namespace PlayniteAchievements.Services.Tests
 {
     [TestClass]
-    public class GamesOverviewSortHelperTests
+    public class GameSummariesSortHelperTests
     {
         [TestMethod]
         public void SortByConfiguredDefault_RecentUnlockDescending_PutsNewestUnlockFirst()
         {
-            var items = new List<GameOverviewItem>
+            var items = new List<GameSummaryItem>
             {
                 CreateItem("Gamma", lastUnlockUtc: Utc(2026, 4, 2), lastPlayed: Utc(2026, 4, 3)),
                 CreateItem("Alpha", lastUnlockUtc: Utc(2026, 4, 5), lastPlayed: Utc(2026, 4, 1)),
                 CreateItem("Beta", lastUnlockUtc: null, lastPlayed: Utc(2026, 4, 4))
             };
 
-            GamesOverviewSortHelper.SortByConfiguredDefault(
+            GameSummariesSortHelper.SortByConfiguredDefault(
                 items,
                 new PersistedSettings
                 {
-                    GamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock,
-                    GamesOverviewGridSortDescending = true
+                    GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                    GameSummariesGridSortDescending = true
                 });
 
             CollectionAssert.AreEqual(
@@ -38,19 +38,19 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void SortByConfiguredDefault_RecentUnlockAscending_PutsOldestUnlockFirst()
         {
-            var items = new List<GameOverviewItem>
+            var items = new List<GameSummaryItem>
             {
                 CreateItem("Gamma", lastUnlockUtc: Utc(2026, 4, 2)),
                 CreateItem("Alpha", lastUnlockUtc: Utc(2026, 4, 5)),
                 CreateItem("Beta", lastUnlockUtc: null)
             };
 
-            GamesOverviewSortHelper.SortByConfiguredDefault(
+            GameSummariesSortHelper.SortByConfiguredDefault(
                 items,
                 new PersistedSettings
                 {
-                    GamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock,
-                    GamesOverviewGridSortDescending = false
+                    GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                    GameSummariesGridSortDescending = false
                 });
 
             CollectionAssert.AreEqual(
@@ -61,19 +61,19 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void SortByConfiguredDefault_LastPlayed_UsesLastPlayedDate()
         {
-            var items = new List<GameOverviewItem>
+            var items = new List<GameSummaryItem>
             {
                 CreateItem("Alpha", lastPlayed: Utc(2026, 4, 1)),
                 CreateItem("Beta", lastPlayed: Utc(2026, 4, 8)),
                 CreateItem("Gamma", lastPlayed: Utc(2026, 4, 4))
             };
 
-            GamesOverviewSortHelper.SortByConfiguredDefault(
+            GameSummariesSortHelper.SortByConfiguredDefault(
                 items,
                 new PersistedSettings
                 {
-                    GamesOverviewGridSortMode = GamesOverviewSortMode.LastPlayed,
-                    GamesOverviewGridSortDescending = true
+                    GameSummariesGridSortMode = GameSummariesSortMode.LastPlayed,
+                    GameSummariesGridSortDescending = true
                 });
 
             CollectionAssert.AreEqual(
@@ -84,19 +84,19 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void SortByConfiguredDefault_TotalAchievements_UsesTotalAchievements()
         {
-            var items = new List<GameOverviewItem>
+            var items = new List<GameSummaryItem>
             {
                 CreateItem("Alpha", totalAchievements: 12, unlockedAchievements: 6),
                 CreateItem("Beta", totalAchievements: 40, unlockedAchievements: 10),
                 CreateItem("Gamma", totalAchievements: 24, unlockedAchievements: 12)
             };
 
-            GamesOverviewSortHelper.SortByConfiguredDefault(
+            GameSummariesSortHelper.SortByConfiguredDefault(
                 items,
                 new PersistedSettings
                 {
-                    GamesOverviewGridSortMode = GamesOverviewSortMode.TotalAchievements,
-                    GamesOverviewGridSortDescending = true
+                    GameSummariesGridSortMode = GameSummariesSortMode.TotalAchievements,
+                    GameSummariesGridSortDescending = true
                 });
 
             CollectionAssert.AreEqual(
@@ -107,19 +107,19 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void SortByConfiguredDefault_Progress_UsesComputedProgression()
         {
-            var items = new List<GameOverviewItem>
+            var items = new List<GameSummaryItem>
             {
                 CreateItem("Alpha", totalAchievements: 10, unlockedAchievements: 3),
                 CreateItem("Beta", totalAchievements: 10, unlockedAchievements: 9),
                 CreateItem("Gamma", totalAchievements: 20, unlockedAchievements: 10)
             };
 
-            GamesOverviewSortHelper.SortByConfiguredDefault(
+            GameSummariesSortHelper.SortByConfiguredDefault(
                 items,
                 new PersistedSettings
                 {
-                    GamesOverviewGridSortMode = GamesOverviewSortMode.Progress,
-                    GamesOverviewGridSortDescending = true
+                    GameSummariesGridSortMode = GameSummariesSortMode.Progress,
+                    GameSummariesGridSortDescending = true
                 });
 
             CollectionAssert.AreEqual(
@@ -130,19 +130,19 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void SortByConfiguredDefault_Alphabetical_UsesSortingName()
         {
-            var items = new List<GameOverviewItem>
+            var items = new List<GameSummaryItem>
             {
                 CreateItem("Zoo", sortingName: "Bravo"),
                 CreateItem("Alpha", sortingName: "Charlie"),
                 CreateItem("Beta", sortingName: "Alpha")
             };
 
-            GamesOverviewSortHelper.SortByConfiguredDefault(
+            GameSummariesSortHelper.SortByConfiguredDefault(
                 items,
                 new PersistedSettings
                 {
-                    GamesOverviewGridSortMode = GamesOverviewSortMode.Alphabetical,
-                    GamesOverviewGridSortDescending = false
+                    GameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
+                    GameSummariesGridSortDescending = false
                 });
 
             CollectionAssert.AreEqual(
@@ -155,31 +155,31 @@ namespace PlayniteAchievements.Services.Tests
         {
             var settings = new PersistedSettings
             {
-                GamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock,
-                GamesOverviewGridSortDescending = true
+                GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                GameSummariesGridSortDescending = true
             };
 
-            var first = GamesOverviewSortHelper.ResolveGridSortAction(
+            var first = GameSummariesSortHelper.ResolveGridSortAction(
                 "SortingName",
                 currentSortPath: null,
                 currentSortDirection: null,
                 settings);
-            var second = GamesOverviewSortHelper.ResolveGridSortAction(
+            var second = GameSummariesSortHelper.ResolveGridSortAction(
                 "SortingName",
                 first.SortMemberPath,
                 first.Direction,
                 settings);
-            var third = GamesOverviewSortHelper.ResolveGridSortAction(
+            var third = GameSummariesSortHelper.ResolveGridSortAction(
                 "SortingName",
                 second.SortMemberPath,
                 second.Direction,
                 settings);
 
-            Assert.AreEqual(GamesOverviewGridSortActionKind.ApplySort, first.Kind);
+            Assert.AreEqual(GameSummariesGridSortActionKind.ApplySort, first.Kind);
             Assert.AreEqual(ListSortDirection.Ascending, first.Direction);
-            Assert.AreEqual(GamesOverviewGridSortActionKind.ApplySort, second.Kind);
+            Assert.AreEqual(GameSummariesGridSortActionKind.ApplySort, second.Kind);
             Assert.AreEqual(ListSortDirection.Descending, second.Direction);
-            Assert.AreEqual(GamesOverviewGridSortActionKind.ResetToDefault, third.Kind);
+            Assert.AreEqual(GameSummariesGridSortActionKind.ResetToDefault, third.Kind);
         }
 
         [TestMethod]
@@ -187,24 +187,24 @@ namespace PlayniteAchievements.Services.Tests
         {
             var settings = new PersistedSettings
             {
-                GamesOverviewGridSortMode = GamesOverviewSortMode.LastPlayed,
-                GamesOverviewGridSortDescending = true
+                GameSummariesGridSortMode = GameSummariesSortMode.LastPlayed,
+                GameSummariesGridSortDescending = true
             };
 
-            var first = GamesOverviewSortHelper.ResolveGridSortAction(
-                nameof(GameOverviewItem.LastPlayed),
+            var first = GameSummariesSortHelper.ResolveGridSortAction(
+                nameof(GameSummaryItem.LastPlayed),
                 currentSortPath: null,
                 currentSortDirection: null,
                 settings);
-            var second = GamesOverviewSortHelper.ResolveGridSortAction(
-                nameof(GameOverviewItem.LastPlayed),
+            var second = GameSummariesSortHelper.ResolveGridSortAction(
+                nameof(GameSummaryItem.LastPlayed),
                 first.SortMemberPath,
                 first.Direction,
                 settings);
 
-            Assert.AreEqual(GamesOverviewGridSortActionKind.ApplySort, first.Kind);
+            Assert.AreEqual(GameSummariesGridSortActionKind.ApplySort, first.Kind);
             Assert.AreEqual(ListSortDirection.Ascending, first.Direction);
-            Assert.AreEqual(GamesOverviewGridSortActionKind.ResetToDefault, second.Kind);
+            Assert.AreEqual(GameSummariesGridSortActionKind.ResetToDefault, second.Kind);
         }
 
         [TestMethod]
@@ -213,13 +213,13 @@ namespace PlayniteAchievements.Services.Tests
             string indicatorPath = "seed";
             ListSortDirection? indicatorDirection = ListSortDirection.Ascending;
 
-            GamesOverviewSortHelper.ApplySortIndicator(
+            GameSummariesSortHelper.ApplySortIndicator(
                 null,
                 null,
                 new PersistedSettings
                 {
-                    GamesOverviewGridSortMode = GamesOverviewSortMode.RecentUnlock,
-                    GamesOverviewGridSortDescending = true
+                    GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                    GameSummariesGridSortDescending = true
                 },
                 (path, direction) =>
                 {
@@ -234,7 +234,7 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void TrySortItems_CollectionScore_UsesEarnedScore()
         {
-            var items = new List<GameOverviewItem>
+            var items = new List<GameSummaryItem>
             {
                 CreateItem("Alpha", collectionScore: 120),
                 CreateItem("Beta", collectionScore: 420),
@@ -243,9 +243,9 @@ namespace PlayniteAchievements.Services.Tests
             string currentSortPath = null;
             var currentSortDirection = ListSortDirection.Ascending;
 
-            var sorted = GamesOverviewSortHelper.TrySortItems(
+            var sorted = GameSummariesSortHelper.TrySortItems(
                 items,
-                nameof(GameOverviewItem.CollectionScore),
+                nameof(GameSummaryItem.CollectionScore),
                 ListSortDirection.Descending,
                 ref currentSortPath,
                 ref currentSortDirection);
@@ -259,7 +259,7 @@ namespace PlayniteAchievements.Services.Tests
         [TestMethod]
         public void TrySortItems_PrestigeScore_UsesEarnedScore()
         {
-            var items = new List<GameOverviewItem>
+            var items = new List<GameSummaryItem>
             {
                 CreateItem("Alpha", prestigeScore: 900),
                 CreateItem("Beta", prestigeScore: 50),
@@ -268,9 +268,9 @@ namespace PlayniteAchievements.Services.Tests
             string currentSortPath = null;
             var currentSortDirection = ListSortDirection.Descending;
 
-            var sorted = GamesOverviewSortHelper.TrySortItems(
+            var sorted = GameSummariesSortHelper.TrySortItems(
                 items,
-                nameof(GameOverviewItem.PrestigeScore),
+                nameof(GameSummaryItem.PrestigeScore),
                 ListSortDirection.Ascending,
                 ref currentSortPath,
                 ref currentSortDirection);
@@ -281,7 +281,7 @@ namespace PlayniteAchievements.Services.Tests
                 items.Select(item => item.GameName).ToArray());
         }
 
-        private static GameOverviewItem CreateItem(
+        private static GameSummaryItem CreateItem(
             string gameName,
             string sortingName = null,
             DateTime? lastUnlockUtc = null,
@@ -291,7 +291,7 @@ namespace PlayniteAchievements.Services.Tests
             int collectionScore = 0,
             int prestigeScore = 0)
         {
-            return new GameOverviewItem
+            return new GameSummaryItem
             {
                 GameName = gameName,
                 SortingName = sortingName ?? gameName,

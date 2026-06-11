@@ -14,11 +14,11 @@ using Playnite.SDK;
 namespace PlayniteAchievements.Views
 {
     /// <summary>
-    /// Lightweight host that returns immediately from the sidebar Opened callback and defers
-    /// creation of the heavy SidebarControl until after Playnite has a chance to paint.
+    /// Lightweight host that returns immediately from the overview Opened callback and defers
+    /// creation of the heavy OverviewControl until after Playnite has a chance to paint.
     /// Also handles showing the first-time landing page when appropriate.
     /// </summary>
-    public partial class SidebarHostControl : UserControl
+    public partial class OverviewHostControl : UserControl
     {
         private readonly Func<UserControl> _createView;
         private readonly ILogger _logger;
@@ -26,11 +26,11 @@ namespace PlayniteAchievements.Views
         private readonly RefreshRuntime _refreshService;
         private readonly PlayniteAchievementsPlugin _plugin;
 
-        private SidebarControl _sidebar;
+        private OverviewControl _overview;
         private FirstTimeLandingPage _landingPage;
         private bool _createScheduled;
 
-        public SidebarHostControl(
+        public OverviewHostControl(
             Func<UserControl> createView,
             ILogger logger,
             IPlayniteAPI api,
@@ -45,19 +45,19 @@ namespace PlayniteAchievements.Views
 
             InitializeComponent();
 
-            Loaded += SidebarHostControl_Loaded;
-            Unloaded += SidebarHostControl_Unloaded;
+            Loaded += OverviewHostControl_Loaded;
+            Unloaded += OverviewHostControl_Unloaded;
 
             // Subscribe to settings saved event to refresh provider status
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
         }
 
-        private void SidebarHostControl_Loaded(object sender, RoutedEventArgs e)
+        private void OverviewHostControl_Loaded(object sender, RoutedEventArgs e)
         {
-            _logger.Info("SidebarHostControl_Loaded called");
-            // Always recreate content when loaded (handles sidebar reopen)
+            _logger.Info("OverviewHostControl_Loaded called");
+            // Always recreate content when loaded (handles overview reopen)
             RecreateContent();
-            _sidebar?.Activate();
+            _overview?.Activate();
         }
 
         public void RefreshContent()
@@ -79,12 +79,12 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void SidebarHostControl_Unloaded(object sender, RoutedEventArgs e)
+        private void OverviewHostControl_Unloaded(object sender, RoutedEventArgs e)
         {
             try
             {
-                _sidebar?.Deactivate();
-                _sidebar?.Dispose();
+                _overview?.Deactivate();
+                _overview?.Dispose();
                 _landingPage?.Dispose();
             }
             catch
@@ -93,7 +93,7 @@ namespace PlayniteAchievements.Views
             }
             finally
             {
-                _sidebar = null;
+                _overview = null;
                 _landingPage = null;
                 _createScheduled = false;
                 // Clear content to allow recreation on next load
@@ -114,10 +114,10 @@ namespace PlayniteAchievements.Views
                 _landingPage.RefreshProviderStatuses();
             }
 
-            // Refresh sidebar if visible
-            if (_sidebar != null)
+            // Refresh overview if visible
+            if (_overview != null)
             {
-                _sidebar.RefreshView();
+                _overview.RefreshView();
             }
         }
 
@@ -126,9 +126,9 @@ namespace PlayniteAchievements.Views
             _logger.Info("RecreateContent called - clearing existing content");
 
             // Dispose existing content
-            _sidebar?.Dispose();
+            _overview?.Dispose();
             _landingPage?.Dispose();
-            _sidebar = null;
+            _overview = null;
             _landingPage = null;
             PART_Content.Content = null;
 
@@ -172,7 +172,7 @@ namespace PlayniteAchievements.Views
                     var seenThemeMigration = settings?.Persisted?.SeenThemeMigration ?? false;
                     var dataService = _plugin?.AchievementDataService;
                     var hasCachedData = dataService?.HasCachedGameData() == true;
-                    _logger.Info($"Sidebar opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(ProviderRegistry.Settings<SteamSettings>().SteamUserId)}, HasEpicAuth={!string.IsNullOrEmpty(ProviderRegistry.Settings<EpicSettings>().AccountId)}, HasRaAuth={!string.IsNullOrEmpty(ProviderRegistry.Settings<RetroAchievementsSettings>().RaUsername)}");
+                    _logger.Info($"Overview opening: FirstTimeSetupCompleted={firstTimeCompleted}, SeenThemeMigration={seenThemeMigration}, HasCachedData={hasCachedData}, HasSteamAuth={!string.IsNullOrEmpty(ProviderRegistry.Settings<SteamSettings>().SteamUserId)}, HasEpicAuth={!string.IsNullOrEmpty(ProviderRegistry.Settings<EpicSettings>().AccountId)}, HasRaAuth={!string.IsNullOrEmpty(ProviderRegistry.Settings<RetroAchievementsSettings>().RaUsername)}");
 
                     // Show landing page if:
                     // 1. Haven't seen the theme migration page yet (!seenThemeMigration)
@@ -187,15 +187,15 @@ namespace PlayniteAchievements.Views
                     }
                     else
                     {
-                        _logger.Info("Creating sidebar directly");
-                        CreateSidebar();
+                        _logger.Info("Creating overview directly");
+                        CreateOverview();
                     }
 
                     PART_Loading.Visibility = Visibility.Collapsed;
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Error(ex, "Failed to create sidebar content.");
+                    _logger?.Error(ex, "Failed to create overview content.");
                     PART_Loading.Visibility = Visibility.Visible;
                 }
                 finally
@@ -231,24 +231,24 @@ namespace PlayniteAchievements.Views
             PART_Content.Content = _landingPage;
         }
 
-        private void CreateSidebar()
+        private void CreateOverview()
         {
-            _logger.Info("Creating sidebar control.");
+            _logger.Info("Creating overview control.");
 
-            var control = _createView() as SidebarControl;
+            var control = _createView() as OverviewControl;
             if (control == null)
             {
-                throw new InvalidOperationException("SidebarHostControl factory did not return SidebarControl.");
+                throw new InvalidOperationException("OverviewHostControl factory did not return OverviewControl.");
             }
 
-            _sidebar = control;
-            PART_Content.Content = _sidebar;
-            _sidebar.Activate();
+            _overview = control;
+            PART_Content.Content = _overview;
+            _overview.Activate();
         }
 
         private void LandingPage_SetupComplete(object sender, EventArgs e)
         {
-            _logger.Info("First-time setup complete, transitioning to sidebar.");
+            _logger.Info("First-time setup complete, transitioning to overview.");
 
             Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -257,11 +257,11 @@ namespace PlayniteAchievements.Views
                     _landingPage?.Dispose();
                     _landingPage = null;
 
-                    CreateSidebar();
+                    CreateOverview();
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Error(ex, "Failed to transition from landing page to sidebar.");
+                    _logger?.Error(ex, "Failed to transition from landing page to overview.");
                 }
             }), DispatcherPriority.Background);
         }

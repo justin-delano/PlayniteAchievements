@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using PlayniteAchievements.Services.Sidebar;
+using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.StartPage;
 
 namespace PlayniteAchievements.Tests.StartPage
@@ -15,7 +15,7 @@ namespace PlayniteAchievements.Tests.StartPage
             var coordinator = new StartPageDataCoordinator(() =>
             {
                 buildCount++;
-                return new SidebarDataSnapshot { TotalGames = buildCount };
+                return new OverviewDataSnapshot { TotalGames = buildCount };
             });
 
             var first = await coordinator.GetSnapshotAsync(default);
@@ -32,7 +32,7 @@ namespace PlayniteAchievements.Tests.StartPage
         [TestMethod]
         public void Invalidate_RaisesSnapshotInvalidated()
         {
-            var coordinator = new StartPageDataCoordinator(() => new SidebarDataSnapshot());
+            var coordinator = new StartPageDataCoordinator(() => new OverviewDataSnapshot());
             var raised = false;
             coordinator.SnapshotInvalidated += (_, __) => raised = true;
 

@@ -69,21 +69,21 @@ namespace PlayniteAchievements.Models.Settings
             target.UseUniformRarityBadges = source.UseUniformRarityBadges;
             target.UseCoverImages = source.UseCoverImages;
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
-            target.ShowSidebarCollectionScoreCard = source.ShowSidebarCollectionScoreCard;
-            target.ShowSidebarPrestigeScoreCard = source.ShowSidebarPrestigeScoreCard;
-            target.ShowSidebarPieCharts = source.ShowSidebarPieCharts;
-            target.ShowSidebarGamesPieChart = source.ShowSidebarGamesPieChart;
-            target.ShowSidebarProviderPieChart = source.ShowSidebarProviderPieChart;
-            target.ShowSidebarRarityPieChart = source.ShowSidebarRarityPieChart;
-            target.ShowSidebarTrophyPieChart = source.ShowSidebarTrophyPieChart;
-            target.ShowSidebarPiePercentages = source.ShowSidebarPiePercentages;
-            target.SidebarPieSmallSliceMode = source.SidebarPieSmallSliceMode;
-            target.ShowSidebarBarCharts = source.ShowSidebarBarCharts;
-            target.ShowSidebarGameMetadata = source.ShowSidebarGameMetadata;
+            target.ShowOverviewCollectionScoreCard = source.ShowOverviewCollectionScoreCard;
+            target.ShowOverviewPrestigeScoreCard = source.ShowOverviewPrestigeScoreCard;
+            target.ShowOverviewPieCharts = source.ShowOverviewPieCharts;
+            target.ShowOverviewGamesPieChart = source.ShowOverviewGamesPieChart;
+            target.ShowOverviewProviderPieChart = source.ShowOverviewProviderPieChart;
+            target.ShowOverviewRarityPieChart = source.ShowOverviewRarityPieChart;
+            target.ShowOverviewTrophyPieChart = source.ShowOverviewTrophyPieChart;
+            target.ShowOverviewPiePercentages = source.ShowOverviewPiePercentages;
+            target.OverviewPieSmallSliceMode = source.OverviewPieSmallSliceMode;
+            target.ShowOverviewBarCharts = source.ShowOverviewBarCharts;
+            target.ShowOverviewGameMetadata = source.ShowOverviewGameMetadata;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
             target.ShowCompletionBorder = source.ShowCompletionBorder;
-            target.ShowOverviewGridColumnHeaders = source.ShowOverviewGridColumnHeaders;
+            target.ShowGameSummariesGridColumnHeaders = source.ShowGameSummariesGridColumnHeaders;
             target.ShowAchievementGridColumnHeaders = source.ShowAchievementGridColumnHeaders;
             target.ShowDesktopThemeAchievementGridColumnHeaders = source.ShowDesktopThemeAchievementGridColumnHeaders;
             target.GridColumnHeaderAlignment = source.GridColumnHeaderAlignment;
@@ -95,31 +95,31 @@ namespace PlayniteAchievements.Models.Settings
             target.CompactUnlockedListSortDescending = source.CompactUnlockedListSortDescending;
             target.CompactLockedListSortMode = source.CompactLockedListSortMode;
             target.CompactLockedListSortDescending = source.CompactLockedListSortDescending;
-            target.GamesOverviewGridSortMode = source.GamesOverviewGridSortMode;
-            target.GamesOverviewGridSortDescending = source.GamesOverviewGridSortDescending;
-            target.SidebarSelectedGameGridSortMode = source.SidebarSelectedGameGridSortMode;
-            target.SidebarSelectedGameGridSortDescending = source.SidebarSelectedGameGridSortDescending;
+            target.GameSummariesGridSortMode = source.GameSummariesGridSortMode;
+            target.GameSummariesGridSortDescending = source.GameSummariesGridSortDescending;
+            target.OverviewSelectedGameGridSortMode = source.OverviewSelectedGameGridSortMode;
+            target.OverviewSelectedGameGridSortDescending = source.OverviewSelectedGameGridSortDescending;
             target.SingleGameGridSortMode = source.SingleGameGridSortMode;
             target.SingleGameGridSortDescending = source.SingleGameGridSortDescending;
             target.AchievementDataGridSortMode = source.AchievementDataGridSortMode;
             target.AchievementDataGridSortDescending = source.AchievementDataGridSortDescending;
             target.AchievementDataGridMaxHeight = source.AchievementDataGridMaxHeight;
             target.SingleGameGridRowHeight = source.SingleGameGridRowHeight;
-            target.SidebarOverviewGridRowHeight = source.SidebarOverviewGridRowHeight;
-            target.SidebarRecentAchievementsGridRowHeight = source.SidebarRecentAchievementsGridRowHeight;
-            target.SidebarSelectedGameGridRowHeight = source.SidebarSelectedGameGridRowHeight;
-            target.StartPageGamesOverviewGridRowHeight = source.StartPageGamesOverviewGridRowHeight;
+            target.OverviewGameSummariesGridRowHeight = source.OverviewGameSummariesGridRowHeight;
+            target.OverviewRecentAchievementsGridRowHeight = source.OverviewRecentAchievementsGridRowHeight;
+            target.OverviewSelectedGameGridRowHeight = source.OverviewSelectedGameGridRowHeight;
+            target.StartPageGameSummariesGridRowHeight = source.StartPageGameSummariesGridRowHeight;
             target.StartPageRecentAchievementsGridRowHeight = source.StartPageRecentAchievementsGridRowHeight;
             target.DesktopThemeAchievementGridRowHeight = source.DesktopThemeAchievementGridRowHeight;
             target.SingleGameGridMaxRows = source.SingleGameGridMaxRows;
-            target.SidebarOverviewGridMaxRows = source.SidebarOverviewGridMaxRows;
-            target.SidebarRecentAchievementsGridMaxRows = source.SidebarRecentAchievementsGridMaxRows;
-            target.SidebarSelectedGameGridMaxRows = source.SidebarSelectedGameGridMaxRows;
-            target.StartPageGamesOverviewGridMaxRows = source.StartPageGamesOverviewGridMaxRows;
+            target.OverviewGameSummariesGridMaxRows = source.OverviewGameSummariesGridMaxRows;
+            target.OverviewRecentAchievementsGridMaxRows = source.OverviewRecentAchievementsGridMaxRows;
+            target.OverviewSelectedGameGridMaxRows = source.OverviewSelectedGameGridMaxRows;
+            target.StartPageGameSummariesGridMaxRows = source.StartPageGameSummariesGridMaxRows;
             target.StartPageRecentAchievementsGridMaxRows = source.StartPageRecentAchievementsGridMaxRows;
             target.DesktopThemeAchievementGridMaxRows = source.DesktopThemeAchievementGridMaxRows;
-            target.StartPageGamesOverviewGrid = source.StartPageGamesOverviewGrid?.Clone() ??
-                new StartPageGamesOverviewGridSettings();
+            target.StartPageGameSummariesGrid = source.StartPageGameSummariesGrid?.Clone() ??
+                new StartPageGameSummariesGridSettings();
             target.StartPageRecentUnlocksGrid = source.StartPageRecentUnlocksGrid?.Clone() ??
                 new StartPageRecentUnlocksGridSettings();
             target.StartPagePieCharts = source.StartPagePieCharts?.Clone() ??
@@ -138,23 +138,23 @@ namespace PlayniteAchievements.Models.Settings
             target.DataGridColumnOrder = source.DataGridColumnOrder != null
                 ? new Dictionary<string, int>(source.DataGridColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            target.SidebarAchievementColumnWidths = source.SidebarAchievementColumnWidths != null
-                ? new Dictionary<string, double>(source.SidebarAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+            target.OverviewRecentAchievementColumnWidths = source.OverviewRecentAchievementColumnWidths != null
+                ? new Dictionary<string, double>(source.OverviewRecentAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            target.SidebarAchievementColumnOrder = source.SidebarAchievementColumnOrder != null
-                ? new Dictionary<string, int>(source.SidebarAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+            target.OverviewRecentAchievementColumnOrder = source.OverviewRecentAchievementColumnOrder != null
+                ? new Dictionary<string, int>(source.OverviewRecentAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            target.SidebarAchievementColumnAlignments = source.SidebarAchievementColumnAlignments != null
-                ? new Dictionary<string, GridAlignment>(source.SidebarAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
+            target.OverviewRecentAchievementColumnAlignments = source.OverviewRecentAchievementColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.OverviewRecentAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            target.SidebarGameColumnWidths = source.SidebarGameColumnWidths != null
-                ? new Dictionary<string, double>(source.SidebarGameColumnWidths, StringComparer.OrdinalIgnoreCase)
+            target.OverviewSelectedGameAchievementColumnWidths = source.OverviewSelectedGameAchievementColumnWidths != null
+                ? new Dictionary<string, double>(source.OverviewSelectedGameAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            target.SidebarGameColumnOrder = source.SidebarGameColumnOrder != null
-                ? new Dictionary<string, int>(source.SidebarGameColumnOrder, StringComparer.OrdinalIgnoreCase)
+            target.OverviewSelectedGameAchievementColumnOrder = source.OverviewSelectedGameAchievementColumnOrder != null
+                ? new Dictionary<string, int>(source.OverviewSelectedGameAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            target.SidebarGameColumnAlignments = source.SidebarGameColumnAlignments != null
-                ? new Dictionary<string, GridAlignment>(source.SidebarGameColumnAlignments, StringComparer.OrdinalIgnoreCase)
+            target.OverviewSelectedGameAchievementColumnAlignments = source.OverviewSelectedGameAchievementColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.OverviewSelectedGameAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.SingleGameColumnWidths = source.SingleGameColumnWidths != null
                 ? new Dictionary<string, double>(source.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
@@ -174,17 +174,17 @@ namespace PlayniteAchievements.Models.Settings
             target.DesktopThemeColumnAlignments = source.DesktopThemeColumnAlignments != null
                 ? new Dictionary<string, GridAlignment>(source.DesktopThemeColumnAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            target.GamesOverviewColumnVisibility = source.GamesOverviewColumnVisibility != null
-                ? new Dictionary<string, bool>(source.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+            target.GameSummariesColumnVisibility = source.GameSummariesColumnVisibility != null
+                ? new Dictionary<string, bool>(source.GameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            target.GamesOverviewColumnWidths = source.GamesOverviewColumnWidths != null
-                ? new Dictionary<string, double>(source.GamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+            target.GameSummariesColumnWidths = source.GameSummariesColumnWidths != null
+                ? new Dictionary<string, double>(source.GameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            target.GamesOverviewColumnOrder = source.GamesOverviewColumnOrder != null
-                ? new Dictionary<string, int>(source.GamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+            target.GameSummariesColumnOrder = source.GameSummariesColumnOrder != null
+                ? new Dictionary<string, int>(source.GameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            target.GamesOverviewColumnAlignments = source.GamesOverviewColumnAlignments != null
-                ? new Dictionary<string, GridAlignment>(source.GamesOverviewColumnAlignments, StringComparer.OrdinalIgnoreCase)
+            target.GameSummariesColumnAlignments = source.GameSummariesColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.GameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.StartPageAchievementColumnVisibility = source.StartPageAchievementColumnVisibility != null
                 ? new Dictionary<string, bool>(source.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
@@ -198,26 +198,26 @@ namespace PlayniteAchievements.Models.Settings
             target.StartPageAchievementColumnAlignments = source.StartPageAchievementColumnAlignments != null
                 ? new Dictionary<string, GridAlignment>(source.StartPageAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            target.StartPageGamesOverviewColumnVisibility = source.StartPageGamesOverviewColumnVisibility != null
-                ? new Dictionary<string, bool>(source.StartPageGamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
+            target.StartPageGameSummariesColumnVisibility = source.StartPageGameSummariesColumnVisibility != null
+                ? new Dictionary<string, bool>(source.StartPageGameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            target.StartPageGamesOverviewColumnWidths = source.StartPageGamesOverviewColumnWidths != null
-                ? new Dictionary<string, double>(source.StartPageGamesOverviewColumnWidths, StringComparer.OrdinalIgnoreCase)
+            target.StartPageGameSummariesColumnWidths = source.StartPageGameSummariesColumnWidths != null
+                ? new Dictionary<string, double>(source.StartPageGameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            target.StartPageGamesOverviewColumnOrder = source.StartPageGamesOverviewColumnOrder != null
-                ? new Dictionary<string, int>(source.StartPageGamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
+            target.StartPageGameSummariesColumnOrder = source.StartPageGameSummariesColumnOrder != null
+                ? new Dictionary<string, int>(source.StartPageGameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            target.StartPageGamesOverviewColumnAlignments = source.StartPageGamesOverviewColumnAlignments != null
-                ? new Dictionary<string, GridAlignment>(source.StartPageGamesOverviewColumnAlignments, StringComparer.OrdinalIgnoreCase)
+            target.StartPageGameSummariesColumnAlignments = source.StartPageGameSummariesColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.StartPageGameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
-            target.SidebarOverviewLeftColumnRatio = source.SidebarOverviewLeftColumnRatio;
+            target.OverviewLeftColumnRatio = source.OverviewLeftColumnRatio;
             target.WindowPlacements = source.WindowPlacements != null
                 ? source.WindowPlacements.ToDictionary(
                     kvp => kvp.Key,
                     kvp => kvp.Value?.Clone(),
                     StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
-            target.SidebarTimelineRange = source.SidebarTimelineRange;
+            target.OverviewTimelineRange = source.OverviewTimelineRange;
 
             // General Settings
             target.FirstTimeSetupCompleted = source.FirstTimeSetupCompleted;

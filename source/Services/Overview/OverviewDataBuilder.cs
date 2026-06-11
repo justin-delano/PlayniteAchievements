@@ -11,9 +11,9 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
 
-namespace PlayniteAchievements.Services.Sidebar
+namespace PlayniteAchievements.Services.Overview
 {
-    public sealed class SidebarDataBuilder
+    public sealed class OverviewDataBuilder
     {
         private sealed class GamePresentation
         {
@@ -39,7 +39,7 @@ namespace PlayniteAchievements.Services.Sidebar
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
 
-        public SidebarDataBuilder(
+        public OverviewDataBuilder(
             AchievementDataService achievementDataService,
             IReadOnlyList<IDataProvider> providers,
             IPlayniteAPI playniteApi,
@@ -51,7 +51,7 @@ namespace PlayniteAchievements.Services.Sidebar
             _logger = logger;
         }
 
-        public SidebarDataSnapshot Build(
+        public OverviewDataSnapshot Build(
             PlayniteAchievementsSettings settings,
             ISet<string> revealedKeys,
             CancellationToken cancel)
@@ -60,7 +60,7 @@ namespace PlayniteAchievements.Services.Sidebar
             revealedKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var providerLookup = BuildProviderLookup();
-            var queryData = _achievementDataService.GetCachedSummaryDataForSidebar(0);
+            var queryData = _achievementDataService.GetCachedSummaryDataForOverview(0);
             if (queryData != null)
             {
                 return BuildFromCachedSummaryData(settings, queryData, providerLookup, cancel);
@@ -69,14 +69,14 @@ namespace PlayniteAchievements.Services.Sidebar
             return BuildFromHydratedData(settings, revealedKeys, providerLookup, cancel);
         }
 
-        private SidebarDataSnapshot BuildFromHydratedData(
+        private OverviewDataSnapshot BuildFromHydratedData(
             PlayniteAchievementsSettings settings,
             ISet<string> revealedKeys,
             IReadOnlyDictionary<string, (string iconKey, string colorHex)> providerLookup,
             CancellationToken cancel)
         {
-            var snapshot = new SidebarDataSnapshot();
-            var gamesOverview = new List<GameOverviewItem>();
+            var snapshot = new OverviewDataSnapshot();
+            var gameSummaries = new List<GameSummaryItem>();
             var recentAchievements = new List<AchievementDisplayItem>();
 
             var globalCounts = new Dictionary<DateTime, int>();
@@ -100,7 +100,7 @@ namespace PlayniteAchievements.Services.Sidebar
             int totalRarePossible = 0;
             int totalUltraRarePossible = 0;
 
-            var allGameData = _achievementDataService.GetAllVisibleGameAchievementDataForSidebar() ?? new List<GameAchievementData>();
+            var allGameData = _achievementDataService.GetAllVisibleGameAchievementDataForOverview() ?? new List<GameAchievementData>();
             for (var i = 0; i < allGameData.Count; i++)
             {
                 cancel.ThrowIfCancellationRequested();
@@ -116,9 +116,9 @@ namespace PlayniteAchievements.Services.Sidebar
                     continue;
                 }
 
-                if (fragment.GameOverview != null)
+                if (fragment.GameSummary != null)
                 {
-                    gamesOverview.Add(fragment.GameOverview);
+                    gameSummaries.Add(fragment.GameSummary);
                 }
 
                 if (fragment.RecentAchievements != null && fragment.RecentAchievements.Count > 0)
@@ -171,7 +171,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 totalUltraRarePossible += fragment.TotalUltraRarePossible;
             }
 
-            gamesOverview = gamesOverview
+            gameSummaries = gameSummaries
                 .OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue)
                 .ToList();
 
@@ -180,12 +180,12 @@ namespace PlayniteAchievements.Services.Sidebar
                 AchievementSortScope.RecentAchievements);
 
             snapshot.Achievements = new List<AchievementDisplayItem>();
-            snapshot.GamesOverview = gamesOverview;
+            snapshot.GameSummaries = gameSummaries;
             snapshot.RecentAchievements = recentAchievements;
             snapshot.GlobalUnlockCountsByDate = globalCounts;
             snapshot.UnlockCountsByDateByGame = singleGameCounts;
 
-            snapshot.TotalGames = gamesOverview.Count;
+            snapshot.TotalGames = gameSummaries.Count;
             snapshot.TotalAchievements = totalAchievements;
             snapshot.TotalUnlocked = totalUnlocked;
             snapshot.TotalCommon = commonCount;
@@ -208,7 +208,7 @@ namespace PlayniteAchievements.Services.Sidebar
             return snapshot;
         }
 
-        private SidebarDataSnapshot BuildFromCachedSummaryData(
+        private OverviewDataSnapshot BuildFromCachedSummaryData(
             PlayniteAchievementsSettings settings,
             CachedSummaryData queryData,
             IReadOnlyDictionary<string, (string iconKey, string colorHex)> providerLookup,
@@ -218,10 +218,10 @@ namespace PlayniteAchievements.Services.Sidebar
             queryData ??= new CachedSummaryData();
             providerLookup ??= BuildProviderLookup();
 
-            var snapshot = new SidebarDataSnapshot
+            var snapshot = new OverviewDataSnapshot
             {
                 Achievements = new List<AchievementDisplayItem>(),
-                GamesOverview = new List<GameOverviewItem>(),
+                GameSummaries = new List<GameSummaryItem>(),
                 RecentAchievements = new List<AchievementDisplayItem>(),
                 GlobalUnlockCountsByDate = CloneCounts(queryData.GlobalUnlockCountsByDate),
                 UnlockCountsByDateByGame = CloneCountsByGame(queryData.UnlockCountsByDateByGame),
@@ -264,7 +264,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 }
 
                 var presentation = ResolveGamePresentation(game.PlayniteGameId, presentationByGameId);
-                snapshot.GamesOverview.Add(new GameOverviewItem
+                snapshot.GameSummaries.Add(new GameSummaryItem
                 {
                     GameName = game.GameName ?? "Unknown",
                     SortingName = presentation.SortingName ?? game.GameName ?? "Unknown",
@@ -338,10 +338,10 @@ namespace PlayniteAchievements.Services.Sidebar
                 presentationByGameId,
                 cancel);
 
-            snapshot.GamesOverview = snapshot.GamesOverview
+            snapshot.GameSummaries = snapshot.GameSummaries
                 .OrderByDescending(g => g.LastPlayed ?? DateTime.MinValue)
                 .ToList();
-            snapshot.TotalGames = snapshot.GamesOverview.Count;
+            snapshot.TotalGames = snapshot.GameSummaries.Count;
             snapshot.TotalLocked = Math.Max(0, snapshot.TotalAchievements - snapshot.TotalUnlocked);
             snapshot.GlobalProgressionPercent = snapshot.TotalAchievements > 0
                 ? (double)snapshot.TotalUnlocked / snapshot.TotalAchievements * 100
@@ -352,7 +352,7 @@ namespace PlayniteAchievements.Services.Sidebar
         }
 
         private static void ApplyScoreSnapshotFromValues(
-            SidebarDataSnapshot snapshot,
+            OverviewDataSnapshot snapshot,
             int collectionScore,
             int prestigeScore)
         {
@@ -366,7 +366,7 @@ namespace PlayniteAchievements.Services.Sidebar
                 prestigeScore));
         }
 
-        private static void ApplyScoreSnapshot(SidebarDataSnapshot snapshot, AchievementScoreSnapshot scoreSnapshot)
+        private static void ApplyScoreSnapshot(OverviewDataSnapshot snapshot, AchievementScoreSnapshot scoreSnapshot)
         {
             if (snapshot == null || scoreSnapshot == null)
             {
@@ -394,7 +394,7 @@ namespace PlayniteAchievements.Services.Sidebar
             return snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level;
         }
 
-        public SidebarGameFragment BuildGameFragment(
+        public OverviewGameFragment BuildGameFragment(
             PlayniteAchievementsSettings settings,
             ISet<string> revealedKeys,
             GameAchievementData gameData,
@@ -439,7 +439,7 @@ namespace PlayniteAchievements.Services.Sidebar
             var gameIconPath = presentation.IconPath;
             var gameCoverPath = presentation.CoverPath;
 
-            var fragment = new SidebarGameFragment
+            var fragment = new OverviewGameFragment
             {
                 CacheKey = gameData.PlayniteGameId?.ToString(),
                 PlayniteGameId = gameData.PlayniteGameId,
@@ -577,7 +577,7 @@ namespace PlayniteAchievements.Services.Sidebar
 
             fragment.IsCompleted = gameData.IsCompleted;
 
-            fragment.GameOverview = new GameOverviewItem
+            fragment.GameSummary = new GameSummaryItem
             {
                 GameName = gameData.GameName ?? "Unknown",
                 SortingName = presentation.SortingName ?? gameData.GameName ?? "Unknown",

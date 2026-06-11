@@ -64,7 +64,7 @@ namespace PlayniteAchievements
 
         private void OpenOverviewWindow()
         {
-            var view = new SidebarControl(
+            var view = new OverviewControl(
                 PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi,
                 _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings);
 

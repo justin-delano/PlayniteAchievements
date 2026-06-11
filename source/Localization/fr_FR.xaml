@@ -150,7 +150,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">Inclure dans les actualisations et actualiser les jeux sélectionnés</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Ouvrir le jeu dans la bibliothèque</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">Vue d'ensemble des succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_OpenGameInSidebar">Ouvrir le jeu dans la barre latérale</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">Open Game in Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Veuillez saisir un identifiant de jeu valide (nombre entier positif).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Veuillez saisir un TitleID Xenia valide de 8 caractères hexadécimaux.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Veuillez saisir un identifiant ShadPS4 valide, tel que CUSA00432 ou NPWR12345_00.</sys:String>
@@ -238,7 +238,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ShadPS4Header">Remplacement de l'identifiant ShadPS4</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ShadPS4Hint">Saisissez un ID PS4 (CUSA00432) ou un ID trophée (NPWR12345_00) pour remplacer la détection automatique.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader">Exclusion des résumés</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">Exclure ce jeu des statistiques et résumés globaux.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Succès final actuel : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Choisissez un succès à définir comme succès final de ce jeu. Lorsque ce succès est débloqué, le jeu sera considéré comme terminé.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Capstone">Succès final</sys:String>
@@ -334,7 +334,7 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseParallelOverride">Remplacer l'exécution parallèle des plateformes</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseRecentLimit">Remplacer la limite des jeux récents</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress_ButtonOpenGame">Ouvrir le jeu</sys:String>
-    <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">Vous pouvez toujours suivre la progression dans la barre latérale.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Progress_RefreshRunningNote">You can still check progress in the overview.</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Custom">Actualisation personnalisée</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Actualiser les favoris</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Actualisation complète</sys:String>
@@ -389,16 +389,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Liste compacte verrouillée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Liste compacte débloquée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Paramètres de Playnite Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">Barre latérale</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSection">Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSubtitle">Shared display defaults and achievement visibility</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSubtitle">Sidebar layout, charts, and grids</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSubtitle">Overview layout, charts, and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySubtitle">Single-game window and theme controls</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSubtitle">StartPage widgets and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarLayout">Sidebar Layout</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarCharts">Sidebar Charts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Overview Layout</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Overview Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">Desktop Theme Integration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Activer l'analyse des archives (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Activer le hachage des disques (pour les consoles à disque)</sys:String>
@@ -485,13 +485,13 @@
     <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Bottom">Bottom</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarRecentAchievementsGrid">Sidebar Recent Achievements Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Overview Recent Achievements Grid</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Conserver les icônes de succès en pleine résolution</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Enregistre les icônes en cache dans leur résolution d'origine au lieu du cache optimisé en 128 px. Cela utilise plus d'espace disque.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProgressBarPreview">Barre de progression</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GamesOverviewGridSort">Grille d'aperçu des jeux dans la barre latérale</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Grille du jeu sélectionné dans la barre latérale</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameSummariesGridSort">Overview Game Summaries Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SelectedGameGridSort">Overview Selected Game Grid</sys:String>
 
     <!-- Provider: Shared -->
     <sys:String x:Key="LOCPlayAch_Settings_ProviderAuth">Authentification {0}</sys:String>
@@ -564,7 +564,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Description">Actualise uniquement vos jeux récemment joués qui possèdent des succès.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Jeux récents à actualiser</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Supprimer tous les tags</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Afficher à nouveau la page de configuration initiale à la prochaine ouverture de la barre latérale.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next overview open.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Réinitialiser la page d'accueil</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Révéler la description masquée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Révéler l'icône masquée</sys:String>
@@ -579,29 +579,29 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Afficher la bordure de complétion</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Afficher le suffixe (Succès masqué)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Afficher une lueur de rareté sur les icônes débloquées</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Afficher les graphiques en barres dans la barre latérale</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Show Overview Bar Charts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Afficher la plateforme, le temps de jeu et la région</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Show Collection Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Show Prestige Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarGamesPieChart">Afficher le graphique des jeux terminés</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">Afficher les pourcentages des graphiques</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">Afficher le graphique par plateforme</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarRarityPieChart">Afficher le graphique par rareté</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarTrophyPieChart">Afficher le graphique par trophée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Show Completed Games Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPiePercentages">Show Pie Percentages</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewProviderPieChart">Show Platform Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewRarityPieChart">Show Rarity Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewTrophyPieChart">Show Trophy Pie Chart</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Afficher le bouton dans la barre de menu supérieure</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGridColumnHeaders">Show Overview Grid Column Headers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Game Summaries Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Desktop Theme Achievement Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">Grille de la vue d'un jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">Fenêtre des succès</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode">Gestion des petites parts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact">Exact</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Exact_Description">Affiche la taille exacte des parts. Les icônes radiales sont masquées pour les parts inférieures à 5 % afin de réduire les chevauchements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Hide_Description">Masque les parts inférieures à 5 % dans le graphique de la barre latérale.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Note">Le pourcentage central utilise toujours les valeurs exactes, il peut donc différer du graphique visible lorsque des parts sont masquées ou arrondies.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round">Arrondir</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_SidebarPieSmallSliceMode_Round_Description">Arrondit les parts inférieures à 5 % à 5 %.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Small Slice Handling</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exact</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description">Shows exact slice sizes. Radial icons are hidden for slices under 5% to reduce overlaps.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description">Hides slices under 5% from the overview pie.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Note">The center percentage always uses exact counts, so it may differ from the visible pie when slices are hidden or rounded.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Round</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round_Description">Rounds slices under 5% up to 5%.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StatsPreview">Statistiques</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TabDisplay">Affichage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TaggingDescription">Ajoute automatiquement des tags aux jeux selon leur statut de succès. Les tags peuvent servir à filtrer et organiser votre bibliothèque.</sys:String>
@@ -624,7 +624,7 @@
     <sys:String x:Key="LOCPlayAch_Auth_TemporaryFailure">Échec de la vérification de l'authentification. Réessayez.</sys:String>
 
     <!-- ================================================================= -->
-    <!-- 12 Sidebar and Filters -->
+    <!-- 12 Overview and Filters -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Rechercher des succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Complete">Terminé</sys:String>
@@ -635,12 +635,12 @@
     <sys:String x:Key="LOCPlayAch_Filter_Played">Joué</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_PlayStatusSelectorPlaceholder">Statut de jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Jamais lancé</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_GamesOverview">Vue d'ensemble des jeux</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_GamesPieChart">Jeux terminés</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_Incomplete">Incomplet</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_ProviderDistribution">Succès par plateforme</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_RarityPieChart">Succès par rareté</sys:String>
-    <sys:String x:Key="LOCPlayAch_Sidebar_TrophyPieChart">Succès par trophée</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Game Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Completed Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Incomplete</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Achievements by Platform</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Achievements by Rarity</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Achievements by Trophy</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->

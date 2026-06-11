@@ -1,4 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.SidebarControl"
+<UserControl x:Class="PlayniteAchievements.Views.OverviewControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -266,7 +266,7 @@
                 </Style.Triggers>
             </Style>
 
-            <Style x:Key="GamesOverviewDataGridCellStyle" TargetType="DataGridCell">
+            <Style x:Key="GameSummariesGridCellStyle" TargetType="DataGridCell">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="Focusable" Value="True"/>
@@ -316,7 +316,7 @@
                 </Style.Triggers>
             </Style>
 
-            <Style x:Key="GamesOverviewDataGridRowStyle" TargetType="DataGridRow">
+            <Style x:Key="GameSummariesGridRowStyle" TargetType="DataGridRow">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
                 <Setter Property="BorderThickness" Value="0,0,0,1"/>
@@ -329,7 +329,7 @@
                 <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
             </Style>
 
-            <Style x:Key="OverviewGameNameTextStyle" TargetType="TextBlock">
+            <Style x:Key="GameSummaryNameTextStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -344,7 +344,7 @@
                 <Setter Property="TextWrapping" Value="Wrap"/>
             </Style>
 
-            <Style x:Key="OverviewProviderIconStyle" TargetType="Image">
+            <Style x:Key="GameSummaryProviderIconStyle" TargetType="Image">
                 <Setter Property="Width" Value="32"/>
                 <Setter Property="Height" Value="32"/>
                 <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -525,12 +525,12 @@
                             VerticalAlignment="Center"
                             MaxWidth="740"
                             Margin="18,0,0,0"
-                            Visibility="{Binding ShowSidebarScoreCards, Converter={StaticResource BoolToVis}}">
+                            Visibility="{Binding ShowOverviewScoreCards, Converter={StaticResource BoolToVis}}">
 
                     <controls:ScoreCardControl Width="300"
                                                ScoreCard="{Binding CollectionScoreCard}"
                                                InfoRequested="ScoreCard_InfoRequested"
-                                               Visibility="{Binding ShowSidebarCollectionScoreCard, Converter={StaticResource BoolToVis}}"/>
+                                               Visibility="{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}"/>
 
                     <Border Background="{DynamicResource NormalBorderBrush}"
                             Opacity="0.55"
@@ -538,12 +538,12 @@
                             Width="1"
                             Height="42"
                             Margin="12,2"
-                            Visibility="{Binding ShowSidebarScoreCardDivider, Converter={StaticResource BoolToVis}}"/>
+                            Visibility="{Binding ShowOverviewScoreCardDivider, Converter={StaticResource BoolToVis}}"/>
 
                     <controls:ScoreCardControl Width="300"
                                                ScoreCard="{Binding PrestigeScoreCard}"
                                                InfoRequested="ScoreCard_InfoRequested"
-                                               Visibility="{Binding ShowSidebarPrestigeScoreCard, Converter={StaticResource BoolToVis}}"/>
+                                               Visibility="{Binding ShowOverviewPrestigeScoreCard, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
 
             </Grid>
@@ -781,7 +781,7 @@
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,1,1">
                         <Grid>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Sidebar_GamesOverview}"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                        Style="{DynamicResource BaseTextBlockStyle}"
                                        FontWeight="Bold"
                                        Foreground="{DynamicResource TextBrush}"
@@ -794,24 +794,24 @@
                     <Border Grid.Row="2" Grid.Column="0"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,1,0">
-                        <Grid x:Name="SidebarBottomChartsGrid">
+                        <Grid x:Name="OverviewBottomChartsGrid">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                        <controls:GamesOverviewDataGridControl x:Name="GamesOverviewDataGridControl"
+                        <controls:GameSummariesGridControl x:Name="GameSummariesGridControl"
                                                                 Grid.Row="0"
                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
-                                                                ItemsSource="{Binding GamesOverview}"
+                                                                ItemsSource="{Binding GameSummaries}"
                                                                 SelectedItem="{Binding SelectedGame, Mode=OneWay}"
                                                                 UseCoverImages="{Binding UseCoverImages}"
-                                                                ShowGameMetadata="{Binding ShowSidebarGameMetadata}"
+                                                                ShowGameMetadata="{Binding ShowOverviewGameMetadata}"
                                                                 ShowCompletionBorder="{Binding ShowCompletionBorder}"
-                                                                ShowColumnHeaders="{Binding ShowOverviewGridColumnHeaders}"
-                                                                FixedRowHeight="{Binding SidebarOverviewGridRowHeight}"
-                                                                ColumnSettingsKey="SidebarOverview"
-                                                                SelectionChanged="GamesOverview_SelectionChanged"
-                                                                RowPreviewMouseLeftButtonDown="GamesOverview_PreviewMouseLeftButtonDown"
+                                                                ShowColumnHeaders="{Binding ShowGameSummariesGridColumnHeaders}"
+                                                                FixedRowHeight="{Binding OverviewGameSummariesGridRowHeight}"
+                                                                ColumnSettingsKey="OverviewGameSummaries"
+                                                                SelectionChanged="GameSummaries_SelectionChanged"
+                                                                RowPreviewMouseLeftButtonDown="GameSummaries_PreviewMouseLeftButtonDown"
                                                                 Sorting="DataGrid_Sorting"
                                                                 RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
                                                                 RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
@@ -901,12 +901,12 @@
                                                                  Grid.Row="0"
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding RecentAchievements}"
-                                                                 ColumnSettingsKey="Sidebar"
+                                                                 ColumnSettingsKey="OverviewRecentAchievements"
                                                                  ShowGameColumn="True"
                                                                  HideStatusColumn="True"
                                                                  UseCoverImages="{Binding UseCoverImages}"
                                                                  ShowColumnHeaders="{Binding ShowAchievementGridColumnHeaders}"
-                                                                 FixedRowHeight="{Binding SidebarRecentAchievementsGridRowHeight}"
+                                                                 FixedRowHeight="{Binding OverviewRecentAchievementsGridRowHeight}"
                                                                  DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                                  UseExternalSorting="True"
                                                                  Sorting="AchievementDataGrid_Sorting"
@@ -926,10 +926,10 @@
                                                                  Grid.Row="0"
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
-                                                                 ColumnSettingsKey="SidebarGame"
+                                                                 ColumnSettingsKey="OverviewSelectedGameAchievements"
                                                                  DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                                  ShowColumnHeaders="{Binding ShowAchievementGridColumnHeaders}"
-                                                                 FixedRowHeight="{Binding SidebarSelectedGameGridRowHeight}"
+                                                                 FixedRowHeight="{Binding OverviewSelectedGameGridRowHeight}"
                                                                  RevealCommand="{Binding DataContext.RevealAchievementCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                  UseExternalSorting="True"
                                                                  Sorting="GameAchievementsGrid_Sorting"
@@ -948,7 +948,7 @@
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,3,0,0">
                         <Border.Resources>
-                            <DataTemplate x:Key="SidebarTimelineContentTemplate">
+                            <DataTemplate x:Key="OverviewTimelineContentTemplate">
                                 <Grid>
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -1031,8 +1031,8 @@
                                 <Style.Triggers>
                                     <MultiDataTrigger>
                                         <MultiDataTrigger.Conditions>
-                                            <Condition Binding="{Binding ShowSidebarPieCharts}" Value="False"/>
-                                            <Condition Binding="{Binding ShowSidebarBarCharts}" Value="False"/>
+                                            <Condition Binding="{Binding ShowOverviewPieCharts}" Value="False"/>
+                                            <Condition Binding="{Binding ShowOverviewBarCharts}" Value="False"/>
                                         </MultiDataTrigger.Conditions>
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                     </MultiDataTrigger>
@@ -1046,7 +1046,7 @@
                             </Grid.ColumnDefinitions>
 
                             <!-- LEFT: Pie Charts -->
-                            <Border x:Name="SidebarPieChartsHost"
+                            <Border x:Name="OverviewPieChartsHost"
                                     Grid.Column="0"
                                     Background="Transparent"
                                     BorderThickness="0"
@@ -1056,16 +1056,16 @@
                                         <Setter Property="Visibility" Value="Visible"/>
                                         <Setter Property="Grid.ColumnSpan" Value="1"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding ShowSidebarPieCharts}" Value="False">
+                                            <DataTrigger Binding="{Binding ShowOverviewPieCharts}" Value="False">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding ShowSidebarBarCharts}" Value="False">
+                                            <DataTrigger Binding="{Binding ShowOverviewBarCharts}" Value="False">
                                                 <Setter Property="Grid.ColumnSpan" Value="2"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Border.Style>
-                                <Grid x:Name="SidebarPieChartsGrid">
+                                <Grid x:Name="OverviewPieChartsGrid">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="*"/>
@@ -1080,7 +1080,7 @@
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0"
-                                               Text="{DynamicResource LOCPlayAch_Sidebar_GamesPieChart}"
+                                               Text="{DynamicResource LOCPlayAch_Overview_GamesPieChart}"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}"
                                                Opacity="0.7"
@@ -1095,7 +1095,7 @@
                                                                       HighlightedLabels="{Binding GamesPieChart.HighlightedLabels}"
                                                                       ExactUnlockedCount="{Binding GamesPieChart.ExactUnlockedCount}"
                                                                       ExactTotalCount="{Binding GamesPieChart.ExactTotalCount}"
-                                                                      ShowCenterPercentage="{Binding ShowSidebarPiePercentages}"
+                                                                      ShowCenterPercentage="{Binding ShowOverviewPiePercentages}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnGamesPieChartSliceClick"/>
                                 </Grid>
@@ -1107,7 +1107,7 @@
                                         <RowDefinition Height="*"/>
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0"
-                                               Text="{DynamicResource LOCPlayAch_Sidebar_ProviderDistribution}"
+                                               Text="{DynamicResource LOCPlayAch_Overview_ProviderDistribution}"
                                                Style="{DynamicResource BaseTextBlockStyle}"
                                                Foreground="{DynamicResource TextBrush}"
                                                Opacity="0.7"
@@ -1123,7 +1123,7 @@
                                                                       HighlightedLabels="{Binding ProviderPieChart.HighlightedLabels}"
                                                                       ExactUnlockedCount="{Binding ProviderPieChart.ExactUnlockedCount}"
                                                                       ExactTotalCount="{Binding ProviderPieChart.ExactTotalCount}"
-                                                                      ShowCenterPercentage="{Binding ShowSidebarPiePercentages}"
+                                                                      ShowCenterPercentage="{Binding ShowOverviewPiePercentages}"
                                                                       IconOffset="12"
                                                                       SliceClick="OnProviderPieChartSliceClick"/>
                                 </Grid>
@@ -1150,7 +1150,7 @@
                                                                       HighlightedLabels="{Binding RarityPieChart.HighlightedLabels}"
                                                                       ExactUnlockedCount="{Binding RarityPieChart.ExactUnlockedCount}"
                                                                       ExactTotalCount="{Binding RarityPieChart.ExactTotalCount}"
-                                                                      ShowCenterPercentage="{Binding ShowSidebarPiePercentages}"
+                                                                      ShowCenterPercentage="{Binding ShowOverviewPiePercentages}"
                                                                       IconOffset="12"/>
                                 </Grid>
 
@@ -1176,7 +1176,7 @@
                                                                       HighlightedLabels="{Binding TrophyPieChart.HighlightedLabels}"
                                                                       ExactUnlockedCount="{Binding TrophyPieChart.ExactUnlockedCount}"
                                                                       ExactTotalCount="{Binding TrophyPieChart.ExactTotalCount}"
-                                                                      ShowCenterPercentage="{Binding ShowSidebarPiePercentages}"
+                                                                      ShowCenterPercentage="{Binding ShowOverviewPiePercentages}"
                                                                       IconOffset="12"/>
                                 </Grid>
                                 </Grid>
@@ -1193,8 +1193,8 @@
                                         <Style.Triggers>
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ShowSidebarPieCharts}" Value="True"/>
-                                                    <Condition Binding="{Binding ShowSidebarBarCharts}" Value="True"/>
+                                                    <Condition Binding="{Binding ShowOverviewPieCharts}" Value="True"/>
+                                                    <Condition Binding="{Binding ShowOverviewBarCharts}" Value="True"/>
                                                 </MultiDataTrigger.Conditions>
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </MultiDataTrigger>
@@ -1202,7 +1202,7 @@
                                     </Style>
                                 </Border.Style>
                                 <ContentControl Content="{Binding}"
-                                                ContentTemplate="{StaticResource SidebarTimelineContentTemplate}"/>
+                                                ContentTemplate="{StaticResource OverviewTimelineContentTemplate}"/>
                             </Border>
 
                             <!-- FULL-WIDTH Timeline When Pie Charts Are Hidden -->
@@ -1216,8 +1216,8 @@
                                         <Style.Triggers>
                                             <MultiDataTrigger>
                                                 <MultiDataTrigger.Conditions>
-                                                    <Condition Binding="{Binding ShowSidebarPieCharts}" Value="False"/>
-                                                    <Condition Binding="{Binding ShowSidebarBarCharts}" Value="True"/>
+                                                    <Condition Binding="{Binding ShowOverviewPieCharts}" Value="False"/>
+                                                    <Condition Binding="{Binding ShowOverviewBarCharts}" Value="True"/>
                                                 </MultiDataTrigger.Conditions>
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </MultiDataTrigger>
@@ -1225,7 +1225,7 @@
                                     </Style>
                                 </Border.Style>
                                 <ContentControl Content="{Binding}"
-                                                ContentTemplate="{StaticResource SidebarTimelineContentTemplate}"/>
+                                                ContentTemplate="{StaticResource OverviewTimelineContentTemplate}"/>
                             </Border>
                         </Grid>
                     </Border>

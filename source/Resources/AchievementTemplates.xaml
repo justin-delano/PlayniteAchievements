@@ -305,7 +305,7 @@
            BasedOn="{StaticResource WrappedDataGridTextStyle}">
     </Style>
 
-    <!-- Shared selector button + menu item styles (sidebar/single-game/game-options) -->
+    <!-- Shared selector button + menu item styles (overview/single-game/game-options) -->
     <Style x:Key="AchievementSelectorButtonStyle"
            TargetType="Button"
            BasedOn="{StaticResource {x:Type Button}}">

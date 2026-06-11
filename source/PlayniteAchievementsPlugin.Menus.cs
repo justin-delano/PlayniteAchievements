@@ -702,7 +702,7 @@ namespace PlayniteAchievements
 
             if (!refreshInProgress)
             {
-                // Fullscreen-only: overview window (desktop uses the sidebar panel).
+                // Fullscreen-only: overview window (desktop uses the overview panel).
                 var isFullscreen = IsFullscreenMode();
 
                 if (isFullscreen)

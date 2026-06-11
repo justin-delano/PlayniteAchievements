@@ -468,7 +468,7 @@ namespace PlayniteAchievements.Views
 
             InitializeComponent();
 
-            // Initialize provider navigation sidebar
+            // Initialize provider navigation overview
             ProviderNavigationItems = new ObservableCollection<ProviderNavigationItem>();
 
             // Playnite does not reliably set DataContext for settings views.
@@ -1309,30 +1309,30 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void ToggleGamesOverviewGridSortDescending(object sender, RoutedEventArgs e)
+        private void ToggleGameSummariesGridSortDescending(object sender, RoutedEventArgs e)
         {
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (persisted != null)
             {
-                persisted.GamesOverviewGridSortDescending = !persisted.GamesOverviewGridSortDescending;
+                persisted.GameSummariesGridSortDescending = !persisted.GameSummariesGridSortDescending;
             }
         }
 
-        private void ToggleStartPageGamesOverviewGridSortDescending(object sender, RoutedEventArgs e)
+        private void ToggleStartPageGameSummariesGridSortDescending(object sender, RoutedEventArgs e)
         {
-            var settings = _settingsViewModel?.Settings?.Persisted?.StartPageGamesOverviewGrid;
+            var settings = _settingsViewModel?.Settings?.Persisted?.StartPageGameSummariesGrid;
             if (settings != null)
             {
                 settings.SortDescending = !settings.SortDescending;
             }
         }
 
-        private void ToggleSidebarSelectedGameGridSortDescending(object sender, RoutedEventArgs e)
+        private void ToggleOverviewSelectedGameGridSortDescending(object sender, RoutedEventArgs e)
         {
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (persisted != null)
             {
-                persisted.SidebarSelectedGameGridSortDescending = !persisted.SidebarSelectedGameGridSortDescending;
+                persisted.OverviewSelectedGameGridSortDescending = !persisted.OverviewSelectedGameGridSortDescending;
             }
         }
 
@@ -1458,11 +1458,11 @@ namespace PlayniteAchievements.Views
         }
 
         // -----------------------------
-        // Provider Navigation Sidebar
+        // Provider Navigation Overview
         // -----------------------------
 
         /// <summary>
-        /// Builds provider navigation items for the sidebar from registered providers.
+        /// Builds provider navigation items for the overview from registered providers.
         /// Items are added in the natural discovery order.
         /// </summary>
         private void BuildProviderNavigationItems(bool selectDefault = true)
@@ -1775,7 +1775,7 @@ namespace PlayniteAchievements.Views
     }
 
     /// <summary>
-    /// Represents a provider item in the settings Providers sidebar navigation.
+    /// Represents a provider item in the settings Providers overview navigation.
     /// </summary>
     public sealed class ProviderNavigationItem : PlayniteAchievements.Common.ObservableObject
     {

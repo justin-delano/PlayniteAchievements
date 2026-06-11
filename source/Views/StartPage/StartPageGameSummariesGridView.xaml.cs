@@ -7,11 +7,11 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.StartPage
 {
-    public partial class StartPageGamesOverviewGridView : UserControl, IDisposable
+    public partial class StartPageGameSummariesGridView : UserControl, IDisposable
     {
         private DataGridRow _pendingRightClickRow;
 
-        public StartPageGamesOverviewGridView()
+        public StartPageGameSummariesGridView()
         {
             InitializeComponent();
         }
@@ -80,12 +80,12 @@ namespace PlayniteAchievements.Views.StartPage
         {
             PlayniteAchievementsPlugin.Instance?.PersistSettingsForUi();
             PlayniteAchievementsPlugin.Instance?.InvalidateStartPageDataForUi();
-            GamesOverviewGrid?.Refresh();
+            GameSummariesGrid?.Refresh();
         }
 
         public void Dispose()
         {
-            GamesOverviewGrid?.Dispose();
+            GameSummariesGrid?.Dispose();
         }
     }
 }

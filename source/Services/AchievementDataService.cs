@@ -37,10 +37,10 @@ namespace PlayniteAchievements.Services
         private readonly ILogger _logger;
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly PersistedSettings _persistedSettings;
-        private readonly object _sidebarProjectionCacheSync = new object();
-        private readonly Dictionary<int, CachedSummaryData> _sidebarSummaryCacheByLimit =
+        private readonly object _overviewProjectionCacheSync = new object();
+        private readonly Dictionary<int, CachedSummaryData> _overviewSummaryCacheByLimit =
             new Dictionary<int, CachedSummaryData>();
-        private bool? _sidebarHasAchievementFilters;
+        private bool? _overviewHasAchievementFilters;
 
         public AchievementDataService(
             ICacheManager cacheService,
@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Services
             _persistedSettings = settings.Persisted;
             _cacheReadOptimizations = cacheService as ICacheReadOptimizations;
             _hydrator = new GameDataHydrator(api, settings.Persisted, _gameCustomDataStore);
-            SubscribeSidebarProjectionInvalidation();
+            SubscribeOverviewProjectionInvalidation();
         }
 
         public GameAchievementData GetGameAchievementData(string playniteGameId)
@@ -155,7 +155,7 @@ namespace PlayniteAchievements.Services
             return GetVisibleGameAchievementData(playniteGameId.ToString());
         }
 
-        public GameAchievementData GetGameAchievementDataForSidebar(Guid playniteGameId)
+        public GameAchievementData GetGameAchievementDataForOverview(Guid playniteGameId)
         {
             if (playniteGameId == Guid.Empty)
             {
@@ -171,7 +171,7 @@ namespace PlayniteAchievements.Services
             catch (Exception ex)
             {
                 _logger?.Error(ex, string.Format(
-                    "Failed to get sidebar achievement data for gameId={0}",
+                    "Failed to get overview achievement data for gameId={0}",
                     playniteGameId));
                 return null;
             }
@@ -192,7 +192,7 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        public List<GameAchievementData> GetAllGameAchievementDataForSidebar()
+        public List<GameAchievementData> GetAllGameAchievementDataForOverview()
         {
             try
             {
@@ -202,12 +202,12 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed to get all sidebar achievement data");
+                _logger?.Error(ex, "Failed to get all overview achievement data");
                 return new List<GameAchievementData>();
             }
         }
 
-        public List<GameAchievementData> GetAllVisibleGameAchievementDataForSidebar()
+        public List<GameAchievementData> GetAllVisibleGameAchievementDataForOverview()
         {
             try
             {
@@ -217,7 +217,7 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed to get all visible sidebar achievement data");
+                _logger?.Error(ex, "Failed to get all visible overview achievement data");
                 return new List<GameAchievementData>();
             }
         }
@@ -263,7 +263,7 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        internal CachedSummaryData GetCachedSummaryDataForSidebar(int recentAchievementDetailLimit = 0)
+        internal CachedSummaryData GetCachedSummaryDataForOverview(int recentAchievementDetailLimit = 0)
         {
             if (HasAchievementFiltersConfigured())
             {
@@ -271,9 +271,9 @@ namespace PlayniteAchievements.Services
             }
 
             var normalizedLimit = Math.Max(0, recentAchievementDetailLimit);
-            lock (_sidebarProjectionCacheSync)
+            lock (_overviewProjectionCacheSync)
             {
-                if (_sidebarSummaryCacheByLimit.TryGetValue(normalizedLimit, out var cachedSummary))
+                if (_overviewSummaryCacheByLimit.TryGetValue(normalizedLimit, out var cachedSummary))
                 {
                     return cachedSummary;
                 }
@@ -288,22 +288,22 @@ namespace PlayniteAchievements.Services
             CachedSummaryData hydratedSummary;
             try
             {
-                hydratedSummary = ApplySidebarSummaryHydration(summaryData);
+                hydratedSummary = ApplyOverviewSummaryHydration(summaryData);
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed to hydrate cached summary data for sidebar");
+                _logger?.Error(ex, "Failed to hydrate cached summary data for overview");
                 hydratedSummary = summaryData;
             }
 
-            lock (_sidebarProjectionCacheSync)
+            lock (_overviewProjectionCacheSync)
             {
-                _sidebarSummaryCacheByLimit[normalizedLimit] = hydratedSummary;
+                _overviewSummaryCacheByLimit[normalizedLimit] = hydratedSummary;
                 return hydratedSummary;
             }
         }
 
-        private CachedSummaryData ApplySidebarSummaryHydration(CachedSummaryData summaryData)
+        private CachedSummaryData ApplyOverviewSummaryHydration(CachedSummaryData summaryData)
         {
             summaryData ??= new CachedSummaryData();
             summaryData.Games ??= new List<CachedGameSummaryData>();
@@ -311,7 +311,7 @@ namespace PlayniteAchievements.Services
             summaryData.GlobalUnlockCountsByDate ??= new Dictionary<DateTime, int>();
             summaryData.UnlockCountsByDateByGame ??= new Dictionary<Guid, Dictionary<DateTime, int>>();
 
-            var (customDataByGameId, excludedSummaryIds) = BuildSidebarCustomDataContext();
+            var (customDataByGameId, excludedSummaryIds) = BuildOverviewCustomDataContext();
             if (excludedSummaryIds != null && excludedSummaryIds.Count > 0)
             {
                 summaryData.Games = summaryData.Games
@@ -418,7 +418,7 @@ namespace PlayniteAchievements.Services
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, "Failed to load per-game custom data for sidebar summary hydration");
+                _logger?.Error(ex, "Failed to load per-game custom data for overview summary hydration");
                 return map;
             }
         }
@@ -507,7 +507,7 @@ namespace PlayniteAchievements.Services
         }
 
         private (Dictionary<Guid, GameCustomDataFile> customDataByGameId, HashSet<Guid> excludedSummaryIds)
-            BuildSidebarCustomDataContext()
+            BuildOverviewCustomDataContext()
         {
             var customDataByGameId = LoadCustomDataByGameId();
             return (customDataByGameId, ResolveExcludedSummaryGameIds(customDataByGameId));
@@ -642,18 +642,18 @@ namespace PlayniteAchievements.Services
 
         private bool HasAchievementFiltersConfigured()
         {
-            lock (_sidebarProjectionCacheSync)
+            lock (_overviewProjectionCacheSync)
             {
-                if (_sidebarHasAchievementFilters.HasValue)
+                if (_overviewHasAchievementFilters.HasValue)
                 {
-                    return _sidebarHasAchievementFilters.Value;
+                    return _overviewHasAchievementFilters.Value;
                 }
             }
 
             var hasAchievementFilters = ComputeHasAchievementFiltersConfigured();
-            lock (_sidebarProjectionCacheSync)
+            lock (_overviewProjectionCacheSync)
             {
-                _sidebarHasAchievementFilters = hasAchievementFilters;
+                _overviewHasAchievementFilters = hasAchievementFilters;
                 return hasAchievementFilters;
             }
         }
@@ -860,14 +860,14 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        private void SubscribeSidebarProjectionInvalidation()
+        private void SubscribeOverviewProjectionInvalidation()
         {
-            _cacheService.CacheInvalidated += OnSidebarProjectionSourceChanged;
-            _cacheService.CacheDeltaUpdated += OnSidebarProjectionSourceChanged;
+            _cacheService.CacheInvalidated += OnOverviewProjectionSourceChanged;
+            _cacheService.CacheDeltaUpdated += OnOverviewProjectionSourceChanged;
 
             if (_gameCustomDataStore != null)
             {
-                _gameCustomDataStore.CustomDataChanged += OnSidebarProjectionSourceChanged;
+                _gameCustomDataStore.CustomDataChanged += OnOverviewProjectionSourceChanged;
             }
 
             if (_persistedSettings != null)
@@ -878,20 +878,20 @@ namespace PlayniteAchievements.Services
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            InvalidateSidebarProjectionCaches();
+            InvalidateOverviewProjectionCaches();
         }
 
-        private void OnSidebarProjectionSourceChanged(object sender, EventArgs e)
+        private void OnOverviewProjectionSourceChanged(object sender, EventArgs e)
         {
-            InvalidateSidebarProjectionCaches();
+            InvalidateOverviewProjectionCaches();
         }
 
-        private void InvalidateSidebarProjectionCaches()
+        private void InvalidateOverviewProjectionCaches()
         {
-            lock (_sidebarProjectionCacheSync)
+            lock (_overviewProjectionCacheSync)
             {
-                _sidebarSummaryCacheByLimit.Clear();
-                _sidebarHasAchievementFilters = null;
+                _overviewSummaryCacheByLimit.Clear();
+                _overviewHasAchievementFilters = null;
             }
         }
 
@@ -927,7 +927,7 @@ namespace PlayniteAchievements.Services
             }
             else
             {
-                _hydrator.HydrateForSidebar(data);
+                _hydrator.HydrateForOverview(data);
             }
 
             return data;
@@ -941,7 +941,7 @@ namespace PlayniteAchievements.Services
             }
             else
             {
-                _hydrator.HydrateAllForSidebar(games);
+                _hydrator.HydrateAllForOverview(games);
             }
         }
     }
