@@ -144,24 +144,36 @@ namespace PlayniteAchievements.Models.Settings
             target.SidebarAchievementColumnOrder = source.SidebarAchievementColumnOrder != null
                 ? new Dictionary<string, int>(source.SidebarAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.SidebarAchievementColumnAlignments = source.SidebarAchievementColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.SidebarAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.SidebarGameColumnWidths = source.SidebarGameColumnWidths != null
                 ? new Dictionary<string, double>(source.SidebarGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             target.SidebarGameColumnOrder = source.SidebarGameColumnOrder != null
                 ? new Dictionary<string, int>(source.SidebarGameColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.SidebarGameColumnAlignments = source.SidebarGameColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.SidebarGameColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.SingleGameColumnWidths = source.SingleGameColumnWidths != null
                 ? new Dictionary<string, double>(source.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             target.SingleGameColumnOrder = source.SingleGameColumnOrder != null
                 ? new Dictionary<string, int>(source.SingleGameColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.SingleGameColumnAlignments = source.SingleGameColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.SingleGameColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.DesktopThemeColumnWidths = source.DesktopThemeColumnWidths != null
                 ? new Dictionary<string, double>(source.DesktopThemeColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             target.DesktopThemeColumnOrder = source.DesktopThemeColumnOrder != null
                 ? new Dictionary<string, int>(source.DesktopThemeColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.DesktopThemeColumnAlignments = source.DesktopThemeColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.DesktopThemeColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.GamesOverviewColumnVisibility = source.GamesOverviewColumnVisibility != null
                 ? new Dictionary<string, bool>(source.GamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -171,6 +183,9 @@ namespace PlayniteAchievements.Models.Settings
             target.GamesOverviewColumnOrder = source.GamesOverviewColumnOrder != null
                 ? new Dictionary<string, int>(source.GamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.GamesOverviewColumnAlignments = source.GamesOverviewColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.GamesOverviewColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.StartPageAchievementColumnVisibility = source.StartPageAchievementColumnVisibility != null
                 ? new Dictionary<string, bool>(source.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -180,6 +195,9 @@ namespace PlayniteAchievements.Models.Settings
             target.StartPageAchievementColumnOrder = source.StartPageAchievementColumnOrder != null
                 ? new Dictionary<string, int>(source.StartPageAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.StartPageAchievementColumnAlignments = source.StartPageAchievementColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.StartPageAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.StartPageGamesOverviewColumnVisibility = source.StartPageGamesOverviewColumnVisibility != null
                 ? new Dictionary<string, bool>(source.StartPageGamesOverviewColumnVisibility, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -189,6 +207,9 @@ namespace PlayniteAchievements.Models.Settings
             target.StartPageGamesOverviewColumnOrder = source.StartPageGamesOverviewColumnOrder != null
                 ? new Dictionary<string, int>(source.StartPageGamesOverviewColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.StartPageGamesOverviewColumnAlignments = source.StartPageGamesOverviewColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.StartPageGamesOverviewColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.SidebarOverviewLeftColumnRatio = source.SidebarOverviewLeftColumnRatio;
             target.WindowPlacements = source.WindowPlacements != null
                 ? source.WindowPlacements.ToDictionary(

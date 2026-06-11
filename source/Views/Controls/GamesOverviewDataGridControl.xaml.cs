@@ -208,6 +208,10 @@ namespace PlayniteAchievements.Views.Controls
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
 
+            DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(
+                GamesOverviewDataGrid,
+                () => GetAlignmentsByKey(settings));
+
             _columnPersistence = new ColumnWidthPersistenceService(
                 GamesOverviewDataGrid,
                 Logger,
@@ -218,7 +222,14 @@ namespace PlayniteAchievements.Views.Controls
                 () => SavePluginSettings(settings),
                 DefaultWidthSeeds,
                 getOrder: () => GetOrderByKey(settings),
-                setOrder: map => SetOrderByKey(settings, map));
+                setOrder: map => SetOrderByKey(settings, map),
+                getCellAlignments: () => GetAlignmentsByKey(settings),
+                setCellAlignments: map => SetAlignmentsByKey(settings, map),
+                getDefaultCellAlignment: () => settings.Persisted?.GridCellAlignment ?? GridAlignment.Left,
+                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GamesOverviewDataGrid));
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("Cover");
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("OverviewPlatform");
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("OverviewProgression");
             _columnPersistence.Attach();
             _isAttached = true;
         }
@@ -395,6 +406,35 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        private Dictionary<string, GridAlignment> GetAlignmentsByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            return IsStartPageScope()
+                ? settings.Persisted.StartPageGamesOverviewColumnAlignments
+                : settings.Persisted.GamesOverviewColumnAlignments;
+        }
+
+        private void SetAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            if (IsStartPageScope())
+            {
+                settings.Persisted.StartPageGamesOverviewColumnAlignments = map;
+            }
+            else
+            {
+                settings.Persisted.GamesOverviewColumnAlignments = map;
+            }
+        }
+
         private bool IsStartPageScope()
         {
             return string.Equals(ColumnSettingsKey, "StartPageOverview", StringComparison.OrdinalIgnoreCase);
@@ -519,7 +559,7 @@ namespace PlayniteAchievements.Views.Controls
                 return false;
             }
 
-            var menu = _columnPersistence?.BuildColumnVisibilityMenu();
+            var menu = _columnPersistence?.BuildColumnVisibilityMenu((owner as DataGridColumnHeader)?.Column);
             if (menu == null || menu.Items.Count == 0)
             {
                 return false;
@@ -577,6 +617,7 @@ namespace PlayniteAchievements.Views.Controls
 
             _columnPersistence?.Dispose();
             _columnPersistence = null;
+            DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(GamesOverviewDataGrid, null);
             _isAttached = false;
         }
     }

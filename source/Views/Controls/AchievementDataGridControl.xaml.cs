@@ -7,6 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
@@ -110,6 +111,16 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(UseExternalSortingProperty);
             set => SetValue(UseExternalSortingProperty, value);
+        }
+
+        public static readonly DependencyProperty SortScopeProperty =
+            DependencyProperty.Register(nameof(SortScope), typeof(AchievementSortScope),
+                typeof(AchievementDataGridControl), new PropertyMetadata(AchievementSortScope.GameAchievements));
+
+        public AchievementSortScope SortScope
+        {
+            get => (AchievementSortScope)GetValue(SortScopeProperty);
+            set => SetValue(SortScopeProperty, value);
         }
 
         /// <summary>
@@ -480,6 +491,10 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
+            DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(
+                AchievementsDataGrid,
+                () => GetAlignmentsByKey(settings));
+
             _columnPersistence = new ColumnWidthPersistenceService(
                 AchievementsDataGrid,
                 Logger,
@@ -514,7 +529,17 @@ namespace PlayniteAchievements.Views.Controls
                     {
                         SetOrderByKey(settings, map);
                     }
-                });
+                },
+                getCellAlignments: () => GetAlignmentMap(settings),
+                setCellAlignments: map =>
+                {
+                    if (AllowLayoutPersistence)
+                    {
+                        SetAlignmentsByKey(settings, map);
+                    }
+                },
+                getDefaultCellAlignment: () => settings.Persisted?.GridCellAlignment ?? GridAlignment.Left,
+                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid));
 
             // Force collapse Game column when not shown (prevents flicker by applying during persistence)
             // Also exclude from visibility toggle menu
@@ -530,6 +555,13 @@ namespace PlayniteAchievements.Views.Controls
                 _columnPersistence.ForcedCollapsedKeys.Add("Status");
                 _columnPersistence.ExcludedVisibilityKeys.Add("Status");
             }
+
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("Status");
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("Icon");
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("Game");
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("RarityTier");
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("Trophy");
+            _columnPersistence.ExcludedCellAlignmentKeys.Add("TrophyType");
 
             _columnPersistence.Attach();
         }
@@ -587,6 +619,17 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return new Dictionary<string, int>(map, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private Dictionary<string, GridAlignment> GetAlignmentMap(PlayniteAchievementsSettings settings)
+        {
+            var map = GetAlignmentsByKey(settings);
+            if (AllowLayoutPersistence || map == null)
+            {
+                return map;
+            }
+
+            return new Dictionary<string, GridAlignment>(map, StringComparer.OrdinalIgnoreCase);
         }
 
         private Dictionary<string, bool> GetVisibilityByKey(PlayniteAchievementsSettings settings)
@@ -659,6 +702,24 @@ namespace PlayniteAchievements.Views.Controls
             };
         }
 
+        private Dictionary<string, GridAlignment> GetAlignmentsByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            return ColumnSettingsKey switch
+            {
+                "DesktopTheme" => settings.Persisted.DesktopThemeColumnAlignments,
+                "SingleGame" => settings.Persisted.SingleGameColumnAlignments,
+                "Sidebar" => settings.Persisted.SidebarAchievementColumnAlignments,
+                "SidebarGame" => settings.Persisted.SidebarGameColumnAlignments,
+                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnAlignments,
+                _ => settings.Persisted.SingleGameColumnAlignments
+            };
+        }
+
         private void SetOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
         {
             if (settings?.Persisted == null)
@@ -685,6 +746,36 @@ namespace PlayniteAchievements.Views.Controls
                     break;
                 default:
                     settings.Persisted.SingleGameColumnOrder = map;
+                    break;
+            }
+        }
+
+        private void SetAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            switch (ColumnSettingsKey)
+            {
+                case "DesktopTheme":
+                    settings.Persisted.DesktopThemeColumnAlignments = map;
+                    break;
+                case "SingleGame":
+                    settings.Persisted.SingleGameColumnAlignments = map;
+                    break;
+                case "Sidebar":
+                    settings.Persisted.SidebarAchievementColumnAlignments = map;
+                    break;
+                case "SidebarGame":
+                    settings.Persisted.SidebarGameColumnAlignments = map;
+                    break;
+                case "StartPageAchievements":
+                    settings.Persisted.StartPageAchievementColumnAlignments = map;
+                    break;
+                default:
+                    settings.Persisted.SingleGameColumnAlignments = map;
                     break;
             }
         }
@@ -772,14 +863,28 @@ namespace PlayniteAchievements.Views.Controls
                     items,
                     e.Column.SortMemberPath,
                     sortDirection.Value,
-                    AchievementSortScope.GameAchievements,
+                    SortScope,
                     ref currentSortPath,
                     ref currentSortDirection))
             {
                 return;
             }
 
-            ItemsSource = items.ToList();
+            if (ItemsSource is BulkObservableCollection<AchievementDisplayItem> bulkItems)
+            {
+                bulkItems.ReplaceAll(items);
+            }
+            else if (ItemsSource is IList<AchievementDisplayItem> listItems && !listItems.IsReadOnly)
+            {
+                CollectionHelper.SynchronizeReferenceCollectionByPosition(
+                    listItems,
+                    items,
+                    updateExisting: null);
+            }
+            else
+            {
+                ItemsSource = items;
+            }
         }
 
         private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -887,7 +992,7 @@ namespace PlayniteAchievements.Views.Controls
                 return false;
             }
 
-            var menu = _columnPersistence?.BuildColumnVisibilityMenu();
+            var menu = _columnPersistence?.BuildColumnVisibilityMenu((owner as DataGridColumnHeader)?.Column);
             if (menu == null || menu.Items.Count == 0)
             {
                 return false;
@@ -967,6 +1072,7 @@ namespace PlayniteAchievements.Views.Controls
 
             _columnPersistence?.Dispose();
             _columnPersistence = null;
+            DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(AchievementsDataGrid, null);
             _isAttached = false;
         }
     }

@@ -390,6 +390,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">緊湊已解鎖列表</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements 設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">側邊欄</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSubtitle">Shared display defaults and achievement visibility</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSubtitle">Sidebar layout, charts, and grids</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySubtitle">Single-game window and theme controls</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSubtitle">StartPage widgets and grids</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarLayout">Sidebar Layout</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarCharts">Sidebar Charts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">Desktop Theme Integration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">啟用封存掃描 (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">啟用光碟雜湊 (針對基於光碟的主機)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">啟用外掛程式通知</sys:String>

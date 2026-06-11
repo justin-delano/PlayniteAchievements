@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Threading;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
@@ -53,6 +56,13 @@ namespace PlayniteAchievements.Views.Helpers
                 new FrameworkPropertyMetadata(
                     TextAlignment.Left,
                     FrameworkPropertyMetadataOptions.Inherits));
+
+        public static readonly DependencyProperty ColumnCellAlignmentOverridesProviderProperty =
+            DependencyProperty.RegisterAttached(
+                "ColumnCellAlignmentOverridesProvider",
+                typeof(Func<Dictionary<string, GridAlignment>>),
+                typeof(DataGridAlignmentBehavior),
+                new PropertyMetadata(null, OnColumnCellAlignmentOverridesProviderChanged));
 
         private static readonly DependencyProperty StateProperty =
             DependencyProperty.RegisterAttached(
@@ -111,6 +121,26 @@ namespace PlayniteAchievements.Views.Helpers
             obj.SetValue(CellTextAlignmentProperty, value);
         }
 
+        public static Func<Dictionary<string, GridAlignment>> GetColumnCellAlignmentOverridesProvider(DependencyObject obj)
+        {
+            return (Func<Dictionary<string, GridAlignment>>)obj.GetValue(ColumnCellAlignmentOverridesProviderProperty);
+        }
+
+        public static void SetColumnCellAlignmentOverridesProvider(
+            DependencyObject obj,
+            Func<Dictionary<string, GridAlignment>> value)
+        {
+            obj.SetValue(ColumnCellAlignmentOverridesProviderProperty, value);
+        }
+
+        public static void Refresh(DependencyObject obj)
+        {
+            if (obj is DataGrid grid)
+            {
+                GetState(grid)?.ApplyAlignment();
+            }
+        }
+
         private static AlignmentState GetState(DependencyObject obj)
         {
             return (AlignmentState)obj.GetValue(StateProperty);
@@ -144,6 +174,13 @@ namespace PlayniteAchievements.Views.Helpers
 
             state?.Detach();
             SetState(grid, null);
+        }
+
+        private static void OnColumnCellAlignmentOverridesProviderChanged(
+            DependencyObject d,
+            DependencyPropertyChangedEventArgs e)
+        {
+            Refresh(d);
         }
 
         private static PlayniteAchievementsSettings ResolveSettingsSource(DependencyObject source)
@@ -225,6 +262,7 @@ namespace PlayniteAchievements.Views.Helpers
                 _grid.Loaded += OnLoaded;
                 _grid.Unloaded += OnUnloaded;
                 _grid.DataContextChanged += OnDataContextChanged;
+                _grid.LoadingRow += OnLoadingRow;
                 _isAttached = true;
 
                 if (_grid.IsLoaded)
@@ -245,6 +283,7 @@ namespace PlayniteAchievements.Views.Helpers
                 _grid.Loaded -= OnLoaded;
                 _grid.Unloaded -= OnUnloaded;
                 _grid.DataContextChanged -= OnDataContextChanged;
+                _grid.LoadingRow -= OnLoadingRow;
                 DetachSettings();
                 _isAttached = false;
             }
@@ -264,6 +303,11 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 AttachSettings();
                 ApplyAlignment();
+            }
+
+            private void OnLoadingRow(object sender, DataGridRowEventArgs e)
+            {
+                QueueApplyColumnCellAlignments(e.Row, retryWhenEmpty: true);
             }
 
             private void AttachSettings()
@@ -323,13 +367,14 @@ namespace PlayniteAchievements.Views.Helpers
                 if (string.IsNullOrEmpty(e?.PropertyName) ||
                     e.PropertyName == nameof(PersistedSettings.GridColumnHeaderAlignment) ||
                     e.PropertyName == nameof(PersistedSettings.GridCellAlignment) ||
-                    e.PropertyName == nameof(PersistedSettings.GridCellVerticalAlignment))
+                    e.PropertyName == nameof(PersistedSettings.GridCellVerticalAlignment) ||
+                    IsColumnCellAlignmentProperty(e.PropertyName))
                 {
                     ApplyAlignment();
                 }
             }
 
-            private void ApplyAlignment()
+            public void ApplyAlignment()
             {
                 var headerAlignment = _persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center;
                 var cellAlignment = _persisted?.GridCellAlignment ?? GridAlignment.Left;
@@ -347,6 +392,148 @@ namespace PlayniteAchievements.Views.Helpers
                 SetCellTextAlignment(
                     _grid,
                     GridAlignmentMapping.ToTextAlignment(cellAlignment));
+
+                ApplyColumnCellAlignments();
+            }
+
+            private void ApplyColumnCellAlignments()
+            {
+                if (_grid?.Items == null)
+                {
+                    return;
+                }
+
+                foreach (var item in _grid.Items)
+                {
+                    if (_grid.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
+                    {
+                        ApplyColumnCellAlignments(row);
+                    }
+                }
+            }
+
+            private void QueueApplyColumnCellAlignments(DataGridRow row, bool retryWhenEmpty = false)
+            {
+                if (row == null)
+                {
+                    return;
+                }
+
+                row.Dispatcher.BeginInvoke(
+                    new Action(() => ApplyColumnCellAlignments(row, retryWhenEmpty)),
+                    DispatcherPriority.Loaded);
+            }
+
+            private void ApplyColumnCellAlignments(DataGridRow row, bool retryWhenEmpty = false)
+            {
+                if (row == null)
+                {
+                    return;
+                }
+
+                var cells = FindVisualChildren<DataGridCell>(row).ToList();
+                if (cells.Count == 0)
+                {
+                    if (retryWhenEmpty)
+                    {
+                        row.Dispatcher.BeginInvoke(
+                            new Action(() => ApplyColumnCellAlignments(row)),
+                            DispatcherPriority.ContextIdle);
+                    }
+
+                    return;
+                }
+
+                var overrides = GetColumnCellAlignmentOverridesProvider(_grid)?.Invoke();
+                foreach (var cell in cells)
+                {
+                    ApplyColumnCellAlignment(cell, overrides);
+                }
+            }
+
+            private void ApplyColumnCellAlignment(
+                DataGridCell cell,
+                IReadOnlyDictionary<string, GridAlignment> overrides)
+            {
+                if (cell?.Column == null)
+                {
+                    return;
+                }
+
+                var key = ResolveColumnKey(cell.Column);
+                if (string.IsNullOrWhiteSpace(key) ||
+                    overrides == null ||
+                    !overrides.TryGetValue(key, out var alignment))
+                {
+                    cell.ClearValue(CellHorizontalAlignmentProperty);
+                    cell.ClearValue(CellTextAlignmentProperty);
+                    return;
+                }
+
+                SetCellHorizontalAlignment(cell, GridAlignmentMapping.ToHorizontalAlignment(alignment));
+                SetCellTextAlignment(cell, GridAlignmentMapping.ToTextAlignment(alignment));
+            }
+
+            private static string ResolveColumnKey(DataGridColumn column)
+            {
+                if (column == null)
+                {
+                    return null;
+                }
+
+                var key = ColumnVisibilityHelper.GetColumnKey(column);
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    return key;
+                }
+
+                return !string.IsNullOrWhiteSpace(column.SortMemberPath)
+                    ? column.SortMemberPath
+                    : null;
+            }
+
+            private static bool IsColumnCellAlignmentProperty(string propertyName)
+            {
+                return propertyName == nameof(PersistedSettings.SidebarAchievementColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.SidebarGameColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.SingleGameColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.DesktopThemeColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.GamesOverviewColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.StartPageAchievementColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.StartPageGamesOverviewColumnAlignments);
+            }
+
+            private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent)
+                where T : DependencyObject
+            {
+                if (parent == null)
+                {
+                    yield break;
+                }
+
+                var count = 0;
+                try
+                {
+                    count = VisualTreeHelper.GetChildrenCount(parent);
+                }
+                catch (InvalidOperationException)
+                {
+                    yield break;
+                }
+
+                for (var i = 0; i < count; i++)
+                {
+                    var child = VisualTreeHelper.GetChild(parent, i);
+                    if (child is T typed)
+                    {
+                        yield return typed;
+                    }
+
+                    foreach (var nested in FindVisualChildren<T>(child))
+                    {
+                        yield return nested;
+                    }
+                }
             }
         }
     }

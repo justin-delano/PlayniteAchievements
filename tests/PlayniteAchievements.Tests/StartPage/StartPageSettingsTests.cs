@@ -24,6 +24,10 @@ namespace PlayniteAchievements.Tests.StartPage
                 {
                     ["Achievement"] = 2
                 },
+                StartPageAchievementColumnAlignments = new Dictionary<string, GridAlignment>
+                {
+                    ["Achievement"] = GridAlignment.Center
+                },
                 StartPageGamesOverviewColumnVisibility = new Dictionary<string, bool>
                 {
                     ["OverviewProvider"] = false
@@ -35,6 +39,10 @@ namespace PlayniteAchievements.Tests.StartPage
                 StartPageGamesOverviewColumnOrder = new Dictionary<string, int>
                 {
                     ["OverviewProvider"] = 3
+                },
+                StartPageGamesOverviewColumnAlignments = new Dictionary<string, GridAlignment>
+                {
+                    ["OverviewProvider"] = GridAlignment.Right
                 }
             };
 
@@ -45,23 +53,29 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsFalse(clone.StartPageAchievementColumnVisibility["Achievement"]);
             Assert.AreEqual(320, clone.StartPageAchievementColumnWidths["Achievement"]);
             Assert.AreEqual(2, clone.StartPageAchievementColumnOrder["Achievement"]);
+            Assert.AreEqual(GridAlignment.Center, clone.StartPageAchievementColumnAlignments["Achievement"]);
             Assert.IsFalse(clone.StartPageGamesOverviewColumnVisibility["OverviewProvider"]);
             Assert.AreEqual(140, clone.StartPageGamesOverviewColumnWidths["OverviewProvider"]);
             Assert.AreEqual(3, clone.StartPageGamesOverviewColumnOrder["OverviewProvider"]);
+            Assert.AreEqual(GridAlignment.Right, clone.StartPageGamesOverviewColumnAlignments["OverviewProvider"]);
 
             Assert.IsFalse(copy.StartPageAchievementColumnVisibility["Achievement"]);
             Assert.AreEqual(320, copy.StartPageAchievementColumnWidths["Achievement"]);
             Assert.AreEqual(2, copy.StartPageAchievementColumnOrder["Achievement"]);
+            Assert.AreEqual(GridAlignment.Center, copy.StartPageAchievementColumnAlignments["Achievement"]);
             Assert.IsFalse(copy.StartPageGamesOverviewColumnVisibility["OverviewProvider"]);
             Assert.AreEqual(140, copy.StartPageGamesOverviewColumnWidths["OverviewProvider"]);
             Assert.AreEqual(3, copy.StartPageGamesOverviewColumnOrder["OverviewProvider"]);
+            Assert.AreEqual(GridAlignment.Right, copy.StartPageGamesOverviewColumnAlignments["OverviewProvider"]);
 
             Assert.AreNotSame(source.StartPageAchievementColumnVisibility, clone.StartPageAchievementColumnVisibility);
             Assert.AreNotSame(source.StartPageAchievementColumnWidths, clone.StartPageAchievementColumnWidths);
             Assert.AreNotSame(source.StartPageAchievementColumnOrder, clone.StartPageAchievementColumnOrder);
+            Assert.AreNotSame(source.StartPageAchievementColumnAlignments, clone.StartPageAchievementColumnAlignments);
             Assert.AreNotSame(source.StartPageGamesOverviewColumnVisibility, copy.StartPageGamesOverviewColumnVisibility);
             Assert.AreNotSame(source.StartPageGamesOverviewColumnWidths, copy.StartPageGamesOverviewColumnWidths);
             Assert.AreNotSame(source.StartPageGamesOverviewColumnOrder, copy.StartPageGamesOverviewColumnOrder);
+            Assert.AreNotSame(source.StartPageGamesOverviewColumnAlignments, copy.StartPageGamesOverviewColumnAlignments);
         }
 
         [TestMethod]

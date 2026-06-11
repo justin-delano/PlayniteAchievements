@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Playnite.SDK;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Views.Helpers
 {
@@ -29,6 +33,10 @@ namespace PlayniteAchievements.Views.Helpers
         private readonly Dictionary<string, double> _pendingWidthUpdates = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private readonly Func<Dictionary<string, int>> _getOrder;
         private readonly Action<Dictionary<string, int>> _setOrder;
+        private readonly Func<Dictionary<string, GridAlignment>> _getCellAlignments;
+        private readonly Action<Dictionary<string, GridAlignment>> _setCellAlignments;
+        private readonly Func<GridAlignment> _getDefaultCellAlignment;
+        private readonly Action _applyCellAlignments;
         private DispatcherTimer _saveTimer;
         private bool _isApplyingWidths;
         private bool _isApplyingOrder;
@@ -47,6 +55,11 @@ namespace PlayniteAchievements.Views.Helpers
         /// Set before calling Attach() to exclude specific columns from user toggle.
         /// </summary>
         public ISet<string> ExcludedVisibilityKeys { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Column keys that should not expose per-column cell alignment controls.
+        /// </summary>
+        public ISet<string> ExcludedCellAlignmentKeys { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Column keys that should be forced to collapsed visibility.
@@ -75,7 +88,11 @@ namespace PlayniteAchievements.Views.Helpers
             Action saveSettings,
             IReadOnlyDictionary<string, double> defaultWidthSeeds = null,
             Func<Dictionary<string, int>> getOrder = null,
-            Action<Dictionary<string, int>> setOrder = null)
+            Action<Dictionary<string, int>> setOrder = null,
+            Func<Dictionary<string, GridAlignment>> getCellAlignments = null,
+            Action<Dictionary<string, GridAlignment>> setCellAlignments = null,
+            Func<GridAlignment> getDefaultCellAlignment = null,
+            Action applyCellAlignments = null)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
             _logger = logger;
@@ -87,6 +104,10 @@ namespace PlayniteAchievements.Views.Helpers
             _defaultWidthSeeds = defaultWidthSeeds ?? new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             _getOrder = getOrder;
             _setOrder = setOrder;
+            _getCellAlignments = getCellAlignments;
+            _setCellAlignments = setCellAlignments;
+            _getDefaultCellAlignment = getDefaultCellAlignment;
+            _applyCellAlignments = applyCellAlignments;
         }
 
         /// <summary>
@@ -1142,10 +1163,10 @@ namespace PlayniteAchievements.Views.Helpers
         }
 
         /// <summary>
-        /// Builds a column visibility context menu for the grid.
-        /// Columns in ExcludedVisibilityKeys are not included in the menu.
+        /// Builds a column menu for the grid.
+        /// Columns in ExcludedVisibilityKeys are not included in the visibility section.
         /// </summary>
-        public ContextMenu BuildColumnVisibilityMenu()
+        public ContextMenu BuildColumnVisibilityMenu(DataGridColumn contextColumn = null)
         {
             if (_grid == null)
             {
@@ -1153,13 +1174,48 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             var menu = new ContextMenu();
+            var hasAlignmentSection = AddAlignmentSection(menu, contextColumn);
+            var separatorIndex = menu.Items.Count;
+            var hasVisibilitySection = AddVisibilitySection(menu);
+            if (hasAlignmentSection && hasVisibilitySection)
+            {
+                menu.Items.Insert(separatorIndex, new Separator());
+            }
 
+            return hasAlignmentSection || hasVisibilitySection ? menu : null;
+        }
+
+        private bool AddAlignmentSection(ContextMenu menu, DataGridColumn contextColumn)
+        {
+            if (menu == null || !CanShowAlignmentSection(contextColumn))
+            {
+                return false;
+            }
+
+            var headerText = ResolveColumnDisplayName(contextColumn);
+            if (string.IsNullOrWhiteSpace(headerText))
+            {
+                return false;
+            }
+
+            menu.Items.Add(CreateSectionHeader(headerText));
+            menu.Items.Add(CreateAlignmentCycleItem(contextColumn));
+            return true;
+        }
+
+        private bool AddVisibilitySection(ContextMenu menu)
+        {
+            if (menu == null)
+            {
+                return false;
+            }
+
+            var visibilityItems = new List<MenuItem>();
             foreach (var column in _grid.Columns
                          .Where(c => c != null)
                          .OrderBy(c => c.DisplayIndex))
             {
                 var key = GetColumnKey(column);
-                // Skip columns that are excluded from visibility toggle
                 if (!string.IsNullOrWhiteSpace(key) && ExcludedVisibilityKeys.Contains(key))
                 {
                     continue;
@@ -1187,10 +1243,277 @@ namespace PlayniteAchievements.Views.Helpers
                     OnColumnVisibilityChanged(targetColumn, isVisible);
                 };
 
+                visibilityItems.Add(item);
+            }
+
+            if (visibilityItems.Count == 0)
+            {
+                return false;
+            }
+
+            menu.Items.Add(CreateSectionHeader("Columns"));
+            foreach (var item in visibilityItems)
+            {
                 menu.Items.Add(item);
             }
 
-            return menu;
+            return true;
+        }
+
+        private bool CanShowAlignmentSection(DataGridColumn column)
+        {
+            if (column == null || _getCellAlignments == null || _setCellAlignments == null)
+            {
+                return false;
+            }
+
+            var key = GetColumnKey(column);
+            return !string.IsNullOrWhiteSpace(key) && !ExcludedCellAlignmentKeys.Contains(key);
+        }
+
+        private MenuItem CreateAlignmentCycleItem(DataGridColumn column)
+        {
+            var item = new MenuItem
+            {
+                StaysOpenOnClick = true,
+                Style = CreateCompactMenuItemStyle(new Thickness(8, 0, 8, 6)),
+                Cursor = Cursors.Hand
+            };
+
+            UpdateAlignmentCycleItem(item, column);
+            item.Click += (_, __) =>
+            {
+                CycleColumnCellAlignment(column);
+                UpdateAlignmentCycleItem(item, column);
+            };
+
+            return item;
+        }
+
+        private void UpdateAlignmentCycleItem(MenuItem item, DataGridColumn column)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            var key = GetColumnKey(column);
+            var hasOverride = TryGetColumnCellAlignmentOverride(key, out var overrideAlignment);
+            var effectiveAlignment = hasOverride ? overrideAlignment : GetDefaultCellAlignment();
+            var description = CreateAlignmentDescription(effectiveAlignment, hasOverride);
+
+            item.Header = CreateAlignmentButtonChrome(effectiveAlignment, !hasOverride);
+            item.ToolTip = description;
+            AutomationProperties.SetName(item, description);
+        }
+
+        private void CycleColumnCellAlignment(DataGridColumn column)
+        {
+            var key = GetColumnKey(column);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var map = _getCellAlignments?.Invoke() ??
+                      new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            var hasOverride = map.TryGetValue(key, out var current);
+            var next = GetNextAlignmentOverride(hasOverride, current);
+
+            if (next.HasValue)
+            {
+                map[key] = next.Value;
+            }
+            else
+            {
+                map.Remove(key);
+            }
+
+            _setCellAlignments?.Invoke(map);
+            _saveSettings?.Invoke();
+            _applyCellAlignments?.Invoke();
+        }
+
+        private bool TryGetColumnCellAlignmentOverride(string key, out GridAlignment alignment)
+        {
+            alignment = GridAlignment.Left;
+            var map = _getCellAlignments?.Invoke();
+            return !string.IsNullOrWhiteSpace(key) &&
+                   map != null &&
+                   map.TryGetValue(key, out alignment);
+        }
+
+        private GridAlignment GetDefaultCellAlignment()
+        {
+            return _getDefaultCellAlignment?.Invoke() ?? GridAlignment.Left;
+        }
+
+        private static GridAlignment? GetNextAlignmentOverride(bool hasOverride, GridAlignment current)
+        {
+            if (!hasOverride)
+            {
+                return GridAlignment.Left;
+            }
+
+            switch (current)
+            {
+                case GridAlignment.Left:
+                    return GridAlignment.Center;
+                case GridAlignment.Center:
+                    return GridAlignment.Right;
+                default:
+                    return null;
+            }
+        }
+
+        private static string CreateAlignmentDescription(GridAlignment effectiveAlignment, bool hasOverride)
+        {
+            var alignmentText = AlignmentToText(effectiveAlignment);
+            return hasOverride
+                ? $"Cell alignment: {alignmentText}. Click to change."
+                : $"Cell alignment: Default ({alignmentText}). Click to change.";
+        }
+
+        private static string AlignmentToText(GridAlignment alignment)
+        {
+            switch (alignment)
+            {
+                case GridAlignment.Center:
+                    return "Center";
+                case GridAlignment.Right:
+                    return "Right";
+                case GridAlignment.Left:
+                default:
+                    return "Left";
+            }
+        }
+
+        private static MenuItem CreateSectionHeader(string text)
+        {
+            var textBlock = new TextBlock
+            {
+                Text = text,
+                FontWeight = FontWeights.SemiBold,
+                TextTrimming = TextTrimming.CharacterEllipsis
+            };
+            textBlock.SetResourceReference(TextBlock.ForegroundProperty, "TextBrush");
+
+            return new MenuItem
+            {
+                Header = textBlock,
+                Focusable = false,
+                IsHitTestVisible = false,
+                Style = CreateCompactMenuItemStyle(new Thickness(8, 6, 8, 3))
+            };
+        }
+
+        private static FrameworkElement CreateAlignmentButtonChrome(GridAlignment alignment, bool isDefault)
+        {
+            var border = new Border
+            {
+                Width = 42,
+                Height = 36,
+                Padding = new Thickness(8, 7, 8, 7),
+                CornerRadius = new CornerRadius(4),
+                BorderThickness = new Thickness(1),
+                Child = CreateAlignmentIcon(alignment, isDefault)
+            };
+            border.SetResourceReference(Border.BorderBrushProperty, "NormalBorderBrush");
+            border.SetResourceReference(Border.BackgroundProperty, "ControlBackgroundBrush");
+            return border;
+        }
+
+        private static Style CreateCompactMenuItemStyle(Thickness margin)
+        {
+            var style = new Style(typeof(MenuItem));
+            style.Setters.Add(new Setter(FrameworkElement.MarginProperty, margin));
+            style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0)));
+            style.Setters.Add(new Setter(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Left));
+            style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Left));
+            style.Setters.Add(new Setter(Control.VerticalContentAlignmentProperty, VerticalAlignment.Center));
+            style.Setters.Add(new Setter(Control.TemplateProperty, CreateCompactMenuItemTemplate()));
+            return style;
+        }
+
+        private static ControlTemplate CreateCompactMenuItemTemplate()
+        {
+            var template = new ControlTemplate(typeof(MenuItem));
+            var border = new FrameworkElementFactory(typeof(Border));
+            border.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+            border.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Left);
+            border.SetValue(UIElement.SnapsToDevicePixelsProperty, true);
+
+            var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            presenter.SetValue(ContentPresenter.ContentSourceProperty, "Header");
+            presenter.SetValue(ContentPresenter.RecognizesAccessKeyProperty, true);
+            presenter.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Left);
+            presenter.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            border.AppendChild(presenter);
+
+            template.VisualTree = border;
+            return template;
+        }
+
+        private static FrameworkElement CreateAlignmentIcon(GridAlignment alignment, bool isDefault)
+        {
+            var grid = new Grid
+            {
+                Width = 24,
+                Height = 18,
+                Opacity = isDefault ? 0.62 : 1
+            };
+
+            AddAlignmentLine(grid, alignment, 0, 16);
+            AddAlignmentLine(grid, alignment, 5, 11);
+            AddAlignmentLine(grid, alignment, 10, 14);
+            AddAlignmentLine(grid, alignment, 15, 8);
+
+            if (isDefault)
+            {
+                var marker = new Border
+                {
+                    Width = 5,
+                    Height = 5,
+                    CornerRadius = new CornerRadius(2.5),
+                    BorderThickness = new Thickness(1),
+                    HorizontalAlignment = HorizontalAlignment.Right,
+                    VerticalAlignment = VerticalAlignment.Bottom,
+                    Margin = new Thickness(0, 0, 0, 1)
+                };
+                marker.SetResourceReference(Border.BorderBrushProperty, "HighlightGlyphBrush");
+                grid.Children.Add(marker);
+            }
+
+            return grid;
+        }
+
+        private static void AddAlignmentLine(Grid grid, GridAlignment alignment, double top, double width)
+        {
+            var line = new Border
+            {
+                Width = width,
+                Height = 1.6,
+                CornerRadius = new CornerRadius(0.8),
+                HorizontalAlignment = ToHorizontalAlignment(alignment),
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, top, 0, 0)
+            };
+            line.SetResourceReference(Border.BackgroundProperty, "TextBrush");
+            grid.Children.Add(line);
+        }
+
+        private static HorizontalAlignment ToHorizontalAlignment(GridAlignment alignment)
+        {
+            switch (alignment)
+            {
+                case GridAlignment.Center:
+                    return HorizontalAlignment.Center;
+                case GridAlignment.Right:
+                    return HorizontalAlignment.Right;
+                case GridAlignment.Left:
+                default:
+                    return HorizontalAlignment.Left;
+            }
         }
 
         private static string ResolveHeaderText(object header)

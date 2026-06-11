@@ -390,6 +390,16 @@
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Liste compacte débloquée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Paramètres de Playnite Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSection">Barre latérale</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSubtitle">Shared display defaults and achievement visibility</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarSubtitle">Sidebar layout, charts, and grids</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySubtitle">Single-game window and theme controls</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSubtitle">StartPage widgets and grids</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarLayout">Sidebar Layout</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_SidebarCharts">Sidebar Charts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">Desktop Theme Integration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Activer l'analyse des archives (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Activer le hachage des disques (pour les consoles à disque)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">Activer les notifications du plugin</sys:String>

@@ -178,21 +178,41 @@ namespace PlayniteAchievements.Models.Tests
                 {
                     ["Title"] = 2
                 },
+                SidebarAchievementColumnAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
+                {
+                    ["Title"] = GridAlignment.Center
+                },
                 SidebarGameColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
                     ["Rarity"] = 3
+                },
+                SidebarGameColumnAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
+                {
+                    ["Rarity"] = GridAlignment.Right
                 },
                 SingleGameColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
                     ["Achievement"] = 1
                 },
+                SingleGameColumnAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
+                {
+                    ["Achievement"] = GridAlignment.Left
+                },
                 DesktopThemeColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
                     ["Points"] = 4
                 },
+                DesktopThemeColumnAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
+                {
+                    ["Points"] = GridAlignment.Right
+                },
                 GamesOverviewColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
                     ["OverviewGameName"] = 1
+                },
+                GamesOverviewColumnAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
+                {
+                    ["OverviewGameName"] = GridAlignment.Center
                 },
                 DataGridColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
@@ -223,6 +243,11 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(4, clone.DesktopThemeColumnOrder["Points"]);
             Assert.AreEqual(1, clone.GamesOverviewColumnOrder["OverviewGameName"]);
             Assert.AreEqual(5, clone.DataGridColumnOrder["Legacy"]);
+            Assert.AreEqual(GridAlignment.Center, clone.SidebarAchievementColumnAlignments["Title"]);
+            Assert.AreEqual(GridAlignment.Right, clone.SidebarGameColumnAlignments["Rarity"]);
+            Assert.AreEqual(GridAlignment.Left, clone.SingleGameColumnAlignments["Achievement"]);
+            Assert.AreEqual(GridAlignment.Right, clone.DesktopThemeColumnAlignments["Points"]);
+            Assert.AreEqual(GridAlignment.Center, clone.GamesOverviewColumnAlignments["OverviewGameName"]);
 
             Assert.AreEqual(2, target.SidebarAchievementColumnOrder["Title"]);
             Assert.AreEqual(3, target.SidebarGameColumnOrder["Rarity"]);
@@ -230,11 +255,21 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(4, target.DesktopThemeColumnOrder["Points"]);
             Assert.AreEqual(1, target.GamesOverviewColumnOrder["OverviewGameName"]);
             Assert.AreEqual(5, target.DataGridColumnOrder["Legacy"]);
+            Assert.AreEqual(GridAlignment.Center, target.SidebarAchievementColumnAlignments["Title"]);
+            Assert.AreEqual(GridAlignment.Right, target.SidebarGameColumnAlignments["Rarity"]);
+            Assert.AreEqual(GridAlignment.Left, target.SingleGameColumnAlignments["Achievement"]);
+            Assert.AreEqual(GridAlignment.Right, target.DesktopThemeColumnAlignments["Points"]);
+            Assert.AreEqual(GridAlignment.Center, target.GamesOverviewColumnAlignments["OverviewGameName"]);
 
             Assert.AreNotSame(source.SidebarAchievementColumnOrder, clone.SidebarAchievementColumnOrder);
             Assert.AreNotSame(source.SidebarGameColumnOrder, target.SidebarGameColumnOrder);
             Assert.AreNotSame(source.DesktopThemeColumnOrder, clone.DesktopThemeColumnOrder);
             Assert.AreNotSame(source.GamesOverviewColumnOrder, target.GamesOverviewColumnOrder);
+            Assert.AreNotSame(source.SidebarAchievementColumnAlignments, clone.SidebarAchievementColumnAlignments);
+            Assert.AreNotSame(source.SidebarGameColumnAlignments, target.SidebarGameColumnAlignments);
+            Assert.AreNotSame(source.SingleGameColumnAlignments, clone.SingleGameColumnAlignments);
+            Assert.AreNotSame(source.DesktopThemeColumnAlignments, clone.DesktopThemeColumnAlignments);
+            Assert.AreNotSame(source.GamesOverviewColumnAlignments, target.GamesOverviewColumnAlignments);
         }
 
         [TestMethod]
