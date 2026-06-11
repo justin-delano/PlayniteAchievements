@@ -106,7 +106,7 @@
     <!-- ================================================================= -->
     <!-- 05 Provider Names -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Provider_BattleNet">Battle.net</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_BattleNet">Blizzard</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Apple">Apple</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_EA">EA</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Epic">Epic</sys:String>
@@ -144,7 +144,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Von Aktualisierungen ausschließen und Daten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Dieses Spiel ausschließen und Daten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Bitte Exohpase-Game-ID eingeben.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Spieloptionen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Spieleinstellungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Dieses Spiel inkludieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">In Aktualisierungen enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">In Aktualisierungen und Aktualisierung ausgewählter Spiele enthalten</sys:String>
@@ -158,7 +158,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Bitte gültige positive ganzzahlige Steam-App-ID eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Einzelnes Spiel aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Aktualisierung läuft]</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Ausgewählte Spiele aktualisieren</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Erfolgsdaten ausgewählter Spiele aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Vollendungserfolg festlegen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_TestModernControls">Moderne Design-Steuerung testen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements">Erfolgsverknüpfung aufheben</sys:String>
@@ -440,7 +440,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Suffix">, then follow its prompts until the export JSON is copied to your clipboard.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step3">3. Save the copied text as a .json file and select it below for the matching game.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step4">4. Optionally paste the copied JSON into StarDB too, so your StarDB tracker stays synced.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Note">Supported files: raw stardb-exporter JSON, StarDB JSON, Paimon.moe JSON, SEELIE.me JSON, Star Rail Station .dat, and rng.moe JSON.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Note">Unterstützte Dateien: rohes stardb-exporter JSON, StarDB JSON, Paimon.moe JSON, SEELIE.me JSON, Star Rail Station .dat und rng.moe JSON.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_InvalidExportPath">One or more configured export files do not exist.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">No export file configured. Refresh will import locked achievement definitions only.</sys:String>
 
@@ -554,7 +554,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Description">Nur Erfolge zuletzt gespielter Spiele aktualisieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Neueste Spiele zur Aktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Alle Schlagworte entfernen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next sidebar open.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Zeigt die initiale Einrichtungsseite beim nächsten Öffnen der Seitenleiste erneut an.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Startseite zurücksetzen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Beschreibung verborgener Erfolge enthüllen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Symbol verborgener Erfolge enthüllen</sys:String>
@@ -568,13 +568,13 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the active column header again to return to this default sort.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Komplettierungsumrandung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(verborgener Erfolg)&quot; anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten bei freigeschalteten Symbolen anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten auf freigeschalteten Symbolen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarBarCharts">Histogramm für Erfolge anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform/Spielzeit/Region anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform, Spielzeit und Region anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarCollectionScoreCard">Kachel für Sammelwertung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPrestigeScoreCard">Kachel für Prestigewertung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarGamesPieChart">Kreisdiagramm für vervollständigte Spiele anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">Prozentwerte auf Kreisdiagrammen anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarPiePercentages">Prozentwerte in Kreisdiagrammen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarProviderPieChart">Kreisdiagramm für Plattformen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarRarityPieChart">Kreisdiagramm für Seltenheit anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowSidebarTrophyPieChart">Kreisdiagramm für Trophäen anzeigen</sys:String>
