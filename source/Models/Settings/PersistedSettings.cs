@@ -113,27 +113,41 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, double> _overviewAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _overviewAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _overviewAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridVerticalAlignment> _overviewAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _overviewAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _overviewGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _overviewGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _overviewGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridVerticalAlignment> _overviewGameColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _overviewGameColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _singleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _singleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _singleGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridVerticalAlignment> _singleGameColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _singleGameColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _desktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _desktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _desktopThemeColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridVerticalAlignment> _desktopThemeColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _desktopThemeColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _gameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _gameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _gameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _gameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridVerticalAlignment> _gameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _gameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _startPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _startPageAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _startPageAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _startPageAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridVerticalAlignment> _startPageAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _startPageAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _startPageGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _startPageGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _startPageGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _startPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridVerticalAlignment> _startPageGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _startPageGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private double _overviewLeftColumnRatio = DefaultOverviewLeftColumnRatio;
         private Dictionary<string, WindowPlacementState> _windowPlacements =
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
@@ -1174,6 +1188,26 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted cell vertical alignment overrides for overview recent achievement columns.
+        /// Missing keys inherit the global GridCellVerticalAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridVerticalAlignment> OverviewRecentAchievementColumnVerticalAlignments
+        {
+            get => _overviewAchievementColumnVerticalAlignments;
+            set => SetValue(ref _overviewAchievementColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted header horizontal alignment overrides for overview recent achievement columns.
+        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> OverviewRecentAchievementColumnHeaderAlignments
+        {
+            get => _overviewAchievementColumnHeaderAlignments;
+            set => SetValue(ref _overviewAchievementColumnHeaderAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
         /// Persisted widths for the overview selected game achievement columns.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
@@ -1219,6 +1253,26 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _overviewGameColumnAlignments;
             set => SetValue(ref _overviewGameColumnAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted cell vertical alignment overrides for overview selected-game achievement columns.
+        /// Missing keys inherit the global GridCellVerticalAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridVerticalAlignment> OverviewSelectedGameAchievementColumnVerticalAlignments
+        {
+            get => _overviewGameColumnVerticalAlignments;
+            set => SetValue(ref _overviewGameColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted header horizontal alignment overrides for overview selected-game achievement columns.
+        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> OverviewSelectedGameAchievementColumnHeaderAlignments
+        {
+            get => _overviewGameColumnHeaderAlignments;
+            set => SetValue(ref _overviewGameColumnHeaderAlignments, NormalizeColumnAlignments(value));
         }
 
         /// <summary>
@@ -1270,6 +1324,26 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted cell vertical alignment overrides for single-game achievement columns.
+        /// Missing keys inherit the global GridCellVerticalAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridVerticalAlignment> SingleGameColumnVerticalAlignments
+        {
+            get => _singleGameColumnVerticalAlignments;
+            set => SetValue(ref _singleGameColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted header horizontal alignment overrides for single-game achievement columns.
+        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> SingleGameColumnHeaderAlignments
+        {
+            get => _singleGameColumnHeaderAlignments;
+            set => SetValue(ref _singleGameColumnHeaderAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
         /// Persisted widths for desktop theme integration achievement columns.
         /// Key is a stable column identifier, value is pixel width.
         /// </summary>
@@ -1315,6 +1389,26 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _desktopThemeColumnAlignments;
             set => SetValue(ref _desktopThemeColumnAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted cell vertical alignment overrides for desktop theme integration achievement columns.
+        /// Missing keys inherit the global GridCellVerticalAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridVerticalAlignment> DesktopThemeColumnVerticalAlignments
+        {
+            get => _desktopThemeColumnVerticalAlignments;
+            set => SetValue(ref _desktopThemeColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted header horizontal alignment overrides for desktop theme integration achievement columns.
+        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> DesktopThemeColumnHeaderAlignments
+        {
+            get => _desktopThemeColumnHeaderAlignments;
+            set => SetValue(ref _desktopThemeColumnHeaderAlignments, NormalizeColumnAlignments(value));
         }
 
         /// <summary>
@@ -1382,6 +1476,26 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted cell vertical alignment overrides for game summaries columns.
+        /// Missing keys inherit the global GridCellVerticalAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridVerticalAlignment> GameSummariesColumnVerticalAlignments
+        {
+            get => _gameSummariesColumnVerticalAlignments;
+            set => SetValue(ref _gameSummariesColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted header horizontal alignment overrides for game summaries columns.
+        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> GameSummariesColumnHeaderAlignments
+        {
+            get => _gameSummariesColumnHeaderAlignments;
+            set => SetValue(ref _gameSummariesColumnHeaderAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
         /// Persisted visibility state for StartPage achievement grid columns.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
@@ -1446,6 +1560,26 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Persisted cell vertical alignment overrides for StartPage achievement grid columns.
+        /// Missing keys inherit the global GridCellVerticalAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridVerticalAlignment> StartPageAchievementColumnVerticalAlignments
+        {
+            get => _startPageAchievementColumnVerticalAlignments;
+            set => SetValue(ref _startPageAchievementColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted header horizontal alignment overrides for StartPage achievement grid columns.
+        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> StartPageAchievementColumnHeaderAlignments
+        {
+            get => _startPageAchievementColumnHeaderAlignments;
+            set => SetValue(ref _startPageAchievementColumnHeaderAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
         /// Persisted visibility state for StartPage game summaries grid columns.
         /// Key is a stable column identifier, value indicates whether the column is visible.
         /// </summary>
@@ -1507,6 +1641,26 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _startPageGameSummariesColumnAlignments;
             set => SetValue(ref _startPageGameSummariesColumnAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted cell vertical alignment overrides for StartPage game summaries grid columns.
+        /// Missing keys inherit the global GridCellVerticalAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridVerticalAlignment> StartPageGameSummariesColumnVerticalAlignments
+        {
+            get => _startPageGameSummariesColumnVerticalAlignments;
+            set => SetValue(ref _startPageGameSummariesColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted header horizontal alignment overrides for StartPage game summaries grid columns.
+        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> StartPageGameSummariesColumnHeaderAlignments
+        {
+            get => _startPageGameSummariesColumnHeaderAlignments;
+            set => SetValue(ref _startPageGameSummariesColumnHeaderAlignments, NormalizeColumnAlignments(value));
         }
 
         /// <summary>
@@ -1943,6 +2097,12 @@ namespace PlayniteAchievements.Models.Settings
                 OverviewRecentAchievementColumnAlignments = this.OverviewRecentAchievementColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.OverviewRecentAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                OverviewRecentAchievementColumnVerticalAlignments = this.OverviewRecentAchievementColumnVerticalAlignments != null
+                    ? new Dictionary<string, GridVerticalAlignment>(this.OverviewRecentAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
+                OverviewRecentAchievementColumnHeaderAlignments = this.OverviewRecentAchievementColumnHeaderAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.OverviewRecentAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 OverviewSelectedGameAchievementColumnWidths = this.OverviewSelectedGameAchievementColumnWidths != null
                     ? new Dictionary<string, double>(this.OverviewSelectedGameAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
@@ -1951,6 +2111,12 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 OverviewSelectedGameAchievementColumnAlignments = this.OverviewSelectedGameAchievementColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.OverviewSelectedGameAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                OverviewSelectedGameAchievementColumnVerticalAlignments = this.OverviewSelectedGameAchievementColumnVerticalAlignments != null
+                    ? new Dictionary<string, GridVerticalAlignment>(this.OverviewSelectedGameAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
+                OverviewSelectedGameAchievementColumnHeaderAlignments = this.OverviewSelectedGameAchievementColumnHeaderAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.OverviewSelectedGameAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 SingleGameColumnWidths = this.SingleGameColumnWidths != null
                     ? new Dictionary<string, double>(this.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
@@ -1961,6 +2127,12 @@ namespace PlayniteAchievements.Models.Settings
                 SingleGameColumnAlignments = this.SingleGameColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.SingleGameColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                SingleGameColumnVerticalAlignments = this.SingleGameColumnVerticalAlignments != null
+                    ? new Dictionary<string, GridVerticalAlignment>(this.SingleGameColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
+                SingleGameColumnHeaderAlignments = this.SingleGameColumnHeaderAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.SingleGameColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 DesktopThemeColumnWidths = this.DesktopThemeColumnWidths != null
                     ? new Dictionary<string, double>(this.DesktopThemeColumnWidths, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
@@ -1969,6 +2141,12 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 DesktopThemeColumnAlignments = this.DesktopThemeColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.DesktopThemeColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                DesktopThemeColumnVerticalAlignments = this.DesktopThemeColumnVerticalAlignments != null
+                    ? new Dictionary<string, GridVerticalAlignment>(this.DesktopThemeColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
+                DesktopThemeColumnHeaderAlignments = this.DesktopThemeColumnHeaderAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.DesktopThemeColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 GameSummariesColumnVisibility = this.GameSummariesColumnVisibility != null
                     ? new Dictionary<string, bool>(this.GameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
@@ -1982,6 +2160,12 @@ namespace PlayniteAchievements.Models.Settings
                 GameSummariesColumnAlignments = this.GameSummariesColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.GameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                GameSummariesColumnVerticalAlignments = this.GameSummariesColumnVerticalAlignments != null
+                    ? new Dictionary<string, GridVerticalAlignment>(this.GameSummariesColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
+                GameSummariesColumnHeaderAlignments = this.GameSummariesColumnHeaderAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.GameSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 StartPageAchievementColumnVisibility = this.StartPageAchievementColumnVisibility != null
                     ? new Dictionary<string, bool>(this.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
@@ -1994,6 +2178,12 @@ namespace PlayniteAchievements.Models.Settings
                 StartPageAchievementColumnAlignments = this.StartPageAchievementColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.StartPageAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                StartPageAchievementColumnVerticalAlignments = this.StartPageAchievementColumnVerticalAlignments != null
+                    ? new Dictionary<string, GridVerticalAlignment>(this.StartPageAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
+                StartPageAchievementColumnHeaderAlignments = this.StartPageAchievementColumnHeaderAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.StartPageAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 StartPageGameSummariesColumnVisibility = this.StartPageGameSummariesColumnVisibility != null
                     ? new Dictionary<string, bool>(this.StartPageGameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
@@ -2005,6 +2195,12 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
                 StartPageGameSummariesColumnAlignments = this.StartPageGameSummariesColumnAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.StartPageGameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                StartPageGameSummariesColumnVerticalAlignments = this.StartPageGameSummariesColumnVerticalAlignments != null
+                    ? new Dictionary<string, GridVerticalAlignment>(this.StartPageGameSummariesColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
+                StartPageGameSummariesColumnHeaderAlignments = this.StartPageGameSummariesColumnHeaderAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.StartPageGameSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 OverviewLeftColumnRatio = this.OverviewLeftColumnRatio,
                 WindowPlacements = this.WindowPlacements != null
@@ -2163,27 +2359,41 @@ namespace PlayniteAchievements.Models.Settings
             OverviewRecentAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             OverviewRecentAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             OverviewRecentAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            OverviewRecentAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            OverviewRecentAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             OverviewSelectedGameAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             OverviewSelectedGameAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             OverviewSelectedGameAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            OverviewSelectedGameAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            OverviewSelectedGameAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             SingleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             SingleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             SingleGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            SingleGameColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            SingleGameColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             DesktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             DesktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             DesktopThemeColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            DesktopThemeColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            DesktopThemeColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             GameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             GameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             GameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             GameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            GameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            GameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             StartPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             StartPageAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             StartPageAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             StartPageAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            StartPageAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            StartPageAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             StartPageGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             StartPageGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             StartPageGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             StartPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            StartPageGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            StartPageGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
 
             OverviewLeftColumnRatio = defaults.OverviewLeftColumnRatio;
         }
@@ -2249,6 +2459,28 @@ namespace PlayniteAchievements.Models.Settings
                 var key = (pair.Key ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(key) &&
                     Enum.IsDefined(typeof(GridAlignment), pair.Value))
+                {
+                    normalized[key] = pair.Value;
+                }
+            }
+
+            return normalized;
+        }
+
+        private static Dictionary<string, GridVerticalAlignment> NormalizeColumnVerticalAlignments(
+            Dictionary<string, GridVerticalAlignment> value)
+        {
+            var normalized = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            if (value == null)
+            {
+                return normalized;
+            }
+
+            foreach (var pair in value)
+            {
+                var key = (pair.Key ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(key) &&
+                    Enum.IsDefined(typeof(GridVerticalAlignment), pair.Value))
                 {
                     normalized[key] = pair.Value;
                 }

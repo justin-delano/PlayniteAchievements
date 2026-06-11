@@ -479,6 +479,12 @@ namespace PlayniteAchievements.Views.Controls
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(
                 AchievementsDataGrid,
                 () => GetAlignmentsByKey(settings));
+            DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(
+                AchievementsDataGrid,
+                () => GetCellVerticalAlignmentsByKey(settings));
+            DataGridAlignmentBehavior.SetColumnHeaderHorizontalAlignmentOverridesProvider(
+                AchievementsDataGrid,
+                () => GetHeaderAlignmentsByKey(settings));
 
             _columnPersistence = new ColumnWidthPersistenceService(
                 AchievementsDataGrid,
@@ -524,6 +530,24 @@ namespace PlayniteAchievements.Views.Controls
                     }
                 },
                 getDefaultCellAlignment: () => settings.Persisted?.GridCellAlignment ?? GridAlignment.Left,
+                getCellVerticalAlignments: () => GetCellVerticalAlignmentMap(settings),
+                setCellVerticalAlignments: map =>
+                {
+                    if (AllowLayoutPersistence)
+                    {
+                        SetCellVerticalAlignmentsByKey(settings, map);
+                    }
+                },
+                getDefaultCellVerticalAlignment: () => settings.Persisted?.GridCellVerticalAlignment ?? GridVerticalAlignment.Center,
+                getHeaderHorizontalAlignments: () => GetHeaderAlignmentMap(settings),
+                setHeaderHorizontalAlignments: map =>
+                {
+                    if (AllowLayoutPersistence)
+                    {
+                        SetHeaderAlignmentsByKey(settings, map);
+                    }
+                },
+                getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid));
 
             // Force collapse Game column when not shown (prevents flicker by applying during persistence)
@@ -602,6 +626,28 @@ namespace PlayniteAchievements.Views.Controls
         private Dictionary<string, GridAlignment> GetAlignmentMap(PlayniteAchievementsSettings settings)
         {
             var map = GetAlignmentsByKey(settings);
+            if (AllowLayoutPersistence || map == null)
+            {
+                return map;
+            }
+
+            return new Dictionary<string, GridAlignment>(map, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private Dictionary<string, GridVerticalAlignment> GetCellVerticalAlignmentMap(PlayniteAchievementsSettings settings)
+        {
+            var map = GetCellVerticalAlignmentsByKey(settings);
+            if (AllowLayoutPersistence || map == null)
+            {
+                return map;
+            }
+
+            return new Dictionary<string, GridVerticalAlignment>(map, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private Dictionary<string, GridAlignment> GetHeaderAlignmentMap(PlayniteAchievementsSettings settings)
+        {
+            var map = GetHeaderAlignmentsByKey(settings);
             if (AllowLayoutPersistence || map == null)
             {
                 return map;
@@ -704,6 +750,46 @@ namespace PlayniteAchievements.Views.Controls
             };
         }
 
+        private Dictionary<string, GridVerticalAlignment> GetCellVerticalAlignmentsByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            return ColumnSettingsKey switch
+            {
+                "DesktopTheme" => settings.Persisted.DesktopThemeColumnVerticalAlignments,
+                "SingleGame" => settings.Persisted.SingleGameColumnVerticalAlignments,
+                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments,
+                "Overview" => settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments,
+                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments,
+                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments,
+                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnVerticalAlignments,
+                _ => settings.Persisted.SingleGameColumnVerticalAlignments
+            };
+        }
+
+        private Dictionary<string, GridAlignment> GetHeaderAlignmentsByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            return ColumnSettingsKey switch
+            {
+                "DesktopTheme" => settings.Persisted.DesktopThemeColumnHeaderAlignments,
+                "SingleGame" => settings.Persisted.SingleGameColumnHeaderAlignments,
+                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments,
+                "Overview" => settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments,
+                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments,
+                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments,
+                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnHeaderAlignments,
+                _ => settings.Persisted.SingleGameColumnHeaderAlignments
+            };
+        }
+
         private void SetOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
         {
             if (settings?.Persisted == null)
@@ -764,6 +850,72 @@ namespace PlayniteAchievements.Views.Controls
                     break;
                 default:
                     settings.Persisted.SingleGameColumnAlignments = map;
+                    break;
+            }
+        }
+
+        private void SetCellVerticalAlignmentsByKey(
+            PlayniteAchievementsSettings settings,
+            Dictionary<string, GridVerticalAlignment> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            switch (ColumnSettingsKey)
+            {
+                case "DesktopTheme":
+                    settings.Persisted.DesktopThemeColumnVerticalAlignments = map;
+                    break;
+                case "SingleGame":
+                    settings.Persisted.SingleGameColumnVerticalAlignments = map;
+                    break;
+                case "OverviewRecentAchievements":
+                case "Overview":
+                    settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments = map;
+                    break;
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                    settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments = map;
+                    break;
+                case "StartPageAchievements":
+                    settings.Persisted.StartPageAchievementColumnVerticalAlignments = map;
+                    break;
+                default:
+                    settings.Persisted.SingleGameColumnVerticalAlignments = map;
+                    break;
+            }
+        }
+
+        private void SetHeaderAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            switch (ColumnSettingsKey)
+            {
+                case "DesktopTheme":
+                    settings.Persisted.DesktopThemeColumnHeaderAlignments = map;
+                    break;
+                case "SingleGame":
+                    settings.Persisted.SingleGameColumnHeaderAlignments = map;
+                    break;
+                case "OverviewRecentAchievements":
+                case "Overview":
+                    settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments = map;
+                    break;
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                    settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments = map;
+                    break;
+                case "StartPageAchievements":
+                    settings.Persisted.StartPageAchievementColumnHeaderAlignments = map;
+                    break;
+                default:
+                    settings.Persisted.SingleGameColumnHeaderAlignments = map;
                     break;
             }
         }
@@ -1080,6 +1232,8 @@ namespace PlayniteAchievements.Views.Controls
             _columnPersistence?.Dispose();
             _columnPersistence = null;
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(AchievementsDataGrid, null);
+            DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(AchievementsDataGrid, null);
+            DataGridAlignmentBehavior.SetColumnHeaderHorizontalAlignmentOverridesProvider(AchievementsDataGrid, null);
             _isAttached = false;
         }
     }

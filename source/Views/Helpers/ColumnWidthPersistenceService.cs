@@ -36,6 +36,12 @@ namespace PlayniteAchievements.Views.Helpers
         private readonly Func<Dictionary<string, GridAlignment>> _getCellAlignments;
         private readonly Action<Dictionary<string, GridAlignment>> _setCellAlignments;
         private readonly Func<GridAlignment> _getDefaultCellAlignment;
+        private readonly Func<Dictionary<string, GridVerticalAlignment>> _getCellVerticalAlignments;
+        private readonly Action<Dictionary<string, GridVerticalAlignment>> _setCellVerticalAlignments;
+        private readonly Func<GridVerticalAlignment> _getDefaultCellVerticalAlignment;
+        private readonly Func<Dictionary<string, GridAlignment>> _getHeaderHorizontalAlignments;
+        private readonly Action<Dictionary<string, GridAlignment>> _setHeaderHorizontalAlignments;
+        private readonly Func<GridAlignment> _getDefaultHeaderHorizontalAlignment;
         private readonly Action _applyCellAlignments;
         private DispatcherTimer _saveTimer;
         private bool _isApplyingWidths;
@@ -60,6 +66,11 @@ namespace PlayniteAchievements.Views.Helpers
         /// Column keys that should not expose per-column cell alignment controls.
         /// </summary>
         public ISet<string> ExcludedCellAlignmentKeys { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Column keys that should not expose per-column header alignment controls.
+        /// </summary>
+        public ISet<string> ExcludedHeaderAlignmentKeys { get; set; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         /// <summary>
         /// Column keys that should be forced to collapsed visibility.
@@ -92,6 +103,12 @@ namespace PlayniteAchievements.Views.Helpers
             Func<Dictionary<string, GridAlignment>> getCellAlignments = null,
             Action<Dictionary<string, GridAlignment>> setCellAlignments = null,
             Func<GridAlignment> getDefaultCellAlignment = null,
+            Func<Dictionary<string, GridVerticalAlignment>> getCellVerticalAlignments = null,
+            Action<Dictionary<string, GridVerticalAlignment>> setCellVerticalAlignments = null,
+            Func<GridVerticalAlignment> getDefaultCellVerticalAlignment = null,
+            Func<Dictionary<string, GridAlignment>> getHeaderHorizontalAlignments = null,
+            Action<Dictionary<string, GridAlignment>> setHeaderHorizontalAlignments = null,
+            Func<GridAlignment> getDefaultHeaderHorizontalAlignment = null,
             Action applyCellAlignments = null)
         {
             _grid = grid ?? throw new ArgumentNullException(nameof(grid));
@@ -107,6 +124,12 @@ namespace PlayniteAchievements.Views.Helpers
             _getCellAlignments = getCellAlignments;
             _setCellAlignments = setCellAlignments;
             _getDefaultCellAlignment = getDefaultCellAlignment;
+            _getCellVerticalAlignments = getCellVerticalAlignments;
+            _setCellVerticalAlignments = setCellVerticalAlignments;
+            _getDefaultCellVerticalAlignment = getDefaultCellVerticalAlignment;
+            _getHeaderHorizontalAlignments = getHeaderHorizontalAlignments;
+            _setHeaderHorizontalAlignments = setHeaderHorizontalAlignments;
+            _getDefaultHeaderHorizontalAlignment = getDefaultHeaderHorizontalAlignment;
             _applyCellAlignments = applyCellAlignments;
         }
 
@@ -1179,7 +1202,7 @@ namespace PlayniteAchievements.Views.Helpers
             var hasVisibilitySection = AddVisibilitySection(menu);
             if (hasAlignmentSection && hasVisibilitySection)
             {
-                menu.Items.Insert(separatorIndex, new Separator());
+                menu.Items.Insert(separatorIndex, new Separator { Margin = new Thickness(8, 8, 8, 0) });
             }
 
             return hasAlignmentSection || hasVisibilitySection ? menu : null;
@@ -1198,9 +1221,173 @@ namespace PlayniteAchievements.Views.Helpers
                 return false;
             }
 
+            var rowItem = CreateAlignmentButtonRowItem(contextColumn);
+            if (rowItem == null)
+            {
+                return false;
+            }
+
             menu.Items.Add(CreateSectionHeader(headerText));
-            menu.Items.Add(CreateAlignmentCycleItem(contextColumn));
+            menu.Items.Add(rowItem);
             return true;
+        }
+
+        private MenuItem CreateAlignmentButtonRowItem(DataGridColumn contextColumn)
+        {
+            MenuItem item = null;
+            Action refreshRow = null;
+
+            refreshRow = () =>
+            {
+                if (item != null)
+                {
+                    item.Header = CreateAlignmentButtonRow(contextColumn, refreshRow);
+                }
+            };
+
+            item = new MenuItem
+            {
+                StaysOpenOnClick = true,
+                Focusable = false,
+                Cursor = Cursors.Arrow,
+                Style = CreateCenteredCompactMenuItemStyle(new Thickness(8, 0, 8, 0))
+            };
+
+            item.Header = CreateAlignmentButtonRow(contextColumn, refreshRow);
+            return item.Header == null ? null : item;
+        }
+
+        private FrameworkElement CreateAlignmentButtonRow(DataGridColumn contextColumn, Action refreshRow)
+        {
+            var row = new StackPanel
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(0)
+            };
+
+            var key = GetColumnKey(contextColumn);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return null;
+            }
+
+            if (CanShowHeaderHorizontalAlignment(contextColumn))
+            {
+                var hasOverride = TryGetColumnHeaderHorizontalAlignmentOverride(key, out var overrideAlignment);
+                var effectiveAlignment = hasOverride ? overrideAlignment : GetDefaultHeaderHorizontalAlignment();
+                var description = CreateHorizontalAlignmentDescription(
+                    "Header horizontal alignment",
+                    effectiveAlignment,
+                    hasOverride);
+
+                row.Children.Add(CreateAlignmentButton(
+                    CreateHeaderAlignmentIcon(effectiveAlignment, !hasOverride),
+                    description,
+                    !hasOverride,
+                    () =>
+                    {
+                        CycleColumnHeaderHorizontalAlignment(contextColumn);
+                        refreshRow?.Invoke();
+                    }));
+            }
+
+            if (CanShowCellHorizontalAlignment(contextColumn))
+            {
+                var hasOverride = TryGetColumnCellAlignmentOverride(key, out var overrideAlignment);
+                var effectiveAlignment = hasOverride ? overrideAlignment : GetDefaultCellAlignment();
+                var description = CreateHorizontalAlignmentDescription(
+                    "Cell horizontal alignment",
+                    effectiveAlignment,
+                    hasOverride);
+
+                row.Children.Add(CreateAlignmentButton(
+                    CreateAlignmentIcon(effectiveAlignment, !hasOverride),
+                    description,
+                    !hasOverride,
+                    () =>
+                    {
+                        CycleColumnCellAlignment(contextColumn);
+                        refreshRow?.Invoke();
+                    }));
+            }
+
+            if (CanShowCellVerticalAlignment(contextColumn))
+            {
+                var hasOverride = TryGetColumnCellVerticalAlignmentOverride(key, out var overrideAlignment);
+                var effectiveAlignment = hasOverride ? overrideAlignment : GetDefaultCellVerticalAlignment();
+                var description = CreateVerticalAlignmentDescription(
+                    "Cell vertical alignment",
+                    effectiveAlignment,
+                    hasOverride);
+
+                row.Children.Add(CreateAlignmentButton(
+                    CreateVerticalAlignmentIcon(effectiveAlignment, !hasOverride),
+                    description,
+                    !hasOverride,
+                    () =>
+                    {
+                        CycleColumnCellVerticalAlignment(contextColumn);
+                        refreshRow?.Invoke();
+                    }));
+            }
+
+            if (row.Children.Count == 0)
+            {
+                return null;
+            }
+
+            if (row.Children[row.Children.Count - 1] is FrameworkElement lastButton)
+            {
+                lastButton.Margin = new Thickness(0);
+            }
+
+            return row;
+        }
+
+        private static Button CreateAlignmentButton(
+            FrameworkElement icon,
+            string description,
+            bool isDefault,
+            Action onClick)
+        {
+            if (icon != null)
+            {
+                icon.HorizontalAlignment = HorizontalAlignment.Center;
+                icon.VerticalAlignment = VerticalAlignment.Center;
+            }
+
+            var button = new Button
+            {
+                Width = 34,
+                Height = 28,
+                MinWidth = 34,
+                MinHeight = 28,
+                Margin = new Thickness(0, 0, 4, 0),
+                Padding = new Thickness(4),
+                BorderThickness = isDefault ? new Thickness(1) : new Thickness(1.6),
+                Cursor = Cursors.Hand,
+                ToolTip = description,
+                Content = icon,
+                Opacity = 1,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Style = CreateCompactAlignmentButtonStyle()
+            };
+
+            SetTextBrushOpacity(button, Control.BorderBrushProperty, isDefault ? 0.42 : 0.92);
+            SetTextBrushOpacity(button, Control.BackgroundProperty, isDefault ? 0.05 : 0.10);
+            button.SetResourceReference(Control.ForegroundProperty, "TextBrush");
+            AutomationProperties.SetName(button, description);
+
+            button.Click += (_, e) =>
+            {
+                e.Handled = true;
+                onClick?.Invoke();
+            };
+
+            return button;
         }
 
         private bool AddVisibilitySection(ContextMenu menu)
@@ -1262,49 +1449,47 @@ namespace PlayniteAchievements.Views.Helpers
 
         private bool CanShowAlignmentSection(DataGridColumn column)
         {
-            if (column == null || _getCellAlignments == null || _setCellAlignments == null)
+            return CanShowCellHorizontalAlignment(column) ||
+                   CanShowCellVerticalAlignment(column) ||
+                   CanShowHeaderHorizontalAlignment(column);
+        }
+
+        private bool CanShowCellHorizontalAlignment(DataGridColumn column)
+        {
+            return CanShowCellAlignmentControl(column) &&
+                   _getCellAlignments != null &&
+                   _setCellAlignments != null;
+        }
+
+        private bool CanShowCellVerticalAlignment(DataGridColumn column)
+        {
+            return CanShowCellAlignmentControl(column) &&
+                   _getCellVerticalAlignments != null &&
+                   _setCellVerticalAlignments != null;
+        }
+
+        private bool CanShowHeaderHorizontalAlignment(DataGridColumn column)
+        {
+            if (column == null || _getHeaderHorizontalAlignments == null || _setHeaderHorizontalAlignments == null)
+            {
+                return false;
+            }
+
+            var key = GetColumnKey(column);
+            return !string.IsNullOrWhiteSpace(key) &&
+                   !ExcludedCellAlignmentKeys.Contains(key) &&
+                   !ExcludedHeaderAlignmentKeys.Contains(key);
+        }
+
+        private bool CanShowCellAlignmentControl(DataGridColumn column)
+        {
+            if (column == null)
             {
                 return false;
             }
 
             var key = GetColumnKey(column);
             return !string.IsNullOrWhiteSpace(key) && !ExcludedCellAlignmentKeys.Contains(key);
-        }
-
-        private MenuItem CreateAlignmentCycleItem(DataGridColumn column)
-        {
-            var item = new MenuItem
-            {
-                StaysOpenOnClick = true,
-                Style = CreateCompactMenuItemStyle(new Thickness(8, 0, 8, 6)),
-                Cursor = Cursors.Hand
-            };
-
-            UpdateAlignmentCycleItem(item, column);
-            item.Click += (_, __) =>
-            {
-                CycleColumnCellAlignment(column);
-                UpdateAlignmentCycleItem(item, column);
-            };
-
-            return item;
-        }
-
-        private void UpdateAlignmentCycleItem(MenuItem item, DataGridColumn column)
-        {
-            if (item == null)
-            {
-                return;
-            }
-
-            var key = GetColumnKey(column);
-            var hasOverride = TryGetColumnCellAlignmentOverride(key, out var overrideAlignment);
-            var effectiveAlignment = hasOverride ? overrideAlignment : GetDefaultCellAlignment();
-            var description = CreateAlignmentDescription(effectiveAlignment, hasOverride);
-
-            item.Header = CreateAlignmentButtonChrome(effectiveAlignment, !hasOverride);
-            item.ToolTip = description;
-            AutomationProperties.SetName(item, description);
         }
 
         private void CycleColumnCellAlignment(DataGridColumn column)
@@ -1318,7 +1503,7 @@ namespace PlayniteAchievements.Views.Helpers
             var map = _getCellAlignments?.Invoke() ??
                       new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             var hasOverride = map.TryGetValue(key, out var current);
-            var next = GetNextAlignmentOverride(hasOverride, current);
+            var next = GetNextHorizontalAlignmentOverride(hasOverride, current);
 
             if (next.HasValue)
             {
@@ -1334,10 +1519,82 @@ namespace PlayniteAchievements.Views.Helpers
             _applyCellAlignments?.Invoke();
         }
 
+        private void CycleColumnCellVerticalAlignment(DataGridColumn column)
+        {
+            var key = GetColumnKey(column);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var map = _getCellVerticalAlignments?.Invoke() ??
+                      new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            var hasOverride = map.TryGetValue(key, out var current);
+            var next = GetNextVerticalAlignmentOverride(hasOverride, current);
+
+            if (next.HasValue)
+            {
+                map[key] = next.Value;
+            }
+            else
+            {
+                map.Remove(key);
+            }
+
+            _setCellVerticalAlignments?.Invoke(map);
+            _saveSettings?.Invoke();
+            _applyCellAlignments?.Invoke();
+        }
+
+        private void CycleColumnHeaderHorizontalAlignment(DataGridColumn column)
+        {
+            var key = GetColumnKey(column);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var map = _getHeaderHorizontalAlignments?.Invoke() ??
+                      new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            var hasOverride = map.TryGetValue(key, out var current);
+            var next = GetNextHorizontalAlignmentOverride(hasOverride, current);
+
+            if (next.HasValue)
+            {
+                map[key] = next.Value;
+            }
+            else
+            {
+                map.Remove(key);
+            }
+
+            _setHeaderHorizontalAlignments?.Invoke(map);
+            _saveSettings?.Invoke();
+            _applyCellAlignments?.Invoke();
+        }
+
         private bool TryGetColumnCellAlignmentOverride(string key, out GridAlignment alignment)
         {
             alignment = GridAlignment.Left;
             var map = _getCellAlignments?.Invoke();
+            return !string.IsNullOrWhiteSpace(key) &&
+                   map != null &&
+                   map.TryGetValue(key, out alignment);
+        }
+
+        private bool TryGetColumnCellVerticalAlignmentOverride(string key, out GridVerticalAlignment alignment)
+        {
+            alignment = GridVerticalAlignment.Center;
+            var map = _getCellVerticalAlignments?.Invoke();
+            return !string.IsNullOrWhiteSpace(key) &&
+                   map != null &&
+                   map.TryGetValue(key, out alignment);
+        }
+
+        private bool TryGetColumnHeaderHorizontalAlignmentOverride(string key, out GridAlignment alignment)
+        {
+            alignment = GridAlignment.Center;
+            var map = _getHeaderHorizontalAlignments?.Invoke();
             return !string.IsNullOrWhiteSpace(key) &&
                    map != null &&
                    map.TryGetValue(key, out alignment);
@@ -1348,7 +1605,17 @@ namespace PlayniteAchievements.Views.Helpers
             return _getDefaultCellAlignment?.Invoke() ?? GridAlignment.Left;
         }
 
-        private static GridAlignment? GetNextAlignmentOverride(bool hasOverride, GridAlignment current)
+        private GridVerticalAlignment GetDefaultCellVerticalAlignment()
+        {
+            return _getDefaultCellVerticalAlignment?.Invoke() ?? GridVerticalAlignment.Center;
+        }
+
+        private GridAlignment GetDefaultHeaderHorizontalAlignment()
+        {
+            return _getDefaultHeaderHorizontalAlignment?.Invoke() ?? GridAlignment.Center;
+        }
+
+        private static GridAlignment? GetNextHorizontalAlignmentOverride(bool hasOverride, GridAlignment current)
         {
             if (!hasOverride)
             {
@@ -1366,12 +1633,44 @@ namespace PlayniteAchievements.Views.Helpers
             }
         }
 
-        private static string CreateAlignmentDescription(GridAlignment effectiveAlignment, bool hasOverride)
+        private static GridVerticalAlignment? GetNextVerticalAlignmentOverride(bool hasOverride, GridVerticalAlignment current)
+        {
+            if (!hasOverride)
+            {
+                return GridVerticalAlignment.Top;
+            }
+
+            switch (current)
+            {
+                case GridVerticalAlignment.Top:
+                    return GridVerticalAlignment.Center;
+                case GridVerticalAlignment.Center:
+                    return GridVerticalAlignment.Bottom;
+                default:
+                    return null;
+            }
+        }
+
+        private static string CreateHorizontalAlignmentDescription(
+            string target,
+            GridAlignment effectiveAlignment,
+            bool hasOverride)
         {
             var alignmentText = AlignmentToText(effectiveAlignment);
             return hasOverride
-                ? $"Cell alignment: {alignmentText}. Click to change."
-                : $"Cell alignment: Default ({alignmentText}). Click to change.";
+                ? $"{target}: {alignmentText}. Click to change."
+                : $"{target}: Default ({alignmentText}). Click to change.";
+        }
+
+        private static string CreateVerticalAlignmentDescription(
+            string target,
+            GridVerticalAlignment effectiveAlignment,
+            bool hasOverride)
+        {
+            var alignmentText = AlignmentToText(effectiveAlignment);
+            return hasOverride
+                ? $"{target}: {alignmentText}. Click to change."
+                : $"{target}: Default ({alignmentText}). Click to change.";
         }
 
         private static string AlignmentToText(GridAlignment alignment)
@@ -1385,6 +1684,20 @@ namespace PlayniteAchievements.Views.Helpers
                 case GridAlignment.Left:
                 default:
                     return "Left";
+            }
+        }
+
+        private static string AlignmentToText(GridVerticalAlignment alignment)
+        {
+            switch (alignment)
+            {
+                case GridVerticalAlignment.Top:
+                    return "Top";
+                case GridVerticalAlignment.Bottom:
+                    return "Bottom";
+                case GridVerticalAlignment.Center:
+                default:
+                    return "Center";
             }
         }
 
@@ -1403,24 +1716,127 @@ namespace PlayniteAchievements.Views.Helpers
                 Header = textBlock,
                 Focusable = false,
                 IsHitTestVisible = false,
-                Style = CreateCompactMenuItemStyle(new Thickness(8, 6, 8, 3))
+                Style = CreateCompactMenuItemStyle(new Thickness(8, 6, 8, 6))
             };
         }
 
-        private static FrameworkElement CreateAlignmentButtonChrome(GridAlignment alignment, bool isDefault)
+        private static Style CreateCenteredCompactMenuItemStyle(Thickness margin)
         {
-            var border = new Border
+            var style = new Style(typeof(MenuItem));
+            style.Setters.Add(new Setter(FrameworkElement.MarginProperty, margin));
+            style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(0)));
+            style.Setters.Add(new Setter(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Stretch));
+            style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Center));
+            style.Setters.Add(new Setter(Control.VerticalContentAlignmentProperty, VerticalAlignment.Center));
+            style.Setters.Add(new Setter(Control.TemplateProperty, CreateCenteredCompactMenuItemTemplate()));
+            return style;
+        }
+
+        private static ControlTemplate CreateCenteredCompactMenuItemTemplate()
+        {
+            var template = new ControlTemplate(typeof(MenuItem));
+
+            var border = new FrameworkElementFactory(typeof(Border));
+            border.SetValue(Border.BackgroundProperty, Brushes.Transparent);
+            border.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
+            border.SetValue(UIElement.SnapsToDevicePixelsProperty, true);
+
+            var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            presenter.SetValue(ContentPresenter.ContentSourceProperty, "Header");
+            presenter.SetValue(ContentPresenter.RecognizesAccessKeyProperty, true);
+            presenter.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+            presenter.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            border.AppendChild(presenter);
+
+            template.VisualTree = border;
+            return template;
+        }
+
+        private static void SetTextBrushOpacity(DependencyObject target, DependencyProperty property, double opacity)
+        {
+            if (target == null || property == null)
             {
-                Width = 42,
-                Height = 36,
-                Padding = new Thickness(8, 7, 8, 7),
-                CornerRadius = new CornerRadius(4),
-                BorderThickness = new Thickness(1),
-                Child = CreateAlignmentIcon(alignment, isDefault)
+                return;
+            }
+
+            var brush = Application.Current?.TryFindResource("TextBrush") as Brush;
+            if (brush != null)
+            {
+                brush = brush.CloneCurrentValue();
+                brush.Opacity = opacity;
+                if (brush.CanFreeze)
+                {
+                    brush.Freeze();
+                }
+
+                target.SetValue(property, brush);
+                return;
+            }
+
+            target.SetValue(property, new SolidColorBrush(Color.FromArgb(
+                (byte)Math.Max(0, Math.Min(255, opacity * 255)),
+                255,
+                255,
+                255)));
+        }
+
+        private static Style CreateCompactAlignmentButtonStyle()
+        {
+            var style = new Style(typeof(Button));
+            style.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(4)));
+            style.Setters.Add(new Setter(Control.HorizontalContentAlignmentProperty, HorizontalAlignment.Center));
+            style.Setters.Add(new Setter(Control.VerticalContentAlignmentProperty, VerticalAlignment.Center));
+            style.Setters.Add(new Setter(Control.TemplateProperty, CreateCompactAlignmentButtonTemplate()));
+            return style;
+        }
+
+        private static ControlTemplate CreateCompactAlignmentButtonTemplate()
+        {
+            var template = new ControlTemplate(typeof(Button));
+
+            var border = new FrameworkElementFactory(typeof(Border));
+            border.Name = "Chrome";
+            border.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Control.BackgroundProperty));
+            border.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(Control.BorderBrushProperty));
+            border.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(Control.BorderThicknessProperty));
+            border.SetValue(Border.CornerRadiusProperty, new CornerRadius(3));
+            border.SetValue(UIElement.OpacityProperty, 0.96);
+            border.SetValue(UIElement.SnapsToDevicePixelsProperty, true);
+
+            var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            presenter.SetValue(ContentPresenter.ContentProperty, new TemplateBindingExtension(ContentControl.ContentProperty));
+            presenter.SetValue(FrameworkElement.MarginProperty, new TemplateBindingExtension(Control.PaddingProperty));
+            presenter.SetValue(FrameworkElement.HorizontalAlignmentProperty, new TemplateBindingExtension(Control.HorizontalContentAlignmentProperty));
+            presenter.SetValue(FrameworkElement.VerticalAlignmentProperty, new TemplateBindingExtension(Control.VerticalContentAlignmentProperty));
+            border.AppendChild(presenter);
+
+            template.VisualTree = border;
+
+            var mouseOverTrigger = new Trigger
+            {
+                Property = UIElement.IsMouseOverProperty,
+                Value = true
             };
-            border.SetResourceReference(Border.BorderBrushProperty, "NormalBorderBrush");
-            border.SetResourceReference(Border.BackgroundProperty, "ControlBackgroundBrush");
-            return border;
+            mouseOverTrigger.Setters.Add(new Setter(Border.OpacityProperty, 1.0, "Chrome"));
+            template.Triggers.Add(mouseOverTrigger);
+
+            var focusTrigger = new Trigger
+            {
+                Property = UIElement.IsKeyboardFocusedProperty,
+                Value = true
+            };
+            focusTrigger.Setters.Add(new Setter(Border.BorderThicknessProperty, new Thickness(1.6), "Chrome"));
+            template.Triggers.Add(focusTrigger);
+
+            var pressedTrigger = new Trigger
+            {
+                Property = ButtonBase.IsPressedProperty,
+                Value = true
+            };
+            pressedTrigger.Setters.Add(new Setter(Border.OpacityProperty, 0.86, "Chrome"));
+            template.Triggers.Add(pressedTrigger);
+
+            return template;
         }
 
         private static Style CreateCompactMenuItemStyle(Thickness margin)
@@ -1454,37 +1870,100 @@ namespace PlayniteAchievements.Views.Helpers
             return template;
         }
 
+        private static FrameworkElement CreateHeaderAlignmentIcon(GridAlignment alignment, bool isDefault)
+        {
+            var grid = new Grid
+            {
+                Width = 20,
+                Height = 14,
+                Opacity = isDefault ? 0.62 : 1,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            // Header alignment intentionally shows only the header row's top line.
+            AddAlignmentLine(grid, alignment, 2, 15);
+            return grid;
+        }
+
         private static FrameworkElement CreateAlignmentIcon(GridAlignment alignment, bool isDefault)
         {
             var grid = new Grid
             {
-                Width = 24,
-                Height = 18,
-                Opacity = isDefault ? 0.62 : 1
+                Width = 20,
+                Height = 14,
+                Opacity = isDefault ? 0.62 : 1,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
             };
 
-            AddAlignmentLine(grid, alignment, 0, 16);
-            AddAlignmentLine(grid, alignment, 5, 11);
-            AddAlignmentLine(grid, alignment, 10, 14);
-            AddAlignmentLine(grid, alignment, 15, 8);
-
-            if (isDefault)
-            {
-                var marker = new Border
-                {
-                    Width = 5,
-                    Height = 5,
-                    CornerRadius = new CornerRadius(2.5),
-                    BorderThickness = new Thickness(1),
-                    HorizontalAlignment = HorizontalAlignment.Right,
-                    VerticalAlignment = VerticalAlignment.Bottom,
-                    Margin = new Thickness(0, 0, 0, 1)
-                };
-                marker.SetResourceReference(Border.BorderBrushProperty, "HighlightGlyphBrush");
-                grid.Children.Add(marker);
-            }
+            AddAlignmentLine(grid, alignment, 0, 14);
+            AddAlignmentLine(grid, alignment, 4, 9);
+            AddAlignmentLine(grid, alignment, 8, 12);
+            AddAlignmentLine(grid, alignment, 12, 7);
 
             return grid;
+        }
+
+        private static FrameworkElement CreateVerticalAlignmentIcon(GridVerticalAlignment alignment, bool isDefault)
+        {
+            var grid = new Grid
+            {
+                Width = 20,
+                Height = 16,
+                Opacity = isDefault ? 0.62 : 1,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+
+            double[] widths;
+            double top;
+
+            switch (alignment)
+            {
+                case GridVerticalAlignment.Top:
+                    widths = new[] { 16.0, 12.0, 8.0 };
+                    top = 1.5;
+                    break;
+
+                case GridVerticalAlignment.Bottom:
+                    widths = new[] { 8.0, 12.0, 16.0 };
+                    top = 5.5;
+                    break;
+
+                case GridVerticalAlignment.Center:
+                default:
+                    widths = new[] { 8.0, 16.0, 8.0 };
+                    top = 3.5;
+                    break;
+            }
+
+            AddVerticalPyramidLine(grid, top, widths[0]);
+            AddVerticalPyramidLine(grid, top + 4.0, widths[1]);
+            AddVerticalPyramidLine(grid, top + 8.0, widths[2]);
+
+            return grid;
+        }
+
+        private static void AddVerticalPyramidLine(Grid grid, double top, double width)
+        {
+            if (grid == null)
+            {
+                return;
+            }
+
+            var line = new Border
+            {
+                Width = width,
+                Height = 1.4,
+                CornerRadius = new CornerRadius(0.7),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Top,
+                Margin = new Thickness(0, top, 0, 0)
+            };
+
+            SetTextBrushOpacity(line, Border.BackgroundProperty, 0.88);
+            grid.Children.Add(line);
         }
 
         private static void AddAlignmentLine(Grid grid, GridAlignment alignment, double top, double width)
@@ -1492,15 +1971,16 @@ namespace PlayniteAchievements.Views.Helpers
             var line = new Border
             {
                 Width = width,
-                Height = 1.6,
-                CornerRadius = new CornerRadius(0.8),
+                Height = 1.4,
+                CornerRadius = new CornerRadius(0.7),
                 HorizontalAlignment = ToHorizontalAlignment(alignment),
                 VerticalAlignment = VerticalAlignment.Top,
                 Margin = new Thickness(0, top, 0, 0)
             };
-            line.SetResourceReference(Border.BackgroundProperty, "TextBrush");
+            SetTextBrushOpacity(line, Border.BackgroundProperty, 0.88);
             grid.Children.Add(line);
         }
+
 
         private static HorizontalAlignment ToHorizontalAlignment(GridAlignment alignment)
         {
@@ -1513,6 +1993,20 @@ namespace PlayniteAchievements.Views.Helpers
                 case GridAlignment.Left:
                 default:
                     return HorizontalAlignment.Left;
+            }
+        }
+
+        private static VerticalAlignment ToVerticalAlignment(GridVerticalAlignment alignment)
+        {
+            switch (alignment)
+            {
+                case GridVerticalAlignment.Top:
+                    return VerticalAlignment.Top;
+                case GridVerticalAlignment.Bottom:
+                    return VerticalAlignment.Bottom;
+                case GridVerticalAlignment.Center:
+                default:
+                    return VerticalAlignment.Center;
             }
         }
 

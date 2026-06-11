@@ -211,6 +211,12 @@ namespace PlayniteAchievements.Views.Controls
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(
                 GameSummariesGrid,
                 () => GetAlignmentsByKey(settings));
+            DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(
+                GameSummariesGrid,
+                () => GetCellVerticalAlignmentsByKey(settings));
+            DataGridAlignmentBehavior.SetColumnHeaderHorizontalAlignmentOverridesProvider(
+                GameSummariesGrid,
+                () => GetHeaderAlignmentsByKey(settings));
 
             _columnPersistence = new ColumnWidthPersistenceService(
                 GameSummariesGrid,
@@ -226,6 +232,12 @@ namespace PlayniteAchievements.Views.Controls
                 getCellAlignments: () => GetAlignmentsByKey(settings),
                 setCellAlignments: map => SetAlignmentsByKey(settings, map),
                 getDefaultCellAlignment: () => settings.Persisted?.GridCellAlignment ?? GridAlignment.Left,
+                getCellVerticalAlignments: () => GetCellVerticalAlignmentsByKey(settings),
+                setCellVerticalAlignments: map => SetCellVerticalAlignmentsByKey(settings, map),
+                getDefaultCellVerticalAlignment: () => settings.Persisted?.GridCellVerticalAlignment ?? GridVerticalAlignment.Center,
+                getHeaderHorizontalAlignments: () => GetHeaderAlignmentsByKey(settings),
+                setHeaderHorizontalAlignments: map => SetHeaderAlignmentsByKey(settings, map),
+                getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GameSummariesGrid));
             _columnPersistence.Attach();
             _isAttached = true;
@@ -432,6 +444,66 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        private Dictionary<string, GridVerticalAlignment> GetCellVerticalAlignmentsByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            return IsStartPageScope()
+                ? settings.Persisted.StartPageGameSummariesColumnVerticalAlignments
+                : settings.Persisted.GameSummariesColumnVerticalAlignments;
+        }
+
+        private void SetCellVerticalAlignmentsByKey(
+            PlayniteAchievementsSettings settings,
+            Dictionary<string, GridVerticalAlignment> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            if (IsStartPageScope())
+            {
+                settings.Persisted.StartPageGameSummariesColumnVerticalAlignments = map;
+            }
+            else
+            {
+                settings.Persisted.GameSummariesColumnVerticalAlignments = map;
+            }
+        }
+
+        private Dictionary<string, GridAlignment> GetHeaderAlignmentsByKey(PlayniteAchievementsSettings settings)
+        {
+            if (settings?.Persisted == null)
+            {
+                return null;
+            }
+
+            return IsStartPageScope()
+                ? settings.Persisted.StartPageGameSummariesColumnHeaderAlignments
+                : settings.Persisted.GameSummariesColumnHeaderAlignments;
+        }
+
+        private void SetHeaderAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
+        {
+            if (settings?.Persisted == null)
+            {
+                return;
+            }
+
+            if (IsStartPageScope())
+            {
+                settings.Persisted.StartPageGameSummariesColumnHeaderAlignments = map;
+            }
+            else
+            {
+                settings.Persisted.GameSummariesColumnHeaderAlignments = map;
+            }
+        }
+
         private bool IsStartPageScope()
         {
             return string.Equals(ColumnSettingsKey, "StartPageGameSummaries", StringComparison.OrdinalIgnoreCase) ||
@@ -616,6 +688,8 @@ namespace PlayniteAchievements.Views.Controls
             _columnPersistence?.Dispose();
             _columnPersistence = null;
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(GameSummariesGrid, null);
+            DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(GameSummariesGrid, null);
+            DataGridAlignmentBehavior.SetColumnHeaderHorizontalAlignmentOverridesProvider(GameSummariesGrid, null);
             _isAttached = false;
         }
     }

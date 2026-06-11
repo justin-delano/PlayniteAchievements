@@ -89,14 +89,14 @@
             <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
             <DataGridTemplateColumn x:Name="StatusColumn"
                                     Width="36" MinWidth="22" CanUserSort="False" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_Status}"
+                                    Header="{DynamicResource LOCPlayAch_Common_Label_Status}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Status"
                                     CellStyle="{StaticResource AchievementStatusCellStyle}"
                                     CellTemplate="{StaticResource AchievementStatusTemplate}"/>
 
             <!-- Achievement Icon -->
             <DataGridTemplateColumn Width="84" MinWidth="22" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_Icon}"
+                                    Header="{DynamicResource LOCPlayAch_Common_Label_Icon}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Icon"
                                     CellStyle="{StaticResource AchievementGlowIconCellStyle}"
                                     CellTemplate="{StaticResource AchievementIconTemplate}"/>
@@ -142,13 +142,21 @@
             
             <!-- Game Column - shown in overview recent achievements -->
             <DataGridTemplateColumn x:Name="GameColumn"
-                                    Width="64" MinWidth="22" CanUserResize="True"
+                                    Width="92"
+                                    MinWidth="22"
+                                    CanUserResize="True"
                                     Header="{DynamicResource LOCPlayAch_Column_Game}"
                                     SortMemberPath="SortingName"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Game"
                                     Visibility="Collapsed"
-                                    CellStyle="{StaticResource AchievementIconCellStyle}"
-                                    CellTemplate="{StaticResource AchievementGameColumnTemplate}"/>
+                                    CellTemplate="{StaticResource AchievementGameColumnTemplate}">
+                <DataGridTemplateColumn.CellStyle>
+                    <Style TargetType="DataGridCell"
+                        BasedOn="{StaticResource AchievementCellStyle}">
+                        <Setter Property="Padding" Value="0"/>
+                    </Style>
+                </DataGridTemplateColumn.CellStyle>
+            </DataGridTemplateColumn>
 
             <!-- Unlock Date / Progress -->
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Common_Unlocked}" SortMemberPath="UnlockTime" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate"
