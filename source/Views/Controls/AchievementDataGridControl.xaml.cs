@@ -26,10 +26,17 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly ILogger Logger = LogManager.GetLogger();
         private ColumnWidthPersistenceService _columnPersistence;
         private bool _isAttached;
+        private const double CompactColumnMinWidth = 22;
+        private const double DefaultStatusColumnWidth = 36;
+        private const double LegacyTrophyColumnWidth = 100;
+        private const double DefaultTrophyColumnWidth = 44;
+        private const double LegacyRarityTierColumnWidth = 90;
+        private const double DefaultRarityTierColumnWidth = 44;
 
         private static readonly IReadOnlyDictionary<string, double> DefaultColumnWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
+                ["Status"] = DefaultStatusColumnWidth,
                 ["Icon"] = 78,
                 ["Game"] = 64,
                 ["Achievement"] = 460,
@@ -37,8 +44,9 @@ namespace PlayniteAchievements.Views.Controls
                 ["UnlockDate"] = 240,
                 ["CategoryType"] = 210,
                 ["CategoryLabel"] = 210,
+                ["Trophy"] = DefaultTrophyColumnWidth,
                 ["Rarity"] = 170,
-                ["RarityTier"] = 90,
+                ["RarityTier"] = DefaultRarityTierColumnWidth,
                 ["RarityPercent"] = 120,
                 ["CollectionScore"] = 110,
                 ["PrestigeScore"] = 110,
@@ -318,7 +326,7 @@ namespace PlayniteAchievements.Views.Controls
             var statusColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "StatusColumn") as DataGridTemplateColumn;
             if (statusColumn != null)
             {
-                SetFixedColumnVisibility(statusColumn, !HideStatusColumn, 36);
+                SetResizableColumnVisibility(statusColumn, !HideStatusColumn, DefaultStatusColumnWidth);
             }
 
             // Update Game column visibility - force collapsed when ShowGameColumn is false
@@ -347,29 +355,6 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
-        private static void SetFixedColumnVisibility(DataGridColumn column, bool isVisible, double width)
-        {
-            if (column == null)
-            {
-                return;
-            }
-
-            if (isVisible)
-            {
-                var roundedWidth = ColumnWidthNormalization.RoundPixelWidth(width);
-                column.MinWidth = roundedWidth;
-                column.MaxWidth = roundedWidth;
-                column.Width = new DataGridLength(roundedWidth, DataGridLengthUnitType.Pixel);
-                column.Visibility = Visibility.Visible;
-                return;
-            }
-
-            column.Visibility = Visibility.Collapsed;
-            column.MinWidth = 0;
-            column.MaxWidth = 0;
-            column.Width = new DataGridLength(0, DataGridLengthUnitType.Pixel);
-        }
-
         private static void SetResizableColumnVisibility(DataGridColumn column, bool isVisible, double defaultWidth)
         {
             if (column == null)
@@ -380,7 +365,7 @@ namespace PlayniteAchievements.Views.Controls
             if (isVisible)
             {
                 column.Visibility = Visibility.Visible;
-                column.MinWidth = 22;
+                column.MinWidth = CompactColumnMinWidth;
                 column.MaxWidth = double.PositiveInfinity;
                 if (column.Width.IsAbsolute && column.Width.Value <= 0)
                 {
@@ -556,13 +541,6 @@ namespace PlayniteAchievements.Views.Controls
                 _columnPersistence.ExcludedVisibilityKeys.Add("Status");
             }
 
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("Status");
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("Icon");
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("Game");
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("RarityTier");
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("Trophy");
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("TrophyType");
-
             _columnPersistence.Attach();
         }
 
@@ -578,7 +556,7 @@ namespace PlayniteAchievements.Views.Controls
                 {
                     if (IsValidWidth(pair.Value))
                     {
-                        merged[pair.Key] = pair.Value;
+                        merged[pair.Key] = NormalizeDefaultWidth(pair.Key, pair.Value);
                     }
                 }
             }
@@ -591,7 +569,7 @@ namespace PlayniteAchievements.Views.Controls
                 {
                     if (!merged.ContainsKey(pair.Key) && IsValidWidth(pair.Value))
                     {
-                        merged[pair.Key] = pair.Value;
+                        merged[pair.Key] = NormalizeDefaultWidth(pair.Key, pair.Value);
                     }
                 }
             }
@@ -813,6 +791,23 @@ namespace PlayniteAchievements.Views.Controls
         private static bool IsValidWidth(double width)
         {
             return !double.IsNaN(width) && !double.IsInfinity(width) && width > 0;
+        }
+
+        private static double NormalizeDefaultWidth(string key, double width)
+        {
+            if (string.Equals(key, "RarityTier", StringComparison.OrdinalIgnoreCase) &&
+                Math.Abs(width - LegacyRarityTierColumnWidth) < 0.2)
+            {
+                return DefaultRarityTierColumnWidth;
+            }
+
+            if (string.Equals(key, "Trophy", StringComparison.OrdinalIgnoreCase) &&
+                Math.Abs(width - LegacyTrophyColumnWidth) < 0.2)
+            {
+                return DefaultTrophyColumnWidth;
+            }
+
+            return width;
         }
 
         private static void SavePluginSettings(PlayniteAchievementsSettings settings)

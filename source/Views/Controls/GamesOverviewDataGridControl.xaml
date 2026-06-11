@@ -184,16 +184,38 @@
             <Style x:Key="OverviewProviderIconStyle" TargetType="Image">
                 <Setter Property="Width" Value="32"/>
                 <Setter Property="Height" Value="32"/>
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="HorizontalAlignment"
+                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"/>
+                <Setter Property="VerticalAlignment"
+                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
                 <Setter Property="UseLayoutRounding" Value="True"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
             </Style>
 
             <Style x:Key="OverviewProgressContainerStyle" TargetType="Grid">
-                <Setter Property="Margin" Value="2,4,10,4"/>
-                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Margin" Value="0,3,2,3"/>
+                <Setter Property="VerticalAlignment"
+                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
+            </Style>
+
+            <Style x:Key="OverviewProgressStackStyle" TargetType="StackPanel">
+                <Setter Property="VerticalAlignment"
+                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
+                <Setter Property="RenderTransform">
+                    <Setter.Value>
+                        <TranslateTransform Y="0"/>
+                    </Setter.Value>
+                </Setter>
+                <Style.Triggers>
+                    <Trigger Property="VerticalAlignment" Value="Center">
+                        <Setter Property="RenderTransform">
+                            <Setter.Value>
+                                <TranslateTransform Y="10"/>
+                            </Setter.Value>
+                        </Setter>
+                    </Trigger>
+                </Style.Triggers>
             </Style>
 
             <Style x:Key="OverviewProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
@@ -217,7 +239,7 @@
 
             <Style x:Key="OverviewProgressFooterStyle" TargetType="Grid">
                 <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                <Setter Property="Margin" Value="0,6,4,0"/>
+                <Setter Property="Margin" Value="0,5,0,0"/>
             </Style>
 
             <Style x:Key="OverviewMiniBadgeItemStyle" TargetType="StackPanel">
@@ -295,10 +317,11 @@
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
-                                        Padding="4,0"
-                                        helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center">
+                                        Padding="4,6">
                             <Grid>
-                                <Border CornerRadius="6" VerticalAlignment="Center"
+                                <Border CornerRadius="6"
+                                        HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                        VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                                         Style="{StaticResource GameImageBorderStyle}">
                                     <Border.Width>
                                         <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,width,12,8,12">
@@ -321,7 +344,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="SortingName" MinWidth="160" helpers:ColumnVisibilityHelper.ColumnKey="OverviewGameName">
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Game}" SortMemberPath="SortingName" helpers:ColumnVisibilityHelper.ColumnKey="OverviewGameName">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
@@ -343,7 +366,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="40" MinWidth="32"
+            <DataGridTemplateColumn Width="40" MinWidth="22"
                                     Header="{DynamicResource LOCPlayAch_Common_Label_Platform}"
                                     CanUserResize="True"
                                     CanUserSort="False"
@@ -357,8 +380,7 @@
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
-                                        Padding="0"
-                                        helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center">
+                                        Padding="0,6">
                             <Grid>
                                 <Image ToolTip="{Binding Provider}"
                                        Style="{StaticResource OverviewProviderIconStyle}">
@@ -387,7 +409,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" helpers:ColumnVisibilityHelper.ColumnKey="OverviewLastPlayed">
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" helpers:ColumnVisibilityHelper.ColumnKey="OverviewLastPlayed">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
@@ -406,7 +428,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Playtime}" SortMemberPath="PlaytimeSeconds" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPlaytime">
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Playtime}" SortMemberPath="PlaytimeSeconds" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPlaytime">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
@@ -425,13 +447,14 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Progress}" SortMemberPath="Progression" helpers:ColumnVisibilityHelper.ColumnKey="OverviewProgression">
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Progress}" SortMemberPath="Progression" helpers:ColumnVisibilityHelper.ColumnKey="OverviewProgression">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
+                                        Padding="4,6,2,6">
                             <Grid>
                                 <Grid Style="{StaticResource OverviewProgressContainerStyle}">
-                                    <StackPanel VerticalAlignment="Center">
+                                    <StackPanel Style="{StaticResource OverviewProgressStackStyle}">
                                         <Grid>
                                             <ProgressBar Value="{Binding Progression, Mode=OneWay}"
                                                          Style="{StaticResource OverviewProgressBarStyle}"/>
@@ -501,7 +524,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Total}" SortMemberPath="TotalAchievements" helpers:ColumnVisibilityHelper.ColumnKey="TotalAchievements">
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Total}" SortMemberPath="TotalAchievements" helpers:ColumnVisibilityHelper.ColumnKey="TotalAchievements">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
@@ -512,9 +535,7 @@
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
                                            TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
-                                    <Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/>
-                                    <Run Text="/" Foreground="{DynamicResource TextBrush}"/>
-                                    <Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/>
+                                    <TextBlock.Inlines><Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource TextBrush}"/><Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/></TextBlock.Inlines>
                                 </TextBlock>
                             </Grid>
                         </ContentControl>
@@ -522,7 +543,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_CollectionScore}" SortMemberPath="CollectionScore" helpers:ColumnVisibilityHelper.ColumnKey="OverviewCollectionScore">
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_CollectionScore}" SortMemberPath="CollectionScore" helpers:ColumnVisibilityHelper.ColumnKey="OverviewCollectionScore">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
@@ -540,7 +561,7 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_PrestigeScore}" SortMemberPath="PrestigeScore" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPrestigeScore">
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_PrestigeScore}" SortMemberPath="PrestigeScore" helpers:ColumnVisibilityHelper.ColumnKey="OverviewPrestigeScore">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">

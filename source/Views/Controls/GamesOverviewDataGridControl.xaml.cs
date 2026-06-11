@@ -227,9 +227,6 @@ namespace PlayniteAchievements.Views.Controls
                 setCellAlignments: map => SetAlignmentsByKey(settings, map),
                 getDefaultCellAlignment: () => settings.Persisted?.GridCellAlignment ?? GridAlignment.Left,
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GamesOverviewDataGrid));
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("Cover");
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("OverviewPlatform");
-            _columnPersistence.ExcludedCellAlignmentKeys.Add("OverviewProgression");
             _columnPersistence.Attach();
             _isAttached = true;
         }
