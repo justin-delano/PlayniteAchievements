@@ -724,7 +724,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedCompletenessFilterText => GetSelectedFilterText(
             _selectedCompletenessFilters,
             CompletenessFilterOptions,
-            L("LOCPlayAch_Filter_CompletenessSelectorPlaceholder", "Completeness"));
+            L("LOCPlayAch_Progress", "Progress"));
 
         public bool IsCompletenessFilterSelected(string value)
         {
@@ -756,7 +756,7 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedPlayStatusFilterText => GetSelectedFilterText(
             _selectedPlayStatusFilters,
             PlayStatusFilterOptions,
-            L("LOCPlayAch_Filter_PlayStatusSelectorPlaceholder", "Play Status"));
+            L("LOCPlayAch_Filter_ActivitySelectorPlaceholder", "Activity"));
 
         public bool IsPlayStatusFilterSelected(string value)
         {
@@ -778,31 +778,52 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
-        /// Selects exactly one completeness filter when a games pie slice is clicked.
-        /// Pie chart clicks are binary: Complete or Incomplete, never both.
+        /// Toggles progress filters when a games pie slice is clicked.
+        /// The two-slice games pie maps Incomplete to both non-complete progress buckets.
         /// </summary>
-        /// <param name="completenessLabel">The completeness label from the clicked slice.</param>
+        /// <param name="completenessLabel">The progress label from the clicked slice.</param>
         public void ToggleCompletenessFilterFromPieChart(string completenessLabel)
         {
-            if (string.IsNullOrWhiteSpace(completenessLabel) ||
-                CompletenessFilterOptions == null ||
-                !CompletenessFilterOptions.Contains(completenessLabel))
+            if (string.IsNullOrWhiteSpace(completenessLabel))
             {
                 return;
             }
 
-            var isOnlySelected =
-                _selectedCompletenessFilters.Count == 1 &&
-                _selectedCompletenessFilters.Contains(completenessLabel);
+            var completeOption = L("LOCPlayAch_Filter_Complete", "Complete");
+            var inProgressOption = L("LOCPlayAch_Filter_InProgress", "In Progress");
+            var noProgressOption = L("LOCPlayAch_Filter_NoProgress", "No Progress");
+            var incompleteSliceLabel = L("LOCPlayAch_Overview_Incomplete", "Incomplete");
+            var targetFilters = new List<string>();
 
-            if (isOnlySelected)
+            if (string.Equals(completenessLabel, completeOption, StringComparison.OrdinalIgnoreCase))
+            {
+                targetFilters.Add(completeOption);
+            }
+            else if (string.Equals(completenessLabel, incompleteSliceLabel, StringComparison.OrdinalIgnoreCase))
+            {
+                targetFilters.Add(inProgressOption);
+                targetFilters.Add(noProgressOption);
+            }
+            else
+            {
+                return;
+            }
+
+            var isCurrentSelection =
+                _selectedCompletenessFilters.Count == targetFilters.Count &&
+                targetFilters.All(filter => _selectedCompletenessFilters.Contains(filter));
+
+            if (isCurrentSelection)
             {
                 _selectedCompletenessFilters.Clear();
             }
             else
             {
                 _selectedCompletenessFilters.Clear();
-                _selectedCompletenessFilters.Add(completenessLabel);
+                foreach (var filter in targetFilters)
+                {
+                    _selectedCompletenessFilters.Add(filter);
+                }
             }
 
             OnPropertyChanged(nameof(SelectedCompletenessFilterText));
@@ -2092,7 +2113,8 @@ namespace PlayniteAchievements.ViewModels
             var options = new List<string>
             {
                 L("LOCPlayAch_Filter_Complete", "Complete"),
-                L("LOCPlayAch_Overview_Incomplete", "Incomplete")
+                L("LOCPlayAch_Filter_InProgress", "In Progress"),
+                L("LOCPlayAch_Filter_NoProgress", "No Progress")
             };
 
             if (CompletenessFilterOptions == null)
@@ -2118,8 +2140,7 @@ namespace PlayniteAchievements.ViewModels
             var options = new List<string>
             {
                 L("LOCPlayAch_Filter_Played", "Played"),
-                L("LOCPlayAch_Filter_Unplayed", "Unplayed"),
-                L("LOCPlayAch_Filter_NoProgress", "No Progress")
+                L("LOCPlayAch_Filter_Unplayed", "Unplayed")
             };
 
             if (PlayStatusFilterOptions == null)
@@ -2796,53 +2817,15 @@ namespace PlayniteAchievements.ViewModels
                     _selectedProviderFilters.Contains(g.ProviderKey));
             }
 
-            // Completeness filter
-            if (_selectedCompletenessFilters.Count > 0)
-            {
-                var completeOption = L("LOCPlayAch_Filter_Complete", "Complete");
-                var incompleteOption = L("LOCPlayAch_Overview_Incomplete", "Incomplete");
-                var includeComplete = _selectedCompletenessFilters.Contains(completeOption);
-                var includeIncomplete = _selectedCompletenessFilters.Contains(incompleteOption);
-
-                if (includeComplete && !includeIncomplete)
-                {
-                    filtered = filtered.Where(g => g.IsCompleted);
-                }
-                else if (!includeComplete && includeIncomplete)
-                {
-                    filtered = filtered.Where(g => !g.IsCompleted);
-                }
-            }
-
-            // Play Status filter
-            // Played/Unplayed are OR'd (play-status categories), No Progress is AND'd (constraint)
-            if (_selectedPlayStatusFilters.Count > 0)
-            {
-                var playedOption = L("LOCPlayAch_Filter_Played", "Played");
-                var unplayedOption = L("LOCPlayAch_Filter_Unplayed", "Unplayed");
-                var noProgressOption = L("LOCPlayAch_Filter_NoProgress", "No Progress");
-
-                var includePlayed = _selectedPlayStatusFilters.Contains(playedOption);
-                var includeUnplayed = _selectedPlayStatusFilters.Contains(unplayedOption);
-                var requireNoProgress = _selectedPlayStatusFilters.Contains(noProgressOption);
-
-                filtered = filtered.Where(g =>
-                {
-                    bool matchesStatus = false;
-                    if (includePlayed && (g.LastPlayed.HasValue || g.UnlockedAchievements > 0))
-                        matchesStatus = true;
-                    if (includeUnplayed && !g.LastPlayed.HasValue && g.UnlockedAchievements == 0)
-                        matchesStatus = true;
-
-                    if (!matchesStatus)
-                        return false;
-
-                    if (requireNoProgress && g.UnlockedAchievements > 0)
-                        return false;
-
-                    return true;
-                });
-            }
+            filtered = OverviewGameSummaryFilters.ApplyActivityAndProgressFilters(
+                filtered,
+                _selectedPlayStatusFilters,
+                _selectedCompletenessFilters,
+                L("LOCPlayAch_Filter_Played", "Played"),
+                L("LOCPlayAch_Filter_Unplayed", "Unplayed"),
+                L("LOCPlayAch_Filter_Complete", "Complete"),
+                L("LOCPlayAch_Filter_InProgress", "In Progress"),
+                L("LOCPlayAch_Filter_NoProgress", "No Progress"));
 
             _filteredGameSummaries = filtered.ToList();
             if (!string.IsNullOrEmpty(_overviewSortPath))
@@ -2873,7 +2856,29 @@ namespace PlayniteAchievements.ViewModels
                 _selectedProviderFilters
                     .Select(GetProviderFilterDisplayName)
                     .Where(label => !string.IsNullOrWhiteSpace(label)));
-            GamesPieChart?.SetSelectedLabels(_selectedCompletenessFilters);
+            GamesPieChart?.SetSelectedLabels(GetGamesPieChartSelectedLabels());
+        }
+
+        private IEnumerable<string> GetGamesPieChartSelectedLabels()
+        {
+            if (_selectedCompletenessFilters.Count == 0)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            var labels = new List<string>();
+            if (_selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_Complete", "Complete")))
+            {
+                labels.Add(L("LOCPlayAch_Filter_Complete", "Complete"));
+            }
+
+            if (_selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_InProgress", "In Progress")) ||
+                _selectedCompletenessFilters.Contains(L("LOCPlayAch_Filter_NoProgress", "No Progress")))
+            {
+                labels.Add(L("LOCPlayAch_Overview_Incomplete", "Incomplete"));
+            }
+
+            return labels;
         }
 
         private void ApplyOverviewPieSmallSliceMode()
@@ -2980,35 +2985,15 @@ namespace PlayniteAchievements.ViewModels
         private IEnumerable<GameSummaryItem> GetPieChartGames()
         {
             var filteredGames = (_allGameSummaries ?? new List<GameSummaryItem>()).Where(game => game != null);
-            if (_selectedPlayStatusFilters.Count > 0)
-            {
-                var playedOption = L("LOCPlayAch_Filter_Played", "Played");
-                var unplayedOption = L("LOCPlayAch_Filter_Unplayed", "Unplayed");
-                var noProgressOption = L("LOCPlayAch_Filter_NoProgress", "No Progress");
-
-                var includePlayed = _selectedPlayStatusFilters.Contains(playedOption);
-                var includeUnplayed = _selectedPlayStatusFilters.Contains(unplayedOption);
-                var requireNoProgress = _selectedPlayStatusFilters.Contains(noProgressOption);
-
-                filteredGames = filteredGames.Where(g =>
-                {
-                    bool matchesStatus = false;
-                    if (includePlayed && (g.LastPlayed.HasValue || g.UnlockedAchievements > 0))
-                        matchesStatus = true;
-                    if (includeUnplayed && !g.LastPlayed.HasValue && g.UnlockedAchievements == 0)
-                        matchesStatus = true;
-
-                    if (!matchesStatus)
-                        return false;
-
-                    if (requireNoProgress && g.UnlockedAchievements > 0)
-                        return false;
-
-                    return true;
-                });
-            }
-
-            return filteredGames;
+            return OverviewGameSummaryFilters.ApplyActivityAndProgressFilters(
+                filteredGames,
+                _selectedPlayStatusFilters,
+                _selectedCompletenessFilters,
+                L("LOCPlayAch_Filter_Played", "Played"),
+                L("LOCPlayAch_Filter_Unplayed", "Unplayed"),
+                L("LOCPlayAch_Filter_Complete", "Complete"),
+                L("LOCPlayAch_Filter_InProgress", "In Progress"),
+                L("LOCPlayAch_Filter_NoProgress", "No Progress"));
         }
 
         private Dictionary<string, (string iconKey, string colorHex)> BuildProviderLookup()

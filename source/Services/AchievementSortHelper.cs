@@ -782,6 +782,16 @@ namespace PlayniteAchievements.Services
 
         private static int CompareUnlockTieBreakers(AchievementDisplayItem a, AchievementDisplayItem b)
         {
+            var progressComparison = CompareProgressFractionDescending(
+                a?.ProgressNum,
+                a?.ProgressDenom,
+                b?.ProgressNum,
+                b?.ProgressDenom);
+            if (progressComparison != 0)
+            {
+                return progressComparison;
+            }
+
             var rarityComparison = a.RaritySortValue.CompareTo(b.RaritySortValue);
             if (rarityComparison != 0)
             {
@@ -792,16 +802,6 @@ namespace PlayniteAchievements.Services
             if (trophyComparison != 0)
             {
                 return trophyComparison;
-            }
-
-            var progressComparison = CompareProgressFractionDescending(
-                a?.ProgressNum,
-                a?.ProgressDenom,
-                b?.ProgressNum,
-                b?.ProgressDenom);
-            if (progressComparison != 0)
-            {
-                return progressComparison;
             }
 
             return (b?.Points ?? 0).CompareTo(a?.Points ?? 0);
@@ -877,12 +877,11 @@ namespace PlayniteAchievements.Services
                 : items.OrderByDescending(a => a?.UnlockTimeUtc ?? DateTime.MinValue);
 
             ordered = ordered
-                .ThenBy(a => a?.RaritySortValue ?? double.MaxValue)
-                .ThenByDescending(a => GetTrophyRank(a?.TrophyType))
                 .ThenByDescending(a => HasProgress(a?.ProgressNum, a?.ProgressDenom))
                 .ThenByDescending(a => GetProgressFraction(a?.ProgressNum, a?.ProgressDenom) ?? 0)
+                .ThenBy(a => a?.RaritySortValue ?? double.MaxValue)
+                .ThenByDescending(a => GetTrophyRank(a?.TrophyType))
                 .ThenByDescending(a => a?.Points ?? 0);
-
             if (includeGameNameTieBreak)
             {
                 ordered = ordered.ThenBy(a => a?.Game?.Name, StringComparer.OrdinalIgnoreCase);

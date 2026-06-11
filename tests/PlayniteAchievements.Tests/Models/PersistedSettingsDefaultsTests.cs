@@ -1,5 +1,9 @@
+using System;
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json.Linq;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Models.Tagging;
 
 namespace PlayniteAchievements.Models.Tests
 {
@@ -326,6 +330,236 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(clone.StartPageGameSummariesGridMaxRows, target.StartPageGameSummariesGridMaxRows);
             Assert.AreEqual(clone.StartPageRecentAchievementsGridMaxRows, target.StartPageRecentAchievementsGridMaxRows);
             Assert.AreEqual(clone.DesktopThemeAchievementGridMaxRows, target.DesktopThemeAchievementGridMaxRows);
+        }
+
+        [TestMethod]
+        public void ResetDisplaySettingsToDefaults_ResetsDisplayLayoutAndPreservesUserData()
+        {
+            var gameId = Guid.NewGuid();
+            var excludedGameId = Guid.NewGuid();
+            var statusId = Guid.NewGuid();
+            var defaults = new PersistedSettings();
+            var settings = new PersistedSettings
+            {
+                ProviderSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Steam"] = JObject.Parse(@"{""ApiKey"":""secret""}")
+                },
+                EnablePeriodicUpdates = false,
+                IncludeHiddenGamesInBulkScans = false,
+                PeriodicUpdateHours = 48,
+                RecentRefreshGamesCount = 7,
+                FirstTimeSetupCompleted = true,
+                SeenThemeMigration = true,
+                ThemeMigrationVersionCache = new Dictionary<string, ThemeMigrationCacheEntry>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["theme"] = new ThemeMigrationCacheEntry
+                    {
+                        ThemeName = "Theme",
+                        ThemePath = "C:\\Theme",
+                        MigratedThemeVersion = "2.0",
+                        MigratedAtUtc = new DateTime(2026, 1, 1)
+                    }
+                },
+                ExcludedGameIds = new HashSet<Guid> { excludedGameId },
+                ExcludedFromSummariesGameIds = new HashSet<Guid> { gameId },
+                ManualCapstones = new Dictionary<Guid, string> { [gameId] = "capstone" },
+                AchievementOrderOverrides = new Dictionary<Guid, List<string>>
+                {
+                    [gameId] = new List<string> { "first", "second" }
+                },
+                AchievementCategoryOverrides = new Dictionary<Guid, Dictionary<string, string>>
+                {
+                    [gameId] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["first"] = "DLC"
+                    }
+                },
+                AchievementCategoryTypeOverrides = new Dictionary<Guid, Dictionary<string, string>>
+                {
+                    [gameId] = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["first"] = "Base"
+                    }
+                },
+                WindowPlacements = new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["overview"] = new WindowPlacementState
+                    {
+                        Left = 10,
+                        Top = 20,
+                        Width = 900,
+                        Height = 700,
+                        IsMaximized = true
+                    }
+                },
+                TaggingSettings = new TaggingSettings
+                {
+                    EnableTagging = true,
+                    SetCompletionStatus = true,
+                    CompletionStatusId = statusId
+                },
+
+                ShowHiddenIcon = true,
+                ShowRarityGlow = false,
+                UseUniformRarityBadges = true,
+                UseCoverImages = false,
+                ShowOverviewCollectionScoreCard = false,
+                ShowOverviewPrestigeScoreCard = false,
+                ShowOverviewPieCharts = false,
+                ShowOverviewBarCharts = false,
+                ShowOverviewGameMetadata = false,
+                ShowTopMenuBarButton = false,
+                ShowCompactListRarityBar = false,
+                ShowCompletionBorder = false,
+                ShowGameSummariesGridColumnHeaders = false,
+                ShowAchievementGridColumnHeaders = false,
+                ShowDesktopThemeAchievementGridColumnHeaders = false,
+                GridColumnHeaderAlignment = GridAlignment.Right,
+                GridCellAlignment = GridAlignment.Center,
+                GridCellVerticalAlignment = GridVerticalAlignment.Bottom,
+                EnableAchievementDataGridControl = false,
+                GameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
+                GameSummariesGridSortDescending = false,
+                OverviewSelectedGameGridSortMode = CompactListSortMode.Rarity,
+                OverviewSelectedGameGridSortDescending = false,
+                AchievementDataGridMaxHeight = 333d,
+                OverviewGameSummariesGridRowHeight = 64d,
+                OverviewGameSummariesGridMaxRows = 4,
+                OverviewLeftColumnRatio = 0.72d
+            };
+
+            settings.TaggingSettings.CompletedConfig.DisplayName = "Done";
+            settings.TaggingSettings.CompletedConfig.IsEnabled = false;
+            settings.StartPageGameSummariesGrid.ShowColumnHeaders = false;
+            settings.StartPageGameSummariesGrid.RowHeight = 70d;
+            settings.StartPageGameSummariesGrid.MaxRows = 3;
+            settings.StartPageRecentUnlocksGrid.ShowColumnHeaders = false;
+            settings.StartPageRecentUnlocksGrid.RowHeight = 72d;
+            settings.StartPageRecentUnlocksGrid.MaxRows = 4;
+            settings.StartPagePieCharts.ShowCenterPercentage = false;
+            settings.StartPagePieCharts.SmallSliceMode = OverviewPieSmallSliceMode.Hide;
+            settings.DataGridColumnVisibility["Title"] = false;
+            settings.DataGridColumnWidths["Title"] = 100d;
+            settings.DataGridColumnOrder["Title"] = 2;
+            settings.OverviewRecentAchievementColumnWidths["Title"] = 101d;
+            settings.OverviewRecentAchievementColumnOrder["Title"] = 3;
+            settings.OverviewRecentAchievementColumnAlignments["Title"] = GridAlignment.Center;
+            settings.OverviewSelectedGameAchievementColumnWidths["Rarity"] = 102d;
+            settings.OverviewSelectedGameAchievementColumnOrder["Rarity"] = 4;
+            settings.OverviewSelectedGameAchievementColumnAlignments["Rarity"] = GridAlignment.Right;
+            settings.SingleGameColumnWidths["Points"] = 103d;
+            settings.SingleGameColumnOrder["Points"] = 5;
+            settings.SingleGameColumnAlignments["Points"] = GridAlignment.Right;
+            settings.DesktopThemeColumnWidths["Points"] = 104d;
+            settings.DesktopThemeColumnOrder["Points"] = 6;
+            settings.DesktopThemeColumnAlignments["Points"] = GridAlignment.Right;
+            settings.GameSummariesColumnVisibility["Cover"] = false;
+            settings.GameSummariesColumnWidths["Cover"] = 105d;
+            settings.GameSummariesColumnOrder["Cover"] = 7;
+            settings.GameSummariesColumnAlignments["Cover"] = GridAlignment.Center;
+            settings.StartPageAchievementColumnVisibility["Icon"] = false;
+            settings.StartPageAchievementColumnWidths["Icon"] = 106d;
+            settings.StartPageAchievementColumnOrder["Icon"] = 8;
+            settings.StartPageAchievementColumnAlignments["Icon"] = GridAlignment.Center;
+            settings.StartPageGameSummariesColumnVisibility["Cover"] = false;
+            settings.StartPageGameSummariesColumnWidths["Cover"] = 107d;
+            settings.StartPageGameSummariesColumnOrder["Cover"] = 9;
+            settings.StartPageGameSummariesColumnAlignments["Cover"] = GridAlignment.Center;
+
+            settings.ResetDisplaySettingsToDefaults();
+
+            Assert.AreEqual(defaults.ShowHiddenIcon, settings.ShowHiddenIcon);
+            Assert.AreEqual(defaults.ShowRarityGlow, settings.ShowRarityGlow);
+            Assert.AreEqual(defaults.UseUniformRarityBadges, settings.UseUniformRarityBadges);
+            Assert.AreEqual(defaults.UseCoverImages, settings.UseCoverImages);
+            Assert.AreEqual(defaults.ShowOverviewCollectionScoreCard, settings.ShowOverviewCollectionScoreCard);
+            Assert.AreEqual(defaults.ShowOverviewPrestigeScoreCard, settings.ShowOverviewPrestigeScoreCard);
+            Assert.AreEqual(defaults.ShowOverviewPieCharts, settings.ShowOverviewPieCharts);
+            Assert.AreEqual(defaults.ShowOverviewGamesPieChart, settings.ShowOverviewGamesPieChart);
+            Assert.AreEqual(defaults.ShowOverviewProviderPieChart, settings.ShowOverviewProviderPieChart);
+            Assert.AreEqual(defaults.ShowOverviewRarityPieChart, settings.ShowOverviewRarityPieChart);
+            Assert.AreEqual(defaults.ShowOverviewTrophyPieChart, settings.ShowOverviewTrophyPieChart);
+            Assert.AreEqual(defaults.ShowOverviewBarCharts, settings.ShowOverviewBarCharts);
+            Assert.AreEqual(defaults.ShowOverviewGameMetadata, settings.ShowOverviewGameMetadata);
+            Assert.AreEqual(defaults.ShowTopMenuBarButton, settings.ShowTopMenuBarButton);
+            Assert.AreEqual(defaults.ShowCompactListRarityBar, settings.ShowCompactListRarityBar);
+            Assert.AreEqual(defaults.ShowCompletionBorder, settings.ShowCompletionBorder);
+            Assert.AreEqual(defaults.ShowGameSummariesGridColumnHeaders, settings.ShowGameSummariesGridColumnHeaders);
+            Assert.AreEqual(defaults.ShowAchievementGridColumnHeaders, settings.ShowAchievementGridColumnHeaders);
+            Assert.AreEqual(defaults.ShowDesktopThemeAchievementGridColumnHeaders, settings.ShowDesktopThemeAchievementGridColumnHeaders);
+            Assert.AreEqual(defaults.GridColumnHeaderAlignment, settings.GridColumnHeaderAlignment);
+            Assert.AreEqual(defaults.GridCellAlignment, settings.GridCellAlignment);
+            Assert.AreEqual(defaults.GridCellVerticalAlignment, settings.GridCellVerticalAlignment);
+            Assert.AreEqual(defaults.EnableAchievementDataGridControl, settings.EnableAchievementDataGridControl);
+            Assert.AreEqual(defaults.GameSummariesGridSortMode, settings.GameSummariesGridSortMode);
+            Assert.AreEqual(defaults.GameSummariesGridSortDescending, settings.GameSummariesGridSortDescending);
+            Assert.AreEqual(defaults.OverviewSelectedGameGridSortMode, settings.OverviewSelectedGameGridSortMode);
+            Assert.AreEqual(defaults.OverviewSelectedGameGridSortDescending, settings.OverviewSelectedGameGridSortDescending);
+            Assert.AreEqual(defaults.AchievementDataGridMaxHeight, settings.AchievementDataGridMaxHeight);
+            Assert.AreEqual(defaults.OverviewGameSummariesGridRowHeight, settings.OverviewGameSummariesGridRowHeight);
+            Assert.AreEqual(defaults.OverviewGameSummariesGridMaxRows, settings.OverviewGameSummariesGridMaxRows);
+            Assert.AreEqual(defaults.StartPageGameSummariesGrid.ShowColumnHeaders, settings.StartPageGameSummariesGrid.ShowColumnHeaders);
+            Assert.AreEqual(defaults.StartPageGameSummariesGridRowHeight, settings.StartPageGameSummariesGridRowHeight);
+            Assert.AreEqual(defaults.StartPageGameSummariesGridMaxRows, settings.StartPageGameSummariesGridMaxRows);
+            Assert.AreEqual(defaults.StartPageRecentUnlocksGrid.ShowColumnHeaders, settings.StartPageRecentUnlocksGrid.ShowColumnHeaders);
+            Assert.AreEqual(defaults.StartPageRecentAchievementsGridRowHeight, settings.StartPageRecentAchievementsGridRowHeight);
+            Assert.AreEqual(defaults.StartPageRecentAchievementsGridMaxRows, settings.StartPageRecentAchievementsGridMaxRows);
+            Assert.AreEqual(defaults.StartPagePieCharts.ShowCenterPercentage, settings.StartPagePieCharts.ShowCenterPercentage);
+            Assert.AreEqual(defaults.StartPagePieCharts.SmallSliceMode, settings.StartPagePieCharts.SmallSliceMode);
+            Assert.AreEqual(defaults.OverviewLeftColumnRatio, settings.OverviewLeftColumnRatio);
+
+            Assert.AreEqual(0, settings.DataGridColumnVisibility.Count);
+            Assert.AreEqual(0, settings.DataGridColumnWidths.Count);
+            Assert.AreEqual(0, settings.DataGridColumnOrder.Count);
+            Assert.AreEqual(0, settings.OverviewRecentAchievementColumnWidths.Count);
+            Assert.AreEqual(0, settings.OverviewRecentAchievementColumnOrder.Count);
+            Assert.AreEqual(0, settings.OverviewRecentAchievementColumnAlignments.Count);
+            Assert.AreEqual(0, settings.OverviewSelectedGameAchievementColumnWidths.Count);
+            Assert.AreEqual(0, settings.OverviewSelectedGameAchievementColumnOrder.Count);
+            Assert.AreEqual(0, settings.OverviewSelectedGameAchievementColumnAlignments.Count);
+            Assert.AreEqual(0, settings.SingleGameColumnWidths.Count);
+            Assert.AreEqual(0, settings.SingleGameColumnOrder.Count);
+            Assert.AreEqual(0, settings.SingleGameColumnAlignments.Count);
+            Assert.AreEqual(0, settings.DesktopThemeColumnWidths.Count);
+            Assert.AreEqual(0, settings.DesktopThemeColumnOrder.Count);
+            Assert.AreEqual(0, settings.DesktopThemeColumnAlignments.Count);
+            Assert.AreEqual(0, settings.GameSummariesColumnVisibility.Count);
+            Assert.AreEqual(0, settings.GameSummariesColumnWidths.Count);
+            Assert.AreEqual(0, settings.GameSummariesColumnOrder.Count);
+            Assert.AreEqual(0, settings.GameSummariesColumnAlignments.Count);
+            Assert.AreEqual(0, settings.StartPageAchievementColumnVisibility.Count);
+            Assert.AreEqual(0, settings.StartPageAchievementColumnWidths.Count);
+            Assert.AreEqual(0, settings.StartPageAchievementColumnOrder.Count);
+            Assert.AreEqual(0, settings.StartPageAchievementColumnAlignments.Count);
+            Assert.AreEqual(0, settings.StartPageGameSummariesColumnVisibility.Count);
+            Assert.AreEqual(0, settings.StartPageGameSummariesColumnWidths.Count);
+            Assert.AreEqual(0, settings.StartPageGameSummariesColumnOrder.Count);
+            Assert.AreEqual(0, settings.StartPageGameSummariesColumnAlignments.Count);
+
+            Assert.AreEqual("secret", settings.ProviderSettings["Steam"]["ApiKey"].Value<string>());
+            Assert.IsFalse(settings.EnablePeriodicUpdates);
+            Assert.IsFalse(settings.IncludeHiddenGamesInBulkScans);
+            Assert.AreEqual(48, settings.PeriodicUpdateHours);
+            Assert.AreEqual(7, settings.RecentRefreshGamesCount);
+            Assert.IsTrue(settings.FirstTimeSetupCompleted);
+            Assert.IsTrue(settings.SeenThemeMigration);
+            Assert.AreEqual("2.0", settings.ThemeMigrationVersionCache["theme"].MigratedThemeVersion);
+            Assert.IsTrue(settings.ExcludedGameIds.Contains(excludedGameId));
+            Assert.IsTrue(settings.ExcludedFromSummariesGameIds.Contains(gameId));
+            Assert.AreEqual("capstone", settings.ManualCapstones[gameId]);
+            CollectionAssert.AreEqual(
+                new List<string> { "first", "second" },
+                settings.AchievementOrderOverrides[gameId]);
+            Assert.AreEqual("DLC", settings.AchievementCategoryOverrides[gameId]["first"]);
+            Assert.AreEqual("Base", settings.AchievementCategoryTypeOverrides[gameId]["first"]);
+            Assert.AreEqual(900d, settings.WindowPlacements["overview"].Width);
+            Assert.IsTrue(settings.WindowPlacements["overview"].IsMaximized);
+            Assert.IsTrue(settings.TaggingSettings.EnableTagging);
+            Assert.IsTrue(settings.TaggingSettings.SetCompletionStatus);
+            Assert.AreEqual(statusId, settings.TaggingSettings.CompletionStatusId);
+            Assert.AreEqual("Done", settings.TaggingSettings.CompletedConfig.DisplayName);
+            Assert.IsFalse(settings.TaggingSettings.CompletedConfig.IsEnabled);
         }
     }
 }

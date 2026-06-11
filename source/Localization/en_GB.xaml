@@ -566,6 +566,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Remove All Tags</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next overview open.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Reset Landing Page</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">Reset Display Settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">Revert Display tab options, grid visibility, column layouts, row sizing, and overview layout to defaults.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Reveal hidden description</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Reveal hidden icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">Reveal hidden title</sys:String>
@@ -628,7 +630,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Search Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Complete">Complete</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_CompletenessSelectorPlaceholder">Completeness</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_InProgress">In Progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_ActivitySelectorPlaceholder">Activity</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Games">Search Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Hidden">Hidden</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_NoProgress">No Progress</sys:String>

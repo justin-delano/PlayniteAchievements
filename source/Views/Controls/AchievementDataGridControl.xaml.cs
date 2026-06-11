@@ -37,7 +37,7 @@ namespace PlayniteAchievements.Views.Controls
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Status"] = DefaultStatusColumnWidth,
-                ["Icon"] = 78,
+                ["Icon"] = 84,
                 ["Game"] = 64,
                 ["Achievement"] = 460,
                 ["Title"] = 260,

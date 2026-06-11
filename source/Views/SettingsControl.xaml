@@ -1299,6 +1299,25 @@
                                         </Border>
                                     </StackPanel>
                                 </Border>
+
+                                <Border Style="{StaticResource SettingGroupCardStyle}">
+                                    <DockPanel LastChildFill="True">
+                                        <Button DockPanel.Dock="Right"
+                                                Content="{DynamicResource LOCPlayAch_Settings_ResetDisplaySettings}"
+                                                Click="ResetDisplaySettings_Click"
+                                                MinWidth="160"
+                                                Margin="16,0,0,0"
+                                                VerticalAlignment="Center"/>
+                                        <StackPanel>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ResetDisplaySettings}"
+                                                       Style="{StaticResource SubSectionHeaderStyle}"
+                                                       Margin="0,0,0,4"/>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ResetDisplaySettings_Help}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       TextWrapping="Wrap"/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </Border>
                             </StackPanel>
                         </ScrollViewer>
 

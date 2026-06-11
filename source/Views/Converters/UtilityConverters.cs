@@ -383,7 +383,9 @@ namespace PlayniteAchievements.Views.Converters
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             var cell = values != null && values.Length > 0 ? values[0] as DataGridCell : null;
-            var grid = values != null && values.Length > 1 ? values[1] as DataGrid : null;
+            var grid = values != null
+                ? values.OfType<DataGrid>().FirstOrDefault()
+                : null;
             var column = cell?.Column;
             if (column == null || grid?.Columns == null)
             {

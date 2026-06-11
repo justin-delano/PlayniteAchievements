@@ -35,6 +35,7 @@
                                     <Border.BorderThickness>
                                         <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
                                             <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
+                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="Column.DisplayIndex"/>
                                             <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
                                         </MultiBinding>
                                     </Border.BorderThickness>
@@ -311,7 +312,7 @@
                    BasedOn="{StaticResource GameSummariesGridRowStyle}"/>
         </DataGrid.RowStyle>
         <DataGrid.Columns>
-            <DataGridTemplateColumn Width="92" MinWidth="22" CanUserResize="True" Header=""
+            <DataGridTemplateColumn Width="92" MinWidth="22" CanUserResize="True" Header="Cover"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Cover">
                 <DataGridTemplateColumn.CellTemplate>
@@ -366,17 +367,12 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="40" MinWidth="22"
+            <DataGridTemplateColumn Width="72" MinWidth="22"
                                     Header="{DynamicResource LOCPlayAch_Common_Label_Platform}"
                                     CanUserResize="True"
                                     CanUserSort="False"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryPlatform">
-                <DataGridTemplateColumn.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text=""/>
-                    </DataTemplate>
-                </DataGridTemplateColumn.HeaderTemplate>
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
@@ -553,8 +549,9 @@
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
-                                           Text="{Binding CollectionScoreFractionText, Mode=OneWay}"/>
+                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                                    <TextBlock.Inlines><Run Text="{Binding CollectionScore, Mode=OneWay, StringFormat={}{0:N0}}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource TextBrush}"/><Run Text="{Binding CollectionScoreTotal, Mode=OneWay, StringFormat={}{0:N0}}" Foreground="{DynamicResource TextBrush}"/></TextBlock.Inlines>
+                                </TextBlock>
                             </Grid>
                         </ContentControl>
                     </DataTemplate>
@@ -571,8 +568,9 @@
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
-                                           Text="{Binding PrestigeScoreFractionText, Mode=OneWay}"/>
+                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                                    <TextBlock.Inlines><Run Text="{Binding PrestigeScore, Mode=OneWay, StringFormat={}{0:N0}}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource TextBrush}"/><Run Text="{Binding PrestigeScoreTotal, Mode=OneWay, StringFormat={}{0:N0}}" Foreground="{DynamicResource TextBrush}"/></TextBlock.Inlines>
+                                </TextBlock>
                             </Grid>
                         </ContentControl>
                     </DataTemplate>

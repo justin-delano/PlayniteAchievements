@@ -2073,6 +2073,121 @@ namespace PlayniteAchievements.Models.Settings
             };
         }
 
+        public void ResetDisplaySettingsToDefaults()
+        {
+            var defaults = new PersistedSettings();
+
+            ShowHiddenIcon = defaults.ShowHiddenIcon;
+            ShowHiddenTitle = defaults.ShowHiddenTitle;
+            ShowHiddenDescription = defaults.ShowHiddenDescription;
+            ShowHiddenSuffix = defaults.ShowHiddenSuffix;
+            ShowLockedIcon = defaults.ShowLockedIcon;
+            PreserveAchievementIconResolution = defaults.PreserveAchievementIconResolution;
+            UseSeparateLockedIconsWhenAvailable = defaults.UseSeparateLockedIconsWhenAvailable;
+            SeparateLockedIconEnabledGameIds = new HashSet<Guid>();
+            ShowRarityGlow = defaults.ShowRarityGlow;
+            UseUniformRarityBadges = defaults.UseUniformRarityBadges;
+            UseCoverImages = defaults.UseCoverImages;
+
+            ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
+            ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
+            ShowOverviewPieCharts = defaults.ShowOverviewPieCharts;
+            ShowOverviewGamesPieChart = defaults.ShowOverviewGamesPieChart;
+            ShowOverviewProviderPieChart = defaults.ShowOverviewProviderPieChart;
+            ShowOverviewRarityPieChart = defaults.ShowOverviewRarityPieChart;
+            ShowOverviewTrophyPieChart = defaults.ShowOverviewTrophyPieChart;
+            ShowOverviewPiePercentages = defaults.ShowOverviewPiePercentages;
+            OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
+            ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;
+            ShowOverviewGameMetadata = defaults.ShowOverviewGameMetadata;
+            ShowTopMenuBarButton = defaults.ShowTopMenuBarButton;
+            ShowCompactListRarityBar = defaults.ShowCompactListRarityBar;
+            ShowCompletionBorder = defaults.ShowCompletionBorder;
+
+            ShowGameSummariesGridColumnHeaders = defaults.ShowGameSummariesGridColumnHeaders;
+            ShowAchievementGridColumnHeaders = defaults.ShowAchievementGridColumnHeaders;
+            ShowDesktopThemeAchievementGridColumnHeaders = defaults.ShowDesktopThemeAchievementGridColumnHeaders;
+            GridColumnHeaderAlignment = defaults.GridColumnHeaderAlignment;
+            GridCellAlignment = defaults.GridCellAlignment;
+            GridCellVerticalAlignment = defaults.GridCellVerticalAlignment;
+
+            EnableAchievementCompactListControl = defaults.EnableAchievementCompactListControl;
+            EnableAchievementDataGridControl = defaults.EnableAchievementDataGridControl;
+            EnableAchievementCompactUnlockedListControl = defaults.EnableAchievementCompactUnlockedListControl;
+            EnableAchievementCompactLockedListControl = defaults.EnableAchievementCompactLockedListControl;
+            EnableAchievementProgressBarControl = defaults.EnableAchievementProgressBarControl;
+            EnableAchievementStatsControl = defaults.EnableAchievementStatsControl;
+            EnableAchievementButtonControl = defaults.EnableAchievementButtonControl;
+            EnableAchievementViewItemControl = defaults.EnableAchievementViewItemControl;
+            EnableAchievementPieChartControl = defaults.EnableAchievementPieChartControl;
+            EnableAchievementBarChartControl = defaults.EnableAchievementBarChartControl;
+
+            CompactListSortMode = defaults.CompactListSortMode;
+            CompactListSortDescending = defaults.CompactListSortDescending;
+            CompactUnlockedListSortMode = defaults.CompactUnlockedListSortMode;
+            CompactUnlockedListSortDescending = defaults.CompactUnlockedListSortDescending;
+            CompactLockedListSortMode = defaults.CompactLockedListSortMode;
+            CompactLockedListSortDescending = defaults.CompactLockedListSortDescending;
+            GameSummariesGridSortMode = defaults.GameSummariesGridSortMode;
+            GameSummariesGridSortDescending = defaults.GameSummariesGridSortDescending;
+            OverviewSelectedGameGridSortMode = defaults.OverviewSelectedGameGridSortMode;
+            OverviewSelectedGameGridSortDescending = defaults.OverviewSelectedGameGridSortDescending;
+            SingleGameGridSortMode = defaults.SingleGameGridSortMode;
+            SingleGameGridSortDescending = defaults.SingleGameGridSortDescending;
+            AchievementDataGridSortMode = defaults.AchievementDataGridSortMode;
+            AchievementDataGridSortDescending = defaults.AchievementDataGridSortDescending;
+
+            AchievementDataGridMaxHeight = defaults.AchievementDataGridMaxHeight;
+            SingleGameGridRowHeight = defaults.SingleGameGridRowHeight;
+            OverviewGameSummariesGridRowHeight = defaults.OverviewGameSummariesGridRowHeight;
+            OverviewRecentAchievementsGridRowHeight = defaults.OverviewRecentAchievementsGridRowHeight;
+            OverviewSelectedGameGridRowHeight = defaults.OverviewSelectedGameGridRowHeight;
+            StartPageGameSummariesGridRowHeight = defaults.StartPageGameSummariesGridRowHeight;
+            StartPageRecentAchievementsGridRowHeight = defaults.StartPageRecentAchievementsGridRowHeight;
+            DesktopThemeAchievementGridRowHeight = defaults.DesktopThemeAchievementGridRowHeight;
+            SingleGameGridMaxRows = defaults.SingleGameGridMaxRows;
+            OverviewGameSummariesGridMaxRows = defaults.OverviewGameSummariesGridMaxRows;
+            OverviewRecentAchievementsGridMaxRows = defaults.OverviewRecentAchievementsGridMaxRows;
+            OverviewSelectedGameGridMaxRows = defaults.OverviewSelectedGameGridMaxRows;
+            StartPageGameSummariesGridMaxRows = defaults.StartPageGameSummariesGridMaxRows;
+            StartPageRecentAchievementsGridMaxRows = defaults.StartPageRecentAchievementsGridMaxRows;
+            DesktopThemeAchievementGridMaxRows = defaults.DesktopThemeAchievementGridMaxRows;
+
+            StartPageGameSummariesGrid = new StartPageGameSummariesGridSettings();
+            StartPageRecentUnlocksGrid = new StartPageRecentUnlocksGridSettings();
+            StartPagePieCharts = new StartPagePieWidgetSettings();
+
+            DataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            DataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            DataGridColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            OverviewRecentAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            OverviewRecentAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            OverviewRecentAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            OverviewSelectedGameAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            OverviewSelectedGameAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            OverviewSelectedGameAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            SingleGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            SingleGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            SingleGameColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            DesktopThemeColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            DesktopThemeColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            DesktopThemeColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            GameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            GameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            GameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            GameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            StartPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            StartPageAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            StartPageAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            StartPageAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            StartPageGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            StartPageGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            StartPageGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            StartPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+
+            OverviewLeftColumnRatio = defaults.OverviewLeftColumnRatio;
+        }
+
         public static double? NormalizeGridRowHeight(double? value)
         {
             if (!value.HasValue ||

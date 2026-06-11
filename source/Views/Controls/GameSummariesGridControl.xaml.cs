@@ -28,7 +28,7 @@ namespace PlayniteAchievements.Views.Controls
             {
                 ["Cover"] = 92,
                 ["GameSummaryName"] = 500,
-                ["GameSummaryPlatform"] = 40,
+                ["GameSummaryPlatform"] = 72,
                 ["GameSummaryLastPlayed"] = 240,
                 ["GameSummaryPlaytime"] = 170,
                 ["GameSummaryProgression"] = 360,

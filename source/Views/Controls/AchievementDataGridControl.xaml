@@ -89,16 +89,16 @@
             <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
             <DataGridTemplateColumn x:Name="StatusColumn"
                                     Width="36" MinWidth="22" CanUserSort="False" CanUserResize="True"
-                                    Header=" "
+                                    Header="{DynamicResource LOCPlayAch_Column_Status}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Status"
                                     CellStyle="{StaticResource AchievementStatusCellStyle}"
                                     CellTemplate="{StaticResource AchievementStatusTemplate}"/>
 
             <!-- Achievement Icon -->
-            <DataGridTemplateColumn Width="78" MinWidth="22" CanUserResize="True"
-                                    Header=""
+            <DataGridTemplateColumn Width="84" MinWidth="22" CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_Icon}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Icon"
-                                    CellStyle="{StaticResource AchievementIconCellStyle}"
+                                    CellStyle="{StaticResource AchievementGlowIconCellStyle}"
                                     CellTemplate="{StaticResource AchievementIconTemplate}"/>
 
             <!-- Achievement Info -->

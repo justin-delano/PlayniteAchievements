@@ -197,7 +197,7 @@
     <Style x:Key="GameOptionsIconCellStyle"
            TargetType="DataGridCell"
            BasedOn="{StaticResource GameOptionsControllerCellStyle}">
-        <Setter Property="Padding" Value="0,6"/>
+        <Setter Property="Padding" Value="6"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridCell">
@@ -205,6 +205,7 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             Padding="{TemplateBinding Padding}"
+                            ClipToBounds="False"
                             SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
                         <ContentPresenter HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                           VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
@@ -236,12 +237,13 @@
 
     <!-- Icon Column Cell Style - centered horizontally for circular achievement icons -->
     <Style x:Key="AchievementIconCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}">
-        <Setter Property="Padding" Value="0,6"/>
+        <Setter Property="Padding" Value="6"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridCell">
                     <Border Background="{TemplateBinding Background}"
                             Padding="{TemplateBinding Padding}"
+                            ClipToBounds="False"
                             SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
                         <ContentPresenter HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                           VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
@@ -249,6 +251,10 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+    </Style>
+
+    <Style x:Key="AchievementGlowIconCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource AchievementIconCellStyle}">
+        <Setter Property="Padding" Value="6"/>
     </Style>
 
     <Style x:Key="AchievementStatusCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource AchievementCellStyle}">
@@ -694,13 +700,13 @@
               UseLayoutRounding="True"
               SnapsToDevicePixels="True">
             <Grid.Width>
-                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,width,4,8,12">
+                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,width,12,8,12">
                     <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
                     <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
                 </MultiBinding>
             </Grid.Width>
             <Grid.Height>
-                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,height,4,8,12">
+                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,height,12,8,12">
                     <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
                     <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
                 </MultiBinding>
@@ -793,7 +799,7 @@
 
     <!-- Unlock Date / Progress Template -->
     <DataTemplate x:Key="AchievementUnlockDateTemplate">
-        <Grid>
+        <Grid HorizontalAlignment="Stretch">
             <TextBlock Text="{Binding UnlockTimeText}"
                        HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                        VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
@@ -805,7 +811,7 @@
                        Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
             <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}"
                   Margin="4,0"
-                  HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                  HorizontalAlignment="Stretch"
                   VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">
                 <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
                              Minimum="0" Maximum="100"

@@ -801,6 +801,7 @@
                             </Grid.RowDefinitions>
                         <controls:GameSummariesGridControl x:Name="GameSummariesGridControl"
                                                                 Grid.Row="0"
+                                                                Margin="16,0,0,0"
                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
                                                                 ItemsSource="{Binding GameSummaries}"
                                                                 SelectedItem="{Binding SelectedGame, Mode=OneWay}"
@@ -899,6 +900,7 @@
 
                             <controls:AchievementDataGridControl x:Name="RecentAchievementsDataGrid"
                                                                  Grid.Row="0"
+                                                                 Margin="16,0,0,0"
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding RecentAchievements}"
                                                                  ColumnSettingsKey="OverviewRecentAchievements"
@@ -924,6 +926,7 @@
                             <!-- Game Achievements List -->
                             <controls:AchievementDataGridControl x:Name="GameAchievementsGrid"
                                                                  Grid.Row="0"
+                                                                 Margin="16,0,0,0"
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
                                                                  ColumnSettingsKey="OverviewSelectedGameAchievements"

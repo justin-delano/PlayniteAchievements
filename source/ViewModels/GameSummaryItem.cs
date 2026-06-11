@@ -255,7 +255,7 @@ namespace PlayniteAchievements.ViewModels
 
         private static string FormatScoreFraction(int earned, int total)
         {
-            return $"{Math.Max(0, earned):N0} / {Math.Max(0, total):N0}";
+            return $"{Math.Max(0, earned):N0}/{Math.Max(0, total):N0}";
         }
     }
 }

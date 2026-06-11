@@ -74,6 +74,7 @@
     <Compile Include="..\..\source\Services\GameSummariesSortHelper.cs" Link="Source\Services\GameSummariesSortHelper.cs" />
     <Compile Include="..\..\source\Services\DisplayGridRowLimitHelper.cs" Link="Source\Services\DisplayGridRowLimitHelper.cs" />
     <Compile Include="..\..\source\Services\Overview\OverviewAchievementFilters.cs" Link="Source\Services\Overview\OverviewAchievementFilters.cs" />
+    <Compile Include="..\..\source\Services\Overview\OverviewGameSummaryFilters.cs" Link="Source\Services\Overview\OverviewGameSummaryFilters.cs" />
     <Compile Include="..\..\source\Services\PlayniteGameMetadataFormatter.cs" Link="Source\Services\PlayniteGameMetadataFormatter.cs" />
     <Compile Include="..\..\source\Services\BackupHelper.cs" Link="Source\Services\BackupHelper.cs" />
     <Compile Include="..\..\source\Models\RebuildProgressModels.cs" Link="Source\Models\RebuildProgressModels.cs" />

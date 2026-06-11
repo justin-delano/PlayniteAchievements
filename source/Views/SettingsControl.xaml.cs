@@ -1171,6 +1171,35 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void ResetDisplaySettings_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                _logger.Info("Resetting Display tab settings to defaults.");
+
+                _settingsViewModel.Settings.Persisted.ResetDisplaySettingsToDefaults();
+                PercentRarityHelper.ApplyBadgeApplicationResources(
+                    _settingsViewModel.Settings.Persisted.UseUniformRarityBadges);
+                RefreshMockPreviews();
+                _plugin.SavePluginSettings(_settingsViewModel.Settings);
+
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    L("LOCPlayAch_Status_Succeeded", "Success!"),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to reset Display tab settings.");
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    LF("LOCPlayAch_Status_Failed", "Error: {0}", ex.Message),
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         private void ExportDatabase_Click(object sender, RoutedEventArgs e)
         {
             try
