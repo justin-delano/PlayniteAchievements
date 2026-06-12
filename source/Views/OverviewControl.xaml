@@ -499,8 +499,8 @@
                                 Content="{Binding RefreshModeSelectionText}"
                                 Click="RefreshModeSelectionButton_Click"
                                 HorizontalContentAlignment="Center"
-                                Width="94"
-                                Height="24"
+                                MinWidth="94"
+                                MinHeight="24"
                                 Margin="0,0,6,0"
                                 VerticalAlignment="Center">
                             <Button.ContextMenu>
