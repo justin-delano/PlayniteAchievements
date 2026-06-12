@@ -4,13 +4,14 @@
     <!-- ================================================================= -->
     <!-- 01 Plugin Titles -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Title_PluginName">Playnite Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Title_PluginName">Succès Playnite</sys:String>
     <sys:String x:Key="LOCPlayAch_Title_Refresh">Actualisation de Playnite Achievements</sys:String>
 
     <!-- ================================================================= -->
     <!-- 02 Core and Common Text -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">Succès</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Actions">Actions</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Exclure des résumés</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Inclure dans les résumés</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddType">Ajouter un type</sys:String>
@@ -52,15 +53,33 @@
     <sys:String x:Key="LOCPlayAch_Common_None">Aucun</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">Aucun remplacement défini</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Non lié</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Status_OverrideSetValue">Remplacement défini : {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unlocked">Débloqué</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Nombre débloqué</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_View">View</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">Terminé</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Counts">{0}/{1}</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Rarity">Rareté :</sys:String>
     <sys:String x:Key="LOCPlayAch_Label_Trophies">Trophées :</sys:String>
     <sys:String x:Key="LOCPlayAch_Progress">Progression</sys:String>
     <sys:String x:Key="LOCPlayAch_RecentAchievements">Succès récents</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Collection">Score de collection</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_HeaderDetailFormat">{0} | {1} | {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_LevelFormat">Nv {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_PointsFormat">{0} pts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Prestige">Score de prestige</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_MaxLevel">Max level reached</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat">{0} until {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tooltip_NextTierLineFormat">{0} until {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_Title">Score System</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_WindowTitle">Collection and Prestige Scores</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_CollectionTitle">Collection Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">Collection Score rewards total achievement collecting. Each unlocked achievement gives fixed points from its rarity tier.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeTitle">Prestige Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Prestige Score rewards rare achievement collecting. Rare achievements are worth many more points than common achievements.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">Levels and tiers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_LevelsBody">Collection and Prestige scores each contribute to a Tier and Level. The first tier is Bronze V, followed by Bronze IV, and continues through Silver, Gold, Platinum, and Master tiers until Master I. Earning 10 levels advances you to the next tier.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_ButtonTooltip">Score system info</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Tier_Master">Master</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_Ellipsis">...</sys:String>
     <sys:String x:Key="LOCPlayAch_Text_UnknownGame">Jeu inconnu</sys:String>
     <sys:String x:Key="LOCPlayAch_Trophy_Bronze">Bronze</sys:String>
@@ -72,6 +91,8 @@
     <!-- ================================================================= -->
     <!-- 03 Columns -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
@@ -82,7 +103,11 @@
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rareté</sys:String>
+<<<<<<< HEAD
     <sys:String x:Key="LOCPlayAch_Column_AchievementName">Title</sys:String>
+=======
+    <sys:String x:Key="LOCPlayAch_Column_AchievementName">Achievement Name</sys:String>
+>>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
     <sys:String x:Key="LOCPlayAch_Column_RarityTier">Rarity Tier</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_RarityPercent">Rarity Percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
@@ -114,6 +139,7 @@
     <sys:String x:Key="LOCPlayAch_Provider_Exophase">Exophase</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GOG">GOG</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_GooglePlay">Google Play</sys:String>
+    <sys:String x:Key="LOCPlayAch_Provider_Hoyoverse">HoYoverse</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_Manual">Manuel</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_PSN">PlayStation</sys:String>
     <sys:String x:Key="LOCPlayAch_Provider_RetroAchievements">RetroAchievements</sys:String>
@@ -144,6 +170,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Exclure des actualisations et effacer les données</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Exclure ce jeu et effacer les données</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Veuillez saisir un identifiant de jeu Exophase.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Filters">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Options du jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Inclure ce jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">Inclure dans les actualisations</sys:String>
@@ -154,10 +181,12 @@
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Veuillez saisir un identifiant de jeu valide (nombre entier positif).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Veuillez saisir un TitleID Xenia valide de 8 caractères hexadécimaux.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Veuillez saisir un identifiant ShadPS4 valide, tel que CUSA00432 ou NPWR12345_00.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_Rpcs3MatchId_InvalidId">Please enter a valid RPCS3 trophy NP Comm ID such as NPWR12345_00.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SteamAppId_InvalidId">Veuillez saisir un identifiant de jeu valide (nombre entier positif).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Actualiser ce jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Actualisation en cours]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Actualiser les jeux sélectionnés</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Définir comme succès final</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_TestModernControls">Tester les contrôles du thème moderne</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements">Dissocier les succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnlinkAchievements_Confirm">Dissocier les succès de &quot;{0}&quot; ?
@@ -180,7 +209,7 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_RenameDialog_NoLabels">Aucun libellé de catégorie disponible à renommer.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_RenameDialog_Title">Renommer un libellé de catégorie</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Base">Jeu de base</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Collectable">Collectable</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Collectable">Collectible</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Default">Par défaut</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_Difficulty">Difficulté</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Category_Type_DLC">DLC</sys:String>
@@ -202,9 +231,19 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Header">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Unfiltered">Unfiltered</sys:String>
+<<<<<<< HEAD
     <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseHint">Activez cette option pour forcer l'utilisation d'Exophase pour ce jeu. Si elle est désactivée, Exophase ne sera utilisé que si la plateforme fait partie des plateformes gérées.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugHint">Remplace l'identifiant Exophase détecté automatiquement afin de lier ce jeu à une entrée Exophase spécifique. Laissez vide pour utiliser la détection automatique.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugLabel">Remplacement de l'identifiant Exophase</sys:String>
+=======
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_HasNote">Note added</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Header">Achievement Notes</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Hint">Add personal notes for this game's achievements. Formatting supports **bold**, *italic*, and __underline__ markers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_NoNote">No note</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Note">Note</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithNotes">With Notes</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithoutNotes">Without Notes</sys:String>
+>>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary_None">Aucun lien manuel configuré.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning">Le suivi manuel peut remplacer les données de succès mises en cache provenant de {0}. Continuer ?</sys:String>
@@ -230,13 +269,17 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsCheckbox">Toujours utiliser des icônes verrouillées distinctes pour ce jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHeader">Icônes verrouillées distinctes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHint">Force le téléchargement et l'utilisation d'icônes verrouillées distinctes lorsque le fournisseur les propose. Si désactivé, ce jeu suivra le paramètre global.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaHeader">Remplacement de l'identifiant RetroAchievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaHint">Saisissez l'identifiant RetroAchievements pour remplacer la détection automatique de ce jeu.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_RaNotCapable">Le remplacement RetroAchievements n'est pas disponible pour ce jeu.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_XeniaHeader">Remplacement du TitleID Xenia</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_XeniaHint">Saisissez le TitleID Xbox 360 pour remplacer la détection automatique de ce jeu et forcer sa gestion par Xenia.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ShadPS4Header">Remplacement de l'identifiant ShadPS4</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ShadPS4Hint">Saisissez un ID PS4 (CUSA00432) ou un ID trophée (NPWR12345_00) pour remplacer la détection automatique.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderHeader">Provider Override</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderHint">Force this game to use one supported achievement provider, or clear the override to use automatic matching.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderStatusAuto">Override set: {0} (auto-detect)</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderStatusValue">Override set: {0} - {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderInvalid">Select a supported provider override.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Steam">Steam AppID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RetroAchievements">RetroAchievements Game ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_ShadPS4">ShadPS4 Match ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RPCS3">RPCS3 NP Comm ID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia">Xenia TitleID</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Exophase">Exophase game ID or slug</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader">Exclusion des résumés</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Succès final actuel : {0}</sys:String>
@@ -249,9 +292,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable">No source page link is available for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LibrarySource">Source de la bibliothèque</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Provider">Fournisseur</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_RaOverride">Remplacement RetroAchievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_XeniaOverride">Remplacement du TitleID Xenia</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_ShadPS4Override">Remplacement de l'identifiant ShadPS4</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Excluded">Exclu</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromRefreshes">Exclu des actualisations groupées</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromSummaries">Exclu des résumés</sys:String>
@@ -264,11 +304,18 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_CustomIcons">Icônes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Filters">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_ManualTracking">Suivi manuel</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Notes">Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Overrides">Remplacements</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Overview">Vue d'ensemble</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_UseExophase">Utiliser Exophase pour ce jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Value_NotAvailable">N/D</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_WindowTitle">Options du jeu - {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Bold">Bold</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_CharacterCountFormat">{0} / {1} characters</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_EditTitle">Edit Note</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Italic">Italic</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Preview">Preview</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_Underline">Underline</sys:String>
+    <sys:String x:Key="LOCPlayAch_NotesDialog_ViewTitle">View Note</sys:String>
 
     <!-- ================================================================= -->
     <!-- 08 Manual Tracking and Linking -->
@@ -439,6 +486,26 @@
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Plateformes gérées</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Les jeux de ces plateformes utiliseront Exophase au lieu des fournisseurs modernes. Cochez les plateformes que vous voulez gérer avec Exophase.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note : pour les jeux des plateformes non cochées, utilisez les Options du jeu pour les inclure individuellement.</sys:String>
+
+    <!-- Provider: HoYoverse -->
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">Enable Genshin Impact</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableHsr">Enable Honkai: Star Rail</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">Enable Zenless Zone Zero</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">Tracker Export Files</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optional public tracker exports used to mark achievements unlocked. Without an export file, refresh still downloads definitions and keeps achievements locked.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">How to Get the JSON</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Prefix">1. Open the </sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter">StarDB achievement importer</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Suffix"> and log in.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Prefix">2. Download and run </sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbExporter">stardb-exporter</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Suffix">, then follow its prompts until the export JSON is copied to your clipboard.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step3">3. Save the copied text as a .json file and select it below for the matching game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step4">4. Optionally paste the copied JSON into StarDB too, so your StarDB tracker stays synced.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Note">Supported files: raw stardb-exporter JSON, StarDB JSON, Paimon.moe JSON, SEELIE.me JSON, Star Rail Station .dat, and rng.moe JSON.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_InvalidExportPath">One or more configured export files do not exist.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">No export file configured. Refresh will import locked achievement definitions only.</sys:String>
+
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Exporter les tables de la base de données en CSV pour le débogage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">Exporter en CSV</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Forcer la reconstruction de l'index de hachage</sys:String>
@@ -505,8 +572,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Manual &amp; Aggregators</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Other</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Uses {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Rarity</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill global rarity percentages. Requires Exophase authentication.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill missing metadata. Requires Exophase authentication.</sys:String>
 
     <!-- Provider: PlayStation -->
     <sys:String x:Key="LOCPlayAch_Settings_Psn_LoginLegacy">Connexion (Legacy)</sys:String>
@@ -566,6 +633,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Supprimer tous les tags</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Show the first-time setup landing page again on next overview open.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Réinitialiser la page d'accueil</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">Reset Display Settings</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">Revert Display tab options, grid visibility, column layouts, row sizing, and overview layout to defaults.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Révéler la description masquée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenIcon">Révéler l'icône masquée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenTitle">Révéler le titre masqué</sys:String>
@@ -591,7 +660,11 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Afficher le bouton dans la barre de menu supérieure</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Game Summaries Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
+<<<<<<< HEAD
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Desktop Theme Achievement Grid Column Headers</sys:String>
+=======
+    <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Column Headers</sys:String>
+>>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">Grille de la vue d'un jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">Fenêtre des succès</sys:String>
@@ -628,7 +701,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Filter_Achievements">Rechercher des succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Complete">Terminé</sys:String>
-    <sys:String x:Key="LOCPlayAch_Filter_CompletenessSelectorPlaceholder">Complétion</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_InProgress">In Progress</sys:String>
+    <sys:String x:Key="LOCPlayAch_Filter_ActivitySelectorPlaceholder">Activity</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Games">Rechercher des jeux</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Hidden">Masqué</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_NoProgress">Aucune progression</sys:String>
