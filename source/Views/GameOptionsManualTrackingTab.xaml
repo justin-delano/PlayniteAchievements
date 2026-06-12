@@ -207,7 +207,7 @@
                               Background="Transparent"
                               RowBackground="Transparent"
                               Foreground="{DynamicResource TextBrush}"
-                              ColumnHeaderStyle="{StaticResource AchievementColumnHeaderLeftStyle}"
+                              ColumnHeaderStyle="{StaticResource GameOptionsColumnHeaderStyle}"
                               helpers:DataGridAlignmentBehavior.IsEnabled="True"
                               PreviewMouseLeftButtonDown="SearchDataGrid_PreviewMouseLeftButtonDown"
                               Tag="ControllerCellFocus"
@@ -437,7 +437,7 @@
                               VirtualizingStackPanel.ScrollUnit="Pixel"
                               ScrollViewer.CanContentScroll="True"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                              ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                              ColumnHeaderStyle="{StaticResource GameOptionsColumnHeaderStyle}"
                               helpers:DataGridAlignmentBehavior.IsEnabled="True"
                               Tag="ControllerCellFocus">
                         <DataGrid.CellStyle>
@@ -456,7 +456,7 @@
                             <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_Unlocked}"
                                                     Width="80"
                                                     SortMemberPath="IsUnlocked"
-                                                    HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                                                    HeaderStyle="{StaticResource GameOptionsColumnHeaderStyle}"
                                                     CellStyle="{StaticResource GameOptionsCheckBoxCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -496,12 +496,17 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid HorizontalAlignment="Stretch"
-                                              VerticalAlignment="Stretch"
-                                              Background="Transparent"
-                                              Style="{StaticResource ClickableCellStyle}"
-                                              PreviewMouseDown="HiddenText_PreviewMouseDown">
+                                            VerticalAlignment="Stretch"
+                                            Background="Transparent"
+                                            Style="{StaticResource ClickableCellStyle}"
+                                            PreviewMouseDown="HiddenText_PreviewMouseDown"
+                                            helpers:DataGridAlignmentBehavior.CellHorizontalAlignment="Left"
+                                            helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center"
+                                            helpers:DataGridAlignmentBehavior.CellTextAlignment="Left">
                                             <ContentControl Content="{Binding}"
-                                                            ContentTemplate="{StaticResource AchievementInfoTemplate}" />
+                                                            ContentTemplate="{StaticResource AchievementInfoTemplate}"
+                                                            HorizontalAlignment="Left"
+                                                            VerticalAlignment="Center" />
                                         </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -511,7 +516,7 @@
                             <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_UnlockTime}"
                                                     Width="300"
                                                     SortMemberPath="UnlockTime"
-                                                    HeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                                                    HeaderStyle="{StaticResource GameOptionsColumnHeaderStyle}"
                                                     CellStyle="{StaticResource GameOptionsControllerCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>

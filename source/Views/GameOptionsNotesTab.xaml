@@ -21,13 +21,13 @@
 
             <DataTemplate x:Key="NotesAchievementInfoTemplate">
                 <StackPanel Margin="12,10"
-                            VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                            HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
                             Background="Transparent">
                     <TextBlock FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
                                TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                               TextAlignment="Left">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
@@ -53,7 +53,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
+                               TextAlignment="Left"
                                MaxHeight="44"
                                TextTrimming="CharacterEllipsis"
                                Margin="0,3,0,0">
@@ -72,7 +72,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.58"
                                TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
+                               TextAlignment="Left"
                                Margin="0,4,0,0" />
                 </StackPanel>
             </DataTemplate>
@@ -189,7 +189,7 @@
                   VirtualizingStackPanel.ScrollUnit="Pixel"
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                  ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                  ColumnHeaderStyle="{StaticResource GameOptionsColumnHeaderStyle}"
                   helpers:DataGridAlignmentBehavior.IsEnabled="True"
                   Tag="ControllerCellFocus"
                   PreviewMouseLeftButtonDown="NotesDataGrid_PreviewMouseLeftButtonDown">
@@ -220,35 +220,56 @@
                 <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_GameOptions_Notes_Note}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <StackPanel Margin="8,8"
-                                        VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                        HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}">
+                            <Grid HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                Margin="8,8">
+
+                                <!-- No note: centered in the cell -->
                                 <TextBlock Text="{Binding NoteStatusText}"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           FontWeight="SemiBold"
-                                           Opacity="0.85"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}" />
-                                <Border Background="#08000000"
-                                        BorderBrush="{DynamicResource NormalBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="4"
-                                        Margin="0,4,0,0"
-                                        Padding="6"
-                                        MaxHeight="70"
-                                        ClipToBounds="True"
-                                        Visibility="{Binding HasAchievementNote, Converter={StaticResource BoolToVis}}">
-                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                                  HorizontalScrollBarVisibility="Disabled"
-                                                  PanningMode="VerticalOnly">
-                                        <TextBlock helpers:AchievementNoteInlineFormatter.FormattedText="{Binding AchievementNote}"
-                                                   Foreground="{DynamicResource TextBrush}"
-                                                   Opacity="0.68"
-                                                   TextWrapping="Wrap"
-                                                   TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
-                                                   Padding="0,0,8,0" />
-                                    </ScrollViewer>
-                                </Border>
-                            </StackPanel>
+                                        Foreground="{DynamicResource TextBrush}"
+                                        FontWeight="SemiBold"
+                                        Opacity="0.85"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        TextAlignment="Center"
+                                        Visibility="{Binding HasAchievementNote, Converter={StaticResource InverseBoolToVis}}" />
+
+                                <!-- Has note: top-left aligned -->
+                                <StackPanel HorizontalAlignment="Stretch"
+                                            VerticalAlignment="Top"
+                                            Visibility="{Binding HasAchievementNote, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="{Binding NoteStatusText}"
+                                            Foreground="{DynamicResource TextBrush}"
+                                            FontWeight="SemiBold"
+                                            Opacity="0.85"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Top"
+                                            TextAlignment="Left" />
+
+                                    <Border Background="#08000000"
+                                            BorderBrush="{DynamicResource NormalBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="4"
+                                            Margin="0,4,0,0"
+                                            Padding="6"
+                                            MaxHeight="70"
+                                            ClipToBounds="True"
+                                            HorizontalAlignment="Stretch">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                    HorizontalScrollBarVisibility="Disabled"
+                                                    PanningMode="VerticalOnly">
+                                            <TextBlock helpers:AchievementNoteInlineFormatter.FormattedText="{Binding AchievementNote}"
+                                                    Foreground="{DynamicResource TextBrush}"
+                                                    Opacity="0.68"
+                                                    TextWrapping="Wrap"
+                                                    TextAlignment="Left"
+                                                    HorizontalAlignment="Stretch"
+                                                    VerticalAlignment="Top"
+                                                    Padding="0,0,8,0" />
+                                        </ScrollViewer>
+                                    </Border>
+                                </StackPanel>
+                            </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>

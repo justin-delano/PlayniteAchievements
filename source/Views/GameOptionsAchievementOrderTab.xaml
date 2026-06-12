@@ -21,14 +21,14 @@
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility" />
 
             <DataTemplate x:Key="OrderAchievementInfoTemplate">
-                <StackPanel VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                            HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                <StackPanel VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
                             Background="Transparent"
                             Margin="12,10">
                     <TextBlock FontWeight="SemiBold"
                                Foreground="{DynamicResource TextBrush}"
                                TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                               TextAlignment="Left">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="FontSize" Value="{DynamicResource FontSize}" />
@@ -54,7 +54,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
+                               TextAlignment="Left"
                                TextTrimming="CharacterEllipsis"
                                MaxHeight="44"
                                Margin="0,3,0,0">
@@ -74,7 +74,7 @@
                                Opacity="0.58"
                                Margin="0,4,0,0"
                                TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}" />
+                               TextAlignment="Left" />
                 </StackPanel>
             </DataTemplate>
         </ResourceDictionary>

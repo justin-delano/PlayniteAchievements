@@ -108,7 +108,7 @@
                   VirtualizingStackPanel.ScrollUnit="Pixel"
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                  ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                  ColumnHeaderStyle="{StaticResource GameOptionsColumnHeaderStyle}"
                   helpers:DataGridAlignmentBehavior.IsEnabled="True"
                   Tag="ControllerCellFocus"
                   PreviewMouseLeftButtonDown="DataGrid_PreviewMouseLeftButtonDown"
@@ -171,17 +171,64 @@
                                         CellStyle="{StaticResource GameOptionsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementIconTemplate}"/>
 
-                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Achievement}"
-                                        CanUserSort="False"
-                                        CellTemplate="{StaticResource AchievementInfoTemplate}"/>
-
+                <DataGridTemplateColumn Width="*"
+                        Header="{DynamicResource LOCPlayAch_Column_Achievement}"
+                        CanUserSort="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                helpers:DataGridAlignmentBehavior.CellHorizontalAlignment="Left"
+                                helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center"
+                                helpers:DataGridAlignmentBehavior.CellTextAlignment="Left">
+                                <ContentControl Content="{Binding}"
+                                                ContentTemplate="{StaticResource AchievementInfoTemplate}"
+                                                HorizontalAlignment="Left"
+                                                VerticalAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <!-- Rarity -->
-                <DataGridTemplateColumn Width="*" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="RaritySortValue" SortDirection="Ascending"
-                                        CellTemplate="{StaticResource AchievementRarityTemplate}"/>
+                <DataGridTemplateColumn Width="*"
+                        Header="{DynamicResource LOCPlayAch_Column_Rarity}"
+                        SortMemberPath="RaritySortValue"
+                        SortDirection="Ascending">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                helpers:DataGridAlignmentBehavior.CellHorizontalAlignment="Center"
+                                helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center"
+                                helpers:DataGridAlignmentBehavior.CellTextAlignment="Center">
+                                <ContentControl Content="{Binding}"
+                                                ContentTemplate="{StaticResource AchievementRarityTemplate}"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
 
                 <!-- Points -->
-                <DataGridTemplateColumn Width="72" Header="{DynamicResource LOCPlayAch_Column_Points}" SortMemberPath="Points"
-                                        CellTemplate="{StaticResource AchievementPointsTemplate}"/>
+                <DataGridTemplateColumn Width="72"
+                        Header="{DynamicResource LOCPlayAch_Column_Points}"
+                        SortMemberPath="Points">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Grid HorizontalAlignment="Stretch"
+                                VerticalAlignment="Stretch"
+                                helpers:DataGridAlignmentBehavior.CellHorizontalAlignment="Center"
+                                helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center"
+                                helpers:DataGridAlignmentBehavior.CellTextAlignment="Center">
+                                <ContentControl Content="{Binding}"
+                                                ContentTemplate="{StaticResource AchievementPointsTemplate}"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
             </DataGrid.Columns>
         </DataGrid>
     </Grid>

@@ -20,82 +20,86 @@
             <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility" />
 
             <DataTemplate x:Key="CategoryAchievementInfoTemplate">
-                <StackPanel Margin="12,10"
-                            VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                            HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
-                            Background="Transparent">
-                    <TextBlock FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextBrush}"
-                               TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                                <Setter Property="Opacity" Value="0.7"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                        <Setter Property="Opacity" Value="1"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
-                                        <Setter Property="FontStyle" Value="Italic"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
-                                        <Setter Property="Opacity" Value="1"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                        <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
-                        <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
-                             FontStyle="Italic"
-                             FontSize="{DynamicResource FontSizeSmall}"
-                             Foreground="{DynamicResource TextBrushDarker}"/>
-                    </TextBlock>
-                    <TextBlock Text="{Binding DescriptionResolved}"
-                               FontSize="{DynamicResource FontSizeSmall}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.7"
-                               TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
-                               MaxHeight="44"
-                               TextTrimming="CharacterEllipsis"
-                               Margin="0,3,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
-                                        <Setter Property="FontStyle" Value="Italic"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
-                                        <Setter Property="Opacity" Value="0.95"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <TextBlock Text="{Binding ApiNameResolved}"
-                               FontSize="{DynamicResource FontSizeSmall}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.58"
-                               TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
-                               Margin="0,4,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                        <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}" />
-                                        <Setter Property="Opacity" Value="0.9" />
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </StackPanel>
+                <Grid>
+                    <StackPanel Margin="12,10"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Left"
+                                Background="Transparent">
+                        <TextBlock FontWeight="SemiBold"
+                                Foreground="{DynamicResource TextBrush}"
+                                TextWrapping="Wrap"
+                                TextAlignment="Left">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                                    <Setter Property="Opacity" Value="0.7"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                            <Setter Property="Opacity" Value="1"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
+                                            <Setter Property="FontStyle" Value="Italic"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
+                                            <Setter Property="Opacity" Value="1"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                            <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
+                            <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
+                                FontStyle="Italic"
+                                FontSize="{DynamicResource FontSizeSmall}"
+                                Foreground="{DynamicResource TextBrushDarker}"/>
+                        </TextBlock>
+
+                        <TextBlock Text="{Binding DescriptionResolved}"
+                                FontSize="{DynamicResource FontSizeSmall}"
+                                Foreground="{DynamicResource TextBrush}"
+                                Opacity="0.7"
+                                TextWrapping="Wrap"
+                                TextAlignment="Left"
+                                MaxHeight="44"
+                                TextTrimming="CharacterEllipsis"
+                                Margin="0,3,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
+                                            <Setter Property="FontStyle" Value="Italic"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
+                                            <Setter Property="Opacity" Value="0.95"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <TextBlock Text="{Binding ApiNameResolved}"
+                                FontSize="{DynamicResource FontSizeSmall}"
+                                Foreground="{DynamicResource TextBrush}"
+                                Opacity="0.58"
+                                TextWrapping="Wrap"
+                                TextAlignment="Left"
+                                Margin="0,4,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                            <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}" />
+                                            <Setter Property="Opacity" Value="0.9" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
             </DataTemplate>
-        </ResourceDictionary>
+       </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid Margin="0">
@@ -261,7 +265,7 @@
                   VirtualizingStackPanel.ScrollUnit="Pixel"
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                  ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                  ColumnHeaderStyle="{StaticResource GameOptionsColumnHeaderStyle}"
                   helpers:DataGridAlignmentBehavior.IsEnabled="True"
                   Tag="ControllerCellFocus"
                   PreviewMouseLeftButtonDown="CategoryDataGrid_PreviewMouseLeftButtonDown">
@@ -309,9 +313,14 @@
                 <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Achievement}"
                                         CellTemplate="{StaticResource CategoryAchievementInfoTemplate}" />
 
-                <DataGridTextColumn Width="160" Header="{DynamicResource LOCPlayAch_Common_Label_Type}" Binding="{Binding CategoryTypeDisplay}">
+                <DataGridTextColumn Width="160"
+                    Header="{DynamicResource LOCPlayAch_Common_Label_Type}"
+                    Binding="{Binding CategoryTypeDisplay}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedCenteredDataGridTextStyle}">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="TextAlignment" Value="Center" />
                             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                             <Setter Property="Opacity" Value="0.85" />
                             <Style.Triggers>
@@ -325,9 +334,14 @@
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
 
-                <DataGridTextColumn Width="190" Header="{DynamicResource LOCPlayAch_Common_Label_Category}" Binding="{Binding CategoryDisplay}">
+                <DataGridTextColumn Width="190"
+                    Header="{DynamicResource LOCPlayAch_Common_Label_Category}"
+                    Binding="{Binding CategoryDisplay}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedCenteredDataGridTextStyle}">
+                            <Setter Property="HorizontalAlignment" Value="Center" />
+                            <Setter Property="VerticalAlignment" Value="Center" />
+                            <Setter Property="TextAlignment" Value="Center" />
                             <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
                             <Setter Property="Opacity" Value="0.85" />
                             <Style.Triggers>

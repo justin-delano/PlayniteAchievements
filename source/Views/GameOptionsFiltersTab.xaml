@@ -21,13 +21,13 @@
 
             <DataTemplate x:Key="FiltersAchievementInfoTemplate">
                 <StackPanel Margin="12,10"
-                            VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                            HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
                             Background="Transparent">
                     <TextBlock FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextBrush}"
-                               TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                            Foreground="{DynamicResource TextBrush}"
+                            TextWrapping="Wrap"
+                            TextAlignment="Left">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
@@ -53,7 +53,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.7"
                                TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
+                               TextAlignment="Left"
                                MaxHeight="44"
                                TextTrimming="CharacterEllipsis"
                                Margin="0,3,0,0">
@@ -72,7 +72,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.58"
                                TextWrapping="Wrap"
-                               TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
+                               TextAlignment="Left"
                                Margin="0,4,0,0" />
                 </StackPanel>
             </DataTemplate>
@@ -202,7 +202,7 @@
                   VirtualizingStackPanel.ScrollUnit="Pixel"
                   ScrollViewer.CanContentScroll="True"
                   ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                  ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
+                  ColumnHeaderStyle="{StaticResource GameOptionsColumnHeaderStyle}"
                   helpers:DataGridAlignmentBehavior.IsEnabled="True"
                   Tag="ControllerCellFocus"
                   PreviewMouseLeftButtonDown="FiltersDataGrid_PreviewMouseLeftButtonDown">
