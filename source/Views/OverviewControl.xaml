@@ -585,7 +585,7 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Divider between filter row and section headers -->
+                <!-- Divider below section headers -->
                 <Border Grid.Row="0"
                         Grid.Column="0"
                         Grid.ColumnSpan="3"
@@ -594,7 +594,7 @@
                         Background="{DynamicResource PanelSeparatorBrush}"
                         IsHitTestVisible="False"
                         Panel.ZIndex="50"/>
-                <!-- Divider between filter row and section headers -->
+                <!-- Divider below search/filter row -->
                 <Border Grid.Row="1"
                         Grid.Column="0"
                         Grid.ColumnSpan="3"
@@ -605,7 +605,7 @@
                         Panel.ZIndex="50"/>
 
                 <!-- LEFT: Filters Row -->
-                <Border Grid.Row="0" Grid.Column="0"
+                <Border Grid.Row="1" Grid.Column="0"
                         Background="{DynamicResource Transparent}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="0,0,1,0"
@@ -699,7 +699,7 @@
                 </Border>
 
                 <!-- RIGHT: Filters Row -->
-                <Border Grid.Row="0" Grid.Column="2"
+                <Border Grid.Row="1" Grid.Column="2"
                         Background="{DynamicResource Transparent}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="0,0,0,0"
@@ -793,8 +793,8 @@
                     </Grid>
                 </Border>
 
-                <!-- LEFT: Header (Row 1) -->
-                    <Border Grid.Row="1" Grid.Column="0"
+                <!-- LEFT: Header (Row 0) -->
+                    <Border Grid.Row="0" Grid.Column="0"
                             Background="{DynamicResource Transparent}"
                             Padding="16,10,16,10"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
@@ -839,7 +839,7 @@
                     </Border>
                     
                     <!-- RIGHT: Header -->
-                    <Grid Grid.Row="1" Grid.Column="2">
+                    <Grid Grid.Row="0" Grid.Column="2">
                         <!-- Header for when NO game is selected -->
                         <Border Background="{DynamicResource Transparent}"
                                 Height="38"
@@ -860,37 +860,35 @@
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="0,0,0,1"
                                 Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
-                            <Grid Margin="16,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
 
-                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{Binding DisplayedSelectedGame.GameName}"
-                                               FontSize="{DynamicResource FontSize}"
-                                               FontWeight="Bold"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               TextTrimming="CharacterEllipsis"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="{Binding SelectedGameHeaderText}"
-                                            FontSize="{DynamicResource FontSizeSmall}"
-                                            Foreground="{DynamicResource TextBrush}"
-                                            Opacity="0.7"
-                                            Margin="8,0,0,0"
-                                            VerticalAlignment="Center"/>
-                                </StackPanel>
+                            <StackPanel Margin="16,0"
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center">
+
+                                <TextBlock Text="{Binding DisplayedSelectedGame.GameName}"
+                                        FontSize="{DynamicResource FontSize}"
+                                        FontWeight="Bold"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        TextTrimming="CharacterEllipsis"
+                                        VerticalAlignment="Center"/>
+
+                                <TextBlock Text="{Binding SelectedGameHeaderText}"
+                                        FontSize="{DynamicResource FontSizeSmall}"
+                                        Foreground="{DynamicResource TextBrush}"
+                                        Opacity="0.7"
+                                        Margin="8,0,0,0"
+                                        VerticalAlignment="Center"/>
 
                                 <Button x:Name="ClearGameSelectionButton"
-                                        Grid.Column="1"
                                         Content="✕"
                                         Click="ClearGameSelection_Click"
                                         Width="24"
                                         Height="24"
                                         Padding="0"
-                                        Margin="6,0,0,0"
-                                        VerticalAlignment="Center"/>
-                            </Grid>
+                                        Margin="10,0,0,0"
+                                        VerticalAlignment="Bottom"/>
+
+                            </StackPanel>
                         </Border>
                     </Grid>
                     
@@ -1245,21 +1243,24 @@
                         </Grid>
                     </Border>
 
-                    <!-- Visible divider line (always shows) -->
-                    <Border Grid.Column="1"
-                        Grid.RowSpan="3"
+                <!-- Visible divider line, skipping top row -->
+                <Border Grid.Column="1"
+                        Grid.Row="1"
+                        Grid.RowSpan="2"
                         Width="2"
                         HorizontalAlignment="Center"
                         Background="{DynamicResource PanelSeparatorBrush}"
                         Opacity="0.35"
                         IsHitTestVisible="False"/>
-                    <GridSplitter Grid.Column="1"
-                        Grid.RowSpan="3"
-                        Style="{StaticResource CenterLineSplitterStyle}"
-                        DragCompleted="OverviewGridSplitter_DragCompleted"
-                        Focusable="False"
-                        IsTabStop="False"
-                        Panel.ZIndex="100"/>
+
+                <GridSplitter Grid.Column="1"
+                            Grid.Row="1"
+                            Grid.RowSpan="2"
+                            Style="{StaticResource CenterLineSplitterStyle}"
+                            DragCompleted="OverviewGridSplitter_DragCompleted"
+                            Focusable="False"
+                            IsTabStop="False"
+                            Panel.ZIndex="100"/>
             </Grid>
         </Grid>
     </Grid>
