@@ -669,7 +669,7 @@ namespace PlayniteAchievements.ViewModels
                 return dataPoint.Count.ToString();
             }
 
-            return $"{dataPoint.UnlockedCount} / {dataPoint.TotalCount}";
+            return $"{dataPoint.UnlockedCount}/{dataPoint.TotalCount}";
         }
 
         private static string FormatSecondaryMetricText(PieSliceInputData dataPoint, int pieTotalCount)
