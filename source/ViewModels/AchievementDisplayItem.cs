@@ -527,7 +527,7 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// Text representation of progress as "ProgressNum / ProgressDenom".
         /// </summary>
-        public string ProgressText => HasProgress ? $"{ProgressNum.Value} / {ProgressDenom.Value}" : string.Empty;
+        public string ProgressText => HasProgress ? $"{ProgressNum.Value}/{ProgressDenom.Value}" : string.Empty;
 
         /// <summary>
         /// Progress percentage (0-100) for progress bar binding.

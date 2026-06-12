@@ -823,37 +823,32 @@
     <DataTemplate x:Key="AchievementUnlockDateTemplate">
         <Grid HorizontalAlignment="Stretch">
             <TextBlock Text="{Binding UnlockTimeText}"
-                       HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
-                       VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                       Style="{DynamicResource BaseTextBlockStyle}"
-                       Foreground="{DynamicResource TextBrush}"
-                       Opacity="0.7"
-                       TextWrapping="Wrap"
-                       TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
-                       Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
+                    HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                    VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                    Style="{DynamicResource BaseTextBlockStyle}"
+                    Foreground="{DynamicResource TextBrush}"
+                    Opacity="0.7"
+                    TextWrapping="Wrap"
+                    TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
+                    Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
+
             <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}"
-                  Margin="4,0"
-                  HorizontalAlignment="Stretch"
-                  VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">
-                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
-                             Minimum="0" Maximum="100"
-                             Background="{DynamicResource ControlBackgroundBrush}"
-                             Foreground="{DynamicResource HighlightGlyphBrush}"
-                             Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}">
-                    <ProgressBar.Style>
-                        <Style TargetType="ProgressBar">
-                            <Setter Property="Height" Value="18"/>
-                        </Style>
-                    </ProgressBar.Style>
-                </ProgressBar>
+                Margin="4,0"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">
+
+                <ProgressBar Style="{StaticResource GameProgressBar}"
+                            Value="{Binding ProgressPercent, Mode=OneWay}"
+                            Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
+
                 <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           FontSize="{DynamicResource FontSizeSmall}"
-                           FontWeight="SemiBold"
-                           Foreground="White"
-                           Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Style="{DynamicResource BaseTextBlockStyle}"
+                        FontSize="{DynamicResource FontSizeSmall}"
+                        FontWeight="SemiBold"
+                        Foreground="White"
+                        Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
             </Grid>
         </Grid>
     </DataTemplate>
