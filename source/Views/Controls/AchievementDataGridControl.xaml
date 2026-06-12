@@ -89,17 +89,30 @@
             <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
             <DataGridTemplateColumn x:Name="StatusColumn"
                                     Width="36" MinWidth="22" CanUserSort="False" CanUserResize="True"
-                                    Header=" "
+                                    Header="{DynamicResource LOCPlayAch_Column_Status}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Status"
                                     CellStyle="{StaticResource AchievementStatusCellStyle}"
-                                    CellTemplate="{StaticResource AchievementStatusTemplate}"/>
+                                    CellTemplate="{StaticResource AchievementStatusTemplate}">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
+            </DataGridTemplateColumn>
+            
 
             <!-- Achievement Icon -->
             <DataGridTemplateColumn Width="84" MinWidth="22" CanUserResize="True"
-                                    Header=" "
+                                    Header="{DynamicResource LOCPlayAch_Column_Icon}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Icon"
                                     CellStyle="{StaticResource AchievementGlowIconCellStyle}"
-                                    CellTemplate="{StaticResource AchievementIconTemplate}"/>
+                                    CellTemplate="{StaticResource AchievementIconTemplate}">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
+            </DataGridTemplateColumn>
 
             <!-- Achievement Info -->
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Achievement}" SortMemberPath="DisplayName" helpers:ColumnVisibilityHelper.ColumnKey="Achievement"
@@ -191,9 +204,15 @@
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
                                     CellTemplate="{StaticResource AchievementRarityTemplate}"/>
 
-            <DataGridTemplateColumn Width="44" MinWidth="22" CanUserResize="True" Header=" " SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityTier"
+            <DataGridTemplateColumn Width="44" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_RarityTier}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityTier"
                                     Visibility="Collapsed"
-                                    CellTemplate="{StaticResource AchievementRarityTierTemplate}"/>
+                                    CellTemplate="{StaticResource AchievementRarityTierTemplate}">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
+            </DataGridTemplateColumn>
 
             <DataGridTemplateColumn Width="120" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_RarityPercent}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityPercent"
                                     Visibility="Collapsed">

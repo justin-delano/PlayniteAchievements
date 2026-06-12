@@ -452,7 +452,7 @@
 
         <!-- ROW 0: Header with Title, Scores, and Refresh Buttons -->
         <Border Grid.Row="0"
-                Background="{DynamicResource ControlBackgroundBrush}"
+                Background="{DynamicResource Transparent}"
                 BorderBrush="{DynamicResource NormalBorderBrush}"
                 BorderThickness="0,0,0,1"
                 Padding="16,0,16,4"
@@ -585,9 +585,28 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
+                <!-- Divider between filter row and section headers -->
+                <Border Grid.Row="0"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="3"
+                        Height="1"
+                        VerticalAlignment="Bottom"
+                        Background="{DynamicResource PanelSeparatorBrush}"
+                        IsHitTestVisible="False"
+                        Panel.ZIndex="50"/>
+                <!-- Divider between filter row and section headers -->
+                <Border Grid.Row="1"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="3"
+                        Height="1"
+                        VerticalAlignment="Bottom"
+                        Background="{DynamicResource PanelSeparatorBrush}"
+                        IsHitTestVisible="False"
+                        Panel.ZIndex="50"/>
+
                 <!-- LEFT: Filters Row -->
                 <Border Grid.Row="0" Grid.Column="0"
-                        Background="{DynamicResource ControlBackgroundBrush}"
+                        Background="{DynamicResource Transparent}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="0,0,1,0"
                         Padding="16,10"
@@ -681,7 +700,7 @@
 
                 <!-- RIGHT: Filters Row -->
                 <Border Grid.Row="0" Grid.Column="2"
-                        Background="{DynamicResource ControlBackgroundBrush}"
+                        Background="{DynamicResource Transparent}"
                         BorderBrush="{DynamicResource NormalBorderBrush}"
                         BorderThickness="0,0,0,0"
                         Padding="16,10"
@@ -776,7 +795,7 @@
 
                 <!-- LEFT: Header (Row 1) -->
                     <Border Grid.Row="1" Grid.Column="0"
-                            Background="{DynamicResource ControlBackgroundBrush}"
+                            Background="{DynamicResource Transparent}"
                             Padding="16,10,16,10"
                             BorderBrush="{DynamicResource NormalBorderBrush}"
                             BorderThickness="0,0,1,1">
@@ -822,7 +841,7 @@
                     <!-- RIGHT: Header -->
                     <Grid Grid.Row="1" Grid.Column="2">
                         <!-- Header for when NO game is selected -->
-                        <Border Background="{DynamicResource ControlBackgroundBrush}"
+                        <Border Background="{DynamicResource Transparent}"
                                 Height="38"
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="0,0,0,1"
@@ -836,7 +855,7 @@
                         </Border>
 
                         <!-- Header for when a game IS selected -->
-                        <Border Background="{DynamicResource ControlBackgroundBrush}"
+                        <Border Background="{DynamicResource Transparent}"
                                 Height="38"
                                 BorderBrush="{DynamicResource NormalBorderBrush}"
                                 BorderThickness="0,0,0,1"
@@ -876,14 +895,14 @@
                     </Grid>
                     
                     <!-- RIGHT: Content (Recent List OR Game Details) -->
-                    <Grid Grid.Row="2" Grid.Column="2" ClipToBounds="False">
+                    <Grid Grid.Row="2" Grid.Column="2">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <!-- Content Area: Recent List OR Game Details -->
-                        <Grid Grid.Row="0" ClipToBounds="False">
+                        <Grid Grid.Row="0">
                             <!-- Default Panel: When no game selected -->
                             <Grid Visibility="{Binding ShowRecentAchievementsPanel, Converter={StaticResource BoolToVis}}">
                                 <Grid.RowDefinitions>
@@ -940,9 +959,9 @@
                             MinHeight="225"
                             Margin="-20,0,-20,-20"
                             Padding="20,8,20,20"
-                            Background="{DynamicResource ControlBackgroundBrush}"
-                            BorderBrush="{DynamicResource NormalBorderBrush}"
-                            BorderThickness="0,3,0,0">
+                            Background="{DynamicResource Transparent}"
+                            BorderBrush="{DynamicResource PanelSeparatorBrush}"
+                            BorderThickness="0,1,0,0">
                         <Border.Resources>
                             <DataTemplate x:Key="OverviewTimelineContentTemplate">
                                 <Grid>

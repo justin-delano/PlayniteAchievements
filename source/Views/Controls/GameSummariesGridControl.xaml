@@ -315,6 +315,11 @@
             <DataGridTemplateColumn Width="92" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Cover}"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Cover">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
@@ -368,11 +373,18 @@
             </DataGridTemplateColumn>
 
             <DataGridTemplateColumn Width="72" MinWidth="22"
-                                    Header=" "
+                                    Header="{DynamicResource LOCPlayAch_Common_Label_Platform}"
                                     CanUserResize="True"
                                     CanUserSort="False"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryPlatform">
+                    <DataGridTemplateColumn.HeaderTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding}"
+                                    Opacity="0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.HeaderTemplate>
+
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
