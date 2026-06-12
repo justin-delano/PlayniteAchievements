@@ -130,18 +130,12 @@
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource TextBrush}"
                                    VerticalAlignment="Center"/>
-                        <TextBlock Margin="8,0,0,0"
+                        <TextBlock Text="{Binding HeaderText}"
+                                   Margin="8,0,0,0"
                                    VerticalAlignment="Center"
                                    Opacity="0.7"
                                    Foreground="{DynamicResource TextBrush}"
                                    FontSize="{DynamicResource FontSizeSmall}">
-                            <Run Text="("/>
-                            <Run Text="{Binding UnlockedAchievements, Mode=OneWay}"/>
-                            <Run Text="/"/>
-                            <Run Text="{Binding TotalAchievements, Mode=OneWay}"/>
-                            <Run Text=" "/>
-                            <Run Text="{DynamicResource LOCPlayAch_Achievements}"/>
-                            <Run Text=")"/>
                         </TextBlock>
 
                         <Button x:Name="RefreshGameButton" Content="{DynamicResource LOCPlayAch_Button_Refresh}" Command="{Binding RefreshGameCommand}" Margin="12,0,0,0" VerticalAlignment="Center" />

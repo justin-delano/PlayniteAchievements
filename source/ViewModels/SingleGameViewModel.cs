@@ -221,6 +221,8 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _unlockedAchievements, value);
         }
 
+        public string HeaderText => $"({UnlockedAchievements}/{TotalAchievements})";
+
         private bool _isCompleted;
         public bool IsCompleted
         {

@@ -89,14 +89,14 @@
             <!-- Status: Checkmark (unlocked) or Padlock (locked) -->
             <DataGridTemplateColumn x:Name="StatusColumn"
                                     Width="36" MinWidth="22" CanUserSort="False" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_Status}"
+                                    Header=" "
                                     helpers:ColumnVisibilityHelper.ColumnKey="Status"
                                     CellStyle="{StaticResource AchievementStatusCellStyle}"
                                     CellTemplate="{StaticResource AchievementStatusTemplate}"/>
 
             <!-- Achievement Icon -->
             <DataGridTemplateColumn Width="84" MinWidth="22" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_Icon}"
+                                    Header=" "
                                     helpers:ColumnVisibilityHelper.ColumnKey="Icon"
                                     CellStyle="{StaticResource AchievementGlowIconCellStyle}"
                                     CellTemplate="{StaticResource AchievementIconTemplate}"/>
@@ -191,7 +191,7 @@
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
                                     CellTemplate="{StaticResource AchievementRarityTemplate}"/>
 
-            <DataGridTemplateColumn Width="44" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_RarityTier}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityTier"
+            <DataGridTemplateColumn Width="44" MinWidth="22" CanUserResize="True" Header=" " SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityTier"
                                     Visibility="Collapsed"
                                     CellTemplate="{StaticResource AchievementRarityTierTemplate}"/>
 

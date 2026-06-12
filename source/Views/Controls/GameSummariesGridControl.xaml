@@ -312,7 +312,7 @@
                    BasedOn="{StaticResource GameSummariesGridRowStyle}"/>
         </DataGrid.RowStyle>
         <DataGrid.Columns>
-            <DataGridTemplateColumn Width="92" MinWidth="22" CanUserResize="True" Header="Cover"
+            <DataGridTemplateColumn Width="92" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Cover}"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Cover">
                 <DataGridTemplateColumn.CellTemplate>
@@ -368,7 +368,7 @@
             </DataGridTemplateColumn>
 
             <DataGridTemplateColumn Width="72" MinWidth="22"
-                                    Header="{DynamicResource LOCPlayAch_Common_Label_Platform}"
+                                    Header=" "
                                     CanUserResize="True"
                                     CanUserSort="False"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
