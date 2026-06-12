@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Media;
-using System.Windows.Threading;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
@@ -28,36 +25,28 @@ namespace PlayniteAchievements.Views.Helpers
                 "HeaderHorizontalAlignment",
                 typeof(HorizontalAlignment),
                 typeof(DataGridAlignmentBehavior),
-                new FrameworkPropertyMetadata(
-                    HorizontalAlignment.Center,
-                    FrameworkPropertyMetadataOptions.Inherits));
+                new PropertyMetadata(HorizontalAlignment.Center));
 
         public static readonly DependencyProperty CellHorizontalAlignmentProperty =
             DependencyProperty.RegisterAttached(
                 "CellHorizontalAlignment",
                 typeof(HorizontalAlignment),
                 typeof(DataGridAlignmentBehavior),
-                new FrameworkPropertyMetadata(
-                    HorizontalAlignment.Left,
-                    FrameworkPropertyMetadataOptions.Inherits));
+                new PropertyMetadata(HorizontalAlignment.Left));
 
         public static readonly DependencyProperty CellVerticalAlignmentProperty =
             DependencyProperty.RegisterAttached(
                 "CellVerticalAlignment",
                 typeof(VerticalAlignment),
                 typeof(DataGridAlignmentBehavior),
-                new FrameworkPropertyMetadata(
-                    VerticalAlignment.Center,
-                    FrameworkPropertyMetadataOptions.Inherits));
+                new PropertyMetadata(VerticalAlignment.Center));
 
         public static readonly DependencyProperty CellTextAlignmentProperty =
             DependencyProperty.RegisterAttached(
                 "CellTextAlignment",
                 typeof(TextAlignment),
                 typeof(DataGridAlignmentBehavior),
-                new FrameworkPropertyMetadata(
-                    TextAlignment.Left,
-                    FrameworkPropertyMetadataOptions.Inherits));
+                new PropertyMetadata(TextAlignment.Left));
 
         public static readonly DependencyProperty ColumnCellAlignmentOverridesProviderProperty =
             DependencyProperty.RegisterAttached(
@@ -137,9 +126,11 @@ namespace PlayniteAchievements.Views.Helpers
             obj.SetValue(CellTextAlignmentProperty, value);
         }
 
-        public static Func<Dictionary<string, GridAlignment>> GetColumnCellAlignmentOverridesProvider(DependencyObject obj)
+        public static Func<Dictionary<string, GridAlignment>> GetColumnCellAlignmentOverridesProvider(
+            DependencyObject obj)
         {
-            return (Func<Dictionary<string, GridAlignment>>)obj.GetValue(ColumnCellAlignmentOverridesProviderProperty);
+            return (Func<Dictionary<string, GridAlignment>>)obj.GetValue(
+                ColumnCellAlignmentOverridesProviderProperty);
         }
 
         public static void SetColumnCellAlignmentOverridesProvider(
@@ -149,9 +140,11 @@ namespace PlayniteAchievements.Views.Helpers
             obj.SetValue(ColumnCellAlignmentOverridesProviderProperty, value);
         }
 
-        public static Func<Dictionary<string, GridVerticalAlignment>> GetColumnCellVerticalAlignmentOverridesProvider(DependencyObject obj)
+        public static Func<Dictionary<string, GridVerticalAlignment>> GetColumnCellVerticalAlignmentOverridesProvider(
+            DependencyObject obj)
         {
-            return (Func<Dictionary<string, GridVerticalAlignment>>)obj.GetValue(ColumnCellVerticalAlignmentOverridesProviderProperty);
+            return (Func<Dictionary<string, GridVerticalAlignment>>)obj.GetValue(
+                ColumnCellVerticalAlignmentOverridesProviderProperty);
         }
 
         public static void SetColumnCellVerticalAlignmentOverridesProvider(
@@ -161,9 +154,11 @@ namespace PlayniteAchievements.Views.Helpers
             obj.SetValue(ColumnCellVerticalAlignmentOverridesProviderProperty, value);
         }
 
-        public static Func<Dictionary<string, GridAlignment>> GetColumnHeaderHorizontalAlignmentOverridesProvider(DependencyObject obj)
+        public static Func<Dictionary<string, GridAlignment>> GetColumnHeaderHorizontalAlignmentOverridesProvider(
+            DependencyObject obj)
         {
-            return (Func<Dictionary<string, GridAlignment>>)obj.GetValue(ColumnHeaderHorizontalAlignmentOverridesProviderProperty);
+            return (Func<Dictionary<string, GridAlignment>>)obj.GetValue(
+                ColumnHeaderHorizontalAlignmentOverridesProviderProperty);
         }
 
         public static void SetColumnHeaderHorizontalAlignmentOverridesProvider(
@@ -200,6 +195,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var isEnabled = e.NewValue is bool value && value;
             var state = GetState(grid);
+
             if (isEnabled)
             {
                 if (state == null)
@@ -302,15 +298,11 @@ namespace PlayniteAchievements.Views.Helpers
                 _grid.Loaded += OnLoaded;
                 _grid.Unloaded += OnUnloaded;
                 _grid.DataContextChanged += OnDataContextChanged;
-                _grid.LoadingRow += OnLoadingRow;
                 _grid.Columns.CollectionChanged += OnColumnsChanged;
+
                 _isAttached = true;
 
-                if (_grid.IsLoaded)
-                {
-                    AttachSettings();
-                }
-
+                AttachSettings();
                 ApplyAlignment();
             }
 
@@ -324,9 +316,11 @@ namespace PlayniteAchievements.Views.Helpers
                 _grid.Loaded -= OnLoaded;
                 _grid.Unloaded -= OnUnloaded;
                 _grid.DataContextChanged -= OnDataContextChanged;
-                _grid.LoadingRow -= OnLoadingRow;
                 _grid.Columns.CollectionChanged -= OnColumnsChanged;
+
                 DetachSettings();
+                ClearColumnAlignments();
+
                 _isAttached = false;
             }
 
@@ -347,11 +341,6 @@ namespace PlayniteAchievements.Views.Helpers
                 ApplyAlignment();
             }
 
-            private void OnLoadingRow(object sender, DataGridRowEventArgs e)
-            {
-                QueueApplyColumnCellAlignments(e.Row, retryWhenEmpty: true);
-            }
-
             private void OnColumnsChanged(object sender, NotifyCollectionChangedEventArgs e)
             {
                 ApplyAlignment();
@@ -361,6 +350,7 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 var settings = ResolveSettingsSource(_grid);
                 var persisted = settings?.Persisted;
+
                 if (ReferenceEquals(settings, _settings) &&
                     ReferenceEquals(persisted, _persisted))
                 {
@@ -425,183 +415,134 @@ namespace PlayniteAchievements.Views.Helpers
 
             public void ApplyAlignment()
             {
-                var headerAlignment = _persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center;
-                var cellAlignment = _persisted?.GridCellAlignment ?? GridAlignment.Left;
-                var cellVerticalAlignment = _persisted?.GridCellVerticalAlignment ?? GridVerticalAlignment.Center;
+                if (_grid?.Columns == null)
+                {
+                    return;
+                }
+
+                var defaultHeaderAlignment =
+                    _persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center;
+
+                var defaultCellHorizontalAlignment =
+                    _persisted?.GridCellAlignment ?? GridAlignment.Left;
+
+                var defaultCellVerticalAlignment =
+                    _persisted?.GridCellVerticalAlignment ?? GridVerticalAlignment.Center;
+
+                var cellHorizontalOverrides =
+                    GetColumnCellAlignmentOverridesProvider(_grid)?.Invoke();
+
+                var cellVerticalOverrides =
+                    GetColumnCellVerticalAlignmentOverridesProvider(_grid)?.Invoke();
+
+                var headerHorizontalOverrides =
+                    GetColumnHeaderHorizontalAlignmentOverridesProvider(_grid)?.Invoke();
+
+                foreach (var column in _grid.Columns)
+                {
+                    ApplyColumnAlignment(
+                        column,
+                        defaultHeaderAlignment,
+                        defaultCellHorizontalAlignment,
+                        defaultCellVerticalAlignment,
+                        headerHorizontalOverrides,
+                        cellHorizontalOverrides,
+                        cellVerticalOverrides);
+                }
+            }
+
+            private static void ApplyColumnAlignment(
+                DataGridColumn column,
+                GridAlignment defaultHeaderAlignment,
+                GridAlignment defaultCellHorizontalAlignment,
+                GridVerticalAlignment defaultCellVerticalAlignment,
+                IReadOnlyDictionary<string, GridAlignment> headerHorizontalOverrides,
+                IReadOnlyDictionary<string, GridAlignment> cellHorizontalOverrides,
+                IReadOnlyDictionary<string, GridVerticalAlignment> cellVerticalOverrides)
+            {
+                if (column == null)
+                {
+                    return;
+                }
+
+                var key = ResolveColumnKey(column);
+
+                var effectiveHeaderAlignment = ResolveHorizontalAlignment(
+                    key,
+                    defaultHeaderAlignment,
+                    headerHorizontalOverrides);
+
+                var effectiveCellHorizontalAlignment = ResolveHorizontalAlignment(
+                    key,
+                    defaultCellHorizontalAlignment,
+                    cellHorizontalOverrides);
+
+                var effectiveCellVerticalAlignment = ResolveVerticalAlignment(
+                    key,
+                    defaultCellVerticalAlignment,
+                    cellVerticalOverrides);
 
                 SetHeaderHorizontalAlignment(
-                    _grid,
-                    GridAlignmentMapping.ToHorizontalAlignment(headerAlignment));
+                    column,
+                    GridAlignmentMapping.ToHorizontalAlignment(effectiveHeaderAlignment));
+
                 SetCellHorizontalAlignment(
-                    _grid,
-                    GridAlignmentMapping.ToHorizontalAlignment(cellAlignment));
-                SetCellVerticalAlignment(
-                    _grid,
-                    GridAlignmentMapping.ToVerticalAlignment(cellVerticalAlignment));
+                    column,
+                    GridAlignmentMapping.ToHorizontalAlignment(effectiveCellHorizontalAlignment));
+
                 SetCellTextAlignment(
-                    _grid,
-                    GridAlignmentMapping.ToTextAlignment(cellAlignment));
+                    column,
+                    GridAlignmentMapping.ToTextAlignment(effectiveCellHorizontalAlignment));
 
-                QueueApplyColumnHeaderAlignments(retryWhenEmpty: true);
-                ApplyColumnCellAlignments();
+                SetCellVerticalAlignment(
+                    column,
+                    GridAlignmentMapping.ToVerticalAlignment(effectiveCellVerticalAlignment));
             }
 
-            private void QueueApplyColumnHeaderAlignments(bool retryWhenEmpty = false)
-            {
-                _grid.Dispatcher.BeginInvoke(
-                    new Action(() => ApplyColumnHeaderAlignments(retryWhenEmpty)),
-                    DispatcherPriority.Loaded);
-            }
-
-            private void ApplyColumnHeaderAlignments(bool retryWhenEmpty = false)
-            {
-                var headers = FindVisualChildren<DataGridColumnHeader>(_grid).ToList();
-                if (headers.Count == 0)
-                {
-                    if (retryWhenEmpty)
-                    {
-                        _grid.Dispatcher.BeginInvoke(
-                            new Action(() => ApplyColumnHeaderAlignments()),
-                            DispatcherPriority.ContextIdle);
-                    }
-
-                    return;
-                }
-
-                var overrides = GetColumnHeaderHorizontalAlignmentOverridesProvider(_grid)?.Invoke();
-                foreach (var header in headers)
-                {
-                    ApplyColumnHeaderHorizontalAlignment(header, overrides);
-                }
-            }
-
-            private void ApplyColumnHeaderHorizontalAlignment(
-                DataGridColumnHeader header,
+            private static GridAlignment ResolveHorizontalAlignment(
+                string key,
+                GridAlignment defaultAlignment,
                 IReadOnlyDictionary<string, GridAlignment> overrides)
             {
-                if (header?.Column == null)
+                if (!string.IsNullOrWhiteSpace(key) &&
+                    overrides != null &&
+                    overrides.TryGetValue(key, out var overrideAlignment))
                 {
-                    return;
+                    return overrideAlignment;
                 }
 
-                var key = ResolveColumnKey(header.Column);
-                if (string.IsNullOrWhiteSpace(key) ||
-                    overrides == null ||
-                    !overrides.TryGetValue(key, out var alignment))
-                {
-                    header.ClearValue(HeaderHorizontalAlignmentProperty);
-                    return;
-                }
-
-                SetHeaderHorizontalAlignment(header, GridAlignmentMapping.ToHorizontalAlignment(alignment));
+                return defaultAlignment;
             }
 
-            private void ApplyColumnCellAlignments()
+            private static GridVerticalAlignment ResolveVerticalAlignment(
+                string key,
+                GridVerticalAlignment defaultAlignment,
+                IReadOnlyDictionary<string, GridVerticalAlignment> overrides)
             {
-                if (_grid?.Items == null)
+                if (!string.IsNullOrWhiteSpace(key) &&
+                    overrides != null &&
+                    overrides.TryGetValue(key, out var overrideAlignment))
                 {
-                    return;
+                    return overrideAlignment;
                 }
 
-                foreach (var item in _grid.Items)
-                {
-                    if (_grid.ItemContainerGenerator.ContainerFromItem(item) is DataGridRow row)
-                    {
-                        ApplyColumnCellAlignments(row);
-                    }
-                }
+                return defaultAlignment;
             }
 
-            private void QueueApplyColumnCellAlignments(DataGridRow row, bool retryWhenEmpty = false)
+            private void ClearColumnAlignments()
             {
-                if (row == null)
+                if (_grid?.Columns == null)
                 {
                     return;
                 }
 
-                row.Dispatcher.BeginInvoke(
-                    new Action(() => ApplyColumnCellAlignments(row, retryWhenEmpty)),
-                    DispatcherPriority.Loaded);
-            }
-
-            private void ApplyColumnCellAlignments(DataGridRow row, bool retryWhenEmpty = false)
-            {
-                if (row == null)
+                foreach (var column in _grid.Columns)
                 {
-                    return;
+                    column.ClearValue(HeaderHorizontalAlignmentProperty);
+                    column.ClearValue(CellHorizontalAlignmentProperty);
+                    column.ClearValue(CellVerticalAlignmentProperty);
+                    column.ClearValue(CellTextAlignmentProperty);
                 }
-
-                var cells = FindVisualChildren<DataGridCell>(row).ToList();
-                if (cells.Count == 0)
-                {
-                    if (retryWhenEmpty)
-                    {
-                        row.Dispatcher.BeginInvoke(
-                            new Action(() => ApplyColumnCellAlignments(row)),
-                            DispatcherPriority.ContextIdle);
-                    }
-
-                    return;
-                }
-
-                var horizontalOverrides = GetColumnCellAlignmentOverridesProvider(_grid)?.Invoke();
-                var verticalOverrides = GetColumnCellVerticalAlignmentOverridesProvider(_grid)?.Invoke();
-
-                foreach (var cell in cells)
-                {
-                    ApplyColumnCellAlignment(cell, horizontalOverrides, verticalOverrides);
-                }
-            }
-
-            private void ApplyColumnCellAlignment(
-                DataGridCell cell,
-                IReadOnlyDictionary<string, GridAlignment> horizontalOverrides,
-                IReadOnlyDictionary<string, GridVerticalAlignment> verticalOverrides)
-            {
-                if (cell?.Column == null)
-                {
-                    return;
-                }
-
-                var key = ResolveColumnKey(cell.Column);
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    ClearColumnCellHorizontalAlignment(cell);
-                    ClearColumnCellVerticalAlignment(cell);
-                    return;
-                }
-
-                if (horizontalOverrides != null &&
-                    horizontalOverrides.TryGetValue(key, out var horizontalAlignment))
-                {
-                    SetCellHorizontalAlignment(cell, GridAlignmentMapping.ToHorizontalAlignment(horizontalAlignment));
-                    SetCellTextAlignment(cell, GridAlignmentMapping.ToTextAlignment(horizontalAlignment));
-                }
-                else
-                {
-                    ClearColumnCellHorizontalAlignment(cell);
-                }
-
-                if (verticalOverrides != null &&
-                    verticalOverrides.TryGetValue(key, out var verticalAlignment))
-                {
-                    SetCellVerticalAlignment(cell, GridAlignmentMapping.ToVerticalAlignment(verticalAlignment));
-                }
-                else
-                {
-                    ClearColumnCellVerticalAlignment(cell);
-                }
-            }
-
-            private static void ClearColumnCellHorizontalAlignment(DataGridCell cell)
-            {
-                cell.ClearValue(CellHorizontalAlignmentProperty);
-                cell.ClearValue(CellTextAlignmentProperty);
-            }
-
-            private static void ClearColumnCellVerticalAlignment(DataGridCell cell)
-            {
-                cell.ClearValue(CellVerticalAlignmentProperty);
             }
 
             private static string ResolveColumnKey(DataGridColumn column)
@@ -653,39 +594,6 @@ namespace PlayniteAchievements.Views.Helpers
                        propertyName == "GameSummariesColumnHeaderAlignments" ||
                        propertyName == "StartPageAchievementColumnHeaderAlignments" ||
                        propertyName == "StartPageGameSummariesColumnHeaderAlignments";
-            }
-
-            private static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent)
-                where T : DependencyObject
-            {
-                if (parent == null)
-                {
-                    yield break;
-                }
-
-                var count = 0;
-                try
-                {
-                    count = VisualTreeHelper.GetChildrenCount(parent);
-                }
-                catch (InvalidOperationException)
-                {
-                    yield break;
-                }
-
-                for (var i = 0; i < count; i++)
-                {
-                    var child = VisualTreeHelper.GetChild(parent, i);
-                    if (child is T typed)
-                    {
-                        yield return typed;
-                    }
-
-                    foreach (var nested in FindVisualChildren<T>(child))
-                    {
-                        yield return nested;
-                    }
-                }
             }
         }
     }

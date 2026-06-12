@@ -111,14 +111,14 @@
                     <DataTemplate>
                         <TextBlock Foreground="{DynamicResource TextBrush}"
                                    TextWrapping="Wrap"
-                                   VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                   HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}">
+                                   VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                   HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                      <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
                                      <Setter Property="Opacity" Value="0.7"/>
                                      <Setter Property="TextAlignment"
-                                             Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                                             Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
                                      <Style.Triggers>
                                         <DataTrigger Binding="{Binding Unlocked}" Value="True">
                                             <Setter Property="Opacity" Value="1"/>

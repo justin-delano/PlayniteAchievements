@@ -169,7 +169,7 @@
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
                 <Setter Property="TextAlignment"
-                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
             </Style>
 
             <Style x:Key="OverviewGameMetadataTextStyle" TargetType="TextBlock">
@@ -179,16 +179,16 @@
                 <Setter Property="Margin" Value="0,4,0,0"/>
                 <Setter Property="TextWrapping" Value="Wrap"/>
                 <Setter Property="TextAlignment"
-                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
             </Style>
 
             <Style x:Key="GameSummaryProviderIconStyle" TargetType="Image">
                 <Setter Property="Width" Value="32"/>
                 <Setter Property="Height" Value="32"/>
                 <Setter Property="HorizontalAlignment"
-                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"/>
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"/>
                 <Setter Property="VerticalAlignment"
-                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
                 <Setter Property="UseLayoutRounding" Value="True"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
                 <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
@@ -197,12 +197,12 @@
             <Style x:Key="OverviewProgressContainerStyle" TargetType="Grid">
                 <Setter Property="Margin" Value="0,3,2,3"/>
                 <Setter Property="VerticalAlignment"
-                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
             </Style>
 
             <Style x:Key="OverviewProgressStackStyle" TargetType="StackPanel">
                 <Setter Property="VerticalAlignment"
-                        Value="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
                 <Setter Property="RenderTransform">
                     <Setter.Value>
                         <TranslateTransform Y="0"/>
@@ -321,8 +321,8 @@
                                         Padding="4,6">
                             <Grid>
                                 <Border CornerRadius="6"
-                                        HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
-                                        VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                        HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                        VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                                         Style="{StaticResource GameImageBorderStyle}">
                                     <Border.Width>
                                         <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,width,12,8,12">
@@ -350,14 +350,14 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <StackPanel VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                            HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                <StackPanel VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                            HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                             Margin="0,0,8,0">
                                     <TextBlock Text="{Binding GameName}"
-                                               HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                               HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                                Style="{StaticResource GameSummaryNameTextStyle}"/>
                                     <TextBlock Text="{Binding SecondaryMetadataText}"
-                                               HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                               HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                                Style="{StaticResource OverviewGameMetadataTextStyle}"
                                                Visibility="{Binding ShowGameMetadata, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}, Converter={StaticResource BoolToVis}}"/>
                                 </StackPanel>
@@ -411,13 +411,13 @@
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
                                 <TextBlock Text="{Binding LastPlayedText}"
-                                           VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                           VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
                                            TextWrapping="Wrap"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                                           TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
                             </Grid>
                         </ContentControl>
                     </DataTemplate>
@@ -430,13 +430,13 @@
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
                                 <TextBlock Text="{Binding PlaytimeText}"
-                                           VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                           VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            Opacity="0.7"
                                            TextWrapping="Wrap"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                                           TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
                             </Grid>
                         </ContentControl>
                     </DataTemplate>
@@ -525,12 +525,12 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                                           TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
                                     <TextBlock.Inlines><Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource TextBrush}"/><Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource TextBrush}"/></TextBlock.Inlines>
                                 </TextBlock>
                             </Grid>
@@ -544,12 +544,12 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                                           TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
                                     <TextBlock.Inlines><Run Text="{Binding CollectionScore, Mode=OneWay, StringFormat={}{0:N0}}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource TextBrush}"/><Run Text="{Binding CollectionScoreTotal, Mode=OneWay, StringFormat={}{0:N0}}" Foreground="{DynamicResource TextBrush}"/></TextBlock.Inlines>
                                 </TextBlock>
                             </Grid>
@@ -563,12 +563,12 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                           HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource BaseTextBlockStyle}"
                                            Foreground="{DynamicResource TextBrush}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                                           TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
                                     <TextBlock.Inlines><Run Text="{Binding PrestigeScore, Mode=OneWay, StringFormat={}{0:N0}}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource TextBrush}"/><Run Text="{Binding PrestigeScoreTotal, Mode=OneWay, StringFormat={}{0:N0}}" Foreground="{DynamicResource TextBrush}"/></TextBlock.Inlines>
                                 </TextBlock>
                             </Grid>
