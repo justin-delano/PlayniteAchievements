@@ -53,7 +53,7 @@
     <sys:String x:Key="LOCPlayAch_Common_None">Keine</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NoOverrideSet">Keine Übersteuerung festgelegt</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_NotLinked">Nicht verknüpft</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Unlocked">Freigeschaltet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Unlocked">Freischaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Anzahl freigeschaltet</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_View">Ansehen</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">Vervollständigt</sys:String>
@@ -277,7 +277,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Capstone">Aktueller Vollendungserfolg</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Completion">Vervollständigung</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_GameId">Playnite Game ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LastUpdatedLocal">Zuletzt aktualisiert (lokal)</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LastUpdatedLocal">Letzte (lokale) Aktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_OpenAchievementPage">Quellseite</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable">Kein Quellseitenlink für dieses Spiel verfügbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LibrarySource">Quellbibliothek</sys:String>
