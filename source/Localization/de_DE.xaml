@@ -12,8 +12,8 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Actions">Aktionen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Von Zusammenfassungen ausschließen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">In Zusammenfassungen enthalten</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">In Übersichten ausschließen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">In Übersichten enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddType">Typ hinzufügen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Auf Auswahl anwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Ascending">Aufsteigend</sys:String>
@@ -221,9 +221,9 @@ This will remove the manual achievement link, delete all manually set unlock tim
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_OpenFolderUnavailable">Der Datenpfad der Erweiterung ist nicht verfügbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_CustomIcons_ValidationError">One or more icon values are invalid. Use absolute http:// or https:// URLs, or managed local files copied into plugin data.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilteredOut">Herausgefiltert</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilteredOutOfSummaries">Filtered Out of Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilteredOutOfSummaries">In Übersichten herausgefiltert</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilterOut">Herausfiltern</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilterOutOfSummaries">Filter Out of Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Filters_FilterOutOfSummaries">In Übersichten herausfiltern</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Header">Filterung</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Unfiltered">Ungefiltert</sys:String>
@@ -270,7 +270,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RPCS3">RPCS3 NP Comm ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia">Xenia Title ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Exophase">Exophase Game ID oder Slug</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader">Zusammenfassungsausschluss</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader">Übersichtsausschluss</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Aktueller Vollendungserfolg: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Lege einen Erfolg als Vollendungserfolg fest. Die Freischaltung eines Vollendungserfolgs wird das Spiel als vervollständigt markieren.</sys:String>
@@ -284,10 +284,10 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Provider">Anbieter</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Excluded">Ausgeschlossen</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromRefreshes">Von Massenaktualisierungen ausgeschlossen</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromSummaries">Von Zusammenfassungen ausgeschlossen</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromSummaries">In Übersichten ausgeschlossen</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Included">Enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_IncludedFromRefreshes">In Massenaktualisierungen enthalten</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Status_IncludedFromSummaries">In Zusammenfassungen enthalten</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Status_IncludedFromSummaries">In Übersichten enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_AchievementOrder">Reihenfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Capstones">Vollendungserfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Tab_Category">Kategorien</sys:String>
@@ -635,13 +635,13 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_SortBy">Sortierung nach</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Sortierrichtung wechseln</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the active column header again to return to this default sort.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Komplettierungsumrandung anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Umrandung für Komplettierung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(verborgener Erfolg)&quot; anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten auf freigeschalteten Symbolen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Übersichtsdiagramme anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform, Spielzeit und Region anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Plakette für Sammelwertung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Plakette für Prestigewertung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Kreisdiagramm für Vervollständigungen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPiePercentages">Show Pie Percentages</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewProviderPieChart">Kreisdiagramm für Plattformen anzeigen</sys:String>
@@ -695,7 +695,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Filter_Played">Gespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_PlayStatusSelectorPlaceholder">Spielstatus</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Ungespielt</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Game Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Spieleübersicht</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Vervollständigte Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Unvollständig</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Erfolge nach Plattform</sys:String>
@@ -751,7 +751,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Tag_Completed">[PA] Vervollständigt</sys:String>
     <sys:String x:Key="LOCPlayAch_Tag_Excluded">[PA] Ausgeschlossen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tag_ExcludedFromSummaries">[PA] Keine Zusammenfassungen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_ExcludedFromSummaries">[PA] Keine Übersicht</sys:String>
     <sys:String x:Key="LOCPlayAch_Tag_HasAchievements">[PA] Erfolge verfügbar</sys:String>
     <sys:String x:Key="LOCPlayAch_Tag_InProgress">[PA] Im Gange</sys:String>
     <sys:String x:Key="LOCPlayAch_Tag_NoAchievements">[PA] Keine Erfolge</sys:String>
