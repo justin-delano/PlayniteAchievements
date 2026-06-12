@@ -589,20 +589,18 @@
                 <Border Grid.Row="0"
                         Grid.Column="0"
                         Grid.ColumnSpan="3"
-                        Height="1"
+                        Height="2"
                         VerticalAlignment="Bottom"
                         Background="{DynamicResource PanelSeparatorBrush}"
-                        IsHitTestVisible="False"
-                        Panel.ZIndex="50"/>
+                        IsHitTestVisible="False"/>
                 <!-- Divider below search/filter row -->
                 <Border Grid.Row="1"
                         Grid.Column="0"
                         Grid.ColumnSpan="3"
-                        Height="1"
+                        Height="2"
                         VerticalAlignment="Bottom"
                         Background="{DynamicResource PanelSeparatorBrush}"
-                        IsHitTestVisible="False"
-                        Panel.ZIndex="50"/>
+                        IsHitTestVisible="False"/>
 
                 <!-- LEFT: Filters Row -->
                 <Border Grid.Row="1" Grid.Column="0"
@@ -959,7 +957,7 @@
                             Padding="20,8,20,20"
                             Background="{DynamicResource Transparent}"
                             BorderBrush="{DynamicResource PanelSeparatorBrush}"
-                            BorderThickness="0,1,0,0">
+                            BorderThickness="0,2,0,0">
                         <Border.Resources>
                             <DataTemplate x:Key="OverviewTimelineContentTemplate">
                                 <Grid>
@@ -1247,10 +1245,9 @@
                 <Border Grid.Column="1"
                         Grid.Row="1"
                         Grid.RowSpan="2"
-                        Width="2"
+                        Width="3"
                         HorizontalAlignment="Center"
                         Background="{DynamicResource PanelSeparatorBrush}"
-                        Opacity="0.35"
                         IsHitTestVisible="False"/>
 
                 <GridSplitter Grid.Column="1"
@@ -1259,8 +1256,7 @@
                             Style="{StaticResource CenterLineSplitterStyle}"
                             DragCompleted="OverviewGridSplitter_DragCompleted"
                             Focusable="False"
-                            IsTabStop="False"
-                            Panel.ZIndex="100"/>
+                            IsTabStop="False"/>
             </Grid>
         </Grid>
     </Grid>
