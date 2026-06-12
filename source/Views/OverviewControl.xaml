@@ -854,19 +854,12 @@
                                                Foreground="{DynamicResource TextBrush}"
                                                TextTrimming="CharacterEllipsis"
                                                VerticalAlignment="Center"/>
-                                    <TextBlock FontSize="{DynamicResource FontSizeSmall}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.7"
-                                               Margin="8,0,0,0"
-                                               VerticalAlignment="Center">
-                                        <Run Text="("/>
-                                        <Run Text="{Binding SelectedGameHeaderUnlockedCount, Mode=OneWay}"/>
-                                        <Run Text="/"/>
-                                        <Run Text="{Binding SelectedGameHeaderTotalCount, Mode=OneWay}"/>
-                                        <Run Text=" "/>
-                                        <Run Text="{Binding SelectedGameHeaderCountQualifier, Mode=OneWay}"/>
-                                        <Run Text=")"/>
-                                    </TextBlock>
+                                    <TextBlock Text="{Binding SelectedGameHeaderText}"
+                                            FontSize="{DynamicResource FontSizeSmall}"
+                                            Foreground="{DynamicResource TextBrush}"
+                                            Opacity="0.7"
+                                            Margin="8,0,0,0"
+                                            VerticalAlignment="Center"/>
                                 </StackPanel>
 
                                 <Button x:Name="ClearGameSelectionButton"

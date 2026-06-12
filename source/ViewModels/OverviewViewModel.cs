@@ -1096,25 +1096,11 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(ShowRecentAchievementsPanel));
         }
 
-        private int _selectedGameHeaderUnlockedCount;
-        public int SelectedGameHeaderUnlockedCount
+        private string _selectedGameHeaderText;
+        public string SelectedGameHeaderText
         {
-            get => _selectedGameHeaderUnlockedCount;
-            private set => SetValue(ref _selectedGameHeaderUnlockedCount, value);
-        }
-
-        private int _selectedGameHeaderTotalCount;
-        public int SelectedGameHeaderTotalCount
-        {
-            get => _selectedGameHeaderTotalCount;
-            private set => SetValue(ref _selectedGameHeaderTotalCount, value);
-        }
-
-        private string _selectedGameHeaderCountQualifier;
-        public string SelectedGameHeaderCountQualifier
-        {
-            get => _selectedGameHeaderCountQualifier;
-            private set => SetValue(ref _selectedGameHeaderCountQualifier, value);
+            get => _selectedGameHeaderText;
+            private set => SetValue(ref _selectedGameHeaderText, value);
         }
 
         /// <summary>
@@ -3409,11 +3395,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            SelectedGameHeaderUnlockedCount = unlocked;
-            SelectedGameHeaderTotalCount = total;
-            SelectedGameHeaderCountQualifier = isFiltered
-                ? L("LOCPlayAch_RefreshModeShort_Selected", "Selected")
-                : L("LOCPlayAch_Achievements", "Achievements");
+            SelectedGameHeaderText = $"({unlocked}/{total} {(isFiltered ? L("LOCPlayAch_RefreshModeShort_Selected", "Selected") : L("LOCPlayAch_Achievements", "Achievements"))})";
         }
 
         private void ResetSelectedGameAchievementVisibilityFilters()

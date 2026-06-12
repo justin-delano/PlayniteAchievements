@@ -109,8 +109,7 @@
                                     Visibility="Collapsed">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <TextBlock FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextBrush}"
+                        <TextBlock Foreground="{DynamicResource TextBrush}"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                                    HorizontalAlignment="{Binding RelativeSource={RelativeSource Self}, Path=(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}">
