@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+﻿<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
@@ -393,7 +393,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Status_Failed">Fehler: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_FilteredCounts">{0} von {1} ({2} freigeschaltet) aus {3} Spielen</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_LoadingAchievements">Lade Erfolge...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">No achievements cached. Click 'Refresh All' to refresh your games.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">Keine Erfolgsdaten zwischengespeichert. Für Aktualisierung &quot;Alle aktualisieren&quot; drücken.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Aktualisierung abgeschlossen!</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix">Einige Plattformen benötigen eine Authentifizierung.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteWithModeAndCount">{0} Aktualisierung abgeschlossen: {1} Spiele aktualisiert</sys:String>
@@ -434,14 +434,14 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSubtitle">StartPage - Widgets &amp; Tabellen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Tabellenstandard</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Overview Layout</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Overview Charts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">Desktop Theme Integration</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Übersicht - Kayout</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Übersicht - Tabellen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_ThemeIntegration">Desktop-Design-Integration</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Archiv-Scan aktivieren (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Enable disc hashing (for disc-based consoles)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">Plugin-Benachrichtigungen aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">Parallele Aktualisierung der Plattformen aktivieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">If disabled, platforms refresh sequentially in deterministic order.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">Wenn deaktiviert: Plattformen werden sequenziell in vorgegebenen Reihenfolge aktualisiert.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnablePeriodicUpdates">Periodische Hintergrundaktualisierungen aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Schlagwortsynchronisation aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Ungespielte Spiele einschließen</sys:String>
@@ -534,12 +534,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_GridColumnHeaderAlignment">Ausrichtung der Spaltenbeschriftung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridCellAlignment">Zellenausrichtung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridCellVerticalAlignment">Vertikale Ausrichtung der Zellen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Left">Links</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Center">Zentriert</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Left">links</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Center">zentriert</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_GridAlignment_Right">Rechts</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Top">Oben</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Center">Zentriert</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Bottom">Unten</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Top">oben</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Center">zentriert</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GridVerticalAlignment_Bottom">unten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">Pixel (leer = automatisch)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">(leer = unbegrenzt)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Tabellenübersicht - Neueste Erfolge</sys:String>
@@ -638,15 +638,15 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Komplettierungsumrandung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(verborgener Erfolg)&quot; anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten auf freigeschalteten Symbolen anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Show Overview Bar Charts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Übersichtsdiagramme anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform, Spielzeit und Region anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Show Collection Score Card</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Show Prestige Score Card</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Show Completed Games Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Kreisdiagramm für Vervollständigungen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPiePercentages">Show Pie Percentages</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewProviderPieChart">Show Platform Pie Chart</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewRarityPieChart">Show Rarity Pie Chart</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewTrophyPieChart">Show Trophy Pie Chart</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewProviderPieChart">Kreisdiagramm für Plattformen anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewRarityPieChart">Kreisdiagramm für Seltenheit anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewTrophyPieChart">Kreisdiagramm für Trophäen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Schaltfläche in oberer Menüleiste anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Game Summaries Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
@@ -654,7 +654,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Vereinheitlichte Seltenheitsmarkierungen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">Single Game View Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">Erfolgsfenster anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Small Slice Handling</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Handhabung kleiner Segmente</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exact</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description">Shows exact slice sizes. Radial icons are hidden for slices under 5% to reduce overlaps.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description">Hides slices under 5% from the overview pie.</sys:String>
@@ -696,7 +696,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Filter_PlayStatusSelectorPlaceholder">Spielstatus</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Ungespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Game Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Completed Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Vervollständigte Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Unvollständig</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Erfolge nach Plattform</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Erfolge nach Seltenheit</sys:String>
