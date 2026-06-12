@@ -224,7 +224,7 @@
                         </DataGrid.RowStyle>
 
                         <DataGrid.Columns>
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_Label_Icon}" Width="80" IsReadOnly="True"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Icon}" Width="80" IsReadOnly="True"
                                                     CellStyle="{StaticResource GameOptionsIconCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>

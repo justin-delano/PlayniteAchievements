@@ -103,11 +103,8 @@
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rareté</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_Column_AchievementName">Title</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_Column_AchievementName">Achievement Name</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
+
     <sys:String x:Key="LOCPlayAch_Column_RarityTier">Rarity Tier</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_RarityPercent">Rarity Percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
@@ -231,11 +228,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Header">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Unfiltered">Unfiltered</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseHint">Activez cette option pour forcer l'utilisation d'Exophase pour ce jeu. Si elle est désactivée, Exophase ne sera utilisé que si la plateforme fait partie des plateformes gérées.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugHint">Remplace l'identifiant Exophase détecté automatiquement afin de lier ce jeu à une entrée Exophase spécifique. Laissez vide pour utiliser la détection automatique.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugLabel">Remplacement de l'identifiant Exophase</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_HasNote">Note added</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Header">Achievement Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Hint">Add personal notes for this game's achievements. Formatting supports **bold**, *italic*, and __underline__ markers.</sys:String>
@@ -243,7 +235,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Note">Note</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithNotes">With Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithoutNotes">Without Notes</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary_None">Aucun lien manuel configuré.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning">Le suivi manuel peut remplacer les données de succès mises en cache provenant de {0}. Continuer ?</sys:String>
@@ -660,11 +651,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Afficher le bouton dans la barre de menu supérieure</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Game Summaries Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Desktop Theme Achievement Grid Column Headers</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Column Headers</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
+
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">Grille de la vue d'un jeu</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">Fenêtre des succès</sys:String>

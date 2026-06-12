@@ -103,11 +103,8 @@
     <sys:String x:Key="LOCPlayAch_Column_Points">點數</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">稀有度</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_Column_AchievementName">Title</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_Column_AchievementName">Achievement Name</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
+
     <sys:String x:Key="LOCPlayAch_Column_RarityTier">Rarity Tier</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_RarityPercent">Rarity Percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">總計</sys:String>
@@ -231,11 +228,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Header">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Unfiltered">Unfiltered</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseHint">勾選以對此遊戲強制使用 Exophase。未勾選的遊戲如果其平台在「受管平台」中，則會自動使用 Exophase。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugHint">覆蓋自動偵測的 Exophase 遊戲 ID 以連結到特定的 Exophase 遊戲。留空則使用自動偵測。</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugLabel">Exophase 遊戲 ID 覆蓋</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_HasNote">Note added</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Header">Achievement Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Hint">Add personal notes for this game's achievements. Formatting supports **bold**, *italic*, and __underline__ markers.</sys:String>
@@ -243,7 +235,6 @@
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Note">Note</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithNotes">With Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithoutNotes">Without Notes</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary_None">未配置手動連結。</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning">手動追蹤可能會替換來自 {0} 的快取成就數據。是否繼續？</sys:String>
@@ -660,11 +651,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">顯示頂部功能表列按鈕</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Game Summaries Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Desktop Theme Achievement Grid Column Headers</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Column Headers</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
+
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">單款遊戲檢視網格</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">檢視成就視窗</sys:String>

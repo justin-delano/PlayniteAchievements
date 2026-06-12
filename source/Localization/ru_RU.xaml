@@ -103,11 +103,8 @@
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rarity</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_Column_AchievementName">Title</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_Column_AchievementName">Achievement Name</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
+
     <sys:String x:Key="LOCPlayAch_Column_RarityTier">Rarity Tier</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_RarityPercent">Rarity Percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
@@ -231,11 +228,6 @@ This will remove the manual achievement link, delete all manually set unlock tim
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Header">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Unfiltered">Unfiltered</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseHint">Check to force Exophase for this game. Unchecked games use Exophase if their platform is in Managed Platforms.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugHint">Override the auto-detected Exophase game ID to link to a specific Exophase game. Leave empty to use auto-detection.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_ExophaseSlugLabel">Exophase Game ID Override</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_HasNote">Note added</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Header">Achievement Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Hint">Add personal notes for this game's achievements. Formatting supports **bold**, *italic*, and __underline__ markers.</sys:String>
@@ -243,7 +235,6 @@ This will remove the manual achievement link, delete all manually set unlock tim
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Note">Note</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithNotes">With Notes</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithoutNotes">Without Notes</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary_None">No manual link configured.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning">Manual tracking can replace cached achievement data from {0}. Continue?</sys:String>
@@ -660,11 +651,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Show Top Menu Bar Button</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Game Summaries Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
-<<<<<<< HEAD
-    <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Desktop Theme Achievement Grid Column Headers</sys:String>
-=======
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Column Headers</sys:String>
->>>>>>> 07176e61541f49b6f5e09013866cfb08932f3b11
+
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SingleGameGridSort">Single Game View Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">View Achievements Window</sys:String>
