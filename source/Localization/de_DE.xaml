@@ -12,7 +12,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Achievements">Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Actions">Aktionen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">In Übersichten ausschließen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Aus Übersichten ausschließen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">In Übersichten enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddType">Typ hinzufügen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Auf Auswahl anwenden</sys:String>
@@ -76,7 +76,7 @@
     <sys:String x:Key="LOCPlayAch_Score_Info_CollectionBody">Collection Score rewards total achievement collecting. Each unlocked achievement gives fixed points from its rarity tier.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeTitle">Prestigewertung</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_PrestigeBody">Prestige Score rewards rare achievement collecting. Rare achievements are worth many more points than common achievements.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">Levels and tiers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Score_Info_LevelsTitle">Stufen und Ränge</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_LevelsBody">Collection and Prestige scores each contribute to a Tier and Level. The first tier is Bronze V, followed by Bronze IV, and continues through Silver, Gold, Platinum, and Master tiers until Master I. Earning 10 levels advances you to the next tier.</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Info_ButtonTooltip">Informationen zum Bewertungssystem</sys:String>
     <sys:String x:Key="LOCPlayAch_Score_Tier_Master">Meister</sys:String>
@@ -149,7 +149,7 @@
     <!-- ================================================================= -->
     <!-- 06 Menus -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Menu_ClearData">Daten entfernen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearData">Erfolgsdaten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearData_ConfirmSelected">Clear data for {0} selected games?
 
 This removes cached achievements and icons for those games. Any manual tracking links and manual unlock times for those games will also be removed.</sys:String>
@@ -162,12 +162,12 @@ This will remove these games from the achievements view, delete their cached dat
     <sys:String x:Key="LOCPlayAch_Menu_Exclude_ConfirmSingle">Exclude &quot;{0}&quot; and clear data?
 
 This will remove the game from the achievements view, delete its cached data, and remove any manual tracking link for the game.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshes">Von Aktualisierungen ausschließen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Von Aktualisierungen ausschließen und Daten entfernen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Dieses Spiel ausschließen und Daten entfernen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshes">Aus Aktualisierungen ausschließen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData">Aus Aktualisierungen ausschließen und Erfolgsdaten entfernen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Dieses Spiel ausschließen und Erfolgsdaten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Bitte Exohpase-Game-ID eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Filters">Filterung</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Spieleinstellungen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Spieleinstellungen öffnen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Dieses Spiel inkludieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">In Aktualisierungen enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">In Aktualisierungen und Aktualisierung ausgewählter Spiele enthalten</sys:String>
@@ -229,16 +229,16 @@ This will remove the manual achievement link, delete all manually set unlock tim
     <sys:String x:Key="LOCPlayAch_GameOptions_Filters_Unfiltered">Ungefiltert</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_HasNote">Notiz hinzugefügt</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Header">Erfolgsnotizen</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Hint">Add personal notes for this game's achievements. Formatting supports **bold**, *italic*, and __underline__ markers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Hint">Hinzufügen von persönlichen Notizen zu diesem Erfolg. Die Formatierung unterstützt Markierungen für **fett**, *kursiv* und __unterstrichen__.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_NoNote">Keine Notiz</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_Note">Notiz</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithNotes">Mit Notizen</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Notes_WithoutNotes">Ohne Notizen</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_LinkSummary_None">Keine manuelle Verknüpfung konfiguriert.</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning">Manual tracking can replace cached achievement data from {0}. Continue?</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning">Die manuelle Verfolgung kann die zwischengespeicherten Erfolgsdaten von &quot;{0}&quot; ersetzen. Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Manual_Source">Manuelle Quelle</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Manual_Unlink">Unlink Manual Tracking</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Manual_Unlink">Manuelle Verfolgung aufheben</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Order_Header">Benutzerdefinierte Erfolgsreihenfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Order_Hint">Drag and drop rows to define the default order. Multi-select with Shift/Ctrl is supported. Changes are saved immediately.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ClearCustomDataButton">Benutzerdefinierte Daten entfernen</sys:String>
@@ -257,7 +257,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusOverride">Durch Übersteuerung aktiviert</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusSettings">Durch Einstellungen aktiviert</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsCheckbox">Immer separate Sperrsymbole für dieses Spiel verwenden</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHeader">Separate Sperrsymbole</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHeader">Separate Symbole für gesperrte Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_LockedIconsHint">Force this game to download and use separate locked icons when providers expose them. When unchecked, the game follows the global setting. Changes apply on the next refresh for this game.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderHeader">Übersteuerung des Anbieters</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderHint">Force this game to use one supported achievement provider, or clear the override to use automatic matching.</sys:String>
@@ -271,7 +271,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia">Xenia Title ID</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Exophase">Exophase Game ID oder Slug</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader">Übersichtsausschluss</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint">Dieses Spiel in sämtlichen Übersichten ausschließen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Aktueller Vollendungserfolg: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Lege einen Erfolg als Vollendungserfolg fest. Die Freischaltung eines Vollendungserfolgs wird das Spiel als vervollständigt markieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Capstone">Aktueller Vollendungserfolg</sys:String>
@@ -283,7 +283,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_LibrarySource">Quellbibliothek</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Overview_Provider">Anbieter</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Excluded">Ausgeschlossen</sys:String>
-    <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromRefreshes">Von Massenaktualisierungen ausgeschlossen</sys:String>
+    <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromRefreshes">Bei Massenaktualisierungen ausgeschlossen</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_ExcludedFromSummaries">In Übersichten ausgeschlossen</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_Included">Enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_GameOptions_Status_IncludedFromRefreshes">In Massenaktualisierungen enthalten</sys:String>
@@ -336,7 +336,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- ================================================================= -->
     <!-- 09 Refresh and Execution -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_ExcludeHeader">Spiel-IDs ausschließen</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ExcludeHeader">Spiele-IDs ausschließen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ExecutionHeader">Ausführung</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_ForceIncludeBypass">Explicit includes bypass user exclusions</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Header">Einmalige benutzerdefinierte Aktualisierung durchführen</sys:String>
@@ -353,7 +353,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_MaxReached">Es können bis zu {0} Voreinstellungen gespeichert werden.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">Bezeichnung für Voreinstellungen eingeben (1-64 Zeichen).</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogTitle">Benutzerdefinierte Aktualisierungsvoreinstellung speichern</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameInvalid">Preset name must be between 1 and {0} characters.</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameInvalid">Die Bezeichnung für Voreinstellungen muss einer Zeichenlänge zwischen 1 und {0} entsprechen.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption"></sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm">Voreinstellung &quot;{0}&quot; überschreiben?</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_SaveAs">Speichern als</sys:String>
@@ -364,8 +364,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_All">Alle Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_Explicit">Explicit only</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Scope_LibrarySelected">Bibliothek ausgewählt</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_ScopeHeader">Game Scope</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_SummaryFormat">Platforms: {0} | Estimated targets: {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_ScopeHeader">Geltungsbereich</sys:String>
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_SummaryFormat">Plattformen: {0} | Geschätzte Ziele: {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_TargetingHeader">Spiele ein-/auschließen</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseIncludeUnplayed">Übersteuerung beinhaltet ungespielte</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_UseParallelOverride">Übersteuerung der parallelen Plattformausführung</sys:String>
@@ -579,11 +579,11 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_RaUsername">Benutzername</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaUsername_Help">Dein RetroAchievements-Benutzername.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey">Web-API-Schlüssel</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">Find your key in your RetroAchievements control panel:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaWebApiKey_Help">Der Schlüssel ist in den Kontoeinstellungen von RetroAchievements einsehbar.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode">Punkteanzeige</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio weights points by achievement rarity, giving harder achievements more value.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Description">TrueRatio gewichtet Punkte nach Erfolgsseltenheit. Dadurch resultieren schwierigere Erfolge in mehr Punkte.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Points">Standardpunkte</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Scaled">TrueRatio (Scaled)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaPointsMode_Scaled">TrueRatio (skaliert)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableFuzzyNameMatching">Unscharfe Namensübereinstimmung aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">Fetch RetroAchievements subsets</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableAutomaticCapstoneAssignment">Automatically assign capstone from win condition</sys:String>
@@ -617,7 +617,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPathHint">&lt;Xenia-Pfad&gt;\content\&lt;Account ID&gt;\FFFE07D1\00010000\&lt;Account ID&gt;\</sys:String>
     <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">Ungültiger Xenia-Kontopfad - Keine Kontodatei</sys:String>
 
-    <sys:String x:Key="LOCPlayAch_Settings_RebuildNow">Rebuild Now</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RebuildNow">Jetzt neu erstellen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Description">Nur Erfolge zuletzt gespielter Spiele aktualisieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Neueste Spiele zur Aktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Alle Schlagworte entfernen</sys:String>
