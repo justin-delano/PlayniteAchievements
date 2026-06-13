@@ -172,19 +172,61 @@
                                         CellTemplate="{StaticResource AchievementIconTemplate}"/>
 
                 <DataGridTemplateColumn Width="*"
-                        Header="{DynamicResource LOCPlayAch_Column_Achievement}"
-                        CanUserSort="False">
+                                        Header="{DynamicResource LOCPlayAch_Column_Achievement}"
+                                        CanUserSort="False">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Grid HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch"
-                                helpers:DataGridAlignmentBehavior.CellHorizontalAlignment="Left"
-                                helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center"
-                                helpers:DataGridAlignmentBehavior.CellTextAlignment="Left">
-                                <ContentControl Content="{Binding}"
-                                                ContentTemplate="{StaticResource AchievementInfoTemplate}"
-                                                HorizontalAlignment="Left"
-                                                VerticalAlignment="Center"/>
+                                VerticalAlignment="Stretch">
+                                <StackPanel Margin="12,10"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Background="Transparent">
+                                    <TextBlock FontWeight="SemiBold"
+                                            Foreground="{DynamicResource TextBrush}"
+                                            TextWrapping="Wrap"
+                                            TextAlignment="Left">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                                                <Setter Property="Opacity" Value="0.7"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
+                                                        <Setter Property="FontStyle" Value="Italic"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                        <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
+                                        <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
+                                            FontStyle="Italic"
+                                            FontSize="{DynamicResource FontSizeSmall}"
+                                            Foreground="{DynamicResource TextBrushDarker}"/>
+                                    </TextBlock>
+
+                                    <TextBlock Text="{Binding DescriptionResolved}"
+                                            FontSize="{DynamicResource FontSizeSmall}"
+                                            Foreground="{DynamicResource TextBrush}"
+                                            Opacity="0.7"
+                                            TextWrapping="Wrap"
+                                            TextAlignment="Left"
+                                            MaxHeight="44"
+                                            TextTrimming="CharacterEllipsis"
+                                            Margin="0,3,0,0">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
+                                                        <Setter Property="FontStyle" Value="Italic"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
+                                </StackPanel>
                             </Grid>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>

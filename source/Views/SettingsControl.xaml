@@ -1015,11 +1015,6 @@
                                                        FontSize="{DynamicResource FontSize}"
                                                        FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_GeneralSubtitle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       Opacity="0.6"
-                                                       TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
                                 </ListBoxItem>
@@ -1043,11 +1038,6 @@
                                                        Foreground="{DynamicResource TextBrush}"
                                                        FontSize="{DynamicResource FontSize}"
                                                        FontWeight="SemiBold"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_OverviewSubtitle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       Opacity="0.6"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
@@ -1073,11 +1063,6 @@
                                                        FontSize="{DynamicResource FontSize}"
                                                        FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_LibrarySubtitle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       Opacity="0.6"
-                                                       TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
                                 </ListBoxItem>
@@ -1101,11 +1086,6 @@
                                                        Foreground="{DynamicResource TextBrush}"
                                                        FontSize="{DynamicResource FontSize}"
                                                        FontWeight="SemiBold"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_StartPageSubtitle}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSizeSmall}"
-                                                       Opacity="0.6"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
                                     </Grid>
