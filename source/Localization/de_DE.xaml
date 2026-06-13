@@ -170,7 +170,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_GameOptions">Spieleinstellungen öffnen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Dieses Spiel inkludieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">In Aktualisierungen enthalten</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">In Aktualisierungen und Aktualisierung ausgewählter Spiele enthalten</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">In allgemeinen und Aktualisierung ausgewählter Spiele enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Spiel in Bibliothek anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">Erfolgsübersicht</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">Spiel in Übersicht anzeigen</sys:String>
