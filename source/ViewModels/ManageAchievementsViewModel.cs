@@ -23,7 +23,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public sealed class GameOptionsViewModel : PlayniteAchievements.Common.ObservableObject
+    public sealed class ManageAchievementsViewModel : PlayniteAchievements.Common.ObservableObject
     {
         private const string ProviderOverrideNoneKey = "None";
 
@@ -39,13 +39,13 @@ namespace PlayniteAchievements.ViewModels
         private readonly RefreshRuntime _refreshService;
         private readonly Action _persistSettingsForUi;
         private readonly AchievementOverridesService _achievementOverridesService;
-        private readonly GameOptionsDataSnapshotProvider _gameDataSnapshotProvider;
+        private readonly ManageAchievementsDataSnapshotProvider _gameDataSnapshotProvider;
         private readonly IPlayniteAPI _playniteApi;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly AchievementPageLinkResolver _achievementPageLinkResolver;
 
-        private GameOptionsTab _selectedTab;
+        private ManageAchievementsTab _selectedTab;
         private bool _hasGame;
         private string _gameName;
         private string _gameImagePath;
@@ -98,14 +98,14 @@ namespace PlayniteAchievements.ViewModels
         public RelayCommand ImportCustomJsonCommand { get; }
         public RelayCommand ClearCustomDataCommand { get; }
 
-        public GameOptionsViewModel(
+        public ManageAchievementsViewModel(
             Guid gameId,
-            GameOptionsTab initialTab,
+            ManageAchievementsTab initialTab,
             PlayniteAchievementsPlugin plugin,
             RefreshRuntime refreshRuntime,
             Action persistSettingsForUi,
             AchievementOverridesService achievementOverridesService,
-            GameOptionsDataSnapshotProvider gameDataSnapshotProvider,
+            ManageAchievementsDataSnapshotProvider gameDataSnapshotProvider,
             IPlayniteAPI playniteApi,
             PlayniteAchievementsSettings settings,
             ILogger logger)
@@ -145,7 +145,7 @@ namespace PlayniteAchievements.ViewModels
 
         public string GameIdText => _gameId.ToString();
 
-        public GameOptionsTab SelectedTab
+        public ManageAchievementsTab SelectedTab
         {
             get => _selectedTab;
             set
@@ -155,30 +155,30 @@ namespace PlayniteAchievements.ViewModels
                     return;
                 }
 
-                if (value == GameOptionsTab.ManualTracking && !ShowManualTrackingTab)
+                if (value == ManageAchievementsTab.ManualTracking && !ShowManualTrackingTab)
                 {
                     return;
                 }
 
                 if (!HasCapstoneData &&
-                    (value == GameOptionsTab.Capstones ||
-                     value == GameOptionsTab.AchievementOrder ||
-                     value == GameOptionsTab.Category ||
-                     value == GameOptionsTab.Filters ||
-                     value == GameOptionsTab.Notes ||
-                     value == GameOptionsTab.CustomIcons))
+                    (value == ManageAchievementsTab.Capstones ||
+                     value == ManageAchievementsTab.AchievementOrder ||
+                     value == ManageAchievementsTab.Category ||
+                     value == ManageAchievementsTab.Filters ||
+                     value == ManageAchievementsTab.Notes ||
+                     value == ManageAchievementsTab.CustomIcons))
                 {
                     return;
                 }
 
-                if (value == GameOptionsTab.ManualTracking &&
+                if (value == ManageAchievementsTab.ManualTracking &&
                     ShouldWarnAboutManualTrackingOverride(out var existingProviderKey) &&
                     !string.Equals(_manualTrackingWarningAcceptedForProvider, existingProviderKey, StringComparison.OrdinalIgnoreCase))
                 {
                     var displayName = ProviderRegistry.GetLocalizedName(existingProviderKey);
                     var message = string.Format(
                         L(
-                            "LOCPlayAch_GameOptions_Manual_ReplaceProviderWarning",
+                            "LOCPlayAch_ManageAchievements_Manual_ReplaceProviderWarning",
                             "Manual tracking can replace cached achievement data from {0}. Continue?"),
                         displayName);
 
@@ -232,14 +232,14 @@ namespace PlayniteAchievements.ViewModels
                 if (UseSeparateLockedIconsOverride)
                 {
                     return L(
-                        "LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusOverride",
+                        "LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusOverride",
                         "Enabled via override");
                 }
 
                 if (GameCustomDataLookup.ShouldUseSeparateLockedIcons(_gameId, _settings?.Persisted))
                 {
                     return L(
-                        "LOCPlayAch_GameOptions_Overrides_LockedIcons_StatusSettings",
+                        "LOCPlayAch_ManageAchievements_Overrides_LockedIcons_StatusSettings",
                         "Enabled via settings");
                 }
 
@@ -325,12 +325,12 @@ namespace PlayniteAchievements.ViewModels
                     string.IsNullOrWhiteSpace(ProviderOverrideValue))
                 {
                     return string.Format(
-                        L("LOCPlayAch_GameOptions_Overrides_ProviderStatusAuto", "Override set: {0} (auto-detect)"),
+                        L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusAuto", "Override set: {0} (auto-detect)"),
                         providerName);
                 }
 
                 return string.Format(
-                    L("LOCPlayAch_GameOptions_Overrides_ProviderStatusValue", "Override set: {0} - {1}"),
+                    L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusValue", "Override set: {0} - {1}"),
                     providerName,
                     ProviderOverrideValue);
             }
@@ -472,8 +472,8 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public string ExclusionStatusText => IsExcluded
-            ? L("LOCPlayAch_GameOptions_Status_ExcludedFromRefreshes", "Excluded from Refreshes")
-            : L("LOCPlayAch_GameOptions_Status_IncludedFromRefreshes", "Included from Refreshes");
+            ? L("LOCPlayAch_ManageAchievements_Status_ExcludedFromRefreshes", "Excluded from Refreshes")
+            : L("LOCPlayAch_ManageAchievements_Status_IncludedFromRefreshes", "Included from Refreshes");
 
         public string ExclusionActionText => IsExcluded
             ? L("LOCPlayAch_Menu_IncludeGame", "Include this Game")
@@ -493,8 +493,8 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public string SummaryExclusionStatusText => IsExcludedFromSummaries
-            ? L("LOCPlayAch_GameOptions_Status_ExcludedFromSummaries", "Excluded from Summaries")
-            : L("LOCPlayAch_GameOptions_Status_IncludedFromSummaries", "Included in Summaries");
+            ? L("LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries", "Excluded from Summaries")
+            : L("LOCPlayAch_ManageAchievements_Status_IncludedFromSummaries", "Included in Summaries");
 
         public string SummaryExclusionActionText => IsExcludedFromSummaries
             ? L("LOCPlayAch_Common_Action_IncludeInSummaries", "Include in Summaries")
@@ -633,8 +633,8 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
-                    LastUpdatedUtcText = L("LOCPlayAch_GameOptions_Value_NotAvailable", "N/A");
-                    LastUpdatedLocalText = L("LOCPlayAch_GameOptions_Value_NotAvailable", "N/A");
+                    LastUpdatedUtcText = L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A");
+                    LastUpdatedLocalText = L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A");
                 }
 
                 var achievements = gameData?.Achievements ?? Enumerable.Empty<AchievementDetail>();
@@ -667,30 +667,30 @@ namespace PlayniteAchievements.ViewModels
                 ManualAchievementLink manualLink;
                 var hasManualLink = ManualAchievementsProvider.TryGetManualLink(_gameId, out manualLink);
                 HasManualTrackingLink = hasManualLink;
-                ManualTrackingSummary = ManualAchievementsProvider.GetGameOptionsLinkSummary(manualLink);
+                ManualTrackingSummary = ManualAchievementsProvider.GetManageAchievementsLinkSummary(manualLink);
                 HasAchievementPageLink = HasGame && _achievementPageLinkResolver.CanResolve(
                     new AchievementPageLinkContext(game, gameData, rawGameData, manualLink));
 
                 RefreshCustomDataState();
 
-                if (!ShowManualTrackingTab && SelectedTab == GameOptionsTab.ManualTracking)
+                if (!ShowManualTrackingTab && SelectedTab == ManageAchievementsTab.ManualTracking)
                 {
-                    SelectedTab = GameOptionsTab.Overview;
+                    SelectedTab = ManageAchievementsTab.Overview;
                 }
 
                 if (!HasCapstoneData &&
-                    (SelectedTab == GameOptionsTab.Capstones ||
-                     SelectedTab == GameOptionsTab.AchievementOrder ||
-                     SelectedTab == GameOptionsTab.Category ||
-                     SelectedTab == GameOptionsTab.Filters ||
-                     SelectedTab == GameOptionsTab.CustomIcons))
+                    (SelectedTab == ManageAchievementsTab.Capstones ||
+                     SelectedTab == ManageAchievementsTab.AchievementOrder ||
+                     SelectedTab == ManageAchievementsTab.Category ||
+                     SelectedTab == ManageAchievementsTab.Filters ||
+                     SelectedTab == ManageAchievementsTab.CustomIcons))
                 {
-                    SelectedTab = GameOptionsTab.Overview;
+                    SelectedTab = ManageAchievementsTab.Overview;
                 }
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Failed to load Game Options state for gameId={_gameId}");
+                _logger?.Error(ex, $"Failed to load Manage Achievements state for gameId={_gameId}");
             }
             finally
             {
@@ -700,7 +700,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void OpenAchievements()
         {
-            _plugin?.OpenSingleGameAchievementsView(_gameId);
+            _plugin?.OpenViewAchievementsWindow(_gameId);
         }
 
         private async Task OpenAchievementPageAsync()
@@ -738,7 +738,7 @@ namespace PlayniteAchievements.ViewModels
         {
             _playniteApi?.Dialogs?.ShowMessage(
                 L(
-                    "LOCPlayAch_GameOptions_Overview_AchievementPageUnavailable",
+                    "LOCPlayAch_ManageAchievements_Overview_AchievementPageUnavailable",
                     "No achievement page link is available for this game."),
                 L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                 MessageBoxButton.OK,
@@ -831,7 +831,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     successMessage += "\n\n" + string.Format(
                         L(
-                            "LOCPlayAch_GameOptions_Overrides_ExportPaOmittedLocalIcons",
+                            "LOCPlayAch_ManageAchievements_Overrides_ExportPaOmittedLocalIcons",
                             ".PA export omitted {0} local image override(s). Use .PA.ZIP to export full image sets."),
                         result.OmittedLocalIconOverrideCount);
                 }
@@ -953,7 +953,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     successMessage += "\n\n" + string.Format(
                         L(
-                            "LOCPlayAch_GameOptions_Overrides_ImportIgnoredPackageImages",
+                            "LOCPlayAch_ManageAchievements_Overrides_ImportIgnoredPackageImages",
                             "Ignored {0} image file(s) because their file names did not match this game's achievement API names."),
                         importResult.IgnoredPackageImageCount);
                 }
@@ -993,7 +993,7 @@ namespace PlayniteAchievements.ViewModels
             var result = _playniteApi?.Dialogs?.ShowMessage(
                 string.Format(
                     L(
-                        "LOCPlayAch_GameOptions_Overrides_ClearCustomDataConfirm",
+                        "LOCPlayAch_ManageAchievements_Overrides_ClearCustomDataConfirm",
                         "Clear all custom data for \"{0}\"?\n\nThis removes per-game exclusions, manual links, capstones, order/category changes, and provider overrides stored by Playnite Achievements. Cached achievement data is not removed."),
                     GameName),
                 L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
@@ -1120,7 +1120,7 @@ namespace PlayniteAchievements.ViewModels
                 return false;
             }
 
-            return ManualAchievementsProvider.TryUnlinkGameOptionsLink(
+            return ManualAchievementsProvider.TryUnlinkManageAchievementsLink(
                 _gameId,
                 GameName,
                 _playniteApi,
@@ -1154,7 +1154,7 @@ namespace PlayniteAchievements.ViewModels
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Failed to refresh game options data for gameId={_gameId}");
+                _logger?.Error(ex, $"Failed to refresh manage achievements data for gameId={_gameId}");
                 _playniteApi?.Dialogs?.ShowMessage(
                     string.Format(
                         L("LOCPlayAch_Error_RefreshFailed", "Refresh failed: {0}"),
@@ -1299,18 +1299,18 @@ namespace PlayniteAchievements.ViewModels
             var providerKey = gameData?.EffectiveProviderKey;
             if (string.IsNullOrWhiteSpace(providerKey))
             {
-                return L("LOCPlayAch_GameOptions_Value_NotAvailable", "N/A");
+                return L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A");
             }
 
             var displayName = ProviderRegistry.GetLocalizedName(providerKey);
             return string.IsNullOrWhiteSpace(displayName)
-                ? L("LOCPlayAch_GameOptions_Value_NotAvailable", "N/A")
+                ? L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A")
                 : displayName;
         }
 
         private string ResolveLibrarySourceDisplayName(Playnite.SDK.Models.Game game, string cachedLibrarySource)
         {
-            var fallback = L("LOCPlayAch_GameOptions_Value_NotAvailable", "N/A");
+            var fallback = L("LOCPlayAch_ManageAchievements_Value_NotAvailable", "N/A");
 
             if (!string.IsNullOrWhiteSpace(game?.Source?.Name))
             {
@@ -1477,7 +1477,7 @@ namespace PlayniteAchievements.ViewModels
                     return true;
 
                 default:
-                    validationMessageKey = "LOCPlayAch_GameOptions_Overrides_ProviderInvalid";
+                    validationMessageKey = "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
                     validationMessageFallback = "Please select a provider override.";
                     return false;
             }
@@ -1541,17 +1541,17 @@ namespace PlayniteAchievements.ViewModels
             switch (NormalizeProviderOverrideSelection(providerKey))
             {
                 case "Steam":
-                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Steam", "Steam AppID");
+                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Steam", "Steam AppID");
                 case "RetroAchievements":
-                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RetroAchievements", "RetroAchievements Game ID");
+                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RetroAchievements", "RetroAchievements Game ID");
                 case "ShadPS4":
-                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_ShadPS4", "ShadPS4 Match ID");
+                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_ShadPS4", "ShadPS4 Match ID");
                 case "RPCS3":
-                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_RPCS3", "RPCS3 NP Comm ID");
+                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3", "RPCS3 NP Comm ID");
                 case "Xenia":
-                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Xenia", "Xenia TitleID");
+                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia", "Xenia TitleID");
                 case "Exophase":
-                    return L("LOCPlayAch_GameOptions_Overrides_ProviderValueLabel_Exophase", "Exophase game ID or slug");
+                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase", "Exophase game ID or slug");
                 default:
                     return string.Empty;
             }

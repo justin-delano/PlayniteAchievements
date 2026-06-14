@@ -13,15 +13,15 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsNotesTab : UserControl, IFullscreenControllerNavigable
+    public partial class ManageAchievementsNotesTab : UserControl, IFullscreenControllerNavigable
     {
-        public GameOptionsNotesTab(GameOptionsNotesViewModel viewModel)
+        public ManageAchievementsNotesTab(ManageAchievementsNotesViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         }
 
-        private GameOptionsNotesViewModel ViewModel => DataContext as GameOptionsNotesViewModel;
+        private ManageAchievementsNotesViewModel ViewModel => DataContext as ManageAchievementsNotesViewModel;
 
         public void RefreshData()
         {
@@ -93,7 +93,7 @@ namespace PlayniteAchievements.Views
             }
 
             var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(source);
-            if (!(row?.DataContext is GameOptionsNoteItem item))
+            if (!(row?.DataContext is ManageAchievementsNoteItem item))
             {
                 return;
             }
@@ -126,13 +126,13 @@ namespace PlayniteAchievements.Views
             e.Handled = true;
         }
 
-        private bool TryResolveRow(FrameworkElement element, out GameOptionsNoteItem item)
+        private bool TryResolveRow(FrameworkElement element, out ManageAchievementsNoteItem item)
         {
-            item = element?.DataContext as GameOptionsNoteItem;
+            item = element?.DataContext as ManageAchievementsNoteItem;
             return item != null;
         }
 
-        private void OpenNoteDialog(GameOptionsNoteItem item, bool isEditMode)
+        private void OpenNoteDialog(ManageAchievementsNoteItem item, bool isEditMode)
         {
             if (item == null)
             {

@@ -17,18 +17,18 @@ using Playnite.SDK;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class SingleGameControl : UserControl, IFullscreenControllerNavigable
+    public partial class ViewAchievementsControl : UserControl, IFullscreenControllerNavigable
     {
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private DataGridRow _pendingRightClickRow;
 
-        public SingleGameControl()
+        public ViewAchievementsControl()
         {
             InitializeComponent();
         }
 
-        public SingleGameControl(
+        public ViewAchievementsControl(
             Guid gameId,
             RefreshRuntime refreshRuntime,
             AchievementDataService achievementDataService,
@@ -40,7 +40,7 @@ namespace PlayniteAchievements.Views
 
             _settings = settings;
             _logger = logger;
-            DataContext = new SingleGameControlModel(gameId, refreshRuntime, achievementDataService, playniteApi, logger, settings);
+            DataContext = new ViewAchievementsViewModel(gameId, refreshRuntime, achievementDataService, playniteApi, logger, settings);
             if (ViewModel != null)
             {
                 ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -57,7 +57,7 @@ namespace PlayniteAchievements.Views
             UpdateDefaultSortIndicator();
         }
 
-        private SingleGameControlModel ViewModel => DataContext as SingleGameControlModel;
+        private ViewAchievementsViewModel ViewModel => DataContext as ViewAchievementsViewModel;
 
         public string WindowTitle => ViewModel?.GameName != null
             ? $"{ViewModel.GameName} - Achievements"
@@ -90,7 +90,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (e.PropertyName == nameof(SingleGameControlModel.HasCustomAchievementOrder))
+            if (e.PropertyName == nameof(ViewAchievementsViewModel.HasCustomAchievementOrder))
             {
                 Dispatcher.BeginInvoke(new Action(UpdateDefaultSortIndicator));
             }

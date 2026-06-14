@@ -752,7 +752,7 @@
                                     Height="30"
                                     Margin="0,0,8,0"
                                     VerticalAlignment="Center"
-                                    ToolTip="{DynamicResource LOCPlayAch_GameOptions_Category_Filter_Type}">
+                                    ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Type}">
                                 <Button.ContextMenu>
                                     <ContextMenu x:Name="SelectedGameTypeFilterSelectionContextMenu"
                                                  ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
@@ -766,7 +766,7 @@
                                     Height="30"
                                     Margin="0,0,8,0"
                                     VerticalAlignment="Center"
-                                    ToolTip="{DynamicResource LOCPlayAch_GameOptions_Category_Filter_Label}">
+                                    ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Label}">
                                 <Button.ContextMenu>
                                     <ContextMenu x:Name="SelectedGameCategoryFilterSelectionContextMenu"
                                                  ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>

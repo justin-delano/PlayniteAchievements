@@ -17,12 +17,12 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public sealed class GameOptionsAchievementIconsViewModel : ObservableObject
+    public sealed class ManageAchievementsAchievementIconsViewModel : ObservableObject
     {
         private readonly Guid _gameId;
         private readonly string _gameIdText;
         private readonly AchievementOverridesService _achievementOverridesService;
-        private readonly GameOptionsDataSnapshotProvider _gameDataSnapshotProvider;
+        private readonly ManageAchievementsDataSnapshotProvider _gameDataSnapshotProvider;
         private readonly ManagedCustomIconService _managedCustomIconService;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
@@ -35,10 +35,10 @@ namespace PlayniteAchievements.ViewModels
         private string _saveStatusText;
         private bool _saveStatusIsError;
 
-        public GameOptionsAchievementIconsViewModel(
+        public ManageAchievementsAchievementIconsViewModel(
             Guid gameId,
             AchievementOverridesService achievementOverridesService,
-            GameOptionsDataSnapshotProvider gameDataSnapshotProvider,
+            ManageAchievementsDataSnapshotProvider gameDataSnapshotProvider,
             ManagedCustomIconService managedCustomIconService,
             PlayniteAchievementsSettings settings,
             ILogger logger)
@@ -143,7 +143,7 @@ namespace PlayniteAchievements.ViewModels
                 if (HasValidationErrors)
                 {
                     return L(
-                        "LOCPlayAch_GameOptions_CustomIcons_ValidationError",
+                        "LOCPlayAch_ManageAchievements_CustomIcons_ValidationError",
                         "One or more icon values are invalid. Use absolute http:// or https:// URLs, or managed local files copied into plugin data.");
                 }
 
@@ -192,7 +192,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 SetSaveStatus(
                     L(
-                        "LOCPlayAch_GameOptions_CustomIcons_LocalFileMissing",
+                        "LOCPlayAch_ManageAchievements_CustomIcons_LocalFileMissing",
                         "The selected image file no longer exists."),
                     isError: true);
                 return;
@@ -408,7 +408,7 @@ namespace PlayniteAchievements.ViewModels
                     SetSaveStatus(
                         string.Format(
                             L("LOCPlayAch_Status_Failed", "Error: {0}"),
-                            L("LOCPlayAch_GameOptions_CustomIcons_OpenFolderUnavailable", "The extension data path is unavailable.")),
+                            L("LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable", "The extension data path is unavailable.")),
                         isError: true);
                     return;
                 }

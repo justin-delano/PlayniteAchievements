@@ -87,7 +87,7 @@ namespace PlayniteAchievements.Views.Helpers
         {
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_GameOptions_Tab_Category", "Categories")
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Category", "Categories")
             };
 
             var addTypeMenu = new MenuItem
@@ -99,7 +99,7 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 var capturedType = categoryType;
                 addTypeMenu.Items.Add(CreateMenuItem(
-                    GameOptionsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
+                    ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
                     () =>
                     {
                         AddCategoryType(context, capturedType);
@@ -153,7 +153,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var filterOutItem = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_GameOptions_Filters_FilterOut", "Filter Out"),
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOut", "Filter Out"),
                 IsCheckable = true,
                 IsChecked = isFiltered
             };
@@ -166,7 +166,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var summaryItem = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_GameOptions_Filters_FilterOutOfSummaries", "Filter Out of Summaries"),
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries", "Filter Out of Summaries"),
                 IsCheckable = true,
                 IsChecked = isFiltered || isSummaryFiltered,
                 IsEnabled = !isFiltered
@@ -198,7 +198,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var menu = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_GameOptions_Tab_Notes", "Notes")
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Tab_Notes", "Notes")
             };
 
             var viewItem = CreateMenuItem(
@@ -241,10 +241,10 @@ namespace PlayniteAchievements.Views.Helpers
             FrameworkElement resourceOwner)
         {
             var inputDialog = new TextInputDialog(
-                L(resourceOwner, "LOCPlayAch_GameOptions_Category_Context_SetLabelHint", "Enter a category label for the selected achievements."),
+                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint", "Enter a category label for the selected achievements."),
                 context.CategoryLabel);
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                L(resourceOwner, "LOCPlayAch_GameOptions_Category_Context_SetLabelTitle", "Set Category Label"),
+                L(resourceOwner, "LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle", "Set Category Label"),
                 inputDialog,
                 new WindowOptions
                 {

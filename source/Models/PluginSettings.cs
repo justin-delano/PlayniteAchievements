@@ -91,6 +91,10 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _openGameAchievementWindow;
         [DontSerialize]
+        private ICommand _openViewAchievementsWindow;
+        [DontSerialize]
+        private ICommand _openManageAchievementsWindow;
+        [DontSerialize]
         private ICommand _setDynamicAchievementsFilterCommand;
         [DontSerialize]
         private ICommand _sortDynamicAchievementsCommand;
@@ -163,6 +167,20 @@ namespace PlayniteAchievements.Models
         {
             get => _openGameAchievementWindow;
             set => SetValue(ref _openGameAchievementWindow, value);
+        }
+
+        [DontSerialize]
+        public ICommand OpenViewAchievementsWindow
+        {
+            get => _openViewAchievementsWindow;
+            set => SetValue(ref _openViewAchievementsWindow, value);
+        }
+
+        [DontSerialize]
+        public ICommand OpenManageAchievementsWindow
+        {
+            get => _openManageAchievementsWindow;
+            set => SetValue(ref _openManageAchievementsWindow, value);
         }
 
         [DontSerialize]

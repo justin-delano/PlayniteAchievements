@@ -16,16 +16,16 @@ using System.Windows.Input;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsCapstonesTab : UserControl, IFullscreenControllerNavigable
+    public partial class ManageAchievementsCapstonesTab : UserControl, IFullscreenControllerNavigable
     {
         private readonly CapstoneViewModel _viewModel;
 
         public event EventHandler CapstoneChanged;
 
-        public GameOptionsCapstonesTab(
+        public ManageAchievementsCapstonesTab(
             Guid gameId,
             AchievementOverridesService achievementOverridesService,
-            GameOptionsDataSnapshotProvider gameDataSnapshotProvider,
+            ManageAchievementsDataSnapshotProvider gameDataSnapshotProvider,
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings)

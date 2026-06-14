@@ -23,8 +23,8 @@ namespace PlayniteAchievements.Services.UI
     /// </summary>
     internal class PluginWindowService
     {
-        private const string SingleGameWindowPlacementKey = "SingleGameAchievements";
-        private const string GameOptionsWindowPlacementKey = "GameOptions";
+        private const string ViewAchievementsWindowPlacementKey = "SingleGameAchievements";
+        private const string ManageAchievementsWindowPlacementKey = "ManageAchievements";
 
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
@@ -117,15 +117,15 @@ namespace PlayniteAchievements.Services.UI
                 _logger);
         }
 
-        public void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Action<Guid> openSingleGameAchievementsView, Guid? singleGameRefreshId = null)
+        public void ShowRefreshProgressControlAndRun(Func<Task> refreshTask, Action<Guid> openViewAchievementsWindow, Guid? singleGameRefreshId = null)
         {
-            ShowRefreshProgressControl(singleGameRefreshId, refreshTask, openSingleGameAchievementsView, validateCanStart: false);
+            ShowRefreshProgressControl(singleGameRefreshId, refreshTask, openViewAchievementsWindow, validateCanStart: false);
         }
 
         public void ShowRefreshProgressControl(
             Guid? singleGameRefreshId,
             Func<Task> refreshTask,
-            Action<Guid> openSingleGameAchievementsView,
+            Action<Guid> openViewAchievementsWindow,
             bool validateCanStart)
         {
             try
@@ -133,7 +133,7 @@ namespace PlayniteAchievements.Services.UI
                 InvokeOnUiThread(() => ShowRefreshProgressControlCore(
                     singleGameRefreshId,
                     refreshTask,
-                    openSingleGameAchievementsView));
+                    openViewAchievementsWindow));
             }
             catch (Exception ex)
             {
@@ -144,7 +144,7 @@ namespace PlayniteAchievements.Services.UI
         private void ShowRefreshProgressControlCore(
             Guid? singleGameRefreshId,
             Func<Task> refreshTask,
-            Action<Guid> openSingleGameAchievementsView)
+            Action<Guid> openViewAchievementsWindow)
         {
             var isFullscreen = DetectFullscreenMode();
 
@@ -152,7 +152,7 @@ namespace PlayniteAchievements.Services.UI
                 _refreshService,
                 _logger,
                 singleGameRefreshId,
-                openSingleGameAchievementsView);
+                openViewAchievementsWindow);
 
             var windowOptions = new WindowOptions
             {
@@ -462,13 +462,13 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        public void OpenSingleGameAchievementsView(Guid gameId)
+        public void OpenViewAchievementsWindow(Guid gameId)
         {
             try
             {
                 var isFullscreen = DetectFullscreenMode();
 
-                var view = new SingleGameControl(
+                var view = new ViewAchievementsControl(
                     gameId,
                     _refreshService,
                     _achievementDataService,
@@ -495,7 +495,7 @@ namespace PlayniteAchievements.Services.UI
 
                 window.MinWidth = 450;
                 window.MinHeight = 500;
-                AttachWindowPlacement(window, SingleGameWindowPlacementKey, isFullscreen);
+                AttachWindowPlacement(window, ViewAchievementsWindowPlacementKey, isFullscreen);
                 try
                 {
                     if (window.Owner == null)
@@ -517,9 +517,9 @@ namespace PlayniteAchievements.Services.UI
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"Failed to open per-game achievements view for gameId={gameId}");
+                _logger.Error(ex, $"Failed to open View Achievements window for gameId={gameId}");
                 _api?.Dialogs?.ShowErrorMessage(
-                    $"Failed to open achievements view: {ex.Message}",
+                    $"Failed to open View Achievements: {ex.Message}",
                     "Playnite Achievements");
             }
         }
@@ -637,7 +637,7 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        public void OpenGameOptionsView(Guid gameId, GameOptionsTab initialTab)
+        public void OpenManageAchievementsView(Guid gameId, ManageAchievementsTab initialTab)
         {
             try
             {
@@ -654,7 +654,7 @@ namespace PlayniteAchievements.Services.UI
 
                 _ensureAchievementResourcesLoaded?.Invoke();
 
-                var view = new GameOptionsControl(
+                var view = new ManageAchievementsControl(
                     gameId,
                     initialTab,
                     _refreshService,
@@ -685,7 +685,7 @@ namespace PlayniteAchievements.Services.UI
 
                 window.MinWidth = 860;
                 window.MinHeight = 620;
-                AttachWindowPlacement(window, GameOptionsWindowPlacementKey, isFullscreen);
+                AttachWindowPlacement(window, ManageAchievementsWindowPlacementKey, isFullscreen);
                 try
                 {
                     if (window.Owner == null)
@@ -707,16 +707,16 @@ namespace PlayniteAchievements.Services.UI
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, $"Failed to open Game Options view for gameId={gameId}");
+                _logger.Error(ex, $"Failed to open Manage Achievements view for gameId={gameId}");
                 _api?.Dialogs?.ShowErrorMessage(
-                    $"Failed to open game options view: {ex.Message}",
+                    $"Failed to open manage achievements view: {ex.Message}",
                     "Playnite Achievements");
             }
         }
 
         public void OpenCapstoneView(Guid gameId)
         {
-            OpenGameOptionsView(gameId, GameOptionsTab.Capstones);
+            OpenManageAchievementsView(gameId, ManageAchievementsTab.Capstones);
         }
 
         public void OpenParityTestView(Guid gameId, bool modern)

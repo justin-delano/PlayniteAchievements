@@ -13,15 +13,15 @@ using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public sealed class GameOptionsCategoryViewModel : ObservableObject
+    public sealed class ManageAchievementsCategoryViewModel : ObservableObject
     {
         private readonly Guid _gameId;
         private readonly AchievementOverridesService _achievementOverridesService;
-        private readonly GameOptionsDataSnapshotProvider _gameDataSnapshotProvider;
+        private readonly ManageAchievementsDataSnapshotProvider _gameDataSnapshotProvider;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
 
-        private List<GameOptionsCategoryItem> _allRows = new List<GameOptionsCategoryItem>();
+        private List<ManageAchievementsCategoryItem> _allRows = new List<ManageAchievementsCategoryItem>();
         private List<string> _canonicalCategoryLabelFilterOptions = new List<string>();
         private bool _hasAchievements;
         private string _searchText = string.Empty;
@@ -32,10 +32,10 @@ namespace PlayniteAchievements.ViewModels
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _hasCustomOverrides;
 
-        public GameOptionsCategoryViewModel(
+        public ManageAchievementsCategoryViewModel(
             Guid gameId,
             AchievementOverridesService achievementOverridesService,
-            GameOptionsDataSnapshotProvider gameDataSnapshotProvider,
+            ManageAchievementsDataSnapshotProvider gameDataSnapshotProvider,
             PlayniteAchievementsSettings settings,
             ILogger logger)
         {
@@ -45,7 +45,7 @@ namespace PlayniteAchievements.ViewModels
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
 
-            AchievementRows = new ObservableCollection<GameOptionsCategoryItem>();
+            AchievementRows = new ObservableCollection<ManageAchievementsCategoryItem>();
             CategoryLabelOptions = new ObservableCollection<string>();
             CategoryLabelFilterOptions = new ObservableCollection<string>();
             TypeSelectionOptions = CreateCategoryTypeOptions(() =>
@@ -62,7 +62,7 @@ namespace PlayniteAchievements.ViewModels
             ReloadData();
         }
 
-        public ObservableCollection<GameOptionsCategoryItem> AchievementRows { get; }
+        public ObservableCollection<ManageAchievementsCategoryItem> AchievementRows { get; }
         public ObservableCollection<string> CategoryLabelOptions { get; }
         public ObservableCollection<string> CategoryLabelFilterOptions { get; }
         public ObservableCollection<CategoryTypeSelectionOption> TypeSelectionOptions { get; }
@@ -281,7 +281,7 @@ namespace PlayniteAchievements.ViewModels
                         return null;
                     }
 
-                    return new GameOptionsCategoryItem
+                    return new ManageAchievementsCategoryItem
                     {
                         ProviderKey = projected.ProviderKey,
                         GameName = projected.GameName,
@@ -326,7 +326,7 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed loading category rows for gameId={_gameId}");
-                _allRows = new List<GameOptionsCategoryItem>();
+                _allRows = new List<ManageAchievementsCategoryItem>();
                 _canonicalCategoryLabelFilterOptions = new List<string>();
                 CollectionHelper.SynchronizeCollection(AchievementRows, _allRows);
                 CollectionHelper.SynchronizeCollection(CategoryLabelOptions, new List<string>());
@@ -359,7 +359,7 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool ApplyBulkToSelection(
-            IReadOnlyList<GameOptionsCategoryItem> selectedRows,
+            IReadOnlyList<ManageAchievementsCategoryItem> selectedRows,
             string categoryText)
         {
             if (selectedRows == null || selectedRows.Count == 0)
@@ -438,7 +438,7 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool AddCategoryTypesToSelection(
-            IReadOnlyList<GameOptionsCategoryItem> selectedRows,
+            IReadOnlyList<ManageAchievementsCategoryItem> selectedRows,
             IEnumerable<string> categoryTypesToAdd)
         {
             if (selectedRows == null || selectedRows.Count == 0)
@@ -491,7 +491,7 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool SetCategoryLabelForSelection(
-            IReadOnlyList<GameOptionsCategoryItem> selectedRows,
+            IReadOnlyList<ManageAchievementsCategoryItem> selectedRows,
             string categoryLabel)
         {
             if (selectedRows == null || selectedRows.Count == 0)
@@ -534,7 +534,7 @@ namespace PlayniteAchievements.ViewModels
             return true;
         }
 
-        public bool ClearSelectionOverrides(IReadOnlyList<GameOptionsCategoryItem> selectedRows)
+        public bool ClearSelectionOverrides(IReadOnlyList<ManageAchievementsCategoryItem> selectedRows)
         {
             if (selectedRows == null || selectedRows.Count == 0)
             {
@@ -656,7 +656,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public List<GameOptionsCategoryItem> GetAllSelectedRows()
+        public List<ManageAchievementsCategoryItem> GetAllSelectedRows()
         {
             return _allRows
                 .Where(item => item != null && item.IsSelected)
@@ -876,7 +876,7 @@ namespace PlayniteAchievements.ViewModels
         public static string GetCategoryTypeDisplayName(string categoryType)
         {
             return L(
-                $"LOCPlayAch_GameOptions_Category_Type_{categoryType}",
+                $"LOCPlayAch_ManageAchievements_Category_Type_{categoryType}",
                 categoryType);
         }
 
@@ -887,7 +887,7 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 
-    public sealed class GameOptionsCategoryItem : AchievementDisplayItem
+    public sealed class ManageAchievementsCategoryItem : AchievementDisplayItem
     {
         private bool _isSelected;
 

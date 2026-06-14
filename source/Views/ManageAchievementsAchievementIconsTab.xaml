@@ -1,4 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.GameOptionsAchievementIconsTab"
+<UserControl x:Class="PlayniteAchievements.Views.ManageAchievementsAchievementIconsTab"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -9,7 +9,7 @@
              mc:Ignorable="d"
              d:DesignHeight="620"
              d:DesignWidth="920"
-             d:DataContext="{d:DesignInstance vm:GameOptionsAchievementIconsViewModel}">
+             d:DataContext="{d:DesignInstance vm:ManageAchievementsAchievementIconsViewModel}">
 
     <UserControl.Resources>
         <ResourceDictionary>
@@ -161,10 +161,10 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_CustomIcons_Header}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_CustomIcons_Header}"
                                Foreground="{DynamicResource TextBrush}"
                                FontWeight="SemiBold" />
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_CustomIcons_Hint}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_CustomIcons_Hint}"
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.75"
                                TextWrapping="Wrap"
@@ -196,7 +196,7 @@
                     </WrapPanel>
 
                     <Button x:Name="OpenIconsFolderButton"
-                            Content="{DynamicResource LOCPlayAch_GameOptions_CustomIcons_OpenFolderButton}"
+                            Content="{DynamicResource LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton}"
                             Command="{Binding OpenIconsFolderCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"
                             HorizontalAlignment="Right"

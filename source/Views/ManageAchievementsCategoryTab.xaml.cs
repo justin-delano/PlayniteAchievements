@@ -14,17 +14,17 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsCategoryTab : UserControl, IFullscreenControllerNavigable
+    public partial class ManageAchievementsCategoryTab : UserControl, IFullscreenControllerNavigable
     {
         private DataGridRow _pendingRightClickRow;
 
-        public GameOptionsCategoryTab(GameOptionsCategoryViewModel viewModel)
+        public ManageAchievementsCategoryTab(ManageAchievementsCategoryViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         }
 
-        private GameOptionsCategoryViewModel ViewModel => DataContext as GameOptionsCategoryViewModel;
+        private ManageAchievementsCategoryViewModel ViewModel => DataContext as ManageAchievementsCategoryViewModel;
 
         private void ApplyBulkButton_Click(object sender, RoutedEventArgs e)
         {
@@ -136,7 +136,7 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void OpenRenameCategoryDialog(GameOptionsCategoryItem contextItem)
+        private void OpenRenameCategoryDialog(ManageAchievementsCategoryItem contextItem)
         {
             if (ViewModel == null)
             {
@@ -152,7 +152,7 @@ namespace PlayniteAchievements.Views
             {
                 API.Instance.Dialogs.ShowMessage(
                     L(
-                        "LOCPlayAch_GameOptions_Category_RenameDialog_NoLabels",
+                        "LOCPlayAch_ManageAchievements_Category_RenameDialog_NoLabels",
                         "No category labels are available to rename."),
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
@@ -164,7 +164,7 @@ namespace PlayniteAchievements.Views
             var dialog = new RenameCategoryLabelDialog(labels, preferredSource);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 L(
-                    "LOCPlayAch_GameOptions_Category_RenameDialog_Title",
+                    "LOCPlayAch_ManageAchievements_Category_RenameDialog_Title",
                     "Rename Category Label"),
                 dialog,
                 new WindowOptions
@@ -204,7 +204,7 @@ namespace PlayniteAchievements.Views
             }
 
             var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(source);
-            if (!(row?.DataContext is GameOptionsCategoryItem item))
+            if (!(row?.DataContext is ManageAchievementsCategoryItem item))
             {
                 return;
             }
@@ -316,8 +316,8 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            var item = CategoryDataGrid?.SelectedItem as GameOptionsCategoryItem
-                       ?? CategoryDataGrid?.CurrentItem as GameOptionsCategoryItem;
+            var item = CategoryDataGrid?.SelectedItem as ManageAchievementsCategoryItem
+                       ?? CategoryDataGrid?.CurrentItem as ManageAchievementsCategoryItem;
             if (item == null || !item.CanReveal)
             {
                 return false;
@@ -374,7 +374,7 @@ namespace PlayniteAchievements.Views
 
         private bool OpenContextMenuForRow(DataGridRow row, bool useControllerPlacement = false)
         {
-            if (!(row?.DataContext is GameOptionsCategoryItem item))
+            if (!(row?.DataContext is ManageAchievementsCategoryItem item))
             {
                 return false;
             }
@@ -396,7 +396,7 @@ namespace PlayniteAchievements.Views
             return true;
         }
 
-        private ContextMenu BuildRowContextMenu(GameOptionsCategoryItem contextItem)
+        private ContextMenu BuildRowContextMenu(ManageAchievementsCategoryItem contextItem)
         {
             var menu = new ContextMenu();
 
@@ -409,7 +409,7 @@ namespace PlayniteAchievements.Views
             {
                 var capturedType = categoryType;
                 addTypeMenu.Items.Add(CreateMenuItem(
-                    GameOptionsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
+                    ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(capturedType),
                     () => AddTypeFromContext(contextItem, capturedType)));
             }
             menu.Items.Add(addTypeMenu);
@@ -432,7 +432,7 @@ namespace PlayniteAchievements.Views
             return item;
         }
 
-        private void AddTypeFromContext(GameOptionsCategoryItem contextItem, string categoryType)
+        private void AddTypeFromContext(ManageAchievementsCategoryItem contextItem, string categoryType)
         {
             if (ViewModel == null)
             {
@@ -448,7 +448,7 @@ namespace PlayniteAchievements.Views
             ViewModel.AddCategoryTypesToSelection(rows, new[] { categoryType });
         }
 
-        private void SetLabelFromContext(GameOptionsCategoryItem contextItem)
+        private void SetLabelFromContext(ManageAchievementsCategoryItem contextItem)
         {
             if (ViewModel == null)
             {
@@ -464,12 +464,12 @@ namespace PlayniteAchievements.Views
             var inputText = contextItem?.CategoryDisplay ?? string.Empty;
             var inputDialog = new TextInputDialog(
                 L(
-                    "LOCPlayAch_GameOptions_Category_Context_SetLabelHint",
+                    "LOCPlayAch_ManageAchievements_Category_Context_SetLabelHint",
                     "Enter a category label for the selected achievements."),
                 inputText);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 L(
-                    "LOCPlayAch_GameOptions_Category_Context_SetLabelTitle",
+                    "LOCPlayAch_ManageAchievements_Category_Context_SetLabelTitle",
                     "Set Category Label"),
                 inputDialog,
                 new WindowOptions
@@ -494,7 +494,7 @@ namespace PlayniteAchievements.Views
             ViewModel.SetCategoryLabelForSelection(rows, inputText);
         }
 
-        private void ClearRowsFromContext(GameOptionsCategoryItem contextItem)
+        private void ClearRowsFromContext(ManageAchievementsCategoryItem contextItem)
         {
             if (ViewModel == null)
             {
@@ -515,19 +515,19 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private List<GameOptionsCategoryItem> ResolveActionRows(GameOptionsCategoryItem contextItem)
+        private List<ManageAchievementsCategoryItem> ResolveActionRows(ManageAchievementsCategoryItem contextItem)
         {
             if (ViewModel == null)
             {
-                return new List<GameOptionsCategoryItem>();
+                return new List<ManageAchievementsCategoryItem>();
             }
 
             var selectedRows = ViewModel.GetAllSelectedRows();
             if (selectedRows.Count == 0)
             {
                 return contextItem == null
-                    ? new List<GameOptionsCategoryItem>()
-                    : new List<GameOptionsCategoryItem> { contextItem };
+                    ? new List<ManageAchievementsCategoryItem>()
+                    : new List<ManageAchievementsCategoryItem> { contextItem };
             }
 
             if (contextItem == null || contextItem.IsSelected)
@@ -535,12 +535,12 @@ namespace PlayniteAchievements.Views
                 return selectedRows;
             }
 
-            return new List<GameOptionsCategoryItem> { contextItem };
+            return new List<ManageAchievementsCategoryItem> { contextItem };
         }
 
         private void RowSelectionCheckBox_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is CheckBox checkBox && checkBox.DataContext is GameOptionsCategoryItem item)
+            if (sender is CheckBox checkBox && checkBox.DataContext is ManageAchievementsCategoryItem item)
             {
                 item.IsSelected = checkBox.IsChecked == true;
             }

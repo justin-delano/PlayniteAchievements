@@ -2,9 +2,9 @@ using System.Windows.Controls;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsOverridesTab : UserControl
+    public partial class ManageAchievementsOverviewTab : UserControl
     {
-        public GameOptionsOverridesTab()
+        public ManageAchievementsOverviewTab()
         {
             InitializeComponent();
         }

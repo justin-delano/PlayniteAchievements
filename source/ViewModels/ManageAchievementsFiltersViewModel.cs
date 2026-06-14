@@ -21,15 +21,15 @@ namespace PlayniteAchievements.ViewModels
         Unfiltered
     }
 
-    public sealed class GameOptionsFiltersViewModel : ObservableObject
+    public sealed class ManageAchievementsFiltersViewModel : ObservableObject
     {
         private readonly Guid _gameId;
         private readonly AchievementOverridesService _achievementOverridesService;
-        private readonly GameOptionsDataSnapshotProvider _gameDataSnapshotProvider;
+        private readonly ManageAchievementsDataSnapshotProvider _gameDataSnapshotProvider;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
 
-        private List<GameOptionsFilterItem> _allRows = new List<GameOptionsFilterItem>();
+        private List<ManageAchievementsFilterItem> _allRows = new List<ManageAchievementsFilterItem>();
         private List<string> _canonicalCategoryLabelFilterOptions = new List<string>();
         private readonly HashSet<string> _selectedCategoryLabelFilters =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -39,10 +39,10 @@ namespace PlayniteAchievements.ViewModels
         private string _searchText = string.Empty;
         private FilterStateOption _selectedFilterOption;
 
-        public GameOptionsFiltersViewModel(
+        public ManageAchievementsFiltersViewModel(
             Guid gameId,
             AchievementOverridesService achievementOverridesService,
-            GameOptionsDataSnapshotProvider gameDataSnapshotProvider,
+            ManageAchievementsDataSnapshotProvider gameDataSnapshotProvider,
             PlayniteAchievementsSettings settings,
             ILogger logger)
         {
@@ -52,7 +52,7 @@ namespace PlayniteAchievements.ViewModels
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
 
-            AchievementRows = new ObservableCollection<GameOptionsFilterItem>();
+            AchievementRows = new ObservableCollection<ManageAchievementsFilterItem>();
             FilterOptions = new ObservableCollection<FilterStateOption>(CreateFilterOptions());
             CategoryLabelFilterOptions = new ObservableCollection<string>();
             TypeFilterOptions = CreateCategoryTypeOptions(() =>
@@ -66,7 +66,7 @@ namespace PlayniteAchievements.ViewModels
             ReloadData();
         }
 
-        public ObservableCollection<GameOptionsFilterItem> AchievementRows { get; }
+        public ObservableCollection<ManageAchievementsFilterItem> AchievementRows { get; }
 
         public ObservableCollection<FilterStateOption> FilterOptions { get; }
 
@@ -230,7 +230,7 @@ namespace PlayniteAchievements.ViewModels
                         return null;
                     }
 
-                    var item = new GameOptionsFilterItem(
+                    var item = new ManageAchievementsFilterItem(
                         filteredApiNames.Contains(apiName),
                         summaryFilteredApiNames.Contains(apiName),
                         OnRowFilterChanged)
@@ -280,7 +280,7 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed loading filter rows for gameId={_gameId}");
-                _allRows = new List<GameOptionsFilterItem>();
+                _allRows = new List<ManageAchievementsFilterItem>();
                 _canonicalCategoryLabelFilterOptions = new List<string>();
                 CollectionHelper.SynchronizeCollection(AchievementRows, _allRows);
                 CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, new List<string>());
@@ -356,7 +356,7 @@ namespace PlayniteAchievements.ViewModels
             return true;
         }
 
-        private void OnRowFilterChanged(GameOptionsFilterItem item)
+        private void OnRowFilterChanged(ManageAchievementsFilterItem item)
         {
             if (_isUpdatingRows)
             {
@@ -579,7 +579,7 @@ namespace PlayniteAchievements.ViewModels
                 AchievementCategoryTypeHelper.AllowedCategoryTypes
                     .Select(type => new CategoryTypeSelectionOption(
                         type,
-                        GameOptionsCategoryViewModel.GetCategoryTypeDisplayName(type))));
+                        ManageAchievementsCategoryViewModel.GetCategoryTypeDisplayName(type))));
 
             foreach (var option in options)
             {
@@ -600,9 +600,9 @@ namespace PlayniteAchievements.ViewModels
             return new[]
             {
                 new FilterStateOption(AchievementFilterStateFilter.All, L("LOCPlayAch_Common_All", "All")),
-                new FilterStateOption(AchievementFilterStateFilter.FilteredOut, L("LOCPlayAch_GameOptions_Filters_FilteredOut", "Filtered Out")),
-                new FilterStateOption(AchievementFilterStateFilter.FilteredOutOfSummaries, L("LOCPlayAch_GameOptions_Filters_FilteredOutOfSummaries", "Filtered Out of Summaries")),
-                new FilterStateOption(AchievementFilterStateFilter.Unfiltered, L("LOCPlayAch_GameOptions_Filters_Unfiltered", "Unfiltered"))
+                new FilterStateOption(AchievementFilterStateFilter.FilteredOut, L("LOCPlayAch_ManageAchievements_Filters_FilteredOut", "Filtered Out")),
+                new FilterStateOption(AchievementFilterStateFilter.FilteredOutOfSummaries, L("LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries", "Filtered Out of Summaries")),
+                new FilterStateOption(AchievementFilterStateFilter.Unfiltered, L("LOCPlayAch_ManageAchievements_Filters_Unfiltered", "Unfiltered"))
             };
         }
 
@@ -613,16 +613,16 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 
-    public sealed class GameOptionsFilterItem : AchievementDisplayItem
+    public sealed class ManageAchievementsFilterItem : AchievementDisplayItem
     {
-        private readonly Action<GameOptionsFilterItem> _filterChanged;
+        private readonly Action<ManageAchievementsFilterItem> _filterChanged;
         private bool _isFiltered;
         private bool _isSummaryFiltered;
 
-        public GameOptionsFilterItem(
+        public ManageAchievementsFilterItem(
             bool isFiltered,
             bool isSummaryFiltered,
-            Action<GameOptionsFilterItem> filterChanged)
+            Action<ManageAchievementsFilterItem> filterChanged)
         {
             _isFiltered = isFiltered;
             _isSummaryFiltered = isSummaryFiltered;

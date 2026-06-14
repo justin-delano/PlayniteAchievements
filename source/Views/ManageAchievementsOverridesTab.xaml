@@ -1,4 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.GameOptionsOverridesTab"
+<UserControl x:Class="PlayniteAchievements.Views.ManageAchievementsOverridesTab"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -31,9 +31,9 @@
         <StackPanel Margin="0">
             <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Overrides_ExclusionHeader}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHeader}"
                                Style="{StaticResource SectionHeaderStyle}" />
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Overrides_ExclusionHint}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHint}"
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.75"
                                TextWrapping="Wrap"
@@ -52,9 +52,9 @@
 
             <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Overrides_SummaryExclusionHeader}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader}"
                                Style="{StaticResource SectionHeaderStyle}" />
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Overrides_SummaryExclusionHint}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint}"
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.75"
                                TextWrapping="Wrap"
@@ -73,9 +73,9 @@
 
             <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Overrides_LockedIconsHeader}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_LockedIconsHeader}"
                                Style="{StaticResource SectionHeaderStyle}" />
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Overrides_LockedIconsHint}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint}"
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.75"
                                TextWrapping="Wrap"
@@ -84,7 +84,7 @@
                                Foreground="{DynamicResource TextBrush}"
                                Margin="0,8,0,0"
                                TextWrapping="Wrap" />
-                    <CheckBox Content="{DynamicResource LOCPlayAch_GameOptions_Overrides_LockedIconsCheckbox}"
+                    <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_LockedIconsCheckbox}"
                               IsChecked="{Binding UseSeparateLockedIconsOverride}"
                               FontWeight="SemiBold"
                               Margin="0,10,0,0" />
@@ -94,9 +94,9 @@
             <Border Style="{StaticResource CardBorderStyle}"
                     Margin="0,0,0,12">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Overrides_ProviderHeader}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ProviderHeader}"
                                Style="{StaticResource SectionHeaderStyle}" />
-                    <TextBlock Text="{DynamicResource LOCPlayAch_GameOptions_Overrides_ProviderHint}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ProviderHint}"
                                Foreground="{DynamicResource TextBrush}"
                                Opacity="0.75"
                                TextWrapping="Wrap"

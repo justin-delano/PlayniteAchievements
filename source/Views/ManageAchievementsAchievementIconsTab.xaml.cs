@@ -17,7 +17,7 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsAchievementIconsTab : UserControl, IFullscreenControllerNavigable
+    public partial class ManageAchievementsAchievementIconsTab : UserControl, IFullscreenControllerNavigable
     {
         private const double SmoothMouseWheelDivisor = 3.0;
         private static readonly Regex HttpUrlRegex = new Regex(@"https?://[^\s""'<>]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -32,7 +32,7 @@ namespace PlayniteAchievements.Views
             ".tiff"
         };
 
-        private readonly GameOptionsAchievementIconsViewModel _viewModel;
+        private readonly ManageAchievementsAchievementIconsViewModel _viewModel;
         private ScrollViewer _achievementCardsScrollViewer;
 
         private enum IconEditorControlKind
@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Views
             BrowseButton
         }
 
-        public GameOptionsAchievementIconsTab(GameOptionsAchievementIconsViewModel viewModel)
+        public ManageAchievementsAchievementIconsTab(ManageAchievementsAchievementIconsViewModel viewModel)
         {
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
             DataContext = _viewModel;

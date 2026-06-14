@@ -15,9 +15,9 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsAchievementOrderTab : UserControl, IFullscreenControllerNavigable
+    public partial class ManageAchievementsAchievementOrderTab : UserControl, IFullscreenControllerNavigable
     {
-        private const string DragDataFormat = "PlayniteAchievements.GameOptionsAchievementOrderRows";
+        private const string DragDataFormat = "PlayniteAchievements.ManageAchievementsAchievementOrderRows";
         private const double AutoScrollEdgeThreshold = 64;
         private const double AutoScrollMinStep = 2;
         private const double AutoScrollVariableStep = 14;
@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Views
         [DllImport("user32.dll")]
         private static extern bool GetCursorPos(out POINT lpPoint);
 
-        public GameOptionsAchievementOrderTab(GameOptionsAchievementOrderViewModel viewModel)
+        public ManageAchievementsAchievementOrderTab(ManageAchievementsAchievementOrderViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
@@ -53,7 +53,7 @@ namespace PlayniteAchievements.Views
             _autoScrollTimer.Tick += AutoScrollTimer_Tick;
         }
 
-        private GameOptionsAchievementOrderViewModel ViewModel => DataContext as GameOptionsAchievementOrderViewModel;
+        private ManageAchievementsAchievementOrderViewModel ViewModel => DataContext as ManageAchievementsAchievementOrderViewModel;
 
         public void RefreshData()
         {

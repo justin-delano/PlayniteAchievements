@@ -303,7 +303,8 @@ namespace PlayniteAchievements
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
                         _logger,
-                        _windowService.RunRefreshWithGlobalProgressAsync);
+                        _windowService.RunRefreshWithGlobalProgressAsync,
+                        gameId => _windowService.OpenManageAchievementsView(gameId, ManageAchievementsTab.Overview));
 
                     SubscribeDatabaseEventHandlers();
 

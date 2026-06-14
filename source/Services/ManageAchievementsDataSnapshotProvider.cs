@@ -3,7 +3,7 @@ using System;
 
 namespace PlayniteAchievements.Services
 {
-    public sealed class GameOptionsDataSnapshotProvider
+    public sealed class ManageAchievementsDataSnapshotProvider
     {
         private readonly Guid _gameId;
         private readonly AchievementDataService _achievementDataService;
@@ -12,7 +12,7 @@ namespace PlayniteAchievements.Services
         private GameAchievementData _hydratedGameData;
         private GameAchievementData _rawGameData;
 
-        public GameOptionsDataSnapshotProvider(
+        public ManageAchievementsDataSnapshotProvider(
             Guid gameId,
             AchievementDataService achievementDataService)
         {

@@ -1,4 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.GameOptionsControl"
+<UserControl x:Class="PlayniteAchievements.Views.ManageAchievementsControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -91,7 +91,7 @@
                 </Border>
 
                 <TextBlock Grid.Row="4"
-                           Text="{DynamicResource LOCPlayAch_Menu_GameOptions}"
+                           Text="{DynamicResource LOCPlayAch_Menu_ManageAchievements}"
                            Foreground="{DynamicResource TextBrush}"
                            Opacity="0.65"
                            FontWeight="SemiBold"
@@ -99,53 +99,53 @@
 
                 <StackPanel Grid.Row="5">
                     <RadioButton x:Name="OverviewTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_Overview}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Overview}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Overview}" />
                     <RadioButton x:Name="ManualTrackingTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_ManualTracking}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_ManualTracking}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding ShowManualTrackingTab, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=ManualTracking}" />
                     <RadioButton x:Name="CapstonesTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_Capstones}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Capstones}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Capstones}" />
                     <RadioButton x:Name="CategoryTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_Category}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Category}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Category}" />
                     <RadioButton x:Name="FiltersTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_Filters}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Filters}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Filters}" />
                     <RadioButton x:Name="NotesTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_Notes}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Notes}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Notes}" />
                     <RadioButton x:Name="AchievementOrderTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_AchievementOrder}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_AchievementOrder}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=AchievementOrder}" />
                     <RadioButton x:Name="CustomIconsTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_CustomIcons}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_CustomIcons}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=CustomIcons}" />
                     <RadioButton x:Name="OverridesTabButton"
-                                 Content="{DynamicResource LOCPlayAch_GameOptions_Tab_Overrides}"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Overrides}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Overrides}" />
                 </StackPanel>
             </Grid>
         </Border>
 
-        <Border x:Name="GameOptionsContentHost"
+        <Border x:Name="ManageAchievementsContentHost"
                 Grid.Column="2"
                 Background="{DynamicResource ControlBackgroundBrush}"
                 BorderBrush="{DynamicResource NormalBorderBrush}"
@@ -153,9 +153,9 @@
                 CornerRadius="6"
                 Padding="12">
             <Grid>
-                <views:GameOptionsOverviewTab x:Name="OverviewTabControl">
-                    <views:GameOptionsOverviewTab.Style>
-                        <Style TargetType="{x:Type views:GameOptionsOverviewTab}">
+                <views:ManageAchievementsOverviewTab x:Name="OverviewTabControl">
+                    <views:ManageAchievementsOverviewTab.Style>
+                        <Style TargetType="{x:Type views:ManageAchievementsOverviewTab}">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SelectedTab}" Value="Overview">
@@ -163,12 +163,12 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </views:GameOptionsOverviewTab.Style>
-                </views:GameOptionsOverviewTab>
+                    </views:ManageAchievementsOverviewTab.Style>
+                </views:ManageAchievementsOverviewTab>
 
-                <views:GameOptionsOverridesTab x:Name="OverridesTabControl">
-                    <views:GameOptionsOverridesTab.Style>
-                        <Style TargetType="{x:Type views:GameOptionsOverridesTab}">
+                <views:ManageAchievementsOverridesTab x:Name="OverridesTabControl">
+                    <views:ManageAchievementsOverridesTab.Style>
+                        <Style TargetType="{x:Type views:ManageAchievementsOverridesTab}">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding SelectedTab}" Value="Overrides">
@@ -176,8 +176,8 @@
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </views:GameOptionsOverridesTab.Style>
-                </views:GameOptionsOverridesTab>
+                    </views:ManageAchievementsOverridesTab.Style>
+                </views:ManageAchievementsOverridesTab>
 
                 <Grid>
                     <Grid.Style>

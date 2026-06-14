@@ -1,6 +1,6 @@
 namespace PlayniteAchievements.ViewModels
 {
-    public enum GameOptionsTab
+    public enum ManageAchievementsTab
     {
         Overview,
         Overrides,

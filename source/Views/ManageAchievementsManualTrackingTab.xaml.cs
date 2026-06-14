@@ -13,13 +13,13 @@ using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsManualTrackingTab : UserControl, IFullscreenControllerNavigable
+    public partial class ManageAchievementsManualTrackingTab : UserControl, IFullscreenControllerNavigable
     {
         public static readonly DependencyProperty UnlinkCommandProperty =
             DependencyProperty.Register(
                 nameof(UnlinkCommand),
                 typeof(ICommand),
-                typeof(GameOptionsManualTrackingTab),
+                typeof(ManageAchievementsManualTrackingTab),
                 new PropertyMetadata(null));
 
         public ICommand UnlinkCommand
@@ -30,7 +30,7 @@ namespace PlayniteAchievements.Views
 
         private readonly ManualAchievementsViewModel _viewModel;
 
-        public GameOptionsManualTrackingTab(ManualAchievementsViewModel viewModel)
+        public ManageAchievementsManualTrackingTab(ManualAchievementsViewModel viewModel)
         {
             InitializeComponent();
             _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));

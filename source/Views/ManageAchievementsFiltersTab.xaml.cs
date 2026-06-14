@@ -12,15 +12,15 @@ using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class GameOptionsFiltersTab : UserControl, IFullscreenControllerNavigable
+    public partial class ManageAchievementsFiltersTab : UserControl, IFullscreenControllerNavigable
     {
-        public GameOptionsFiltersTab(GameOptionsFiltersViewModel viewModel)
+        public ManageAchievementsFiltersTab(ManageAchievementsFiltersViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         }
 
-        private GameOptionsFiltersViewModel ViewModel => DataContext as GameOptionsFiltersViewModel;
+        private ManageAchievementsFiltersViewModel ViewModel => DataContext as ManageAchievementsFiltersViewModel;
 
         public void RefreshData()
         {
@@ -97,7 +97,7 @@ namespace PlayniteAchievements.Views
             }
 
             var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(source);
-            if (!(row?.DataContext is GameOptionsFilterItem item))
+            if (!(row?.DataContext is ManageAchievementsFilterItem item))
             {
                 return;
             }

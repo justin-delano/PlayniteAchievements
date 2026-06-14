@@ -17,7 +17,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public class SingleGameControlModel : ObservableObject, IDisposable
+    public class ViewAchievementsViewModel : ObservableObject, IDisposable
     {
         private readonly RefreshRuntime _refreshService;
         private readonly AchievementDataService _achievementDataService;
@@ -42,7 +42,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly HashSet<string> _selectedCategoryTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedCategoryLabelFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-        public SingleGameControlModel(
+        public ViewAchievementsViewModel(
             Guid gameId,
             RefreshRuntime refreshRuntime,
             AchievementDataService achievementDataService,

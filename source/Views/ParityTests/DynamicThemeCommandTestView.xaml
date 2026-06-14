@@ -61,9 +61,14 @@
                             Click="RequestUpdate_Click"
                             MinWidth="120"
                             Margin="0,0,8,0" />
-                    <Button Content="Open Game View"
-                            Click="OpenGameView_Click"
+                    <Button Content="Open View Achievements"
+                            Click="OpenViewAchievements_Click"
                             MinWidth="120"
+                            Margin="0,0,8,0"
+                            IsEnabled="{Binding HasSelectedGame, Mode=OneWay}" />
+                    <Button Content="Open Manage Achievements"
+                            Click="OpenManageAchievements_Click"
+                            MinWidth="170"
                             IsEnabled="{Binding HasSelectedGame, Mode=OneWay}" />
                 </WrapPanel>
             </StackPanel>

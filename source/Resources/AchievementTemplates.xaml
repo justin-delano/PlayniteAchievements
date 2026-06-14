@@ -160,20 +160,20 @@
         </Style.Triggers>
     </Style>
 
-    <Style x:Key="GameOptionsDataGridCellStyle"
+    <Style x:Key="ManageAchievementsDataGridCellStyle"
            TargetType="DataGridCell"
            BasedOn="{StaticResource AchievementCellStyle}">
     </Style>
 
-    <Style x:Key="GameOptionsColumnHeaderStyle"
+    <Style x:Key="ManageAchievementsColumnHeaderStyle"
         TargetType="{x:Type DataGridColumnHeader}"
         BasedOn="{StaticResource AchievementColumnHeaderStyle}">
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
     </Style>
 
-    <Style x:Key="GameOptionsControllerCellStyle"
+    <Style x:Key="ManageAchievementsControllerCellStyle"
            TargetType="DataGridCell"
-           BasedOn="{StaticResource GameOptionsDataGridCellStyle}">
+           BasedOn="{StaticResource ManageAchievementsDataGridCellStyle}">
         <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Template">
@@ -201,9 +201,9 @@
         </Style.Triggers>
     </Style>
 
-    <Style x:Key="GameOptionsIconCellStyle"
+    <Style x:Key="ManageAchievementsIconCellStyle"
            TargetType="DataGridCell"
-           BasedOn="{StaticResource GameOptionsControllerCellStyle}">
+           BasedOn="{StaticResource ManageAchievementsControllerCellStyle}">
         <Setter Property="Padding" Value="6"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -222,9 +222,9 @@
         </Setter>
     </Style>
 
-    <Style x:Key="GameOptionsCheckBoxCellStyle"
+    <Style x:Key="ManageAchievementsCheckBoxCellStyle"
            TargetType="DataGridCell"
-           BasedOn="{StaticResource GameOptionsControllerCellStyle}">
+           BasedOn="{StaticResource ManageAchievementsControllerCellStyle}">
         <Setter Property="Padding" Value="0,6"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -293,7 +293,7 @@
         <Setter Property="MinHeight" Value="66"/>
     </Style>
 
-    <Style x:Key="GameOptionsDataGridRowStyle"
+    <Style x:Key="ManageAchievementsDataGridRowStyle"
            TargetType="DataGridRow"
            BasedOn="{StaticResource AchievementRowStyle}">
         <Setter Property="Focusable" Value="False"/>
@@ -318,7 +318,7 @@
            BasedOn="{StaticResource WrappedDataGridTextStyle}">
     </Style>
 
-    <!-- Shared selector button + menu item styles (overview/single-game/game-options) -->
+    <!-- Shared selector button + menu item styles (overview/view-achievements/manage-achievements) -->
     <Style x:Key="AchievementSelectorButtonStyle"
            TargetType="Button"
            BasedOn="{StaticResource {x:Type Button}}">

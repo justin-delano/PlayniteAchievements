@@ -20,24 +20,24 @@ namespace PlayniteAchievements.ViewModels
         WithoutNotes
     }
 
-    public sealed class GameOptionsNotesViewModel : ObservableObject
+    public sealed class ManageAchievementsNotesViewModel : ObservableObject
     {
         private readonly Guid _gameId;
         private readonly AchievementOverridesService _achievementOverridesService;
-        private readonly GameOptionsDataSnapshotProvider _gameDataSnapshotProvider;
+        private readonly ManageAchievementsDataSnapshotProvider _gameDataSnapshotProvider;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
 
-        private List<GameOptionsNoteItem> _allRows = new List<GameOptionsNoteItem>();
+        private List<ManageAchievementsNoteItem> _allRows = new List<ManageAchievementsNoteItem>();
         private bool _hasAchievements;
         private bool _hasCustomNotes;
         private string _searchText = string.Empty;
         private NoteStateOption _selectedNoteOption;
 
-        public GameOptionsNotesViewModel(
+        public ManageAchievementsNotesViewModel(
             Guid gameId,
             AchievementOverridesService achievementOverridesService,
-            GameOptionsDataSnapshotProvider gameDataSnapshotProvider,
+            ManageAchievementsDataSnapshotProvider gameDataSnapshotProvider,
             PlayniteAchievementsSettings settings,
             ILogger logger)
         {
@@ -47,7 +47,7 @@ namespace PlayniteAchievements.ViewModels
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
 
-            AchievementRows = new ObservableCollection<GameOptionsNoteItem>();
+            AchievementRows = new ObservableCollection<ManageAchievementsNoteItem>();
             NoteOptions = new ObservableCollection<NoteStateOption>(CreateNoteOptions());
             _selectedNoteOption = NoteOptions.FirstOrDefault();
             ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty);
@@ -55,7 +55,7 @@ namespace PlayniteAchievements.ViewModels
             ReloadData();
         }
 
-        public ObservableCollection<GameOptionsNoteItem> AchievementRows { get; }
+        public ObservableCollection<ManageAchievementsNoteItem> AchievementRows { get; }
 
         public ObservableCollection<NoteStateOption> NoteOptions { get; }
 
@@ -146,7 +146,7 @@ namespace PlayniteAchievements.ViewModels
                     }
 
                     notes.TryGetValue(apiName, out var note);
-                    var item = new GameOptionsNoteItem
+                    var item = new ManageAchievementsNoteItem
                     {
                         ProviderKey = projected.ProviderKey,
                         GameName = projected.GameName,
@@ -193,14 +193,14 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed loading note rows for gameId={_gameId}");
-                _allRows = new List<GameOptionsNoteItem>();
+                _allRows = new List<ManageAchievementsNoteItem>();
                 CollectionHelper.SynchronizeCollection(AchievementRows, _allRows);
                 HasAchievements = false;
                 HasCustomNotes = false;
             }
         }
 
-        public void SetNote(GameOptionsNoteItem item, string note)
+        public void SetNote(ManageAchievementsNoteItem item, string note)
         {
             if (item == null || string.IsNullOrWhiteSpace(item.ApiName))
             {
@@ -321,8 +321,8 @@ namespace PlayniteAchievements.ViewModels
             return new[]
             {
                 new NoteStateOption(AchievementNoteStateFilter.All, L("LOCPlayAch_Common_All", "All")),
-                new NoteStateOption(AchievementNoteStateFilter.WithNotes, L("LOCPlayAch_GameOptions_Notes_WithNotes", "With Notes")),
-                new NoteStateOption(AchievementNoteStateFilter.WithoutNotes, L("LOCPlayAch_GameOptions_Notes_WithoutNotes", "Without Notes"))
+                new NoteStateOption(AchievementNoteStateFilter.WithNotes, L("LOCPlayAch_ManageAchievements_Notes_WithNotes", "With Notes")),
+                new NoteStateOption(AchievementNoteStateFilter.WithoutNotes, L("LOCPlayAch_ManageAchievements_Notes_WithoutNotes", "Without Notes"))
             };
         }
 
@@ -333,13 +333,13 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 
-    public sealed class GameOptionsNoteItem : AchievementDisplayItem
+    public sealed class ManageAchievementsNoteItem : AchievementDisplayItem
     {
         public string NotePreview => AchievementNoteHelper.GetPreviewText(AchievementNote);
 
         public string NoteStatusText => HasAchievementNote
-            ? L("LOCPlayAch_GameOptions_Notes_HasNote", "Note added")
-            : L("LOCPlayAch_GameOptions_Notes_NoNote", "No note");
+            ? L("LOCPlayAch_ManageAchievements_Notes_HasNote", "Note added")
+            : L("LOCPlayAch_ManageAchievements_Notes_NoNote", "No note");
 
         public string CategoryDisplay => AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(CategoryLabel);
 

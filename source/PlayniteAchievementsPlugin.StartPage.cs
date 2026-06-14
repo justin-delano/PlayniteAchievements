@@ -232,7 +232,7 @@ namespace PlayniteAchievements
             if (data is AchievementDisplayItem || data is RecentAchievementItem)
             {
                 menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewAchievements",
-                    () => OpenSingleGameAchievementsView(gameId)));
+                    () => OpenViewAchievementsWindow(gameId)));
                 menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
                     () => OpenStartPageGameInLibrary(gameId)));
             }
@@ -243,7 +243,7 @@ namespace PlayniteAchievements
         private void AddStartPageGameRowMenuItems(ContextMenu menu, Guid gameId, FrameworkElement resourceOwner)
         {
             menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewAchievements",
-                () => OpenSingleGameAchievementsView(gameId)));
+                () => OpenViewAchievementsWindow(gameId)));
 
             if (!IsRefreshInProgress())
             {
@@ -260,8 +260,8 @@ namespace PlayniteAchievements
             menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
                 () => OpenStartPageGameInLibrary(gameId)));
             menu.Items.Add(new Separator());
-            menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_GameOptions",
-                () => OpenGameOptionsView(gameId)));
+            menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ManageAchievements",
+                () => OpenManageAchievementsView(gameId)));
 
             var game = PlayniteApi?.Database?.Games?.Get(gameId);
             if (game != null)
