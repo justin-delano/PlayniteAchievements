@@ -202,19 +202,20 @@ namespace PlayniteAchievements.Views
             if (e.PropertyName != nameof(OverviewViewModel.IsGameSelected) &&
                 e.PropertyName != nameof(OverviewViewModel.IsSelectedGameContentReady)) return;
 
-            // Defer grid operations to Render priority to batch with visibility change
-            // This prevents flicker by ensuring all layout happens in one render pass
+            // Defer sort updates to Render priority so they batch with the panel visibility change.
+            // The selected-game grid normalizes from its visibility/size events; refreshing here
+            // reapplies persisted widths and produces a second visible layout pass.
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 ResetAchievementsSortDirection();
 
-                if (!_viewModel.IsGameSelected)
+                if (_viewModel.IsGameSelected)
                 {
-                    ResetRecentAchievementsToDefaultSort();
+                    return;
                 }
 
+                ResetRecentAchievementsToDefaultSort();
                 RecentAchievementsDataGrid?.Refresh();
-                GameAchievementsGrid?.Refresh();
             }), DispatcherPriority.Render);
         }
 
