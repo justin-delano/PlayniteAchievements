@@ -416,7 +416,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">Anwenden &amp; synchronisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">Versteckte Spiele in Massenaktualisierungen einschließen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description">Controls whether bulk refreshes include games marked hidden in Playnite. Single-game and other explicit user-targeted refreshes still include hidden games.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">Balkendiagramm</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">Histogramm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Schaltfläche</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_ProgressClearing">Entferne zwischengespeicherte Erfolgsdaten...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_ClearDescription">Remove cached achievement data. Refresh again to rebuild it from providers.</sys:String>
@@ -499,7 +499,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Datenbank zur Fehleranalyse als CSV exportieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV exportieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ForceHashIndexRebuild">Neuerstellung des Hash-Index erzwingen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Maximalalter des Hash-Index (Tage)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_HashIndexMaxAgeDays">Maximales Alter des Hash-Indexes (Tage)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements">Sichtbarkeit verborgener Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HiddenAchievements_Description">Steuert, welche Elemente versteckter Erfolge verborgen bleiben, bis sie manuell enthüllt werden.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_HoursBetweenUpdates">Aktualisierungsintervall in Stunden:</sys:String>
@@ -638,7 +638,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Umrandung für Vervollständigung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(verborgener Erfolg)&quot; anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten auf freigeschalteten Symbolen anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Übersichtsdiagramme anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Histogramm für Erfolge anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion">Plattform, Spielzeit und Region anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Plakette für Sammelwertung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Plakette für Prestigewertung anzeigen</sys:String>
@@ -657,7 +657,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Handhabung kleiner Segmente</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exakt darstellen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact_Description">Exakte Darstellung der Segmente. Symbole für Segmente unter 5 % werden ausgeblendet, um Überlagerungen zu reduzieren.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description">Segmente unter 5 % in Kreisdiagrammen ausblenden.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Hide_Description">Segmente unter 5 % in Kreisdiagrammen verbergen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Note">The center percentage always uses exact counts, so it may differ from the visible pie when slices are hidden or rounded.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round">Runden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round_Description">Segmente unter 5 % auf 5 % aufrunden.</sys:String>
