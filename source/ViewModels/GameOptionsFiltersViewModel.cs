@@ -30,6 +30,9 @@ namespace PlayniteAchievements.ViewModels
         private readonly ILogger _logger;
 
         private List<GameOptionsFilterItem> _allRows = new List<GameOptionsFilterItem>();
+        private List<string> _canonicalCategoryLabelFilterOptions = new List<string>();
+        private readonly HashSet<string> _selectedCategoryLabelFilters =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _hasAchievements;
         private bool _hasCustomFilters;
         private bool _isUpdatingRows;
@@ -51,6 +54,12 @@ namespace PlayniteAchievements.ViewModels
 
             AchievementRows = new ObservableCollection<GameOptionsFilterItem>();
             FilterOptions = new ObservableCollection<FilterStateOption>(CreateFilterOptions());
+            CategoryLabelFilterOptions = new ObservableCollection<string>();
+            TypeFilterOptions = CreateCategoryTypeOptions(() =>
+            {
+                OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
+                ApplyFilter();
+            });
             _selectedFilterOption = FilterOptions.FirstOrDefault();
             ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty);
 
@@ -60,6 +69,10 @@ namespace PlayniteAchievements.ViewModels
         public ObservableCollection<GameOptionsFilterItem> AchievementRows { get; }
 
         public ObservableCollection<FilterStateOption> FilterOptions { get; }
+
+        public ObservableCollection<CategoryTypeSelectionOption> TypeFilterOptions { get; }
+
+        public ObservableCollection<string> CategoryLabelFilterOptions { get; }
 
         public RelayCommand ClearSearchCommand { get; }
 
@@ -99,6 +112,72 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public string SelectedCategoryTypeFilterText
+        {
+            get
+            {
+                var selected = GetSelectedCategoryTypeFilterValues();
+                return selected.Count == 0
+                    ? L("LOCPlayAch_Common_Label_Type", "Type")
+                    : string.Join(", ", selected);
+            }
+        }
+
+        public string SelectedCategoryLabelFilterText
+        {
+            get
+            {
+                if (_selectedCategoryLabelFilters.Count == 0)
+                {
+                    return L(
+                        "LOCPlayAch_Common_Label_Category",
+                        "Category");
+                }
+
+                var ordered = CategoryLabelFilterOptions
+                    .Where(label => _selectedCategoryLabelFilters.Contains(label))
+                    .ToList();
+                if (ordered.Count == 0)
+                {
+                    ordered = _selectedCategoryLabelFilters
+                        .OrderBy(label => label, StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                }
+
+                return string.Join(", ", ordered);
+            }
+        }
+
+        public bool IsCategoryLabelFilterSelected(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return false;
+            }
+
+            return _selectedCategoryLabelFilters.Contains(value.Trim());
+        }
+
+        public void SetCategoryLabelFilterSelected(string value, bool isSelected)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            var normalized = value.Trim();
+            var changed = isSelected
+                ? _selectedCategoryLabelFilters.Add(normalized)
+                : _selectedCategoryLabelFilters.Remove(normalized);
+            if (!changed)
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
+            ApplyFilter();
+        }
+
         public void ReloadData()
         {
             try
@@ -133,6 +212,10 @@ namespace PlayniteAchievements.ViewModels
                         .OrderBy(a => a.DisplayName ?? a.ApiName, StringComparer.OrdinalIgnoreCase)
                         .ToList();
                 }
+
+                _canonicalCategoryLabelFilterOptions = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
+                    orderedAchievements,
+                    achievement => ResolveEffectiveCategoryLabel(achievement, categoryOverrides));
 
                 _allRows = orderedAchievements.Select(a =>
                 {
@@ -192,12 +275,17 @@ namespace PlayniteAchievements.ViewModels
                 HasAchievements = _allRows.Count > 0;
                 RefreshCustomFilterState();
                 ApplyFilter();
+                RefreshCategoryLabelFilterOptions();
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed loading filter rows for gameId={_gameId}");
                 _allRows = new List<GameOptionsFilterItem>();
+                _canonicalCategoryLabelFilterOptions = new List<string>();
                 CollectionHelper.SynchronizeCollection(AchievementRows, _allRows);
+                CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, new List<string>());
+                _selectedCategoryLabelFilters.Clear();
+                OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
                 HasAchievements = false;
                 HasCustomFilters = false;
             }
@@ -221,6 +309,46 @@ namespace PlayniteAchievements.ViewModels
             finally
             {
                 _isUpdatingRows = false;
+            }
+
+            PersistCurrentFilters();
+            ApplyFilter();
+            return true;
+        }
+
+        public bool SetVisibleRowsFiltered(bool isFiltered)
+        {
+            var rows = AchievementRows
+                .Where(row => row != null)
+                .ToList();
+            if (rows.Count == 0)
+            {
+                return false;
+            }
+
+            var changed = false;
+            _isUpdatingRows = true;
+            try
+            {
+                foreach (var row in rows)
+                {
+                    if (row.IsFiltered == isFiltered)
+                    {
+                        continue;
+                    }
+
+                    row.SetFilterState(isFiltered, row.IsSummaryFiltered);
+                    changed = true;
+                }
+            }
+            finally
+            {
+                _isUpdatingRows = false;
+            }
+
+            if (!changed)
+            {
+                return false;
             }
 
             PersistCurrentFilters();
@@ -277,6 +405,35 @@ namespace PlayniteAchievements.ViewModels
                     (a.CategoryTypeDisplay?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0));
             }
 
+            var selectedTypeFilters = GetSelectedCategoryTypeFilterValues();
+            if (selectedTypeFilters.Count > 0)
+            {
+                var selectedTypeSet = new HashSet<string>(selectedTypeFilters, StringComparer.OrdinalIgnoreCase);
+                filtered = filtered.Where(a =>
+                {
+                    var rowTypes = AchievementCategoryTypeHelper.ParseValues(
+                        AchievementCategoryTypeHelper.NormalizeOrDefault(a.CategoryType));
+                    if (rowTypes.Count == 0)
+                    {
+                        return false;
+                    }
+
+                    return rowTypes.Any(selectedTypeSet.Contains);
+                });
+            }
+
+            if (_selectedCategoryLabelFilters.Count > 0)
+            {
+                var selectedCategorySet = new HashSet<string>(
+                    _selectedCategoryLabelFilters
+                        .Select(AchievementCategoryTypeHelper.NormalizeCategoryOrDefault)
+                        .Where(value => !string.IsNullOrWhiteSpace(value)),
+                    StringComparer.OrdinalIgnoreCase);
+                filtered = filtered.Where(a =>
+                    selectedCategorySet.Contains(
+                        AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel)));
+            }
+
             switch (SelectedFilterOption?.Value ?? AchievementFilterStateFilter.All)
             {
                 case AchievementFilterStateFilter.FilteredOut:
@@ -291,6 +448,38 @@ namespace PlayniteAchievements.ViewModels
             }
 
             CollectionHelper.SynchronizeCollection(AchievementRows, filtered.ToList());
+        }
+
+        private void RefreshCategoryLabelFilterOptions()
+        {
+            var labels = _allRows
+                .Where(row => row != null)
+                .Select(row => AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(row.CategoryLabel))
+                .Where(label => !string.IsNullOrWhiteSpace(label))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(label => label, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var labelSet = new HashSet<string>(labels, StringComparer.OrdinalIgnoreCase);
+            var categoryLabelFilterOptions = (_canonicalCategoryLabelFilterOptions ?? new List<string>())
+                .Where(label => !string.IsNullOrWhiteSpace(label) && labelSet.Contains(label))
+                .ToList();
+            foreach (var label in labels)
+            {
+                if (!categoryLabelFilterOptions.Contains(label, StringComparer.OrdinalIgnoreCase))
+                {
+                    categoryLabelFilterOptions.Add(label);
+                }
+            }
+
+            CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, categoryLabelFilterOptions);
+
+            if (PruneCategoryLabelFilterSelections(categoryLabelFilterOptions))
+            {
+                ApplyFilter();
+            }
+
+            OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
         }
 
         private Dictionary<string, string> GetCurrentCategoryOverrideMap()
@@ -361,6 +550,49 @@ namespace PlayniteAchievements.ViewModels
             }
 
             return AchievementCategoryTypeHelper.NormalizeOrDefault(achievement?.CategoryType);
+        }
+
+        private bool PruneCategoryLabelFilterSelections(IEnumerable<string> options)
+        {
+            var optionSet = new HashSet<string>(
+                (options ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value)),
+                StringComparer.OrdinalIgnoreCase);
+            return _selectedCategoryLabelFilters.RemoveWhere(value => !optionSet.Contains(value)) > 0;
+        }
+
+        private List<string> GetSelectedCategoryTypeFilterValues()
+        {
+            return GetSelectedCategoryTypeValues(TypeFilterOptions);
+        }
+
+        private static List<string> GetSelectedCategoryTypeValues(IEnumerable<CategoryTypeSelectionOption> options)
+        {
+            return (options ?? Enumerable.Empty<CategoryTypeSelectionOption>())
+                .Where(option => option?.IsSelected == true)
+                .Select(option => option.Value)
+                .ToList();
+        }
+
+        private ObservableCollection<CategoryTypeSelectionOption> CreateCategoryTypeOptions(Action onSelectionChanged)
+        {
+            var options = new ObservableCollection<CategoryTypeSelectionOption>(
+                AchievementCategoryTypeHelper.AllowedCategoryTypes
+                    .Select(type => new CategoryTypeSelectionOption(
+                        type,
+                        GameOptionsCategoryViewModel.GetCategoryTypeDisplayName(type))));
+
+            foreach (var option in options)
+            {
+                option.PropertyChanged += (_, args) =>
+                {
+                    if (string.Equals(args?.PropertyName, nameof(CategoryTypeSelectionOption.IsSelected), StringComparison.Ordinal))
+                    {
+                        onSelectionChanged?.Invoke();
+                    }
+                };
+            }
+
+            return options;
         }
 
         private static IEnumerable<FilterStateOption> CreateFilterOptions()
