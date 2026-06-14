@@ -43,11 +43,11 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsMessageAlt">Keine Unterstützung von Erfolgen durch dieses Spiel oder seiner Plattform.</sys:String>
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">Keine Erfolge gefunden</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Nicht authentifiziert</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Bezeichnung ändern...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Bezeichnung ändern</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Ausgewählte zurücksetzen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_RevertChanges">Änderungen widerrufen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectAll">Alle auswählen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">Bezeichnung festlegen...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_SetLabelEllipsis">Bezeichnung festlegen</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Disabled">Deaktiviert</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Status_Linked">Verknüpft</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_None">Keine</sys:String>
