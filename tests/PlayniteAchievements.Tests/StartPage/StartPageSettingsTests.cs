@@ -43,6 +43,14 @@ namespace PlayniteAchievements.Tests.StartPage
                 StartPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>
                 {
                     ["GameSummaryProvider"] = GridAlignment.Right
+                },
+                StartPageGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>
+                {
+                    ["GameSummaryProvider"] = GridVerticalAlignment.Bottom
+                },
+                StartPageGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>
+                {
+                    ["GameSummaryProvider"] = GridAlignment.Center
                 }
             };
 
@@ -58,6 +66,8 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreEqual(140, clone.StartPageGameSummariesColumnWidths["GameSummaryProvider"]);
             Assert.AreEqual(3, clone.StartPageGameSummariesColumnOrder["GameSummaryProvider"]);
             Assert.AreEqual(GridAlignment.Right, clone.StartPageGameSummariesColumnAlignments["GameSummaryProvider"]);
+            Assert.AreEqual(GridVerticalAlignment.Bottom, clone.StartPageGameSummariesColumnVerticalAlignments["GameSummaryProvider"]);
+            Assert.AreEqual(GridAlignment.Center, clone.StartPageGameSummariesColumnHeaderAlignments["GameSummaryProvider"]);
 
             Assert.IsFalse(copy.StartPageAchievementColumnVisibility["Achievement"]);
             Assert.AreEqual(320, copy.StartPageAchievementColumnWidths["Achievement"]);
@@ -67,6 +77,8 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreEqual(140, copy.StartPageGameSummariesColumnWidths["GameSummaryProvider"]);
             Assert.AreEqual(3, copy.StartPageGameSummariesColumnOrder["GameSummaryProvider"]);
             Assert.AreEqual(GridAlignment.Right, copy.StartPageGameSummariesColumnAlignments["GameSummaryProvider"]);
+            Assert.AreEqual(GridVerticalAlignment.Bottom, copy.StartPageGameSummariesColumnVerticalAlignments["GameSummaryProvider"]);
+            Assert.AreEqual(GridAlignment.Center, copy.StartPageGameSummariesColumnHeaderAlignments["GameSummaryProvider"]);
 
             Assert.AreNotSame(source.StartPageAchievementColumnVisibility, clone.StartPageAchievementColumnVisibility);
             Assert.AreNotSame(source.StartPageAchievementColumnWidths, clone.StartPageAchievementColumnWidths);
@@ -76,6 +88,8 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreNotSame(source.StartPageGameSummariesColumnWidths, copy.StartPageGameSummariesColumnWidths);
             Assert.AreNotSame(source.StartPageGameSummariesColumnOrder, copy.StartPageGameSummariesColumnOrder);
             Assert.AreNotSame(source.StartPageGameSummariesColumnAlignments, copy.StartPageGameSummariesColumnAlignments);
+            Assert.AreNotSame(source.StartPageGameSummariesColumnVerticalAlignments, copy.StartPageGameSummariesColumnVerticalAlignments);
+            Assert.AreNotSame(source.StartPageGameSummariesColumnHeaderAlignments, copy.StartPageGameSummariesColumnHeaderAlignments);
         }
 
         [TestMethod]

@@ -24,8 +24,8 @@ namespace PlayniteAchievements.Tests.StartPage
                 .ToList();
             var settings = new PersistedSettings
             {
-                GameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
-                GameSummariesGridSortDescending = false
+                OverviewGameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
+                OverviewGameSummariesGridSortDescending = false
             };
             settings.StartPageGameSummariesGrid.SortMode = GameSummariesSortMode.RecentUnlock;
             settings.StartPageGameSummariesGrid.SortDescending = true;
@@ -47,8 +47,8 @@ namespace PlayniteAchievements.Tests.StartPage
             };
             var settings = new PersistedSettings
             {
-                GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
-                GameSummariesGridSortDescending = true
+                OverviewGameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                OverviewGameSummariesGridSortDescending = true
             };
             settings.StartPageGameSummariesGrid.SortMode = GameSummariesSortMode.Alphabetical;
             settings.StartPageGameSummariesGrid.SortDescending = false;
@@ -71,8 +71,8 @@ namespace PlayniteAchievements.Tests.StartPage
                 .ToList();
             var settings = new PersistedSettings
             {
-                GameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
-                GameSummariesGridSortDescending = false
+                OverviewGameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
+                OverviewGameSummariesGridSortDescending = false
             };
             settings.StartPageGameSummariesGrid.MaxRows = 3;
             settings.StartPageGameSummariesGrid.SortMode = GameSummariesSortMode.Alphabetical;

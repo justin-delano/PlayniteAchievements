@@ -903,7 +903,7 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowCompletionBorder => _settings?.Persisted?.ShowCompletionBorder ?? true;
 
-        public bool ShowGameSummariesGridColumnHeaders => _settings?.Persisted?.ShowGameSummariesGridColumnHeaders ?? true;
+        public bool ShowOverviewGameSummariesGridColumnHeaders => _settings?.Persisted?.ShowOverviewGameSummariesGridColumnHeaders ?? true;
 
         public bool ShowAchievementGridColumnHeaders => _settings?.Persisted?.ShowAchievementGridColumnHeaders ?? true;
 
@@ -2178,7 +2178,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowOverviewBarCharts));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadata));
                 OnPropertyChanged(nameof(ShowCompletionBorder));
-                OnPropertyChanged(nameof(ShowGameSummariesGridColumnHeaders));
+                OnPropertyChanged(nameof(ShowOverviewGameSummariesGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowAchievementGridColumnHeaders));
                 OnPropertyChanged(nameof(OverviewGameSummariesGridRowHeight));
                 OnPropertyChanged(nameof(OverviewRecentAchievementsGridRowHeight));
@@ -2229,9 +2229,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(ShowCompletionBorder));
             }
-            else if (propertyName == nameof(PersistedSettings.ShowGameSummariesGridColumnHeaders))
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewGameSummariesGridColumnHeaders))
             {
-                OnPropertyChanged(nameof(ShowGameSummariesGridColumnHeaders));
+                OnPropertyChanged(nameof(ShowOverviewGameSummariesGridColumnHeaders));
             }
             else if (propertyName == nameof(PersistedSettings.ShowAchievementGridColumnHeaders))
             {

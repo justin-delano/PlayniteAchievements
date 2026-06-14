@@ -1427,7 +1427,7 @@
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
-                                                          IsChecked="{Binding Persisted.ShowGameSummariesGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowOverviewGameSummariesGridColumnHeaders}"
                                                           Margin="0,0,0,12"/>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
@@ -1449,7 +1449,7 @@
                                                            Style="{StaticResource SubSectionHeaderStyle}"
                                                            Margin="0,0,0,8"/>
                                                 <StackPanel Orientation="Horizontal">
-                                                    <ComboBox SelectedValue="{Binding Persisted.GameSummariesGridSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                    <ComboBox SelectedValue="{Binding Persisted.OverviewGameSummariesGridSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
                                                               MinWidth="180">
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_LastUnlock}" Tag="{x:Static settings:GameSummariesSortMode.RecentUnlock}"/>
@@ -1461,13 +1461,13 @@
                                                     <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
                                                             Margin="4,0,0,0"
                                                             VerticalAlignment="Center"
-                                                            Click="ToggleGameSummariesGridSortDescending">
+                                                            Click="ToggleOverviewGameSummariesGridSortDescending">
                                                         <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
                                                             <TextBlock.Style>
                                                                 <Style TargetType="TextBlock">
                                                                     <Setter Property="Text" Value="&#xea65;"/>
                                                                     <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding Persisted.GameSummariesGridSortDescending}" Value="True">
+                                                                        <DataTrigger Binding="{Binding Persisted.OverviewGameSummariesGridSortDescending}" Value="True">
                                                                             <Setter Property="Text" Value="&#xea66;"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>

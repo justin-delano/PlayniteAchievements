@@ -825,7 +825,7 @@
                                                                 UseCoverImages="{Binding UseCoverImages}"
                                                                 ShowGameMetadata="{Binding ShowOverviewGameMetadata}"
                                                                 ShowCompletionBorder="{Binding ShowCompletionBorder}"
-                                                                ShowColumnHeaders="{Binding ShowGameSummariesGridColumnHeaders}"
+                                                                ShowColumnHeaders="{Binding ShowOverviewGameSummariesGridColumnHeaders}"
                                                                 FixedRowHeight="{Binding OverviewGameSummariesGridRowHeight}"
                                                                 ColumnSettingsKey="OverviewGameSummaries"
                                                                 SelectionChanged="GameSummaries_SelectionChanged"

@@ -44,7 +44,7 @@ namespace PlayniteAchievements.Models.Tests
         {
             var settings = new PersistedSettings();
 
-            Assert.IsTrue(settings.ShowGameSummariesGridColumnHeaders);
+            Assert.IsTrue(settings.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.IsTrue(settings.ShowAchievementGridColumnHeaders);
             Assert.IsTrue(settings.ShowDesktopThemeAchievementGridColumnHeaders);
         }
@@ -172,7 +172,7 @@ namespace PlayniteAchievements.Models.Tests
         {
             var source = new PersistedSettings
             {
-                ShowGameSummariesGridColumnHeaders = false,
+                ShowOverviewGameSummariesGridColumnHeaders = false,
                 ShowAchievementGridColumnHeaders = false,
                 ShowDesktopThemeAchievementGridColumnHeaders = false,
                 GridColumnHeaderAlignment = GridAlignment.Right,
@@ -210,13 +210,21 @@ namespace PlayniteAchievements.Models.Tests
                 {
                     ["Points"] = GridAlignment.Right
                 },
-                GameSummariesColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                OverviewGameSummariesColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
                     ["GameSummaryName"] = 1
                 },
-                GameSummariesColumnAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
+                OverviewGameSummariesColumnAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
                 {
                     ["GameSummaryName"] = GridAlignment.Center
+                },
+                OverviewGameSummariesColumnVerticalAlignments = new System.Collections.Generic.Dictionary<string, GridVerticalAlignment>
+                {
+                    ["GameSummaryName"] = GridVerticalAlignment.Bottom
+                },
+                OverviewGameSummariesColumnHeaderAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
+                {
+                    ["GameSummaryName"] = GridAlignment.Right
                 },
                 DataGridColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
@@ -228,10 +236,10 @@ namespace PlayniteAchievements.Models.Tests
             var target = new PersistedSettings();
             target.CopyFrom(source);
 
-            Assert.IsFalse(clone.ShowGameSummariesGridColumnHeaders);
+            Assert.IsFalse(clone.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.IsFalse(clone.ShowAchievementGridColumnHeaders);
             Assert.IsFalse(clone.ShowDesktopThemeAchievementGridColumnHeaders);
-            Assert.IsFalse(target.ShowGameSummariesGridColumnHeaders);
+            Assert.IsFalse(target.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.IsFalse(target.ShowAchievementGridColumnHeaders);
             Assert.IsFalse(target.ShowDesktopThemeAchievementGridColumnHeaders);
             Assert.AreEqual(GridAlignment.Right, clone.GridColumnHeaderAlignment);
@@ -245,35 +253,41 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(3, clone.OverviewSelectedGameAchievementColumnOrder["Rarity"]);
             Assert.AreEqual(1, clone.SingleGameColumnOrder["Achievement"]);
             Assert.AreEqual(4, clone.DesktopThemeColumnOrder["Points"]);
-            Assert.AreEqual(1, clone.GameSummariesColumnOrder["GameSummaryName"]);
+            Assert.AreEqual(1, clone.OverviewGameSummariesColumnOrder["GameSummaryName"]);
             Assert.AreEqual(5, clone.DataGridColumnOrder["Legacy"]);
             Assert.AreEqual(GridAlignment.Center, clone.OverviewRecentAchievementColumnAlignments["Title"]);
             Assert.AreEqual(GridAlignment.Right, clone.OverviewSelectedGameAchievementColumnAlignments["Rarity"]);
             Assert.AreEqual(GridAlignment.Left, clone.SingleGameColumnAlignments["Achievement"]);
             Assert.AreEqual(GridAlignment.Right, clone.DesktopThemeColumnAlignments["Points"]);
-            Assert.AreEqual(GridAlignment.Center, clone.GameSummariesColumnAlignments["GameSummaryName"]);
+            Assert.AreEqual(GridAlignment.Center, clone.OverviewGameSummariesColumnAlignments["GameSummaryName"]);
+            Assert.AreEqual(GridVerticalAlignment.Bottom, clone.OverviewGameSummariesColumnVerticalAlignments["GameSummaryName"]);
+            Assert.AreEqual(GridAlignment.Right, clone.OverviewGameSummariesColumnHeaderAlignments["GameSummaryName"]);
 
             Assert.AreEqual(2, target.OverviewRecentAchievementColumnOrder["Title"]);
             Assert.AreEqual(3, target.OverviewSelectedGameAchievementColumnOrder["Rarity"]);
             Assert.AreEqual(1, target.SingleGameColumnOrder["Achievement"]);
             Assert.AreEqual(4, target.DesktopThemeColumnOrder["Points"]);
-            Assert.AreEqual(1, target.GameSummariesColumnOrder["GameSummaryName"]);
+            Assert.AreEqual(1, target.OverviewGameSummariesColumnOrder["GameSummaryName"]);
             Assert.AreEqual(5, target.DataGridColumnOrder["Legacy"]);
             Assert.AreEqual(GridAlignment.Center, target.OverviewRecentAchievementColumnAlignments["Title"]);
             Assert.AreEqual(GridAlignment.Right, target.OverviewSelectedGameAchievementColumnAlignments["Rarity"]);
             Assert.AreEqual(GridAlignment.Left, target.SingleGameColumnAlignments["Achievement"]);
             Assert.AreEqual(GridAlignment.Right, target.DesktopThemeColumnAlignments["Points"]);
-            Assert.AreEqual(GridAlignment.Center, target.GameSummariesColumnAlignments["GameSummaryName"]);
+            Assert.AreEqual(GridAlignment.Center, target.OverviewGameSummariesColumnAlignments["GameSummaryName"]);
+            Assert.AreEqual(GridVerticalAlignment.Bottom, target.OverviewGameSummariesColumnVerticalAlignments["GameSummaryName"]);
+            Assert.AreEqual(GridAlignment.Right, target.OverviewGameSummariesColumnHeaderAlignments["GameSummaryName"]);
 
             Assert.AreNotSame(source.OverviewRecentAchievementColumnOrder, clone.OverviewRecentAchievementColumnOrder);
             Assert.AreNotSame(source.OverviewSelectedGameAchievementColumnOrder, target.OverviewSelectedGameAchievementColumnOrder);
             Assert.AreNotSame(source.DesktopThemeColumnOrder, clone.DesktopThemeColumnOrder);
-            Assert.AreNotSame(source.GameSummariesColumnOrder, target.GameSummariesColumnOrder);
+            Assert.AreNotSame(source.OverviewGameSummariesColumnOrder, target.OverviewGameSummariesColumnOrder);
             Assert.AreNotSame(source.OverviewRecentAchievementColumnAlignments, clone.OverviewRecentAchievementColumnAlignments);
             Assert.AreNotSame(source.OverviewSelectedGameAchievementColumnAlignments, target.OverviewSelectedGameAchievementColumnAlignments);
             Assert.AreNotSame(source.SingleGameColumnAlignments, clone.SingleGameColumnAlignments);
             Assert.AreNotSame(source.DesktopThemeColumnAlignments, clone.DesktopThemeColumnAlignments);
-            Assert.AreNotSame(source.GameSummariesColumnAlignments, target.GameSummariesColumnAlignments);
+            Assert.AreNotSame(source.OverviewGameSummariesColumnAlignments, target.OverviewGameSummariesColumnAlignments);
+            Assert.AreNotSame(source.OverviewGameSummariesColumnVerticalAlignments, target.OverviewGameSummariesColumnVerticalAlignments);
+            Assert.AreNotSame(source.OverviewGameSummariesColumnHeaderAlignments, target.OverviewGameSummariesColumnHeaderAlignments);
         }
 
         [TestMethod]
@@ -412,15 +426,15 @@ namespace PlayniteAchievements.Models.Tests
                 ShowTopMenuBarButton = false,
                 ShowCompactListRarityBar = false,
                 ShowCompletionBorder = false,
-                ShowGameSummariesGridColumnHeaders = false,
+                ShowOverviewGameSummariesGridColumnHeaders = false,
                 ShowAchievementGridColumnHeaders = false,
                 ShowDesktopThemeAchievementGridColumnHeaders = false,
                 GridColumnHeaderAlignment = GridAlignment.Right,
                 GridCellAlignment = GridAlignment.Center,
                 GridCellVerticalAlignment = GridVerticalAlignment.Bottom,
                 EnableAchievementDataGridControl = false,
-                GameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
-                GameSummariesGridSortDescending = false,
+                OverviewGameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
+                OverviewGameSummariesGridSortDescending = false,
                 OverviewSelectedGameGridSortMode = CompactListSortMode.Rarity,
                 OverviewSelectedGameGridSortDescending = false,
                 AchievementDataGridMaxHeight = 333d,
@@ -454,10 +468,10 @@ namespace PlayniteAchievements.Models.Tests
             settings.DesktopThemeColumnWidths["Points"] = 104d;
             settings.DesktopThemeColumnOrder["Points"] = 6;
             settings.DesktopThemeColumnAlignments["Points"] = GridAlignment.Right;
-            settings.GameSummariesColumnVisibility["Cover"] = false;
-            settings.GameSummariesColumnWidths["Cover"] = 105d;
-            settings.GameSummariesColumnOrder["Cover"] = 7;
-            settings.GameSummariesColumnAlignments["Cover"] = GridAlignment.Center;
+            settings.OverviewGameSummariesColumnVisibility["Cover"] = false;
+            settings.OverviewGameSummariesColumnWidths["Cover"] = 105d;
+            settings.OverviewGameSummariesColumnOrder["Cover"] = 7;
+            settings.OverviewGameSummariesColumnAlignments["Cover"] = GridAlignment.Center;
             settings.StartPageAchievementColumnVisibility["Icon"] = false;
             settings.StartPageAchievementColumnWidths["Icon"] = 106d;
             settings.StartPageAchievementColumnOrder["Icon"] = 8;
@@ -485,15 +499,15 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.ShowTopMenuBarButton, settings.ShowTopMenuBarButton);
             Assert.AreEqual(defaults.ShowCompactListRarityBar, settings.ShowCompactListRarityBar);
             Assert.AreEqual(defaults.ShowCompletionBorder, settings.ShowCompletionBorder);
-            Assert.AreEqual(defaults.ShowGameSummariesGridColumnHeaders, settings.ShowGameSummariesGridColumnHeaders);
+            Assert.AreEqual(defaults.ShowOverviewGameSummariesGridColumnHeaders, settings.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.AreEqual(defaults.ShowAchievementGridColumnHeaders, settings.ShowAchievementGridColumnHeaders);
             Assert.AreEqual(defaults.ShowDesktopThemeAchievementGridColumnHeaders, settings.ShowDesktopThemeAchievementGridColumnHeaders);
             Assert.AreEqual(defaults.GridColumnHeaderAlignment, settings.GridColumnHeaderAlignment);
             Assert.AreEqual(defaults.GridCellAlignment, settings.GridCellAlignment);
             Assert.AreEqual(defaults.GridCellVerticalAlignment, settings.GridCellVerticalAlignment);
             Assert.AreEqual(defaults.EnableAchievementDataGridControl, settings.EnableAchievementDataGridControl);
-            Assert.AreEqual(defaults.GameSummariesGridSortMode, settings.GameSummariesGridSortMode);
-            Assert.AreEqual(defaults.GameSummariesGridSortDescending, settings.GameSummariesGridSortDescending);
+            Assert.AreEqual(defaults.OverviewGameSummariesGridSortMode, settings.OverviewGameSummariesGridSortMode);
+            Assert.AreEqual(defaults.OverviewGameSummariesGridSortDescending, settings.OverviewGameSummariesGridSortDescending);
             Assert.AreEqual(defaults.OverviewSelectedGameGridSortMode, settings.OverviewSelectedGameGridSortMode);
             Assert.AreEqual(defaults.OverviewSelectedGameGridSortDescending, settings.OverviewSelectedGameGridSortDescending);
             Assert.AreEqual(defaults.AchievementDataGridMaxHeight, settings.AchievementDataGridMaxHeight);
@@ -524,10 +538,10 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(0, settings.DesktopThemeColumnWidths.Count);
             Assert.AreEqual(0, settings.DesktopThemeColumnOrder.Count);
             Assert.AreEqual(0, settings.DesktopThemeColumnAlignments.Count);
-            Assert.AreEqual(0, settings.GameSummariesColumnVisibility.Count);
-            Assert.AreEqual(0, settings.GameSummariesColumnWidths.Count);
-            Assert.AreEqual(0, settings.GameSummariesColumnOrder.Count);
-            Assert.AreEqual(0, settings.GameSummariesColumnAlignments.Count);
+            Assert.AreEqual(0, settings.OverviewGameSummariesColumnVisibility.Count);
+            Assert.AreEqual(0, settings.OverviewGameSummariesColumnWidths.Count);
+            Assert.AreEqual(0, settings.OverviewGameSummariesColumnOrder.Count);
+            Assert.AreEqual(0, settings.OverviewGameSummariesColumnAlignments.Count);
             Assert.AreEqual(0, settings.StartPageAchievementColumnVisibility.Count);
             Assert.AreEqual(0, settings.StartPageAchievementColumnWidths.Count);
             Assert.AreEqual(0, settings.StartPageAchievementColumnOrder.Count);

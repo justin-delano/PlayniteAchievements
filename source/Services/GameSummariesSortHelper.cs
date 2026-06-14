@@ -103,16 +103,16 @@ namespace PlayniteAchievements.Services
             }
 
             return new GameSummariesSortSpec(
-                settings.GameSummariesGridSortMode,
-                settings.GameSummariesGridSortDescending
+                settings.OverviewGameSummariesGridSortMode,
+                settings.OverviewGameSummariesGridSortDescending
                     ? ListSortDirection.Descending
                     : ListSortDirection.Ascending);
         }
 
         public static bool IsConfiguredDefaultSortPropertyName(string propertyName)
         {
-            return propertyName == nameof(PersistedSettings.GameSummariesGridSortMode) ||
-                   propertyName == nameof(PersistedSettings.GameSummariesGridSortDescending);
+            return propertyName == nameof(PersistedSettings.OverviewGameSummariesGridSortMode) ||
+                   propertyName == nameof(PersistedSettings.OverviewGameSummariesGridSortDescending);
         }
 
         public static void ApplySortIndicator(

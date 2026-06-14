@@ -40,15 +40,15 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(false, persisted["ShowOverviewCollectionScoreCard"].Value<bool>());
             Assert.AreEqual(false, persisted["ShowOverviewGameMetadata"].Value<bool>());
             Assert.AreEqual("Hide", persisted["OverviewPieSmallSliceMode"].Value<string>());
-            Assert.AreEqual("Alphabetical", persisted["GameSummariesGridSortMode"].Value<string>());
-            Assert.AreEqual(false, persisted["GameSummariesGridSortDescending"].Value<bool>());
+            Assert.AreEqual("Alphabetical", persisted["OverviewGameSummariesGridSortMode"].Value<string>());
+            Assert.AreEqual(false, persisted["OverviewGameSummariesGridSortDescending"].Value<bool>());
             Assert.AreEqual(84.0, persisted["OverviewGameSummariesGridRowHeight"].Value<double>());
             Assert.AreEqual(3, persisted["OverviewGameSummariesGridMaxRows"].Value<int>());
             Assert.AreEqual("None", persisted["OverviewSelectedGameGridSortMode"].Value<string>());
             Assert.AreEqual(false, persisted["OverviewSelectedGameGridSortDescending"].Value<bool>());
             Assert.AreEqual(0.64, persisted["OverviewLeftColumnRatio"].Value<double>());
             Assert.AreEqual("SixMonths", persisted["OverviewTimelineRange"].Value<string>());
-            Assert.AreEqual(false, persisted["ShowGameSummariesGridColumnHeaders"].Value<bool>());
+            Assert.AreEqual(false, persisted["ShowOverviewGameSummariesGridColumnHeaders"].Value<bool>());
             Assert.IsNotNull(persisted["StartPageGameSummariesGrid"]);
             Assert.IsNull(persisted["ShowSidebarCollectionScoreCard"]);
             Assert.IsNull(persisted["GamesOverviewGridSortMode"]);
@@ -81,7 +81,7 @@ namespace PlayniteAchievements.Models.Tests
 
             var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
             var persisted = (JObject)migrated["Persisted"];
-            var overviewWidths = (JObject)persisted["GameSummariesColumnWidths"];
+            var overviewWidths = (JObject)persisted["OverviewGameSummariesColumnWidths"];
             var startPageOrder = (JObject)persisted["StartPageGameSummariesColumnOrder"];
 
             Assert.AreEqual(500.0, overviewWidths["GameSummaryName"].Value<double>());
@@ -106,18 +106,51 @@ namespace PlayniteAchievements.Models.Tests
                         ""ShowSidebarGameMetadata"": false,
                         ""ShowOverviewGameMetadata"": true,
                         ""GamesOverviewColumnOrder"": { ""OverviewGameName"": 2 },
-                        ""GameSummariesColumnOrder"": { ""GameSummaryName"": 1 }
+                        ""OverviewGameSummariesColumnOrder"": { ""GameSummaryName"": 1 }
                     }
                 }";
 
             var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
             var persisted = (JObject)migrated["Persisted"];
-            var order = (JObject)persisted["GameSummariesColumnOrder"];
+            var order = (JObject)persisted["OverviewGameSummariesColumnOrder"];
 
             Assert.AreEqual(true, persisted["ShowOverviewGameMetadata"].Value<bool>());
             Assert.AreEqual(1, order["GameSummaryName"].Value<int>());
             Assert.IsNull(persisted["ShowSidebarGameMetadata"]);
             Assert.IsNull(persisted["GamesOverviewColumnOrder"]);
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_RenamesIntermediateGameSummariesSettings()
+        {
+            const string json =
+                @"{
+                    ""Persisted"": {
+                        ""ShowGameSummariesGridColumnHeaders"": false,
+                        ""GameSummariesGridSortMode"": ""Alphabetical"",
+                        ""GameSummariesGridSortDescending"": false,
+                        ""GameSummariesColumnHeaderAlignments"": {
+                            ""OverviewGameName"": ""Right""
+                        },
+                        ""GameSummariesColumnVerticalAlignments"": {
+                            ""OverviewProvider"": ""Bottom""
+                        }
+                    }
+                }";
+
+            var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
+            var persisted = (JObject)migrated["Persisted"];
+            var headerAlignments = (JObject)persisted["OverviewGameSummariesColumnHeaderAlignments"];
+            var verticalAlignments = (JObject)persisted["OverviewGameSummariesColumnVerticalAlignments"];
+
+            Assert.AreEqual(false, persisted["ShowOverviewGameSummariesGridColumnHeaders"].Value<bool>());
+            Assert.AreEqual("Alphabetical", persisted["OverviewGameSummariesGridSortMode"].Value<string>());
+            Assert.AreEqual(false, persisted["OverviewGameSummariesGridSortDescending"].Value<bool>());
+            Assert.AreEqual("Right", headerAlignments["GameSummaryName"].Value<string>());
+            Assert.AreEqual("Bottom", verticalAlignments["GameSummaryProvider"].Value<string>());
+            Assert.IsNull(persisted["ShowGameSummariesGridColumnHeaders"]);
+            Assert.IsNull(persisted["GameSummariesGridSortMode"]);
+            Assert.IsNull(persisted["GameSummariesColumnHeaderAlignments"]);
         }
     }
 }

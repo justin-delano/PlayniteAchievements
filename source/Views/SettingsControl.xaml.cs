@@ -1338,12 +1338,12 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void ToggleGameSummariesGridSortDescending(object sender, RoutedEventArgs e)
+        private void ToggleOverviewGameSummariesGridSortDescending(object sender, RoutedEventArgs e)
         {
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (persisted != null)
             {
-                persisted.GameSummariesGridSortDescending = !persisted.GameSummariesGridSortDescending;
+                persisted.OverviewGameSummariesGridSortDescending = !persisted.OverviewGameSummariesGridSortDescending;
             }
         }
 

@@ -26,8 +26,8 @@ namespace PlayniteAchievements.Services.Tests
                 items,
                 new PersistedSettings
                 {
-                    GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
-                    GameSummariesGridSortDescending = true
+                    OverviewGameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                    OverviewGameSummariesGridSortDescending = true
                 });
 
             CollectionAssert.AreEqual(
@@ -49,8 +49,8 @@ namespace PlayniteAchievements.Services.Tests
                 items,
                 new PersistedSettings
                 {
-                    GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
-                    GameSummariesGridSortDescending = false
+                    OverviewGameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                    OverviewGameSummariesGridSortDescending = false
                 });
 
             CollectionAssert.AreEqual(
@@ -72,8 +72,8 @@ namespace PlayniteAchievements.Services.Tests
                 items,
                 new PersistedSettings
                 {
-                    GameSummariesGridSortMode = GameSummariesSortMode.LastPlayed,
-                    GameSummariesGridSortDescending = true
+                    OverviewGameSummariesGridSortMode = GameSummariesSortMode.LastPlayed,
+                    OverviewGameSummariesGridSortDescending = true
                 });
 
             CollectionAssert.AreEqual(
@@ -95,8 +95,8 @@ namespace PlayniteAchievements.Services.Tests
                 items,
                 new PersistedSettings
                 {
-                    GameSummariesGridSortMode = GameSummariesSortMode.TotalAchievements,
-                    GameSummariesGridSortDescending = true
+                    OverviewGameSummariesGridSortMode = GameSummariesSortMode.TotalAchievements,
+                    OverviewGameSummariesGridSortDescending = true
                 });
 
             CollectionAssert.AreEqual(
@@ -118,8 +118,8 @@ namespace PlayniteAchievements.Services.Tests
                 items,
                 new PersistedSettings
                 {
-                    GameSummariesGridSortMode = GameSummariesSortMode.Progress,
-                    GameSummariesGridSortDescending = true
+                    OverviewGameSummariesGridSortMode = GameSummariesSortMode.Progress,
+                    OverviewGameSummariesGridSortDescending = true
                 });
 
             CollectionAssert.AreEqual(
@@ -141,8 +141,8 @@ namespace PlayniteAchievements.Services.Tests
                 items,
                 new PersistedSettings
                 {
-                    GameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
-                    GameSummariesGridSortDescending = false
+                    OverviewGameSummariesGridSortMode = GameSummariesSortMode.Alphabetical,
+                    OverviewGameSummariesGridSortDescending = false
                 });
 
             CollectionAssert.AreEqual(
@@ -155,8 +155,8 @@ namespace PlayniteAchievements.Services.Tests
         {
             var settings = new PersistedSettings
             {
-                GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
-                GameSummariesGridSortDescending = true
+                OverviewGameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                OverviewGameSummariesGridSortDescending = true
             };
 
             var first = GameSummariesSortHelper.ResolveGridSortAction(
@@ -187,8 +187,8 @@ namespace PlayniteAchievements.Services.Tests
         {
             var settings = new PersistedSettings
             {
-                GameSummariesGridSortMode = GameSummariesSortMode.LastPlayed,
-                GameSummariesGridSortDescending = true
+                OverviewGameSummariesGridSortMode = GameSummariesSortMode.LastPlayed,
+                OverviewGameSummariesGridSortDescending = true
             };
 
             var first = GameSummariesSortHelper.ResolveGridSortAction(
@@ -218,8 +218,8 @@ namespace PlayniteAchievements.Services.Tests
                 null,
                 new PersistedSettings
                 {
-                    GameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
-                    GameSummariesGridSortDescending = true
+                    OverviewGameSummariesGridSortMode = GameSummariesSortMode.RecentUnlock,
+                    OverviewGameSummariesGridSortDescending = true
                 },
                 (path, direction) =>
                 {

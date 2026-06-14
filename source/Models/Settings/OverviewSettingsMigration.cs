@@ -5,7 +5,8 @@ using Newtonsoft.Json.Linq;
 namespace PlayniteAchievements.Models.Settings
 {
     /// <summary>
-    /// Migrates the old Sidebar/GamesOverview settings shape to Overview/GameSummaries.
+    /// Migrates old Sidebar/GamesOverview and intermediate GameSummaries settings
+    /// to the canonical OverviewGameSummaries/StartPageGameSummaries shape.
     /// Runs before settings deserialization so existing user config values are preserved.
     /// </summary>
     public static class OverviewSettingsMigration
@@ -23,9 +24,12 @@ namespace PlayniteAchievements.Models.Settings
             ("SidebarPieSmallSliceMode", "OverviewPieSmallSliceMode"),
             ("ShowSidebarBarCharts", "ShowOverviewBarCharts"),
             ("ShowSidebarGameMetadata", "ShowOverviewGameMetadata"),
-            ("ShowOverviewGridColumnHeaders", "ShowGameSummariesGridColumnHeaders"),
-            ("GamesOverviewGridSortMode", "GameSummariesGridSortMode"),
-            ("GamesOverviewGridSortDescending", "GameSummariesGridSortDescending"),
+            ("ShowGameSummariesGridColumnHeaders", "ShowOverviewGameSummariesGridColumnHeaders"),
+            ("ShowOverviewGridColumnHeaders", "ShowOverviewGameSummariesGridColumnHeaders"),
+            ("GameSummariesGridSortMode", "OverviewGameSummariesGridSortMode"),
+            ("GamesOverviewGridSortMode", "OverviewGameSummariesGridSortMode"),
+            ("GameSummariesGridSortDescending", "OverviewGameSummariesGridSortDescending"),
+            ("GamesOverviewGridSortDescending", "OverviewGameSummariesGridSortDescending"),
             ("SidebarSelectedGameGridSortMode", "OverviewSelectedGameGridSortMode"),
             ("SidebarSelectedGameGridSortDescending", "OverviewSelectedGameGridSortDescending"),
             ("SidebarOverviewGridRowHeight", "OverviewGameSummariesGridRowHeight"),
@@ -43,14 +47,24 @@ namespace PlayniteAchievements.Models.Settings
             ("SidebarGameColumnWidths", "OverviewSelectedGameAchievementColumnWidths"),
             ("SidebarGameColumnOrder", "OverviewSelectedGameAchievementColumnOrder"),
             ("SidebarGameColumnAlignments", "OverviewSelectedGameAchievementColumnAlignments"),
-            ("GamesOverviewColumnVisibility", "GameSummariesColumnVisibility"),
-            ("GamesOverviewColumnWidths", "GameSummariesColumnWidths"),
-            ("GamesOverviewColumnOrder", "GameSummariesColumnOrder"),
-            ("GamesOverviewColumnAlignments", "GameSummariesColumnAlignments"),
+            ("GameSummariesColumnVisibility", "OverviewGameSummariesColumnVisibility"),
+            ("GamesOverviewColumnVisibility", "OverviewGameSummariesColumnVisibility"),
+            ("GameSummariesColumnWidths", "OverviewGameSummariesColumnWidths"),
+            ("GamesOverviewColumnWidths", "OverviewGameSummariesColumnWidths"),
+            ("GameSummariesColumnOrder", "OverviewGameSummariesColumnOrder"),
+            ("GamesOverviewColumnOrder", "OverviewGameSummariesColumnOrder"),
+            ("GameSummariesColumnAlignments", "OverviewGameSummariesColumnAlignments"),
+            ("GamesOverviewColumnAlignments", "OverviewGameSummariesColumnAlignments"),
+            ("GameSummariesColumnVerticalAlignments", "OverviewGameSummariesColumnVerticalAlignments"),
+            ("GamesOverviewColumnVerticalAlignments", "OverviewGameSummariesColumnVerticalAlignments"),
+            ("GameSummariesColumnHeaderAlignments", "OverviewGameSummariesColumnHeaderAlignments"),
+            ("GamesOverviewColumnHeaderAlignments", "OverviewGameSummariesColumnHeaderAlignments"),
             ("StartPageGamesOverviewColumnVisibility", "StartPageGameSummariesColumnVisibility"),
             ("StartPageGamesOverviewColumnWidths", "StartPageGameSummariesColumnWidths"),
             ("StartPageGamesOverviewColumnOrder", "StartPageGameSummariesColumnOrder"),
             ("StartPageGamesOverviewColumnAlignments", "StartPageGameSummariesColumnAlignments"),
+            ("StartPageGamesOverviewColumnVerticalAlignments", "StartPageGameSummariesColumnVerticalAlignments"),
+            ("StartPageGamesOverviewColumnHeaderAlignments", "StartPageGameSummariesColumnHeaderAlignments"),
             ("SidebarOverviewLeftColumnRatio", "OverviewLeftColumnRatio"),
             ("SidebarTimelineRange", "OverviewTimelineRange")
         };
@@ -69,14 +83,18 @@ namespace PlayniteAchievements.Models.Settings
 
         private static readonly string[] GameSummaryColumnDictionaries =
         {
-            "GameSummariesColumnVisibility",
-            "GameSummariesColumnWidths",
-            "GameSummariesColumnOrder",
-            "GameSummariesColumnAlignments",
+            "OverviewGameSummariesColumnVisibility",
+            "OverviewGameSummariesColumnWidths",
+            "OverviewGameSummariesColumnOrder",
+            "OverviewGameSummariesColumnAlignments",
+            "OverviewGameSummariesColumnVerticalAlignments",
+            "OverviewGameSummariesColumnHeaderAlignments",
             "StartPageGameSummariesColumnVisibility",
             "StartPageGameSummariesColumnWidths",
             "StartPageGameSummariesColumnOrder",
-            "StartPageGameSummariesColumnAlignments"
+            "StartPageGameSummariesColumnAlignments",
+            "StartPageGameSummariesColumnVerticalAlignments",
+            "StartPageGameSummariesColumnHeaderAlignments"
         };
 
         public static string MigrateFromJson(string json)

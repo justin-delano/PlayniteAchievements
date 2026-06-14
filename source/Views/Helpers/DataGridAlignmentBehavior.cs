@@ -569,7 +569,7 @@ namespace PlayniteAchievements.Views.Helpers
                        propertyName == nameof(PersistedSettings.OverviewSelectedGameAchievementColumnAlignments) ||
                        propertyName == nameof(PersistedSettings.SingleGameColumnAlignments) ||
                        propertyName == nameof(PersistedSettings.DesktopThemeColumnAlignments) ||
-                       propertyName == nameof(PersistedSettings.GameSummariesColumnAlignments) ||
+                       propertyName == nameof(PersistedSettings.OverviewGameSummariesColumnAlignments) ||
                        propertyName == nameof(PersistedSettings.StartPageAchievementColumnAlignments) ||
                        propertyName == nameof(PersistedSettings.StartPageGameSummariesColumnAlignments);
             }
@@ -580,7 +580,7 @@ namespace PlayniteAchievements.Views.Helpers
                        propertyName == "OverviewSelectedGameAchievementColumnVerticalAlignments" ||
                        propertyName == "SingleGameColumnVerticalAlignments" ||
                        propertyName == "DesktopThemeColumnVerticalAlignments" ||
-                       propertyName == "GameSummariesColumnVerticalAlignments" ||
+                       propertyName == "OverviewGameSummariesColumnVerticalAlignments" ||
                        propertyName == "StartPageAchievementColumnVerticalAlignments" ||
                        propertyName == "StartPageGameSummariesColumnVerticalAlignments";
             }
@@ -591,7 +591,7 @@ namespace PlayniteAchievements.Views.Helpers
                        propertyName == "OverviewSelectedGameAchievementColumnHeaderAlignments" ||
                        propertyName == "SingleGameColumnHeaderAlignments" ||
                        propertyName == "DesktopThemeColumnHeaderAlignments" ||
-                       propertyName == "GameSummariesColumnHeaderAlignments" ||
+                       propertyName == "OverviewGameSummariesColumnHeaderAlignments" ||
                        propertyName == "StartPageAchievementColumnHeaderAlignments" ||
                        propertyName == "StartPageGameSummariesColumnHeaderAlignments";
             }

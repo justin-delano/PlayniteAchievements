@@ -337,7 +337,7 @@ namespace PlayniteAchievements.Views.Controls
 
             return IsStartPageScope()
                 ? settings.Persisted.StartPageGameSummariesColumnWidths
-                : settings.Persisted.GameSummariesColumnWidths;
+                : settings.Persisted.OverviewGameSummariesColumnWidths;
         }
 
         private void SetWidthsByKey(PlayniteAchievementsSettings settings, Dictionary<string, double> map)
@@ -353,7 +353,7 @@ namespace PlayniteAchievements.Views.Controls
             }
             else
             {
-                settings.Persisted.GameSummariesColumnWidths = map;
+                settings.Persisted.OverviewGameSummariesColumnWidths = map;
             }
         }
 
@@ -366,7 +366,7 @@ namespace PlayniteAchievements.Views.Controls
 
             return IsStartPageScope()
                 ? settings.Persisted.StartPageGameSummariesColumnOrder
-                : settings.Persisted.GameSummariesColumnOrder;
+                : settings.Persisted.OverviewGameSummariesColumnOrder;
         }
 
         private void SetOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
@@ -382,7 +382,7 @@ namespace PlayniteAchievements.Views.Controls
             }
             else
             {
-                settings.Persisted.GameSummariesColumnOrder = map;
+                settings.Persisted.OverviewGameSummariesColumnOrder = map;
             }
         }
 
@@ -395,7 +395,7 @@ namespace PlayniteAchievements.Views.Controls
 
             return IsStartPageScope()
                 ? settings.Persisted.StartPageGameSummariesColumnVisibility
-                : settings.Persisted.GameSummariesColumnVisibility;
+                : settings.Persisted.OverviewGameSummariesColumnVisibility;
         }
 
         private void SetVisibilityByKey(PlayniteAchievementsSettings settings, Dictionary<string, bool> map)
@@ -411,7 +411,7 @@ namespace PlayniteAchievements.Views.Controls
             }
             else
             {
-                settings.Persisted.GameSummariesColumnVisibility = map;
+                settings.Persisted.OverviewGameSummariesColumnVisibility = map;
             }
         }
 
@@ -424,7 +424,7 @@ namespace PlayniteAchievements.Views.Controls
 
             return IsStartPageScope()
                 ? settings.Persisted.StartPageGameSummariesColumnAlignments
-                : settings.Persisted.GameSummariesColumnAlignments;
+                : settings.Persisted.OverviewGameSummariesColumnAlignments;
         }
 
         private void SetAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
@@ -440,7 +440,7 @@ namespace PlayniteAchievements.Views.Controls
             }
             else
             {
-                settings.Persisted.GameSummariesColumnAlignments = map;
+                settings.Persisted.OverviewGameSummariesColumnAlignments = map;
             }
         }
 
@@ -453,7 +453,7 @@ namespace PlayniteAchievements.Views.Controls
 
             return IsStartPageScope()
                 ? settings.Persisted.StartPageGameSummariesColumnVerticalAlignments
-                : settings.Persisted.GameSummariesColumnVerticalAlignments;
+                : settings.Persisted.OverviewGameSummariesColumnVerticalAlignments;
         }
 
         private void SetCellVerticalAlignmentsByKey(
@@ -471,7 +471,7 @@ namespace PlayniteAchievements.Views.Controls
             }
             else
             {
-                settings.Persisted.GameSummariesColumnVerticalAlignments = map;
+                settings.Persisted.OverviewGameSummariesColumnVerticalAlignments = map;
             }
         }
 
@@ -484,7 +484,7 @@ namespace PlayniteAchievements.Views.Controls
 
             return IsStartPageScope()
                 ? settings.Persisted.StartPageGameSummariesColumnHeaderAlignments
-                : settings.Persisted.GameSummariesColumnHeaderAlignments;
+                : settings.Persisted.OverviewGameSummariesColumnHeaderAlignments;
         }
 
         private void SetHeaderAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
@@ -500,7 +500,7 @@ namespace PlayniteAchievements.Views.Controls
             }
             else
             {
-                settings.Persisted.GameSummariesColumnHeaderAlignments = map;
+                settings.Persisted.OverviewGameSummariesColumnHeaderAlignments = map;
             }
         }
 

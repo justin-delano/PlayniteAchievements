@@ -1603,7 +1603,7 @@ namespace PlayniteAchievements.Views
             // AchievementDataGridControl handles its own width persistence
             if (_pendingOverviewWidthUpdates.Count > 0)
             {
-                changed |= FlushToMap(_settings.Persisted.GameSummariesColumnWidths, _pendingOverviewWidthUpdates);
+                changed |= FlushToMap(_settings.Persisted.OverviewGameSummariesColumnWidths, _pendingOverviewWidthUpdates);
             }
 
             if (changed) SaveSettings();
@@ -1792,7 +1792,7 @@ namespace PlayniteAchievements.Views
         private void ApplyVisibilityToGrids()
         {
             // RecentAchievementsDataGrid and GameAchievementsGrid use AchievementDataGridControl which handles its own visibility
-            ApplyVisibility(GameSummariesGrid, _settings?.Persisted?.GameSummariesColumnVisibility);
+            ApplyVisibility(GameSummariesGrid, _settings?.Persisted?.OverviewGameSummariesColumnVisibility);
         }
 
         private void ApplyVisibility(DataGrid grid, Dictionary<string, bool> map)
@@ -1894,7 +1894,7 @@ namespace PlayniteAchievements.Views
 
         private Dictionary<string, double> GetOverviewWidths()
         {
-            return _settings?.Persisted?.GameSummariesColumnWidths
+            return _settings?.Persisted?.OverviewGameSummariesColumnWidths
                 ?? new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         }
 
@@ -1912,11 +1912,11 @@ namespace PlayniteAchievements.Views
             }
             changed |= EnsureSeeds(achievementMap, DefaultAchievementWidthSeeds);
 
-            var overviewMap = _settings.Persisted.GameSummariesColumnWidths;
+            var overviewMap = _settings.Persisted.OverviewGameSummariesColumnWidths;
             if (overviewMap == null)
             {
                 overviewMap = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                _settings.Persisted.GameSummariesColumnWidths = overviewMap;
+                _settings.Persisted.OverviewGameSummariesColumnWidths = overviewMap;
                 changed = true;
             }
             changed |= EnsureSeeds(overviewMap, DefaultOverviewWidthSeeds);
@@ -1999,7 +1999,7 @@ namespace PlayniteAchievements.Views
 
             if (grid == GameSummariesGrid)
             {
-                PersistVisibility(_settings?.Persisted?.GameSummariesColumnVisibility, key, isVisible);
+                PersistVisibility(_settings?.Persisted?.OverviewGameSummariesColumnVisibility, key, isVisible);
                 NormalizeGridColumns(GameSummariesGrid);
                 GameSummariesGrid.Items.Refresh();
             }

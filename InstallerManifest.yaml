@@ -1,6 +1,27 @@
 AddonId: PlayniteAchievements
 Packages:
 
+  - Version: 2.5.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-05-30
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.0/PlayniteAchievements_2_5_0.pext
+    Changelog:
+    - "A massive customization update!"
+    - "[New] Added native StartPage support! All PlayniteAchievements summary features are now available on the StartPage. StartPage widget configuration is separate from main settings, allowing for further customization."
+    - "[New] Added Notes tab to Game Options, allowing you to save custom notes for each achievement."
+    - "[Adjusted] Moved the Ignored and SummaryIgnored categories to a new Filters tab, for clarity."
+    - "[Adjusted] Tweaked the calculations for Collection and Prestige scores, and new columns show scores per achievement. You may notice some differences in your scores now, but they will remain stable unless I get critical feedback."
+    - "[Adjusted] Prestige and Collection levels now go up to 250, and tiers are set at every 10 levels. This should lead to more consistent progression."
+    - "[New] MANY new grid customization options. Per grid maximum rows count, per grid row height, per column and global text alignment settings, to name a few."
+    - "[New] Redesigned the Display tab of Settings to match the Platforms tab."
+    - "[Adjusted] Image columns can now be resized in all grids."
+    - "[Adjusted] The Sidebar view has been renamed to the Overview view and Games Overview (left of sidebar) has been renamed to Game Summaries, for clarity."
+    - "[Fixed] Fixed 3-way sorting issues in grids"
+    - "[New] Window positions and sizes are now saved between uses."
+    - "[Fixed] Colors in Overview view are improved."
+    - "Localization updates."
+    - "As always, many additional improvements and fixes behind the scenes."
+
   - Version: 2.4.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-05-30
