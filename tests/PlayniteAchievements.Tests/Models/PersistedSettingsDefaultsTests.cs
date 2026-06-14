@@ -178,6 +178,10 @@ namespace PlayniteAchievements.Models.Tests
                 GridColumnHeaderAlignment = GridAlignment.Right,
                 GridCellAlignment = GridAlignment.Center,
                 GridCellVerticalAlignment = GridVerticalAlignment.Bottom,
+                OverviewRecentAchievementColumnVisibility = new System.Collections.Generic.Dictionary<string, bool>
+                {
+                    ["Title"] = false
+                },
                 OverviewRecentAchievementColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
                     ["Title"] = 2
@@ -186,6 +190,10 @@ namespace PlayniteAchievements.Models.Tests
                 {
                     ["Title"] = GridAlignment.Center
                 },
+                OverviewSelectedGameAchievementColumnVisibility = new System.Collections.Generic.Dictionary<string, bool>
+                {
+                    ["Rarity"] = false
+                },
                 OverviewSelectedGameAchievementColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
                     ["Rarity"] = 3
@@ -193,6 +201,10 @@ namespace PlayniteAchievements.Models.Tests
                 OverviewSelectedGameAchievementColumnAlignments = new System.Collections.Generic.Dictionary<string, GridAlignment>
                 {
                     ["Rarity"] = GridAlignment.Right
+                },
+                SingleGameColumnVisibility = new System.Collections.Generic.Dictionary<string, bool>
+                {
+                    ["Achievement"] = false
                 },
                 SingleGameColumnOrder = new System.Collections.Generic.Dictionary<string, int>
                 {
@@ -249,6 +261,9 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(GridAlignment.Center, target.GridCellAlignment);
             Assert.AreEqual(GridVerticalAlignment.Bottom, target.GridCellVerticalAlignment);
 
+            Assert.IsFalse(clone.OverviewRecentAchievementColumnVisibility["Title"]);
+            Assert.IsFalse(clone.OverviewSelectedGameAchievementColumnVisibility["Rarity"]);
+            Assert.IsFalse(clone.SingleGameColumnVisibility["Achievement"]);
             Assert.AreEqual(2, clone.OverviewRecentAchievementColumnOrder["Title"]);
             Assert.AreEqual(3, clone.OverviewSelectedGameAchievementColumnOrder["Rarity"]);
             Assert.AreEqual(1, clone.SingleGameColumnOrder["Achievement"]);
@@ -263,6 +278,9 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(GridVerticalAlignment.Bottom, clone.OverviewGameSummariesColumnVerticalAlignments["GameSummaryName"]);
             Assert.AreEqual(GridAlignment.Right, clone.OverviewGameSummariesColumnHeaderAlignments["GameSummaryName"]);
 
+            Assert.IsFalse(target.OverviewRecentAchievementColumnVisibility["Title"]);
+            Assert.IsFalse(target.OverviewSelectedGameAchievementColumnVisibility["Rarity"]);
+            Assert.IsFalse(target.SingleGameColumnVisibility["Achievement"]);
             Assert.AreEqual(2, target.OverviewRecentAchievementColumnOrder["Title"]);
             Assert.AreEqual(3, target.OverviewSelectedGameAchievementColumnOrder["Rarity"]);
             Assert.AreEqual(1, target.SingleGameColumnOrder["Achievement"]);
@@ -278,11 +296,14 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(GridAlignment.Right, target.OverviewGameSummariesColumnHeaderAlignments["GameSummaryName"]);
 
             Assert.AreNotSame(source.OverviewRecentAchievementColumnOrder, clone.OverviewRecentAchievementColumnOrder);
+            Assert.AreNotSame(source.OverviewRecentAchievementColumnVisibility, clone.OverviewRecentAchievementColumnVisibility);
             Assert.AreNotSame(source.OverviewSelectedGameAchievementColumnOrder, target.OverviewSelectedGameAchievementColumnOrder);
+            Assert.AreNotSame(source.OverviewSelectedGameAchievementColumnVisibility, target.OverviewSelectedGameAchievementColumnVisibility);
             Assert.AreNotSame(source.DesktopThemeColumnOrder, clone.DesktopThemeColumnOrder);
             Assert.AreNotSame(source.OverviewGameSummariesColumnOrder, target.OverviewGameSummariesColumnOrder);
             Assert.AreNotSame(source.OverviewRecentAchievementColumnAlignments, clone.OverviewRecentAchievementColumnAlignments);
             Assert.AreNotSame(source.OverviewSelectedGameAchievementColumnAlignments, target.OverviewSelectedGameAchievementColumnAlignments);
+            Assert.AreNotSame(source.SingleGameColumnVisibility, clone.SingleGameColumnVisibility);
             Assert.AreNotSame(source.SingleGameColumnAlignments, clone.SingleGameColumnAlignments);
             Assert.AreNotSame(source.DesktopThemeColumnAlignments, clone.DesktopThemeColumnAlignments);
             Assert.AreNotSame(source.OverviewGameSummariesColumnAlignments, target.OverviewGameSummariesColumnAlignments);
@@ -456,12 +477,15 @@ namespace PlayniteAchievements.Models.Tests
             settings.DataGridColumnVisibility["Title"] = false;
             settings.DataGridColumnWidths["Title"] = 100d;
             settings.DataGridColumnOrder["Title"] = 2;
+            settings.OverviewRecentAchievementColumnVisibility["Title"] = false;
             settings.OverviewRecentAchievementColumnWidths["Title"] = 101d;
             settings.OverviewRecentAchievementColumnOrder["Title"] = 3;
             settings.OverviewRecentAchievementColumnAlignments["Title"] = GridAlignment.Center;
+            settings.OverviewSelectedGameAchievementColumnVisibility["Rarity"] = false;
             settings.OverviewSelectedGameAchievementColumnWidths["Rarity"] = 102d;
             settings.OverviewSelectedGameAchievementColumnOrder["Rarity"] = 4;
             settings.OverviewSelectedGameAchievementColumnAlignments["Rarity"] = GridAlignment.Right;
+            settings.SingleGameColumnVisibility["Points"] = false;
             settings.SingleGameColumnWidths["Points"] = 103d;
             settings.SingleGameColumnOrder["Points"] = 5;
             settings.SingleGameColumnAlignments["Points"] = GridAlignment.Right;
@@ -526,12 +550,15 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(0, settings.DataGridColumnVisibility.Count);
             Assert.AreEqual(0, settings.DataGridColumnWidths.Count);
             Assert.AreEqual(0, settings.DataGridColumnOrder.Count);
+            Assert.AreEqual(0, settings.OverviewRecentAchievementColumnVisibility.Count);
             Assert.AreEqual(0, settings.OverviewRecentAchievementColumnWidths.Count);
             Assert.AreEqual(0, settings.OverviewRecentAchievementColumnOrder.Count);
             Assert.AreEqual(0, settings.OverviewRecentAchievementColumnAlignments.Count);
+            Assert.AreEqual(0, settings.OverviewSelectedGameAchievementColumnVisibility.Count);
             Assert.AreEqual(0, settings.OverviewSelectedGameAchievementColumnWidths.Count);
             Assert.AreEqual(0, settings.OverviewSelectedGameAchievementColumnOrder.Count);
             Assert.AreEqual(0, settings.OverviewSelectedGameAchievementColumnAlignments.Count);
+            Assert.AreEqual(0, settings.SingleGameColumnVisibility.Count);
             Assert.AreEqual(0, settings.SingleGameColumnWidths.Count);
             Assert.AreEqual(0, settings.SingleGameColumnOrder.Count);
             Assert.AreEqual(0, settings.SingleGameColumnAlignments.Count);

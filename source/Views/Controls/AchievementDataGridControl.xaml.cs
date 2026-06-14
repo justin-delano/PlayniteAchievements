@@ -24,7 +24,7 @@ namespace PlayniteAchievements.Views.Controls
     public partial class AchievementDataGridControl : UserControl, IDisposable
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-        private ColumnWidthPersistenceService _columnPersistence;
+        private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
         private const double CompactColumnMinWidth = 22;
         private const double DefaultStatusColumnWidth = 36;
@@ -51,6 +51,17 @@ namespace PlayniteAchievements.Views.Controls
                 ["CollectionScore"] = 110,
                 ["PrestigeScore"] = 110,
                 ["Points"] = 100
+            };
+
+        private static readonly IReadOnlyDictionary<string, double> LegacyOverviewAchievementWidthSeeds =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Achievement"] = 520,
+                ["UnlockDate"] = 230,
+                ["CategoryType"] = 200,
+                ["CategoryLabel"] = 200,
+                ["Rarity"] = 170,
+                ["Points"] = 120
             };
 
         /// <summary>
@@ -251,6 +262,16 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(AllowColumnVisibilityMenuProperty, value);
         }
 
+        public static readonly DependencyProperty DelayInitialRenderUntilNormalizedProperty =
+            DependencyProperty.Register(nameof(DelayInitialRenderUntilNormalized), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnDelayInitialRenderUntilNormalizedChanged));
+
+        public bool DelayInitialRenderUntilNormalized
+        {
+            get => (bool)GetValue(DelayInitialRenderUntilNormalizedProperty);
+            set => SetValue(DelayInitialRenderUntilNormalizedProperty, value);
+        }
+
         public static readonly DependencyProperty ShowColumnHeadersProperty =
             DependencyProperty.Register(nameof(ShowColumnHeaders), typeof(bool),
                 typeof(AchievementDataGridControl), new PropertyMetadata(true, OnShowColumnHeadersChanged));
@@ -342,6 +363,14 @@ namespace PlayniteAchievements.Views.Controls
             if (d is AchievementDataGridControl control)
             {
                 control.UpdateColumnHeadersVisibility();
+            }
+        }
+
+        private static void OnDelayInitialRenderUntilNormalizedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control && control._columnPersistence != null)
+            {
+                control._columnPersistence.DelayInitialRenderUntilNormalized = e.NewValue is bool value && value;
             }
         }
 
@@ -486,7 +515,7 @@ namespace PlayniteAchievements.Views.Controls
                 AchievementsDataGrid,
                 () => GetHeaderAlignmentsByKey(settings));
 
-            _columnPersistence = new ColumnWidthPersistenceService(
+            _columnPersistence = new DataGridColumnLayoutService(
                 AchievementsDataGrid,
                 Logger,
                 () => GetMergedWidths(settings),
@@ -548,7 +577,9 @@ namespace PlayniteAchievements.Views.Controls
                     }
                 },
                 getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
-                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid));
+                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid),
+                isRuntimeDefaultWidth: IsRuntimeDefaultWidthSeed);
+            _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
 
             // Force collapse Game column when not shown (prevents flicker by applying during persistence)
             // Also exclude from visibility toggle menu
@@ -585,20 +616,37 @@ namespace PlayniteAchievements.Views.Controls
                 }
             }
 
-            // Fall back to single game widths for any missing keys
-            var singleGameMap = settings?.Persisted?.SingleGameColumnWidths;
-            if (singleGameMap != null)
+            if (ShouldUseSingleGameWidthFallback())
             {
-                foreach (var pair in singleGameMap)
+                var singleGameMap = settings?.Persisted?.SingleGameColumnWidths;
+                if (singleGameMap != null)
                 {
-                    if (!merged.ContainsKey(pair.Key) && IsValidWidth(pair.Value))
+                    foreach (var pair in singleGameMap)
                     {
-                        merged[pair.Key] = NormalizeDefaultWidth(pair.Key, pair.Value);
+                        if (!merged.ContainsKey(pair.Key) && IsValidWidth(pair.Value))
+                        {
+                            merged[pair.Key] = NormalizeDefaultWidth(pair.Key, pair.Value);
+                        }
                     }
                 }
             }
 
             return merged;
+        }
+
+        private bool ShouldUseSingleGameWidthFallback()
+        {
+            switch (ColumnSettingsKey)
+            {
+                case "OverviewRecentAchievements":
+                case "Overview":
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                case "StartPageAchievements":
+                    return false;
+                default:
+                    return true;
+            }
         }
 
         private Dictionary<string, bool> GetVisibilityMap(PlayniteAchievementsSettings settings)
@@ -667,6 +715,14 @@ namespace PlayniteAchievements.Views.Controls
             {
                 case "StartPageAchievements":
                     return settings.Persisted.StartPageAchievementColumnVisibility;
+                case "SingleGame":
+                    return settings.Persisted.SingleGameColumnVisibility;
+                case "OverviewRecentAchievements":
+                case "Overview":
+                    return settings.Persisted.OverviewRecentAchievementColumnVisibility;
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                    return settings.Persisted.OverviewSelectedGameAchievementColumnVisibility;
                 default:
                     return settings.Persisted.DataGridColumnVisibility;
             }
@@ -683,6 +739,17 @@ namespace PlayniteAchievements.Views.Controls
             {
                 case "StartPageAchievements":
                     settings.Persisted.StartPageAchievementColumnVisibility = map;
+                    break;
+                case "SingleGame":
+                    settings.Persisted.SingleGameColumnVisibility = map;
+                    break;
+                case "OverviewRecentAchievements":
+                case "Overview":
+                    settings.Persisted.OverviewRecentAchievementColumnVisibility = map;
+                    break;
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                    settings.Persisted.OverviewSelectedGameAchievementColumnVisibility = map;
                     break;
                 default:
                     settings.Persisted.DataGridColumnVisibility = map;
@@ -972,6 +1039,21 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return width;
+        }
+
+        private static bool IsRuntimeDefaultWidthSeed(string key, double width)
+        {
+            return IsWidthSeed(DefaultColumnWidthSeeds, key, width) ||
+                   IsWidthSeed(LegacyOverviewAchievementWidthSeeds, key, width);
+        }
+
+        private static bool IsWidthSeed(IReadOnlyDictionary<string, double> seeds, string key, double width)
+        {
+            return !string.IsNullOrWhiteSpace(key) &&
+                   seeds != null &&
+                   seeds.TryGetValue(key, out var seed) &&
+                   IsValidWidth(seed) &&
+                   Math.Abs(ColumnWidthNormalization.RoundPixelWidth(width) - ColumnWidthNormalization.RoundPixelWidth(seed)) <= 0.2;
         }
 
         private static void SavePluginSettings(PlayniteAchievementsSettings settings)

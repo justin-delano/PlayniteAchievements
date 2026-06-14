@@ -124,6 +124,8 @@ namespace PlayniteAchievements.Models.Settings
                     changed |= RenameColumnKeys(persisted[dictionaryName] as JObject);
                 }
 
+                changed |= CopyLegacyAchievementColumnVisibility(persisted);
+
                 return changed
                     ? root.ToString(Formatting.None)
                     : json;
@@ -171,6 +173,33 @@ namespace PlayniteAchievements.Models.Settings
                 }
 
                 dictionary.Remove(rename.OldName);
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private static bool CopyLegacyAchievementColumnVisibility(JObject persisted)
+        {
+            if (persisted == null || persisted["DataGridColumnVisibility"] == null)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var propertyName in new[]
+            {
+                "OverviewRecentAchievementColumnVisibility",
+                "OverviewSelectedGameAchievementColumnVisibility",
+                "SingleGameColumnVisibility"
+            })
+            {
+                if (persisted[propertyName] != null)
+                {
+                    continue;
+                }
+
+                persisted[propertyName] = persisted["DataGridColumnVisibility"].DeepClone();
                 changed = true;
             }
 

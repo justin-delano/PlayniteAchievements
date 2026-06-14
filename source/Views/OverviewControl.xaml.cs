@@ -37,41 +37,9 @@ namespace PlayniteAchievements.Views
         private bool _committingOverviewSelection;
         private DataGrid GameSummariesGrid => GameSummariesGridControl?.InternalDataGrid;
 
-        // Column persistence state (for GameSummariesGrid only - AchievementDataGridControl handles its own)
-        private readonly Dictionary<DataGridColumn, EventHandler> _columnWidthChangedHandlers = new Dictionary<DataGridColumn, EventHandler>();
-        private readonly Dictionary<string, double> _pendingOverviewWidthUpdates = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        private DispatcherTimer _saveTimer;
-        private bool _isApplyingWidths;
-        private bool _isResizeInProgress;
-        private string _lastOverviewResizedKey;
-
-        private static readonly IReadOnlyDictionary<string, double> DefaultAchievementWidthSeeds =
-            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["Achievement"] = 520,
-                ["UnlockDate"] = 230,
-                ["CategoryType"] = 200,
-                ["CategoryLabel"] = 200,
-                ["Rarity"] = 170,
-                ["Points"] = 120
-            };
-
-        private static readonly IReadOnlyDictionary<string, double> DefaultOverviewWidthSeeds =
-            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["GameSummaryName"] = 500,
-                ["GameSummaryLastPlayed"] = 240,
-                ["GameSummaryPlaytime"] = 170,
-                ["GameSummaryProgression"] = 360,
-                ["TotalAchievements"] = 180,
-                ["GameSummaryCollectionScore"] = 180,
-                ["GameSummaryPrestigeScore"] = 180
-            };
-
         public OverviewControl()
         {
             InitializeComponent();
-            InitSaveTimer();
         }
 
         public OverviewControl(
@@ -86,7 +54,6 @@ namespace PlayniteAchievements.Views
             PlayniteAchievementsSettings settings)
         {
             InitializeComponent();
-            InitSaveTimer();
 
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings;
@@ -109,15 +76,6 @@ namespace PlayniteAchievements.Views
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.SetActive(false);
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
-        }
-
-        private void InitSaveTimer()
-        {
-            _saveTimer = new DispatcherTimer(DispatcherPriority.Background)
-            {
-                Interval = TimeSpan.FromMilliseconds(350)
-            };
-            _saveTimer.Tick += SaveTimer_Tick;
         }
 
         private void ScoreCard_InfoRequested(object sender, RoutedEventArgs e)
@@ -184,9 +142,9 @@ namespace PlayniteAchievements.Views
                     _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
                 }
                 PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
-                FlushPendingUpdates();
-                DetachAllHandlers();
                 GameSummariesGridControl?.Dispose();
+                RecentAchievementsDataGrid?.Dispose();
+                GameAchievementsGrid?.Dispose();
                 _viewModel?.Dispose();
             }
             catch (Exception ex)
@@ -199,11 +157,10 @@ namespace PlayniteAchievements.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
-            EnsureDefaultSeeds();
-            // RecentAchievementsDataGrid is now AchievementDataGridControl, uses built-in persistence
-            // GameAchievementsGrid uses AchievementDataGridControl with built-in persistence
-            GameSummariesGridControl?.Refresh();
             ApplyOverviewColumnRatio();
+            GameSummariesGridControl?.Refresh();
+            RecentAchievementsDataGrid?.Refresh();
+            GameAchievementsGrid?.Refresh();
             ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
             UpdatePieChartLayout();
@@ -256,23 +213,9 @@ namespace PlayniteAchievements.Views
                     ResetRecentAchievementsToDefaultSort();
                 }
 
-                if (TryApplyPendingToggleWidths()) return;
-                QueueActiveGridNormalization(rescaleAll: false);
+                RecentAchievementsDataGrid?.Refresh();
+                GameAchievementsGrid?.Refresh();
             }), DispatcherPriority.Render);
-        }
-
-        private void SaveTimer_Tick(object sender, EventArgs e)
-        {
-            _saveTimer?.Stop();
-            var shouldNormalizeOverview = _pendingOverviewWidthUpdates.Count > 0;
-            FlushPendingUpdates();
-
-            if (_isResizeInProgress) return;
-
-            if (shouldNormalizeOverview)
-            {
-                NormalizeGridColumns(GameSummariesGrid);
-            }
         }
 
         private void ClearLeftSearch_Click(object sender, RoutedEventArgs e) => _viewModel?.ClearLeftSearch();
@@ -501,10 +444,6 @@ namespace PlayniteAchievements.Views
 
         private void ClearGameSelection_Click(object sender, RoutedEventArgs e)
         {
-            if (_viewModel?.IsGameSelected == true)
-            {
-                PrecomputeToggleWidths(toGameSelected: false);
-            }
             _viewModel?.ClearGameSelection();
             _lastSelectedOverviewGameId = null;
         }
@@ -1021,12 +960,6 @@ namespace PlayniteAchievements.Views
             var currentGameId = item.PlayniteGameId;
             var gameChanged = !_lastSelectedOverviewGameId.HasValue ||
                               currentGameId != _lastSelectedOverviewGameId.Value;
-            var wasGameSelected = _viewModel.IsGameSelected;
-
-            if (!wasGameSelected)
-            {
-                PrecomputeToggleWidths(toGameSelected: true);
-            }
 
             _committingOverviewSelection = true;
             try
@@ -1053,11 +986,6 @@ namespace PlayniteAchievements.Views
             if (_viewModel == null)
             {
                 return false;
-            }
-
-            if (_viewModel.IsGameSelected)
-            {
-                PrecomputeToggleWidths(toGameSelected: false);
             }
 
             _committingOverviewSelection = true;
@@ -1151,10 +1079,6 @@ namespace PlayniteAchievements.Views
                 {
                     // Best-effort: swallow any focus clearing errors to avoid breaking UI
                 }
-                if (_viewModel.IsGameSelected)
-                {
-                    PrecomputeToggleWidths(toGameSelected: false);
-                }
                 _viewModel.ClearGameSelection();
                 _lastSelectedOverviewGameId = null;
                 e.Handled = true;
@@ -1234,25 +1158,6 @@ namespace PlayniteAchievements.Views
                   ?? e?.Source as DataGridRow
                   ?? VisualTreeHelpers.FindVisualParent<DataGridRow>(e?.OriginalSource as DependencyObject);
             return row != null;
-        }
-
-        private void DataGridColumnMenu_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            if (!(sender is DataGrid grid)) return;
-
-            var source = e.OriginalSource as DependencyObject;
-            var header = VisualTreeHelpers.FindVisualParent<DataGridColumnHeader>(source);
-            if (header?.Column == null) return;
-
-            e.Handled = true;
-            var menu = BuildColumnVisibilityMenu(grid);
-            if (menu == null || menu.Items.Count == 0) return;
-
-            menu.Placement = PlacementMode.Bottom;
-            menu.PlacementTarget = header;
-            menu.HorizontalOffset = 0;
-            menu.VerticalOffset = 0;
-            menu.IsOpen = true;
         }
 
         private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
@@ -1503,533 +1408,6 @@ namespace PlayniteAchievements.Views
         private static bool IsValidOverviewColumnRatio(double ratio)
         {
             return !double.IsNaN(ratio) && !double.IsInfinity(ratio) && ratio > 0d && ratio < 1d;
-        }
-
-        #endregion
-
-        #region Column Persistence
-
-        private void AttachHandlers(DataGrid grid)
-        {
-            if (grid == null) return;
-
-            foreach (var column in grid.Columns)
-            {
-                AttachWidthHandler(grid, column);
-            }
-
-            grid.Loaded += Grid_Loaded;
-            grid.SizeChanged += Grid_SizeChanged;
-            grid.PreviewMouseLeftButtonDown += Grid_PreviewMouseLeftButtonDown;
-            grid.PreviewMouseLeftButtonUp += Grid_PreviewMouseLeftButtonUp;
-            grid.LostMouseCapture += Grid_LostMouseCapture;
-        }
-
-        private void DetachAllHandlers()
-        {
-            foreach (var pair in _columnWidthChangedHandlers.ToList())
-            {
-                var descriptor = System.ComponentModel.DependencyPropertyDescriptor
-                    .FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn));
-                descriptor?.RemoveValueChanged(pair.Key, pair.Value);
-            }
-            _columnWidthChangedHandlers.Clear();
-
-            DetachGridHandlers(GameSummariesGrid);
-            DetachGridHandlers(RecentAchievementsDataGrid.InternalDataGrid);
-            // GameAchievementsGrid is managed by AchievementDataGridControl
-
-            if (_saveTimer != null)
-            {
-                _saveTimer.Stop();
-                _saveTimer.Tick -= SaveTimer_Tick;
-                _saveTimer = null;
-            }
-        }
-
-        private void DetachGridHandlers(DataGrid grid)
-        {
-            if (grid == null) return;
-            grid.Loaded -= Grid_Loaded;
-            grid.SizeChanged -= Grid_SizeChanged;
-            grid.PreviewMouseLeftButtonDown -= Grid_PreviewMouseLeftButtonDown;
-            grid.PreviewMouseLeftButtonUp -= Grid_PreviewMouseLeftButtonUp;
-            grid.LostMouseCapture -= Grid_LostMouseCapture;
-        }
-
-        private void AttachWidthHandler(DataGrid grid, DataGridColumn column)
-        {
-            if (column == null || _columnWidthChangedHandlers.ContainsKey(column)) return;
-
-            var descriptor = System.ComponentModel.DependencyPropertyDescriptor
-                .FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn));
-            if (descriptor == null) return;
-
-            EventHandler handler = (_, __) => OnColumnWidthChanged(grid, column);
-            descriptor.AddValueChanged(column, handler);
-            _columnWidthChangedHandlers[column] = handler;
-        }
-
-        private void OnColumnWidthChanged(DataGrid grid, DataGridColumn column)
-        {
-            if (_isApplyingWidths || !_isResizeInProgress || column == null || !column.CanUserResize) return;
-
-            var key = ColumnWidthNormalization.GetColumnKey(column);
-            if (string.IsNullOrWhiteSpace(key)) return;
-
-            var width = column.ActualWidth;
-            if (!ColumnWidthNormalization.IsValidWidth(width)) return;
-
-            // RecentAchievementsDataGrid and GameAchievementsGrid handle their own column widths via ColumnWidthPersistenceService
-            if (grid == GameSummariesGrid)
-            {
-                _lastOverviewResizedKey = key;
-                QueueWidthUpdate(_pendingOverviewWidthUpdates, key, width);
-            }
-        }
-
-        private void QueueWidthUpdate(Dictionary<string, double> map, string key, double width)
-        {
-            map[key] = ColumnWidthNormalization.RoundPixelWidth(width);
-            _saveTimer?.Stop();
-            _saveTimer?.Start();
-        }
-
-        private void FlushPendingUpdates()
-        {
-            if (_settings?.Persisted == null) return;
-
-            var changed = false;
-            // AchievementDataGridControl handles its own width persistence
-            if (_pendingOverviewWidthUpdates.Count > 0)
-            {
-                changed |= FlushToMap(_settings.Persisted.OverviewGameSummariesColumnWidths, _pendingOverviewWidthUpdates);
-            }
-
-            if (changed) SaveSettings();
-        }
-
-        private bool FlushToMap(Dictionary<string, double> target, Dictionary<string, double> pending)
-        {
-            if (target == null || pending.Count == 0) return false;
-
-            var changed = false;
-            foreach (var update in pending)
-            {
-                if (!ColumnWidthNormalization.IsValidWidth(update.Value)) continue;
-                if (!target.TryGetValue(update.Key, out var existing) || Math.Abs(existing - update.Value) > 0.1)
-                {
-                    target[update.Key] = update.Value;
-                    changed = true;
-                }
-            }
-            pending.Clear();
-            return changed;
-        }
-
-        private void Grid_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is DataGrid grid)
-            {
-                NormalizeGridColumns(grid);
-            }
-        }
-
-        private void Grid_SizeChanged(object sender, SizeChangedEventArgs e)
-        {
-            if (!e.WidthChanged || !(sender is DataGrid grid) || !grid.IsVisible || grid.ActualWidth <= 1) return;
-
-            var isRecentAchievementsGrid = grid == RecentAchievementsDataGrid.InternalDataGrid;
-            var isVisibilityActivation = e.PreviousSize.Width <= 1;
-            if (isRecentAchievementsGrid && isVisibilityActivation && HasPendingToggleWidths()) return;
-
-            grid.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (grid.IsLoaded && !_isResizeInProgress)
-                {
-                    if (isRecentAchievementsGrid)
-                    {
-                        NormalizeRecentAchievementColumns(grid);
-                    }
-                    else
-                    {
-                        NormalizeGridColumns(grid);
-                    }
-                }
-            }), DispatcherPriority.Render);
-        }
-
-        private void Grid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (VisualTreeHelpers.IsColumnResizeThumbHit(e.OriginalSource as DependencyObject))
-            {
-                _isResizeInProgress = true;
-            }
-        }
-
-        private void Grid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            CompleteResizeNormalization(sender as DataGrid);
-        }
-
-        private void Grid_LostMouseCapture(object sender, MouseEventArgs e)
-        {
-            CompleteResizeNormalization(sender as DataGrid);
-        }
-
-        private void CompleteResizeNormalization(DataGrid grid)
-        {
-            if (!_isResizeInProgress) return;
-            _isResizeInProgress = false;
-            if (grid == null) return;
-            grid.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (grid == RecentAchievementsDataGrid.InternalDataGrid)
-                {
-                    NormalizeRecentAchievementColumns(grid);
-                }
-                else
-                {
-                    NormalizeGridColumns(grid);
-                }
-            }), DispatcherPriority.Background);
-        }
-
-        #endregion
-
-        #region Normalization
-
-        private void NormalizeGridColumns(DataGrid grid, bool rescaleAll = false)
-        {
-            if (grid == null || !grid.IsLoaded) return;
-
-            if (grid == RecentAchievementsDataGrid.InternalDataGrid)
-            {
-                NormalizeRecentAchievementColumns(grid, rescaleAll);
-                return;
-            }
-
-            string protectedKey = grid == GameSummariesGrid ? _lastOverviewResizedKey : null;
-            var preferredWidths = grid == GameSummariesGrid ? GetOverviewWidths() : null;
-
-            if (ColumnWidthNormalization.TryBuildNormalizedWidths(grid, protectedKey, rescaleAll,
-                preferredWidths, 0, out var normalized))
-            {
-                ColumnWidthNormalization.ApplyWidthsByKey(grid, normalized, ref _isApplyingWidths);
-            }
-        }
-
-        private void NormalizeRecentAchievementColumns(DataGrid referenceGrid, bool rescaleAll = false)
-        {
-            // AchievementDataGridControl handles its own column normalization internally
-            // This method is kept for compatibility but is now a no-op
-        }
-
-        private Dictionary<string, double> CaptureResizableWidths(DataGrid grid, double fallbackWidth)
-        {
-            var captured = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            if (grid == null || !grid.IsLoaded) return captured;
-
-            var available = ColumnWidthNormalization.GetGridAvailableWidth(grid);
-            if (!ColumnWidthNormalization.IsValidWidth(available))
-            {
-                available = fallbackWidth;
-            }
-            if (!ColumnWidthNormalization.IsValidWidth(available)) return captured;
-
-            var minColWidth = ColumnWidthNormalization.ResolveResizableMinimumColumnWidth(
-                grid.Columns.Where(c => c?.Visibility == Visibility.Visible).ToList(),
-                ColumnWidthNormalization.GetContainerRelativeMinimumColumnWidth(available),
-                available);
-
-            foreach (var column in grid.Columns.Where(c => c?.Visibility == Visibility.Visible && c.CanUserResize))
-            {
-                var key = ColumnWidthNormalization.GetColumnKey(column);
-                if (string.IsNullOrWhiteSpace(key)) continue;
-
-                var columnMinWidth = ColumnWidthNormalization.ResolveColumnMinimumWidth(column, minColWidth);
-                captured[key] = Math.Max(columnMinWidth, ColumnWidthNormalization.GetCurrentWidth(column));
-            }
-
-            return captured;
-        }
-
-        private void QueueActiveGridNormalization(bool rescaleAll)
-        {
-            // Only RecentAchievementsDataGrid needs manual normalization
-            // GameAchievementsGrid uses AchievementDataGridControl with built-in persistence
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (_viewModel == null) return;
-                if (_viewModel.IsSelectedGameContentReady) return; // GameAchievementsGrid manages itself
-
-                if (RecentAchievementsDataGrid.InternalDataGrid == null || !RecentAchievementsDataGrid.InternalDataGrid.IsLoaded ||
-                    !RecentAchievementsDataGrid.InternalDataGrid.IsVisible || RecentAchievementsDataGrid.InternalDataGrid.ActualWidth <= 1) return;
-                NormalizeRecentAchievementColumns(RecentAchievementsDataGrid.InternalDataGrid, rescaleAll);
-            }), DispatcherPriority.Loaded);
-        }
-
-        #endregion
-
-        #region Toggle Precomputation
-
-        // RecentAchievementsDataGrid and GameAchievementsGrid now use AchievementDataGridControl
-        // which handles its own column persistence. Toggle width handling is no longer needed.
-
-        private bool HasPendingToggleWidths() => false;
-
-        private bool TryApplyPendingToggleWidths() => false;
-
-        private void PrecomputeToggleWidths(bool toGameSelected)
-        {
-            // No-op: AchievementDataGridControl handles its own column widths
-        }
-
-        #endregion
-
-        #region Apply/Get Widths
-
-        private void ApplyVisibilityToGrids()
-        {
-            // RecentAchievementsDataGrid and GameAchievementsGrid use AchievementDataGridControl which handles its own visibility
-            ApplyVisibility(GameSummariesGrid, _settings?.Persisted?.OverviewGameSummariesColumnVisibility);
-        }
-
-        private void ApplyVisibility(DataGrid grid, Dictionary<string, bool> map)
-        {
-            if (grid == null || map == null) return;
-            foreach (var column in grid.Columns)
-            {
-                var key = ColumnWidthNormalization.GetColumnKey(column);
-                if (!string.IsNullOrWhiteSpace(key) && map.TryGetValue(key, out var isVisible))
-                {
-                    column.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-                }
-            }
-        }
-
-        private void ApplyWidthsToGrids()
-        {
-            // RecentAchievementsDataGrid and GameAchievementsGrid use AchievementDataGridControl which handles its own widths
-            EnsureDefaultSeeds();
-            ApplyWidths(GameSummariesGrid, GetOverviewWidths());
-            NormalizeGridColumns(GameSummariesGrid);
-        }
-
-        private void ApplyWidths(DataGrid grid, Dictionary<string, double> map)
-        {
-            if (grid == null || map == null) return;
-
-            _isApplyingWidths = true;
-            try
-            {
-                foreach (var column in grid.Columns)
-                {
-                    if (column == null || !column.CanUserResize) continue;
-                    var key = ColumnWidthNormalization.GetColumnKey(column);
-                    if (string.IsNullOrWhiteSpace(key)) continue;
-                    if (map.TryGetValue(key, out var width) && ColumnWidthNormalization.IsValidWidth(width))
-                    {
-                        column.Width = new DataGridLength(ColumnWidthNormalization.RoundPixelWidth(width), DataGridLengthUnitType.Pixel);
-                    }
-                }
-            }
-            finally
-            {
-                _isApplyingWidths = false;
-            }
-        }
-
-        private void ApplyWidthToGridByKey(DataGrid grid, string key, double width)
-        {
-            if (grid == null || string.IsNullOrWhiteSpace(key) || !ColumnWidthNormalization.IsValidWidth(width)) return;
-
-            _isApplyingWidths = true;
-            try
-            {
-                foreach (var column in grid.Columns)
-                {
-                    if (column == null || !column.CanUserResize) continue;
-                    var colKey = ColumnWidthNormalization.GetColumnKey(column);
-                    var roundedWidth = ColumnWidthNormalization.RoundPixelWidth(width);
-                    if (ColumnWidthNormalization.KeysEqual(colKey, key) && Math.Abs(column.ActualWidth - roundedWidth) > 0.1)
-                    {
-                        column.Width = new DataGridLength(roundedWidth, DataGridLengthUnitType.Pixel);
-                    }
-                }
-            }
-            finally
-            {
-                _isApplyingWidths = false;
-            }
-        }
-
-        private Dictionary<string, double> GetAchievementWidths()
-        {
-            var merged = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-
-            // Legacy fallback
-            var legacy = _settings?.Persisted?.DataGridColumnWidths;
-            if (legacy != null)
-            {
-                foreach (var pair in legacy)
-                {
-                    if (ColumnWidthNormalization.IsValidWidth(pair.Value))
-                        merged[pair.Key] = pair.Value;
-                }
-            }
-
-            var current = _settings?.Persisted?.OverviewRecentAchievementColumnWidths;
-            if (current != null)
-            {
-                foreach (var pair in current)
-                {
-                    if (ColumnWidthNormalization.IsValidWidth(pair.Value))
-                        merged[pair.Key] = pair.Value;
-                }
-            }
-
-            return merged;
-        }
-
-        private Dictionary<string, double> GetOverviewWidths()
-        {
-            return _settings?.Persisted?.OverviewGameSummariesColumnWidths
-                ?? new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-        }
-
-        private void EnsureDefaultSeeds()
-        {
-            if (_settings?.Persisted == null) return;
-            var changed = false;
-
-            var achievementMap = _settings.Persisted.OverviewRecentAchievementColumnWidths;
-            if (achievementMap == null)
-            {
-                achievementMap = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                _settings.Persisted.OverviewRecentAchievementColumnWidths = achievementMap;
-                changed = true;
-            }
-            changed |= EnsureSeeds(achievementMap, DefaultAchievementWidthSeeds);
-
-            var overviewMap = _settings.Persisted.OverviewGameSummariesColumnWidths;
-            if (overviewMap == null)
-            {
-                overviewMap = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-                _settings.Persisted.OverviewGameSummariesColumnWidths = overviewMap;
-                changed = true;
-            }
-            changed |= EnsureSeeds(overviewMap, DefaultOverviewWidthSeeds);
-
-            if (changed) SaveSettings();
-        }
-
-        private bool EnsureSeeds(Dictionary<string, double> map, IReadOnlyDictionary<string, double> seeds)
-        {
-            if (map == null || seeds == null) return false;
-            var changed = false;
-            foreach (var pair in seeds)
-            {
-                if (!map.TryGetValue(pair.Key, out var width) || !ColumnWidthNormalization.IsValidWidth(width))
-                {
-                    map[pair.Key] = pair.Value;
-                    changed = true;
-                }
-            }
-            return changed;
-        }
-
-        #endregion
-
-        #region Column Visibility Menu
-
-        private ContextMenu BuildColumnVisibilityMenu(DataGrid grid)
-        {
-            var menu = new ContextMenu();
-            foreach (var column in grid.Columns)
-            {
-                var header = ResolveColumnDisplayName(column);
-                if (string.IsNullOrWhiteSpace(header)) continue;
-
-                var target = column;
-                var item = new MenuItem
-                {
-                    Header = header,
-                    IsCheckable = true,
-                    IsChecked = target.Visibility == Visibility.Visible,
-                    StaysOpenOnClick = true
-                };
-                item.Click += (_, __) =>
-                {
-                    var isVisible = item.IsChecked;
-                    target.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-                    OnColumnVisibilityChanged(grid, target, isVisible);
-                };
-                menu.Items.Add(item);
-            }
-            return menu;
-        }
-
-        private static string ResolveHeaderText(object header)
-        {
-            switch (header)
-            {
-                case string text: return text;
-                case TextBlock tb: return tb.Text;
-                default: return header?.ToString() ?? string.Empty;
-            }
-        }
-
-        private static string ResolveColumnDisplayName(DataGridColumn column)
-        {
-            var headerText = ResolveHeaderText(column?.Header);
-            if (!string.IsNullOrWhiteSpace(headerText))
-            {
-                return headerText;
-            }
-
-            // Fall back to ColumnKey for columns with blank headers
-            return ColumnWidthNormalization.GetColumnKey(column) ?? string.Empty;
-        }
-
-        private void OnColumnVisibilityChanged(DataGrid grid, DataGridColumn column, bool isVisible)
-        {
-            var key = ColumnWidthNormalization.GetColumnKey(column);
-            if (string.IsNullOrWhiteSpace(key)) return;
-
-            if (grid == GameSummariesGrid)
-            {
-                PersistVisibility(_settings?.Persisted?.OverviewGameSummariesColumnVisibility, key, isVisible);
-                NormalizeGridColumns(GameSummariesGrid);
-                GameSummariesGrid.Items.Refresh();
-            }
-            else if (grid == RecentAchievementsDataGrid.InternalDataGrid)
-            {
-                PersistVisibility(_settings?.Persisted?.DataGridColumnVisibility, key, isVisible);
-                // GameAchievementsGrid handles its own visibility via AchievementDataGridControl
-                NormalizeRecentAchievementColumns(grid);
-            }
-        }
-
-        private void ApplyVisibilityToGridByKey(DataGrid grid, string key, bool isVisible)
-        {
-            if (grid == null || string.IsNullOrWhiteSpace(key)) return;
-            foreach (var column in grid.Columns)
-            {
-                var colKey = ColumnWidthNormalization.GetColumnKey(column);
-                if (ColumnWidthNormalization.KeysEqual(colKey, key))
-                {
-                    column.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
-                }
-            }
-        }
-
-        private void PersistVisibility(Dictionary<string, bool> map, string key, bool isVisible)
-        {
-            if (map == null || string.IsNullOrWhiteSpace(key) || _settings?.Persisted == null) return;
-            if (map.TryGetValue(key, out var existing) && existing == isVisible) return;
-            map[key] = isVisible;
-            SaveSettings();
         }
 
         #endregion

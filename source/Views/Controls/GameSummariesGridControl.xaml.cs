@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Views.Controls
     public partial class GameSummariesGridControl : UserControl, IDisposable
     {
         private static readonly ILogger Logger = LogManager.GetLogger();
-        private ColumnWidthPersistenceService _columnPersistence;
+        private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
 
         private static readonly IReadOnlyDictionary<string, double> DefaultWidthSeeds =
@@ -141,6 +141,19 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(ShowColumnHeadersProperty, value);
         }
 
+        public static readonly DependencyProperty DelayInitialRenderUntilNormalizedProperty =
+            DependencyProperty.Register(
+                nameof(DelayInitialRenderUntilNormalized),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(false, OnDelayInitialRenderUntilNormalizedChanged));
+
+        public bool DelayInitialRenderUntilNormalized
+        {
+            get => (bool)GetValue(DelayInitialRenderUntilNormalizedProperty);
+            set => SetValue(DelayInitialRenderUntilNormalizedProperty, value);
+        }
+
         public event SelectionChangedEventHandler SelectionChanged;
 
         public event EventHandler<DataGridSortingEventArgs> Sorting;
@@ -218,7 +231,7 @@ namespace PlayniteAchievements.Views.Controls
                 GameSummariesGrid,
                 () => GetHeaderAlignmentsByKey(settings));
 
-            _columnPersistence = new ColumnWidthPersistenceService(
+            _columnPersistence = new DataGridColumnLayoutService(
                 GameSummariesGrid,
                 Logger,
                 () => GetWidthsByKey(settings),
@@ -239,6 +252,7 @@ namespace PlayniteAchievements.Views.Controls
                 setHeaderHorizontalAlignments: map => SetHeaderAlignmentsByKey(settings, map),
                 getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GameSummariesGrid));
+            _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
             _columnPersistence.Attach();
             _isAttached = true;
         }
@@ -248,6 +262,14 @@ namespace PlayniteAchievements.Views.Controls
             if (d is GameSummariesGridControl control)
             {
                 control.UpdateColumnHeadersVisibility();
+            }
+        }
+
+        private static void OnDelayInitialRenderUntilNormalizedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is GameSummariesGridControl control && control._columnPersistence != null)
+            {
+                control._columnPersistence.DelayInitialRenderUntilNormalized = e.NewValue is bool value && value;
             }
         }
 

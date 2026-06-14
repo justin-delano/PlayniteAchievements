@@ -138,6 +138,9 @@ namespace PlayniteAchievements.Models.Settings
             target.DataGridColumnOrder = source.DataGridColumnOrder != null
                 ? new Dictionary<string, int>(source.DataGridColumnOrder, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.OverviewRecentAchievementColumnVisibility = source.OverviewRecentAchievementColumnVisibility != null
+                ? new Dictionary<string, bool>(source.OverviewRecentAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             target.OverviewRecentAchievementColumnWidths = source.OverviewRecentAchievementColumnWidths != null
                 ? new Dictionary<string, double>(source.OverviewRecentAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -153,6 +156,9 @@ namespace PlayniteAchievements.Models.Settings
             target.OverviewRecentAchievementColumnHeaderAlignments = source.OverviewRecentAchievementColumnHeaderAlignments != null
                 ? new Dictionary<string, GridAlignment>(source.OverviewRecentAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.OverviewSelectedGameAchievementColumnVisibility = source.OverviewSelectedGameAchievementColumnVisibility != null
+                ? new Dictionary<string, bool>(source.OverviewSelectedGameAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             target.OverviewSelectedGameAchievementColumnWidths = source.OverviewSelectedGameAchievementColumnWidths != null
                 ? new Dictionary<string, double>(source.OverviewSelectedGameAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -168,6 +174,9 @@ namespace PlayniteAchievements.Models.Settings
             target.OverviewSelectedGameAchievementColumnHeaderAlignments = source.OverviewSelectedGameAchievementColumnHeaderAlignments != null
                 ? new Dictionary<string, GridAlignment>(source.OverviewSelectedGameAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.SingleGameColumnVisibility = source.SingleGameColumnVisibility != null
+                ? new Dictionary<string, bool>(source.SingleGameColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             target.SingleGameColumnWidths = source.SingleGameColumnWidths != null
                 ? new Dictionary<string, double>(source.SingleGameColumnWidths, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);

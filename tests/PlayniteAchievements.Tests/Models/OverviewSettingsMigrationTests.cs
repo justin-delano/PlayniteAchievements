@@ -152,5 +152,68 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsNull(persisted["GameSummariesGridSortMode"]);
             Assert.IsNull(persisted["GameSummariesColumnHeaderAlignments"]);
         }
+
+        [TestMethod]
+        public void MigrateFromJson_CopiesLegacyAchievementColumnVisibilityToScopeMaps()
+        {
+            const string json =
+                @"{
+                    ""Persisted"": {
+                        ""DataGridColumnVisibility"": {
+                            ""Title"": false,
+                            ""Rarity"": true
+                        }
+                    }
+                }";
+
+            var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
+            var persisted = (JObject)migrated["Persisted"];
+            var recentVisibility = (JObject)persisted["OverviewRecentAchievementColumnVisibility"];
+            var selectedVisibility = (JObject)persisted["OverviewSelectedGameAchievementColumnVisibility"];
+            var singleGameVisibility = (JObject)persisted["SingleGameColumnVisibility"];
+
+            Assert.IsFalse(recentVisibility["Title"].Value<bool>());
+            Assert.IsTrue(recentVisibility["Rarity"].Value<bool>());
+            Assert.IsFalse(selectedVisibility["Title"].Value<bool>());
+            Assert.IsTrue(selectedVisibility["Rarity"].Value<bool>());
+            Assert.IsFalse(singleGameVisibility["Title"].Value<bool>());
+            Assert.IsTrue(singleGameVisibility["Rarity"].Value<bool>());
+            Assert.IsNotNull(persisted["DataGridColumnVisibility"]);
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_DoesNotOverwriteExistingAchievementColumnVisibilityMaps()
+        {
+            const string json =
+                @"{
+                    ""Persisted"": {
+                        ""DataGridColumnVisibility"": {
+                            ""Title"": false
+                        },
+                        ""OverviewRecentAchievementColumnVisibility"": {
+                            ""Icon"": false
+                        },
+                        ""OverviewSelectedGameAchievementColumnVisibility"": {
+                            ""Rarity"": false
+                        },
+                        ""SingleGameColumnVisibility"": {
+                            ""Points"": false
+                        }
+                    }
+                }";
+
+            var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
+            var persisted = (JObject)migrated["Persisted"];
+            var recentVisibility = (JObject)persisted["OverviewRecentAchievementColumnVisibility"];
+            var selectedVisibility = (JObject)persisted["OverviewSelectedGameAchievementColumnVisibility"];
+            var singleGameVisibility = (JObject)persisted["SingleGameColumnVisibility"];
+
+            Assert.IsFalse(recentVisibility["Icon"].Value<bool>());
+            Assert.IsNull(recentVisibility["Title"]);
+            Assert.IsFalse(selectedVisibility["Rarity"].Value<bool>());
+            Assert.IsNull(selectedVisibility["Title"]);
+            Assert.IsFalse(singleGameVisibility["Points"].Value<bool>());
+            Assert.IsNull(singleGameVisibility["Title"]);
+        }
     }
 }
