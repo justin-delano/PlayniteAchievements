@@ -119,6 +119,8 @@ namespace PlayniteAchievements.Models.Settings
                     changed |= MoveProperty(persisted, rename.OldName, rename.NewName);
                 }
 
+                changed |= CopyLegacyAchievementGridHeaderVisibility(persisted);
+
                 foreach (var dictionaryName in GameSummaryColumnDictionaries)
                 {
                     changed |= RenameColumnKeys(persisted[dictionaryName] as JObject);
@@ -177,6 +179,33 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             return changed;
+        }
+
+        private static bool CopyLegacyAchievementGridHeaderVisibility(JObject persisted)
+        {
+            const string oldName = "ShowAchievementGridColumnHeaders";
+
+            if (persisted == null || persisted[oldName] == null)
+            {
+                return false;
+            }
+
+            foreach (var propertyName in new[]
+            {
+                "ShowOverviewRecentAchievementsGridColumnHeaders",
+                "ShowOverviewSelectedGameGridColumnHeaders"
+            })
+            {
+                if (persisted[propertyName] != null)
+                {
+                    continue;
+                }
+
+                persisted[propertyName] = persisted[oldName].DeepClone();
+            }
+
+            persisted.Remove(oldName);
+            return true;
         }
 
         private static bool CopyLegacyAchievementColumnVisibility(JObject persisted)

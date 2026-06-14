@@ -71,7 +71,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showCompactListRarityBar = true;
         private bool _showCompletionBorder = true;
         private bool _showGameSummariesGridColumnHeaders = true;
-        private bool _showAchievementGridColumnHeaders = true;
+        private bool _showOverviewRecentAchievementsGridColumnHeaders = true;
+        private bool _showOverviewSelectedGameGridColumnHeaders = true;
         private bool _showDesktopThemeAchievementGridColumnHeaders = true;
         private GridAlignment _gridColumnHeaderAlignment = GridAlignment.Center;
         private GridAlignment _gridCellAlignment = GridAlignment.Left;
@@ -599,12 +600,21 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, shows column headers in overview achievement grids.
+        /// When true, shows column headers in the overview recent achievements grid.
         /// </summary>
-        public bool ShowAchievementGridColumnHeaders
+        public bool ShowOverviewRecentAchievementsGridColumnHeaders
         {
-            get => _showAchievementGridColumnHeaders;
-            set => SetValue(ref _showAchievementGridColumnHeaders, value);
+            get => _showOverviewRecentAchievementsGridColumnHeaders;
+            set => SetValue(ref _showOverviewRecentAchievementsGridColumnHeaders, value);
+        }
+
+        /// <summary>
+        /// When true, shows column headers in the overview selected game achievements grid.
+        /// </summary>
+        public bool ShowOverviewSelectedGameGridColumnHeaders
+        {
+            get => _showOverviewSelectedGameGridColumnHeaders;
+            set => SetValue(ref _showOverviewSelectedGameGridColumnHeaders, value);
         }
 
         /// <summary>
@@ -2075,7 +2085,8 @@ namespace PlayniteAchievements.Models.Settings
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ShowCompletionBorder = this.ShowCompletionBorder,
                 ShowOverviewGameSummariesGridColumnHeaders = this.ShowOverviewGameSummariesGridColumnHeaders,
-                ShowAchievementGridColumnHeaders = this.ShowAchievementGridColumnHeaders,
+                ShowOverviewRecentAchievementsGridColumnHeaders = this.ShowOverviewRecentAchievementsGridColumnHeaders,
+                ShowOverviewSelectedGameGridColumnHeaders = this.ShowOverviewSelectedGameGridColumnHeaders,
                 ShowDesktopThemeAchievementGridColumnHeaders = this.ShowDesktopThemeAchievementGridColumnHeaders,
                 GridColumnHeaderAlignment = this.GridColumnHeaderAlignment,
                 GridCellAlignment = this.GridCellAlignment,
@@ -2361,7 +2372,8 @@ namespace PlayniteAchievements.Models.Settings
             ShowCompletionBorder = defaults.ShowCompletionBorder;
 
             ShowOverviewGameSummariesGridColumnHeaders = defaults.ShowOverviewGameSummariesGridColumnHeaders;
-            ShowAchievementGridColumnHeaders = defaults.ShowAchievementGridColumnHeaders;
+            ShowOverviewRecentAchievementsGridColumnHeaders = defaults.ShowOverviewRecentAchievementsGridColumnHeaders;
+            ShowOverviewSelectedGameGridColumnHeaders = defaults.ShowOverviewSelectedGameGridColumnHeaders;
             ShowDesktopThemeAchievementGridColumnHeaders = defaults.ShowDesktopThemeAchievementGridColumnHeaders;
             GridColumnHeaderAlignment = defaults.GridColumnHeaderAlignment;
             GridCellAlignment = defaults.GridCellAlignment;

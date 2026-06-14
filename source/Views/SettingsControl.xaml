@@ -1493,6 +1493,9 @@
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowOverviewRecentAchievementsGridColumnHeaders}"
+                                                          Margin="0,0,0,12"/>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
@@ -1523,7 +1526,7 @@
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
-                                                          IsChecked="{Binding Persisted.ShowAchievementGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowOverviewSelectedGameGridColumnHeaders}"
                                                           Margin="0,0,0,12"/>
                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"

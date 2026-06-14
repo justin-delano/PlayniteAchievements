@@ -905,7 +905,9 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewGameSummariesGridColumnHeaders => _settings?.Persisted?.ShowOverviewGameSummariesGridColumnHeaders ?? true;
 
-        public bool ShowAchievementGridColumnHeaders => _settings?.Persisted?.ShowAchievementGridColumnHeaders ?? true;
+        public bool ShowOverviewRecentAchievementsGridColumnHeaders => _settings?.Persisted?.ShowOverviewRecentAchievementsGridColumnHeaders ?? true;
+
+        public bool ShowOverviewSelectedGameGridColumnHeaders => _settings?.Persisted?.ShowOverviewSelectedGameGridColumnHeaders ?? true;
 
         public double? OverviewGameSummariesGridRowHeight => _settings?.Persisted?.OverviewGameSummariesGridRowHeight;
 
@@ -2179,7 +2181,8 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowOverviewGameMetadata));
                 OnPropertyChanged(nameof(ShowCompletionBorder));
                 OnPropertyChanged(nameof(ShowOverviewGameSummariesGridColumnHeaders));
-                OnPropertyChanged(nameof(ShowAchievementGridColumnHeaders));
+                OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridColumnHeaders));
+                OnPropertyChanged(nameof(ShowOverviewSelectedGameGridColumnHeaders));
                 OnPropertyChanged(nameof(OverviewGameSummariesGridRowHeight));
                 OnPropertyChanged(nameof(OverviewRecentAchievementsGridRowHeight));
                 OnPropertyChanged(nameof(OverviewSelectedGameGridRowHeight));
@@ -2233,9 +2236,13 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(ShowOverviewGameSummariesGridColumnHeaders));
             }
-            else if (propertyName == nameof(PersistedSettings.ShowAchievementGridColumnHeaders))
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewRecentAchievementsGridColumnHeaders))
             {
-                OnPropertyChanged(nameof(ShowAchievementGridColumnHeaders));
+                OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridColumnHeaders));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewSelectedGameGridColumnHeaders))
+            {
+                OnPropertyChanged(nameof(ShowOverviewSelectedGameGridColumnHeaders));
             }
             else if (propertyName == nameof(PersistedSettings.OverviewGameSummariesGridRowHeight))
             {

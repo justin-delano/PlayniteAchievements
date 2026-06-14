@@ -84,7 +84,8 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
             target.ShowCompletionBorder = source.ShowCompletionBorder;
             target.ShowOverviewGameSummariesGridColumnHeaders = source.ShowOverviewGameSummariesGridColumnHeaders;
-            target.ShowAchievementGridColumnHeaders = source.ShowAchievementGridColumnHeaders;
+            target.ShowOverviewRecentAchievementsGridColumnHeaders = source.ShowOverviewRecentAchievementsGridColumnHeaders;
+            target.ShowOverviewSelectedGameGridColumnHeaders = source.ShowOverviewSelectedGameGridColumnHeaders;
             target.ShowDesktopThemeAchievementGridColumnHeaders = source.ShowDesktopThemeAchievementGridColumnHeaders;
             target.GridColumnHeaderAlignment = source.GridColumnHeaderAlignment;
             target.GridCellAlignment = source.GridCellAlignment;
