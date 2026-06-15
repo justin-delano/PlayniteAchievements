@@ -214,7 +214,7 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Event raised when setup is complete and the sidebar should be shown.
+        /// Event raised when setup is complete and the overview should be shown.
         /// </summary>
         public event EventHandler SetupComplete;
 
@@ -465,7 +465,7 @@ namespace PlayniteAchievements.Views
         });
 
         /// <summary>
-        /// Command to continue to the sidebar without refreshing.
+        /// Command to continue to the overview without refreshing.
         /// </summary>
         public ICommand ContinueCommand => new RelayCommand(() =>
         {

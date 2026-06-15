@@ -303,7 +303,7 @@ namespace PlayniteAchievements
                 MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
-                    OpenSingleGameAchievementsView(game.Id);
+                    OpenViewAchievementsWindow(game.Id);
                 }
             };
 
@@ -334,11 +334,11 @@ namespace PlayniteAchievements
 
             yield return new GameMenuItem
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_GameOptions"),
+                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ManageAchievements"),
                 MenuSection = PluginGameMenuSection,
                 Action = (a) =>
                 {
-                    OpenGameOptionsView(game.Id);
+                    OpenManageAchievementsView(game.Id);
                 }
             };
 
@@ -702,7 +702,7 @@ namespace PlayniteAchievements
 
             if (!refreshInProgress)
             {
-                // Fullscreen-only: overview window (desktop uses the sidebar panel).
+                // Fullscreen-only: overview window (desktop uses the overview panel).
                 var isFullscreen = IsFullscreenMode();
 
                 if (isFullscreen)

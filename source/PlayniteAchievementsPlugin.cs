@@ -229,6 +229,7 @@ namespace PlayniteAchievements
                     _cacheManager.CacheInvalidated += (_, __) =>
                     {
                         try { _imageService?.Clear(); } catch { }
+                        InvalidateStartPageData();
                     };
                     _achievementOverridesService = new AchievementOverridesService(
                         _gameCustomDataStore,
@@ -302,7 +303,8 @@ namespace PlayniteAchievements
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
                         _logger,
-                        _windowService.RunRefreshWithGlobalProgressAsync);
+                        _windowService.RunRefreshWithGlobalProgressAsync,
+                        gameId => _windowService.OpenManageAchievementsView(gameId, ManageAchievementsTab.Overview));
 
                     SubscribeDatabaseEventHandlers();
 
@@ -353,7 +355,7 @@ namespace PlayniteAchievements
             }
         }
 
-        // === Sidebar ===
+        // === Overview ===
 
         public override IEnumerable<SidebarItem> GetSidebarItems()
         {
@@ -361,11 +363,11 @@ namespace PlayniteAchievements
             {
                 Title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 Type = SiderbarItemType.View,
-                Icon = GetSidebarIcon(),
+                Icon = GetOverviewIcon(),
                 Opened = () =>
                 {
-                    return new SidebarHostControl(
-                        () => new SidebarControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings),
+                    return new OverviewHostControl(
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings),
                         _logger,
                         PlayniteApi,
                         _refreshService,
@@ -374,7 +376,7 @@ namespace PlayniteAchievements
             };
         }
 
-        private TextBlock GetSidebarIcon()
+        private TextBlock GetOverviewIcon()
         {
             var tb = new TextBlock
             {
@@ -483,6 +485,7 @@ namespace PlayniteAchievements
                     _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
             }
 
+            InvalidateStartPageData();
             _tagSyncService?.HandlePersistedSettingsPropertyChanged(e);
         }
 
@@ -525,6 +528,7 @@ namespace PlayniteAchievements
             try { _fullscreenControllerNavigationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenControllerNavigationService"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
+            DisposeStartPageViews();
 
             // Shutdown logging system
             try { PluginLogger.Shutdown(); } catch (Exception ex) { System.Diagnostics.Trace.TraceError($"Failed to shutdown logger: {ex}"); }
@@ -652,6 +656,8 @@ namespace PlayniteAchievements
             {
                 _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={e.PlayniteGameId}.");
             }
+
+            InvalidateStartPageData();
         }
 
         private void OnAchievementGameRefreshed(Guid gameId)
@@ -661,6 +667,8 @@ namespace PlayniteAchievements
             {
                 _tagSyncService.SyncTagsForGames(new List<Guid> { gameId });
             }
+
+            InvalidateStartPageData();
         }
 
         private void HandleRefreshAuthNotifications(RebuildPayload payload)
