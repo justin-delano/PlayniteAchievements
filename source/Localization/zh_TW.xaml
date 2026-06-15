@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+﻿<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
@@ -168,7 +168,6 @@
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">排除此遊戲並清除數據</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">請輸入 Exophase 遊戲 ID。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Filters">Filters</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ManageAchievements">Manage Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ManageAchievements">Manage Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">包含此遊戲</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">包含在重新整理中</sys:String>
