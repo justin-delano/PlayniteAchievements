@@ -22,6 +22,7 @@ Packages:
     - "[New] Window positions and sizes are now saved between uses."
     - "[New] Capstone achievements are now marked in the Status column of grids."
     - "[Fixed] Colors in the Overview are improved."
+    - "[Fixed] RetroAchievements overrides now should find Subsets."
     - "Localization updates."
     - "As always, many additional improvements and fixes behind the scenes."
 
