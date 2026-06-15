@@ -373,8 +373,6 @@ namespace PlayniteAchievements.ViewModels
             get => _isCurrentMarker;
             set => SetValue(ref _isCurrentMarker, value);
         }
-
-        public bool IsCapstone { get; set; }
     }
 }
 

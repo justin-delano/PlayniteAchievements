@@ -258,6 +258,13 @@ namespace PlayniteAchievements.ViewModels
 
         public bool HasAchievementNote => !string.IsNullOrWhiteSpace(AchievementNote);
 
+        private bool _isCapstone;
+        public bool IsCapstone
+        {
+            get => _isCapstone;
+            set => SetValue(ref _isCapstone, value);
+        }
+
         /// <summary>
         /// True if this achievement has PlayStation trophy type data.
         /// </summary>
@@ -303,6 +310,7 @@ namespace PlayniteAchievements.ViewModels
             CategoryType = other.CategoryType;
             CategoryLabel = other.CategoryLabel;
             AchievementNote = other.AchievementNote;
+            IsCapstone = other.IsCapstone;
         }
     }
 }

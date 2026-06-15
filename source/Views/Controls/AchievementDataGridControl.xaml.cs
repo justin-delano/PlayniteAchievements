@@ -652,12 +652,43 @@ namespace PlayniteAchievements.Views.Controls
         private Dictionary<string, bool> GetVisibilityMap(PlayniteAchievementsSettings settings)
         {
             var map = GetVisibilityByKey(settings);
+            map = ApplyContextDefaultVisibility(settings, map);
             if (AllowLayoutPersistence || map == null)
             {
                 return map;
             }
 
             return new Dictionary<string, bool>(map, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private Dictionary<string, bool> ApplyContextDefaultVisibility(
+            PlayniteAchievementsSettings settings,
+            Dictionary<string, bool> map)
+        {
+            if (!ShouldDefaultStatusColumnHidden(ColumnSettingsKey) ||
+                (map != null && map.ContainsKey("Status")))
+            {
+                return map;
+            }
+
+            if (map == null)
+            {
+                map = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                if (AllowLayoutPersistence)
+                {
+                    SetVisibilityByKey(settings, map);
+                }
+            }
+
+            map["Status"] = false;
+            return map;
+        }
+
+        private static bool ShouldDefaultStatusColumnHidden(string columnSettingsKey)
+        {
+            return string.Equals(columnSettingsKey, "StartPageAchievements", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(columnSettingsKey, "OverviewRecentAchievements", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(columnSettingsKey, "Overview", StringComparison.OrdinalIgnoreCase);
         }
 
         private Dictionary<string, int> GetOrderMap(PlayniteAchievementsSettings settings)

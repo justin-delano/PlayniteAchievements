@@ -227,6 +227,16 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public bool IsCapstone
+        {
+            get => _source?.IsCapstone == true;
+            set => SetSourceValue(
+                source => source.IsCapstone,
+                (source, next) => source.IsCapstone = next,
+                value,
+                nameof(IsCapstone));
+        }
+
         public bool Hidden
         {
             get => _source?.Hidden == true;
@@ -1087,6 +1097,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(Rarity));
             OnPropertyChanged(nameof(GamerScore));
             OnPropertyChanged(nameof(Unlocked));
+            OnPropertyChanged(nameof(IsCapstone));
             OnPropertyChanged(nameof(Hidden));
             OnPropertyChanged(nameof(IsUnlock));
             OnPropertyChanged(nameof(ApiName));
