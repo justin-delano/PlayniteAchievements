@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json.Linq;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Tagging;
 
@@ -37,6 +38,15 @@ namespace PlayniteAchievements.Models.Tests
 
             Assert.IsTrue(settings.ShowOverviewCollectionScoreCard);
             Assert.IsTrue(settings.ShowOverviewPrestigeScoreCard);
+        }
+
+        [TestMethod]
+        public void Constructor_DefaultsViewAchievementsTimelineState()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.AreEqual(TimelineRange.OneYear, settings.ViewAchievementsTimelineRange);
+            Assert.IsFalse(settings.ViewAchievementsTimelineVisible);
         }
 
         [TestMethod]
@@ -165,6 +175,25 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsFalse(clone.ShowOverviewPrestigeScoreCard);
             Assert.IsFalse(target.ShowOverviewCollectionScoreCard);
             Assert.IsFalse(target.ShowOverviewPrestigeScoreCard);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveViewAchievementsTimelineState()
+        {
+            var source = new PersistedSettings
+            {
+                ViewAchievementsTimelineRange = TimelineRange.All,
+                ViewAchievementsTimelineVisible = true
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.AreEqual(TimelineRange.All, clone.ViewAchievementsTimelineRange);
+            Assert.IsTrue(clone.ViewAchievementsTimelineVisible);
+            Assert.AreEqual(TimelineRange.All, target.ViewAchievementsTimelineRange);
+            Assert.IsTrue(target.ViewAchievementsTimelineVisible);
         }
 
         [TestMethod]
@@ -461,7 +490,9 @@ namespace PlayniteAchievements.Models.Tests
                 AchievementDataGridMaxHeight = 333d,
                 OverviewGameSummariesGridRowHeight = 64d,
                 OverviewGameSummariesGridMaxRows = 4,
-                OverviewLeftColumnRatio = 0.72d
+                OverviewLeftColumnRatio = 0.72d,
+                ViewAchievementsTimelineRange = TimelineRange.All,
+                ViewAchievementsTimelineVisible = true
             };
 
             settings.TaggingSettings.CompletedConfig.DisplayName = "Done";
@@ -546,6 +577,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.StartPagePieCharts.ShowCenterPercentage, settings.StartPagePieCharts.ShowCenterPercentage);
             Assert.AreEqual(defaults.StartPagePieCharts.SmallSliceMode, settings.StartPagePieCharts.SmallSliceMode);
             Assert.AreEqual(defaults.OverviewLeftColumnRatio, settings.OverviewLeftColumnRatio);
+            Assert.AreEqual(defaults.ViewAchievementsTimelineRange, settings.ViewAchievementsTimelineRange);
+            Assert.AreEqual(defaults.ViewAchievementsTimelineVisible, settings.ViewAchievementsTimelineVisible);
 
             Assert.AreEqual(0, settings.DataGridColumnVisibility.Count);
             Assert.AreEqual(0, settings.DataGridColumnWidths.Count);

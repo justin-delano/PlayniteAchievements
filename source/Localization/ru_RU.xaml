@@ -676,7 +676,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authenticated</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_Checking">Checking authentication...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_NotChecked">Не проверено</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_NotChecked">Ожидает проверки</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_TemporaryFailure">Authentication check failed. Retry.</sys:String>
 
     <!-- ================================================================= -->

@@ -1,7 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Navigation;
 
 namespace PlayniteAchievements.Views.Helpers
 {
@@ -146,7 +148,75 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
+            var index = 0;
+            while (index < text.Length)
+            {
+                var link = FindNextLink(text, index);
+                if (link.Start < 0)
+                {
+                    AddTextRun(inlines, text.Substring(index), bold, italic, underline);
+                    return;
+                }
+
+                if (link.Start > index)
+                {
+                    AddTextRun(inlines, text.Substring(index, link.Start - index), bold, italic, underline);
+                }
+
+                AddHyperlink(inlines, link.DisplayText, link.NavigateUri, bold, italic, underline);
+                index = link.End;
+            }
+        }
+
+        private static void AddTextRun(
+            InlineCollection inlines,
+            string text,
+            bool bold,
+            bool italic,
+            bool underline)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
             var run = new Run(text);
+            ApplyTextStyle(run, bold, italic, underline);
+            inlines.Add(run);
+        }
+
+        private static void AddHyperlink(
+            InlineCollection inlines,
+            string displayText,
+            Uri navigateUri,
+            bool bold,
+            bool italic,
+            bool underline)
+        {
+            if (string.IsNullOrWhiteSpace(displayText) || navigateUri == null)
+            {
+                return;
+            }
+
+            var run = new Run(displayText);
+            ApplyTextStyle(run, bold, italic, underline);
+
+            var hyperlink = new Hyperlink(run)
+            {
+                NavigateUri = navigateUri,
+                ToolTip = navigateUri.AbsoluteUri
+            };
+            hyperlink.RequestNavigate += Hyperlink_RequestNavigate;
+            inlines.Add(hyperlink);
+        }
+
+        private static void ApplyTextStyle(Run run, bool bold, bool italic, bool underline)
+        {
+            if (run == null)
+            {
+                return;
+            }
+
             if (bold)
             {
                 run.FontWeight = FontWeights.Bold;
@@ -161,8 +231,139 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 run.TextDecorations = TextDecorations.Underline;
             }
+        }
 
-            inlines.Add(run);
+        private static void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            if (e?.Uri == null)
+            {
+                return;
+            }
+
+            try
+            {
+                Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri)
+                {
+                    UseShellExecute = true
+                });
+                e.Handled = true;
+            }
+            catch
+            {
+                // Navigation failures should not close or corrupt the note dialog.
+            }
+        }
+
+        private static LinkMatch FindNextLink(string text, int startIndex)
+        {
+            for (var i = startIndex; i < text.Length; i++)
+            {
+                if (text[i] == '[' && TryParseMarkdownLink(text, i, out var markdownLink))
+                {
+                    return markdownLink;
+                }
+
+                if (IsRawUrlStart(text, i) && TryParseRawUrl(text, i, out var rawLink))
+                {
+                    return rawLink;
+                }
+            }
+
+            return new LinkMatch(-1, -1, string.Empty, null);
+        }
+
+        private static bool TryParseMarkdownLink(string text, int startIndex, out LinkMatch match)
+        {
+            match = default;
+
+            var labelEnd = text.IndexOf(']', startIndex + 1);
+            if (labelEnd <= startIndex + 1 ||
+                labelEnd + 1 >= text.Length ||
+                text[labelEnd + 1] != '(')
+            {
+                return false;
+            }
+
+            var urlStart = labelEnd + 2;
+            var urlEnd = text.IndexOf(')', urlStart);
+            if (urlEnd <= urlStart)
+            {
+                return false;
+            }
+
+            var label = text.Substring(startIndex + 1, labelEnd - startIndex - 1);
+            var urlText = text.Substring(urlStart, urlEnd - urlStart);
+            if (!TryCreateNavigateUri(urlText, out var uri))
+            {
+                return false;
+            }
+
+            match = new LinkMatch(startIndex, urlEnd + 1, label, uri);
+            return true;
+        }
+
+        private static bool TryParseRawUrl(string text, int startIndex, out LinkMatch match)
+        {
+            match = default;
+
+            var end = startIndex;
+            while (end < text.Length && !char.IsWhiteSpace(text[end]))
+            {
+                end++;
+            }
+
+            var urlText = text.Substring(startIndex, end - startIndex);
+            while (urlText.Length > 0 && IsTrailingUrlPunctuation(urlText[urlText.Length - 1]))
+            {
+                urlText = urlText.Substring(0, urlText.Length - 1);
+                end--;
+            }
+
+            if (!TryCreateNavigateUri(urlText, out var uri))
+            {
+                return false;
+            }
+
+            match = new LinkMatch(startIndex, end, urlText, uri);
+            return true;
+        }
+
+        private static bool IsRawUrlStart(string text, int index)
+        {
+            return text.IndexOf("http://", index, StringComparison.OrdinalIgnoreCase) == index ||
+                   text.IndexOf("https://", index, StringComparison.OrdinalIgnoreCase) == index;
+        }
+
+        private static bool TryCreateNavigateUri(string value, out Uri uri)
+        {
+            uri = null;
+            var candidate = (value ?? string.Empty).Trim();
+            if (!Uri.TryCreate(candidate, UriKind.Absolute, out var parsed))
+            {
+                return false;
+            }
+
+            if (!string.Equals(parsed.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(parsed.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            uri = parsed;
+            return true;
+        }
+
+        private static bool IsTrailingUrlPunctuation(char value)
+        {
+            return value == '.' ||
+                   value == ',' ||
+                   value == ';' ||
+                   value == ':' ||
+                   value == '!' ||
+                   value == '?' ||
+                   value == ')' ||
+                   value == ']' ||
+                   value == '}';
         }
 
         private enum MarkerKind
@@ -186,6 +387,25 @@ namespace PlayniteAchievements.Views.Helpers
             public string Token { get; }
 
             public MarkerKind Kind { get; }
+        }
+
+        private readonly struct LinkMatch
+        {
+            public LinkMatch(int start, int end, string displayText, Uri navigateUri)
+            {
+                Start = start;
+                End = end;
+                DisplayText = displayText;
+                NavigateUri = navigateUri;
+            }
+
+            public int Start { get; }
+
+            public int End { get; }
+
+            public string DisplayText { get; }
+
+            public Uri NavigateUri { get; }
         }
     }
 }

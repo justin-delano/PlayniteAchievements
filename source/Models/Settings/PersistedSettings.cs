@@ -156,6 +156,8 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, WindowPlacementState> _windowPlacements =
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
         private TimelineRange _overviewTimelineRange = TimelineRange.OneYear;
+        private TimelineRange _viewAchievementsTimelineRange = TimelineRange.OneYear;
+        private bool _viewAchievementsTimelineVisible = false;
         private bool _firstTimeSetupCompleted = false;
         private bool _seenThemeMigration = false;
         private HashSet<Guid> _excludedGameIds = new HashSet<Guid>();
@@ -1775,6 +1777,24 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _overviewTimelineRange, value);
         }
 
+        /// <summary>
+        /// Last selected range for the single-game achievements window timeline chart.
+        /// </summary>
+        public TimelineRange ViewAchievementsTimelineRange
+        {
+            get => _viewAchievementsTimelineRange;
+            set => SetValue(ref _viewAchievementsTimelineRange, value);
+        }
+
+        /// <summary>
+        /// Whether the single-game achievements window timeline chart is expanded.
+        /// </summary>
+        public bool ViewAchievementsTimelineVisible
+        {
+            get => _viewAchievementsTimelineVisible;
+            set => SetValue(ref _viewAchievementsTimelineVisible, value);
+        }
+
         #endregion
 
         #region General Settings
@@ -2281,6 +2301,8 @@ namespace PlayniteAchievements.Models.Settings
                         StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase),
                 OverviewTimelineRange = this.OverviewTimelineRange,
+                ViewAchievementsTimelineRange = this.ViewAchievementsTimelineRange,
+                ViewAchievementsTimelineVisible = this.ViewAchievementsTimelineVisible,
 
                 // General Settings
                 FirstTimeSetupCompleted = this.FirstTimeSetupCompleted,
@@ -2471,6 +2493,8 @@ namespace PlayniteAchievements.Models.Settings
             StartPageGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
 
             OverviewLeftColumnRatio = defaults.OverviewLeftColumnRatio;
+            ViewAchievementsTimelineRange = defaults.ViewAchievementsTimelineRange;
+            ViewAchievementsTimelineVisible = defaults.ViewAchievementsTimelineVisible;
         }
 
         public static double? NormalizeGridRowHeight(double? value)

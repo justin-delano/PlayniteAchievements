@@ -270,6 +270,8 @@ namespace PlayniteAchievements.Models.Settings
                     StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
             target.OverviewTimelineRange = source.OverviewTimelineRange;
+            target.ViewAchievementsTimelineRange = source.ViewAchievementsTimelineRange;
+            target.ViewAchievementsTimelineVisible = source.ViewAchievementsTimelineVisible;
 
             // General Settings
             target.FirstTimeSetupCompleted = source.FirstTimeSetupCompleted;

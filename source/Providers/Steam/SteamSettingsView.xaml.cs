@@ -91,6 +91,10 @@ namespace PlayniteAchievements.Providers.Steam
         {
             _steamSettings = settings as SteamSettings;
             base.Initialize(settings);
+            SetAuthStatusVisualState(pending: true, success: false);
+            WebAuthenticated = false;
+            FullyConfigured = false;
+            WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
         }
 
         public async Task RefreshAuthStatusAsync()
@@ -123,6 +127,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             WebAuthenticated = hasWebAuth;
             FullyConfigured = hasWebAuth;
+            SetAuthStatusVisualState(pending: false, success: hasWebAuth);
 
             if (hasWebAuth)
             {
