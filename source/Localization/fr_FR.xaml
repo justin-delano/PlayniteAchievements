@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
@@ -93,6 +93,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Succès</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
@@ -427,12 +428,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Liste compacte débloquée</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Paramètres de Playnite Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSection">Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSubtitle">Shared display defaults and achievement visibility</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSubtitle">Overview layout, charts, and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySubtitle">Single-game window and theme controls</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSubtitle">StartPage widgets and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Overview Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Overview Charts</sys:String>
@@ -475,7 +472,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">Connectez-vous à Exophase pour actualiser les données suivies et utiliser les liens manuels Exophase.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Plateformes gérées</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Les jeux de ces plateformes utiliseront Exophase au lieu des fournisseurs modernes. Cochez les plateformes que vous voulez gérer avec Exophase.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note : pour les jeux des plateformes non cochées, utilisez les Options du jeu pour les inclure individuellement.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Manage Achievements to include individually.</sys:String>
 
     <!-- Provider: HoYoverse -->
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">Enable Genshin Impact</sys:String>

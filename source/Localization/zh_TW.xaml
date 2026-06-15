@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
@@ -93,6 +93,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">成就</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
@@ -167,6 +168,7 @@
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">排除此遊戲並清除數據</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">請輸入 Exophase 遊戲 ID。</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Filters">Filters</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ManageAchievements">Manage Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ManageAchievements">Manage Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">包含此遊戲</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">包含在重新整理中</sys:String>
@@ -427,12 +429,8 @@
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">緊湊已解鎖列表</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements 設定</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSection">Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSubtitle">Shared display defaults and achievement visibility</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSubtitle">Overview layout, charts, and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySubtitle">Single-game window and theme controls</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSubtitle">StartPage widgets and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Overview Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Overview Charts</sys:String>
@@ -475,7 +473,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Help">認證 Exophase 以重新整理追蹤數據並使用 Exophase 手動連結。</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">受管平台</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">這些平台上的遊戲將使用 Exophase 而非現代提供者。勾選您希望由 Exophase 管理的平台。</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">注意: 對於未勾選平台上的遊戲，請使用「遊戲選項」單獨包含。</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Manage Achievements to include individually.</sys:String>
 
     <!-- Provider: HoYoverse -->
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">Enable Genshin Impact</sys:String>
