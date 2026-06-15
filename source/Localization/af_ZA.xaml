@@ -1,4 +1,4 @@
-﻿﻿<?xml version="1.0"?>
+﻿<?xml version="1.0"?>
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:sys="clr-namespace:System;assembly=mscorlib">
 
     <!-- ================================================================= -->
@@ -93,6 +93,7 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
@@ -427,12 +428,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Compact Unlocked List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSection">Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_GeneralSubtitle">Shared display defaults and achievement visibility</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSubtitle">Overview layout, charts, and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySubtitle">Single-game window and theme controls</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSubtitle">StartPage widgets and grids</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Overview Layout</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewCharts">Overview Charts</sys:String>
