@@ -557,9 +557,13 @@ namespace PlayniteAchievements.Views.Helpers
         {
             if (e.NewValue is bool isVisible && isVisible)
             {
+                _lastObservedScrollViewerWidth = 0;
                 QueueScrollViewerAttach(DispatcherPriority.Loaded);
                 ApplyCurrentLayoutMode(rescaleAll: false, priority: DispatcherPriority.Loaded);
+                return;
             }
+
+            _lastObservedScrollViewerWidth = 0;
         }
 
         private void Grid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -914,7 +918,7 @@ namespace PlayniteAchievements.Views.Helpers
 
         private bool NormalizeColumnsToContainer(bool rescaleAll = false)
         {
-            if (_grid == null || !_grid.IsLoaded)
+            if (_grid == null || !_grid.IsLoaded || !_grid.IsVisible)
             {
                 return false;
             }
@@ -932,6 +936,11 @@ namespace PlayniteAchievements.Views.Helpers
 
         private void ApplyDefaultWidthsOrQueue(DispatcherPriority priority = DispatcherPriority.Render)
         {
+            if (_grid == null || (_grid.IsLoaded && !_grid.IsVisible))
+            {
+                return;
+            }
+
             if (NormalizeColumnsToContainer(rescaleAll: true))
             {
                 return;
@@ -969,7 +978,7 @@ namespace PlayniteAchievements.Views.Helpers
                 protectedKey,
                 _lastResizeAbsorberColumnKey,
                 rescaleAll,
-                BuildEffectivePreferredWidths(includePending: true),
+                BuildNormalizationPreferredWidths(includePending: true),
                 fallbackAvailableWidth: 0,
                 useEqualWidthForMissing: true,
                 out normalized);
@@ -1190,6 +1199,11 @@ namespace PlayniteAchievements.Views.Helpers
 
         private void ApplyCurrentLayoutMode(bool rescaleAll, DispatcherPriority priority = DispatcherPriority.Render)
         {
+            if (_grid == null || (_grid.IsLoaded && !_grid.IsVisible))
+            {
+                return;
+            }
+
             if (!HasUserPersistedWidths())
             {
                 ApplyDefaultWidthsOrQueue(priority);
@@ -1222,7 +1236,9 @@ namespace PlayniteAchievements.Views.Helpers
                     var shouldRescaleAll = _queuedNormalizationRescaleAll;
                     _queuedNormalizationRescaleAll = false;
 
-                    if (_grid == null || _isResizeInProgress)
+                    if (_grid == null ||
+                        (_grid.IsLoaded && !_grid.IsVisible) ||
+                        _isResizeInProgress)
                     {
                         return;
                     }
@@ -1274,6 +1290,34 @@ namespace PlayniteAchievements.Views.Helpers
 
         private Dictionary<string, double> BuildEffectivePreferredWidths(bool includePending)
         {
+            return BuildPreferredWidths(includePending, includeDefaultSeeds: false);
+        }
+
+        private Dictionary<string, double> BuildNormalizationPreferredWidths(bool includePending)
+        {
+            var result = BuildPreferredWidths(includePending, includeDefaultSeeds: true);
+
+            if (_defaultWidthSeeds != null)
+            {
+                foreach (var pair in _defaultWidthSeeds)
+                {
+                    var key = (pair.Key ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(key) ||
+                        !IsValidWidth(pair.Value) ||
+                        result.ContainsKey(key))
+                    {
+                        continue;
+                    }
+
+                    result[key] = ColumnWidthNormalization.RoundPixelWidth(pair.Value);
+                }
+            }
+
+            return result;
+        }
+
+        private Dictionary<string, double> BuildPreferredWidths(bool includePending, bool includeDefaultSeeds)
+        {
             var result = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             var map = _getWidths?.Invoke();
 
@@ -1284,7 +1328,7 @@ namespace PlayniteAchievements.Views.Helpers
                     var key = (pair.Key ?? string.Empty).Trim();
                     if (string.IsNullOrWhiteSpace(key) ||
                         !IsValidWidth(pair.Value) ||
-                        IsDefaultSeedWidth(key, pair.Value))
+                        (!includeDefaultSeeds && IsDefaultSeedWidth(key, pair.Value)))
                     {
                         continue;
                     }

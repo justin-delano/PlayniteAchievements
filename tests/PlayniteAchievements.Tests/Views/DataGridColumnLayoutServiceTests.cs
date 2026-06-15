@@ -129,6 +129,53 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void Attach_WithEmptyWidthsUsesDefaultSeedProportionsWithoutPersisting()
+        {
+            RunOnStaThread(() =>
+            {
+                var order = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var defaultSeeds = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["A"] = 50,
+                    ["B"] = 300,
+                    ["C"] = 50
+                };
+                var saveCount = 0;
+                var grid = CreateGrid();
+                grid.Width = 600;
+                grid.Height = 160;
+
+                var window = new Window
+                {
+                    Width = 640,
+                    Height = 220,
+                    Content = grid,
+                    ShowActivated = false
+                };
+
+                DataGridColumnLayoutService service = null;
+                try
+                {
+                    window.Show();
+                    grid.UpdateLayout();
+
+                    service = CreateService(grid, order, () => saveCount++, defaultWidthSeeds: defaultSeeds);
+                    service.Attach();
+                    DrainDispatcher();
+
+                    Assert.IsTrue(grid.Columns[1].Width.DisplayValue > grid.Columns[0].Width.DisplayValue * 3);
+                    Assert.IsTrue(grid.Columns[1].Width.DisplayValue > grid.Columns[2].Width.DisplayValue * 3);
+                    Assert.AreEqual(0, saveCount);
+                }
+                finally
+                {
+                    service?.Detach();
+                    window.Close();
+                }
+            });
+        }
+
+        [TestMethod]
         public void Detach_ClearsInitialRetryAndScrollViewerHandlers()
         {
             RunOnStaThread(() =>
@@ -223,9 +270,13 @@ namespace PlayniteAchievements.Tests.Views
         private static DataGridColumnLayoutService CreateService(
             DataGrid grid,
             Dictionary<string, int> order,
-            Action saveSettings)
+            Action saveSettings,
+            Dictionary<string, double> initialWidths = null,
+            IReadOnlyDictionary<string, double> defaultWidthSeeds = null)
         {
-            var widths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            var widths = initialWidths != null
+                ? new Dictionary<string, double>(initialWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             var visibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
 
             return new DataGridColumnLayoutService(
@@ -236,7 +287,7 @@ namespace PlayniteAchievements.Tests.Views
                 getVisibility: () => visibility,
                 setVisibility: map => visibility = map,
                 saveSettings: saveSettings,
-                defaultWidthSeeds: null,
+                defaultWidthSeeds: defaultWidthSeeds,
                 getOrder: () => order,
                 setOrder: map =>
                 {
