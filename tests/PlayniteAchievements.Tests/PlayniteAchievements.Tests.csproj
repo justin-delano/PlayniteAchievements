@@ -116,6 +116,8 @@
     <Compile Include="..\..\source\Providers\Hoyoverse\HoyoverseLzStringUtf16Codec.cs" Link="Source\Providers\Hoyoverse\HoyoverseLzStringUtf16Codec.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsSettings.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsSettings.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsCapabilityHelper.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsCapabilityHelper.cs" />
+    <Compile Include="..\..\source\Providers\RetroAchievements\Models\RaApiResponseModels.cs" Link="Source\Providers\RetroAchievements\Models\RaApiResponseModels.cs" />
+    <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsSubsetConsoleResolver.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsSubsetConsoleResolver.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsSubsetTitleResolver.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsSubsetTitleResolver.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RaConsoleIdResolver.cs" Link="Source\Providers\RetroAchievements\RaConsoleIdResolver.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\EmuLibraryGameIdDecoder.cs" Link="Source\Providers\RetroAchievements\EmuLibraryGameIdDecoder.cs" />
