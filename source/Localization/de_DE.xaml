@@ -168,7 +168,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_ExcludeGame">Dieses Spiel ausschließen und Erfolgsdaten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ExophaseSlug_Empty">Bitte Exohpase-Game-ID eingeben.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_Filters">Filterung</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_ManageAchievements">Manage Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ManageAchievements">Erfolgsverwaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeGame">Dieses Spiel inkludieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshes">In Aktualisierungen enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">In allgemeinen und Aktualisierung ausgewählter Spiele enthalten</sys:String>
@@ -273,7 +273,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase">Exophase Game ID oder Slug</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">Übersichtsausschluss</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Capstone_Current">Aktueller Vollendungserfolg: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Capstone_Current">Aktueller Vollendungserfolg: &quot;{0}&quot;</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Lege einen Erfolg als Vollendungserfolg fest. Die Freischaltung eines Vollendungserfolgs wird das Spiel als vervollständigt markieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Capstone">Aktueller Vollendungserfolg</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Completion">Vervollständigung</sys:String>
@@ -299,7 +299,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Overrides">Übersteuerungen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Overview">Übersicht</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Value_NotAvailable">Nicht zutreffend</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_WindowTitle">Manage Achievements - {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_WindowTitle">&quot;{0}&quot; - Erfolgsverwaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_Bold">Fett</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_CharacterCountFormat">{0}/{1} Zeichen</sys:String>
     <sys:String x:Key="LOCPlayAch_NotesDialog_EditTitle">Notiz bearbeiten</sys:String>
