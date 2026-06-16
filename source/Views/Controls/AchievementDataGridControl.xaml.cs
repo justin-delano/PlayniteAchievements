@@ -29,42 +29,70 @@ namespace PlayniteAchievements.Views.Controls
         private bool _isAttached;
         private const double CompactColumnMinWidth = 22;
         private const double DefaultStatusColumnWidth = 36;
-        private const double LegacyTrophyColumnWidth = 100;
-        private const double DefaultTrophyColumnWidth = 44;
-        private const double LegacyRarityTierColumnWidth = 90;
-        private const double DefaultRarityTierColumnWidth = 44;
 
-        private static readonly IReadOnlyDictionary<string, double> DefaultColumnWidthSeeds =
-            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+        // Defaults are applied only when a saved layout is missing a key.
+        private static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, bool>> DefaultVisibilityByColumnSettingsKey =
+            new Dictionary<string, IReadOnlyDictionary<string, bool>>(StringComparer.OrdinalIgnoreCase)
             {
-                ["Status"] = DefaultStatusColumnWidth,
-                ["Icon"] = 84,
-                ["Game"] = 64,
-                ["Achievement"] = 460,
-                ["Title"] = 260,
-                ["Note"] = 180,
-                ["UnlockDate"] = 240,
-                ["CategoryType"] = 210,
-                ["CategoryLabel"] = 210,
-                ["Trophy"] = DefaultTrophyColumnWidth,
-                ["Rarity"] = 170,
-                ["RarityTier"] = DefaultRarityTierColumnWidth,
-                ["RarityPercent"] = 120,
-                ["CollectionScore"] = 110,
-                ["PrestigeScore"] = 110,
-                ["Points"] = 100
+                ["Default"] = CreateAchievementVisibility(),
+                ["SingleGame"] = CreateAchievementVisibility(),
+                ["DesktopTheme"] = CreateAchievementVisibility(),
+                ["OverviewSelectedGameAchievements"] = CreateAchievementVisibility(),
+                ["OverviewGame"] = CreateAchievementVisibility(),
+                ["OverviewRecentAchievements"] = CreateAchievementVisibility(status: false, game: true),
+                ["Overview"] = CreateAchievementVisibility(status: false, game: true),
+                ["StartPageAchievements"] = CreateAchievementVisibility(
+                    status: false,
+                    game: false,
+                    unlockDate: false,
+                    categoryType: false,
+                    categoryLabel: false,
+                    trophy: false,
+                    rarity: false,
+                    rarityTier: true,
+                    collectionScore: false,
+                    prestigeScore: false,
+                    points: false)
             };
 
-        private static readonly IReadOnlyDictionary<string, double> LegacyOverviewAchievementWidthSeeds =
-            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+        private static IReadOnlyDictionary<string, bool> CreateAchievementVisibility(
+            bool status = true,
+            bool icon = true,
+            bool achievement = true,
+            bool title = false,
+            bool note = false,
+            bool game = false,
+            bool unlockDate = true,
+            bool categoryType = false,
+            bool categoryLabel = false,
+            bool trophy = false,
+            bool rarity = true,
+            bool rarityTier = false,
+            bool rarityPercent = false,
+            bool collectionScore = false,
+            bool prestigeScore = false,
+            bool points = false)
+        {
+            return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
             {
-                ["Achievement"] = 520,
-                ["UnlockDate"] = 230,
-                ["CategoryType"] = 200,
-                ["CategoryLabel"] = 200,
-                ["Rarity"] = 170,
-                ["Points"] = 120
+                ["Status"] = status,
+                ["Icon"] = icon,
+                ["Achievement"] = achievement,
+                ["Title"] = title,
+                ["Note"] = note,
+                ["Game"] = game,
+                ["UnlockDate"] = unlockDate,
+                ["CategoryType"] = categoryType,
+                ["CategoryLabel"] = categoryLabel,
+                ["Trophy"] = trophy,
+                ["Rarity"] = rarity,
+                ["RarityTier"] = rarityTier,
+                ["RarityPercent"] = rarityPercent,
+                ["CollectionScore"] = collectionScore,
+                ["PrestigeScore"] = prestigeScore,
+                ["Points"] = points
             };
+        }
 
         /// <summary>
         /// Identifies the ItemsSource dependency property.
@@ -543,7 +571,6 @@ namespace PlayniteAchievements.Views.Controls
                         SavePluginSettings(settings);
                     }
                 },
-                DefaultColumnWidthSeeds,
                 getOrder: () => GetOrderMap(settings),
                 setOrder: map =>
                 {
@@ -579,8 +606,7 @@ namespace PlayniteAchievements.Views.Controls
                     }
                 },
                 getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
-                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid),
-                isRuntimeDefaultWidth: IsRuntimeDefaultWidthSeed);
+                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid));
             _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
 
             // Force collapse Game column when not shown (prevents flicker by applying during persistence)
@@ -613,7 +639,7 @@ namespace PlayniteAchievements.Views.Controls
                 {
                     if (IsValidWidth(pair.Value))
                     {
-                        merged[pair.Key] = NormalizeDefaultWidth(pair.Key, pair.Value);
+                        merged[pair.Key] = pair.Value;
                     }
                 }
             }
@@ -627,7 +653,7 @@ namespace PlayniteAchievements.Views.Controls
                     {
                         if (!merged.ContainsKey(pair.Key) && IsValidWidth(pair.Value))
                         {
-                            merged[pair.Key] = NormalizeDefaultWidth(pair.Key, pair.Value);
+                            merged[pair.Key] = pair.Value;
                         }
                     }
                 }
@@ -667,8 +693,31 @@ namespace PlayniteAchievements.Views.Controls
             PlayniteAchievementsSettings settings,
             Dictionary<string, bool> map)
         {
-            if (!ShouldDefaultStatusColumnHidden(ColumnSettingsKey) ||
-                (map != null && map.ContainsKey("Status")))
+            var defaults = GetDefaultVisibility(ColumnSettingsKey);
+            return defaults != null
+                ? ApplyVisibilityDefaults(settings, map, defaults)
+                : map;
+        }
+
+        private static IReadOnlyDictionary<string, bool> GetDefaultVisibility(string columnSettingsKey)
+        {
+            if (!string.IsNullOrWhiteSpace(columnSettingsKey) &&
+                DefaultVisibilityByColumnSettingsKey.TryGetValue(columnSettingsKey, out var defaults))
+            {
+                return defaults;
+            }
+
+            return DefaultVisibilityByColumnSettingsKey.TryGetValue("Default", out var fallback)
+                ? fallback
+                : null;
+        }
+
+        private Dictionary<string, bool> ApplyVisibilityDefaults(
+            PlayniteAchievementsSettings settings,
+            Dictionary<string, bool> map,
+            IReadOnlyDictionary<string, bool> defaults)
+        {
+            if (defaults == null || defaults.Count == 0)
             {
                 return map;
             }
@@ -682,15 +731,15 @@ namespace PlayniteAchievements.Views.Controls
                 }
             }
 
-            map["Status"] = false;
-            return map;
-        }
+            foreach (var pair in defaults)
+            {
+                if (!map.ContainsKey(pair.Key))
+                {
+                    map[pair.Key] = pair.Value;
+                }
+            }
 
-        private static bool ShouldDefaultStatusColumnHidden(string columnSettingsKey)
-        {
-            return string.Equals(columnSettingsKey, "StartPageAchievements", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(columnSettingsKey, "OverviewRecentAchievements", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(columnSettingsKey, "Overview", StringComparison.OrdinalIgnoreCase);
+            return map;
         }
 
         private Dictionary<string, int> GetOrderMap(PlayniteAchievementsSettings settings)
@@ -1055,38 +1104,6 @@ namespace PlayniteAchievements.Views.Controls
         private static bool IsValidWidth(double width)
         {
             return !double.IsNaN(width) && !double.IsInfinity(width) && width > 0;
-        }
-
-        private static double NormalizeDefaultWidth(string key, double width)
-        {
-            if (string.Equals(key, "RarityTier", StringComparison.OrdinalIgnoreCase) &&
-                Math.Abs(width - LegacyRarityTierColumnWidth) < 0.2)
-            {
-                return DefaultRarityTierColumnWidth;
-            }
-
-            if (string.Equals(key, "Trophy", StringComparison.OrdinalIgnoreCase) &&
-                Math.Abs(width - LegacyTrophyColumnWidth) < 0.2)
-            {
-                return DefaultTrophyColumnWidth;
-            }
-
-            return width;
-        }
-
-        private static bool IsRuntimeDefaultWidthSeed(string key, double width)
-        {
-            return IsWidthSeed(DefaultColumnWidthSeeds, key, width) ||
-                   IsWidthSeed(LegacyOverviewAchievementWidthSeeds, key, width);
-        }
-
-        private static bool IsWidthSeed(IReadOnlyDictionary<string, double> seeds, string key, double width)
-        {
-            return !string.IsNullOrWhiteSpace(key) &&
-                   seeds != null &&
-                   seeds.TryGetValue(key, out var seed) &&
-                   IsValidWidth(seed) &&
-                   Math.Abs(ColumnWidthNormalization.RoundPixelWidth(width) - ColumnWidthNormalization.RoundPixelWidth(seed)) <= 0.2;
         }
 
         private static void SavePluginSettings(PlayniteAchievementsSettings settings)
