@@ -230,6 +230,10 @@ namespace PlayniteAchievements.ViewModels
 {
     public class AchievementDisplayItem
     {
+        public sealed class AppearanceSettingsSnapshot
+        {
+        }
+
         public string DisplayName { get; set; }
 
         public string Name => DisplayName;
@@ -249,6 +253,8 @@ namespace PlayniteAchievements.ViewModels
         public string CategoryType { get; set; }
 
         public string CategoryLabel { get; set; }
+
+        public bool HasAchievementNote { get; set; }
 
         public bool Hidden { get; set; }
 
@@ -286,7 +292,8 @@ namespace PlayniteAchievements.ViewModels
             PlayniteAchievements.Models.Achievements.AchievementDetail achievement,
             PlayniteAchievements.Models.PlayniteAchievementsSettings settings,
             ISet<string> revealedKeys = null,
-            Guid? playniteGameIdOverride = null)
+            Guid? playniteGameIdOverride = null,
+            AppearanceSettingsSnapshot appearanceSettings = null)
         {
             return new AchievementDisplayItem();
         }
@@ -296,9 +303,18 @@ namespace PlayniteAchievements.ViewModels
             PlayniteAchievements.Models.Achievements.AchievementDetail achievement,
             PlayniteAchievements.Models.PlayniteAchievementsSettings settings,
             string gameIconPath,
-            string gameCoverPath)
+            string gameCoverPath,
+            AppearanceSettingsSnapshot appearanceSettings = null)
         {
             return new AchievementDisplayItem();
+        }
+
+        public static AppearanceSettingsSnapshot CreateAppearanceSettingsSnapshot(
+            PlayniteAchievements.Models.PlayniteAchievementsSettings settings,
+            Guid? playniteGameId,
+            bool? resolvedUseSeparateLockedIcons)
+        {
+            return new AppearanceSettingsSnapshot();
         }
 
         public static bool IsAppearanceSettingPropertyName(string propertyName)
@@ -340,6 +356,10 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public void ApplyAppearanceSettings(PlayniteAchievements.Models.PlayniteAchievementsSettings settings)
+        {
+        }
+
+        public void ApplyAppearanceSettings(AppearanceSettingsSnapshot snapshot)
         {
         }
 

@@ -125,7 +125,8 @@
                         <TextBlock Foreground="{DynamicResource TextBrush}"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                   HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}">
+                                   HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                   helpers:AchievementNoteInlineFormatter.NoteToolTip="{Binding AchievementNote}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                      <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
@@ -147,7 +148,43 @@
                                  FontStyle="Italic"
                                  FontSize="{DynamicResource FontSizeSmall}"
                                  Foreground="{DynamicResource TextBrushDarker}"/>
+                            <Run Text="{Binding AchievementNoteInlineMarker, Mode=OneWay}"
+                                 FontFamily="{DynamicResource FontIcoFont}"
+                                 FontSize="{DynamicResource FontSizeSmall}"
+                                 Foreground="{DynamicResource TextBrushDarker}"/>
                         </TextBlock>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_ManageAchievements_Notes_Note}" SortMemberPath="HasAchievementNote" helpers:ColumnVisibilityHelper.ColumnKey="Note"
+                                    CellStyle="{StaticResource AchievementNoteCellStyle}"
+                                    Visibility="Collapsed">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <helpers:HeightDecoupledDecorator>
+                            <TextBlock Foreground="{DynamicResource TextBrush}"
+                                       TextWrapping="Wrap"
+                                       TextTrimming="CharacterEllipsis"
+                                       helpers:AchievementNoteInlineFormatter.FormattedText="{Binding AchievementNote}"
+                                       helpers:AchievementNoteInlineFormatter.NoteToolTip="{Binding AchievementNote}"
+                                       VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                       HorizontalAlignment="Stretch">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
+                                        <Setter Property="Opacity" Value="0.7"/>
+                                        <Setter Property="TextAlignment"
+                                                Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding HasAchievementNote}" Value="True">
+                                                <Setter Property="Opacity" Value="0.9"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </helpers:HeightDecoupledDecorator>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

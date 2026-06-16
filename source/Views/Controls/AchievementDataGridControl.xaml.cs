@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
@@ -41,6 +42,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["Game"] = 64,
                 ["Achievement"] = 460,
                 ["Title"] = 260,
+                ["Note"] = 180,
                 ["UnlockDate"] = 240,
                 ["CategoryType"] = 210,
                 ["CategoryLabel"] = 210,
@@ -1161,6 +1163,11 @@ namespace PlayniteAchievements.Views.Controls
 
         private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            if (IsHyperlinkClick(e?.OriginalSource))
+            {
+                return;
+            }
+
             if (sender is DataGridRow row && row.DataContext is AchievementDisplayItem item)
             {
                 if (TryActivateAchievementItem(item, consumeWhenNoAction: false))
@@ -1168,6 +1175,12 @@ namespace PlayniteAchievements.Views.Controls
                     e.Handled = true;
                 }
             }
+        }
+
+        private static bool IsHyperlinkClick(object source)
+        {
+            return source is DependencyObject dependencyObject &&
+                   VisualTreeHelpers.FindVisualParent<Hyperlink>(dependencyObject) != null;
         }
 
         private bool TryActivateAchievementItem(AchievementDisplayItem item, bool consumeWhenNoAction)

@@ -282,11 +282,14 @@ namespace PlayniteAchievements.ViewModels
                     (source, next) => source.AchievementNote = next,
                     AchievementNoteHelper.NormalizeNote(value),
                     nameof(AchievementNote),
-                    nameof(HasAchievementNote));
+                    nameof(HasAchievementNote),
+                    nameof(AchievementNoteInlineMarker));
             }
         }
 
         public bool HasAchievementNote => !string.IsNullOrWhiteSpace(AchievementNote);
+
+        public string AchievementNoteInlineMarker => HasAchievementNote ? " \uEFB6" : string.Empty;
 
         // Hidden achievement visibility settings
         private bool _showHiddenIcon;
@@ -1103,6 +1106,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(ApiName));
             OnPropertyChanged(nameof(AchievementNote));
             OnPropertyChanged(nameof(HasAchievementNote));
+            OnPropertyChanged(nameof(AchievementNoteInlineMarker));
             OnPropertyChanged(nameof(ProgressNum));
             OnPropertyChanged(nameof(ProgressDenom));
             OnPropertyChanged(nameof(HasProgress));

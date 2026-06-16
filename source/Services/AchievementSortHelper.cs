@@ -549,6 +549,7 @@ namespace PlayniteAchievements.Services
                 "Points" => ApplyDirection(
                     (a, b) => a.Points.CompareTo(b.Points),
                     direction),
+                "HasAchievementNote" => (a, b) => CompareByAchievementNote(a, b, direction),
                 "TrophyType" => (a, b) => CompareByTrophyType(a, b, direction),
                 _ => null
             };
@@ -736,6 +737,20 @@ namespace PlayniteAchievements.Services
             }
 
             return CompareByUnlockTime(a, b, ListSortDirection.Ascending, scope);
+        }
+
+        private static int CompareByAchievementNote(
+            AchievementDisplayItem a,
+            AchievementDisplayItem b,
+            ListSortDirection direction)
+        {
+            var comparison = (a?.HasAchievementNote ?? false).CompareTo(b?.HasAchievementNote ?? false);
+            if (direction == ListSortDirection.Descending)
+            {
+                comparison = -comparison;
+            }
+
+            return comparison != 0 ? comparison : CompareByDisplayName(a, b);
         }
 
         private static int CompareByUnlockTime(

@@ -20,6 +20,8 @@ namespace PlayniteAchievements.Views
 {
     public partial class CustomRefreshControl : UserControl, INotifyPropertyChanged
     {
+        private const string WindowPlacementKey = "CustomRefresh";
+
         public sealed class ScopeOptionItem
         {
             public CustomGameScope Scope { get; set; }
@@ -476,6 +478,12 @@ namespace PlayniteAchievements.Views
 
             window.MinWidth = 820;
             window.MinHeight = 620;
+            WindowPlacementPersistenceService.Attach(
+                window,
+                settings?.Persisted,
+                persistSettingsForUi,
+                WindowPlacementKey,
+                logger);
             control.RequestClose += (s, e) => window.Close();
             window.ShowDialog();
 
