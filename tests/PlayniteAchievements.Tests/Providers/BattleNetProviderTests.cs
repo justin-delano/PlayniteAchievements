@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.BattleNet;
 using PlayniteAchievements.Providers.BattleNet.Models;
 
@@ -132,6 +133,86 @@ namespace PlayniteAchievements.Tests.Providers
             target.DeserializeFromJson(source.SerializeToJson());
 
             Assert.IsTrue(target.UseExophaseForRarity);
+        }
+
+        [TestMethod]
+        public void WowMetadataProjection_IsOnlyRequiredForNonEnglishLocale()
+        {
+            Assert.IsFalse(WowGameStrategy.RequiresEnglishMetadataProjection("english"));
+            Assert.IsFalse(WowGameStrategy.RequiresEnglishMetadataProjection("en-US"));
+            Assert.IsTrue(WowGameStrategy.RequiresEnglishMetadataProjection("german"));
+            Assert.IsTrue(WowGameStrategy.RequiresEnglishMetadataProjection("de-DE"));
+        }
+
+        [TestMethod]
+        public void WowMetadataProjection_UsesEnglishNamesWithoutChangingNativeRows()
+        {
+            var native = new List<AchievementDetail>
+            {
+                new AchievementDetail
+                {
+                    ApiName = "42769",
+                    DisplayName = "Held der Morgendaemmerung",
+                    Description = "German description.",
+                    Points = 0,
+                    ProviderKey = "BattleNet"
+                }
+            };
+            var english = new List<AchievementDetail>
+            {
+                new AchievementDetail
+                {
+                    ApiName = "42769",
+                    DisplayName = "Hero of the Dawn",
+                    Description = "Outgrow the use of Hero Dawncrests during Midnight Season 1.",
+                    Points = 0,
+                    ProviderKey = "BattleNet"
+                }
+            };
+
+            var projection = WowGameStrategy.CreateEnglishMetadataProjection(native, english);
+
+            Assert.AreEqual("Held der Morgendaemmerung", native[0].DisplayName);
+            Assert.AreEqual("German description.", native[0].Description);
+            Assert.AreEqual("Hero of the Dawn", projection[0].DisplayName);
+            Assert.AreEqual(
+                "Outgrow the use of Hero Dawncrests during Midnight Season 1.",
+                projection[0].Description);
+            Assert.AreEqual("42769", projection[0].ApiName);
+        }
+
+        [TestMethod]
+        public void WowMetadataProjection_CopiesOnlyRarityBackByApiName()
+        {
+            var native = new List<AchievementDetail>
+            {
+                new AchievementDetail
+                {
+                    ApiName = "42769",
+                    DisplayName = "Held der Morgendaemmerung",
+                    Description = "German description.",
+                    Rarity = RarityTier.Common
+                }
+            };
+            var projection = new List<AchievementDetail>
+            {
+                new AchievementDetail
+                {
+                    ApiName = "42769",
+                    DisplayName = "Hero of the Dawn",
+                    Description = "English description.",
+                    GlobalPercentUnlocked = 5.79,
+                    Rarity = RarityTier.UltraRare
+                }
+            };
+
+            var updated = WowGameStrategy.ApplyProjectedRarity(native, projection);
+
+            Assert.AreEqual(1, updated);
+            Assert.AreEqual("Held der Morgendaemmerung", native[0].DisplayName);
+            Assert.AreEqual("German description.", native[0].Description);
+            Assert.AreEqual(5.79, native[0].GlobalPercentUnlocked);
+            Assert.AreEqual(RarityTier.UltraRare, native[0].Rarity);
         }
 
         [TestMethod]

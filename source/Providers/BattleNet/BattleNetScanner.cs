@@ -70,7 +70,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 async (game, token) =>
                 {
                     var data = await FetchForGameAsync(game, locale, token).ConfigureAwait(false);
-                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
+                    await EnrichRarityAsync(game, data, rarityEnricher, locale, token).ConfigureAwait(false);
                     return data == null
                         ? ProviderRefreshExecutor.ProviderGameResult.Skipped()
                         : new ProviderRefreshExecutor.ProviderGameResult { Data = data };
@@ -112,15 +112,37 @@ namespace PlayniteAchievements.Providers.BattleNet
             return enricher;
         }
 
-        private static async Task EnrichRarityAsync(
+        private async Task EnrichRarityAsync(
             Game game,
             GameAchievementData data,
             ExophaseMetadataEnricher rarityEnricher,
+            string locale,
             CancellationToken cancel)
         {
             if (rarityEnricher == null || data?.Achievements == null || data.Achievements.Count == 0)
             {
                 return;
+            }
+
+            if (_wow.MatchesGame(game) && WowGameStrategy.RequiresEnglishMetadataProjection(locale))
+            {
+                var projection = await TryCreateWowEnglishMetadataProjectionAsync(game, data.Achievements, cancel)
+                    .ConfigureAwait(false);
+
+                if (projection != null && projection.Count > 0)
+                {
+                    await rarityEnricher.EnrichAsync(
+                        game,
+                        projection,
+                        "blizzard",
+                        "BattleNet",
+                        cancel,
+                        ExophaseMetadataFields.Rarity).ConfigureAwait(false);
+
+                    var copied = WowGameStrategy.ApplyProjectedRarity(data.Achievements, projection);
+                    _logger?.Info($"[BattleNet/WoW] Copied Exophase rarity from English metadata projection to {copied}/{data.Achievements.Count} localized achievements.");
+                    return;
+                }
             }
 
             await rarityEnricher.EnrichAsync(
@@ -130,6 +152,37 @@ namespace PlayniteAchievements.Providers.BattleNet
                 "BattleNet",
                 cancel,
                 ExophaseMetadataFields.Rarity).ConfigureAwait(false);
+        }
+
+        private async Task<List<AchievementDetail>> TryCreateWowEnglishMetadataProjectionAsync(
+            Game game,
+            IList<AchievementDetail> nativeAchievements,
+            CancellationToken cancel)
+        {
+            try
+            {
+                var englishData = await _wow
+                    .FetchAchievementsAsync(game, WowGameStrategy.EnglishMetadataLocale, cancel)
+                    .ConfigureAwait(false);
+                if (englishData?.Achievements == null || englishData.Achievements.Count == 0)
+                {
+                    _logger?.Warn($"[BattleNet/WoW] English metadata projection unavailable for '{game?.Name}'. Falling back to localized Exophase title matching.");
+                    return null;
+                }
+
+                return WowGameStrategy.CreateEnglishMetadataProjection(
+                    nativeAchievements,
+                    englishData.Achievements);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"[BattleNet/WoW] Failed to build English metadata projection for '{game?.Name}'. Falling back to localized Exophase title matching.");
+                return null;
+            }
         }
 
         private static string Bool(bool value) => value ? "true" : "false";

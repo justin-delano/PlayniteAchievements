@@ -169,7 +169,68 @@ namespace PlayniteAchievements.ViewModels
         public bool VerifySettings(out List<string> errors)
         {
             errors = new List<string>();
+
+            var persisted = Settings?.Persisted;
+            if (persisted != null)
+            {
+                ValidateAchievementHotkeys(persisted, errors);
+            }
+
             return errors.Count == 0;
+        }
+
+        private static void ValidateAchievementHotkeys(PersistedSettings persisted, List<string> errors)
+        {
+            var viewLabel = L("LOCPlayAch_Menu_ViewAchievements", "View Achievements");
+            var manageLabel = L("LOCPlayAch_Menu_ManageAchievements", "Manage Achievements");
+            var invalidMessage = L(
+                "LOCPlayAch_Hotkeys_InvalidShortcut",
+                "Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.");
+            var duplicateMessage = L("LOCPlayAch_Hotkeys_DuplicateShortcut", "That shortcut is already assigned.");
+
+            var viewValid = TryValidateHotkey(viewLabel, persisted.ViewAchievementsHotkey, invalidMessage, errors, out var viewGesture);
+            var manageValid = TryValidateHotkey(manageLabel, persisted.ManageAchievementsHotkey, invalidMessage, errors, out var manageGesture);
+
+            if (viewValid &&
+                manageValid &&
+                viewGesture != null &&
+                manageGesture != null &&
+                !viewGesture.IsEmpty &&
+                !manageGesture.IsEmpty &&
+                viewGesture.Equals(manageGesture))
+            {
+                errors.Add(duplicateMessage);
+            }
+        }
+
+        private static bool TryValidateHotkey(
+            string label,
+            string text,
+            string invalidMessage,
+            List<string> errors,
+            out AchievementHotkeyGesture gesture)
+        {
+            gesture = AchievementHotkeyGesture.Empty;
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return true;
+            }
+
+            if (AchievementHotkeyGesture.TryParse(text, out gesture) &&
+                gesture != null &&
+                !gesture.IsEmpty)
+            {
+                return true;
+            }
+
+            errors.Add($"{label}: {invalidMessage}");
+            gesture = AchievementHotkeyGesture.Empty;
+            return false;
+        }
+
+        private static string L(string key, string fallback)
+        {
+            return ResourceProvider.GetString(key) ?? fallback;
         }
 
         private PlayniteAchievementsSettings _editingClone;

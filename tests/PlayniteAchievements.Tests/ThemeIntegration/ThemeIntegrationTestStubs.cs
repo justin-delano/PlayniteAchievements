@@ -220,6 +220,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
         }
 
+        public void OpenViewAchievementsWindow(Guid gameId)
+        {
+        }
+
         public void CloseOverlayWindowIfOpen()
         {
         }

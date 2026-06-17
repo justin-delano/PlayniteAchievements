@@ -1,7 +1,10 @@
 using System;
+using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -25,6 +28,13 @@ namespace PlayniteAchievements.Services.UI
     {
         private const string ViewAchievementsWindowPlacementKey = "SingleGameAchievements";
         private const string ManageAchievementsWindowPlacementKey = "ManageAchievements";
+        private const int ShowWindowRestore = 9;
+
+        private enum AchievementWindowKind
+        {
+            ViewAchievements,
+            ManageAchievements
+        }
 
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
@@ -38,6 +48,8 @@ namespace PlayniteAchievements.Services.UI
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly Action _ensureAchievementResourcesLoaded;
         private readonly FullscreenControllerNavigationService _fullscreenControllerNavigationService;
+        private readonly System.Collections.Generic.Dictionary<Tuple<AchievementWindowKind, Guid>, Window> _achievementWindows =
+            new System.Collections.Generic.Dictionary<Tuple<AchievementWindowKind, Guid>, Window>();
 
         public PluginWindowService(
             IPlayniteAPI api,
@@ -82,24 +94,56 @@ namespace PlayniteAchievements.Services.UI
 
         private void ShowWindow(Window window, bool isFullscreen)
         {
+            PrepareForegroundActivation(window);
+
             if (isFullscreen)
             {
                 window.Show();
-                try
-                {
-                    window.Topmost = true;
-                    window.Activate();
-                    window.Topmost = false;
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, "Failed to activate window in fullscreen");
-                }
+                BringWindowToForeground(window);
             }
             else
             {
                 window.ShowDialog();
             }
+        }
+
+        private void PrepareForegroundActivation(Window window)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            window.ShowActivated = true;
+
+            RoutedEventHandler loadedHandler = null;
+            loadedHandler = (s, e) =>
+            {
+                window.Loaded -= loadedHandler;
+                QueueBringWindowToForeground(window);
+            };
+
+            EventHandler contentRenderedHandler = null;
+            contentRenderedHandler = (s, e) =>
+            {
+                window.ContentRendered -= contentRenderedHandler;
+                QueueBringWindowToForeground(window);
+            };
+
+            window.Loaded += loadedHandler;
+            window.ContentRendered += contentRenderedHandler;
+        }
+
+        private static void QueueBringWindowToForeground(Window window)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            window.Dispatcher.BeginInvoke(
+                new Action(() => BringWindowToForeground(window)),
+                DispatcherPriority.ApplicationIdle);
         }
 
         private void AttachWindowPlacement(Window window, string key, bool isFullscreen)
@@ -462,8 +506,286 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
+        public void ToggleViewAchievementsWindow(Guid gameId)
+        {
+            try
+            {
+                InvokeOnUiThread(() => ToggleAchievementWindow(
+                    AchievementWindowKind.ViewAchievements,
+                    gameId,
+                    () => OpenViewAchievementsWindowCore(gameId)));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to toggle View Achievements window for gameId={gameId}");
+            }
+        }
+
+        public void ToggleManageAchievementsView(Guid gameId)
+        {
+            try
+            {
+                InvokeOnUiThread(() => ToggleAchievementWindow(
+                    AchievementWindowKind.ManageAchievements,
+                    gameId,
+                    () => OpenManageAchievementsViewCore(gameId, ManageAchievementsTab.Overview)));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to toggle Manage Achievements window for gameId={gameId}");
+            }
+        }
+
+        private void ToggleAchievementWindow(AchievementWindowKind kind, Guid gameId, Action openWindow)
+        {
+            if (gameId == Guid.Empty || openWindow == null)
+            {
+                return;
+            }
+
+            if (TryGetTrackedWindow(kind, gameId, out var existingWindow))
+            {
+                if (existingWindow.IsActive)
+                {
+                    existingWindow.Close();
+                    return;
+                }
+
+                ActivateTrackedWindow(existingWindow);
+                return;
+            }
+
+            CloseTrackedWindows(kind);
+            openWindow();
+        }
+
+        private bool TryActivateTrackedWindow(AchievementWindowKind kind, Guid gameId)
+        {
+            if (!TryGetTrackedWindow(kind, gameId, out var window))
+            {
+                return false;
+            }
+
+            ActivateTrackedWindow(window);
+            return true;
+        }
+
+        private bool TryActivateManageAchievementsWindow(Guid gameId, ManageAchievementsTab tab)
+        {
+            if (!TryGetTrackedWindow(AchievementWindowKind.ManageAchievements, gameId, out var window))
+            {
+                return false;
+            }
+
+            if (window.Content is ManageAchievementsControl control)
+            {
+                control.SelectTab(tab);
+            }
+
+            ActivateTrackedWindow(window);
+            return true;
+        }
+
+        private bool TryGetTrackedWindow(AchievementWindowKind kind, Guid gameId, out Window window)
+        {
+            window = null;
+            if (gameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            var key = Tuple.Create(kind, gameId);
+            if (!_achievementWindows.TryGetValue(key, out var tracked) || tracked == null)
+            {
+                _achievementWindows.Remove(key);
+                return false;
+            }
+
+            window = tracked;
+            return true;
+        }
+
+        private void TrackAchievementWindow(AchievementWindowKind kind, Guid gameId, Window window)
+        {
+            if (gameId == Guid.Empty || window == null)
+            {
+                return;
+            }
+
+            var key = Tuple.Create(kind, gameId);
+            _achievementWindows[key] = window;
+            window.Closed += (s, e) =>
+            {
+                if (_achievementWindows.TryGetValue(key, out var tracked) &&
+                    ReferenceEquals(tracked, window))
+                {
+                    _achievementWindows.Remove(key);
+                }
+            };
+        }
+
+        private void CloseTrackedWindows(AchievementWindowKind kind)
+        {
+            var windows = _achievementWindows
+                .Where(pair => pair.Key.Item1 == kind)
+                .Select(pair => pair.Value)
+                .Where(window => window != null)
+                .Distinct()
+                .ToList();
+
+            foreach (var window in windows)
+            {
+                try
+                {
+                    window.Close();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to close tracked achievement window.");
+                }
+            }
+        }
+
+        private void ActivateTrackedWindow(Window window)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (window.WindowState == WindowState.Minimized)
+                {
+                    window.WindowState = WindowState.Normal;
+                }
+
+                if (!window.IsVisible)
+                {
+                    window.Show();
+                }
+
+                BringWindowToForeground(window);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to activate tracked achievement window.");
+            }
+        }
+
+        private static void BringWindowToForeground(Window window)
+        {
+            if (window == null || !window.IsVisible)
+            {
+                return;
+            }
+
+            try
+            {
+                var wasMinimized = window.WindowState == WindowState.Minimized;
+                if (window.WindowState == WindowState.Minimized)
+                {
+                    window.WindowState = WindowState.Normal;
+                }
+
+                var helper = new WindowInteropHelper(window);
+                var hwnd = helper.Handle != IntPtr.Zero ? helper.Handle : helper.EnsureHandle();
+                if (hwnd == IntPtr.Zero)
+                {
+                    window.Activate();
+                    window.Focus();
+                    return;
+                }
+
+                if (wasMinimized)
+                {
+                    ShowWindowNative(hwnd, ShowWindowRestore);
+                }
+
+                var foregroundWindow = GetForegroundWindow();
+                var currentThread = GetCurrentThreadId();
+                var targetThread = GetWindowThreadProcessId(hwnd, IntPtr.Zero);
+                var foregroundThread = foregroundWindow != IntPtr.Zero
+                    ? GetWindowThreadProcessId(foregroundWindow, IntPtr.Zero)
+                    : 0;
+
+                var attachedCurrent = false;
+                var attachedForeground = false;
+
+                try
+                {
+                    if (targetThread != 0 && targetThread != currentThread)
+                    {
+                        attachedCurrent = AttachThreadInput(currentThread, targetThread, true);
+                    }
+
+                    if (targetThread != 0 &&
+                        foregroundThread != 0 &&
+                        foregroundThread != targetThread)
+                    {
+                        attachedForeground = AttachThreadInput(foregroundThread, targetThread, true);
+                    }
+
+                    BringWindowToTop(hwnd);
+                    SetForegroundWindow(hwnd);
+                    SetActiveWindow(hwnd);
+                }
+                finally
+                {
+                    if (attachedForeground)
+                    {
+                        AttachThreadInput(foregroundThread, targetThread, false);
+                    }
+
+                    if (attachedCurrent)
+                    {
+                        AttachThreadInput(currentThread, targetThread, false);
+                    }
+                }
+
+                var wasTopmost = window.Topmost;
+                window.Topmost = true;
+                window.Topmost = wasTopmost;
+                window.Activate();
+                window.Focus();
+            }
+            catch
+            {
+                try
+                {
+                    window.Activate();
+                    window.Focus();
+                }
+                catch
+                {
+                }
+            }
+        }
+
         public void OpenViewAchievementsWindow(Guid gameId)
         {
+            try
+            {
+                InvokeOnUiThread(() => OpenViewAchievementsWindowCore(gameId));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open View Achievements window for gameId={gameId}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open View Achievements: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
+        private void OpenViewAchievementsWindowCore(Guid gameId)
+        {
+            if (TryActivateTrackedWindow(AchievementWindowKind.ViewAchievements, gameId))
+            {
+                return;
+            }
+
+            CloseTrackedWindows(AchievementWindowKind.ViewAchievements);
+
             try
             {
                 var isFullscreen = DetectFullscreenMode();
@@ -508,6 +830,7 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 window.Closed += (s, ev) => view.Cleanup();
+                TrackAchievementWindow(AchievementWindowKind.ViewAchievements, gameId, window);
                 if (isFullscreen)
                 {
                     _fullscreenControllerNavigationService?.RegisterWindow(window, view);
@@ -641,6 +964,26 @@ namespace PlayniteAchievements.Services.UI
         {
             try
             {
+                InvokeOnUiThread(() => OpenManageAchievementsViewCore(gameId, initialTab));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open Manage Achievements view for gameId={gameId}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open manage achievements view: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
+        private void OpenManageAchievementsViewCore(Guid gameId, ManageAchievementsTab initialTab)
+        {
+            if (TryActivateManageAchievementsWindow(gameId, initialTab))
+            {
+                return;
+            }
+
+            try
+            {
                 var isFullscreen = DetectFullscreenMode();
 
                 var game = _api?.Database?.Games?.Get(gameId);
@@ -698,6 +1041,7 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 window.Closed += (s, e) => view.Cleanup();
+                TrackAchievementWindow(AchievementWindowKind.ManageAchievements, gameId, window);
                 if (isFullscreen)
                 {
                     _fullscreenControllerNavigationService?.RegisterWindow(window, view);
@@ -829,5 +1173,29 @@ namespace PlayniteAchievements.Services.UI
 
             resources.MergedDictionaries.Add(new ResourceDictionary { Source = targetUri });
         }
+
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool BringWindowToTop(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetActiveWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, IntPtr lpdwProcessId);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        [DllImport("user32.dll")]
+        private static extern bool AttachThreadInput(uint idAttach, uint idAttachTo, bool fAttach);
+
+        [DllImport("user32.dll", EntryPoint = "ShowWindow")]
+        private static extern bool ShowWindowNative(IntPtr hWnd, int nCmdShow);
     }
 }

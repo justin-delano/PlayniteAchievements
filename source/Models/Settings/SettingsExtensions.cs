@@ -49,6 +49,12 @@ namespace PlayniteAchievements.Models.Settings
                 ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(source.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
                 : new List<CustomRefreshPreset>();
 
+            // Hotkey Settings
+            target.EnableAchievementHotkeys = source.EnableAchievementHotkeys;
+            target.EnableGlobalAchievementHotkeys = source.EnableGlobalAchievementHotkeys;
+            target.ViewAchievementsHotkey = source.ViewAchievementsHotkey;
+            target.ManageAchievementsHotkey = source.ManageAchievementsHotkey;
+
             // Notification Settings
             target.EnableNotifications = source.EnableNotifications;
             target.NotifyPeriodicUpdates = source.NotifyPeriodicUpdates;

@@ -86,6 +86,8 @@ namespace PlayniteAchievements
         private readonly ThemeIntegrationService _themeIntegrationService;
         private readonly ThemeControlRegistry _themeControlRegistry;
         private readonly PluginWindowService _windowService;
+        private readonly AchievementHotkeyTargetResolver _achievementHotkeyTargetResolver;
+        private readonly AchievementHotkeyService _achievementHotkeyService;
         private readonly FullscreenControllerNavigationService _fullscreenControllerNavigationService;
         private readonly ThemeAutoMigrationService _themeAutoMigrationService;
 
@@ -275,6 +277,15 @@ namespace PlayniteAchievements
                         EnsureAchievementResourcesLoaded,
                         _fullscreenControllerNavigationService);
 
+                    _achievementHotkeyTargetResolver = new AchievementHotkeyTargetResolver(PlayniteApi, _logger);
+                    _achievementHotkeyService = new AchievementHotkeyService(
+                        PlayniteApi,
+                        _settingsViewModel.Settings,
+                        _achievementHotkeyTargetResolver,
+                        _logger,
+                        gameId => _windowService.ToggleViewAchievementsWindow(gameId),
+                        gameId => _windowService.ToggleManageAchievementsView(gameId));
+
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
                         _logger,
                         PlayniteApi,
@@ -401,8 +412,29 @@ namespace PlayniteAchievements
             }
         }
 
+        public override void OnGameStarted(OnGameStartedEventArgs args)
+        {
+            try
+            {
+                _achievementHotkeyTargetResolver?.NotifyGameStarted(args?.Game);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to track started game for achievement hotkeys.");
+            }
+        }
+
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
+            try
+            {
+                _achievementHotkeyTargetResolver?.NotifyGameStopped(args?.Game);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to track stopped game for achievement hotkeys.");
+            }
+
             _logger.Info($"Game stopped: {args.Game.Name}. Triggering refresh.");
             _ = _refreshCoordinator.ExecuteAsync(new RefreshRequest
             {
@@ -459,6 +491,8 @@ namespace PlayniteAchievements
                     // ignore
                 }
 
+                _achievementHotkeyService?.Start();
+
                 // Auto-migrate themes that have been updated since the last migration.
                 _themeAutoMigrationService?.ScheduleAutoMigration();
 
@@ -483,6 +517,14 @@ namespace PlayniteAchievements
             {
                 PercentRarityHelper.ApplyBadgeApplicationResources(
                     _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.EnableAchievementHotkeys) ||
+                e.PropertyName == nameof(PersistedSettings.EnableGlobalAchievementHotkeys) ||
+                e.PropertyName == nameof(PersistedSettings.ViewAchievementsHotkey) ||
+                e.PropertyName == nameof(PersistedSettings.ManageAchievementsHotkey))
+            {
+                _achievementHotkeyService?.RefreshConfiguration();
             }
 
             InvalidateStartPageData();
@@ -522,6 +564,7 @@ namespace PlayniteAchievements
 
             _backgroundUpdates.Stop();
 
+            try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
             try { _imageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose imageService"); }
             try { _diskImageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose diskImageService"); }
             try { _manualSourceRegistry?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose manualSourceRegistry"); }

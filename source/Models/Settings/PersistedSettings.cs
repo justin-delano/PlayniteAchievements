@@ -30,6 +30,8 @@ namespace PlayniteAchievements.Models.Settings
         public const GameActivityScope DefaultStartPageActivityScope = GameActivityScope.Played;
         public const GameProgressScope DefaultStartPageProgressScope =
             GameProgressScope.Completed | GameProgressScope.InProgress;
+        public const string DefaultViewAchievementsHotkey = "Ctrl+Alt+V";
+        public const string DefaultManageAchievementsHotkey = "Ctrl+Alt+M";
 
         public PersistedSettings()
         {
@@ -46,6 +48,10 @@ namespace PlayniteAchievements.Models.Settings
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
         private int _recentRefreshGamesCount = 10;
+        private bool _enableAchievementHotkeys = true;
+        private bool _enableGlobalAchievementHotkeys = false;
+        private string _viewAchievementsHotkey = DefaultViewAchievementsHotkey;
+        private string _manageAchievementsHotkey = DefaultManageAchievementsHotkey;
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
@@ -272,6 +278,46 @@ namespace PlayniteAchievements.Models.Settings
                     CustomRefreshPreset.NormalizePresets(value, CustomRefreshPreset.MaxPresetCount));
                 SetValue(ref _customRefreshPresets, normalized);
             }
+        }
+
+        #endregion
+
+        #region Hotkey Settings
+
+        /// <summary>
+        /// Enables keyboard shortcuts for achievement windows while Playnite is focused.
+        /// </summary>
+        public bool EnableAchievementHotkeys
+        {
+            get => _enableAchievementHotkeys;
+            set => SetValue(ref _enableAchievementHotkeys, value);
+        }
+
+        /// <summary>
+        /// Registers eligible achievement hotkeys with Windows so they work outside Playnite.
+        /// </summary>
+        public bool EnableGlobalAchievementHotkeys
+        {
+            get => _enableGlobalAchievementHotkeys;
+            set => SetValue(ref _enableGlobalAchievementHotkeys, value);
+        }
+
+        /// <summary>
+        /// Shortcut that opens, focuses, or toggles the View Achievements window.
+        /// </summary>
+        public string ViewAchievementsHotkey
+        {
+            get => _viewAchievementsHotkey;
+            set => SetValue(ref _viewAchievementsHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that opens, focuses, or toggles the Manage Achievements window.
+        /// </summary>
+        public string ManageAchievementsHotkey
+        {
+            get => _manageAchievementsHotkey;
+            set => SetValue(ref _manageAchievementsHotkey, NormalizeHotkeyText(value));
         }
 
         #endregion
@@ -2090,6 +2136,12 @@ namespace PlayniteAchievements.Models.Settings
                     ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(this.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
                     : new List<CustomRefreshPreset>(),
 
+                // Hotkey Settings
+                EnableAchievementHotkeys = this.EnableAchievementHotkeys,
+                EnableGlobalAchievementHotkeys = this.EnableGlobalAchievementHotkeys,
+                ViewAchievementsHotkey = this.ViewAchievementsHotkey,
+                ManageAchievementsHotkey = this.ManageAchievementsHotkey,
+
                 // Notification Settings
                 EnableNotifications = this.EnableNotifications,
                 NotifyPeriodicUpdates = this.NotifyPeriodicUpdates,
@@ -2554,6 +2606,13 @@ namespace PlayniteAchievements.Models.Settings
         private static string NormalizePath(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string NormalizeHotkeyText(string value)
+        {
+            return AchievementHotkeyGesture.TryParse(value, out var gesture) && gesture != null
+                ? gesture.ToString()
+                : string.Empty;
         }
 
         private static Dictionary<string, int> NormalizeColumnOrder(Dictionary<string, int> value)
