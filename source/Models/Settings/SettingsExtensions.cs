@@ -125,6 +125,8 @@ namespace PlayniteAchievements.Models.Settings
                 new StartPageRecentUnlocksGridSettings();
             target.StartPagePieCharts = source.StartPagePieCharts?.Clone() ??
                 new StartPagePieWidgetSettings();
+            target.StartPageActivityScope = source.StartPageActivityScope;
+            target.StartPageProgressScope = source.StartPageProgressScope;
             target.EnableParallelProviderRefresh = source.EnableParallelProviderRefresh;
             target.ScanDelayMs = source.ScanDelayMs;
             target.MaxRetryAttempts = source.MaxRetryAttempts;

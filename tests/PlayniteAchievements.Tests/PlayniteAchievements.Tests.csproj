@@ -180,6 +180,8 @@
     <Compile Include="..\..\source\Models\SelectedGameBindingContext.cs" Link="Source\Models\SelectedGameBindingContext.cs" />
     <Compile Include="..\..\source\Models\Settings\PersistedSettings.cs" Link="Source\Models\Settings\PersistedSettings.cs" />
     <Compile Include="..\..\source\Models\Settings\WindowPlacementState.cs" Link="Source\Models\Settings\WindowPlacementState.cs" />
+    <Compile Include="..\..\source\Models\Settings\GameActivityScope.cs" Link="Source\Models\Settings\GameActivityScope.cs" />
+    <Compile Include="..\..\source\Models\Settings\GameProgressScope.cs" Link="Source\Models\Settings\GameProgressScope.cs" />
     <Compile Include="..\..\source\Models\Settings\GridAlignment.cs" Link="Source\Models\Settings\GridAlignment.cs" />
     <Compile Include="..\..\source\Models\Settings\GridVerticalAlignment.cs" Link="Source\Models\Settings\GridVerticalAlignment.cs" />
     <Compile Include="..\..\source\Models\Settings\CompactListSortMode.cs" Link="Source\Models\Settings\CompactListSortMode.cs" />
@@ -221,6 +223,7 @@
     <Compile Include="..\..\source\Models\ThemeIntegration\SelectedGameRuntimeState.cs" Link="Source\Models\ThemeIntegration\SelectedGameRuntimeState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\ThemeRuntimeState.cs" Link="Source\Models\ThemeIntegration\ThemeRuntimeState.cs" />
     <Compile Include="..\..\source\Views\Helpers\ColumnVisibilityHelper.cs" Link="Source\Views\Helpers\ColumnVisibilityHelper.cs" />
+    <Compile Include="..\..\source\Views\Helpers\DataGridHoverScrollBarBehavior.cs" Link="Source\Views\Helpers\DataGridHoverScrollBarBehavior.cs" />
     <Compile Include="..\..\source\Views\Helpers\DataGridColumnLayoutService.cs" Link="Source\Views\Helpers\DataGridColumnLayoutService.cs" />
     <Compile Include="..\..\source\Views\Helpers\ColumnWidthNormalization.cs" Link="Source\Views\Helpers\ColumnWidthNormalization.cs" />
     <Compile Include="..\..\source\Views\Helpers\GridAlignmentMapping.cs" Link="Source\Views\Helpers\GridAlignmentMapping.cs" />

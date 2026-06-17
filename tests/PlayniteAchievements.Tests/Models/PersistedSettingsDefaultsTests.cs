@@ -92,6 +92,17 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsStartPageScopes()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.AreEqual(GameActivityScope.Played, settings.StartPageActivityScope);
+            Assert.AreEqual(
+                GameProgressScope.Completed | GameProgressScope.InProgress,
+                settings.StartPageProgressScope);
+        }
+
+        [TestMethod]
         public void GridLayoutSettings_NormalizeInvalidValues()
         {
             var settings = new PersistedSettings();
@@ -505,6 +516,8 @@ namespace PlayniteAchievements.Models.Tests
             settings.StartPageRecentUnlocksGrid.MaxRows = 4;
             settings.StartPagePieCharts.ShowCenterPercentage = false;
             settings.StartPagePieCharts.SmallSliceMode = OverviewPieSmallSliceMode.Hide;
+            settings.StartPageActivityScope = GameActivityScope.All;
+            settings.StartPageProgressScope = GameProgressScope.NoProgress;
             settings.DataGridColumnVisibility["Title"] = false;
             settings.DataGridColumnWidths["Title"] = 100d;
             settings.DataGridColumnOrder["Title"] = 2;
@@ -576,6 +589,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.StartPageRecentAchievementsGridMaxRows, settings.StartPageRecentAchievementsGridMaxRows);
             Assert.AreEqual(defaults.StartPagePieCharts.ShowCenterPercentage, settings.StartPagePieCharts.ShowCenterPercentage);
             Assert.AreEqual(defaults.StartPagePieCharts.SmallSliceMode, settings.StartPagePieCharts.SmallSliceMode);
+            Assert.AreEqual(defaults.StartPageActivityScope, settings.StartPageActivityScope);
+            Assert.AreEqual(defaults.StartPageProgressScope, settings.StartPageProgressScope);
             Assert.AreEqual(defaults.OverviewLeftColumnRatio, settings.OverviewLeftColumnRatio);
             Assert.AreEqual(defaults.ViewAchievementsTimelineRange, settings.ViewAchievementsTimelineRange);
             Assert.AreEqual(defaults.ViewAchievementsTimelineVisible, settings.ViewAchievementsTimelineVisible);

@@ -145,8 +145,10 @@ namespace PlayniteAchievements.ViewModels
             SelectedGameCategoryFilterOptions = new ObservableCollection<string>();
             CompletenessFilterOptions = new ObservableCollection<string>();
 
-            // Pre-seed Played as default so UI never renders the placeholder
+            // Pre-seed default overview scope.
             _selectedPlayStatusFilters.Add(L("LOCPlayAch_Filter_Played", "Played"));
+            _selectedCompletenessFilters.Add(L("LOCPlayAch_Filter_Complete", "Complete"));
+            _selectedCompletenessFilters.Add(L("LOCPlayAch_Filter_InProgress", "In Progress"));
 
             // Initialize refresh mode options from service (exclude LibrarySelected - context menu only)
             RefreshModes = new ObservableCollection<RefreshMode>(

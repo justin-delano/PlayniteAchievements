@@ -2203,6 +2203,65 @@
 
                                 <Border Style="{StaticResource SectionBorderStyle}">
                                     <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_CustomRefresh_ScopeHeader}"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="0,0,0,12"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Grid.Row="0"
+                                                           Grid.Column="0"
+                                                           Text="{DynamicResource LOCPlayAch_Filter_ActivitySelectorPlaceholder}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,10,8"/>
+                                                <Button x:Name="StartPageActivityScopeSelectionButton"
+                                                        Grid.Row="0"
+                                                        Grid.Column="1"
+                                                        Content="{Binding StartPageActivityScopeText, ElementName=SettingsControlRoot}"
+                                                        Click="StartPageActivityScopeSelectionButton_Click"
+                                                        MinWidth="220"
+                                                        Height="30"
+                                                        Margin="0,0,0,8"
+                                                        HorizontalAlignment="Left">
+                                                    <Button.ContextMenu>
+                                                        <ContextMenu x:Name="StartPageActivityScopeSelectionContextMenu"/>
+                                                    </Button.ContextMenu>
+                                                </Button>
+
+                                                <TextBlock Grid.Row="1"
+                                                           Grid.Column="0"
+                                                           Text="{DynamicResource LOCPlayAch_Progress}"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,10,0"/>
+                                                <Button x:Name="StartPageProgressScopeSelectionButton"
+                                                        Grid.Row="1"
+                                                        Grid.Column="1"
+                                                        Content="{Binding StartPageProgressScopeText, ElementName=SettingsControlRoot}"
+                                                        Click="StartPageProgressScopeSelectionButton_Click"
+                                                        MinWidth="220"
+                                                        Height="30"
+                                                        HorizontalAlignment="Left">
+                                                    <Button.ContextMenu>
+                                                        <ContextMenu x:Name="StartPageProgressScopeSelectionContextMenu"/>
+                                                    </Button.ContextMenu>
+                                                </Button>
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="0,0,0,12"/>

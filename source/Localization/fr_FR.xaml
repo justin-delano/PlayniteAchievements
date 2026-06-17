@@ -355,7 +355,6 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">Saisissez un nom de préréglage (1 à 64 caractères).</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogTitle">Enregistrer le préréglage d'actualisation</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameInvalid">Le nom du préréglage doit contenir entre 1 et {0} caractères.</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption"></sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm">Écraser le préréglage &quot;{0}&quot; ?</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_SaveAs">Enregistrer sous</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_PresetsHeader">Préréglages</sys:String>

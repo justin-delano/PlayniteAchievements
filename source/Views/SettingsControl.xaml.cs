@@ -6,12 +6,14 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
@@ -392,6 +394,32 @@ namespace PlayniteAchievements.Views
             set => SetValue(LegacyManualImportBusyProperty, value);
         }
 
+        public static readonly DependencyProperty StartPageActivityScopeTextProperty =
+            DependencyProperty.Register(
+                nameof(StartPageActivityScopeText),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(string.Empty));
+
+        public string StartPageActivityScopeText
+        {
+            get => (string)GetValue(StartPageActivityScopeTextProperty);
+            set => SetValue(StartPageActivityScopeTextProperty, value);
+        }
+
+        public static readonly DependencyProperty StartPageProgressScopeTextProperty =
+            DependencyProperty.Register(
+                nameof(StartPageProgressScopeText),
+                typeof(string),
+                typeof(SettingsControl),
+                new PropertyMetadata(string.Empty));
+
+        public string StartPageProgressScopeText
+        {
+            get => (string)GetValue(StartPageProgressScopeTextProperty);
+            set => SetValue(StartPageProgressScopeTextProperty, value);
+        }
+
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly ILogger _logger;
@@ -482,6 +510,7 @@ namespace PlayniteAchievements.Views
 
             // Subscribe to settings property changes to refresh mock previews
             _settingsViewModel.Settings.Persisted.PropertyChanged += OnSettingsPropertyChanged;
+            UpdateStartPageScopeTexts();
 
             // Debug logging to verify DataContext and Settings values
             _logger?.Info($"SettingsControl created. DataContext type: {DataContext?.GetType().Name}");
@@ -1392,6 +1421,234 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void StartPageActivityScopeSelectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenStartPageActivityScopeContextMenu(sender as Button);
+        }
+
+        private void StartPageProgressScopeSelectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenStartPageProgressScopeContextMenu(sender as Button);
+        }
+
+        private void OpenStartPageActivityScopeContextMenu(Button button)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (button == null || persisted == null)
+            {
+                return;
+            }
+
+            var options = new[]
+            {
+                new { Scope = GameActivityScope.Played, Label = L("LOCPlayAch_Filter_Played", "Played") },
+                new { Scope = GameActivityScope.Unplayed, Label = L("LOCPlayAch_Filter_Unplayed", "Unplayed") }
+            };
+
+            var menu = PrepareStartPageScopeContextMenu(button);
+            if (menu == null)
+            {
+                return;
+            }
+
+            var current = persisted.StartPageActivityScope;
+            foreach (var option in options)
+            {
+                var scope = option.Scope;
+                var item = CreateStartPageScopeMenuItem(
+                    button,
+                    option.Label,
+                    current.HasFlag(scope),
+                    isChecked =>
+                    {
+                        var settings = _settingsViewModel?.Settings?.Persisted;
+                        if (settings == null)
+                        {
+                            return;
+                        }
+
+                        settings.StartPageActivityScope = isChecked
+                            ? settings.StartPageActivityScope | scope
+                            : settings.StartPageActivityScope & ~scope;
+                        UpdateStartPageScopeTexts();
+                    });
+                menu.Items.Add(item);
+            }
+
+            OpenSelectorContextMenu(button, menu);
+        }
+
+        private void OpenStartPageProgressScopeContextMenu(Button button)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (button == null || persisted == null)
+            {
+                return;
+            }
+
+            var options = new[]
+            {
+                new { Scope = GameProgressScope.Completed, Label = L("LOCPlayAch_Filter_Complete", "Complete") },
+                new { Scope = GameProgressScope.InProgress, Label = L("LOCPlayAch_Filter_InProgress", "In Progress") },
+                new { Scope = GameProgressScope.NoProgress, Label = L("LOCPlayAch_Filter_NoProgress", "No Progress") }
+            };
+
+            var menu = PrepareStartPageScopeContextMenu(button);
+            if (menu == null)
+            {
+                return;
+            }
+
+            var current = persisted.StartPageProgressScope;
+            foreach (var option in options)
+            {
+                var scope = option.Scope;
+                var item = CreateStartPageScopeMenuItem(
+                    button,
+                    option.Label,
+                    current.HasFlag(scope),
+                    isChecked =>
+                    {
+                        var settings = _settingsViewModel?.Settings?.Persisted;
+                        if (settings == null)
+                        {
+                            return;
+                        }
+
+                        settings.StartPageProgressScope = isChecked
+                            ? settings.StartPageProgressScope | scope
+                            : settings.StartPageProgressScope & ~scope;
+                        UpdateStartPageScopeTexts();
+                    });
+                menu.Items.Add(item);
+            }
+
+            OpenSelectorContextMenu(button, menu);
+        }
+
+        private static ContextMenu PrepareStartPageScopeContextMenu(Button button)
+        {
+            var menu = button?.ContextMenu;
+            if (menu == null)
+            {
+                return null;
+            }
+
+            menu.Items.Clear();
+            return menu;
+        }
+
+        private static MenuItem CreateStartPageScopeMenuItem(
+            Button button,
+            string header,
+            bool isChecked,
+            Action<bool> setSelection)
+        {
+            var item = new MenuItem
+            {
+                Header = header,
+                IsCheckable = true,
+                StaysOpenOnClick = true,
+                IsChecked = isChecked
+            };
+
+            var itemStyle = button?.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
+            if (itemStyle != null)
+            {
+                item.Style = itemStyle;
+            }
+
+            item.Click += (_, __) => setSelection?.Invoke(item.IsChecked);
+            return item;
+        }
+
+        private static void OpenSelectorContextMenu(Button button, ContextMenu menu)
+        {
+            if (button == null || menu == null || menu.Items.Count == 0)
+            {
+                return;
+            }
+
+            RoutedEventHandler onClosed = null;
+            onClosed = (_, __) =>
+            {
+                menu.Closed -= onClosed;
+                button.ReleaseMouseCapture();
+            };
+
+            menu.Closed += onClosed;
+            menu.PlacementTarget = button;
+            menu.Placement = PlacementMode.Bottom;
+            menu.HorizontalOffset = 0;
+            menu.VerticalOffset = 0;
+            menu.IsOpen = true;
+        }
+
+        private void UpdateStartPageScopeTexts()
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            var activityScope = persisted?.StartPageActivityScope ??
+                PersistedSettings.DefaultStartPageActivityScope;
+            var progressScope = persisted?.StartPageProgressScope ??
+                PersistedSettings.DefaultStartPageProgressScope;
+
+            StartPageActivityScopeText = GetActivityScopeText(activityScope);
+            StartPageProgressScopeText = GetProgressScopeText(progressScope);
+        }
+
+        private static string GetActivityScopeText(GameActivityScope scope)
+        {
+            scope = PersistedSettings.NormalizeStartPageActivityScope(scope);
+            if (scope == GameActivityScope.None)
+            {
+                return L("LOCPlayAch_Filter_ActivitySelectorPlaceholder", "Activity");
+            }
+
+            var labels = new List<string>();
+            if (scope.HasFlag(GameActivityScope.Played))
+            {
+                labels.Add(L("LOCPlayAch_Filter_Played", "Played"));
+            }
+
+            if (scope.HasFlag(GameActivityScope.Unplayed))
+            {
+                labels.Add(L("LOCPlayAch_Filter_Unplayed", "Unplayed"));
+            }
+
+            return labels.Count > 0
+                ? string.Join(", ", labels)
+                : L("LOCPlayAch_Filter_ActivitySelectorPlaceholder", "Activity");
+        }
+
+        private static string GetProgressScopeText(GameProgressScope scope)
+        {
+            scope = PersistedSettings.NormalizeStartPageProgressScope(scope);
+            if (scope == GameProgressScope.None)
+            {
+                return L("LOCPlayAch_Progress", "Progress");
+            }
+
+            var labels = new List<string>();
+            if (scope.HasFlag(GameProgressScope.Completed))
+            {
+                labels.Add(L("LOCPlayAch_Filter_Complete", "Complete"));
+            }
+
+            if (scope.HasFlag(GameProgressScope.InProgress))
+            {
+                labels.Add(L("LOCPlayAch_Filter_InProgress", "In Progress"));
+            }
+
+            if (scope.HasFlag(GameProgressScope.NoProgress))
+            {
+                labels.Add(L("LOCPlayAch_Filter_NoProgress", "No Progress"));
+            }
+
+            return labels.Count > 0
+                ? string.Join(", ", labels)
+                : L("LOCPlayAch_Progress", "Progress");
+        }
+
         // -----------------------------
         // Tagging Methods
         // -----------------------------
@@ -1769,6 +2026,12 @@ namespace PlayniteAchievements.Views
             {
                 PercentRarityHelper.ApplyBadgeApplicationResources(
                     _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
+            }
+
+            if (e.PropertyName == nameof(Models.Settings.PersistedSettings.StartPageActivityScope) ||
+                e.PropertyName == nameof(Models.Settings.PersistedSettings.StartPageProgressScope))
+            {
+                UpdateStartPageScopeTexts();
             }
 
             if (refreshProperties.Contains(e.PropertyName))

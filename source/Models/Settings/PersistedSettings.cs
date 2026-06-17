@@ -27,6 +27,9 @@ namespace PlayniteAchievements.Models.Settings
         public const double DefaultOverviewLeftColumnRatio = 0.5d;
         public const double MinOverviewLeftColumnRatio = 0.01d;
         public const double MaxOverviewLeftColumnRatio = 0.99d;
+        public const GameActivityScope DefaultStartPageActivityScope = GameActivityScope.Played;
+        public const GameProgressScope DefaultStartPageProgressScope =
+            GameProgressScope.Completed | GameProgressScope.InProgress;
 
         public PersistedSettings()
         {
@@ -104,6 +107,8 @@ namespace PlayniteAchievements.Models.Settings
             new StartPageRecentUnlocksGridSettings();
         private StartPagePieWidgetSettings _startPagePieCharts =
             new StartPagePieWidgetSettings();
+        private GameActivityScope _startPageActivityScope = DefaultStartPageActivityScope;
+        private GameProgressScope _startPageProgressScope = DefaultStartPageProgressScope;
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
@@ -1059,6 +1064,18 @@ namespace PlayniteAchievements.Models.Settings
             get => _startPagePieCharts ?? (_startPagePieCharts = AttachStartPageSettings(
                 new StartPagePieWidgetSettings()));
             set => SetStartPagePieSettings(ref _startPagePieCharts, value, nameof(StartPagePieCharts));
+        }
+
+        public GameActivityScope StartPageActivityScope
+        {
+            get => NormalizeStartPageActivityScope(_startPageActivityScope);
+            set => SetValue(ref _startPageActivityScope, NormalizeStartPageActivityScope(value));
+        }
+
+        public GameProgressScope StartPageProgressScope
+        {
+            get => NormalizeStartPageProgressScope(_startPageProgressScope);
+            set => SetValue(ref _startPageProgressScope, NormalizeStartPageProgressScope(value));
         }
 
         /// <summary>
@@ -2156,6 +2173,8 @@ namespace PlayniteAchievements.Models.Settings
                     new StartPageRecentUnlocksGridSettings(),
                 StartPagePieCharts = this.StartPagePieCharts?.Clone() ??
                     new StartPagePieWidgetSettings(),
+                StartPageActivityScope = this.StartPageActivityScope,
+                StartPageProgressScope = this.StartPageProgressScope,
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
@@ -2446,6 +2465,8 @@ namespace PlayniteAchievements.Models.Settings
             StartPageGameSummariesGrid = new StartPageGameSummariesGridSettings();
             StartPageRecentUnlocksGrid = new StartPageRecentUnlocksGridSettings();
             StartPagePieCharts = new StartPagePieWidgetSettings();
+            StartPageActivityScope = defaults.StartPageActivityScope;
+            StartPageProgressScope = defaults.StartPageProgressScope;
 
             DataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             DataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -2518,6 +2539,16 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             return Math.Max(MinimumGridMaxRows, value.Value);
+        }
+
+        public static GameActivityScope NormalizeStartPageActivityScope(GameActivityScope value)
+        {
+            return value & GameActivityScope.All;
+        }
+
+        public static GameProgressScope NormalizeStartPageProgressScope(GameProgressScope value)
+        {
+            return value & GameProgressScope.All;
         }
 
         private static string NormalizePath(string value)

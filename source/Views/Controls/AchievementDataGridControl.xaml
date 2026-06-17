@@ -52,6 +52,7 @@
               UseLayoutRounding="True"
               SnapsToDevicePixels="True"
               Tag="ControllerCellFocus"
+              helpers:DataGridHoverScrollBarBehavior.IsEnabled="True"
               helpers:DataGridAlignmentBehavior.IsEnabled="True"
               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
               PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">

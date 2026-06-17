@@ -6,6 +6,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Providers.BattleNet
@@ -15,17 +16,34 @@ namespace PlayniteAchievements.Providers.BattleNet
         private readonly Sc2GameStrategy _sc2;
         private readonly WowGameStrategy _wow;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly BattleNetSettings _providerSettings;
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _playniteApi;
+        private readonly string _pluginUserDataPath;
 
         public BattleNetScanner(
             BattleNetApiClient client,
             PlayniteAchievementsSettings settings,
             ILogger logger)
+            : this(client, settings, ProviderRegistry.Settings<BattleNetSettings>(), logger, null, null)
+        {
+        }
+
+        public BattleNetScanner(
+            BattleNetApiClient client,
+            PlayniteAchievementsSettings settings,
+            BattleNetSettings providerSettings,
+            ILogger logger,
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath)
         {
             _sc2 = new Sc2GameStrategy(client, logger);
             _wow = new WowGameStrategy(client, logger);
             _settings = settings;
+            _providerSettings = providerSettings;
             _logger = logger;
+            _playniteApi = playniteApi;
+            _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -44,12 +62,15 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             _logger?.Info($"[BattleNet] Refresh started. games={gamesToRefresh.Count}, locale={locale}");
 
+            var rarityEnricher = await CreateRarityEnricherAsync(cancel).ConfigureAwait(false);
+
             var payload = await ProviderRefreshExecutor.RunProviderGamesAsync(
                 gamesToRefresh,
                 onGameStarting,
                 async (game, token) =>
                 {
-                    var data = await FetchForGameAsync(game, locale, token);
+                    var data = await FetchForGameAsync(game, locale, token).ConfigureAwait(false);
+                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
                     return data == null
                         ? ProviderRefreshExecutor.ProviderGameResult.Skipped()
                         : new ProviderRefreshExecutor.ProviderGameResult { Data = data };
@@ -77,6 +98,38 @@ namespace PlayniteAchievements.Providers.BattleNet
                 return await _sc2.FetchAchievementsAsync(game, locale, ct);
             }
             return null;
+        }
+
+        private async Task<ExophaseMetadataEnricher> CreateRarityEnricherAsync(CancellationToken cancel)
+        {
+            if (_providerSettings?.UseExophaseForRarity != true)
+            {
+                return null;
+            }
+
+            var enricher = new ExophaseMetadataEnricher(_playniteApi, _logger, _settings, _pluginUserDataPath);
+            await enricher.InitializeAsync(cancel).ConfigureAwait(false);
+            return enricher;
+        }
+
+        private static async Task EnrichRarityAsync(
+            Game game,
+            GameAchievementData data,
+            ExophaseMetadataEnricher rarityEnricher,
+            CancellationToken cancel)
+        {
+            if (rarityEnricher == null || data?.Achievements == null || data.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            await rarityEnricher.EnrichAsync(
+                game,
+                data.Achievements,
+                "blizzard",
+                "BattleNet",
+                cancel,
+                ExophaseMetadataFields.Rarity).ConfigureAwait(false);
         }
 
         private static string Bool(bool value) => value ? "true" : "false";

@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Services.StartPage
@@ -18,9 +19,7 @@ namespace PlayniteAchievements.Services.StartPage
             int? rowLimit = null)
         {
             var widgetSettings = settings?.StartPageGameSummariesGrid ?? new StartPageGameSummariesGridSettings();
-            var list = (items ?? Enumerable.Empty<GameSummaryItem>())
-                .Where(item => item != null)
-                .ToList();
+            var list = FilterGameSummariesForStartPage(items, settings, includeProgressScope: true);
 
             GameSummariesSortHelper.Sort(
                 list,
@@ -32,6 +31,24 @@ namespace PlayniteAchievements.Services.StartPage
             return DisplayGridRowLimitHelper.Limit(
                 list,
                 rowLimit ?? widgetSettings.MaxRows);
+        }
+
+        public static List<GameSummaryItem> FilterGameSummariesForStartPage(
+            IEnumerable<GameSummaryItem> items,
+            PersistedSettings settings,
+            bool includeProgressScope)
+        {
+            var activityScope = settings?.StartPageActivityScope ??
+                PersistedSettings.DefaultStartPageActivityScope;
+            var progressScope = includeProgressScope
+                ? settings?.StartPageProgressScope ?? PersistedSettings.DefaultStartPageProgressScope
+                : GameProgressScope.None;
+
+            return OverviewGameSummaryFilters.ApplyActivityAndProgressFilters(
+                    (items ?? Enumerable.Empty<GameSummaryItem>()).Where(item => item != null),
+                    activityScope,
+                    progressScope)
+                .ToList();
         }
 
         public static List<AchievementDisplayItem> ProjectRecentUnlocks(

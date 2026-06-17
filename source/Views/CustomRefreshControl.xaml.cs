@@ -438,7 +438,7 @@ namespace PlayniteAchievements.Views
             _recentLimitOverrideText = (_settings?.Persisted?.RecentRefreshGamesCount ?? 10).ToString();
             _placeholderPreset = new CustomRefreshPreset
             {
-                Name = L("LOCPlayAch_CustomRefresh_Presets_NoneOption", " "),
+                Name = L("LOCPlayAch_CustomRefresh_None", " "),
                 Options = null
             };
 

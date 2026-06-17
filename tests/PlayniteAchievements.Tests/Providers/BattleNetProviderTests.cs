@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Providers.BattleNet;
@@ -96,6 +97,41 @@ namespace PlayniteAchievements.Tests.Providers
             var locked = achievements.Single(item => item.ApiName == "2");
             Assert.IsFalse(locked.Unlocked);
             Assert.IsFalse(locked.UnlockTimeUtc.HasValue);
+        }
+
+        [TestMethod]
+        public void Settings_DefaultsExophaseRarityOff()
+        {
+            var settings = new BattleNetSettings();
+
+            Assert.IsFalse(settings.UseExophaseForRarity);
+        }
+
+        [TestMethod]
+        public void Settings_SerializesExophaseRarityFlag()
+        {
+            var settings = new BattleNetSettings
+            {
+                UseExophaseForRarity = true
+            };
+
+            var json = JObject.Parse(settings.SerializeToJson());
+
+            Assert.IsTrue(json["UseExophaseForRarity"].Value<bool>());
+        }
+
+        [TestMethod]
+        public void Settings_RoundTripsExophaseRarityFlag()
+        {
+            var source = new BattleNetSettings
+            {
+                UseExophaseForRarity = true
+            };
+            var target = new BattleNetSettings();
+
+            target.DeserializeFromJson(source.SerializeToJson());
+
+            Assert.IsTrue(target.UseExophaseForRarity);
         }
 
         [TestMethod]

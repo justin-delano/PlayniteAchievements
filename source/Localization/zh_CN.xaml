@@ -355,7 +355,6 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogHint">输入预设名称 (1-64 个字符)。</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameDialogTitle">保存自定义刷新预设</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NameInvalid">预设名称必须在 1 到 {0} 个字符之间。</sys:String>
-    <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_NoneOption"></sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_OverwriteConfirm">覆盖预设“{0}”？</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_SaveAs">另存为</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_PresetsHeader">预设</sys:String>
