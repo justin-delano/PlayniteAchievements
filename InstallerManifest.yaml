@@ -1,20 +1,20 @@
 AddonId: PlayniteAchievements
 Packages:
 
-  - Version: 2.5.1
-    RequiredApiVersion: 6.14.0
-    ReleaseDate: 2026-05-30
-    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.1/PlayniteAchievements_2_5_1.pext
-    Changelog:
-    - "[New] Added Note marker and Note column to achievement grids."
-    - "[New] Notes now support hyperlinking."
-    - "[New] Added Exophase metadata support for native Battle.net platform."
-    - "[New] Added Hotkeys section to Settings. View or manage achievements while in game, or in Playnite. Hotkeys can be customized."
-    - "[New] Greatly expanded functionality of Dynamic Lists for theme devs. Check the wiki for more information, but this is the new best way to access achievement data in themes."
-    - "[Fixed] Fixed case where some RetroAchievements subsets were not being shared between games."
-    - "[Fixed] Fixed column widths adjustment when window is resized."
-    - "[Fixed] Triggering platform authentication checks in settings is more clear."
-    - "As always, many additional improvements and fixes behind the scenes."
+  # - Version: 2.5.1
+  #   RequiredApiVersion: 6.14.0
+  #   ReleaseDate: 2026-05-30
+  #   PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.1/PlayniteAchievements_2_5_1.pext
+  #   Changelog:
+  #   - "[New] Added Note marker and Note column to achievement grids."
+  #   - "[New] Notes now support hyperlinking."
+  #   - "[New] Added Exophase metadata support for native Battle.net platform."
+  #   - "[New] Added Hotkeys section to Settings. View or manage achievements while in game, or in Playnite. Hotkeys can be customized."
+  #   - "[New] Greatly expanded functionality of Dynamic Lists for theme devs. Check the wiki for more information, but this is the new best way to access achievement data in themes."
+  #   - "[Fixed] Fixed case where some RetroAchievements subsets were not being shared between games."
+  #   - "[Fixed] Fixed column widths adjustment when window is resized."
+  #   - "[Fixed] Triggering platform authentication checks in settings is more clear."
+  #   - "As always, many additional improvements and fixes behind the scenes."
 
   - Version: 2.5.0
     RequiredApiVersion: 6.14.0
