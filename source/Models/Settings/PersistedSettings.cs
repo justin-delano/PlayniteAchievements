@@ -32,6 +32,7 @@ namespace PlayniteAchievements.Models.Settings
             GameProgressScope.Completed | GameProgressScope.InProgress;
         public const string DefaultViewAchievementsHotkey = "Ctrl+Alt+V";
         public const string DefaultManageAchievementsHotkey = "Ctrl+Alt+M";
+        public const string DefaultOverviewHotkey = "Ctrl+Alt+O";
 
         public PersistedSettings()
         {
@@ -52,6 +53,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableGlobalAchievementHotkeys = false;
         private string _viewAchievementsHotkey = DefaultViewAchievementsHotkey;
         private string _manageAchievementsHotkey = DefaultManageAchievementsHotkey;
+        private string _overviewHotkey = DefaultOverviewHotkey;
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
@@ -318,6 +320,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _manageAchievementsHotkey;
             set => SetValue(ref _manageAchievementsHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that opens, focuses, or toggles the Achievements Overview window.
+        /// </summary>
+        public string OverviewHotkey
+        {
+            get => _overviewHotkey;
+            set => SetValue(ref _overviewHotkey, NormalizeHotkeyText(value));
         }
 
         #endregion
@@ -2141,6 +2152,7 @@ namespace PlayniteAchievements.Models.Settings
                 EnableGlobalAchievementHotkeys = this.EnableGlobalAchievementHotkeys,
                 ViewAchievementsHotkey = this.ViewAchievementsHotkey,
                 ManageAchievementsHotkey = this.ManageAchievementsHotkey,
+                OverviewHotkey = this.OverviewHotkey,
 
                 // Notification Settings
                 EnableNotifications = this.EnableNotifications,

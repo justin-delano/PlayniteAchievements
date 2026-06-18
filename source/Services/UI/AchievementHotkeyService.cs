@@ -21,6 +21,7 @@ namespace PlayniteAchievements.Services.UI
     {
         private const int ViewAchievementsHotkeyId = 0x504101;
         private const int ManageAchievementsHotkeyId = 0x504102;
+        private const int OverviewHotkeyId = 0x504103;
         private const int WmHotkey = 0x0312;
         private const uint ModAlt = 0x0001;
         private const uint ModControl = 0x0002;
@@ -35,6 +36,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly ILogger _logger;
         private readonly Action<Guid> _toggleViewAchievementsWindow;
         private readonly Action<Guid> _toggleManageAchievementsWindow;
+        private readonly Action _toggleOverviewWindow;
         private readonly Dictionary<int, AchievementHotkeyAction> _registeredGlobalHotkeys =
             new Dictionary<int, AchievementHotkeyAction>();
 
@@ -44,6 +46,7 @@ namespace PlayniteAchievements.Services.UI
         private IntPtr _globalHotkeyWindowHandle = IntPtr.Zero;
         private AchievementHotkeyGesture _viewGesture = AchievementHotkeyGesture.Empty;
         private AchievementHotkeyGesture _manageGesture = AchievementHotkeyGesture.Empty;
+        private AchievementHotkeyGesture _overviewGesture = AchievementHotkeyGesture.Empty;
         private AchievementHotkeyAction? _lastHandledAction;
         private DateTime _lastHandledAtUtc;
 
@@ -53,7 +56,8 @@ namespace PlayniteAchievements.Services.UI
             AchievementHotkeyTargetResolver targetResolver,
             ILogger logger,
             Action<Guid> toggleViewAchievementsWindow,
-            Action<Guid> toggleManageAchievementsWindow)
+            Action<Guid> toggleManageAchievementsWindow,
+            Action toggleOverviewWindow)
         {
             _api = api;
             _settings = settings;
@@ -61,6 +65,7 @@ namespace PlayniteAchievements.Services.UI
             _logger = logger;
             _toggleViewAchievementsWindow = toggleViewAchievementsWindow ?? throw new ArgumentNullException(nameof(toggleViewAchievementsWindow));
             _toggleManageAchievementsWindow = toggleManageAchievementsWindow ?? throw new ArgumentNullException(nameof(toggleManageAchievementsWindow));
+            _toggleOverviewWindow = toggleOverviewWindow ?? throw new ArgumentNullException(nameof(toggleOverviewWindow));
         }
 
         private Dispatcher UiDispatcher =>
@@ -133,6 +138,7 @@ namespace PlayniteAchievements.Services.UI
 
             _viewGesture = ParseGesture(_settings?.Persisted?.ViewAchievementsHotkey);
             _manageGesture = ParseGesture(_settings?.Persisted?.ManageAchievementsHotkey);
+            _overviewGesture = ParseGesture(_settings?.Persisted?.OverviewHotkey);
             UnregisterGlobalHotkeys();
 
             var persisted = _settings?.Persisted;
@@ -218,6 +224,12 @@ namespace PlayniteAchievements.Services.UI
                 return true;
             }
 
+            if (!_overviewGesture.IsEmpty && gesture.Equals(_overviewGesture))
+            {
+                action = AchievementHotkeyAction.Overview;
+                return true;
+            }
+
             return false;
         }
 
@@ -242,6 +254,12 @@ namespace PlayniteAchievements.Services.UI
 
             _lastHandledAction = action;
             _lastHandledAtUtc = now;
+
+            if (action == AchievementHotkeyAction.Overview)
+            {
+                _toggleOverviewWindow();
+                return;
+            }
 
             var target = _targetResolver.Resolve();
             if (target?.HasTarget != true)
@@ -273,6 +291,7 @@ namespace PlayniteAchievements.Services.UI
 
             RegisterGlobalHotkey(ViewAchievementsHotkeyId, AchievementHotkeyAction.ViewAchievements, _viewGesture);
             RegisterGlobalHotkey(ManageAchievementsHotkeyId, AchievementHotkeyAction.ManageAchievements, _manageGesture);
+            RegisterGlobalHotkey(OverviewHotkeyId, AchievementHotkeyAction.Overview, _overviewGesture);
         }
 
         private bool EnsureGlobalHotkeySink()
@@ -490,7 +509,8 @@ namespace PlayniteAchievements.Services.UI
         private enum AchievementHotkeyAction
         {
             ViewAchievements,
-            ManageAchievements
+            ManageAchievements,
+            Overview
         }
     }
 }

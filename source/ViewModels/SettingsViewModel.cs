@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
@@ -183,6 +184,7 @@ namespace PlayniteAchievements.ViewModels
         {
             var viewLabel = L("LOCPlayAch_Menu_ViewAchievements", "View Achievements");
             var manageLabel = L("LOCPlayAch_Menu_ManageAchievements", "Manage Achievements");
+            var overviewLabel = L("LOCPlayAch_Menu_OpenOverview", "Achievements Overview");
             var invalidMessage = L(
                 "LOCPlayAch_Hotkeys_InvalidShortcut",
                 "Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.");
@@ -190,17 +192,37 @@ namespace PlayniteAchievements.ViewModels
 
             var viewValid = TryValidateHotkey(viewLabel, persisted.ViewAchievementsHotkey, invalidMessage, errors, out var viewGesture);
             var manageValid = TryValidateHotkey(manageLabel, persisted.ManageAchievementsHotkey, invalidMessage, errors, out var manageGesture);
+            var overviewValid = TryValidateHotkey(overviewLabel, persisted.OverviewHotkey, invalidMessage, errors, out var overviewGesture);
 
-            if (viewValid &&
-                manageValid &&
-                viewGesture != null &&
-                manageGesture != null &&
-                !viewGesture.IsEmpty &&
-                !manageGesture.IsEmpty &&
-                viewGesture.Equals(manageGesture))
+            var assignedGestures = new List<AchievementHotkeyGesture>();
+            AddDuplicateHotkeyError(viewValid, viewGesture, assignedGestures, duplicateMessage, errors);
+            AddDuplicateHotkeyError(manageValid, manageGesture, assignedGestures, duplicateMessage, errors);
+            AddDuplicateHotkeyError(overviewValid, overviewGesture, assignedGestures, duplicateMessage, errors);
+        }
+
+        private static void AddDuplicateHotkeyError(
+            bool isValid,
+            AchievementHotkeyGesture gesture,
+            List<AchievementHotkeyGesture> assignedGestures,
+            string duplicateMessage,
+            List<string> errors)
+        {
+            if (!isValid || gesture == null || gesture.IsEmpty)
             {
-                errors.Add(duplicateMessage);
+                return;
             }
+
+            if (assignedGestures.Any(existing => existing.Equals(gesture)))
+            {
+                if (!errors.Contains(duplicateMessage))
+                {
+                    errors.Add(duplicateMessage);
+                }
+
+                return;
+            }
+
+            assignedGestures.Add(gesture);
         }
 
         private static bool TryValidateHotkey(

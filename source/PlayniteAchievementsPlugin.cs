@@ -284,7 +284,8 @@ namespace PlayniteAchievements
                         _achievementHotkeyTargetResolver,
                         _logger,
                         gameId => _windowService.ToggleViewAchievementsWindow(gameId),
-                        gameId => _windowService.ToggleManageAchievementsView(gameId));
+                        gameId => _windowService.ToggleManageAchievementsView(gameId),
+                        ToggleOverviewWindow);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
                         _logger,
@@ -522,7 +523,8 @@ namespace PlayniteAchievements
             if (e.PropertyName == nameof(PersistedSettings.EnableAchievementHotkeys) ||
                 e.PropertyName == nameof(PersistedSettings.EnableGlobalAchievementHotkeys) ||
                 e.PropertyName == nameof(PersistedSettings.ViewAchievementsHotkey) ||
-                e.PropertyName == nameof(PersistedSettings.ManageAchievementsHotkey))
+                e.PropertyName == nameof(PersistedSettings.ManageAchievementsHotkey) ||
+                e.PropertyName == nameof(PersistedSettings.OverviewHotkey))
             {
                 _achievementHotkeyService?.RefreshConfiguration();
             }

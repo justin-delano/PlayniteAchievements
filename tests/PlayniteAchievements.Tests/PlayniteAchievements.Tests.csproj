@@ -217,6 +217,8 @@
     <Compile Include="..\..\source\Models\Achievements\Scoring\AchievementScoreCalculator.cs" Link="Source\Models\Achievements\Scoring\AchievementScoreCalculator.cs" />
     <Compile Include="..\..\source\Models\Achievements\Scoring\AchievementScoreSnapshot.cs" Link="Source\Models\Achievements\Scoring\AchievementScoreSnapshot.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\GameAchievementSummary.cs" Link="Source\Models\ThemeIntegration\GameAchievementSummary.cs" />
+    <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeOption.cs" Link="Source\Models\ThemeIntegration\DynamicThemeOption.cs" />
+    <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeOptionGroups.cs" Link="Source\Models\ThemeIntegration\DynamicThemeOptionGroups.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeViewState.cs" Link="Source\Models\ThemeIntegration\DynamicThemeViewState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\LegacyThemeBindings.cs" Link="Source\Models\ThemeIntegration\LegacyThemeBindings.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\LibraryRuntimeState.cs" Link="Source\Models\ThemeIntegration\LibraryRuntimeState.cs" />
@@ -231,6 +233,10 @@
     <Compile Include="..\..\source\Views\Helpers\VisualTreeHelpers.cs" Link="Source\Views\Helpers\VisualTreeHelpers.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\LibraryRuntimeStateBuilder.cs" Link="Source\Services\ThemeIntegration\LibraryRuntimeStateBuilder.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\SelectedGameRuntimeStateBuilder.cs" Link="Source\Services\ThemeIntegration\SelectedGameRuntimeStateBuilder.cs" />
+    <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeFilterEvaluator.cs" Link="Source\Services\ThemeIntegration\DynamicThemeFilterEvaluator.cs" />
+    <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeFilterExpression.cs" Link="Source\Services\ThemeIntegration\DynamicThemeFilterExpression.cs" />
+    <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeLabels.cs" Link="Source\Services\ThemeIntegration\DynamicThemeLabels.cs" />
+    <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeOptionFactory.cs" Link="Source\Services\ThemeIntegration\DynamicThemeOptionFactory.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" Link="Source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\ThemeIntegrationService.cs" Link="Source\Services\ThemeIntegration\ThemeIntegrationService.cs" />
     <Compile Include="..\..\source\Services\Cache\ICacheManager.cs" Link="Source\Services\Cache\ICacheManager.cs" />

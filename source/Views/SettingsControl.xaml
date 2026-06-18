@@ -616,6 +616,34 @@
                                             MinWidth="74"/>
                                 </Grid>
 
+                                <Grid Style="{StaticResource SettingRowStyle}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="150"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Menu_OpenOverview}"
+                                                   Foreground="{DynamicResource TextBrush}"
+                                                   FontWeight="SemiBold"/>
+                                    </StackPanel>
+
+                                    <Button x:Name="OverviewHotkeyCaptureButton"
+                                            Grid.Column="1"
+                                            Content="{Binding OverviewHotkeyButtonText, ElementName=SettingsControlRoot}"
+                                            Click="OverviewHotkeyCapture_Click"
+                                            PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
+                                            IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
+                                            Margin="12,0,8,0"/>
+
+                                    <Button Grid.Column="2"
+                                            Content="{DynamicResource LOCPlayAch_Button_Reset}"
+                                            Click="ResetOverviewHotkey_Click"
+                                            IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
+                                            MinWidth="74"/>
+                                </Grid>
+
                                 <TextBlock Text="{Binding HotkeyCaptureStatusText, ElementName=SettingsControlRoot}"
                                            Style="{StaticResource MutedTextStyle}"
                                            TextWrapping="Wrap"/>

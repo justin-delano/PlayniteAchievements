@@ -54,6 +54,7 @@ namespace PlayniteAchievements.Models.Settings
             target.EnableGlobalAchievementHotkeys = source.EnableGlobalAchievementHotkeys;
             target.ViewAchievementsHotkey = source.ViewAchievementsHotkey;
             target.ManageAchievementsHotkey = source.ManageAchievementsHotkey;
+            target.OverviewHotkey = source.OverviewHotkey;
 
             // Notification Settings
             target.EnableNotifications = source.EnableNotifications;

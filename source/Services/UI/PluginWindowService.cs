@@ -28,6 +28,10 @@ namespace PlayniteAchievements.Services.UI
     {
         private const string ViewAchievementsWindowPlacementKey = "SingleGameAchievements";
         private const string ManageAchievementsWindowPlacementKey = "ManageAchievements";
+        private const string OverviewWindowPlacementKey = "Overview";
+        private const int WhMouseLl = 14;
+        private const int WmLButtonDown = 0x0201;
+        private const int WmLButtonUp = 0x0202;
         private const int ShowWindowRestore = 9;
 
         private enum AchievementWindowKind
@@ -50,6 +54,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly FullscreenControllerNavigationService _fullscreenControllerNavigationService;
         private readonly System.Collections.Generic.Dictionary<Tuple<AchievementWindowKind, Guid>, Window> _achievementWindows =
             new System.Collections.Generic.Dictionary<Tuple<AchievementWindowKind, Guid>, Window>();
+        private Window _overviewWindow;
 
         public PluginWindowService(
             IPlayniteAPI api,
@@ -105,6 +110,104 @@ namespace PlayniteAchievements.Services.UI
             {
                 window.ShowDialog();
             }
+        }
+
+        private void AttachOwnerClickClose(Window window, bool isFullscreen)
+        {
+            if (window == null || isFullscreen)
+            {
+                return;
+            }
+
+            Window owner;
+            try
+            {
+                owner = window.Owner ?? _api?.Dialogs?.GetCurrentAppWindow();
+            }
+            catch
+            {
+                owner = null;
+            }
+
+            if (owner == null)
+            {
+                return;
+            }
+
+            var ownerHandle = GetWindowHandle(owner);
+            var windowHandle = GetWindowHandle(window);
+            if (ownerHandle == IntPtr.Zero || windowHandle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            LowLevelMouseProc hookProc = null;
+            var hookHandle = IntPtr.Zero;
+            var isClosing = false;
+
+            hookProc = (nCode, wParam, lParam) =>
+            {
+                try
+                {
+                    if (nCode >= 0 &&
+                        IsLeftButtonMessage(wParam) &&
+                        window.IsVisible &&
+                        window.IsActive)
+                    {
+                        var mouse = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
+                        if (IsPointInsideWindow(ownerHandle, mouse.pt) &&
+                            !IsPointInsideWindow(windowHandle, mouse.pt))
+                        {
+                            if (!isClosing && wParam == new IntPtr(WmLButtonDown))
+                            {
+                                isClosing = true;
+                                window.Dispatcher.BeginInvoke(
+                                    new Action(() =>
+                                    {
+                                        if (window.IsVisible)
+                                        {
+                                            window.Close();
+                                        }
+                                    }),
+                                    DispatcherPriority.Input);
+                            }
+
+                            return new IntPtr(1);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to handle owner click for plugin window.");
+                }
+
+                return CallNextHookEx(hookHandle, nCode, wParam, lParam);
+            };
+
+            hookHandle = SetWindowsHookEx(WhMouseLl, hookProc, GetModuleHandle(null), 0);
+            if (hookHandle == IntPtr.Zero)
+            {
+                _logger?.Debug(
+                    $"Failed to install plugin window owner-click hook. Win32Error={Marshal.GetLastWin32Error()}");
+                return;
+            }
+
+            window.Closed += (s, e) =>
+            {
+                if (hookHandle != IntPtr.Zero)
+                {
+                    UnhookWindowsHookEx(hookHandle);
+                    hookHandle = IntPtr.Zero;
+                }
+
+                hookProc = null;
+            };
+        }
+
+        private static bool IsLeftButtonMessage(IntPtr message)
+        {
+            return message == new IntPtr(WmLButtonDown) ||
+                   message == new IntPtr(WmLButtonUp);
         }
 
         private void PrepareForegroundActivation(Window window)
@@ -536,6 +639,128 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
+        public void ToggleOverviewWindow()
+        {
+            try
+            {
+                InvokeOnUiThread(() =>
+                {
+                    if (TryActivateOverviewWindow(closeIfActive: true))
+                    {
+                        return;
+                    }
+
+                    OpenOverviewWindowCore();
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to toggle Achievements Overview window");
+            }
+        }
+
+        public void OpenOverviewWindow()
+        {
+            try
+            {
+                InvokeOnUiThread(() =>
+                {
+                    if (TryActivateOverviewWindow(closeIfActive: false))
+                    {
+                        return;
+                    }
+
+                    OpenOverviewWindowCore();
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to open Achievements Overview window");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open achievements overview: {ex.Message}",
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+            }
+        }
+
+        private bool TryActivateOverviewWindow(bool closeIfActive)
+        {
+            var window = FindOpenOverviewWindow();
+            if (window == null)
+            {
+                return false;
+            }
+
+            if (closeIfActive && window.IsActive)
+            {
+                window.Close();
+                return true;
+            }
+
+            ActivateTrackedWindow(window);
+            return true;
+        }
+
+        private Window FindOpenOverviewWindow()
+        {
+            if (_overviewWindow?.IsVisible == true)
+            {
+                return _overviewWindow;
+            }
+
+            var application = Application.Current;
+            return application?.Windows?
+                .OfType<Window>()
+                .Where(window => window != null && window.IsVisible && !ReferenceEquals(window, application.MainWindow))
+                .FirstOrDefault(IsOverviewWindow);
+        }
+
+        private static bool IsOverviewWindow(Window window)
+        {
+            return ContainsOverviewControl(window?.Content);
+        }
+
+        private static bool ContainsOverviewControl(object content)
+        {
+            if (content == null)
+            {
+                return false;
+            }
+
+            if (content is OverviewControl)
+            {
+                return true;
+            }
+
+            if (content is FullscreenOverlayContainer overlay)
+            {
+                return ContainsOverviewControl(overlay.HostedContent);
+            }
+
+            if (content is ContentControl contentControl)
+            {
+                return ContainsOverviewControl(contentControl.Content);
+            }
+
+            return false;
+        }
+
+        private void TrackOverviewWindow(Window window)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            _overviewWindow = window;
+            window.Closed += (s, e) =>
+            {
+                if (ReferenceEquals(_overviewWindow, window))
+                {
+                    _overviewWindow = null;
+                }
+            };
+        }
+
         private void ToggleAchievementWindow(AchievementWindowKind kind, Guid gameId, Action openWindow)
         {
             if (gameId == Guid.Empty || openWindow == null)
@@ -762,6 +987,110 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
+        private static IntPtr GetWindowHandle(Window window)
+        {
+            if (window == null)
+            {
+                return IntPtr.Zero;
+            }
+
+            try
+            {
+                var helper = new WindowInteropHelper(window);
+                return helper.Handle != IntPtr.Zero ? helper.Handle : helper.EnsureHandle();
+            }
+            catch
+            {
+                return IntPtr.Zero;
+            }
+        }
+
+        private static bool IsPointInsideWindow(IntPtr windowHandle, NativePoint point)
+        {
+            if (windowHandle == IntPtr.Zero ||
+                !GetWindowRect(windowHandle, out var rect))
+            {
+                return false;
+            }
+
+            return point.X >= rect.Left &&
+                   point.X < rect.Right &&
+                   point.Y >= rect.Top &&
+                   point.Y < rect.Bottom;
+        }
+
+        private void OpenOverviewWindowCore()
+        {
+            try
+            {
+                var isFullscreen = DetectFullscreenMode();
+
+                var view = new OverviewControl(
+                    _api,
+                    _logger,
+                    _refreshService,
+                    _cacheManager,
+                    _persistSettingsForUi,
+                    _achievementOverridesService,
+                    _achievementDataService,
+                    _refreshCoordinator,
+                    _settings);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 1280,
+                    Height = 800
+                };
+
+                var window = PlayniteUiProvider.CreateExtensionWindow(
+                    ResourceProvider.GetString("LOCPlayAch_Menu_OpenOverview") ??
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ??
+                    "Achievements Overview",
+                    view,
+                    windowOptions,
+                    isFullscreen);
+
+                AttachWindowPlacement(window, OverviewWindowPlacementKey, isFullscreen);
+                try
+                {
+                    if (window.Owner == null)
+                    {
+                        window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
+                    }
+                }
+                catch
+                {
+                }
+
+                window.Loaded += (s, e) => view.Activate();
+                window.Closed += (s, e) =>
+                {
+                    view.Deactivate();
+                    view.Dispose();
+                };
+
+                AttachOwnerClickClose(window, isFullscreen);
+                TrackOverviewWindow(window);
+                if (isFullscreen)
+                {
+                    _fullscreenControllerNavigationService?.RegisterWindow(window, view);
+                }
+
+                ShowWindow(window, isFullscreen);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to open Achievements Overview window");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open achievements overview: {ex.Message}",
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+            }
+        }
+
         public void OpenViewAchievementsWindow(Guid gameId)
         {
             try
@@ -830,6 +1159,7 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 window.Closed += (s, ev) => view.Cleanup();
+                AttachOwnerClickClose(window, isFullscreen);
                 TrackAchievementWindow(AchievementWindowKind.ViewAchievements, gameId, window);
                 if (isFullscreen)
                 {
@@ -1041,6 +1371,7 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 window.Closed += (s, e) => view.Cleanup();
+                AttachOwnerClickClose(window, isFullscreen);
                 TrackAchievementWindow(AchievementWindowKind.ManageAchievements, gameId, window);
                 if (isFullscreen)
                 {
@@ -1197,5 +1528,48 @@ namespace PlayniteAchievements.Services.UI
 
         [DllImport("user32.dll", EntryPoint = "ShowWindow")]
         private static extern bool ShowWindowNative(IntPtr hWnd, int nCmdShow);
+
+        private delegate IntPtr LowLevelMouseProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativePoint
+        {
+            public int X;
+            public int Y;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeRect
+        {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MSLLHOOKSTRUCT
+        {
+            public NativePoint pt;
+            public uint mouseData;
+            public uint flags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect lpRect);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
     }
 }

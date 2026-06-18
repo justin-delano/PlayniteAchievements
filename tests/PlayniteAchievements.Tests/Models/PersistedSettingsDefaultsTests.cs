@@ -111,6 +111,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsFalse(settings.EnableGlobalAchievementHotkeys);
             Assert.AreEqual(PersistedSettings.DefaultViewAchievementsHotkey, settings.ViewAchievementsHotkey);
             Assert.AreEqual(PersistedSettings.DefaultManageAchievementsHotkey, settings.ManageAchievementsHotkey);
+            Assert.AreEqual(PersistedSettings.DefaultOverviewHotkey, settings.OverviewHotkey);
         }
 
         [TestMethod]
@@ -226,7 +227,8 @@ namespace PlayniteAchievements.Models.Tests
                 EnableAchievementHotkeys = false,
                 EnableGlobalAchievementHotkeys = true,
                 ViewAchievementsHotkey = "F8",
-                ManageAchievementsHotkey = "Shift+F9"
+                ManageAchievementsHotkey = "Shift+F9",
+                OverviewHotkey = "F10"
             };
 
             var clone = source.Clone();
@@ -237,11 +239,13 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsTrue(clone.EnableGlobalAchievementHotkeys);
             Assert.AreEqual("F8", clone.ViewAchievementsHotkey);
             Assert.AreEqual("Shift+F9", clone.ManageAchievementsHotkey);
+            Assert.AreEqual("F10", clone.OverviewHotkey);
 
             Assert.IsFalse(target.EnableAchievementHotkeys);
             Assert.IsTrue(target.EnableGlobalAchievementHotkeys);
             Assert.AreEqual("F8", target.ViewAchievementsHotkey);
             Assert.AreEqual("Shift+F9", target.ManageAchievementsHotkey);
+            Assert.AreEqual("F10", target.OverviewHotkey);
         }
 
         [TestMethod]
