@@ -145,11 +145,6 @@ namespace PlayniteAchievements.ViewModels
             SelectedGameCategoryFilterOptions = new ObservableCollection<string>();
             CompletenessFilterOptions = new ObservableCollection<string>();
 
-            // Pre-seed default overview scope.
-            _selectedPlayStatusFilters.Add(L("LOCPlayAch_Filter_Played", "Played"));
-            _selectedCompletenessFilters.Add(L("LOCPlayAch_Filter_Complete", "Complete"));
-            _selectedCompletenessFilters.Add(L("LOCPlayAch_Filter_InProgress", "In Progress"));
-
             // Initialize refresh mode options from service (exclude LibrarySelected - context menu only)
             RefreshModes = new ObservableCollection<RefreshMode>(
                 _refreshService.GetRefreshModes().Where(m => m.Type != RefreshModeType.LibrarySelected));
@@ -2873,7 +2868,13 @@ namespace PlayniteAchievements.ViewModels
                 labels.Add(L("LOCPlayAch_Overview_Incomplete", "Incomplete"));
             }
 
-            return labels;
+            var distinctLabels = labels
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return distinctLabels.Count == 1
+                ? distinctLabels
+                : Enumerable.Empty<string>();
         }
 
         private void ApplyOverviewPieSmallSliceMode()
