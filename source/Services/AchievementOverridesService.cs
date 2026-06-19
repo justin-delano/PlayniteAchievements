@@ -175,6 +175,31 @@ namespace PlayniteAchievements.Services
             _notifyCacheInvalidated(true);
         }
 
+        public void SetCustomAchievements(
+            Guid gameId,
+            IReadOnlyList<CustomAchievementDefinition> definitions,
+            IReadOnlyDictionary<string, string> renamedApiNames = null)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            _gameCustomDataStore.Update(gameId, customData =>
+            {
+                if (renamedApiNames != null && renamedApiNames.Count > 0)
+                {
+                    MigrateApiNameReferences(customData, renamedApiNames);
+                }
+
+                customData.CustomAchievements = definitions != null
+                    ? definitions.Select(definition => definition?.Clone()).Where(definition => definition != null).ToList()
+                    : null;
+            });
+
+            _notifyCacheInvalidated(true);
+        }
+
         public void SetSeparateLockedIconOverride(Guid gameId, bool enabled)
         {
             if (gameId == Guid.Empty)
@@ -335,6 +360,91 @@ namespace PlayniteAchievements.Services
                 }
 
                 result.Add(normalized);
+            }
+
+            return result.Count > 0 ? result : null;
+        }
+
+        private static void MigrateApiNameReferences(
+            GameCustomDataFile customData,
+            IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (customData == null || renamedApiNames == null || renamedApiNames.Count == 0)
+            {
+                return;
+            }
+
+            customData.ManualCapstoneApiName = MigrateApiName(customData.ManualCapstoneApiName, renamedApiNames);
+            customData.AchievementOrder = MigrateApiNameList(customData.AchievementOrder, renamedApiNames);
+            customData.FilteredAchievementApiNames = MigrateApiNameList(customData.FilteredAchievementApiNames, renamedApiNames);
+            customData.SummaryFilteredAchievementApiNames = MigrateApiNameList(customData.SummaryFilteredAchievementApiNames, renamedApiNames);
+            customData.AchievementCategoryOverrides = MigrateApiNameMap(customData.AchievementCategoryOverrides, renamedApiNames);
+            customData.AchievementCategoryTypeOverrides = MigrateApiNameMap(customData.AchievementCategoryTypeOverrides, renamedApiNames);
+            customData.AchievementUnlockedIconOverrides = MigrateApiNameMap(customData.AchievementUnlockedIconOverrides, renamedApiNames);
+            customData.AchievementLockedIconOverrides = MigrateApiNameMap(customData.AchievementLockedIconOverrides, renamedApiNames);
+            customData.AchievementNotes = MigrateApiNameMap(customData.AchievementNotes, renamedApiNames);
+        }
+
+        private static string MigrateApiName(
+            string apiName,
+            IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            var normalized = (apiName ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return apiName;
+            }
+
+            return renamedApiNames.TryGetValue(normalized, out var migrated) &&
+                   !string.IsNullOrWhiteSpace(migrated)
+                ? migrated
+                : apiName;
+        }
+
+        private static List<string> MigrateApiNameList(
+            IEnumerable<string> apiNames,
+            IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (apiNames == null)
+            {
+                return null;
+            }
+
+            var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var apiName in apiNames)
+            {
+                var normalized = MigrateApiName(apiName, renamedApiNames);
+                if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
+                {
+                    continue;
+                }
+
+                result.Add(normalized);
+            }
+
+            return result.Count > 0 ? result : null;
+        }
+
+        private static Dictionary<string, string> MigrateApiNameMap(
+            IReadOnlyDictionary<string, string> source,
+            IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in source)
+            {
+                var migratedKey = MigrateApiName(pair.Key, renamedApiNames);
+                if (string.IsNullOrWhiteSpace(migratedKey))
+                {
+                    continue;
+                }
+
+                result[migratedKey] = pair.Value;
             }
 
             return result.Count > 0 ? result : null;

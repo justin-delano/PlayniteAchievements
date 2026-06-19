@@ -10,6 +10,7 @@ namespace PlayniteAchievements.ViewModels
         Category,
         Filters,
         Notes,
-        CustomIcons
+        CustomIcons,
+        Custom
     }
 }

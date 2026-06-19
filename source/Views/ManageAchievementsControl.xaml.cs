@@ -26,6 +26,7 @@ namespace PlayniteAchievements.Views
         {
             ManageAchievementsTab.Overview,
             ManageAchievementsTab.ManualTracking,
+            ManageAchievementsTab.Custom,
             ManageAchievementsTab.Capstones,
             ManageAchievementsTab.Category,
             ManageAchievementsTab.Filters,
@@ -49,12 +50,14 @@ namespace PlayniteAchievements.Views
 
         private ManageAchievementsCapstonesTab _capstoneControl;
         private ManageAchievementsManualTrackingTab _manualControl;
+        private ManageAchievementsCustomTab _customControl;
         private ManageAchievementsAchievementOrderTab _achievementOrderControl;
         private ManageAchievementsCategoryTab _categoryControl;
         private ManageAchievementsFiltersTab _filtersControl;
         private ManageAchievementsNotesTab _notesControl;
         private ManageAchievementsAchievementIconsTab _achievementIconsControl;
         private ManualAchievementsViewModel _manualViewModel;
+        private ManageAchievementsCustomViewModel _customViewModel;
         private ManageAchievementsAchievementOrderViewModel _achievementOrderViewModel;
         private ManageAchievementsCategoryViewModel _categoryViewModel;
         private ManageAchievementsFiltersViewModel _filtersViewModel;
@@ -62,6 +65,7 @@ namespace PlayniteAchievements.Views
         private ManageAchievementsAchievementIconsViewModel _achievementIconsViewModel;
         private bool _manualStartAtEditing;
         private bool _manualRefreshPending;
+        private bool _customRefreshPending;
         private bool _capstoneRefreshPending;
         private bool _achievementOrderRefreshPending;
         private bool _categoryRefreshPending;
@@ -162,6 +166,7 @@ namespace PlayniteAchievements.Views
 
             CleanupCapstone();
             CleanupManual();
+            CleanupCustom();
             CleanupAchievementOrder();
             CleanupCategory();
             CleanupFilters();
@@ -246,6 +251,20 @@ namespace PlayniteAchievements.Views
                 if (_manualRefreshPending && !IsManualViewModelRefreshing() && _manualControl != null)
                 {
                     _manualRefreshPending = false;
+                }
+            }
+            else if (_viewModel.SelectedTab == ManageAchievementsTab.Custom)
+            {
+                var hadCustomControl = _customControl != null;
+                EnsureCustomControl(forceRecreate: false);
+                if (_customRefreshPending)
+                {
+                    if (hadCustomControl)
+                    {
+                        _customControl?.RefreshData();
+                    }
+
+                    _customRefreshPending = false;
                 }
             }
             else if (_viewModel.SelectedTab == ManageAchievementsTab.AchievementOrder)
@@ -473,6 +492,7 @@ namespace PlayniteAchievements.Views
                 {
                     OverviewTabButton,
                     ManualTrackingTabButton,
+                    CustomTabButton,
                     CapstonesTabButton,
                     CategoryTabButton,
                     FiltersTabButton,
@@ -519,6 +539,8 @@ namespace PlayniteAchievements.Views
                     break;
                 case ManageAchievementsTab.ManualTracking:
                     return _manualControl?.GetControllerElements() ?? new List<UIElement>();
+                case ManageAchievementsTab.Custom:
+                    return _customControl?.GetControllerElements() ?? new List<UIElement>();
                 case ManageAchievementsTab.Capstones:
                     return _capstoneControl?.GetControllerElements() ?? new List<UIElement>();
                 case ManageAchievementsTab.Category:
@@ -577,6 +599,8 @@ namespace PlayniteAchievements.Views
             {
                 case ManageAchievementsTab.ManualTracking:
                     return _manualControl?.HandleFullscreenControllerInput(input) == true;
+                case ManageAchievementsTab.Custom:
+                    return _customControl?.HandleFullscreenControllerInput(input) == true;
                 case ManageAchievementsTab.Category:
                     return _categoryControl?.HandleFullscreenControllerInput(input) == true;
                 case ManageAchievementsTab.Filters:
@@ -605,6 +629,8 @@ namespace PlayniteAchievements.Views
             {
                 case ManageAchievementsTab.ManualTracking:
                     return _viewModel.ShowManualTrackingTab;
+                case ManageAchievementsTab.Custom:
+                    return true;
                 case ManageAchievementsTab.Capstones:
                 case ManageAchievementsTab.Category:
                 case ManageAchievementsTab.Filters:
@@ -779,6 +805,26 @@ namespace PlayniteAchievements.Views
             ManualHost.Content = _manualControl;
         }
 
+        private void EnsureCustomControl(bool forceRecreate)
+        {
+            if (_customControl != null && !forceRecreate)
+            {
+                return;
+            }
+
+            CleanupCustom();
+
+            _customViewModel = new ManageAchievementsCustomViewModel(
+                _viewModel.GameId,
+                _achievementOverridesService,
+                PlayniteAchievementsPlugin.Instance?.GameCustomDataStore,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
+                _logger);
+            _customViewModel.CustomAchievementsSaved += CustomViewModel_CustomAchievementsSaved;
+            _customControl = new ManageAchievementsCustomTab(_customViewModel);
+            CustomHost.Content = _customControl;
+        }
+
         private void EnsureAchievementOrderControl(bool forceRecreate)
         {
             if (_achievementOrderControl != null && !forceRecreate)
@@ -881,6 +927,11 @@ namespace PlayniteAchievements.Views
             HandleStateChanged(refreshCapstone: true);
         }
 
+        private void CustomViewModel_CustomAchievementsSaved(object sender, EventArgs e)
+        {
+            HandleStateChanged(refreshCapstone: true);
+        }
+
         private void CapstoneControl_CapstoneChanged(object sender, EventArgs e)
         {
             _gameDataSnapshotProvider?.Invalidate();
@@ -933,6 +984,7 @@ namespace PlayniteAchievements.Views
             _viewModel.Reload();
 
             _manualRefreshPending = true;
+            _customRefreshPending = true;
             _achievementOrderRefreshPending = true;
             _categoryRefreshPending = true;
             _filtersRefreshPending = true;
@@ -951,6 +1003,7 @@ namespace PlayniteAchievements.Views
         {
             _gameDataSnapshotProvider?.Invalidate();
             _manualRefreshPending = true;
+            _customRefreshPending = true;
             _capstoneRefreshPending = true;
             _achievementOrderRefreshPending = true;
             _categoryRefreshPending = true;
@@ -985,6 +1038,22 @@ namespace PlayniteAchievements.Views
             if (ManualHost != null)
             {
                 ManualHost.Content = null;
+            }
+        }
+
+        private void CleanupCustom()
+        {
+            if (_customViewModel != null)
+            {
+                _customViewModel.CustomAchievementsSaved -= CustomViewModel_CustomAchievementsSaved;
+            }
+
+            _customControl = null;
+            _customViewModel = null;
+
+            if (CustomHost != null)
+            {
+                CustomHost.Content = null;
             }
         }
 

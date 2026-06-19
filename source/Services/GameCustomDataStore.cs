@@ -299,6 +299,11 @@ namespace PlayniteAchievements.Services
                 fileStems,
                 AchievementIconVariant.Locked,
                 imageSources);
+            RewritePortableCustomAchievementIconsForPackage(
+                playniteGameId,
+                portable.CustomAchievements,
+                fileStems,
+                imageSources);
 
             EnsureDestinationDirectory(destinationPath);
             if (File.Exists(destinationPath))
@@ -474,6 +479,7 @@ namespace PlayniteAchievements.Services
 
                     RewritePackageImageOverrides(playniteGameId, entriesByName, portable?.AchievementUnlockedIconOverrides, AchievementIconVariant.Unlocked);
                     RewritePackageImageOverrides(playniteGameId, entriesByName, portable?.AchievementLockedIconOverrides, AchievementIconVariant.Locked);
+                    RewritePackageCustomAchievementImages(playniteGameId, entriesByName, portable?.CustomAchievements);
 
                     return new PortableGameCustomDataImportResult
                     {
@@ -650,6 +656,136 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        private void RewritePortableCustomAchievementIconsForPackage(
+            Guid playniteGameId,
+            IReadOnlyList<CustomAchievementDefinition> customAchievements,
+            IReadOnlyDictionary<string, string> fileStems,
+            IDictionary<string, string> imageSources)
+        {
+            if (customAchievements == null || customAchievements.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var definition in customAchievements)
+            {
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                if (definition == null || string.IsNullOrWhiteSpace(apiName))
+                {
+                    continue;
+                }
+
+                definition.UnlockedIconPath = RewritePortableCustomAchievementIconForPackage(
+                    playniteGameId,
+                    apiName,
+                    definition.UnlockedIconPath,
+                    fileStems,
+                    AchievementIconVariant.Unlocked,
+                    imageSources);
+                definition.LockedIconPath = RewritePortableCustomAchievementIconForPackage(
+                    playniteGameId,
+                    apiName,
+                    definition.LockedIconPath,
+                    fileStems,
+                    AchievementIconVariant.Locked,
+                    imageSources);
+            }
+        }
+
+        private string RewritePortableCustomAchievementIconForPackage(
+            Guid playniteGameId,
+            string apiName,
+            string value,
+            IReadOnlyDictionary<string, string> fileStems,
+            AchievementIconVariant variant,
+            IDictionary<string, string> imageSources)
+        {
+            var normalizedValue = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(normalizedValue))
+            {
+                return null;
+            }
+
+            if (!fileStems.TryGetValue(apiName, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+            {
+                throw new InvalidOperationException($"Could not determine a bundled icon name for '{apiName}'.");
+            }
+
+            var bundledSource = ResolveBundledIconSourcePath(playniteGameId, normalizedValue, fileStem, variant);
+            var relativeEntryName = BuildPackageImageEntryName(fileStem, variant);
+            imageSources[relativeEntryName] = bundledSource;
+            return relativeEntryName;
+        }
+
+        private void RewritePackageCustomAchievementImages(
+            Guid playniteGameId,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            IReadOnlyList<CustomAchievementDefinition> customAchievements)
+        {
+            if (customAchievements == null || customAchievements.Count == 0)
+            {
+                return;
+            }
+
+            var apiNames = customAchievements
+                .Select(definition => CustomAchievementProjectionService.BuildApiName(definition?.Id))
+                .Where(apiName => !string.IsNullOrWhiteSpace(apiName))
+                .ToList();
+            var fileStems = AchievementIconCachePathBuilder.BuildFileStems(apiNames);
+
+            foreach (var definition in customAchievements)
+            {
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                if (definition == null || string.IsNullOrWhiteSpace(apiName))
+                {
+                    continue;
+                }
+
+                definition.UnlockedIconPath = RewritePackageCustomAchievementImage(
+                    playniteGameId,
+                    entriesByName,
+                    fileStems,
+                    apiName,
+                    definition.UnlockedIconPath,
+                    AchievementIconVariant.Unlocked);
+                definition.LockedIconPath = RewritePackageCustomAchievementImage(
+                    playniteGameId,
+                    entriesByName,
+                    fileStems,
+                    apiName,
+                    definition.LockedIconPath,
+                    AchievementIconVariant.Locked);
+            }
+        }
+
+        private string RewritePackageCustomAchievementImage(
+            Guid playniteGameId,
+            IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
+            IReadOnlyDictionary<string, string> fileStems,
+            string apiName,
+            string value,
+            AchievementIconVariant variant)
+        {
+            var normalizedValue = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(normalizedValue) || IsHttpUrl(normalizedValue))
+            {
+                return normalizedValue;
+            }
+
+            var normalizedEntryName = NormalizePackageImagePathOrThrow(normalizedValue);
+            if (!entriesByName.TryGetValue(normalizedEntryName, out var imageEntry))
+            {
+                throw new InvalidOperationException($"Package is missing bundled icon entry '{normalizedValue}'.");
+            }
+
+            if (!fileStems.TryGetValue(apiName, out var fileStem) || string.IsNullOrWhiteSpace(fileStem))
+            {
+                throw new InvalidOperationException($"Could not determine a managed custom icon path for '{apiName}'.");
+            }
+
+            return ImportPackageImageToManagedPath(playniteGameId, imageEntry, fileStem, variant);
+        }
+
         private string ResolveBundledIconSourcePath(
             Guid playniteGameId,
             string overrideValue,
@@ -801,6 +937,7 @@ namespace PlayniteAchievements.Services
             var omitted = 0;
             omitted += FilterLocalIconOverrides(portable?.AchievementUnlockedIconOverrides);
             omitted += FilterLocalIconOverrides(portable?.AchievementLockedIconOverrides);
+            omitted += FilterLocalCustomAchievementIcons(portable?.CustomAchievements);
             if (portable?.AchievementUnlockedIconOverrides != null && portable.AchievementUnlockedIconOverrides.Count == 0)
             {
                 portable.AchievementUnlockedIconOverrides = null;
@@ -809,6 +946,39 @@ namespace PlayniteAchievements.Services
             if (portable?.AchievementLockedIconOverrides != null && portable.AchievementLockedIconOverrides.Count == 0)
             {
                 portable.AchievementLockedIconOverrides = null;
+            }
+
+            return omitted;
+        }
+
+        private static int FilterLocalCustomAchievementIcons(IReadOnlyList<CustomAchievementDefinition> customAchievements)
+        {
+            if (customAchievements == null || customAchievements.Count == 0)
+            {
+                return 0;
+            }
+
+            var omitted = 0;
+            foreach (var definition in customAchievements)
+            {
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(definition.UnlockedIconPath) &&
+                    !IsHttpUrl(definition.UnlockedIconPath))
+                {
+                    definition.UnlockedIconPath = null;
+                    omitted++;
+                }
+
+                if (!string.IsNullOrWhiteSpace(definition.LockedIconPath) &&
+                    !IsHttpUrl(definition.LockedIconPath))
+                {
+                    definition.LockedIconPath = null;
+                    omitted++;
+                }
             }
 
             return omitted;
@@ -840,6 +1010,22 @@ namespace PlayniteAchievements.Services
         {
             RejectLocalIconOverridesInPortableMap(portable?.AchievementUnlockedIconOverrides);
             RejectLocalIconOverridesInPortableMap(portable?.AchievementLockedIconOverrides);
+            RejectLocalCustomAchievementIconsInPortableFile(portable?.CustomAchievements);
+        }
+
+        private static void RejectLocalCustomAchievementIconsInPortableFile(
+            IReadOnlyList<CustomAchievementDefinition> customAchievements)
+        {
+            if (customAchievements == null)
+            {
+                return;
+            }
+
+            foreach (var definition in customAchievements)
+            {
+                RejectPlainPortableIconValue(definition?.UnlockedIconPath);
+                RejectPlainPortableIconValue(definition?.LockedIconPath);
+            }
         }
 
         private static void RejectLocalIconOverridesInPortableMap(IReadOnlyDictionary<string, string> overrides)
@@ -859,6 +1045,17 @@ namespace PlayniteAchievements.Services
 
                 throw new InvalidOperationException("Plain .PA files cannot contain local icon paths. Use .PA.ZIP for bundled images.");
             }
+        }
+
+        private static void RejectPlainPortableIconValue(string value)
+        {
+            var normalized = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(normalized) || IsHttpUrl(normalized))
+            {
+                return;
+            }
+
+            throw new InvalidOperationException("Plain .PA files cannot contain local icon paths. Use .PA.ZIP for bundled images.");
         }
 
         private void SyncManagedCustomIconCache(Guid playniteGameId, GameCustomDataFile normalizedData)
@@ -905,6 +1102,14 @@ namespace PlayniteAchievements.Services
                 data.AchievementLockedIconOverrides,
                 fileStems,
                 AchievementIconVariant.Locked))
+            {
+                yield return retainedPath;
+            }
+
+            foreach (var retainedPath in EnumerateManagedCustomAchievementIconPaths(
+                gameIdText,
+                data.CustomAchievements,
+                fileStems))
             {
                 yield return retainedPath;
             }
@@ -964,8 +1169,98 @@ namespace PlayniteAchievements.Services
         {
             return (portable?.AchievementUnlockedIconOverrides?.Keys ?? Enumerable.Empty<string>())
                 .Concat(portable?.AchievementLockedIconOverrides?.Keys ?? Enumerable.Empty<string>())
+                .Concat(EnumerateCustomAchievementIconApiNames(portable?.CustomAchievements))
                 .Where(key => !string.IsNullOrWhiteSpace(key))
                 .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private IEnumerable<string> EnumerateManagedCustomAchievementIconPaths(
+            string gameIdText,
+            IReadOnlyList<CustomAchievementDefinition> customAchievements,
+            IReadOnlyDictionary<string, string> fileStems)
+        {
+            if (customAchievements == null || customAchievements.Count == 0)
+            {
+                yield break;
+            }
+
+            foreach (var definition in customAchievements)
+            {
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition?.Id);
+                if (string.IsNullOrWhiteSpace(apiName) ||
+                    !fileStems.TryGetValue(apiName, out var fileStem) ||
+                    string.IsNullOrWhiteSpace(fileStem))
+                {
+                    continue;
+                }
+
+                foreach (var retainedPath in EnumerateManagedCustomIconPath(
+                    gameIdText,
+                    fileStem,
+                    definition.UnlockedIconPath,
+                    AchievementIconVariant.Unlocked))
+                {
+                    yield return retainedPath;
+                }
+
+                foreach (var retainedPath in EnumerateManagedCustomIconPath(
+                    gameIdText,
+                    fileStem,
+                    definition.LockedIconPath,
+                    AchievementIconVariant.Locked))
+                {
+                    yield return retainedPath;
+                }
+            }
+        }
+
+        private IEnumerable<string> EnumerateManagedCustomIconPath(
+            string gameIdText,
+            string fileStem,
+            string value,
+            AchievementIconVariant variant)
+        {
+            var normalized = NormalizeText(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                yield break;
+            }
+
+            if (_managedCustomIconService.IsManagedCustomIconPath(normalized, gameIdText))
+            {
+                yield return normalized;
+                yield break;
+            }
+
+            if (IsHttpUrl(normalized))
+            {
+                yield return _managedCustomIconService.GetAchievementCustomIconPath(gameIdText, fileStem, variant);
+            }
+        }
+
+        private static IEnumerable<string> EnumerateCustomAchievementIconApiNames(
+            IReadOnlyList<CustomAchievementDefinition> customAchievements)
+        {
+            if (customAchievements == null)
+            {
+                yield break;
+            }
+
+            foreach (var definition in customAchievements)
+            {
+                if (definition == null ||
+                    (string.IsNullOrWhiteSpace(definition.UnlockedIconPath) &&
+                     string.IsNullOrWhiteSpace(definition.LockedIconPath)))
+                {
+                    continue;
+                }
+
+                var apiName = CustomAchievementProjectionService.BuildApiName(definition.Id);
+                if (!string.IsNullOrWhiteSpace(apiName))
+                {
+                    yield return apiName;
+                }
+            }
         }
 
         private ManagedCustomIconService GetManagedCustomIconServiceOrThrow()

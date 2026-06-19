@@ -9,7 +9,7 @@ namespace PlayniteAchievements.Models.Settings
     /// </summary>
     public sealed class GameCustomDataPortableFile
     {
-        public int SchemaVersion { get; set; } = 4;
+        public int SchemaVersion { get; set; } = 5;
 
         public Guid PlayniteGameId { get; set; }
 
@@ -46,6 +46,8 @@ namespace PlayniteAchievements.Models.Settings
         public ProviderOverrideData ProviderOverride { get; set; }
 
         public ManualAchievementLink ManualLink { get; set; }
+
+        public List<CustomAchievementDefinition> CustomAchievements { get; set; }
 
         public GameCustomDataPortableFile Clone()
         {
@@ -85,7 +87,10 @@ namespace PlayniteAchievements.Models.Settings
                 ForceUseExophase = ForceUseExophase,
                 ExophaseSlugOverride = ExophaseSlugOverride,
                 ProviderOverride = ProviderOverride?.Clone(),
-                ManualLink = ManualLink?.Clone()
+                ManualLink = ManualLink?.Clone(),
+                CustomAchievements = CustomAchievements != null
+                    ? CustomAchievements.ConvertAll(item => item?.Clone()).FindAll(item => item != null)
+                    : null
             };
         }
     }

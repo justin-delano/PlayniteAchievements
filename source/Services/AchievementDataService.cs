@@ -35,12 +35,14 @@ namespace PlayniteAchievements.Services
         private readonly ICacheReadOptimizations _cacheReadOptimizations;
         private readonly GameDataHydrator _hydrator;
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _api;
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly PersistedSettings _persistedSettings;
         private readonly object _overviewProjectionCacheSync = new object();
         private readonly Dictionary<int, CachedSummaryData> _overviewSummaryCacheByLimit =
             new Dictionary<int, CachedSummaryData>();
         private bool? _overviewHasAchievementFilters;
+        private bool? _overviewHasCustomAchievements;
 
         public AchievementDataService(
             ICacheManager cacheService,
@@ -54,6 +56,7 @@ namespace PlayniteAchievements.Services
             if (settings == null) throw new ArgumentNullException(nameof(settings));
 
             _logger = logger;
+            _api = api;
             _gameCustomDataStore = gameCustomDataStore;
             _persistedSettings = settings.Persisted;
             _cacheReadOptimizations = cacheService as ICacheReadOptimizations;
@@ -265,7 +268,7 @@ namespace PlayniteAchievements.Services
 
         internal CachedSummaryData GetCachedSummaryDataForOverview(int recentAchievementDetailLimit = 0)
         {
-            if (HasAchievementFiltersConfigured())
+            if (HasAchievementFiltersConfigured() || HasCustomAchievementsConfigured())
             {
                 return null;
             }
@@ -684,6 +687,24 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        private bool HasCustomAchievementsConfigured()
+        {
+            lock (_overviewProjectionCacheSync)
+            {
+                if (_overviewHasCustomAchievements.HasValue)
+                {
+                    return _overviewHasCustomAchievements.Value;
+                }
+            }
+
+            var hasCustomAchievements = ComputeHasCustomAchievementsConfigured();
+            lock (_overviewProjectionCacheSync)
+            {
+                _overviewHasCustomAchievements = hasCustomAchievements;
+                return hasCustomAchievements;
+            }
+        }
+
         private bool ComputeHasAchievementFiltersConfigured()
         {
             var customDataByGameId = LoadCustomDataByGameId();
@@ -691,6 +712,20 @@ namespace PlayniteAchievements.Services
             {
                 if (HasApiNames(customData?.FilteredAchievementApiNames) ||
                     HasApiNames(customData?.SummaryFilteredAchievementApiNames))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool ComputeHasCustomAchievementsConfigured()
+        {
+            var customDataByGameId = LoadCustomDataByGameId();
+            foreach (var customData in customDataByGameId.Values)
+            {
+                if (CustomAchievementProjectionService.HasCustomAchievements(customData))
                 {
                     return true;
                 }
@@ -918,18 +953,22 @@ namespace PlayniteAchievements.Services
             {
                 _overviewSummaryCacheByLimit.Clear();
                 _overviewHasAchievementFilters = null;
+                _overviewHasCustomAchievements = null;
             }
         }
 
         private List<GameAchievementData> LoadAllCachedGameData()
         {
+            List<GameAchievementData> result;
             if (_cacheReadOptimizations != null)
             {
-                return _cacheReadOptimizations.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                result = _cacheReadOptimizations.LoadAllGameDataFast() ?? new List<GameAchievementData>();
+                AppendSyntheticCustomOnlyGameData(result);
+                return result;
             }
 
             var gameIds = _cacheService.GetCachedGameIds();
-            var result = new List<GameAchievementData>();
+            result = new List<GameAchievementData>();
             foreach (var gameId in gameIds)
             {
                 var gameData = _cacheService.LoadGameData(gameId);
@@ -939,6 +978,7 @@ namespace PlayniteAchievements.Services
                 }
             }
 
+            AppendSyntheticCustomOnlyGameData(result);
             return result;
         }
 
@@ -947,6 +987,11 @@ namespace PlayniteAchievements.Services
             bool includeAchievementOverlays)
         {
             var data = _cacheService.LoadGameData(playniteGameId);
+            if (data == null && Guid.TryParse(playniteGameId, out var parsedGameId))
+            {
+                data = CreateSyntheticCustomGameData(parsedGameId, LoadCustomData(parsedGameId));
+            }
+
             if (includeAchievementOverlays)
             {
                 _hydrator.Hydrate(data);
@@ -957,6 +1002,79 @@ namespace PlayniteAchievements.Services
             }
 
             return data;
+        }
+
+        private void AppendSyntheticCustomOnlyGameData(ICollection<GameAchievementData> result)
+        {
+            if (result == null || _gameCustomDataStore == null)
+            {
+                return;
+            }
+
+            var existingIds = new HashSet<Guid>(
+                result
+                    .Where(data => data?.PlayniteGameId.HasValue == true && data.PlayniteGameId.Value != Guid.Empty)
+                    .Select(data => data.PlayniteGameId.Value));
+
+            foreach (var customData in LoadCustomDataByGameId().Values)
+            {
+                if (customData == null ||
+                    customData.PlayniteGameId == Guid.Empty ||
+                    existingIds.Contains(customData.PlayniteGameId) ||
+                    !CustomAchievementProjectionService.HasCustomAchievements(customData))
+                {
+                    continue;
+                }
+
+                var synthetic = CreateSyntheticCustomGameData(customData.PlayniteGameId, customData);
+                if (synthetic == null)
+                {
+                    continue;
+                }
+
+                result.Add(synthetic);
+                existingIds.Add(customData.PlayniteGameId);
+            }
+        }
+
+        private GameCustomDataFile LoadCustomData(Guid playniteGameId)
+        {
+            if (playniteGameId == Guid.Empty || _gameCustomDataStore == null)
+            {
+                return null;
+            }
+
+            return _gameCustomDataStore.TryLoad(playniteGameId, out var data)
+                ? data
+                : null;
+        }
+
+        private GameAchievementData CreateSyntheticCustomGameData(
+            Guid playniteGameId,
+            GameCustomDataFile customData)
+        {
+            if (!CustomAchievementProjectionService.HasCustomAchievements(customData))
+            {
+                return null;
+            }
+
+            return CustomAchievementProjectionService.CreateSyntheticGameData(
+                playniteGameId,
+                GetGame(playniteGameId),
+                customData.CustomAchievements,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService);
+        }
+
+        private Playnite.SDK.Models.Game GetGame(Guid playniteGameId)
+        {
+            try
+            {
+                return _api?.Database?.Games?.Get(playniteGameId);
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         private void HydrateAll(IEnumerable<GameAchievementData> games, bool includeAchievementOverlays)

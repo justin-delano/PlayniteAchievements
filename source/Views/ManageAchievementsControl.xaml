@@ -107,6 +107,10 @@
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding ShowManualTrackingTab, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=ManualTracking}" />
+                    <RadioButton x:Name="CustomTabButton"
+                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Custom}"
+                                 Style="{StaticResource NavTabRadioStyle}"
+                                 IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Custom}" />
                     <RadioButton x:Name="CapstonesTabButton"
                                  Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Capstones}"
                                  Style="{StaticResource NavTabRadioStyle}"
@@ -215,6 +219,20 @@
                         </Style>
                     </Grid.Style>
                     <ContentControl x:Name="ManualHost" />
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="{x:Type Grid}">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding SelectedTab}" Value="Custom">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <ContentControl x:Name="CustomHost" />
                 </Grid>
 
                 <Grid>

@@ -86,6 +86,12 @@ namespace PlayniteAchievements.Models.Achievements
         [IgnoreDataMember]
         public string ProviderKey { get; set; }
 
+        /// <summary>
+        /// Runtime-only flag for achievements projected from per-game custom data.
+        /// </summary>
+        [IgnoreDataMember]
+        public bool IsCustom { get; set; }
+
         [IgnoreDataMember]
         public string IconDisplay => AchievementIconResolver.GetUnlockedDisplayIcon(UnlockedIconPath);
 

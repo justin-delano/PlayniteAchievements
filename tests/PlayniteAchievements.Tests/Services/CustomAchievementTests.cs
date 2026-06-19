@@ -1,0 +1,146 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace PlayniteAchievements.Services.Tests
+{
+    [TestClass]
+    public class CustomAchievementTests
+    {
+        [TestMethod]
+        public void NormalizeInternal_CustomAchievements_NormalizesAndDropsInvalidRows()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    CustomAchievements = new List<CustomAchievementDefinition>
+                    {
+                        new CustomAchievementDefinition
+                        {
+                            Id = " custom:first-win ",
+                            DisplayName = " First Win ",
+                            Description = "  Start the game.  ",
+                            Unlocked = true,
+                            UnlockTimeUtc = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Unspecified),
+                            Points = -10,
+                            ScaledPoints = 25,
+                            Category = " Main Story ",
+                            CategoryType = "dlc",
+                            TrophyType = "GOLD",
+                            Rarity = "rare",
+                            GlobalPercentUnlocked = 101,
+                            ProgressNum = 3,
+                            ProgressDenom = 2
+                        },
+                        new CustomAchievementDefinition
+                        {
+                            Id = "FIRST-WIN",
+                            DisplayName = "Duplicate ID"
+                        },
+                        new CustomAchievementDefinition
+                        {
+                            DisplayName = " Boss Fight! ",
+                            ProgressNum = 1,
+                            ProgressDenom = 2
+                        },
+                        new CustomAchievementDefinition
+                        {
+                            DisplayName = " "
+                        }
+                    }
+                },
+                gameId);
+
+            Assert.AreEqual(2, normalized.CustomAchievements.Count);
+            Assert.AreEqual("first-win", normalized.CustomAchievements[0].Id);
+            Assert.AreEqual("First Win", normalized.CustomAchievements[0].DisplayName);
+            Assert.AreEqual("Start the game.", normalized.CustomAchievements[0].Description);
+            Assert.AreEqual(DateTimeKind.Utc, normalized.CustomAchievements[0].UnlockTimeUtc.Value.Kind);
+            Assert.IsNull(normalized.CustomAchievements[0].Points);
+            Assert.AreEqual(25, normalized.CustomAchievements[0].ScaledPoints);
+            Assert.AreEqual("Main Story", normalized.CustomAchievements[0].Category);
+            Assert.AreEqual("DLC", normalized.CustomAchievements[0].CategoryType);
+            Assert.AreEqual("gold", normalized.CustomAchievements[0].TrophyType);
+            Assert.AreEqual("Rare", normalized.CustomAchievements[0].Rarity);
+            Assert.IsNull(normalized.CustomAchievements[0].GlobalPercentUnlocked);
+            Assert.IsNull(normalized.CustomAchievements[0].ProgressNum);
+            Assert.IsNull(normalized.CustomAchievements[0].ProgressDenom);
+
+            Assert.AreEqual("boss-fight", normalized.CustomAchievements[1].Id);
+            Assert.AreEqual(1, normalized.CustomAchievements[1].ProgressNum);
+            Assert.AreEqual(2, normalized.CustomAchievements[1].ProgressDenom);
+            Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(normalized));
+        }
+
+        [TestMethod]
+        public void ProjectAchievements_UsesCustomApiNamesAndRuntimeFlags()
+        {
+            var achievements = CustomAchievementProjectionService.ProjectAchievements(
+                Guid.Empty,
+                new[]
+                {
+                    new CustomAchievementDefinition
+                    {
+                        DisplayName = " Boss Fight! ",
+                        Description = "Win the fight.",
+                        Unlocked = true,
+                        UnlockTimeUtc = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+                        Points = 10,
+                        CategoryType = "mp",
+                        TrophyType = "Silver",
+                        Rarity = "UltraRare",
+                        GlobalPercentUnlocked = 4.5,
+                        ProgressNum = 1,
+                        ProgressDenom = 3
+                    }
+                });
+
+            Assert.AreEqual(1, achievements.Count);
+            var achievement = achievements[0];
+            Assert.AreEqual("custom:boss-fight", achievement.ApiName);
+            Assert.AreEqual("Boss Fight!", achievement.DisplayName);
+            Assert.IsTrue(achievement.IsCustom);
+            Assert.AreEqual(CustomAchievementProjectionService.ProviderKey, achievement.ProviderKey);
+            Assert.IsTrue(achievement.Unlocked);
+            Assert.AreEqual(10, achievement.Points);
+            Assert.AreEqual("Multiplayer", achievement.CategoryType);
+            Assert.AreEqual("silver", achievement.TrophyType);
+            Assert.AreEqual(RarityTier.UltraRare, achievement.Rarity);
+            Assert.AreEqual(4.5, achievement.GlobalPercentUnlocked);
+            Assert.AreEqual(1, achievement.ProgressNum);
+            Assert.AreEqual(3, achievement.ProgressDenom);
+        }
+
+        [TestMethod]
+        public void TextImport_ParsesQuotedCsvAndReportsInvalidRows()
+        {
+            var service = new CustomAchievementTextImportService();
+            var result = service.Import(
+                "Title,Description,Unlocked,Unlocked At,Points,Percent,Progress,Total\r\n" +
+                "\"First, Win\",\"Uses a comma\",yes,2026-01-02T03:04:05Z,10,50%,1,2\r\n" +
+                ",Missing title,no,,0,10,0,1\r\n" +
+                "Bad Percent,,,,0,150,0,1");
+
+            Assert.AreEqual(1, result.Definitions.Count);
+            Assert.IsTrue(result.HasErrors);
+            Assert.IsTrue(result.Errors.Any(error => error.Contains("title/name is required")));
+            Assert.IsTrue(result.Errors.Any(error => error.Contains("percent must be between 0 and 100")));
+
+            var definition = result.Definitions[0];
+            Assert.AreEqual("first-win", definition.Id);
+            Assert.AreEqual("First, Win", definition.DisplayName);
+            Assert.AreEqual("Uses a comma", definition.Description);
+            Assert.IsTrue(definition.Unlocked);
+            Assert.AreEqual(DateTimeKind.Utc, definition.UnlockTimeUtc.Value.Kind);
+            Assert.AreEqual(10, definition.Points);
+            Assert.AreEqual(50, definition.GlobalPercentUnlocked);
+            Assert.AreEqual(1, definition.ProgressNum);
+            Assert.AreEqual(2, definition.ProgressDenom);
+        }
+    }
+}

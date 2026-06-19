@@ -60,6 +60,7 @@ namespace PlayniteAchievements.Services.Hydration
             }
 
             // Hydrate achievements with settings overlays (capstone + category/category-type overrides).
+            AppendCustomAchievements(data, gameId, customData);
             if (data.Achievements != null && data.Achievements.Count > 0)
             {
                 _achievementHydrator.HydrateAllWithCapstoneOverride(
@@ -90,6 +91,7 @@ namespace PlayniteAchievements.Services.Hydration
             data.UseSeparateLockedIconsWhenAvailable = customData.UseSeparateLockedIcons;
             data.Game = GetGame(gameId);
 
+            AppendCustomAchievements(data, gameId, customData);
             if (data.Achievements != null && data.Achievements.Count > 0)
             {
                 _achievementHydrator.HydrateAllWithCapstoneOverride(
@@ -100,6 +102,47 @@ namespace PlayniteAchievements.Services.Hydration
 
                 ApplyAchievementIconOverrides(gameId, data.Achievements);
             }
+        }
+
+        private static void AppendCustomAchievements(
+            GameAchievementData data,
+            Guid gameId,
+            ResolvedGameCustomData customData)
+        {
+            if (data == null)
+            {
+                return;
+            }
+
+            data.Achievements ??= new List<AchievementDetail>();
+            for (var i = data.Achievements.Count - 1; i >= 0; i--)
+            {
+                var achievement = data.Achievements[i];
+                if (achievement?.IsCustom == true ||
+                    CustomAchievementProjectionService.IsCustomApiName(achievement?.ApiName))
+                {
+                    data.Achievements.RemoveAt(i);
+                }
+            }
+
+            var definitions = customData?.CustomAchievements;
+            if (definitions == null || definitions.Count == 0)
+            {
+                return;
+            }
+
+            var managedCustomIconService = PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService;
+            var projected = CustomAchievementProjectionService.ProjectAchievements(
+                gameId,
+                definitions,
+                managedCustomIconService);
+            if (projected.Count == 0)
+            {
+                return;
+            }
+
+            data.HasAchievements = true;
+            data.Achievements.AddRange(projected);
         }
 
         /// <summary>
