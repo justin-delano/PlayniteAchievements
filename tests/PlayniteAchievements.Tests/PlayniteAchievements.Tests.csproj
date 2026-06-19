@@ -240,6 +240,7 @@
     <Compile Include="..\..\source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" Link="Source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\ThemeIntegrationService.cs" Link="Source\Services\ThemeIntegration\ThemeIntegrationService.cs" />
     <Compile Include="..\..\source\Services\Cache\ICacheManager.cs" Link="Source\Services\Cache\ICacheManager.cs" />
+    <Compile Include="..\..\source\Services\Cache\CachedSummaryData.cs" Link="Source\Services\Cache\CachedSummaryData.cs" />
     <Compile Include="..\..\source\Services\Refresh\BulkRefreshGameFilter.cs" Link="Source\Services\Refresh\BulkRefreshGameFilter.cs" />
     <Compile Include="..\..\source\Services\Refresh\ProviderRefreshExecutor.cs" Link="Source\Services\Refresh\ProviderRefreshExecutor.cs" />
     <Compile Include="..\..\source\Services\Refresh\TargetSelectionResolver.cs" Link="Source\Services\Refresh\TargetSelectionResolver.cs" />

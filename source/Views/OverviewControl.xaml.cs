@@ -50,6 +50,7 @@ namespace PlayniteAchievements.Views
             Action persistSettingsForUi,
             AchievementOverridesService achievementOverridesService,
             AchievementDataService achievementDataService,
+            GameCustomDataStore gameCustomDataStore,
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings)
         {
@@ -68,6 +69,7 @@ namespace PlayniteAchievements.Views
                 refreshRuntime,
                 _persistSettingsForUi,
                 _achievementDataService,
+                gameCustomDataStore,
                 refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint)),
                 api,
                 logger,

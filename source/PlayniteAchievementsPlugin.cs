@@ -236,8 +236,7 @@ namespace PlayniteAchievements
                     _achievementOverridesService = new AchievementOverridesService(
                         _gameCustomDataStore,
                         _cacheManager,
-                        _logger,
-                        force => _cacheManager.NotifyCacheInvalidated());
+                        _logger);
                     _achievementDataService = new AchievementDataService(
                         _cacheManager,
                         PlayniteApi,
@@ -272,6 +271,7 @@ namespace PlayniteAchievements
                         PersistSettingsForUi,
                         _achievementOverridesService,
                         _achievementDataService,
+                        _gameCustomDataStore,
                         _settingsViewModel.Settings,
                         _manualSourceRegistry,
                         EnsureAchievementResourcesLoaded,
@@ -283,9 +283,9 @@ namespace PlayniteAchievements
                         _settingsViewModel.Settings,
                         _achievementHotkeyTargetResolver,
                         _logger,
-                        gameId => _windowService.ToggleViewAchievementsWindow(gameId),
-                        gameId => _windowService.ToggleManageAchievementsView(gameId),
-                        ToggleOverviewWindow);
+                        gameId => _windowService.ToggleViewAchievementsWindowFromHotkey(gameId),
+                        gameId => _windowService.ToggleManageAchievementsViewFromHotkey(gameId),
+                        ToggleOverviewWindowFromHotkey);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
                         _logger,
@@ -335,7 +335,7 @@ namespace PlayniteAchievements
 
                 // Initialize top panel item for popout window
                 _topPanelItem = new PlayniteAchievementsTopPanelItem(
-                    PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings);
+                    OpenOverviewWindow);
 
                 _logger.Info("PlayniteAchievementsPlugin initialized.");
             }
@@ -379,7 +379,7 @@ namespace PlayniteAchievements
                 Opened = () =>
                 {
                     return new OverviewHostControl(
-                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings),
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings),
                         _logger,
                         PlayniteApi,
                         _refreshService,
@@ -567,6 +567,7 @@ namespace PlayniteAchievements
             _backgroundUpdates.Stop();
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
+            try { _windowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowService"); }
             try { _imageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose imageService"); }
             try { _diskImageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose diskImageService"); }
             try { _manualSourceRegistry?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose manualSourceRegistry"); }
