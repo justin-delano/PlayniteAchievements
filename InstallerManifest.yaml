@@ -1,6 +1,14 @@
 AddonId: PlayniteAchievements
 Packages:
 
+  - Version: 2.5.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-05-30
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.2/PlayniteAchievements_2_5_2.pext
+    Changelog:
+    - "[Fixed] Performance improvements when editing in Manage Achievements window."
+    - "[Fixed] Memory leak during large library refreshes."
+
   - Version: 2.5.1
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-05-30
