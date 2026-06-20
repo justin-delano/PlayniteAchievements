@@ -54,6 +54,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private int _requestVersion;
         private int _processedVersion;
         private Guid? _requestedGameId;
+        private bool _requestedForceSelectedGameRefresh;
         private CancellationTokenSource _activeUpdateCts;
         private Guid? _appliedGameId;
         private DateTime _appliedLastUpdatedUtc;
@@ -278,12 +279,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             EnsureFullscreenInitialized();
         }
 
-        public void RequestUpdate(Guid? gameId)
+        public void RequestUpdate(Guid? gameId, bool forceRefresh = false)
         {
             lock (_updateGate)
             {
                 _requestVersion++;
                 _requestedGameId = gameId;
+                _requestedForceSelectedGameRefresh |= forceRefresh;
                 if (_updateRunner == null || _updateRunner.IsCompleted)
                 {
                     _updateRunner = RunUpdateLoopAsync();
@@ -336,14 +338,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 if (shouldRefreshSelectedGame)
                 {
-                    var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
-                    dispatcher.InvokeIfNeeded(
-                        () => PopulateSingleGameDataSync(resolvedGameId.Value),
-                        DispatcherPriority.Background);
+                    RequestUpdate(resolvedGameId.Value, forceRefresh: true);
                 }
                 else if (resolvedGameId.HasValue)
                 {
-                    RequestUpdate(resolvedGameId.Value);
+                    RequestUpdate(resolvedGameId.Value, forceRefresh: true);
                 }
             }
             catch (Exception ex)
@@ -470,6 +469,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 int version;
                 Guid? gameId;
+                bool forceRefresh;
                 CancellationToken token;
 
                 lock (_updateGate)
@@ -481,6 +481,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                     version = _requestVersion;
                     gameId = _requestedGameId;
+                    forceRefresh = _requestedForceSelectedGameRefresh;
+                    _requestedForceSelectedGameRefresh = false;
                     _processedVersion = version;
 
                     try { _activeUpdateCts?.Cancel(); } catch { }
@@ -520,7 +522,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
-                if (_appliedGameId.HasValue &&
+                if (!forceRefresh &&
+                    _appliedGameId.HasValue &&
                     _appliedGameId.Value == gameId.Value &&
                     _appliedLastUpdatedUtc == gameData.LastUpdatedUtc)
                 {

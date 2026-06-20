@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Views
     {
         private readonly CapstoneViewModel _viewModel;
 
-        public event EventHandler CapstoneChanged;
+        public event EventHandler<CapstoneChangedEventArgs> CapstoneChanged;
 
         public ManageAchievementsCapstonesTab(
             Guid gameId,
@@ -49,9 +49,9 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void ViewModel_CapstoneChanged(object sender, EventArgs e)
+        private void ViewModel_CapstoneChanged(object sender, CapstoneChangedEventArgs e)
         {
-            CapstoneChanged?.Invoke(this, EventArgs.Empty);
+            CapstoneChanged?.Invoke(this, e);
         }
 
         private void MarkerCheckBox_Click(object sender, RoutedEventArgs e)

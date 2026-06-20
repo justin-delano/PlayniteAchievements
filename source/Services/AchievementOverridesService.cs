@@ -96,6 +96,23 @@ namespace PlayniteAchievements.Services
             });
         }
 
+        public void SetAchievementCategoryOverrides(
+            Guid gameId,
+            IReadOnlyDictionary<string, string> categoryOverrides,
+            IReadOnlyDictionary<string, string> categoryTypeOverrides)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            _gameCustomDataStore.Update(gameId, customData =>
+            {
+                customData.AchievementCategoryOverrides = CopyStringOverrides(categoryOverrides);
+                customData.AchievementCategoryTypeOverrides = CopyStringOverrides(categoryTypeOverrides);
+            });
+        }
+
         public void SetAchievementFilters(
             Guid gameId,
             IEnumerable<string> filteredAchievementApiNames,

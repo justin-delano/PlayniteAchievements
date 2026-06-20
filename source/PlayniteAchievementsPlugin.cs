@@ -92,6 +92,7 @@ namespace PlayniteAchievements
         private readonly ThemeAutoMigrationService _themeAutoMigrationService;
 
         // Tagging
+        private readonly object _tagSyncGate = new object();
         private TagSyncService _tagSyncService;
 
         public override Guid Id { get; } =
@@ -691,7 +692,7 @@ namespace PlayniteAchievements
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
             {
-                _tagSyncService.SyncTagsForGames(new List<Guid> { e.PlayniteGameId });
+                QueueTagSync(e.PlayniteGameId);
             }
 
             try
@@ -704,6 +705,35 @@ namespace PlayniteAchievements
             }
 
             InvalidateStartPageData();
+        }
+
+        private void QueueTagSync(Guid gameId)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var tagSyncService = _tagSyncService;
+            if (tagSyncService == null)
+            {
+                return;
+            }
+
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    lock (_tagSyncGate)
+                    {
+                        tagSyncService.SyncTagsForGames(new List<Guid> { gameId });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"Failed to sync tags after custom-data change for gameId={gameId}.");
+                }
+            });
         }
 
         private void OnAchievementGameRefreshed(Guid gameId)

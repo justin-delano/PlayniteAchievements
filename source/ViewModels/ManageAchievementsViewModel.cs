@@ -851,10 +851,6 @@ namespace PlayniteAchievements.ViewModels
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
-            finally
-            {
-                Reload();
-            }
         }
 
         private void ExportCustomPackage()
@@ -903,10 +899,6 @@ namespace PlayniteAchievements.ViewModels
                     L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
-            }
-            finally
-            {
-                Reload();
             }
         }
 
@@ -1249,6 +1241,15 @@ namespace PlayniteAchievements.ViewModels
             CanExportCustomJson = hasStoredData && GameCustomDataNormalizer.HasPortableData(currentData);
         }
 
+        internal void NotifyCapstoneChanged(string displayName)
+        {
+            CurrentCapstoneName = string.IsNullOrWhiteSpace(displayName)
+                ? L("LOCPlayAch_CustomRefresh_None", "None")
+                : displayName.Trim();
+            RefreshCustomDataState();
+            CustomDataRevision = unchecked(CustomDataRevision + 1);
+        }
+
         internal void NotifyCustomDataChanged(
             bool requiresRefresh,
             bool forceIconRefresh = false)
@@ -1258,7 +1259,7 @@ namespace PlayniteAchievements.ViewModels
 
             if (_settings?.SelectedGame?.Id == _gameId)
             {
-                _plugin?.ThemeUpdateService?.RequestUpdate(_gameId);
+                _plugin?.ThemeUpdateService?.RequestUpdate(_gameId, forceRefresh: true);
             }
 
             Reload();
@@ -1276,7 +1277,7 @@ namespace PlayniteAchievements.ViewModels
             _refreshService?.Cache?.NotifyCacheInvalidated();
             if (_settings?.SelectedGame?.Id == _gameId)
             {
-                _plugin?.ThemeUpdateService?.RequestUpdate(_gameId);
+                _plugin?.ThemeUpdateService?.RequestUpdate(_gameId, forceRefresh: true);
             }
 
             RefreshCustomDataState();

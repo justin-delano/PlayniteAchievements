@@ -300,9 +300,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return false;
             }
 
-            var service = CurrentOverridesService;
-            service?.SetAchievementCategoryOverrides(context.GameId, categoryMap);
-            service?.SetAchievementCategoryTypeOverrides(context.GameId, typeMap);
+            CurrentOverridesService?.SetAchievementCategoryOverrides(context.GameId, categoryMap, typeMap);
             return true;
         }
 

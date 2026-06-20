@@ -11,6 +11,19 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
+    public sealed class CapstoneChangedEventArgs : EventArgs
+    {
+        public CapstoneChangedEventArgs(string apiName, string displayName)
+        {
+            ApiName = apiName;
+            DisplayName = displayName;
+        }
+
+        public string ApiName { get; }
+
+        public string DisplayName { get; }
+    }
+
     public sealed class CapstoneViewModel : ObservableObject
     {
         private readonly Guid _gameId;
@@ -22,7 +35,7 @@ namespace PlayniteAchievements.ViewModels
         private List<CapstoneOptionItem> _allOptions = new List<CapstoneOptionItem>();
         private string _searchText = string.Empty;
 
-        public event EventHandler CapstoneChanged;
+        public event EventHandler<CapstoneChangedEventArgs> CapstoneChanged;
 
         public CapstoneViewModel(
             Guid gameId,
@@ -103,8 +116,8 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            UpdateMarkerSelection(item);
-            CapstoneChanged?.Invoke(this, EventArgs.Empty);
+            var displayName = UpdateMarkerSelection(item);
+            CapstoneChanged?.Invoke(this, new CapstoneChangedEventArgs(item.ApiName, displayName));
         }
 
         public void ClearMarker()
@@ -117,7 +130,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             UpdateMarkerSelection(null);
-            CapstoneChanged?.Invoke(this, EventArgs.Empty);
+            CapstoneChanged?.Invoke(this, new CapstoneChangedEventArgs(null, null));
         }
 
         public void ToggleReveal(CapstoneOptionItem item)
@@ -128,7 +141,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void UpdateMarkerSelection(CapstoneOptionItem newMarker)
+        private string UpdateMarkerSelection(CapstoneOptionItem newMarker)
         {
             var markerApiName = NormalizeText(newMarker?.ApiName);
             CapstoneOptionItem matchedMarker = null;
@@ -147,7 +160,9 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
-            SetCurrentMarkerText(matchedMarker?.DisplayName ?? newMarker?.DisplayName);
+            var displayName = matchedMarker?.DisplayName ?? newMarker?.DisplayName;
+            SetCurrentMarkerText(displayName);
+            return displayName;
         }
 
         private void ApplyFilter()
