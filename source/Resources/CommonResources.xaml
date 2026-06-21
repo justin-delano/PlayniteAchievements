@@ -35,22 +35,12 @@
     <converters:HiddenAchievementConverter x:Key="HiddenTitleConverter" ConversionMode="Title"/>
     <converters:HiddenAchievementConverter x:Key="HiddenDescriptionConverter" ConversionMode="Description"/>
 
-    <!-- Playnite theme bridge. App-owned XAML should prefer these PlayAch keys so host theme keys stay centralized. -->
-    <StaticResource x:Key="PlayAch.Brush.Text" ResourceKey="TextBrush"/>
-    <StaticResource x:Key="PlayAch.Brush.Text.Secondary" ResourceKey="TextBrushDarker"/>
-    <StaticResource x:Key="PlayAch.Brush.Text.Tertiary" ResourceKey="TextBrushDark"/>
-    <StaticResource x:Key="PlayAch.Brush.Surface" ResourceKey="ControlBackgroundBrush"/>
-    <StaticResource x:Key="PlayAch.Brush.Panel" ResourceKey="PanelBackgroundBrush"/>
-    <StaticResource x:Key="PlayAch.Brush.Border" ResourceKey="NormalBorderBrush"/>
-    <StaticResource x:Key="PlayAch.Brush.ControlBorder" ResourceKey="NormalBrush"/>
-    <StaticResource x:Key="PlayAch.Brush.Glyph" ResourceKey="GlyphBrush"/>
-    <StaticResource x:Key="PlayAch.Brush.Accent" ResourceKey="HighlightGlyphBrush"/>
-    <StaticResource x:Key="PlayAch.Brush.Selection" ResourceKey="SelectionLightBrush"/>
-    <StaticResource x:Key="PlayAch.TextBlock.BaseStyle" ResourceKey="BaseTextBlockStyle"/>
-    <StaticResource x:Key="PlayAch.FontSize.Body" ResourceKey="FontSize"/>
-    <StaticResource x:Key="PlayAch.FontSize.Caption" ResourceKey="FontSizeSmall"/>
-    <StaticResource x:Key="PlayAch.FontSize.Title" ResourceKey="FontSizeLarge"/>
-    <StaticResource x:Key="PlayAch.FontFamily.Icon" ResourceKey="FontIcoFont"/>
+    <!-- PlayAch theme tokens are populated at runtime by PlayAchResourceService. -->
+    <Style x:Key="PlayAch.TextBlock.BaseStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
+    </Style>
 
     <Style x:Key="PlayAch.CardBorderStyle" TargetType="Border">
         <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Surface}"/>

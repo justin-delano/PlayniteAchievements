@@ -85,6 +85,7 @@ namespace PlayniteAchievements
         private readonly FullscreenWindowService _fullscreenWindowService;
         private readonly ThemeIntegrationService _themeIntegrationService;
         private readonly ThemeControlRegistry _themeControlRegistry;
+        private readonly AchievementResourceService _resourceService;
         private readonly PluginWindowService _windowService;
         private readonly AchievementHotkeyTargetResolver _achievementHotkeyTargetResolver;
         private readonly AchievementHotkeyService _achievementHotkeyService;
@@ -178,6 +179,7 @@ namespace PlayniteAchievements
             PluginLogger.Initialize(GetPluginUserDataPath());
             _logger = PluginLogger.GetLogger(nameof(PlayniteAchievementsPlugin));
             _themeControlRegistry = new ThemeControlRegistry();
+            _resourceService = new AchievementResourceService(_logger);
 
             using (PerfScope.StartStartup(_logger, "PluginCtor.Total", thresholdMs: 50))
             {
@@ -275,7 +277,7 @@ namespace PlayniteAchievements
                         _gameCustomDataStore,
                         _settingsViewModel.Settings,
                         _manualSourceRegistry,
-                        EnsureAchievementResourcesLoaded,
+                        () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
                         _fullscreenControllerNavigationService);
 
                     _achievementHotkeyTargetResolver = new AchievementHotkeyTargetResolver(PlayniteApi, _logger);

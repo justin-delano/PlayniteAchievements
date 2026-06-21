@@ -9,6 +9,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Threading.Tasks;
 using System.ComponentModel;
 using PlayniteAchievements.Services;
@@ -23,9 +24,13 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.ThemeMigration;
+using PlayniteAchievements.Services.UI;
 using Playnite.SDK;
 using System.Diagnostics;
 using System.Windows.Navigation;
+using DrawingColor = System.Drawing.Color;
+using FormsColorDialog = System.Windows.Forms.ColorDialog;
+using FormsDialogResult = System.Windows.Forms.DialogResult;
 
 namespace PlayniteAchievements.Views
 {
@@ -36,6 +41,7 @@ namespace PlayniteAchievements.Views
         // -----------------------------
 
         private System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> _mockCompactListItems;
+        private ObservableCollection<ResourceAppearanceItem> _resourceAppearanceItems;
 
         /// <summary>
         /// Gets mock achievement items for compact list preview in settings.
@@ -53,6 +59,24 @@ namespace PlayniteAchievements.Views
                             GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon()));
                 }
                 return _mockCompactListItems;
+            }
+        }
+
+        public ObservableCollection<ResourceAppearanceItem> ResourceAppearanceItems
+        {
+            get
+            {
+                if (_resourceAppearanceItems == null)
+                {
+                    _resourceAppearanceItems = new ObservableCollection<ResourceAppearanceItem>(
+                        PlayAchResourceService.ResourceDescriptors.Select(descriptor =>
+                            new ResourceAppearanceItem(
+                                descriptor,
+                                _settingsViewModel.Settings.Persisted,
+                                ApplyResourceAppearanceOverrides)));
+                }
+
+                return _resourceAppearanceItems;
             }
         }
 
@@ -1268,6 +1292,8 @@ namespace PlayniteAchievements.Views
                 _logger.Info("Resetting Display tab settings to defaults.");
 
                 _settingsViewModel.Settings.Persisted.ResetDisplaySettingsToDefaults();
+                RebuildResourceAppearanceItems();
+                ApplyResourceAppearanceOverrides();
                 PercentRarityHelper.ApplyBadgeApplicationResources(
                     _settingsViewModel.Settings.Persisted.UseUniformRarityBadges);
                 RefreshMockPreviews();
@@ -1287,6 +1313,76 @@ namespace PlayniteAchievements.Views
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
+            }
+        }
+
+        private void PickResourceColor_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is not ResourceAppearanceItem item ||
+                !item.IsBrush)
+            {
+                return;
+            }
+
+            using (var dialog = new FormsColorDialog())
+            {
+                dialog.FullOpen = true;
+                dialog.AnyColor = true;
+                if (TryParseColor(item.CustomValue, out var currentColor))
+                {
+                    dialog.Color = DrawingColor.FromArgb(
+                        currentColor.A,
+                        currentColor.R,
+                        currentColor.G,
+                        currentColor.B);
+                }
+
+                if (dialog.ShowDialog() != FormsDialogResult.OK)
+                {
+                    return;
+                }
+
+                var selected = dialog.Color;
+                item.Mode = ResourceOverrideMode.Custom;
+                item.CustomValue = $"#{selected.A:X2}{selected.R:X2}{selected.G:X2}{selected.B:X2}";
+            }
+        }
+
+        private void RebuildResourceAppearanceItems()
+        {
+            var items = ResourceAppearanceItems;
+            items.Clear();
+            foreach (var descriptor in PlayAchResourceService.ResourceDescriptors)
+            {
+                items.Add(new ResourceAppearanceItem(
+                    descriptor,
+                    _settingsViewModel.Settings.Persisted,
+                    ApplyResourceAppearanceOverrides));
+            }
+        }
+
+        private void ApplyResourceAppearanceOverrides()
+        {
+            var resources = Application.Current?.Resources;
+            if (resources != null)
+            {
+                PlayAchResourceService.Apply(
+                    resources,
+                    _settingsViewModel?.Settings?.Persisted?.ResourceOverrides);
+            }
+        }
+
+        private static bool TryParseColor(string value, out Color color)
+        {
+            try
+            {
+                color = (Color)ColorConverter.ConvertFromString(value);
+                return true;
+            }
+            catch
+            {
+                color = Colors.Transparent;
+                return false;
             }
         }
 
@@ -2453,6 +2549,135 @@ namespace PlayniteAchievements.Views
             {
                 OnPropertyChanged(nameof(IsEnabled));
             }
+        }
+    }
+
+    public sealed class ResourceAppearanceItem : PlayniteAchievements.Common.ObservableObject
+    {
+        private readonly PersistedSettings _settings;
+        private readonly Action _applyResources;
+        private ResourceOverrideMode _mode;
+        private string _customValue;
+
+        public ResourceAppearanceItem(
+            ResourceOverrideDescriptor descriptor,
+            PersistedSettings settings,
+            Action applyResources)
+        {
+            Descriptor = descriptor ?? throw new ArgumentNullException(nameof(descriptor));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _applyResources = applyResources;
+
+            if (_settings.ResourceOverrides != null &&
+                _settings.ResourceOverrides.TryGetValue(descriptor.ResourceKey, out var persisted) &&
+                persisted != null)
+            {
+                _mode = persisted.Mode;
+                _customValue = persisted.CustomValue;
+            }
+            else
+            {
+                _mode = ResourceOverrideMode.FollowPlaynite;
+                _customValue = GetCurrentPlayniteValueText(descriptor);
+            }
+        }
+
+        public ResourceOverrideDescriptor Descriptor { get; }
+        public string DisplayName => Descriptor.DisplayName;
+        public string ResourceKey => Descriptor.ResourceKey;
+        public string PlayniteResourceKey => Descriptor.PlayniteResourceKey;
+        public bool IsBrush => Descriptor.ValueKind == ResourceOverrideValueKind.Brush;
+        public bool IsFontSize => Descriptor.ValueKind == ResourceOverrideValueKind.FontSize;
+        public bool IsFontFamily => Descriptor.ValueKind == ResourceOverrideValueKind.FontFamily;
+
+        public ResourceOverrideMode Mode
+        {
+            get => _mode;
+            set
+            {
+                if (SetValueAndReturn(ref _mode, value))
+                {
+                    Persist();
+                    OnPropertyChanged(nameof(IsCustom));
+                }
+            }
+        }
+
+        public bool IsCustom => Mode == ResourceOverrideMode.Custom;
+
+        public string CustomValue
+        {
+            get => _customValue;
+            set
+            {
+                if (SetValueAndReturn(ref _customValue, value))
+                {
+                    Persist();
+                    OnPropertyChanged(nameof(PreviewBrush));
+                }
+            }
+        }
+
+        public Brush PreviewBrush
+        {
+            get
+            {
+                try
+                {
+                    return new SolidColorBrush((Color)ColorConverter.ConvertFromString(CustomValue));
+                }
+                catch
+                {
+                    return Brushes.Transparent;
+                }
+            }
+        }
+
+        private void Persist()
+        {
+            if (_settings.ResourceOverrides == null)
+            {
+                _settings.ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            _settings.ResourceOverrides[ResourceKey] = new ResourceOverrideSetting
+            {
+                Mode = Mode,
+                CustomValue = CustomValue
+            };
+
+            _settings.OnPropertyChanged(nameof(PersistedSettings.ResourceOverrides));
+            _applyResources?.Invoke();
+        }
+
+        private static string GetCurrentPlayniteValueText(ResourceOverrideDescriptor descriptor)
+        {
+            var value = Application.Current?.TryFindResource(descriptor.PlayniteResourceKey);
+            switch (descriptor.ValueKind)
+            {
+                case ResourceOverrideValueKind.Brush:
+                    return BrushToText(value as Brush);
+
+                case ResourceOverrideValueKind.FontSize:
+                    return Convert.ToString(value, System.Globalization.CultureInfo.InvariantCulture);
+
+                case ResourceOverrideValueKind.FontFamily:
+                    return value?.ToString() ?? string.Empty;
+
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string BrushToText(Brush brush)
+        {
+            if (brush is SolidColorBrush solid)
+            {
+                var color = solid.Color;
+                return $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
+            }
+
+            return string.Empty;
         }
     }
 

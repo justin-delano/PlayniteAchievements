@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 using Playnite.SDK;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -149,6 +151,7 @@ namespace PlayniteAchievements.ViewModels
             _plugin.ProviderRegistry?.CancelEditSession();
             _plugin.ProviderRegistry?.SyncFromSettings(Settings.Persisted);
             GameCustomDataStore?.SyncRuntimeCaches();
+            ApplyThemeResources();
         }
 
         public void EndEdit()
@@ -162,6 +165,7 @@ namespace PlayniteAchievements.ViewModels
             // Sync provider registry from the updated settings
             _plugin.ProviderRegistry?.SyncFromSettings(Settings.Persisted);
             GameCustomDataStore?.SyncRuntimeCaches();
+            ApplyThemeResources();
 
             // Notify listeners that settings have been saved (e.g., to refresh provider status in landing page)
             PlayniteAchievementsPlugin.NotifySettingsSaved();
@@ -198,6 +202,15 @@ namespace PlayniteAchievements.ViewModels
             AddDuplicateHotkeyError(viewValid, viewGesture, assignedGestures, duplicateMessage, errors);
             AddDuplicateHotkeyError(manageValid, manageGesture, assignedGestures, duplicateMessage, errors);
             AddDuplicateHotkeyError(overviewValid, overviewGesture, assignedGestures, duplicateMessage, errors);
+        }
+
+        private void ApplyThemeResources()
+        {
+            var resources = Application.Current?.Resources;
+            if (resources != null)
+            {
+                PlayAchResourceService.Apply(resources, Settings?.Persisted?.ResourceOverrides);
+            }
         }
 
         private static void AddDuplicateHotkeyError(

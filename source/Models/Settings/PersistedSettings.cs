@@ -120,6 +120,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
+        private Dictionary<string, ResourceOverrideSetting> _resourceOverrides =
+            new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
         private List<CustomRefreshPreset> _customRefreshPresets = new List<CustomRefreshPreset>();
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -1169,6 +1171,16 @@ namespace PlayniteAchievements.Models.Settings
         #endregion
 
         #region Theme Integration Settings
+
+        /// <summary>
+        /// Optional overrides for plugin semantic resources such as PlayAch.Brush.Text.
+        /// Missing entries follow the current Playnite theme resource mapped by the resolver.
+        /// </summary>
+        public Dictionary<string, ResourceOverrideSetting> ResourceOverrides
+        {
+            get => _resourceOverrides;
+            set => SetValue(ref _resourceOverrides, NormalizeResourceOverrides(value));
+        }
 
         #endregion
 
@@ -2242,6 +2254,12 @@ namespace PlayniteAchievements.Models.Settings
                 EnableParallelProviderRefresh = this.EnableParallelProviderRefresh,
                 ScanDelayMs = this.ScanDelayMs,
                 MaxRetryAttempts = this.MaxRetryAttempts,
+                ResourceOverrides = this.ResourceOverrides != null
+                    ? this.ResourceOverrides.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Clone(),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase),
 
                 // UI Column Settings
                 DataGridColumnVisibility = this.DataGridColumnVisibility != null
@@ -2460,6 +2478,7 @@ namespace PlayniteAchievements.Models.Settings
             ShowRarityGlow = defaults.ShowRarityGlow;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
             UseCoverImages = defaults.UseCoverImages;
+            ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
 
             ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
             ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
@@ -2625,6 +2644,29 @@ namespace PlayniteAchievements.Models.Settings
             return AchievementHotkeyGesture.TryParse(value, out var gesture) && gesture != null
                 ? gesture.ToString()
                 : string.Empty;
+        }
+
+        private static Dictionary<string, ResourceOverrideSetting> NormalizeResourceOverrides(
+            Dictionary<string, ResourceOverrideSetting> value)
+        {
+            var normalized = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            if (value == null)
+            {
+                return normalized;
+            }
+
+            foreach (var pair in value)
+            {
+                var key = (pair.Key ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(key) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                normalized[key] = pair.Value.Clone();
+            }
+
+            return normalized;
         }
 
         private static Dictionary<string, int> NormalizeColumnOrder(Dictionary<string, int> value)

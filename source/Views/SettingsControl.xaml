@@ -852,6 +852,30 @@
                                     </Grid>
                                 </ListBoxItem>
 
+                                <ListBoxItem Tag="Appearance"
+                                             Style="{StaticResource ProviderNavigationItemContainerStyle}">
+                                    <Grid Margin="8,3" MinHeight="44">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="&#xE790;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                   Opacity="0.68"
+                                                   FontSize="16"
+                                                   Margin="0,0,9,0"
+                                                   VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="Appearance"
+                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                                       FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </ListBoxItem>
+
                                 <ListBoxItem Tag="Overview"
                                              Style="{StaticResource ProviderNavigationItemContainerStyle}">
                                     <Grid Margin="8,3" MinHeight="44">
@@ -1130,6 +1154,141 @@
                                                        TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </DockPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ScrollViewer.Style>
+                                <Style TargetType="ScrollViewer">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedValue, ElementName=DisplaySectionListBox}" Value="Appearance">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ScrollViewer.Style>
+                            <StackPanel Margin="20">
+                                <Border Style="{StaticResource SectionBorderStyle}"
+                                        Background="{DynamicResource PlayAch.Brush.Panel}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}">
+                                    <StackPanel>
+                                        <TextBlock Text="Appearance"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                                        <TextBlock Text="Each token follows the active Playnite theme by default. Set a custom value to override only that token."
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="Theme resources"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                                        <ItemsControl ItemsSource="{Binding ResourceAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Style="{StaticResource SettingGroupCardStyle}">
+                                                        <Grid>
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="2*"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                                <ColumnDefinition Width="2*"/>
+                                                            </Grid.ColumnDefinitions>
+
+                                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding DisplayName}"
+                                                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                                           FontWeight="SemiBold"
+                                                                           TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Text="{Binding PlayniteResourceKey, StringFormat=Playnite: {0}}"
+                                                                           Style="{StaticResource MutedTextStyle}"
+                                                                           TextTrimming="CharacterEllipsis"/>
+                                                            </StackPanel>
+
+                                                            <ComboBox Grid.Column="1"
+                                                                      Width="140"
+                                                                      Margin="14,0"
+                                                                      VerticalAlignment="Center"
+                                                                      SelectedValue="{Binding Mode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                      SelectedValuePath="Tag">
+                                                                <ComboBoxItem Content="Follow Playnite" Tag="{x:Static settings:ResourceOverrideMode.FollowPlaynite}"/>
+                                                                <ComboBoxItem Content="Custom" Tag="{x:Static settings:ResourceOverrideMode.Custom}"/>
+                                                            </ComboBox>
+
+                                                            <Grid Grid.Column="2" VerticalAlignment="Center">
+                                                                <Grid.Style>
+                                                                    <Style TargetType="Grid">
+                                                                        <Setter Property="IsEnabled" Value="False"/>
+                                                                        <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Disabled}"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCustom}" Value="True">
+                                                                                <Setter Property="IsEnabled" Value="True"/>
+                                                                                <Setter Property="Opacity" Value="1"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Grid.Style>
+
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <Border Grid.Column="0"
+                                                                        Width="26"
+                                                                        Height="26"
+                                                                        Margin="0,0,8,0"
+                                                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                        Background="{Binding PreviewBrush}">
+                                                                    <Border.Style>
+                                                                        <Style TargetType="Border">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsBrush}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Border.Style>
+                                                                </Border>
+
+                                                                <TextBox Grid.Column="1"
+                                                                         MinWidth="120"
+                                                                         Text="{Binding CustomValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                                <Button Grid.Column="2"
+                                                                        Content="Pick"
+                                                                        Margin="8,0,0,0"
+                                                                        MinWidth="58"
+                                                                        Click="PickResourceColor_Click">
+                                                                    <Button.Style>
+                                                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsBrush}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Button.Style>
+                                                                </Button>
+                                                            </Grid>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>

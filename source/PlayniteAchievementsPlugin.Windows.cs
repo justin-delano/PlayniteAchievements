@@ -57,7 +57,7 @@ namespace PlayniteAchievements
 
         private void EnsureAchievementResourcesLoaded()
         {
-            _windowService.EnsureAchievementResourcesLoaded();
+            _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings);
         }
 
         private void OpenOverviewWindow()

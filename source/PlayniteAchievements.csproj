@@ -109,7 +109,9 @@
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
     <Reference Include="System.Security" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="mscorlib" />
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
