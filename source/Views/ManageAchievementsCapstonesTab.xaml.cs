@@ -54,17 +54,17 @@ namespace PlayniteAchievements.Views
             CapstoneChanged?.Invoke(this, e);
         }
 
-        private void MarkerCheckBox_Click(object sender, RoutedEventArgs e)
+        private async void MarkerCheckBox_Click(object sender, RoutedEventArgs e)
         {
             if (sender is CheckBox checkBox && checkBox.DataContext is CapstoneOptionItem item)
             {
                 if (item.IsCurrentMarker)
                 {
-                    _viewModel?.ClearMarker();
+                    await _viewModel.ClearMarkerAsync();
                 }
                 else
                 {
-                    _viewModel?.SetMarker(item);
+                    await _viewModel.SetMarkerAsync(item);
                 }
             }
 
@@ -180,11 +180,9 @@ namespace PlayniteAchievements.Views
                 _ => 0
             });
 
-            _viewModel.AchievementOptions.Clear();
-            foreach (var item in items)
-            {
-                _viewModel.AchievementOptions.Add(item);
-            }
+            PlayniteAchievements.Common.CollectionHelper.SynchronizeCollection(
+                _viewModel.AchievementOptions,
+                items);
         }
     }
 }

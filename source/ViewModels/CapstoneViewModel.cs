@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
@@ -34,6 +36,8 @@ namespace PlayniteAchievements.ViewModels
         private readonly PlayniteAchievementsSettings _settings;
         private List<CapstoneOptionItem> _allOptions = new List<CapstoneOptionItem>();
         private string _searchText = string.Empty;
+        private string _persistedMarkerApiName;
+        private int _capstoneWriteVersion;
 
         public event EventHandler<CapstoneChangedEventArgs> CapstoneChanged;
 
@@ -102,35 +106,54 @@ namespace PlayniteAchievements.ViewModels
 
         public RelayCommand ClearSearchCommand { get; }
 
-        public void SetMarker(CapstoneOptionItem item)
+        public async Task SetMarkerAsync(CapstoneOptionItem item)
         {
-            if (item == null || string.IsNullOrWhiteSpace(item.ApiName))
+            var markerApiName = NormalizeText(item?.ApiName);
+            if (string.IsNullOrWhiteSpace(markerApiName))
             {
-                return;
-            }
-
-            var result = _achievementOverridesService.SetCapstone(_gameId, item.ApiName);
-            if (!result.Success)
-            {
-                ShowError(ResolveErrorMessage(result));
                 return;
             }
 
             var displayName = UpdateMarkerSelection(item);
-            CapstoneChanged?.Invoke(this, new CapstoneChangedEventArgs(item.ApiName, displayName));
-        }
-
-        public void ClearMarker()
-        {
-            var result = _achievementOverridesService.SetCapstone(_gameId, null);
-            if (!result.Success)
+            var writeVersion = Interlocked.Increment(ref _capstoneWriteVersion);
+            var result = await PersistCapstoneAsync(markerApiName);
+            if (result.Success)
             {
-                ShowError(ResolveErrorMessage(result));
+                _persistedMarkerApiName = markerApiName;
+                if (IsLatestCapstoneWrite(writeVersion))
+                {
+                    CapstoneChanged?.Invoke(this, new CapstoneChangedEventArgs(markerApiName, displayName));
+                }
                 return;
             }
 
+            if (IsLatestCapstoneWrite(writeVersion))
+            {
+                UpdateMarkerSelection(FindOptionByApiName(_persistedMarkerApiName));
+                ShowError(ResolveErrorMessage(result));
+            }
+        }
+
+        public async Task ClearMarkerAsync()
+        {
             UpdateMarkerSelection(null);
-            CapstoneChanged?.Invoke(this, new CapstoneChangedEventArgs(null, null));
+            var writeVersion = Interlocked.Increment(ref _capstoneWriteVersion);
+            var result = await PersistCapstoneAsync(null);
+            if (result.Success)
+            {
+                _persistedMarkerApiName = null;
+                if (IsLatestCapstoneWrite(writeVersion))
+                {
+                    CapstoneChanged?.Invoke(this, new CapstoneChangedEventArgs(null, null));
+                }
+                return;
+            }
+
+            if (IsLatestCapstoneWrite(writeVersion))
+            {
+                UpdateMarkerSelection(FindOptionByApiName(_persistedMarkerApiName));
+                ShowError(ResolveErrorMessage(result));
+            }
         }
 
         public void ToggleReveal(CapstoneOptionItem item)
@@ -146,7 +169,7 @@ namespace PlayniteAchievements.ViewModels
             var markerApiName = NormalizeText(newMarker?.ApiName);
             CapstoneOptionItem matchedMarker = null;
 
-            foreach (var option in AchievementOptions)
+            foreach (var option in _allOptions)
             {
                 var isMatch = !string.IsNullOrWhiteSpace(markerApiName) &&
                               string.Equals(
@@ -165,6 +188,45 @@ namespace PlayniteAchievements.ViewModels
             return displayName;
         }
 
+        private CapstoneOptionItem FindOptionByApiName(string apiName)
+        {
+            var normalized = NormalizeText(apiName);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            return _allOptions.FirstOrDefault(option =>
+                string.Equals(
+                    NormalizeText(option?.ApiName),
+                    normalized,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool IsLatestCapstoneWrite(int writeVersion)
+        {
+            return writeVersion == Volatile.Read(ref _capstoneWriteVersion);
+        }
+
+        private async Task<CacheWriteResult> PersistCapstoneAsync(string markerApiName)
+        {
+            try
+            {
+                return await _achievementOverridesService
+                    .SetCapstoneAsync(_gameId, markerApiName)
+                    .ConfigureAwait(true);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed setting capstone for gameId={_gameId}.");
+                return CacheWriteResult.CreateFailure(
+                    _gameId.ToString("D"),
+                    "settings_save_failed",
+                    ex.Message,
+                    ex);
+            }
+        }
+
         private void ApplyFilter()
         {
             var filtered = _allOptions.AsEnumerable();
@@ -176,11 +238,9 @@ namespace PlayniteAchievements.ViewModels
                     (item.Description?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0));
             }
 
-            AchievementOptions.Clear();
-            foreach (var item in filtered)
-            {
-                AchievementOptions.Add(item);
-            }
+            PlayniteAchievements.Common.CollectionHelper.SynchronizeCollection(
+                AchievementOptions,
+                filtered.ToList());
         }
 
         public void ClearSearch()
@@ -265,6 +325,7 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 ApplyFilter();
+                _persistedMarkerApiName = currentCapstoneApiName;
                 SetCurrentMarkerText(currentMarkerOption?.DisplayName);
             }
             catch (Exception ex)

@@ -551,13 +551,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
-                var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
-                if (dispatcher == null)
-                {
-                    continue;
-                }
-
-                await dispatcher.InvokeAsync(() =>
+                Action applyState = () =>
                 {
                     if (!IsLatest(version))
                     {
@@ -573,7 +567,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     ApplySelectedGameState(state);
                     _appliedGameId = gameId;
                     _appliedLastUpdatedUtc = gameData.LastUpdatedUtc;
-                }, DispatcherPriority.Background).Task.ConfigureAwait(false);
+                };
+
+                var dispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+                if (dispatcher == null)
+                {
+                    applyState();
+                }
+                else
+                {
+                    await dispatcher.InvokeAsync(applyState, DispatcherPriority.Background).Task.ConfigureAwait(false);
+                }
             }
         }
 

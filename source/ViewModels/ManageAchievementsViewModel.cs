@@ -1247,7 +1247,6 @@ namespace PlayniteAchievements.ViewModels
                 ? L("LOCPlayAch_CustomRefresh_None", "None")
                 : displayName.Trim();
             RefreshCustomDataState();
-            CustomDataRevision = unchecked(CustomDataRevision + 1);
         }
 
         internal void NotifyCustomDataChanged(

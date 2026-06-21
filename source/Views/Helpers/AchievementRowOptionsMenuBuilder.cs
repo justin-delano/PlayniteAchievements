@@ -57,7 +57,7 @@ namespace PlayniteAchievements.Views.Helpers
                 IsCheckable = true,
                 IsChecked = isEffectiveCapstone
             };
-            item.Click += (_, __) =>
+            item.Click += async (_, __) =>
             {
                 var service = CurrentOverridesService;
                 if (service == null)
@@ -65,7 +65,7 @@ namespace PlayniteAchievements.Views.Helpers
                     return;
                 }
 
-                var result = service.SetCapstone(
+                var result = await service.SetCapstoneAsync(
                     context.GameId,
                     isEffectiveCapstone ? null : context.ApiName);
                 if (!result.Success)

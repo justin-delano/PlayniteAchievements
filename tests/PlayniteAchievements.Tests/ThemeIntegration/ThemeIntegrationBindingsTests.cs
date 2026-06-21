@@ -918,12 +918,10 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             context.Service.NotifyCustomDataChanged(gameId);
 
             Assert.AreEqual(2, context.Settings.DynamicLibraryAchievements.Count);
-            Assert.AreEqual(1, context.Settings.Achievements.Count);
+            await WaitForConditionAsync(() => context.Settings.Achievements.Count == 1);
             AssertAchievementNames(context.Settings.Achievements, "Visible One");
 
-            await Task.Delay(700);
-
-            Assert.AreEqual(1, context.Settings.DynamicLibraryAchievements.Count);
+            await WaitForConditionAsync(() => context.Settings.DynamicLibraryAchievements.Count == 1);
             AssertAchievementNames(context.Settings.DynamicLibraryAchievements, "Visible One");
 
             var summary = FindSummary(context.Settings.DynamicGameSummaries, gameId);
@@ -1731,6 +1729,22 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
 
             dispatcher.Invoke(new Action(() => { }), DispatcherPriority.Background);
             dispatcher.Invoke(new Action(() => { }), DispatcherPriority.ApplicationIdle);
+        }
+
+        private static async Task WaitForConditionAsync(Func<bool> condition, int timeoutMs = 1500)
+        {
+            var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+            while (DateTime.UtcNow < deadline)
+            {
+                if (condition())
+                {
+                    return;
+                }
+
+                await Task.Delay(25).ConfigureAwait(false);
+            }
+
+            Assert.IsTrue(condition(), "Timed out waiting for asynchronous theme binding update.");
         }
 
         private static HashSet<string> TrackPropertyChanges(INotifyPropertyChanged source)

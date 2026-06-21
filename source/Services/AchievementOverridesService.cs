@@ -6,6 +6,7 @@ using Playnite.SDK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Services
 {
@@ -53,6 +54,11 @@ namespace PlayniteAchievements.Services
                     ex.Message,
                     ex);
             }
+        }
+
+        public Task<CacheWriteResult> SetCapstoneAsync(Guid playniteGameId, string capstoneApiName)
+        {
+            return Task.Run(() => SetCapstone(playniteGameId, capstoneApiName));
         }
 
         public void SetAchievementOrderOverride(Guid gameId, IReadOnlyList<string> orderedApiNames)

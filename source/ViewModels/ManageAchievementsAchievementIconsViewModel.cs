@@ -319,7 +319,6 @@ namespace PlayniteAchievements.ViewModels
 
                 var unlockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                 var lockedOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                var retainedManagedPaths = new List<string>();
                 for (var i = 0; i < AchievementRows.Count; i++)
                 {
                     var row = AchievementRows[i];
@@ -334,18 +333,15 @@ namespace PlayniteAchievements.ViewModels
                     if (!string.IsNullOrWhiteSpace(unlockedOverride))
                     {
                         unlockedOverrides[apiName] = unlockedOverride;
-                        TrackManagedOverridePath(retainedManagedPaths, unlockedOverride);
                     }
 
                     if (!string.IsNullOrWhiteSpace(lockedOverride))
                     {
                         lockedOverrides[apiName] = lockedOverride;
-                        TrackManagedOverridePath(retainedManagedPaths, lockedOverride);
                     }
                 }
 
                 _achievementOverridesService.SetAchievementIconOverrides(_gameId, unlockedOverrides, lockedOverrides);
-                _managedCustomIconService.PruneGameCustomCache(_gameIdText, retainedManagedPaths);
 
                 for (var i = 0; i < AchievementRows.Count; i++)
                 {
@@ -502,18 +498,6 @@ namespace PlayniteAchievements.ViewModels
             RevertChangesCommand?.RaiseCanExecuteChanged();
             ClearAllCommand?.RaiseCanExecuteChanged();
             OpenIconsFolderCommand?.RaiseCanExecuteChanged();
-        }
-
-        private void TrackManagedOverridePath(ICollection<string> retainedManagedPaths, string overrideValue)
-        {
-            var normalized = NormalizeText(overrideValue);
-            if (string.IsNullOrWhiteSpace(normalized) ||
-                !_managedCustomIconService.IsManagedCustomIconPath(normalized, _gameIdText))
-            {
-                return;
-            }
-
-            retainedManagedPaths?.Add(normalized);
         }
 
         private static List<AchievementDetail> BuildOrderedAchievements(
