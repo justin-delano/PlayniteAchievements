@@ -1,9 +1,17 @@
 AddonId: PlayniteAchievements
 Packages:
 
+  - Version: 2.5.3
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-06-21
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.3/PlayniteAchievements_2_5_3.pext
+    Changelog:
+    - "[Fixed] More performance improvements.
+    - "[Fixed] Image columns in grids have better width defaults, minimums, and maximums."
+
   - Version: 2.5.2
     RequiredApiVersion: 6.14.0
-    ReleaseDate: 2026-05-30
+    ReleaseDate: 2026-06-19
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.2/PlayniteAchievements_2_5_2.pext
     Changelog:
     - "[Fixed] Performance improvements when editing in Manage Achievements window."
@@ -11,7 +19,7 @@ Packages:
 
   - Version: 2.5.1
     RequiredApiVersion: 6.14.0
-    ReleaseDate: 2026-05-30
+    ReleaseDate: 2026-06-18
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.1/PlayniteAchievements_2_5_1.pext
     Changelog:
     - "[New] Added Note marker and Note column to achievement grids."
@@ -26,7 +34,7 @@ Packages:
 
   - Version: 2.5.0
     RequiredApiVersion: 6.14.0
-    ReleaseDate: 2026-05-30
+    ReleaseDate: 2026-06-15
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.0/PlayniteAchievements_2_5_0.pext
     Changelog:
     - "A massive customization update!"
@@ -51,7 +59,7 @@ Packages:
 
   - Version: 2.4.0
     RequiredApiVersion: 6.14.0
-    ReleaseDate: 2026-05-30
+    ReleaseDate: 2026-06-02
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.4.0/PlayniteAchievements_2_4_0.pext
     Changelog:
     - "Added native support for EA achievements. These do not come with Icons or Rarity data natively at the moment, but this additional data can be fetched from Exophase."
