@@ -184,7 +184,7 @@
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
 
-                <DataGridTemplateColumn Width="64" MinWidth="64" MaxWidth="64" CanUserSort="False" CanUserResize="False"
+                <DataGridTemplateColumn Width="72" MinWidth="44" MaxWidth="160" CanUserSort="False" CanUserResize="True"
                                         CellStyle="{StaticResource ManageAchievementsIconCellStyle}"
                                         CellTemplate="{StaticResource AchievementIconTemplate}"/>
 
