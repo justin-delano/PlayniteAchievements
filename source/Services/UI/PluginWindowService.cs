@@ -1405,10 +1405,16 @@ namespace PlayniteAchievements.Services.UI
 
                 void LoadResources()
                 {
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/DesignTokens.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/CommonResources.xaml");
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/RarityBadges.xaml");
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/TrophyBadges.xaml");
-                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/AchievementTemplates.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/AchievementResources.xaml");
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Providers/ProviderIcons.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Providers/ProviderSettingsStyles.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/ManageAchievementsStyles.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/OverviewStyles.xaml");
+                    EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/SettingsStyles.xaml");
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/MigrationStyles.xaml");
                     PercentRarityHelper.ApplyBadgeApplicationResources(
                         _settings?.Persisted?.UseUniformRarityBadges ?? false);

@@ -15,7 +15,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -33,8 +33,8 @@
               RowHeaderWidth="0"
               GridLinesVisibility="None"
               RowBackground="Transparent"
-              BorderThickness="1"
-              BorderBrush="{DynamicResource NormalBorderBrush}"
+              BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+              BorderBrush="{DynamicResource PlayAch.Brush.Border}"
               Background="Transparent"
               CanUserAddRows="False"
               CanUserDeleteRows="False"
@@ -48,7 +48,7 @@
               ScrollViewer.CanContentScroll="True"
               ScrollViewer.IsDeferredScrollingEnabled="False"
               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-              Padding="0"
+              Padding="{StaticResource PlayAch.Thickness.None}"
               UseLayoutRounding="True"
               SnapsToDevicePixels="True"
               Tag="ControllerCellFocus"
@@ -123,14 +123,14 @@
                                     Visibility="Collapsed">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <TextBlock Foreground="{DynamicResource TextBrush}"
+                        <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    TextWrapping="Wrap"
                                    VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                                    HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                    helpers:AchievementNoteInlineFormatter.NoteToolTip="{Binding AchievementNote}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                     <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                                     <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
                                      <Setter Property="Opacity" Value="0.7"/>
                                      <Setter Property="TextAlignment"
                                              Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
@@ -147,12 +147,12 @@
                             <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
                             <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
                                  FontStyle="Italic"
-                                 FontSize="{DynamicResource FontSizeSmall}"
-                                 Foreground="{DynamicResource TextBrushDarker}"/>
+                                 FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                 Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
                             <Run Text="{Binding AchievementNoteInlineMarker, Mode=OneWay}"
-                                 FontFamily="{DynamicResource FontIcoFont}"
-                                 FontSize="{DynamicResource FontSizeSmall}"
-                                 Foreground="{DynamicResource TextBrushDarker}"/>
+                                 FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                 FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                 Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
                         </TextBlock>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
@@ -164,7 +164,7 @@
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <helpers:HeightDecoupledDecorator>
-                            <TextBlock Foreground="{DynamicResource TextBrush}"
+                            <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text}"
                                        TextWrapping="Wrap"
                                        TextTrimming="CharacterEllipsis"
                                        helpers:AchievementNoteInlineFormatter.FormattedText="{Binding AchievementNote}"
@@ -173,7 +173,7 @@
                                        HorizontalAlignment="Stretch">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
+                                        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
                                         <Setter Property="Opacity" Value="0.7"/>
                                         <Setter Property="TextAlignment"
                                                 Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
@@ -217,8 +217,8 @@
                     <DataTemplate>
                         <TextBlock Text="{Binding CategoryTypeDisplay}"
                                    Style="{StaticResource WrappedCenteredDataGridTextStyle}"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Opacity="0.7"/>
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
@@ -228,8 +228,8 @@
                     <DataTemplate>
                         <TextBlock Text="{Binding CategoryLabelDisplay}"
                                    Style="{StaticResource WrappedCenteredDataGridTextStyle}"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Opacity="0.7"/>
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
@@ -258,9 +258,9 @@
                     <DataTemplate>
                         <TextBlock Text="{Binding GlobalPercentText}"
                                    Style="{StaticResource WrappedCenteredDataGridTextStyle}"
-                                   Foreground="{DynamicResource TextBrush}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    FontWeight="SemiBold"
-                                   Opacity="0.8"/>
+                                   Opacity="{StaticResource PlayAch.Opacity.Secondary}"/>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
@@ -270,8 +270,8 @@
                     <DataTemplate>
                         <TextBlock Text="{Binding CollectionScore, StringFormat={}{0:N0}}"
                                    Style="{StaticResource WrappedCenteredDataGridTextStyle}"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Opacity="0.7"/>
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
@@ -281,8 +281,8 @@
                     <DataTemplate>
                         <TextBlock Text="{Binding PrestigeScore, StringFormat={}{0:N0}}"
                                    Style="{StaticResource WrappedCenteredDataGridTextStyle}"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Opacity="0.7"/>
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

@@ -11,7 +11,7 @@
     <base:ThemeControlBase.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
@@ -40,8 +40,8 @@
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="0"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
             </Style>
 
             <Style x:Key="ProgressFooterStyle" TargetType="Grid">
@@ -88,7 +88,7 @@
                                         Grid.Column="1"
                                         BadgeSize="14"
                                         UseUniformRarityBadges="{Binding DataContext.Persisted.UseUniformRarityBadges, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
-                                        Margin="8,0,0,0"
+                                        Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                         HorizontalAlignment="Right"
                                         VerticalAlignment="Center"/>
         </Grid>

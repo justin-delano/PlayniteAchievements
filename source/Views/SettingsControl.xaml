@@ -5,7 +5,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:conv="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
@@ -16,294 +15,13 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <conv:NullableDoubleTextConverter x:Key="NullableDoubleTextConverter"/>
-            <conv:NullableIntTextConverter x:Key="NullableIntTextConverter"/>
-            <conv:EnumToBoolConverter x:Key="EnumToBool"/>
-            <conv:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility"/>
-            <conv:ProviderIconConverter x:Key="ProviderIconConverter"/>
-
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
             <Style x:Key="PreviewThemeControlStyle"
                    TargetType="{x:Type base:ThemeControlBase}">
                 <Setter Property="SettingsOverride"
                         Value="{Binding DataContext, ElementName=SettingsControlRoot}"/>
-            </Style>
-
-            <!-- Disable Steam auth buttons while busy -->
-            <Style x:Key="SteamAuthActionButtonStyle"
-                   TargetType="Button"
-                   BasedOn="{StaticResource {x:Type Button}}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding SteamAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                 Value="True">
-                        <Setter Property="IsEnabled" Value="False"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Disable GOG auth buttons while busy -->
-            <Style x:Key="GogAuthActionButtonStyle"
-                   TargetType="Button"
-                   BasedOn="{StaticResource {x:Type Button}}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding GogAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                 Value="True">
-                        <Setter Property="IsEnabled" Value="False"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Disable Epic auth buttons while busy -->
-            <Style x:Key="EpicAuthActionButtonStyle"
-                   TargetType="Button"
-                   BasedOn="{StaticResource {x:Type Button}}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding EpicAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                 Value="True">
-                        <Setter Property="IsEnabled" Value="False"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Disable PSN auth buttons while busy -->
-            <Style x:Key="PsnAuthActionButtonStyle"
-                   TargetType="Button"
-                   BasedOn="{StaticResource {x:Type Button}}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding PsnAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                 Value="True">
-                        <Setter Property="IsEnabled" Value="False"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Disable Xbox auth buttons while busy -->
-            <Style x:Key="XboxAuthActionButtonStyle"
-                   TargetType="Button"
-                   BasedOn="{StaticResource {x:Type Button}}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding XboxAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                 Value="True">
-                        <Setter Property="IsEnabled" Value="False"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Disable Exophase auth buttons while busy -->
-            <Style x:Key="ExophaseAuthActionButtonStyle"
-                   TargetType="Button"
-                   BasedOn="{StaticResource {x:Type Button}}">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding ExophaseAuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                 Value="True">
-                        <Setter Property="IsEnabled" Value="False"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Section header style -->
-            <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="16"/>
-                <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Margin" Value="0,0,0,12"/>
-                <Setter Property="Opacity" Value="1"/>
-            </Style>
-
-            <!-- Subsection header style -->
-            <Style x:Key="SubSectionHeaderStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="13"/>
-                <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Opacity" Value="0.96"/>
-            </Style>
-
-            <Style x:Key="SectionAccentRuleStyle" TargetType="Border">
-                <Setter Property="Height" Value="2"/>
-                <Setter Property="Width" Value="44"/>
-                <Setter Property="HorizontalAlignment" Value="Left"/>
-                <Setter Property="CornerRadius" Value="1"/>
-                <Setter Property="Background" Value="{DynamicResource HighlightGlyphBrush}"/>
-                <Setter Property="Margin" Value="0,0,0,14"/>
-            </Style>
-
-            <Style x:Key="ContextLabelStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="10"/>
-                <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
-                <Setter Property="TextWrapping" Value="Wrap"/>
-                <Setter Property="Margin" Value="0,0,0,8"/>
-            </Style>
-
-            <Style x:Key="SettingGroupCardStyle" TargetType="Border">
-                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
-                <Setter Property="CornerRadius" Value="6"/>
-                <Setter Property="Padding" Value="14"/>
-                <Setter Property="Margin" Value="0,0,0,14"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
-                <Setter Property="BorderThickness" Value="1"/>
-            </Style>
-
-            <Style x:Key="OverviewPieModeRadioButtonStyle" TargetType="RadioButton">
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Margin" Value="0,0,0,6"/>
-                <Setter Property="VerticalContentAlignment" Value="Center"/>
-                <Setter Property="HorizontalAlignment" Value="Left"/>
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
-                    </Trigger>
-                    <Trigger Property="IsChecked" Value="True">
-                        <Setter Property="Foreground" Value="{DynamicResource HighlightGlyphBrush}"/>
-                    </Trigger>
-                    <Trigger Property="IsEnabled" Value="False">
-                        <Setter Property="Opacity" Value="0.55"/>
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Accent text style -->
-            <Style x:Key="AccentTextStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                <Setter Property="FontWeight" Value="Medium"/>
-                <Setter Property="Foreground" Value="#4CC9F0"/>
-            </Style>
-
-            <!-- Modern button style -->
-            <Style x:Key="ModernActionButton" TargetType="Button"
-                   BasedOn="{StaticResource {x:Type Button}}">
-                <Setter Property="Padding" Value="18,8"/>
-                <Setter Property="MinWidth" Value="120"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Opacity" Value="0.85"/>
-                    </Trigger>
-                    <Trigger Property="IsPressed" Value="True">
-                        <Setter Property="Opacity" Value="0.7"/>
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Tab header with icon -->
-            <Style x:Key="TabHeaderWithIconStyle" TargetType="StackPanel">
-                <Setter Property="Orientation" Value="Horizontal"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="Margin" Value="0"/>
-            </Style>
-
-            <Style x:Key="HeaderIconStyle" TargetType="TextBlock">
-                <Setter Property="FontFamily" Value="{DynamicResource FontIcoFont}"/>
-                <Setter Property="FontSize" Value="14"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Margin" Value="0,0,8,0"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-            </Style>
-
-            <!-- Prominent link button shown at top of General tab -->
-            <Style x:Key="ProminentLinkButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                <Setter Property="Padding" Value="16,12"/>
-                <Setter Property="Margin" Value="6,0"/>
-                <Setter Property="MinWidth" Value="120"/>
-                <Setter Property="MinHeight" Value="64"/>
-                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
-                <Setter Property="BorderThickness" Value="1"/>
-                <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                <Setter Property="HorizontalContentAlignment" Value="Center"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="Bd"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="8"
-                                    Padding="{TemplateBinding Padding}">
-                                <Border.Effect>
-                                    <DropShadowEffect Color="#000000" Opacity="0.06" BlurRadius="8" ShadowDepth="1"/>
-                                </Border.Effect>
-                                <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                                  RecognizesAccessKey="True"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="#12FFFFFF"/>
-                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}"/>
-                                </Trigger>
-                                <Trigger Property="IsPressed" Value="True">
-                                    <Setter TargetName="Bd" Property="Background" Value="#10FFFFFF"/>
-                                </Trigger>
-                                <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Bd" Property="Opacity" Value="0.55"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <!-- Section container style with shadow -->
-            <Style x:Key="SectionBorderStyle" TargetType="Border">
-                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
-                <Setter Property="CornerRadius" Value="8"/>
-                <Setter Property="Padding" Value="18"/>
-                <Setter Property="Margin" Value="0,0,0,20"/>
-                <Setter Property="BorderBrush" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="1"/>
-            </Style>
-
-            <!-- Setting row style -->
-            <Style x:Key="SettingRowStyle" TargetType="Grid">
-                <Setter Property="Margin" Value="0,0,0,14"/>
-            </Style>
-
-            <!-- Muted text style -->
-            <Style x:Key="MutedTextStyle" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Opacity" Value="0.6"/>
-                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                <Setter Property="TextWrapping" Value="Wrap"/>
-            </Style>
-
-            <Style x:Key="ProviderNavigationItemContainerStyle" TargetType="ListBoxItem">
-                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="Margin" Value="0"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ListBoxItem">
-                            <Border x:Name="BackgroundBorder"
-                                    Background="{TemplateBinding Background}">
-                                <Grid>
-                                    <Border x:Name="SelectionAccent"
-                                            Width="3"
-                                            HorizontalAlignment="Left"
-                                            Background="{DynamicResource HighlightGlyphBrush}"
-                                            Visibility="Collapsed"/>
-                                    <ContentPresenter Margin="3,0,0,0"
-                                                      HorizontalAlignment="Stretch"
-                                                      VerticalAlignment="Stretch"/>
-                                </Grid>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="#10FFFFFF"/>
-                                </Trigger>
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter TargetName="BackgroundBorder" Property="Background" Value="#1CFFFFFF"/>
-                                    <Setter TargetName="SelectionAccent" Property="Visibility" Value="Visible"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -324,8 +42,8 @@
 
                         <!-- Settings Header -->
                         <Border Style="{StaticResource SectionBorderStyle}"
-                                Background="{DynamicResource PanelBackgroundBrush}"
-                                BorderBrush="{DynamicResource NormalBorderBrush}">
+                                Background="{DynamicResource PlayAch.Brush.Panel}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Description}"
                                        Style="{StaticResource SectionHeaderStyle}"
                                        Margin="0"/>
@@ -344,8 +62,8 @@
                                     ToolTip="{DynamicResource LOCPlayAch_Settings_TabDisplay}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_TabDisplay}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock FontFamily="{DynamicResource FontIcoFont}"
-                                               FontSize="20" Margin="0,0,10,0" Text="&#xEFB3;" Foreground="{DynamicResource HighlightGlyphBrush}"/>
+                                    <TextBlock FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                               FontSize="20" Margin="0,0,10,0" Text="&#xEFB3;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
@@ -355,8 +73,8 @@
                                     ToolTip="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock FontFamily="{DynamicResource FontIcoFont}"
-                                               FontSize="20" Margin="0,0,10,0" Text="&#xEF7B;" Foreground="{DynamicResource HighlightGlyphBrush}"/>
+                                    <TextBlock FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                               FontSize="20" Margin="0,0,10,0" Text="&#xEF7B;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
@@ -366,8 +84,8 @@
                                     ToolTip="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_ThemeMigration_Title}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                    <TextBlock FontFamily="{DynamicResource FontIcoFont}"
-                                               FontSize="20" Margin="0,0,10,0" Text="&#xEFD2;" Foreground="{DynamicResource HighlightGlyphBrush}"/>
+                                    <TextBlock FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                                               FontSize="20" Margin="0,0,10,0" Text="&#xEFD2;" Foreground="{DynamicResource PlayAch.Brush.Accent}"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                 </StackPanel>
                             </Button>
@@ -387,7 +105,7 @@
 
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Language}"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    FontWeight="SemiBold"
                                                    Margin="0,0,0,2"/>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LanguageHint}"
@@ -438,7 +156,7 @@
                                            Style="{StaticResource SectionHeaderStyle}"/>
 
                                 <!-- Periodic Updates -->
-                                <Grid Style="{StaticResource SettingRowStyle}" Margin="0,0,0,16">
+                                <Grid Style="{StaticResource SettingRowStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -452,20 +170,20 @@
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HoursBetweenUpdates}"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    VerticalAlignment="Center"
-                                                   Margin="0,0,8,0"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                                             <TextBox Text="{Binding Persisted.PeriodicUpdateHours, UpdateSourceTrigger=PropertyChanged}"
-                                                 Width="50"
+                                                 Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
                                                      IsEnabled="{Binding Persisted.EnablePeriodicUpdates}"
                                                  TextAlignment="Right"/>
                                     </StackPanel>
                                 </Grid>
 
-                                <StackPanel Margin="0,0,0,16">
+                                <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}">
                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes}"
                                               IsChecked="{Binding Persisted.IncludeHiddenGamesInBulkScans}"
-                                              Margin="0,0,0,4"/>
+                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description}"
                                                Style="{StaticResource MutedTextStyle}"
                                                Margin="18,0,0,0"
@@ -481,7 +199,7 @@
 
                                     <StackPanel Grid.Column="0">
                                         <TextBlock Text="{DynamicResource LOCPlayAch_RefreshMode_Recent}"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    FontWeight="SemiBold"
                                                    Margin="0,0,0,2"/>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_Description}"
@@ -490,11 +208,11 @@
 
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecentRefresh_RecentGames}"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    VerticalAlignment="Center"
-                                                   Margin="0,0,8,0"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                                             <TextBox Text="{Binding Persisted.RecentRefreshGamesCount, UpdateSourceTrigger=PropertyChanged}"
-                                                 Width="50"
+                                                 Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
                                                  TextAlignment="Right"/>
                                     </StackPanel>
                                 </Grid>
@@ -548,7 +266,7 @@
 
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Hotkeys_Enable}"
                                           IsChecked="{Binding Persisted.EnableAchievementHotkeys}"
-                                          Margin="0,0,0,8"/>
+                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
 
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Hotkeys_EnableGlobal}"
                                           IsChecked="{Binding Persisted.EnableGlobalAchievementHotkeys}"
@@ -569,7 +287,7 @@
 
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Menu_ViewAchievements}"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    FontWeight="SemiBold"/>
                                     </StackPanel>
 
@@ -585,7 +303,7 @@
                                             Content="{DynamicResource LOCPlayAch_Button_Reset}"
                                             Click="ResetViewAchievementsHotkey_Click"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
-                                            MinWidth="74"/>
+                                            MinWidth="{StaticResource PlayAch.Size.Button.ResetMinWidth}"/>
                                 </Grid>
 
                                 <Grid Style="{StaticResource SettingRowStyle}">
@@ -597,7 +315,7 @@
 
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Menu_ManageAchievements}"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    FontWeight="SemiBold"/>
                                     </StackPanel>
 
@@ -613,7 +331,7 @@
                                             Content="{DynamicResource LOCPlayAch_Button_Reset}"
                                             Click="ResetManageAchievementsHotkey_Click"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
-                                            MinWidth="74"/>
+                                            MinWidth="{StaticResource PlayAch.Size.Button.ResetMinWidth}"/>
                                 </Grid>
 
                                 <Grid Style="{StaticResource SettingRowStyle}">
@@ -625,7 +343,7 @@
 
                                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Menu_OpenOverview}"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    FontWeight="SemiBold"/>
                                     </StackPanel>
 
@@ -641,7 +359,7 @@
                                             Content="{DynamicResource LOCPlayAch_Button_Reset}"
                                             Click="ResetOverviewHotkey_Click"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
-                                            MinWidth="74"/>
+                                            MinWidth="{StaticResource PlayAch.Size.Button.ResetMinWidth}"/>
                                 </Grid>
 
                                 <TextBlock Text="{Binding HotkeyCaptureStatusText, ElementName=SettingsControlRoot}"
@@ -680,12 +398,12 @@
 
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TaggingDescription}"
                                            Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,0,0,16"
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"
                                            TextWrapping="Wrap"/>
 
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableTagging}"
                                           IsChecked="{Binding Persisted.TaggingSettings.EnableTagging, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          Margin="0,0,0,12"/>
+                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                 <!-- Tag Configuration Grid - only visible when tagging is enabled -->
                                 <StackPanel Margin="18,0,0,0"
@@ -693,11 +411,11 @@
 
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TaggingSection}"
                                                FontWeight="SemiBold"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Margin="0,0,0,12"/>
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                     <!-- Tag List -->
-                                    <Grid Margin="0,0,0,12">
+                                    <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="Auto"/>
@@ -726,7 +444,7 @@
                                         <TextBox Grid.Row="0" Grid.Column="2"
                                                  x:Name="HasAchievementsTagTextBox"
                                                  Text="{Binding Persisted.TaggingSettings.HasAchievementsConfig.DisplayName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
-                                                 Margin="0,0,0,6"/>
+                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
                                         <!-- In Progress Tag -->
                                         <CheckBox Grid.Row="1" Grid.Column="0"
@@ -740,7 +458,7 @@
                                         <TextBox Grid.Row="1" Grid.Column="2"
                                                  x:Name="InProgressTagTextBox"
                                                  Text="{Binding Persisted.TaggingSettings.InProgressConfig.DisplayName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
-                                                 Margin="0,0,0,6"/>
+                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
                                         <!-- Completed Tag -->
                                         <CheckBox Grid.Row="2" Grid.Column="0"
@@ -754,7 +472,7 @@
                                         <TextBox Grid.Row="2" Grid.Column="2"
                                                  x:Name="CompletedTagTextBox"
                                                  Text="{Binding Persisted.TaggingSettings.CompletedConfig.DisplayName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
-                                                 Margin="0,0,0,6"/>
+                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
                                         <!-- No Achievements Tag -->
                                         <CheckBox Grid.Row="3" Grid.Column="0"
@@ -768,7 +486,7 @@
                                         <TextBox Grid.Row="3" Grid.Column="2"
                                                  x:Name="NoAchievementsTagTextBox"
                                                  Text="{Binding Persisted.TaggingSettings.NoAchievementsConfig.DisplayName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
-                                                 Margin="0,0,0,6"/>
+                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
                                         <!-- Customized Tag -->
                                         <CheckBox Grid.Row="4" Grid.Column="0"
@@ -782,7 +500,7 @@
                                         <TextBox Grid.Row="4" Grid.Column="2"
                                                  x:Name="CustomizedTagTextBox"
                                                  Text="{Binding Persisted.TaggingSettings.CustomizedConfig.DisplayName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
-                                                 Margin="0,0,0,6"/>
+                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
                                         <!-- Not Customized Tag -->
                                         <CheckBox Grid.Row="5" Grid.Column="0"
@@ -796,7 +514,7 @@
                                         <TextBox Grid.Row="5" Grid.Column="2"
                                                  x:Name="NotCustomizedTagTextBox"
                                                  Text="{Binding Persisted.TaggingSettings.NotCustomizedConfig.DisplayName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
-                                                 Margin="0,0,0,6"/>
+                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
                                         <!-- Excluded Tag -->
                                         <CheckBox Grid.Row="6" Grid.Column="0"
@@ -810,17 +528,17 @@
                                         <TextBox Grid.Row="6" Grid.Column="2"
                                                  x:Name="ExcludedTagTextBox"
                                                  Text="{Binding Persisted.TaggingSettings.ExcludedConfig.DisplayName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
-                                                 Margin="0,0,0,6"/>
+                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
                                         <!-- Excluded from Summaries Tag -->
                                         <CheckBox Grid.Row="7" Grid.Column="0"
                                                   IsChecked="{Binding Persisted.TaggingSettings.ExcludedFromSummariesConfig.IsEnabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                   VerticalAlignment="Center"
-                                                  Margin="0,0,8,0"/>
+                                                  Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                                         <TextBlock Grid.Row="7" Grid.Column="1"
                                                    Text="{DynamicResource LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries}"
                                                    VerticalAlignment="Center"
-                                                   Margin="0,0,12,0"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Right.Md}"/>
                                         <TextBox Grid.Row="7" Grid.Column="2"
                                                  x:Name="ExcludedFromSummariesTagTextBox"
                                                  Text="{Binding Persisted.TaggingSettings.ExcludedFromSummariesConfig.DisplayName, Mode=TwoWay, UpdateSourceTrigger=Explicit}"
@@ -836,11 +554,11 @@
                                     <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                                         <Button Content="{DynamicResource LOCPlayAch_Settings_ApplyAndSync}"
                                                 Click="ApplyAndSync_Click"
-                                                Margin="0,0,8,0"
-                                                Padding="12,6"/>
+                                                Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
+                                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"/>
                                         <Button Content="{DynamicResource LOCPlayAch_Settings_RemoveAllTags}"
                                                 Click="RemoveAllTags_Click"
-                                                Padding="12,6"/>
+                                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"/>
                                     </StackPanel>
                                 </StackPanel>
                             </StackPanel>
@@ -853,7 +571,7 @@
                                            Style="{StaticResource SectionHeaderStyle}"/>
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,0,0,16">
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}">
                                     PlayniteAchievements is the single source for both Desktop and Fullscreen themes.
                                     Both modern and SuccessStory-compatible properties are always populated so themes can bind to either surface.
                                 </TextBlock>
@@ -862,7 +580,7 @@
 
                                 <TextBlock Text="Modern PlayniteAchievements theme integration"
                                            FontWeight="SemiBold"
-                                           Margin="0,0,0,8" />
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}" />
 
                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                            Margin="0,0,0,0">
@@ -879,16 +597,16 @@
                                            Style="{StaticResource SectionHeaderStyle}"/>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Maintenance_Description}"
                                            Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,0,0,16"/>
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"/>
 
                                 <Border Style="{StaticResource SettingGroupCardStyle}">
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CachedAchievementData_Title}"
                                                    Style="{StaticResource SubSectionHeaderStyle}"
-                                                   Margin="0,0,0,4"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CachedAchievementData_Description}"
                                                    Style="{StaticResource MutedTextStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                         <Grid>
                                             <Grid.ColumnDefinitions>
@@ -904,7 +622,7 @@
                                             <Button Grid.Column="1"
                                                     Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                     Click="WipeCache_Click"
-                                                    Padding="14,6"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
@@ -915,10 +633,10 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Title}"
                                                    Style="{StaticResource SubSectionHeaderStyle}"
-                                                   Margin="0,0,0,4"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_IconCache_Description}"
                                                    Style="{StaticResource MutedTextStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                         <Grid Style="{StaticResource SettingRowStyle}">
                                             <Grid.ColumnDefinitions>
@@ -934,7 +652,7 @@
                                             <Button Grid.Column="1"
                                                     Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                     Click="ClearAllIconCache_Click"
-                                                    Padding="14,6"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
@@ -953,7 +671,7 @@
                                             <Button Grid.Column="1"
                                                     Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                     Click="ClearCompressedIconCache_Click"
-                                                    Padding="14,6"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
@@ -972,7 +690,7 @@
                                             <Button Grid.Column="1"
                                                     Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                     Click="ClearFullResolutionIconCache_Click"
-                                                    Padding="14,6"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
@@ -991,7 +709,7 @@
                                             <Button Grid.Column="1"
                                                     Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                                     Click="ClearLockedIconCache_Click"
-                                                    Padding="14,6"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
@@ -1002,10 +720,10 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Utilities_Title}"
                                                    Style="{StaticResource SubSectionHeaderStyle}"
-                                                   Margin="0,0,0,4"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Utilities_Description}"
                                                    Style="{StaticResource MutedTextStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                         <Grid Style="{StaticResource SettingRowStyle}">
                                             <Grid.ColumnDefinitions>
@@ -1021,7 +739,7 @@
                                             <Button Grid.Column="1"
                                                     Content="{DynamicResource LOCPlayAch_Settings_ResetFirstTimeSetupButton}"
                                                     Click="ResetFirstTimeSetup_Click"
-                                                    Padding="14,6"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
@@ -1040,7 +758,7 @@
                                             <Button Grid.Column="1"
                                                     Content="{DynamicResource LOCPlayAch_Settings_ExportDatabaseButton}"
                                                     Click="ExportDatabase_Click"
-                                                    Padding="14,6"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
@@ -1059,7 +777,7 @@
                                             <Button Grid.Column="1"
                                                     Content="{DynamicResource LOCPlayAch_Settings_OpenDataFolderButton}"
                                                     Click="OpenDataFolder_Click"
-                                                    Padding="14,6"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
@@ -1080,24 +798,24 @@
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <Grid Background="{DynamicResource PanelBackgroundBrush}">
+                <Grid Background="{DynamicResource PlayAch.Brush.Panel}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="220" MinWidth="190" MaxWidth="260"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0"
-                            BorderBrush="{DynamicResource NormalBorderBrush}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                             BorderThickness="0,0,1,0"
-                            Background="{DynamicResource ControlBackgroundBrush}">
+                            Background="{DynamicResource PlayAch.Brush.Surface}">
                         <DockPanel LastChildFill="True">
                             <Border DockPanel.Dock="Top"
-                                    BorderBrush="{DynamicResource NormalBorderBrush}"
+                                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                                     BorderThickness="0,0,0,1"
                                     Padding="12,12,12,10">
                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}"
-                                           Foreground="{DynamicResource TextBrush}"
-                                           FontSize="{DynamicResource FontSize}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                            FontWeight="SemiBold"
                                            TextTrimming="CharacterEllipsis"/>
                             </Border>
@@ -1109,7 +827,7 @@
                                      Background="Transparent"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     Padding="0">
+                                     Padding="{StaticResource PlayAch.Thickness.None}">
                                 <ListBoxItem Tag="General"
                                              Style="{StaticResource ProviderNavigationItemContainerStyle}">
                                     <Grid Margin="8,3" MinHeight="44">
@@ -1119,15 +837,15 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="&#xE713;"
                                                    FontFamily="Segoe MDL2 Assets"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    Opacity="0.68"
                                                    FontSize="16"
                                                    Margin="0,0,9,0"
                                                    VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Common_General}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSize}"
+                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                                        FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
@@ -1143,15 +861,15 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="&#xE8A7;"
                                                    FontFamily="Segoe MDL2 Assets"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    Opacity="0.68"
                                                    FontSize="16"
                                                    Margin="0,0,9,0"
                                                    VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_OverviewSection}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSize}"
+                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                                        FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
@@ -1167,15 +885,15 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="&#xE8F1;"
                                                    FontFamily="Segoe MDL2 Assets"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    Opacity="0.68"
                                                    FontSize="16"
                                                    Margin="0,0,9,0"
                                                    VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_LibrarySection}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSize}"
+                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                                        FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
@@ -1191,15 +909,15 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="&#xE80F;"
                                                    FontFamily="Segoe MDL2 Assets"
-                                                   Foreground="{DynamicResource TextBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                    Opacity="0.68"
                                                    FontSize="16"
                                                    Margin="0,0,9,0"
                                                    VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_StartPageSection}"
-                                                       Foreground="{DynamicResource TextBrush}"
-                                                       FontSize="{DynamicResource FontSize}"
+                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                                        FontWeight="SemiBold"
                                                        TextTrimming="CharacterEllipsis"/>
                                         </StackPanel>
@@ -1224,8 +942,8 @@
                             </ScrollViewer.Style>
                             <StackPanel Margin="20">
                                 <Border Style="{StaticResource SectionBorderStyle}"
-                                        Background="{DynamicResource PanelBackgroundBrush}"
-                                        BorderBrush="{DynamicResource NormalBorderBrush}">
+                                        Background="{DynamicResource PlayAch.Brush.Panel}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}">
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Common_General}"
                                                Style="{StaticResource SectionHeaderStyle}"
                                                Margin="0"/>
@@ -1235,42 +953,42 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_GridDefaults}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridColumnHeaderAlignment}"
                                                                VerticalAlignment="Center"/>
                                                     <ComboBox SelectedValue="{Binding Persisted.GridColumnHeaderAlignment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
                                                               MinWidth="140"
-                                                              Margin="8,0,0,0">
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}" Tag="{x:Static settings:GridAlignment.Left}"/>
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Center}" Tag="{x:Static settings:GridAlignment.Center}"/>
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}" Tag="{x:Static settings:GridAlignment.Right}"/>
                                                     </ComboBox>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridCellAlignment}"
                                                                VerticalAlignment="Center"/>
                                                     <ComboBox SelectedValue="{Binding Persisted.GridCellAlignment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
                                                               MinWidth="140"
-                                                              Margin="8,0,0,0">
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Left}" Tag="{x:Static settings:GridAlignment.Left}"/>
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Center}" Tag="{x:Static settings:GridAlignment.Center}"/>
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridAlignment_Right}" Tag="{x:Static settings:GridAlignment.Right}"/>
                                                     </ComboBox>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridCellVerticalAlignment}"
                                                                VerticalAlignment="Center"/>
                                                     <ComboBox SelectedValue="{Binding Persisted.GridCellVerticalAlignment, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
                                                               MinWidth="140"
-                                                              Margin="8,0,0,0">
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Top}" Tag="{x:Static settings:GridVerticalAlignment.Top}"/>
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Center}" Tag="{x:Static settings:GridVerticalAlignment.Center}"/>
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Bottom}" Tag="{x:Static settings:GridVerticalAlignment.Bottom}"/>
@@ -1278,7 +996,7 @@
                                                 </StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
                                                           IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseUniformRarityBadges}"
                                                           IsChecked="{Binding Persisted.UseUniformRarityBadges}"/>
                                             </StackPanel>
@@ -1290,7 +1008,7 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Achievements}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                                         <!-- Unlocked Achievement Visibility -->
@@ -1298,14 +1016,14 @@
                                             <StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockedAchievements}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,8"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <TextBlock Text="PREVIEW"
                                                            Style="{StaticResource ContextLabelStyle}"/>
                                                 <modern:AchievementDataGridControl
                                                     Style="{StaticResource PreviewThemeControlStyle}"
                                                     ThemeDataOverride="{Binding UnlockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     PreviewMaxHeightOverride="122"
-                                                    Margin="0,0,0,12"/>
+                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <TextBlock Text="SETTINGS"
                                                            Style="{StaticResource ContextLabelStyle}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
@@ -1319,16 +1037,16 @@
                                             <StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,4"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements_Description}"
-                                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,8"/>
+                                                           Style="{StaticResource MutedTextStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <TextBlock Text="PREVIEW"
                                                            Style="{StaticResource ContextLabelStyle}"/>
                                                 <modern:AchievementDataGridControl
                                                     Style="{StaticResource PreviewThemeControlStyle}"
                                                     ThemeDataOverride="{Binding LockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     PreviewMaxHeightOverride="122"
-                                                    Margin="0,0,0,12"/>
+                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <TextBlock Text="SETTINGS"
                                                            Style="{StaticResource ContextLabelStyle}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealLockedIcon}"
@@ -1341,21 +1059,21 @@
                                             <StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Title}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,4"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Description}"
                                                            Style="{StaticResource MutedTextStyle}"
-                                                           Margin="0,0,0,8"
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"
                                                            TextWrapping="Wrap"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable}"
                                                           IsChecked="{Binding Persisted.UseSeparateLockedIconsWhenAvailable}"
-                                                          Margin="0,0,0,4"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help}"
                                                            Style="{StaticResource MutedTextStyle}"
                                                            Margin="24,0,0,10"
                                                            TextWrapping="Wrap"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_PreserveAchievementIconResolution}"
                                                           IsChecked="{Binding Persisted.PreserveAchievementIconResolution}"
-                                                          Margin="0,0,0,4"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PreserveAchievementIconResolution_Help}"
                                                            Style="{StaticResource MutedTextStyle}"
                                                            Margin="24,0,0,0"
@@ -1368,25 +1086,25 @@
                                             <StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,4"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements_Description}"
-                                                           Style="{StaticResource MutedTextStyle}" Margin="0,0,0,8"/>
+                                                           Style="{StaticResource MutedTextStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <TextBlock Text="PREVIEW"
                                                            Style="{StaticResource ContextLabelStyle}"/>
                                                 <modern:AchievementDataGridControl
                                                     Style="{StaticResource PreviewThemeControlStyle}"
                                                     ThemeDataOverride="{Binding HiddenPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     PreviewMaxHeightOverride="122"
-                                                    Margin="0,0,0,12"/>
+                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <TextBlock Text="SETTINGS"
                                                            Style="{StaticResource ContextLabelStyle}"/>
                                                 <StackPanel>
                                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenIcon}"
-                                                              IsChecked="{Binding Persisted.ShowHiddenIcon}" Margin="0,0,0,6"/>
+                                                              IsChecked="{Binding Persisted.ShowHiddenIcon}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
                                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenTitle}"
-                                                              IsChecked="{Binding Persisted.ShowHiddenTitle}" Margin="0,0,0,6"/>
+                                                              IsChecked="{Binding Persisted.ShowHiddenTitle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
                                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenDescription}"
-                                                              IsChecked="{Binding Persisted.ShowHiddenDescription}" Margin="0,0,0,6"/>
+                                                              IsChecked="{Binding Persisted.ShowHiddenDescription}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
                                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowHiddenSuffix}"
                                                               IsChecked="{Binding Persisted.ShowHiddenSuffix}"/>
                                                 </StackPanel>
@@ -1406,7 +1124,7 @@
                                         <StackPanel>
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ResetDisplaySettings}"
                                                        Style="{StaticResource SubSectionHeaderStyle}"
-                                                       Margin="0,0,0,4"/>
+                                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ResetDisplaySettings_Help}"
                                                        Style="{StaticResource MutedTextStyle}"
                                                        TextWrapping="Wrap"/>
@@ -1430,8 +1148,8 @@
                             </ScrollViewer.Style>
                             <StackPanel Margin="20">
                                 <Border Style="{StaticResource SectionBorderStyle}"
-                                        Background="{DynamicResource PanelBackgroundBrush}"
-                                        BorderBrush="{DynamicResource NormalBorderBrush}">
+                                        Background="{DynamicResource PlayAch.Brush.Panel}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}">
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_OverviewSection}"
                                                Style="{StaticResource SectionHeaderStyle}"
                                                Margin="0"/>
@@ -1441,23 +1159,23 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_OverviewLayout}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewCollectionScoreCard}"
                                                           IsChecked="{Binding Persisted.ShowOverviewCollectionScoreCard}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard}"
                                                           IsChecked="{Binding Persisted.ShowOverviewPrestigeScoreCard}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion}"
                                                           IsChecked="{Binding Persisted.ShowOverviewGameMetadata}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
                                                           IsChecked="{Binding Persisted.UseCoverImages}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
                                                           IsChecked="{Binding Persisted.ShowCompletionBorder}"/>
                                             </StackPanel>
@@ -1471,27 +1189,27 @@
 
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewGamesPieChart}"
                                                           IsChecked="{Binding Persisted.ShowOverviewGamesPieChart}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewProviderPieChart}"
                                                           IsChecked="{Binding Persisted.ShowOverviewProviderPieChart}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewRarityPieChart}"
                                                           IsChecked="{Binding Persisted.ShowOverviewRarityPieChart}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewTrophyPieChart}"
                                                           IsChecked="{Binding Persisted.ShowOverviewTrophyPieChart}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewPiePercentages}"
                                                           IsChecked="{Binding Persisted.ShowOverviewPiePercentages}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewBarCharts}"
                                                           IsChecked="{Binding Persisted.ShowOverviewBarCharts}"
-                                                          Margin="0,0,0,12"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,8"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
 
-                                                <StackPanel Margin="0,0,0,8">
+                                                <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <RadioButton Content="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact}"
                                                                  GroupName="OverviewPieSmallSliceMode"
                                                                  Style="{StaticResource OverviewPieModeRadioButtonStyle}"
@@ -1502,7 +1220,7 @@
                                                                Margin="24,0,0,0"/>
                                                 </StackPanel>
 
-                                                <StackPanel Margin="0,0,0,8">
+                                                <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <RadioButton Content="{DynamicResource LOCPlayAch_Common_Hide}"
                                                                  GroupName="OverviewPieSmallSliceMode"
                                                                  Style="{StaticResource OverviewPieModeRadioButtonStyle}"
@@ -1513,7 +1231,7 @@
                                                                Margin="24,0,0,0"/>
                                                 </StackPanel>
 
-                                                <StackPanel Margin="0,0,0,8">
+                                                <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <RadioButton Content="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Round}"
                                                                  GroupName="OverviewPieSmallSliceMode"
                                                                  Style="{StaticResource OverviewPieModeRadioButtonStyle}"
@@ -1537,32 +1255,32 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GameSummariesGridSort}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewGameSummariesGridColumnHeaders}"
-                                                          Margin="0,0,0,12"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.OverviewGameSummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.OverviewGameSummariesGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,8"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <StackPanel Orientation="Horizontal">
                                                     <ComboBox SelectedValue="{Binding Persisted.OverviewGameSummariesGridSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
@@ -1574,7 +1292,7 @@
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Name}" Tag="{x:Static settings:GameSummariesSortMode.Alphabetical}"/>
                                                     </ComboBox>
                                                     <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                            Margin="4,0,0,0"
+                                                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                             VerticalAlignment="Center"
                                                             Click="ToggleOverviewGameSummariesGridSortDescending">
                                                         <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -1594,7 +1312,7 @@
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortResetHint}"
                                                            Style="{StaticResource MutedTextStyle}"
                                                            TextWrapping="Wrap"
-                                                           Margin="0,8,0,0"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -1604,28 +1322,28 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_OverviewRecentAchievementsGrid}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewRecentAchievementsGridColumnHeaders}"
-                                                          Margin="0,0,0,12"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.OverviewRecentAchievementsGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.OverviewRecentAchievementsGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
                                             </StackPanel>
                                         </Border>
@@ -1636,32 +1354,32 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SelectedGameGridSort}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewSelectedGameGridColumnHeaders}"
-                                                          Margin="0,0,0,12"/>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.OverviewSelectedGameGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.OverviewSelectedGameGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,8"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <StackPanel Orientation="Horizontal">
                                                     <ComboBox SelectedValue="{Binding Persisted.OverviewSelectedGameGridSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
@@ -1671,7 +1389,7 @@
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                                     </ComboBox>
                                                     <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                            Margin="4,0,0,0"
+                                                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                             VerticalAlignment="Center"
                                                             Click="ToggleOverviewSelectedGameGridSortDescending">
                                                         <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -1691,7 +1409,7 @@
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortResetHint}"
                                                            Style="{StaticResource MutedTextStyle}"
                                                            TextWrapping="Wrap"
-                                                           Margin="0,8,0,0"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -1713,8 +1431,8 @@
                             </ScrollViewer.Style>
                             <StackPanel Margin="20">
                                 <Border Style="{StaticResource SectionBorderStyle}"
-                                        Background="{DynamicResource PanelBackgroundBrush}"
-                                        BorderBrush="{DynamicResource NormalBorderBrush}">
+                                        Background="{DynamicResource PlayAch.Brush.Panel}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}">
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_LibrarySection}"
                                                Style="{StaticResource SectionHeaderStyle}"
                                                Margin="0"/>
@@ -1724,29 +1442,29 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ViewAchievementsWindow}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.SingleGameGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.SingleGameGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,8"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <StackPanel Orientation="Horizontal">
                                                     <ComboBox SelectedValue="{Binding Persisted.SingleGameGridSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
@@ -1756,7 +1474,7 @@
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                                     </ComboBox>
                                                     <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                            Margin="4,0,0,0"
+                                                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                             VerticalAlignment="Center"
                                                             Click="ToggleSingleGameGridSortDescending">
                                                         <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -1776,15 +1494,15 @@
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortResetHint}"
                                                            Style="{StaticResource MutedTextStyle}"
                                                            TextWrapping="Wrap"
-                                                           Margin="0,8,0,0"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
                                 </Border>
 
                                 <Border Style="{StaticResource SectionBorderStyle}"
-                                        Background="{DynamicResource PanelBackgroundBrush}"
-                                        BorderBrush="{DynamicResource NormalBorderBrush}">
+                                        Background="{DynamicResource PlayAch.Brush.Panel}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}">
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_ThemeIntegration}"
                                                Style="{StaticResource SectionHeaderStyle}"
                                                Margin="0"/>
@@ -1793,7 +1511,7 @@
                         <!-- ================== DATA GRID PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -1816,35 +1534,35 @@
                                             Style="{StaticResource PreviewThemeControlStyle}"
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             PreviewMinimumMaxHeight="220"
-                                            Margin="0,0,0,12"/>
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <TextBlock Text="SETTINGS"
                                                    Style="{StaticResource ContextLabelStyle}"/>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders}"
                                                   IsChecked="{Binding Persisted.ShowDesktopThemeAchievementGridColumnHeaders}"
-                                                  Margin="0,0,0,8"/>
+                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridMaxHeight}"
                                                        VerticalAlignment="Center"/>
                                             <TextBox Text="{Binding Persisted.AchievementDataGridMaxHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=88}"
-                                                     Width="80" Margin="8,0,0,0"/>
+                                                     Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsUnit}"
-                                                       VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                       VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                         </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Top.Sm}">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                        VerticalAlignment="Center"/>
                                             <TextBox Text="{Binding Persisted.DesktopThemeAchievementGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                                                     Width="80" Margin="8,0,0,0"/>
+                                                     Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                                                       VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                       VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                         </StackPanel>
-                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                        <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Top.Sm}">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
                                                        VerticalAlignment="Center"/>
                                             <TextBox Text="{Binding Persisted.DesktopThemeAchievementGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
-                                                     Width="80" Margin="8,0,0,0"/>
+                                                     Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
-                                                       VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                       VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                         </StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                    Style="{StaticResource SubSectionHeaderStyle}"
@@ -1858,7 +1576,7 @@
                                                 <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                             </ComboBox>
                                             <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                    Margin="4,0,0,0"
+                                                    Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                     VerticalAlignment="Center"
                                                     Click="ToggleAchievementDataGridSortDescending">
                                                 <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -1878,7 +1596,7 @@
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortResetHint}"
                                                    Style="{StaticResource MutedTextStyle}"
                                                    TextWrapping="Wrap"
-                                                   Margin="0,8,0,0"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
@@ -1887,7 +1605,7 @@
                         <!-- ================== COMPACT LIST PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -1911,12 +1629,12 @@
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             SettingsOverride="{Binding}"
                                             IconSize="48"
-                                            Margin="0,0,0,12"/>
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <TextBlock Text="SETTINGS"
                                                    Style="{StaticResource ContextLabelStyle}"/>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompactListRarityBar}"
                                                   IsChecked="{Binding Persisted.ShowCompactListRarityBar}"
-                                                  Margin="0,0,0,8"/>
+                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -1926,7 +1644,7 @@
                                             <TextBlock Grid.Column="0"
                                                        Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                        VerticalAlignment="Center"
-                                                       Margin="0,0,8,0"/>
+                                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                                             <ComboBox Grid.Column="1"
                                                       SelectedValue="{Binding Persisted.CompactListSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                       SelectedValuePath="Tag">
@@ -1936,7 +1654,7 @@
                                             </ComboBox>
                                             <Button Grid.Column="2"
                                                     ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                    Margin="4,0,0,0"
+                                                    Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                     VerticalAlignment="Center"
                                                     Click="ToggleCompactListSortDescending">
                                                 <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -1961,7 +1679,7 @@
                         <!-- ================== COMPACT UNLOCKED LIST PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -1985,7 +1703,7 @@
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             SettingsOverride="{Binding}"
                                             IconSize="48"
-                                            Margin="0,0,0,12"/>
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <TextBlock Text="SETTINGS"
                                                    Style="{StaticResource ContextLabelStyle}"/>
                                         <Grid>
@@ -1997,7 +1715,7 @@
                                             <TextBlock Grid.Column="0"
                                                        Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                        VerticalAlignment="Center"
-                                                       Margin="0,0,8,0"/>
+                                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                                             <ComboBox Grid.Column="1"
                                                       SelectedValue="{Binding Persisted.CompactUnlockedListSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                       SelectedValuePath="Tag">
@@ -2007,7 +1725,7 @@
                                             </ComboBox>
                                             <Button Grid.Column="2"
                                                     ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                    Margin="4,0,0,0"
+                                                    Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                     VerticalAlignment="Center"
                                                     Click="ToggleCompactUnlockedListSortDescending">
                                                 <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -2032,7 +1750,7 @@
                         <!-- ================== COMPACT LOCKED LIST PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -2056,7 +1774,7 @@
                                             ThemeDataOverride="{Binding PreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                             SettingsOverride="{Binding}"
                                             IconSize="48"
-                                            Margin="0,0,0,12"/>
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <TextBlock Text="SETTINGS"
                                                    Style="{StaticResource ContextLabelStyle}"/>
                                         <Grid>
@@ -2068,7 +1786,7 @@
                                             <TextBlock Grid.Column="0"
                                                        Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                        VerticalAlignment="Center"
-                                                       Margin="0,0,8,0"/>
+                                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                                             <ComboBox Grid.Column="1"
                                                       SelectedValue="{Binding Persisted.CompactLockedListSortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                       SelectedValuePath="Tag">
@@ -2078,7 +1796,7 @@
                                             </ComboBox>
                                             <Button Grid.Column="2"
                                                     ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                    Margin="4,0,0,0"
+                                                    Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                     VerticalAlignment="Center"
                                                     Click="ToggleCompactLockedListSortDescending">
                                                 <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -2103,7 +1821,7 @@
                         <!-- ================== PROGRESS BAR PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -2133,7 +1851,7 @@
                         <!-- ================== STATS PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -2163,7 +1881,7 @@
                         <!-- ================== BUTTON PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -2198,7 +1916,7 @@
                         <!-- ================== VIEW ITEM PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -2233,7 +1951,7 @@
                         <!-- ================== PIE CHART PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -2265,7 +1983,7 @@
                         <!-- ================== BAR CHART PREVIEW SECTION ================== -->
                         <Border Style="{StaticResource SectionBorderStyle}">
                             <StackPanel>
-                                <Grid Margin="0,0,0,12">
+                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
@@ -2309,8 +2027,8 @@
                             </ScrollViewer.Style>
                             <StackPanel Margin="20">
                                 <Border Style="{StaticResource SectionBorderStyle}"
-                                        Background="{DynamicResource PanelBackgroundBrush}"
-                                        BorderBrush="{DynamicResource NormalBorderBrush}">
+                                        Background="{DynamicResource PlayAch.Brush.Panel}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}">
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_StartPageSection}"
                                                Style="{StaticResource SectionHeaderStyle}"
                                                Margin="0"/>
@@ -2320,7 +2038,7 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_CustomRefresh_ScopeHeader}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
@@ -2345,8 +2063,8 @@
                                                         Content="{Binding StartPageActivityScopeText, ElementName=SettingsControlRoot}"
                                                         Click="StartPageActivityScopeSelectionButton_Click"
                                                         MinWidth="220"
-                                                        Height="30"
-                                                        Margin="0,0,0,8"
+                                                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"
                                                         HorizontalAlignment="Left">
                                                     <Button.ContextMenu>
                                                         <ContextMenu x:Name="StartPageActivityScopeSelectionContextMenu"/>
@@ -2364,7 +2082,7 @@
                                                         Content="{Binding StartPageProgressScopeText, ElementName=SettingsControlRoot}"
                                                         Click="StartPageProgressScopeSelectionButton_Click"
                                                         MinWidth="220"
-                                                        Height="30"
+                                                        Height="{StaticResource PlayAch.Size.Control.Height}"
                                                         HorizontalAlignment="Left">
                                                     <Button.ContextMenu>
                                                         <ContextMenu x:Name="StartPageProgressScopeSelectionContextMenu"/>
@@ -2379,44 +2097,44 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
                                                           IsChecked="{Binding Persisted.StartPageGameSummariesGrid.UseCoverImages}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion}"
                                                           IsChecked="{Binding Persisted.StartPageGameSummariesGrid.ShowGameMetadata}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
                                                           IsChecked="{Binding Persisted.StartPageGameSummariesGrid.ShowCompletionBorder}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.StartPageGameSummariesGrid.ShowColumnHeaders}"
-                                                          Margin="0,0,0,12"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.StartPageGameSummariesGrid.RowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.StartPageGameSummariesGrid.MaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
 
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,8"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <StackPanel Orientation="Horizontal">
                                                     <ComboBox SelectedValue="{Binding Persisted.StartPageGameSummariesGrid.SortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
@@ -2428,7 +2146,7 @@
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Name}" Tag="{x:Static settings:GameSummariesSortMode.Alphabetical}"/>
                                                     </ComboBox>
                                                     <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                            Margin="4,0,0,0"
+                                                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                             VerticalAlignment="Center"
                                                             Click="ToggleStartPageGameSummariesGridSortDescending">
                                                         <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -2454,37 +2172,37 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
                                                           IsChecked="{Binding Persisted.StartPageRecentUnlocksGrid.UseCoverImages}"
-                                                          Margin="0,0,0,8"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.StartPageRecentUnlocksGrid.ShowColumnHeaders}"
-                                                          Margin="0,0,0,12"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.StartPageRecentUnlocksGrid.RowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.StartPageRecentUnlocksGrid.MaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
-                                                             Width="80" Margin="8,0,0,0"/>
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
-                                                               VerticalAlignment="Center" Margin="4,0,0,0" Opacity="0.6"/>
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                                 </StackPanel>
 
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,8"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <StackPanel Orientation="Horizontal">
                                                     <ComboBox SelectedValue="{Binding Persisted.StartPageRecentUnlocksGrid.SortMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                               SelectedValuePath="Tag"
@@ -2494,7 +2212,7 @@
                                                         <ComboBoxItem Content="{DynamicResource LOCPlayAch_Column_Rarity}" Tag="{x:Static settings:CompactListSortMode.Rarity}"/>
                                                     </ComboBox>
                                                     <Button ToolTip="{DynamicResource LOCPlayAch_Settings_SortDirection_Tooltip}"
-                                                            Margin="4,0,0,0"
+                                                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                                             VerticalAlignment="Center"
                                                             Click="ToggleStartPageRecentUnlocksGridSortDescending">
                                                         <TextBlock FontFamily="{DynamicResource CommonFont}" FontSize="18">
@@ -2520,16 +2238,16 @@
                                     <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PieChartPreview}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="0,0,0,12"/>
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewPiePercentages}"
                                                           IsChecked="{Binding Persisted.StartPagePieCharts.ShowCenterPercentage}"
-                                                          Margin="0,0,0,12"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="0,0,0,8"/>
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <StackPanel Orientation="Horizontal">
                                                     <RadioButton Content="{DynamicResource LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact}"
                                                                  GroupName="StartPagePieSmallSliceMode"
@@ -2564,19 +2282,19 @@
                         <TextBlock Text="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <Grid Background="{DynamicResource PanelBackgroundBrush}">
+                <Grid Background="{DynamicResource PlayAch.Brush.Panel}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="220" MinWidth="190" MaxWidth="260"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <Border Grid.Column="0"
-                            BorderBrush="{DynamicResource NormalBorderBrush}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                             BorderThickness="0,0,1,0"
-                            Background="{DynamicResource ControlBackgroundBrush}">
+                            Background="{DynamicResource PlayAch.Brush.Surface}">
                         <DockPanel LastChildFill="True">
                             <Border DockPanel.Dock="Top"
-                                    BorderBrush="{DynamicResource NormalBorderBrush}"
+                                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                                     BorderThickness="0,0,0,1"
                                     Padding="10,10,10,8">
                                 <Grid>
@@ -2587,9 +2305,9 @@
 
                                     <TextBlock Text="&#xE721;"
                                                FontFamily="Segoe MDL2 Assets"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.55"
-                                               Margin="0,0,8,0"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Opacity="{StaticResource PlayAch.Opacity.Disabled}"
+                                               Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                                                VerticalAlignment="Center"/>
 
                                     <TextBox Grid.Column="1"
@@ -2607,13 +2325,13 @@
                                      Background="Transparent"
                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                                     Padding="0">
+                                     Padding="{StaticResource PlayAch.Thickness.None}">
                                 <ListBox.GroupStyle>
                                     <GroupStyle>
                                         <GroupStyle.HeaderTemplate>
                                             <DataTemplate>
                                                 <TextBlock Text="{Binding Name}"
-                                                           Foreground="{DynamicResource TextBrush}"
+                                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                            FontSize="10"
                                                            FontWeight="SemiBold"
                                                            Opacity="0.58"
@@ -2626,7 +2344,7 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Margin="8,3"
-                                              MinHeight="30">
+                                              MinHeight="{StaticResource PlayAch.Size.Control.Height}">
                                             <Grid.Style>
                                                 <Style TargetType="Grid">
                                                     <Setter Property="Opacity" Value="1"/>
@@ -2645,7 +2363,7 @@
 
                                             <Image Width="18"
                                                    Height="18"
-                                                   Margin="0,0,8,0"
+                                                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                                                    VerticalAlignment="Center"
                                                    RenderOptions.BitmapScalingMode="HighQuality">
                                                 <Image.Source>
@@ -2660,14 +2378,14 @@
                                                         VerticalAlignment="Center"
                                                         ToolTip="{Binding Subtitle}">
                                                 <TextBlock Text="{Binding DisplayName}"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           FontSize="{DynamicResource FontSize}"
+                                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                           FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                                            FontWeight="SemiBold"
                                                            TextTrimming="CharacterEllipsis"/>
                                                 <TextBlock Text="{Binding Subtitle}"
-                                                           Foreground="{DynamicResource TextBrush}"
-                                                           FontSize="{DynamicResource FontSizeSmall}"
-                                                           Opacity="0.6"
+                                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                                           Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                                            TextTrimming="CharacterEllipsis"
                                                            Visibility="{Binding HasSubtitle, Converter={StaticResource BoolToVis}}"/>
                                             </StackPanel>
@@ -2699,11 +2417,11 @@
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
                                            Style="{StaticResource SectionHeaderStyle}"
-                                           Margin="0,0,0,12"/>
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                 <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"
                                            Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,0,0,16"
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"
                                            TextWrapping="Wrap"/>
 
                                 <!-- Theme Dropdown -->
@@ -2723,8 +2441,8 @@
                                             Margin="0,12,0,0">
                                     <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationLimited}"
                                             Click="MigrateThemeLimited_Click"
-                                            Padding="14,6"
-                                            Margin="0,0,8,0"
+                                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
+                                            Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                                             MinWidth="100"
                                             IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"
                                             ToolTipService.ShowOnDisabled="True">
@@ -2739,7 +2457,7 @@
                                     <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationFull}"
                                             x:Name="ThemeMigrationFullButton"
                                             Click="MigrateThemeFull_Click"
-                                            Padding="14,6"
+                                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                             MinWidth="100"
                                             IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"
                                             ToolTipService.ShowOnDisabled="True">
@@ -2753,13 +2471,13 @@
                                     </Button>
                                 </StackPanel>
 
-                                <Border Background="#12000000"
+                                <Border Background="{StaticResource PlayAch.Brush.Overlay.Shade.12}"
                                         x:Name="ThemeMigrationCustomContainer"
-                                        BorderBrush="{DynamicResource NormalBorderBrush}"
-                                        BorderThickness="1"
-                                        CornerRadius="6"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                        CornerRadius="{StaticResource PlayAch.Radius.Card}"
                                         Margin="0,16,0,0"
-                                        Padding="0"
+                                        Padding="{StaticResource PlayAch.Thickness.None}"
                                         IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}">
                                     <Expander x:Name="ThemeMigrationCustomExpander"
                                               IsExpanded="False"
@@ -2769,7 +2487,7 @@
                                               BorderThickness="0">
                                         <Expander.Header>
                                             <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Custom}"
-                                                       Foreground="{DynamicResource TextBrush}"
+                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                        FontWeight="SemiBold"
                                                        Margin="-4,8,0,8"/>
                                         </Expander.Header>
@@ -2778,10 +2496,10 @@
                                             <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"
                                                        Style="{StaticResource MutedTextStyle}"
                                                        HorizontalAlignment="Left"
-                                                       Margin="0,0,0,12"
+                                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"
                                                        MaxWidth="520"/>
 
-                                            <Grid Margin="0,0,0,12"
+                                            <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"
                                                   HorizontalAlignment="Left">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="176"/>
@@ -2794,7 +2512,7 @@
                                                         Content="{DynamicResource LOCPlayAch_ThemeMigration_AllLegacy}"
                                                         Click="ThemeMigrationSetAllLegacy_Click"
                                                         Style="{StaticResource MigrationChoiceButtonBaseStyle}"
-                                                        Margin="0,0,8,0"/>
+                                                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                                                 <Button Grid.Column="3"
                                                         Content="{DynamicResource LOCPlayAch_ThemeMigration_AllModern}"
                                                         Click="ThemeMigrationSetAllModern_Click"
@@ -2814,16 +2532,16 @@
                                                             </Grid.ColumnDefinitions>
 
                                                             <TextBlock Text="{Binding DisplayName}"
-                                                                       Foreground="{DynamicResource TextBrush}"
+                                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                                        VerticalAlignment="Center"
-                                                                       Margin="0,0,12,0"/>
+                                                                       Margin="{StaticResource PlayAch.Thickness.Right.Md}"/>
 
                                                             <Button Grid.Column="1"
                                                                     Content="{DynamicResource LOCPlayAch_ThemeMigration_ModeLegacy}"
                                                                     Style="{StaticResource MigrationChoiceLegacyButtonStyle}"
                                                                     Click="ThemeMigrationRowSetLegacy_Click"
                                                                     CommandParameter="{Binding}"
-                                                                    Margin="0,0,8,0"/>
+                                                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
 
                                                             <ToggleButton Grid.Column="2"
                                                                           Style="{StaticResource MigrationSwitchToggleStyle}"
@@ -2834,7 +2552,7 @@
                                                                     Style="{StaticResource MigrationChoiceModernButtonStyle}"
                                                                     Click="ThemeMigrationRowSetModern_Click"
                                                                     CommandParameter="{Binding}"
-                                                                    Margin="8,0,0,0"/>
+                                                                    Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                         </Grid>
                                                     </DataTemplate>
                                                 </ItemsControl.ItemTemplate>
@@ -2842,8 +2560,8 @@
 
                                             <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationCustom}"
                                                     Click="MigrateThemeCustom_Click"
-                                                    Padding="14,6"
-                                                    Margin="0,6,0,0"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
+                                                    Margin="{StaticResource PlayAch.Thickness.Top.Compact}"
                                                     MinWidth="100"
                                                     HorizontalAlignment="Right"
                                                     IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"/>
@@ -2854,7 +2572,7 @@
                                 <!-- No themes message -->
                                 <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_NoThemesMessage}"
                                            Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,8,0,0"
+                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
                                            Visibility="{Binding ShowNoThemesMessage, ElementName=SettingsControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </StackPanel>
                         </Border>
@@ -2864,7 +2582,7 @@
                             <StackPanel>
                                 <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Revert}"
                                            Style="{StaticResource SectionHeaderStyle}"
-                                           Margin="0,0,0,12"/>
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                 <!-- Revertable Theme Dropdown and Revert Button -->
                                 <Grid Style="{StaticResource SettingRowStyle}">
@@ -2884,7 +2602,7 @@
                                     <Button Grid.Column="1"
                                             Content="{DynamicResource LOCPlayAch_ThemeMigration_RevertButton}"
                                             Click="RevertTheme_Click"
-                                            Padding="14,6"
+                                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                                             Margin="16,0,0,0"
                                             MinWidth="100"
                                             IsEnabled="{Binding HasRevertableThemes, ElementName=SettingsControlRoot}"/>
@@ -2893,7 +2611,7 @@
                                 <!-- No revertable themes message -->
                                 <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_NoRevertableThemes}"
                                            Style="{StaticResource MutedTextStyle}"
-                                           Margin="0,8,0,0"
+                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
                                            Visibility="{Binding ShowNoRevertableThemesMessage, ElementName=SettingsControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             </StackPanel>
                         </Border>

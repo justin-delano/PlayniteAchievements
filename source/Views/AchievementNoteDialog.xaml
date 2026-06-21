@@ -9,6 +9,14 @@
              d:DesignWidth="620"
              FocusManager.FocusedElement="{Binding ElementName=NoteTextBox}">
 
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -16,7 +24,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid Grid.Row="0" Margin="0,0,0,12">
+        <Grid Grid.Row="0" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
@@ -26,10 +34,10 @@
                     Grid.Column="0"
                     Width="48"
                     Height="48"
-                    Margin="0,0,12,0"
-                    Background="{DynamicResource PanelBackgroundBrush}"
-                    BorderBrush="{DynamicResource NormalBorderBrush}"
-                    BorderThickness="1"
+                    Margin="{StaticResource PlayAch.Thickness.Right.Md}"
+                    Background="{DynamicResource PlayAch.Brush.Panel}"
+                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
                     CornerRadius="4"
                     ClipToBounds="True">
                 <Image x:Name="AchievementIconImage"
@@ -43,15 +51,15 @@
             <StackPanel Grid.Column="1"
                         VerticalAlignment="Center">
                 <TextBlock x:Name="AchievementTitleTextBlock"
-                           Foreground="{DynamicResource TextBrush}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                            FontWeight="SemiBold"
                            TextWrapping="Wrap" />
                 <TextBlock x:Name="AchievementApiNameTextBlock"
-                           Foreground="{DynamicResource TextBrush}"
-                           Opacity="0.6"
-                           FontSize="{DynamicResource FontSizeSmall}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Muted}"
+                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                            TextWrapping="Wrap"
-                           Margin="0,4,0,0" />
+                           Margin="{StaticResource PlayAch.Thickness.Top.Xs}" />
             </StackPanel>
         </Grid>
 
@@ -61,7 +69,7 @@
                       HorizontalScrollBarVisibility="Disabled"
                       PanningMode="VerticalOnly">
             <TextBlock x:Name="ViewTextBlock"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        TextWrapping="Wrap"
                        Padding="0,0,8,0" />
         </ScrollViewer>
@@ -78,29 +86,29 @@
 
             <StackPanel Grid.Row="0"
                         Orientation="Horizontal"
-                        Margin="0,0,0,8">
+                        Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                 <Button x:Name="BoldButton"
                         Content="B"
                         FontWeight="Bold"
                         Width="34"
-                        Height="30"
-                        Padding="0"
-                        Margin="0,0,6,0"
+                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                        Padding="{StaticResource PlayAch.Thickness.None}"
+                        Margin="{StaticResource PlayAch.Thickness.Right.Compact}"
                         ToolTip="{DynamicResource LOCPlayAch_NotesDialog_Bold}"
                         Click="BoldButton_Click" />
                 <Button x:Name="ItalicButton"
                         Content="I"
                         FontStyle="Italic"
                         Width="34"
-                        Height="30"
-                        Padding="0"
-                        Margin="0,0,6,0"
+                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                        Padding="{StaticResource PlayAch.Thickness.None}"
+                        Margin="{StaticResource PlayAch.Thickness.Right.Compact}"
                         ToolTip="{DynamicResource LOCPlayAch_NotesDialog_Italic}"
                         Click="ItalicButton_Click" />
                 <Button x:Name="UnderlineButton"
                         Width="34"
-                        Height="30"
-                        Padding="0"
+                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                        Padding="{StaticResource PlayAch.Thickness.None}"
                         ToolTip="{DynamicResource LOCPlayAch_NotesDialog_Underline}"
                         Click="UnderlineButton_Click">
                     <TextBlock Text="U" TextDecorations="Underline" />
@@ -121,22 +129,22 @@
 
             <TextBlock x:Name="CharacterCountTextBlock"
                        Grid.Row="2"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        Opacity="0.65"
-                       FontSize="{DynamicResource FontSizeSmall}"
+                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                        HorizontalAlignment="Right"
                        Margin="0,6,0,10" />
 
             <TextBlock Grid.Row="3"
                        Text="{DynamicResource LOCPlayAch_NotesDialog_Preview}"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        FontWeight="SemiBold"
-                       Margin="0,0,0,6" />
+                       Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}" />
 
             <Border Grid.Row="4"
-                    Background="{DynamicResource PanelBackgroundBrush}"
-                    BorderBrush="{DynamicResource NormalBorderBrush}"
-                    BorderThickness="1"
+                    Background="{DynamicResource PlayAch.Brush.Panel}"
+                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
                     CornerRadius="4"
                     Padding="10"
                     MinHeight="86"
@@ -145,7 +153,7 @@
                               HorizontalScrollBarVisibility="Disabled"
                               PanningMode="VerticalOnly">
                     <TextBlock x:Name="PreviewTextBlock"
-                               Foreground="{DynamicResource TextBrush}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                TextWrapping="Wrap"
                                Padding="0,0,8,0" />
                 </ScrollViewer>
@@ -159,26 +167,26 @@
             <Button x:Name="SaveButton"
                     Content="{DynamicResource LOCPlayAch_Button_Save}"
                     Click="SaveButton_Click"
-                    Padding="12,6"
+                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                     MinWidth="82"
-                    Margin="0,0,8,0"
+                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                     IsDefault="True" />
             <Button x:Name="ClearButton"
                     Content="{DynamicResource LOCPlayAch_Button_Clear}"
                     Click="ClearButton_Click"
-                    Padding="12,6"
+                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                     MinWidth="82"
-                    Margin="0,0,8,0" />
+                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
             <Button x:Name="CancelButton"
                     Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                     Click="CancelButton_Click"
-                    Padding="12,6"
+                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                     MinWidth="82"
                     IsCancel="True" />
             <Button x:Name="CloseButton"
                     Content="{DynamicResource LOCPlayAch_Button_Ok}"
                     Click="CancelButton_Click"
-                    Padding="12,6"
+                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                     MinWidth="82"
                     IsDefault="True" />
         </StackPanel>

@@ -19,11 +19,11 @@
         Displays achievement icons in a horizontal wrap panel.
     -->
     <local:ThemeControlBase.Resources>
-        <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
-        <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
-        <converters:BooleanConverter x:Key="InvertBoolConverter" Mode="Inverted" />
-        <converters:HiddenAchievementConverter x:Key="HiddenIconConverter" ConversionMode="Icon" />
-        <converters:HiddenAchievementConverter x:Key="HiddenTitleConverter" ConversionMode="Title" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </local:ThemeControlBase.Resources>
 
     <Grid Name="PART_GridContener"
@@ -57,7 +57,7 @@
                     </Setter>
                     <Style.Triggers>
                         <Trigger Property="Selector.IsSelected" Value="True">
-                            <Setter Property="Foreground" Value="{DynamicResource TextBrushDark}" />
+                            <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text.Tertiary}" />
                         </Trigger>
                     </Style.Triggers>
                 </Style>

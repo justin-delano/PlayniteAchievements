@@ -11,6 +11,14 @@
                    UseLayoutRounding="True"
                    SnapsToDevicePixels="True">
 
+    <modern:AchievementCompactListControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </modern:AchievementCompactListControlBase.Resources>
+
     <!-- Virtualized horizontal compact list -->
     <ItemsControl x:Name="AchievementsList"
                   ItemsSource="{Binding DisplayItems, Mode=OneWay, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}"
@@ -34,7 +42,7 @@
                 <ScrollViewer CanContentScroll="True"
                               HorizontalScrollBarVisibility="Hidden"
                               VerticalScrollBarVisibility="Disabled"
-                              Padding="0"
+                              Padding="{StaticResource PlayAch.Thickness.None}"
                               ClipToBounds="False"
                               UseLayoutRounding="True"
                               SnapsToDevicePixels="True">

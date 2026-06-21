@@ -15,18 +15,18 @@
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="BattleNetFieldLabelStyle" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Margin" Value="0,0,12,8"/>
             </Style>
 
             <Style x:Key="BattleNetStatusIconStyle" TargetType="TextBlock">
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
-                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
                 <Setter Property="Margin" Value="0,0,12,0"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Text" Value="&#xE783;"/>
-                <Setter Property="Foreground" Value="#F72585"/>
+                <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthError}"/>
             </Style>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -35,46 +35,30 @@
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="20">
 
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-                <Viewbox Width="28" Height="28" Margin="0,0,12,0" VerticalAlignment="Center">
-                    <Path Data="{StaticResource GeoBattleNet}" Fill="#14B8A6"/>
+            <StackPanel Style="{StaticResource ProviderHeaderPanelStyle}">
+                <Viewbox Style="{StaticResource ProviderHeaderIconStyle}">
+                    <Path Data="{StaticResource GeoBattleNet}" Fill="{StaticResource PlayAch.Brush.ProviderBattleNet}"/>
                 </Viewbox>
-                <TextBlock Text="{DynamicResource LOCPlayAch_Provider_BattleNet}"
-                           FontSize="20"
-                           FontWeight="Bold"
-                           VerticalAlignment="Center"
-                           Foreground="{DynamicResource TextBrush}"/>
+                <TextBlock Text="{DynamicResource LOCPlayAch_Provider_BattleNet}" Style="{StaticResource ProviderTitleTextStyle}"/>
             </StackPanel>
 
-            <Border Style="{StaticResource SectionBorderStyle}" Margin="0,0,0,12">
+            <Border Style="{StaticResource ProviderEnableToggleBorderStyle}">
                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
                           IsChecked="{Binding Settings.IsEnabled, Mode=TwoWay}"
                           FontWeight="SemiBold"
-                          FontSize="{DynamicResource FontSize}"/>
+                          FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
             </Border>
 
-            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}"
-                       Margin="0,0,0,16">
-                <TextBlock.Style>
-                    <Style TargetType="TextBlock" BasedOn="{StaticResource MutedTextStyle}">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding Settings.IsEnabled}" Value="False">
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </TextBlock.Style>
-            </TextBlock>
+            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}" Style="{StaticResource ProviderDisabledMessageStyle}"/>
 
             <Border Style="{StaticResource SectionBorderStyle}"
                     IsEnabled="{Binding Settings.IsEnabled}"
-                    Margin="0,0,0,12">
+                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                 <StackPanel>
                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseExophaseForMetadata}"
                               IsChecked="{Binding Settings.UseExophaseForRarity, Mode=TwoWay}"
                               FontWeight="SemiBold"
-                              FontSize="{DynamicResource FontSize}"/>
+                              FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UseExophaseForMetadata_Help}"
                                Style="{StaticResource MutedTextStyle}"
                                Margin="24,8,0,0"
@@ -88,24 +72,24 @@
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_WowSection}"
                                Style="{StaticResource SectionHeaderStyle}"/>
 
-                    <Border Background="{DynamicResource PanelBackgroundBrush}"
+                    <Border Background="{DynamicResource PlayAch.Brush.Panel}"
                             CornerRadius="8"
                             Padding="16"
-                            BorderThickness="1">
+                            BorderThickness="{StaticResource PlayAch.Thickness.Border}">
                         <Border.Style>
                             <Style TargetType="Border">
-                                <Setter Property="BorderBrush" Value="#F72585"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.AuthError}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding WowConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                  Value="True">
-                                        <Setter Property="BorderBrush" Value="#06FFA5"/>
+                                        <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
 
                         <StackPanel>
-                            <Grid Margin="0,0,0,12">
+                            <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
@@ -121,7 +105,7 @@
                                                 <DataTrigger Binding="{Binding WowConfigured, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                              Value="True">
                                                     <Setter Property="Text" Value="&#xE73E;"/>
-                                                    <Setter Property="Foreground" Value="#06FFA5"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -156,8 +140,8 @@
                                               Grid.Column="1"
                                               x:Name="WowRegionCombo"
                                               SelectionChanged="WowRegion_SelectionChanged"
-                                              FontSize="{DynamicResource FontSize}"
-                                              Margin="0,0,0,8"/>
+                                              FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
 
                                     <TextBlock Grid.Row="1"
                                                Grid.Column="0"
@@ -168,18 +152,18 @@
                                               x:Name="WowRealmCombo"
                                               DisplayMemberPath="Name"
                                               SelectionChanged="WowRealm_SelectionChanged"
-                                              FontSize="{DynamicResource FontSize}"
-                                              Margin="0,0,0,8"/>
+                                              FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
 
                                     <TextBlock Grid.Row="2"
                                                Grid.Column="0"
                                                Text="{DynamicResource LOCPlayAch_Settings_BattleNet_WowCharacter}"
                                                Style="{StaticResource BattleNetFieldLabelStyle}"
-                                               Margin="0,0,12,0"/>
+                                               Margin="{StaticResource PlayAch.Thickness.Right.Md}"/>
                                     <TextBox Grid.Row="2"
                                              Grid.Column="1"
                                              Text="{Binding Settings.WowCharacter, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource FontSize}"/>
+                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
                                 </Grid>
                             </Border>
                         </StackPanel>
@@ -194,24 +178,24 @@
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Section}"
                                Style="{StaticResource SectionHeaderStyle}"/>
 
-                    <Border Background="{DynamicResource PanelBackgroundBrush}"
+                    <Border Background="{DynamicResource PlayAch.Brush.Panel}"
                             CornerRadius="8"
                             Padding="16"
-                            BorderThickness="1">
+                            BorderThickness="{StaticResource PlayAch.Thickness.Border}">
                         <Border.Style>
                             <Style TargetType="Border">
-                                <Setter Property="BorderBrush" Value="#F72585"/>
+                                <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.AuthError}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding Sc2Configured, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                  Value="True">
-                                        <Setter Property="BorderBrush" Value="#06FFA5"/>
+                                        <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
 
                         <StackPanel>
-                            <Grid Margin="0,0,0,12">
+                            <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
@@ -227,7 +211,7 @@
                                                 <DataTrigger Binding="{Binding Sc2Configured, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                              Value="True">
                                                     <Setter Property="Text" Value="&#xE73E;"/>
-                                                    <Setter Property="Foreground" Value="#06FFA5"/>
+                                                    <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -263,8 +247,8 @@
                                     <TextBox Grid.Row="0"
                                              Grid.Column="1"
                                              Text="{Binding Settings.BattleNetClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource FontSize}"
-                                             Margin="0,0,0,8"/>
+                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                             Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
 
                                     <TextBlock Grid.Row="1"
                                                Grid.Column="0"
@@ -274,8 +258,8 @@
                                                  Grid.Column="1"
                                                  x:Name="ClientSecretBox"
                                                  PasswordChanged="ClientSecret_Changed"
-                                                 FontSize="{DynamicResource FontSize}"
-                                                 Margin="0,0,0,8"/>
+                                                 FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
 
                                     <TextBlock Grid.Row="2"
                                                Grid.Column="0"
@@ -284,8 +268,8 @@
                                     <TextBox Grid.Row="2"
                                              Grid.Column="1"
                                              Text="{Binding Settings.Sc2RegionId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource FontSize}"
-                                             Margin="0,0,0,8"/>
+                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                             Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
 
                                     <TextBlock Grid.Row="3"
                                                Grid.Column="0"
@@ -294,18 +278,18 @@
                                     <TextBox Grid.Row="3"
                                              Grid.Column="1"
                                              Text="{Binding Settings.Sc2RealmId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource FontSize}"
-                                             Margin="0,0,0,8"/>
+                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                             Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
 
                                     <TextBlock Grid.Row="4"
                                                Grid.Column="0"
                                                Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Profile}"
                                                Style="{StaticResource BattleNetFieldLabelStyle}"
-                                               Margin="0,0,12,0"/>
+                                               Margin="{StaticResource PlayAch.Thickness.Right.Md}"/>
                                     <TextBox Grid.Row="4"
                                              Grid.Column="1"
                                              Text="{Binding Settings.Sc2ProfileId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource FontSize}"/>
+                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
                                 </Grid>
                             </Border>
                         </StackPanel>

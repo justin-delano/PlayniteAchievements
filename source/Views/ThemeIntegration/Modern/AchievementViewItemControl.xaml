@@ -6,6 +6,14 @@
                    xmlns:base="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Base"
                    mc:Ignorable="d"
                    d:DesignHeight="24" d:DesignWidth="200">
+    <base:ThemeControlBase.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </base:ThemeControlBase.Resources>
+
     <!--
         Modern view item control for theme integration.
         Displays achievement summary per game in grid/list views.
@@ -25,8 +33,8 @@
         <!-- Simple label format (when ShowProgressBar=False) -->
         <TextBlock x:Name="LabelMode"
                    VerticalAlignment="Center"
-                   Foreground="{DynamicResource TextBrush}"
-                   FontSize="{DynamicResource FontSize}">
+                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                   FontSize="{DynamicResource PlayAch.FontSize.Body}">
             <TextBlock.Text>
                 <MultiBinding StringFormat="{}{0}/{1}">
                     <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="UnlockedCount" FallbackValue="0" />
@@ -49,16 +57,16 @@
                          MinWidth="40"
                          Height="16"
                          VerticalAlignment="Center"
-                         Foreground="{DynamicResource HighlightGlyphBrush}"
-                         Background="{DynamicResource ControlBackgroundBrush}"
-                         BorderBrush="{DynamicResource NormalBorderBrush}"/>
+                         Foreground="{DynamicResource PlayAch.Brush.Accent}"
+                         Background="{DynamicResource PlayAch.Brush.Surface}"
+                         BorderBrush="{DynamicResource PlayAch.Brush.Border}"/>
 
             <TextBlock Grid.Column="0"
                        Grid.ColumnSpan="2"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
-                       Foreground="{DynamicResource TextBrush}"
-                       FontSize="{DynamicResource FontSizeSmall}">
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       FontSize="{DynamicResource PlayAch.FontSize.Caption}">
                 <TextBlock.Text>
                     <MultiBinding StringFormat="{}{0}/{1}">
                         <Binding RelativeSource="{RelativeSource AncestorType=base:ThemeControlBase}" Path="UnlockedCount" FallbackValue="0" />

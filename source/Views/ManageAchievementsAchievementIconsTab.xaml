@@ -14,134 +14,8 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/ManageAchievementsStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility" />
-            <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility" />
-
-            <Style x:Key="CardBorderStyle" TargetType="Border">
-                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="12" />
-            </Style>
-
-            <Style x:Key="ToolbarButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                <Setter Property="MinHeight" Value="30" />
-                <Setter Property="Padding" Value="12,6" />
-                <Setter Property="Margin" Value="0,0,8,0" />
-            </Style>
-
-            <Style x:Key="InlineBrowseButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                <Setter Property="Width" Value="34" />
-                <Setter Property="Height" Value="34" />
-                <Setter Property="Focusable" Value="True" />
-                <Setter Property="KeyboardNavigation.IsTabStop" Value="True" />
-                <Setter Property="Padding" Value="0" />
-                <Setter Property="Margin" Value="8,0,0,0" />
-                <Setter Property="FontSize" Value="16" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
-                    </Trigger>
-                    <Trigger Property="IsPressed" Value="True">
-                        <Setter Property="Background" Value="#18000000" />
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-
-            <Style x:Key="EditorTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ClearableSearchTextBoxStyle}">
-                <Setter Property="Focusable" Value="True" />
-                <Setter Property="KeyboardNavigation.IsTabStop" Value="True" />
-                <Setter Property="Padding" Value="10,6,30,6" />
-                <Setter Property="MinHeight" Value="34" />
-                <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource GlyphBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-                <Setter Property="CaretBrush" Value="{DynamicResource TextBrush}" />
-                <Setter Property="HorizontalScrollBarVisibility" Value="Auto" />
-                <Setter Property="VerticalContentAlignment" Value="Center" />
-                <Setter Property="TextWrapping" Value="NoWrap" />
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
-                    </Trigger>
-                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                        <Setter Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
-                        <Setter Property="BorderThickness" Value="2" />
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-
-            <Style x:Key="StatusTextStyle" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-                <Setter Property="Opacity" Value="0.8" />
-                <Setter Property="TextWrapping" Value="Wrap" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding StatusIsError}" Value="True">
-                        <Setter Property="Foreground" Value="#FFE07070" />
-                        <Setter Property="Opacity" Value="1" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <Style x:Key="VariantBadgeStyle" TargetType="Border">
-                <Setter Property="Width" Value="22" />
-                <Setter Property="Height" Value="22" />
-                <Setter Property="CornerRadius" Value="11" />
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Background" Value="#12000000" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
-
-            <Style x:Key="PreviewBorderStyle" TargetType="Border">
-                <Setter Property="Width" Value="34" />
-                <Setter Property="Height" Value="34" />
-                <Setter Property="CornerRadius" Value="4" />
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="Background" Value="{DynamicResource PanelBackgroundBrush}" />
-                <Setter Property="VerticalAlignment" Value="Center" />
-            </Style>
-
-            <Style x:Key="IconCardListItemStyle" TargetType="ListBoxItem">
-                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                <Setter Property="VerticalContentAlignment" Value="Stretch" />
-                <Setter Property="Focusable" Value="False" />
-                <Setter Property="Padding" Value="0" />
-                <Setter Property="Margin" Value="0,0,0,8" />
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ListBoxItem">
-                            <ContentPresenter />
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <Style x:Key="IconCardBorderStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
-                <Setter Property="Padding" Value="8,9" />
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding CanReveal}" Value="True">
-                        <Setter Property="Cursor" Value="Hand" />
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsMouseOver}" Value="True">
-                        <Setter Property="Background" Value="#14000000" />
-                        <Setter Property="BorderBrush" Value="{DynamicResource HighlightGlyphBrush}" />
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -153,7 +27,8 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0"
-                Style="{StaticResource CardBorderStyle}">
+                Style="{StaticResource ManageAchievementsHeaderCardStyle}"
+                Margin="0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -162,23 +37,19 @@
 
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_CustomIcons_Header}"
-                               Foreground="{DynamicResource TextBrush}"
-                               FontWeight="SemiBold" />
+                               Style="{StaticResource ManageAchievementsHeaderTitleStyle}" />
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_CustomIcons_Hint}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
-                               TextWrapping="Wrap"
-                               Margin="0,6,0,0" />
+                               Style="{StaticResource ManageAchievementsHeaderHintStyle}" />
                     <TextBlock Text="{Binding StatusText}"
                                Style="{StaticResource StatusTextStyle}"
-                               Margin="0,8,0,0"
+                               Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
                                Visibility="{Binding HasStatusText, Converter={StaticResource BoolToVis}}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="1"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
-                            Margin="12,0,0,0">
+                            Margin="{StaticResource PlayAch.Thickness.Left.Md}">
                     <WrapPanel Orientation="Horizontal"
                                HorizontalAlignment="Right">
                         <Button x:Name="RevertChangesButton"
@@ -192,7 +63,7 @@
                         <Button x:Name="SaveButton"
                                 Content="{DynamicResource LOCPlayAch_Button_Save}"
                                 Command="{Binding SaveCommand}"
-                                Padding="12,6" />
+                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding}" />
                     </WrapPanel>
 
                     <Button x:Name="OpenIconsFolderButton"
@@ -200,15 +71,15 @@
                             Command="{Binding OpenIconsFolderCommand}"
                             Style="{StaticResource ToolbarButtonStyle}"
                             HorizontalAlignment="Right"
-                            Margin="0,8,0,0" />
+                            Margin="{StaticResource PlayAch.Thickness.Top.Sm}" />
                 </StackPanel>
             </Grid>
         </Border>
 
         <TextBlock Grid.Row="2"
                    Text="{DynamicResource LOCPlayAch_Common_NoCachedAchievementsForGame}"
-                   Foreground="{DynamicResource TextBrush}"
-                   Opacity="0.8"
+                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                   Opacity="{StaticResource PlayAch.Opacity.Secondary}"
                    TextWrapping="Wrap"
                    VerticalAlignment="Top"
                    Visibility="{Binding HasAchievements, Converter={StaticResource InverseBoolToVis}}" />
@@ -245,14 +116,14 @@
                             </Grid.ColumnDefinitions>
 
                             <StackPanel Grid.Column="0"
-                                        Margin="0,0,12,0"
+                                        Margin="{StaticResource PlayAch.Thickness.Right.Md}"
                                         VerticalAlignment="Center">
                                 <TextBlock FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextBrush}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            TextWrapping="Wrap">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
-                                            <Setter Property="FontSize" Value="{DynamicResource FontSize}" />
+                                            <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}" />
                                             <Setter Property="Opacity" Value="0.7" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Unlocked}" Value="True">
@@ -267,13 +138,13 @@
                                     <Run Text="{Binding DisplayNameResolved, Mode=OneWay}" />
                                     <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
                                          FontStyle="Italic"
-                                         FontSize="{DynamicResource FontSizeSmall}"
-                                         Foreground="{DynamicResource TextBrushDarker}" />
+                                         FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                         Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}" />
                                 </TextBlock>
                                 <TextBlock Text="{Binding DescriptionResolved}"
-                                           Foreground="{DynamicResource TextBrush}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            Opacity="0.72"
-                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                            Margin="0,3,0,0"
                                            TextWrapping="Wrap"
                                            MaxHeight="36"
@@ -289,9 +160,9 @@
                                     </TextBlock.Style>
                                 </TextBlock>
                                 <TextBlock Text="{Binding ApiNameResolved}"
-                                           Foreground="{DynamicResource TextBrush}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            Opacity="0.58"
-                                           FontSize="{DynamicResource FontSizeSmall}"
+                                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                            Margin="0,3,0,0"
                                            TextWrapping="Wrap" />
                             </StackPanel>
@@ -319,23 +190,23 @@
                                         <TextBlock Text="&#x2713;"
                                                    FontSize="13"
                                                    FontWeight="Bold"
-                                                   Foreground="{DynamicResource GlyphBrush}"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Glyph}"
                                                    HorizontalAlignment="Center"
                                                    VerticalAlignment="Center" />
                                     </Border>
 
                                     <Border Grid.Column="1"
                                             Style="{StaticResource PreviewBorderStyle}"
-                                            Margin="8,0,0,0">
+                                            Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                         <Image Width="30"
-                                               Height="30"
+                                               Height="{StaticResource PlayAch.Size.Control.Height}"
                                               Stretch="Uniform"
                                                helpers:AsyncImage.Uri="{Binding UnlockedPreviewPath}"
                                                helpers:AsyncImage.DecodePixel="72" />
                                     </Border>
 
                                     <Grid Grid.Column="2"
-                                          Margin="8,0,0,0">
+                                          Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                         <TextBox Text="{Binding UnlockedOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  ToolTip="{Binding UnlockedOverrideToolTip}"
                                                  Tag="Unlocked"
@@ -346,7 +217,7 @@
                                                 <Style TargetType="TextBox" BasedOn="{StaticResource EditorTextBoxStyle}">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding HasUnlockedOverrideValidationError}" Value="True">
-                                                            <Setter Property="BorderBrush" Value="#FFE07070" />
+                                                            <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.ErrorText}" />
                                                             <Setter Property="BorderThickness" Value="2" />
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -371,7 +242,7 @@
 
                                 <Border Grid.Row="1"
                                         Height="1"
-                                        Background="#14000000"
+                                        Background="{StaticResource PlayAch.Brush.Overlay.Shade.14}"
                                         Margin="30,0,0,0" />
 
                                 <Grid Grid.Row="2"
@@ -396,16 +267,16 @@
 
                                     <Border Grid.Column="1"
                                             Style="{StaticResource PreviewBorderStyle}"
-                                            Margin="8,0,0,0">
+                                            Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                         <Image Width="30"
-                                               Height="30"
+                                               Height="{StaticResource PlayAch.Size.Control.Height}"
                                               Stretch="Uniform"
                                                helpers:AsyncImage.Uri="{Binding LockedPreviewPath}"
                                                helpers:AsyncImage.DecodePixel="72" />
                                     </Border>
 
                                     <Grid Grid.Column="2"
-                                          Margin="8,0,0,0">
+                                          Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                         <TextBox Text="{Binding LockedOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  ToolTip="{Binding LockedOverrideToolTip}"
                                                  Tag="Locked"
@@ -416,7 +287,7 @@
                                                 <Style TargetType="TextBox" BasedOn="{StaticResource EditorTextBoxStyle}">
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding HasLockedOverrideValidationError}" Value="True">
-                                                            <Setter Property="BorderBrush" Value="#FFE07070" />
+                                                            <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.ErrorText}" />
                                                             <Setter Property="BorderThickness" Value="2" />
                                                         </DataTrigger>
                                                     </Style.Triggers>

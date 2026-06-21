@@ -10,6 +10,7 @@
     <base:ThemeControlBase.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
@@ -40,14 +41,14 @@
                    Effect="{StaticResource BadgeShadow}"
                    Style="{StaticResource RarityIcon}"
                    VerticalAlignment="Center"
-                   Margin="0,0,8,0"/>
+                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
             <TextBlock Grid.Column="1"
                        Text="{DynamicResource LOCPlayAch_Rarity_UltraRare}"
                        FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        VerticalAlignment="Center"/>
             <TextBlock Grid.Column="2"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        VerticalAlignment="Center">
                 <Run Text="{Binding UltraRare.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
@@ -69,14 +70,14 @@
                    Effect="{StaticResource BadgeShadow}"
                    Style="{StaticResource RarityIcon}"
                    VerticalAlignment="Center"
-                   Margin="0,0,8,0"/>
+                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
             <TextBlock Grid.Column="1"
                        Text="{DynamicResource LOCPlayAch_Rarity_Rare}"
                        FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        VerticalAlignment="Center"/>
             <TextBlock Grid.Column="2"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        VerticalAlignment="Center">
                 <Run Text="{Binding Rare.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
@@ -98,14 +99,14 @@
                    Effect="{StaticResource BadgeShadow}"
                    Style="{StaticResource RarityIcon}"
                    VerticalAlignment="Center"
-                   Margin="0,0,8,0"/>
+                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
             <TextBlock Grid.Column="1"
                        Text="{DynamicResource LOCPlayAch_Rarity_Uncommon}"
                        FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        VerticalAlignment="Center"/>
             <TextBlock Grid.Column="2"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        VerticalAlignment="Center">
                 <Run Text="{Binding Uncommon.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>
@@ -127,14 +128,14 @@
                    Effect="{StaticResource BadgeShadow}"
                    Style="{StaticResource RarityIcon}"
                    VerticalAlignment="Center"
-                   Margin="0,0,8,0"/>
+                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
             <TextBlock Grid.Column="1"
                        Text="{DynamicResource LOCPlayAch_Rarity_Common}"
                        FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        VerticalAlignment="Center"/>
             <TextBlock Grid.Column="2"
-                       Foreground="{DynamicResource TextBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        VerticalAlignment="Center">
                 <Run Text="{Binding Common.Unlocked, Mode=OneWay}"/>
                 <Run Text="/"/>

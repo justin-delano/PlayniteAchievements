@@ -13,60 +13,8 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/ManageAchievementsStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-
-            <!-- Cursor style for hidden achievements -->
-            <Style x:Key="HiddenAchievementTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                <Setter Property="Cursor" Value="Arrow"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding CanReveal}" Value="True">
-                        <Setter Property="Cursor" Value="Hand"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding IsHidden}" Value="True">
-                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                        <Setter Property="Opacity" Value="0.6"/>
-                        <Setter Property="FontStyle" Value="Italic"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Clickable cell style for hidden achievements -->
-            <Style x:Key="ClickableCellStyle" TargetType="Grid">
-                <Setter Property="Cursor" Value="Arrow"/>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding CanReveal}" Value="True">
-                        <Setter Property="Cursor" Value="Hand"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <!-- Cell style that stretches content to fill cell for clickable areas -->
-            <Style x:Key="StretchCellStyle" TargetType="DataGridCell" BasedOn="{StaticResource ManageAchievementsControllerCellStyle}">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="DataGridCell">
-                            <Border Background="{TemplateBinding Background}"
-                                    Padding="{TemplateBinding Padding}">
-                                <ContentPresenter VerticalAlignment="Stretch" HorizontalAlignment="Stretch"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                        <Setter Property="Background" Value="#30FFFFFF"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                        <Setter Property="Background" Value="#40FFFFFF"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -92,20 +40,15 @@
 
                 <!-- Header -->
                 <Border Grid.Row="0"
-                        Background="{DynamicResource ControlBackgroundBrush}"
-                        BorderBrush="{DynamicResource NormalBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="12"
-                        Margin="0,0,0,12">
+                        Style="{StaticResource ManageAchievementsHeaderCardStyle}">
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManualAchievements_Search_Header}"
-                               Style="{DynamicResource BaseTextBlockStyle}"
-                               Foreground="{DynamicResource TextBrush}"
+                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                                TextWrapping="Wrap"/>
                 </Border>
 
                 <!-- Source Selection -->
-                <Grid Grid.Row="1" Margin="0,0,0,8">
+                <Grid Grid.Row="1" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -114,8 +57,8 @@
                     <TextBlock Grid.Column="0"
                                Text="{DynamicResource LOCPlayAch_ManageAchievements_Manual_Source}"
                                VerticalAlignment="Center"
-                               Margin="0,0,8,0"
-                               Foreground="{DynamicResource TextBrush}"/>
+                               Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"/>
                     <ComboBox x:Name="SourceComboBox"
                               Grid.Column="1"
                               ItemsSource="{Binding AvailableSources}"
@@ -127,7 +70,7 @@
                 </Grid>
 
                 <!-- Search bar -->
-                <Grid Grid.Row="2" Margin="0,0,0,12">
+                <Grid Grid.Row="2" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -136,29 +79,10 @@
                     <Grid Grid.Column="0">
                         <TextBox x:Name="SearchTextBox"
                                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                 Style="{StaticResource ClearableSearchTextBoxStyle}"
+                                 Style="{StaticResource ManageAchievementsSearchTextBoxStyle}"
                                  KeyDown="SearchTextBox_KeyDown"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
-                                   VerticalAlignment="Center"
-                                   HorizontalAlignment="Left"
-                                   Margin="12,0,0,0"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Opacity="0.5"
-                                   IsHitTestVisible="False">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SearchText}" Value="">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                                   Style="{StaticResource ManageAchievementsSearchPlaceholderTextStyle}"/>
                         <Button x:Name="ClearSearchTextButton"
                                 Tag="{Binding SearchText}"
                                 Click="ClearSearchTextButton_Click"
@@ -169,9 +93,9 @@
                             Grid.Column="1"
                             Content="{DynamicResource LOCPlayAch_Button_Search}"
                             Command="{Binding SearchCommand}"
-                            Padding="12,6"
+                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="80"
-                            Margin="8,0,0,0"/>
+                            Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                 </Grid>
 
                 <!-- Results grid -->
@@ -179,7 +103,7 @@
                         Background="Transparent"
                         BorderBrush="Transparent"
                         BorderThickness="0"
-                        Margin="0,0,0,12">
+                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                     <DataGrid x:Name="SearchResultsDataGrid"
                               ItemsSource="{Binding SearchResults}"
                               SelectedItem="{Binding SelectedResult, Mode=TwoWay}"
@@ -206,7 +130,7 @@
                               BorderThickness="0"
                               Background="Transparent"
                               RowBackground="Transparent"
-                              Foreground="{DynamicResource TextBrush}"
+                              Foreground="{DynamicResource PlayAch.Brush.Text}"
                               ColumnHeaderStyle="{StaticResource ManageAchievementsColumnHeaderStyle}"
                               helpers:DataGridHoverScrollBarBehavior.IsEnabled="True"
                               helpers:DataGridAlignmentBehavior.IsEnabled="True"
@@ -246,7 +170,7 @@
                                                 Width="*">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedDataGridTextStyle}">
-                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -257,7 +181,7 @@
                                                 Visibility="{Binding DataContext.ShowPlatformColumn, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedDataGridTextStyle}">
-                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -267,7 +191,7 @@
                                                 Width="*">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style TargetType="TextBlock" BasedOn="{StaticResource WrappedDataGridTextStyle}">
-                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
@@ -278,10 +202,10 @@
                 <!-- Status -->
                 <TextBlock Grid.Row="4"
                            Text="{Binding SearchStatusMessage}"
-                           Foreground="{DynamicResource TextBrush}"
-                           Opacity="0.75"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Hint}"
                            TextWrapping="Wrap"
-                           Margin="0,0,0,12"/>
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
             </Grid>
 
             <!-- Stage 2: Refreshing -->
@@ -298,10 +222,10 @@
 
                 <TextBlock Grid.Row="0"
                            Text="{Binding ProgressMessage}"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           Foreground="{DynamicResource TextBrush}"
+                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                            HorizontalAlignment="Center"
-                           Margin="0,0,0,16"
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"
                            TextWrapping="Wrap"
                            MaxWidth="400"/>
 
@@ -313,16 +237,16 @@
 
                 <TextBlock Grid.Row="2"
                            Text="{Binding ProgressPercent, StringFormat={}{0:F0}%, Mode=OneWay}"
-                           Foreground="{DynamicResource TextBrush}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                            HorizontalAlignment="Center"
-                           Margin="0,8,0,0"/>
+                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
 
                 <Button x:Name="RefreshCancelButton"
                         Grid.Row="3"
                         Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                         Command="{Binding CancelRefreshCommand}"
                         IsEnabled="{Binding CanCancelRefresh}"
-                        Padding="12,6"
+                        Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="80"
                         HorizontalAlignment="Center"
                         Margin="0,24,0,0"/>
@@ -340,20 +264,15 @@
 
                 <!-- Header -->
                 <Border Grid.Row="0"
-                        Background="{DynamicResource ControlBackgroundBrush}"
-                        BorderBrush="{DynamicResource NormalBorderBrush}"
-                        BorderThickness="1"
-                        CornerRadius="6"
-                        Padding="12"
-                        Margin="0,0,0,12">
+                        Style="{StaticResource ManageAchievementsHeaderCardStyle}">
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManualAchievements_Edit_Header}"
-                               Style="{DynamicResource BaseTextBlockStyle}"
-                               Foreground="{DynamicResource TextBrush}"
+                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                TextWrapping="Wrap"/>
                 </Border>
 
                 <!-- Progress and action bar -->
-                <Grid Grid.Row="1" Margin="0,0,0,12">
+                <Grid Grid.Row="1" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
@@ -364,28 +283,9 @@
                         <Grid>
                             <TextBox x:Name="EditSearchTextBox"
                                      Text="{Binding EditSearchFilter, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                     Style="{StaticResource ClearableSearchTextBoxStyle}"/>
+                                     Style="{StaticResource ManageAchievementsSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Common_FilterAchievementsPlaceholder}"
-                                       VerticalAlignment="Center"
-                                       HorizontalAlignment="Left"
-                                       Margin="12,0,0,0"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.5"
-                                       IsHitTestVisible="False">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding EditSearchFilter}" Value="">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding EditSearchFilter}" Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                                       Style="{StaticResource ManageAchievementsEditSearchPlaceholderTextStyle}"/>
                             <Button x:Name="ClearEditFilterButton"
                                     Tag="{Binding EditSearchFilter}"
                                     Click="ClearEditFilterButton_Click"
@@ -399,7 +299,7 @@
                                 Content="{DynamicResource LOCPlayAch_Common_SelectAll}"
                                 Command="{Binding UnlockAllCommand}"
                                 Padding="8,4"
-                                Margin="0,0,8,0"/>
+                                Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                         <Button x:Name="LockAllButton"
                                 Content="{DynamicResource LOCPlayAch_Common_DeselectAll}"
                                 Command="{Binding LockAllCommand}"
@@ -412,7 +312,7 @@
                         Background="Transparent"
                         BorderBrush="Transparent"
                         BorderThickness="0"
-                        Margin="0,0,0,12">
+                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                     <DataGrid x:Name="ManualAchievementsDataGrid"
                               ItemsSource="{Binding FilteredAchievements}"
                               AutoGenerateColumns="False"
@@ -536,10 +436,10 @@
                                                       Focusable="False"
                                                       IsTabStop="False"/>
                                             <Grid Grid.Column="1"
-                                                  Margin="8,0,0,0"
+                                                  Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                                   VerticalAlignment="Center">
                                                 <TextBlock Text="—"
-                                                           Opacity="0.5"
+                                                           Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                                            HorizontalAlignment="Center"
                                                            VerticalAlignment="Center"
                                                            Visibility="{Binding CanEditUnlockTime, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
@@ -551,7 +451,7 @@
                                                             HorizontalAlignment="Center"
                                                             VerticalAlignment="Center"
                                                             Padding="4,2"
-                                                            Margin="0,0,6,0"/>
+                                                            Margin="{StaticResource PlayAch.Thickness.Right.Compact}"/>
                                                 <TextBox Text="{Binding TimeText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                                          Width="62"
                                                          VerticalContentAlignment="Center"
@@ -594,7 +494,7 @@
                     Converter={StaticResource BooleanToVisibilityConverter}}"
                         VerticalAlignment="Center" HorizontalAlignment="Center">
                 <TextBlock Text="{Binding ErrorMessage}"
-                           Foreground="{DynamicResource TextBrush}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
                            Opacity="0.9"
                            TextWrapping="Wrap"
                            MaxWidth="400"
@@ -622,51 +522,51 @@
                                 RelativeSource={RelativeSource AncestorType=UserControl},
                                 Converter={StaticResource BooleanToVisibilityConverter}}">
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Manual_Source}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Hint}"
                                VerticalAlignment="Center" />
                     <TextBlock Text=": "
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Hint}"
                                VerticalAlignment="Center" />
                     <TextBlock Text="{Binding ManualSourceName}"
-                               Foreground="{DynamicResource TextBrush}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
                     <TextBlock Text="   "
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.7"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                VerticalAlignment="Center" />
                     <TextBlock Text="{Binding SourceGameName}"
-                               Foreground="{DynamicResource TextBrush}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
                     <TextBlock Text=" ("
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.7"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                VerticalAlignment="Center" />
                     <TextBlock Text="{Binding SourceGameId}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.7"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                VerticalAlignment="Center" />
                     <TextBlock Text=")"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.7"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                VerticalAlignment="Center" />
                     <Button x:Name="UnlinkButton"
                             Content="{DynamicResource LOCPlayAch_ManageAchievements_Manual_Unlink}"
                             Command="{Binding UnlinkCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                             Padding="10,5"
-                            Margin="12,0,0,0"
+                            Margin="{StaticResource PlayAch.Thickness.Left.Md}"
                             VerticalAlignment="Center" />
                 </StackPanel>
 
                 <TextBlock Grid.Row="1"
                            Text="{Binding SaveStatusMessage}"
-                           Foreground="{DynamicResource TextBrush}"
-                           Opacity="0.8"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Secondary}"
                            VerticalAlignment="Center"
-                           Margin="0,6,0,0"
+                           Margin="{StaticResource PlayAch.Thickness.Top.Compact}"
                            TextWrapping="Wrap"
                            Visibility="{Binding HasSaveStatus, Converter={StaticResource BooleanToVisibilityConverter}}" />
             </Grid>
@@ -683,14 +583,14 @@
                     <Button x:Name="NextButton"
                             Content="{DynamicResource LOCPlayAch_Button_Next}"
                             Click="NextButton_Click"
-                            Padding="12,6"
+                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="80"
-                            Margin="0,0,8,0"
+                            Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                             IsDefault="True"/>
                     <Button x:Name="SearchCancelButton"
                             Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                             Click="CancelButton_Click"
-                            Padding="12,6"
+                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="80"
                             IsCancel="True"/>
                 </StackPanel>
@@ -703,14 +603,14 @@
                     <Button x:Name="SaveButton"
                             Content="{DynamicResource LOCPlayAch_Button_Save}"
                             Command="{Binding SaveCommand}"
-                            Padding="12,6"
+                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="80"
-                            Margin="0,0,8,0"
+                            Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                             IsDefault="True"/>
                     <Button x:Name="EditCancelButton"
                             Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                             Click="CancelButton_Click"
-                            Padding="12,6"
+                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="80"/>
                 </StackPanel>
             </StackPanel>

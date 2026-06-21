@@ -14,68 +14,8 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/ManageAchievementsStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility" />
-            <converters:BooleanConverter x:Key="InverseBoolToVis" Mode="InvertedToVisibility" />
-
-            <DataTemplate x:Key="FiltersAchievementInfoTemplate">
-                <StackPanel Margin="12,10"
-                            HorizontalAlignment="Left"
-                            VerticalAlignment="Center"
-                            Background="Transparent">
-                    <TextBlock FontWeight="SemiBold"
-                            Foreground="{DynamicResource TextBrush}"
-                            TextWrapping="Wrap"
-                            TextAlignment="Left">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                                <Setter Property="Opacity" Value="0.7"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Unlocked}" Value="True">
-                                        <Setter Property="Opacity" Value="1"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding IsTitleHidden}" Value="True">
-                                        <Setter Property="FontStyle" Value="Italic"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                        <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
-                        <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
-                             FontStyle="Italic"
-                             FontSize="{DynamicResource FontSizeSmall}"
-                             Foreground="{DynamicResource TextBrushDarker}"/>
-                    </TextBlock>
-                    <TextBlock Text="{Binding DescriptionResolved}"
-                               FontSize="{DynamicResource FontSizeSmall}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.7"
-                               TextWrapping="Wrap"
-                               TextAlignment="Left"
-                               MaxHeight="44"
-                               TextTrimming="CharacterEllipsis"
-                               Margin="0,3,0,0">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsDescriptionHidden}" Value="True">
-                                        <Setter Property="FontStyle" Value="Italic"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <TextBlock Text="{Binding ApiNameResolved}"
-                               FontSize="{DynamicResource FontSizeSmall}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.58"
-                               TextWrapping="Wrap"
-                               TextAlignment="Left"
-                               Margin="0,4,0,0" />
-                </StackPanel>
-            </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -87,12 +27,7 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0"
-                Background="{DynamicResource ControlBackgroundBrush}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="6"
-                Padding="12"
-                Margin="0,0,0,12">
+                Style="{StaticResource ManageAchievementsHeaderCardStyle}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -100,25 +35,20 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Filters_Header}"
-                               Foreground="{DynamicResource TextBrush}"
-                               FontWeight="SemiBold" />
+                               Style="{StaticResource ManageAchievementsHeaderTitleStyle}" />
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Filters_Hint}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
-                               TextWrapping="Wrap"
-                               Margin="0,6,0,0" />
+                               Style="{StaticResource ManageAchievementsHeaderHintStyle}" />
                 </StackPanel>
                 <Button x:Name="ResetFiltersButton"
                         Grid.Column="1"
                         Content="{DynamicResource LOCPlayAch_Button_Reset}"
                         Click="ResetFiltersButton_Click"
-                        Margin="12,0,0,0"
-                        VerticalAlignment="Top"
+                        Style="{StaticResource ManageAchievementsHeaderActionButtonStyle}"
                         IsEnabled="{Binding HasCustomFilters}" />
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" Margin="0,0,0,12" MinHeight="34" VerticalAlignment="Top">
+        <Grid Grid.Row="1" Style="{StaticResource ManageAchievementsToolbarRowStyle}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="150" />
@@ -130,29 +60,9 @@
             <Grid Grid.Column="0">
                 <TextBox x:Name="SearchTextBox"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Style="{StaticResource ClearableSearchTextBoxStyle}"
-                         Height="30"
-                         VerticalAlignment="Center" />
+                         Style="{StaticResource ManageAchievementsSearchTextBoxStyle}" />
                 <TextBlock Text="{DynamicResource LOCPlayAch_Common_FilterAchievementsPlaceholder}"
-                           VerticalAlignment="Center"
-                           Margin="12,0,0,0"
-                           Foreground="{DynamicResource TextBrush}"
-                           Opacity="0.5"
-                           IsHitTestVisible="False">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Visibility" Value="Collapsed" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding SearchText}" Value="">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
-                                    <Setter Property="Visibility" Value="Visible" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                           Style="{StaticResource ManageAchievementsSearchPlaceholderTextStyle}"/>
                 <Button x:Name="ClearSearchButton"
                         Tag="{Binding SearchText}"
                         Command="{Binding ClearSearchCommand}"
@@ -164,7 +74,7 @@
                     Grid.Column="1"
                     Content="{Binding SelectedCategoryTypeFilterText}"
                     Click="FilterTypeSelectionButton_Click"
-                    Height="30"
+                    Height="{StaticResource PlayAch.Size.Control.Height}"
                     Margin="6,0,0,0"
                     VerticalAlignment="Center"
                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Type}">
@@ -179,7 +89,7 @@
                     Content="{Binding SelectedCategoryLabelFilterText}"
                     Click="CategoryLabelFilterSelectionButton_Click"
                     Margin="6,0,0,0"
-                    Height="30"
+                    Height="{StaticResource PlayAch.Size.Control.Height}"
                     VerticalAlignment="Center"
                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Label}">
                 <Button.ContextMenu>
@@ -193,32 +103,32 @@
                       ItemsSource="{Binding FilterOptions}"
                       SelectedItem="{Binding SelectedFilterOption, Mode=TwoWay}"
                       DisplayMemberPath="DisplayName"
-                      Height="30"
-                      Margin="8,0,0,0"
+                      Height="{StaticResource PlayAch.Size.Control.Height}"
+                      Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                       VerticalAlignment="Center" />
 
             <StackPanel Grid.Column="4"
                         Orientation="Horizontal"
                         VerticalAlignment="Center"
-                        Margin="8,0,0,0">
+                        Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                 <Button x:Name="SelectAllButton"
                         Content="{DynamicResource LOCPlayAch_Common_SelectAll}"
                         Click="SelectAllButton_Click"
-                        Height="30"
+                        Height="{StaticResource PlayAch.Size.Control.Height}"
                         Padding="10,2"
-                        Margin="0,0,8,0" />
+                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
                 <Button x:Name="DeselectAllButton"
                         Content="{DynamicResource LOCPlayAch_Common_DeselectAll}"
                         Click="DeselectAllButton_Click"
-                        Height="30"
+                        Height="{StaticResource PlayAch.Size.Control.Height}"
                         Padding="10,2" />
             </StackPanel>
         </Grid>
 
         <TextBlock Grid.Row="2"
                    Text="{DynamicResource LOCPlayAch_Common_NoCachedAchievementsForGame}"
-                   Foreground="{DynamicResource TextBrush}"
-                   Opacity="0.8"
+                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                   Opacity="{StaticResource PlayAch.Opacity.Secondary}"
                    TextWrapping="Wrap"
                    VerticalAlignment="Top"
                    Margin="0"
@@ -281,7 +191,7 @@
 
                 <DataGridTemplateColumn Width="2*" Header="{DynamicResource LOCPlayAch_Column_Achievement}"
                                         IsReadOnly="True"
-                                        CellTemplate="{StaticResource FiltersAchievementInfoTemplate}" />
+                                        CellTemplate="{StaticResource ManageAchievementInfoTemplate}" />
 
                 <DataGridTextColumn Width="160"
                                     IsReadOnly="True"
@@ -292,7 +202,7 @@
                             <Setter Property="HorizontalAlignment" Value="Center" />
                             <Setter Property="VerticalAlignment" Value="Center" />
                             <Setter Property="TextAlignment" Value="Center" />
-                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}" />
                             <Setter Property="Opacity" Value="0.85" />
                         </Style>
                     </DataGridTextColumn.ElementStyle>
@@ -307,7 +217,7 @@
                             <Setter Property="HorizontalAlignment" Value="Center" />
                             <Setter Property="VerticalAlignment" Value="Center" />
                             <Setter Property="TextAlignment" Value="Center" />
-                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+                            <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}" />
                             <Setter Property="Opacity" Value="0.85" />
                         </Style>
                     </DataGridTextColumn.ElementStyle>

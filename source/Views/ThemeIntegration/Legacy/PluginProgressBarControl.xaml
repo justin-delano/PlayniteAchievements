@@ -10,8 +10,11 @@
                    d:DesignHeight="40" d:DesignWidth="300">
 
     <local:ThemeControlBase.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        <converters:HeightToFontSizeConverter x:Key="HeightToFontSizeConverter" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </local:ThemeControlBase.Resources>
 
     <Grid Name="PART_GridContener">
@@ -49,7 +52,7 @@
                    TextWrapping="NoWrap"
                    FontSize="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=FontSize}"
                    FontWeight="SemiBold"
-                   Foreground="{DynamicResource TextBrush}"
+                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                    IsHitTestVisible="False"
                    Visibility="{Binding RelativeSource={RelativeSource AncestorType=PluginUserControl}, Path=IntegrationShowProgressBarPercent, Converter={StaticResource BooleanToVisibilityConverter}}" />
     </Grid>

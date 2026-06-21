@@ -14,7 +14,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <Style x:Key="ScoreInfoTierIconStyle" TargetType="Image" BasedOn="{StaticResource RarityIcon}">
@@ -25,11 +25,11 @@
                 <Setter Property="VerticalAlignment" Value="Center"/>
             </Style>
 
-            <Style x:Key="ScoreInfoTierArrowStyle" TargetType="TextBlock" BasedOn="{StaticResource BaseTextBlockStyle}">
+            <Style x:Key="ScoreInfoTierArrowStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                 <Setter Property="Text" Value="&#xE76C;"/>
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
                 <Setter Property="FontSize" Value="14"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="Opacity" Value="0.58"/>
                 <Setter Property="HorizontalAlignment" Value="Center"/>
                 <Setter Property="VerticalAlignment" Value="Top"/>
@@ -47,10 +47,10 @@
 
         <TextBlock Grid.Row="0"
                    Text="{DynamicResource LOCPlayAch_Score_Info_Title}"
-                   Style="{DynamicResource BaseTextBlockStyle}"
+                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                    FontSize="20"
                    FontWeight="SemiBold"
-                   Foreground="{DynamicResource TextBrush}"
+                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                    Margin="0,0,0,14"/>
 
         <ScrollViewer Grid.Row="1"
@@ -68,22 +68,22 @@
 
                 <Border Grid.Row="0"
                         Grid.Column="0"
-                        BorderBrush="{DynamicResource NormalBorderBrush}"
-                        BorderThickness="1"
-                        Background="{DynamicResource ControlBackgroundBrush}"
-                        CornerRadius="6"
+                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                        Background="{DynamicResource PlayAch.Brush.Surface}"
+                        CornerRadius="{StaticResource PlayAch.Radius.Card}"
                         Padding="14"
                         Margin="0,0,8,12">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Score_Info_CollectionTitle}"
-                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    FontSize="15"
                                    FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Margin="0,0,0,8"/>
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Score_Info_CollectionBody}"
-                                   Style="{DynamicResource BaseTextBlockStyle}"
-                                   Foreground="{DynamicResource TextBrush}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Opacity="0.82"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
@@ -91,22 +91,22 @@
 
                 <Border Grid.Row="0"
                         Grid.Column="1"
-                        BorderBrush="{DynamicResource NormalBorderBrush}"
-                        BorderThickness="1"
-                        Background="{DynamicResource ControlBackgroundBrush}"
-                        CornerRadius="6"
+                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                        Background="{DynamicResource PlayAch.Brush.Surface}"
+                        CornerRadius="{StaticResource PlayAch.Radius.Card}"
                         Padding="14"
                         Margin="8,0,0,12">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Score_Info_PrestigeTitle}"
-                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    FontSize="15"
                                    FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Margin="0,0,0,8"/>
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Score_Info_PrestigeBody}"
-                                   Style="{DynamicResource BaseTextBlockStyle}"
-                                   Foreground="{DynamicResource TextBrush}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Opacity="0.82"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
@@ -115,25 +115,25 @@
                 <Border Grid.Row="1"
                         Grid.Column="0"
                         Grid.ColumnSpan="2"
-                        BorderBrush="{DynamicResource NormalBorderBrush}"
-                        BorderThickness="1"
-                        Background="{DynamicResource ControlBackgroundBrush}"
-                        CornerRadius="6"
+                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                        Background="{DynamicResource PlayAch.Brush.Surface}"
+                        CornerRadius="{StaticResource PlayAch.Radius.Card}"
                         Padding="14">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Score_Info_LevelsTitle}"
-                                   Style="{DynamicResource BaseTextBlockStyle}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    FontSize="15"
                                    FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextBrush}"
-                                   Margin="0,0,0,8"/>
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                         <Grid Margin="0,4,0,18"
                               MinHeight="116">
                             <Border Height="2"
                                     Margin="48,28,48,0"
                                     VerticalAlignment="Top"
-                                    Background="{DynamicResource NormalBorderBrush}"
-                                    Opacity="0.55"/>
+                                    Background="{DynamicResource PlayAch.Brush.Border}"
+                                    Opacity="{StaticResource PlayAch.Opacity.Disabled}"/>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -150,24 +150,24 @@
                                 <StackPanel Grid.Column="0"
                                             HorizontalAlignment="Center"
                                             MinWidth="88"
-                                            Margin="0,0,0,4">
-                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}">
+                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                         <Border CornerRadius="28"
-                                                Background="#12FFFFFF"
-                                                BorderBrush="{DynamicResource NormalBorderBrush}"
-                                                BorderThickness="1"/>
+                                                Background="{StaticResource PlayAch.Brush.Overlay.Tint.12}"
+                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"/>
                                         <Image Source="{StaticResource BadgeBronzeTriangle}"
                                                Style="{StaticResource ScoreInfoTierIconStyle}"/>
                                     </Grid>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Trophy_Bronze}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontWeight="SemiBold"
                                                TextAlignment="Center"
                                                TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Text="V-I"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontSize="11"
                                                Opacity="0.68"
                                                TextAlignment="Center"
@@ -181,24 +181,24 @@
                                 <StackPanel Grid.Column="2"
                                             HorizontalAlignment="Center"
                                             MinWidth="88"
-                                            Margin="0,0,0,4">
-                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}">
+                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                         <Border CornerRadius="28"
-                                                Background="#12FFFFFF"
-                                                BorderBrush="{DynamicResource NormalBorderBrush}"
-                                                BorderThickness="1"/>
+                                                Background="{StaticResource PlayAch.Brush.Overlay.Tint.12}"
+                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"/>
                                         <Image Source="{StaticResource BadgeSilverSquare}"
                                                Style="{StaticResource ScoreInfoTierIconStyle}"/>
                                     </Grid>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Trophy_Silver}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontWeight="SemiBold"
                                                TextAlignment="Center"
                                                TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Text="V-I"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontSize="11"
                                                Opacity="0.68"
                                                TextAlignment="Center"
@@ -212,24 +212,24 @@
                                 <StackPanel Grid.Column="4"
                                             HorizontalAlignment="Center"
                                             MinWidth="88"
-                                            Margin="0,0,0,4">
-                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}">
+                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                         <Border CornerRadius="28"
-                                                Background="#12FFFFFF"
-                                                BorderBrush="{DynamicResource NormalBorderBrush}"
-                                                BorderThickness="1"/>
+                                                Background="{StaticResource PlayAch.Brush.Overlay.Tint.12}"
+                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"/>
                                         <Image Source="{StaticResource BadgeGoldPentagon}"
                                                Style="{StaticResource ScoreInfoTierIconStyle}"/>
                                     </Grid>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Trophy_Gold}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontWeight="SemiBold"
                                                TextAlignment="Center"
                                                TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Text="V-I"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontSize="11"
                                                Opacity="0.68"
                                                TextAlignment="Center"
@@ -243,24 +243,24 @@
                                 <StackPanel Grid.Column="6"
                                             HorizontalAlignment="Center"
                                             MinWidth="88"
-                                            Margin="0,0,0,4">
-                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}">
+                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                         <Border CornerRadius="28"
-                                                Background="#12FFFFFF"
-                                                BorderBrush="{DynamicResource NormalBorderBrush}"
-                                                BorderThickness="1"/>
+                                                Background="{StaticResource PlayAch.Brush.Overlay.Tint.12}"
+                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"/>
                                         <Image Source="{StaticResource BadgePlatinumHexagon}"
                                                Style="{StaticResource ScoreInfoTierIconStyle}"/>
                                     </Grid>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Trophy_Platinum}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontWeight="SemiBold"
                                                TextAlignment="Center"
                                                TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Text="V-I"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontSize="11"
                                                Opacity="0.68"
                                                TextAlignment="Center"
@@ -274,24 +274,24 @@
                                 <StackPanel Grid.Column="8"
                                             HorizontalAlignment="Center"
                                             MinWidth="88"
-                                            Margin="0,0,0,4">
-                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="0,0,0,8">
+                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}">
+                                    <Grid Width="56" Height="56" HorizontalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                         <Border CornerRadius="28"
-                                                Background="#12FFFFFF"
-                                                BorderBrush="{DynamicResource NormalBorderBrush}"
-                                                BorderThickness="1"/>
+                                                Background="{StaticResource PlayAch.Brush.Overlay.Tint.12}"
+                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"/>
                                         <Image Source="{StaticResource BadgeCompletedGame}"
                                                Style="{StaticResource ScoreInfoTierIconStyle}"/>
                                     </Grid>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Score_Tier_Master}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontWeight="SemiBold"
                                                TextAlignment="Center"
                                                TextTrimming="CharacterEllipsis"/>
                                     <TextBlock Text="V-I"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                FontSize="11"
                                                Opacity="0.68"
                                                TextAlignment="Center"
@@ -301,8 +301,8 @@
                             </Grid>
                         </Grid>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Score_Info_LevelsBody}"
-                                   Style="{DynamicResource BaseTextBlockStyle}"
-                                   Foreground="{DynamicResource TextBrush}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Opacity="0.82"
                                    TextWrapping="Wrap"/>
                     </StackPanel>
@@ -316,7 +316,7 @@
                     Margin="0,16,0,0">
             <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
                     Click="CloseButton_Click"
-                    Padding="14,6"
+                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
                     MinWidth="84"
                     IsDefault="True"
                     IsCancel="True"/>

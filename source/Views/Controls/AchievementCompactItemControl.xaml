@@ -3,7 +3,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              mc:Ignorable="d"
@@ -14,11 +13,8 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility"/>
-            <converters:BooleanConverter x:Key="InvertedBooleanConverter" Mode="Inverted"/>
-            <converters:PercentToCompactRarityGlowConverter x:Key="PercentToRarityGlow"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -40,61 +36,61 @@
                             <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
                             <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
                                  FontStyle="Italic"
-                                 FontSize="{DynamicResource FontSizeSmall}"
-                                 Foreground="{DynamicResource TextBrushDarker}"/>
+                                 FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                 Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
                         </TextBlock>
 
                         <!-- Description -->
                         <TextBlock Text="{Binding DescriptionResolved, Mode=OneWay}"
                                    TextWrapping="Wrap"
-                                   Margin="0,4,0,0"
-                                   Opacity="0.8"/>
+                                   Margin="{StaticResource PlayAch.Thickness.Top.Xs}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Secondary}"/>
 
                         <!-- Game name (if available) -->
                         <TextBlock Text="{Binding GameName, Mode=OneWay}"
                                    TextWrapping="Wrap"
-                                   Margin="0,4,0,0"
-                                   FontSize="{DynamicResource FontSizeSmall}"
-                                   Opacity="0.6"/>
+                                   Margin="{StaticResource PlayAch.Thickness.Top.Xs}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
 
                         <!-- Unlock date -->
                         <TextBlock Text="{Binding UnlockTimeText, Mode=OneWay}"
-                                   Margin="0,4,0,0"
-                                   FontSize="{DynamicResource FontSizeSmall}"
-                                   Opacity="0.6"
+                                   Margin="{StaticResource PlayAch.Thickness.Top.Xs}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Muted}"
                                    Visibility="{Binding Unlocked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                         <!-- Rarity info (only when percentage data is available) -->
-                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                        <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Top.Xs}"
                                     Visibility="{Binding HasRarityPercent, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Text="{Binding RarityDetailText, Mode=OneWay}"
-                                       FontSize="{DynamicResource FontSizeSmall}"
-                                       Opacity="0.7"/>
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
                         </StackPanel>
 
                         <!-- Progress info (for partial progress achievements) -->
-                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0"
+                        <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Top.Xs}"
                                     Visibility="{Binding HasProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock Text="{Binding ProgressText, Mode=OneWay}"
-                                       FontSize="{DynamicResource FontSizeSmall}"
-                                       Opacity="0.7"/>
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
                             <TextBlock Text=" ("
-                                       FontSize="{DynamicResource FontSizeSmall}"
-                                       Opacity="0.5"/>
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Placeholder}"/>
                             <TextBlock Text="{Binding ProgressPercent, Mode=OneWay, StringFormat={}{0:F0}%}"
-                                       FontSize="{DynamicResource FontSizeSmall}"
-                                       Opacity="0.7"/>
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
                             <TextBlock Text=")"
-                                       FontSize="{DynamicResource FontSizeSmall}"
-                                       Opacity="0.5"/>
+                                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Placeholder}"/>
                         </StackPanel>
 
                         <!-- Click to reveal hint for hidden achievements -->
                         <TextBlock Text="{DynamicResource LOCPlayAch_Achievements_ClickToReveal}"
-                                   Margin="0,4,0,0"
-                                   FontSize="{DynamicResource FontSizeSmall}"
+                                   Margin="{StaticResource PlayAch.Thickness.Top.Xs}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                    FontStyle="Italic"
-                                   Opacity="0.5"
+                                   Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                    Visibility="{Binding CanReveal, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     </StackPanel>
                 </ToolTip.Content>
@@ -126,7 +122,7 @@
                                     <Condition Binding="{Binding ShowRarityGlow}" Value="True"/>
                                 </MultiDataTrigger.Conditions>
                                 <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
+                                <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource CompactPercentToRarityGlow}}"/>
                             </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
@@ -160,8 +156,8 @@
             <ProgressBar Height="10"
                          Maximum="100"
                          Value="{Binding RarityPercentValue, Mode=OneWay}"
-                         Background="#80000000"
-                         Foreground="{DynamicResource HighlightGlyphBrush}"
+                         Background="{StaticResource PlayAch.Brush.Overlay.Shade.80}"
+                         Foreground="{DynamicResource PlayAch.Brush.Accent}"
                          BorderThickness="0"/>
             <TextBlock Text="{Binding RarityPercentValue, Mode=OneWay, StringFormat={}{0:F0}%}"
                        HorizontalAlignment="Center"

@@ -10,79 +10,69 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <converters:BooleanConverter x:Key="BoolToVis" Mode="ToVisibility" />
-            <Style x:Key="CardBorderStyle" TargetType="Border">
-                <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}" />
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}" />
-                <Setter Property="BorderThickness" Value="1" />
-                <Setter Property="CornerRadius" Value="6" />
-                <Setter Property="Padding" Value="12" />
-            </Style>
-            <Style x:Key="SectionHeaderStyle" TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
-                <Setter Property="FontWeight" Value="SemiBold" />
-                <Setter Property="FontSize" Value="{DynamicResource FontSize}" />
-            </Style>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/ManageAchievementsStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
         <StackPanel Margin="0">
-            <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHeader}"
                                Style="{StaticResource SectionHeaderStyle}" />
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ExclusionHint}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Hint}"
                                TextWrapping="Wrap"
-                               Margin="0,6,0,0" />
+                               Margin="{StaticResource PlayAch.Thickness.Top.Compact}" />
                     <TextBlock Text="{Binding ExclusionStatusText}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Margin="0,8,0,0" />
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Margin="{StaticResource PlayAch.Thickness.Top.Sm}" />
                     <Button Content="{Binding ExclusionActionText}"
                             Command="{Binding ToggleExclusionCommand}"
-                            Padding="12,6"
+                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="190"
                             HorizontalAlignment="Left"
                             Margin="0,10,0,0" />
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader}"
                                Style="{StaticResource SectionHeaderStyle}" />
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Hint}"
                                TextWrapping="Wrap"
-                               Margin="0,6,0,0" />
+                               Margin="{StaticResource PlayAch.Thickness.Top.Compact}" />
                     <TextBlock Text="{Binding SummaryExclusionStatusText}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Margin="0,8,0,0" />
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Margin="{StaticResource PlayAch.Thickness.Top.Sm}" />
                     <Button Content="{Binding SummaryExclusionActionText}"
                             Command="{Binding ToggleSummaryExclusionCommand}"
-                            Padding="12,6"
+                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                             MinWidth="190"
                             HorizontalAlignment="Left"
                             Margin="0,10,0,0" />
                 </StackPanel>
             </Border>
 
-            <Border Style="{StaticResource CardBorderStyle}" Margin="0,0,0,12">
+            <Border Style="{StaticResource CardBorderStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_LockedIconsHeader}"
                                Style="{StaticResource SectionHeaderStyle}" />
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_LockedIconsHint}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Hint}"
                                TextWrapping="Wrap"
-                               Margin="0,6,0,0" />
+                               Margin="{StaticResource PlayAch.Thickness.Top.Compact}" />
                     <TextBlock Text="{Binding SeparateLockedIconsStatusText}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Margin="0,8,0,0"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
                                TextWrapping="Wrap" />
                     <CheckBox Content="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_LockedIconsCheckbox}"
                               IsChecked="{Binding UseSeparateLockedIconsOverride}"
@@ -92,18 +82,18 @@
             </Border>
 
             <Border Style="{StaticResource CardBorderStyle}"
-                    Margin="0,0,0,12">
+                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ProviderHeader}"
                                Style="{StaticResource SectionHeaderStyle}" />
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Overrides_ProviderHint}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Opacity="0.75"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Hint}"
                                TextWrapping="Wrap"
-                               Margin="0,6,0,0" />
+                               Margin="{StaticResource PlayAch.Thickness.Top.Compact}" />
                     <TextBlock Text="{Binding ProviderOverrideStatusText}"
-                               Foreground="{DynamicResource TextBrush}"
-                               Margin="0,8,0,0"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
                                TextWrapping="Wrap" />
 
                     <Grid Margin="0,10,0,0">
@@ -122,25 +112,25 @@
                         <Button Grid.Column="1"
                                 Content="{DynamicResource LOCPlayAch_Button_Apply}"
                                 Command="{Binding ApplyProviderOverrideCommand}"
-                                Padding="12,6"
-                                Margin="8,0,0,0" />
+                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
+                                Margin="{StaticResource PlayAch.Thickness.Left.Sm}" />
                         <Button Grid.Column="2"
                                 Content="{DynamicResource LOCPlayAch_Button_Clear}"
                                 Command="{Binding ClearProviderOverrideCommand}"
-                                Padding="12,6"
-                                Margin="8,0,0,0" />
+                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
+                                Margin="{StaticResource PlayAch.Thickness.Left.Sm}" />
                     </Grid>
 
                     <StackPanel Margin="0,12,0,0"
                                 Visibility="{Binding IsProviderOverrideProviderSelected, Converter={StaticResource BoolToVis}}">
                         <TextBlock Text="{Binding ProviderOverrideInputLabel}"
-                                   Foreground="{DynamicResource TextBrush}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    FontWeight="SemiBold" />
                         <TextBox Text="{Binding ProviderOverrideInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  Padding="8,6"
                                  Width="300"
                                  HorizontalAlignment="Left"
-                                 Margin="0,6,0,0" />
+                                 Margin="{StaticResource PlayAch.Thickness.Top.Compact}" />
                     </StackPanel>
                 </StackPanel>
             </Border>

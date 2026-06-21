@@ -19,20 +19,13 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/OverviewStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:EnumToBoolConverter x:Key="EnumToBool"/>
-            <converters:IntToVisibilityConverter x:Key="IntToVis"/>
-            <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
-            <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
-            <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
-            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
-            <converters:DataGridCompletedBorderThicknessConverter x:Key="OverviewCompletedBorderThickness"/>
 
             <!-- Shared LegendItem DataTemplate for all pie charts -->
             <DataTemplate x:Key="LegendItemTemplate">
                 <StackPanel Orientation="Horizontal" Margin="0,2">
-                    <Grid Width="18" Height="18" Margin="0,0,6,0" VerticalAlignment="Center"
+                    <Grid Width="18" Height="18" Margin="{StaticResource PlayAch.Thickness.Right.Compact}" VerticalAlignment="Center"
                           UseLayoutRounding="True"
                           SnapsToDevicePixels="True">
                         <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
@@ -51,16 +44,16 @@
                         </Image>
                     </Grid>
                     <TextBlock Text="{Binding Count}"
-                               Style="{DynamicResource BaseTextBlockStyle}"
-                               Foreground="{DynamicResource TextBrush}"
-                               FontSize="{DynamicResource FontSizeSmall}"
+                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                VerticalAlignment="Center"/>
                 </StackPanel>
             </DataTemplate>
 
             <Style x:Key="NavigationButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="BorderThickness" Value="0"/>
                 <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
                 <Setter Property="FontSize" Value="14"/>
@@ -83,10 +76,10 @@
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource HighlightGlyphBrush}"/>
+                                    <Setter TargetName="border" Property="Background" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.20}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -127,9 +120,9 @@
             <!-- Tab button style -->
             <Style x:Key="TabButtonStyle" TargetType="RadioButton">
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="Padding" Value="16,10"/>
-                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Template">
@@ -143,7 +136,7 @@
                                                       VerticalAlignment="Center"/>
                                     <Border x:Name="indicator"
                                             Height="3"
-                                            Background="#2196F3"
+                                            Background="{StaticResource PlayAch.Brush.CompletionAccent}"
                                             VerticalAlignment="Bottom"
                                             Margin="0,0,0,-10"
                                             Visibility="Collapsed"/>
@@ -152,18 +145,18 @@
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="indicator" Property="Visibility" Value="Visible"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="False">
                                     <Setter Property="Opacity" Value="0.6"/>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="Opacity" Value="1"/>
-                                    <Setter TargetName="border" Property="Background" Value="#10FFFFFF"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.10}"/>
                                 </Trigger>
                                 <Trigger Property="IsKeyboardFocused" Value="True">
                                     <Setter Property="Opacity" Value="1"/>
-                                    <Setter TargetName="border" Property="Background" Value="#20FFFFFF"/>
+                                    <Setter TargetName="border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.20}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
@@ -191,9 +184,9 @@
                         <ControlTemplate TargetType="Button">
                             <TextBlock Text="{TemplateBinding Content}"
                                        VerticalAlignment="Center"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextBrush}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                                        TextTrimming="CharacterEllipsis"/>
                         </ControlTemplate>
                     </Setter.Value>
@@ -205,9 +198,9 @@
                                 <ControlTemplate TargetType="Button">
                                     <TextBlock Text="{TemplateBinding Content}"
                                                VerticalAlignment="Center"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                                FontWeight="Bold"
-                                               Foreground="{DynamicResource HighlightGlyphBrush}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Accent}"
                                                TextTrimming="CharacterEllipsis"/>
                                 </ControlTemplate>
                             </Setter.Value>
@@ -235,179 +228,6 @@
                 </Style.Triggers>
             </Style>
 
-            <!-- Style for Game Icon/Cover in Grid -->
-            <Style x:Key="GameImageBorderStyle" TargetType="Border">
-                <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
-                <Setter Property="UseLayoutRounding" Value="True"/>
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Setter Property="ClipToBounds" Value="True"/>
-                <Setter Property="Width" Value="64"/>
-                <Setter Property="Height" Value="64"/>
-                <Setter Property="Margin" Value="6,8,6,7"/>
-                    <Setter Property="Background">
-                        <Setter.Value>
-                        <ImageBrush Stretch="Uniform"
-                                    helpers:AsyncImage.Uri="{Binding GameLogo, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                                    helpers:AsyncImage.DecodePixel="96"/>
-                        </Setter.Value>
-                    </Setter>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding DataContext.UseCoverImages, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True">
-                        <Setter Property="Width" Value="64"/>
-                        <Setter Property="Height" Value="96"/>
-                        <Setter Property="Background">
-                            <Setter.Value>
-                                <ImageBrush Stretch="Uniform"
-                                            helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
-                                            helpers:AsyncImage.DecodePixel="128"/>
-                            </Setter.Value>
-                        </Setter>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <Style x:Key="GameSummariesGridCellStyle" TargetType="DataGridCell">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Focusable" Value="True"/>
-                <Setter Property="IsTabStop" Value="True"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="UseLayoutRounding" Value="True"/>
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="DataGridCell">
-                            <Border Background="{TemplateBinding Background}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
-                                <ContentPresenter VerticalAlignment="Stretch"
-                                                  HorizontalAlignment="Stretch"/>
-                            </Border>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
-                        <Setter Property="Background" Value="#30FFFFFF"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                        <Setter Property="Background" Value="#30FFFFFF"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                        <Setter Property="Background" Value="#40FFFFFF"/>
-                    </DataTrigger>
-                    <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
-                        <Setter Property="Background" Value="#30FFFFFF"/>
-                    </DataTrigger>
-                    <MultiDataTrigger>
-                        <MultiDataTrigger.Conditions>
-                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
-                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
-                        </MultiDataTrigger.Conditions>
-                        <Setter Property="Background" Value="#50FFFFFF"/>
-                    </MultiDataTrigger>
-                    <MultiDataTrigger>
-                        <MultiDataTrigger.Conditions>
-                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
-                            <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
-                        </MultiDataTrigger.Conditions>
-                        <Setter Property="Background" Value="#45FFFFFF"/>
-                    </MultiDataTrigger>
-                </Style.Triggers>
-            </Style>
-
-            <Style x:Key="GameSummariesGridRowStyle" TargetType="DataGridRow">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource NormalBorderBrush}"/>
-                <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                <Setter Property="UseLayoutRounding" Value="True"/>
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="MinHeight" Value="112"/>
-                <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
-                <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
-            </Style>
-
-            <Style x:Key="GameSummaryNameTextStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="TextWrapping" Value="Wrap"/>
-            </Style>
-
-            <Style x:Key="OverviewGameMetadataTextStyle" TargetType="TextBlock">
-                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
-                <Setter Property="Opacity" Value="0.6"/>
-                <Setter Property="Margin" Value="0,4,0,0"/>
-                <Setter Property="TextWrapping" Value="Wrap"/>
-            </Style>
-
-            <Style x:Key="GameSummaryProviderIconStyle" TargetType="Image">
-                <Setter Property="Width" Value="32"/>
-                <Setter Property="Height" Value="32"/>
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="UseLayoutRounding" Value="True"/>
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Setter Property="RenderOptions.BitmapScalingMode" Value="NearestNeighbor"/>
-            </Style>
-
-            <Style x:Key="OverviewProgressContainerStyle" TargetType="Grid">
-                <Setter Property="Margin" Value="2,4,10,4"/>
-                <Setter Property="VerticalAlignment" Value="Stretch"/>
-            </Style>
-
-            <Style x:Key="OverviewProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
-                <Setter Property="Height" Value="22"/>
-            </Style>
-
-            <Style x:Key="OverviewProgressPercentTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Foreground" Value="White"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="HorizontalAlignment" Value="Center"/>
-                <Setter Property="TextAlignment" Value="Center"/>
-                <Setter Property="Margin" Value="0"/>
-            </Style>
-
-            <Style x:Key="OverviewProgressMetaRowStyle" TargetType="StackPanel">
-                <Setter Property="Orientation" Value="Horizontal"/>
-                <Setter Property="HorizontalAlignment" Value="Right"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-            </Style>
-
-            <Style x:Key="OverviewProgressFooterStyle" TargetType="Grid">
-                <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                <Setter Property="Margin" Value="0,10,4,0"/>
-            </Style>
-
-            <Style x:Key="OverviewMiniBadgeItemStyle" TargetType="StackPanel">
-                <Setter Property="Orientation" Value="Horizontal"/>
-                <Setter Property="Margin" Value="4,0"/>
-            </Style>
-
-            <Style x:Key="OverviewMiniBadgeImageStyle" TargetType="Image" BasedOn="{StaticResource RarityIcon}">
-                <Setter Property="Effect" Value="{StaticResource BadgeShadow}"/>
-                <Setter Property="Width" Value="18"/>
-                <Setter Property="Height" Value="18"/>
-            </Style>
-
-            <Style x:Key="OverviewMiniBadgeTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
-                <Setter Property="FontSize" Value="{DynamicResource FontSizeSmall}"/>
-                <Setter Property="FontWeight" Value="Bold"/>
-                <Setter Property="Foreground" Value="White"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="Margin" Value="3,0,0,0"/>
-            </Style>
-
-            <Style x:Key="OverviewCompletedFooterIconStyle" TargetType="Image" BasedOn="{StaticResource OverviewMiniBadgeImageStyle}">
-                <Setter Property="HorizontalAlignment" Value="Left"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="Margin" Value="4,0,0,0"/>
-            </Style>
-
             <Style x:Key="CenterLineSplitterStyle" TargetType="GridSplitter">
                 <Setter Property="Width" Value="14"/>
                 <Setter Property="Background" Value="Transparent"/>
@@ -428,7 +248,7 @@
                                 <Border x:Name="Line"
                                         Width="2"
                                         HorizontalAlignment="Center"
-                                        Background="{DynamicResource NormalBorderBrush}"
+                                        Background="{DynamicResource PlayAch.Brush.Border}"
                                         Opacity="1"/>
                             </Grid>
                             <ControlTemplate.Triggers>
@@ -453,7 +273,7 @@
         <!-- ROW 0: Header with Title, Scores, and Refresh Buttons -->
         <Border Grid.Row="0"
                 Background="{DynamicResource Transparent}"
-                BorderBrush="{DynamicResource NormalBorderBrush}"
+                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                 BorderThickness="0,0,0,1"
                 Padding="16,0,16,4"
                 WindowChrome.IsHitTestVisibleInChrome="True">
@@ -481,14 +301,14 @@
                             ToolTip="Back to Library"/>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
-                               Style="{DynamicResource BaseTextBlockStyle}"
+                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                FontWeight="Bold"
                                FontSize="20"
-                               Foreground="{DynamicResource TextBrush}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                                VerticalAlignment="Center"
                                MaxWidth="230"
                                TextTrimming="CharacterEllipsis"
-                               Margin="12,0,0,0"/>
+                               Margin="{StaticResource PlayAch.Thickness.Left.Md}"/>
 
                     <StackPanel Orientation="Horizontal"
                                 VerticalAlignment="Center"
@@ -501,7 +321,7 @@
                                 HorizontalContentAlignment="Center"
                                 MinWidth="94"
                                 MinHeight="24"
-                                Margin="0,0,6,0"
+                                Margin="{StaticResource PlayAch.Thickness.Right.Compact}"
                                 VerticalAlignment="Center">
                             <Button.ContextMenu>
                                 <ContextMenu x:Name="RefreshModeSelectionContextMenu"
@@ -532,8 +352,8 @@
                                                InfoRequested="ScoreCard_InfoRequested"
                                                Visibility="{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}"/>
 
-                    <Border Background="{DynamicResource NormalBorderBrush}"
-                            Opacity="0.55"
+                    <Border Background="{DynamicResource PlayAch.Brush.Border}"
+                            Opacity="{StaticResource PlayAch.Opacity.Disabled}"
                             VerticalAlignment="Center"
                             Width="1"
                             Height="42"
@@ -556,11 +376,11 @@
                 Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
             <StackPanel>
                 <TextBlock Text="{Binding ProgressMessage}"
-                           Style="{DynamicResource BaseTextBlockStyle}"
-                           Foreground="{DynamicResource TextBrush}"
-                           Opacity="0.8"
+                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Secondary}"
                            TextTrimming="CharacterEllipsis"
-                           Margin="0,0,0,6"/>
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
                 <ProgressBar Value="{Binding ProgressPercent}"
                              Height="6"
                              Minimum="0"
@@ -605,7 +425,7 @@
                 <!-- LEFT: Filters Row -->
                 <Border Grid.Row="1" Grid.Column="0"
                         Background="{DynamicResource Transparent}"
-                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                         BorderThickness="0,0,1,0"
                         Padding="16,10"
                         KeyboardNavigation.DirectionalNavigation="Continue">
@@ -624,9 +444,9 @@
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
                                        VerticalAlignment="Center"
-                                       Margin="12,0,0,0"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.5"
+                                       Margin="{StaticResource PlayAch.Thickness.Left.Md}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                        IsHitTestVisible="False">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
@@ -654,8 +474,8 @@
                                 Content="{Binding SelectedProviderFilterText}"
                                 Click="ProviderFilterSelectionButton_Click"
                                 Width="170"
-                                Height="30"
-                                Margin="4,0,0,0"
+                                Height="{StaticResource PlayAch.Size.Control.Height}"
+                                Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                 VerticalAlignment="Center">
                         <Button.ContextMenu>
                             <ContextMenu x:Name="ProviderFilterSelectionContextMenu"
@@ -669,8 +489,8 @@
                                 Content="{Binding SelectedCompletenessFilterText}"
                                 Click="CompletenessFilterSelectionButton_Click"
                                 Width="170"
-                                Height="30"
-                                Margin="4,0,0,0"
+                                Height="{StaticResource PlayAch.Size.Control.Height}"
+                                Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                 VerticalAlignment="Center">
                         <Button.ContextMenu>
                             <ContextMenu x:Name="CompletenessFilterSelectionContextMenu"
@@ -684,8 +504,8 @@
                                 Content="{Binding SelectedPlayStatusFilterText}"
                                 Click="PlayStatusFilterSelectionButton_Click"
                                 Width="170"
-                                Height="30"
-                                Margin="4,0,0,0"
+                                Height="{StaticResource PlayAch.Size.Control.Height}"
+                                Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                 VerticalAlignment="Center">
                         <Button.ContextMenu>
                             <ContextMenu x:Name="PlayStatusFilterSelectionContextMenu"
@@ -699,7 +519,7 @@
                 <!-- RIGHT: Filters Row -->
                 <Border Grid.Row="1" Grid.Column="2"
                         Background="{DynamicResource Transparent}"
-                        BorderBrush="{DynamicResource NormalBorderBrush}"
+                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                         BorderThickness="0,0,0,0"
                         Padding="16,10"
                         KeyboardNavigation.DirectionalNavigation="Continue">
@@ -715,9 +535,9 @@
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
                                        VerticalAlignment="Center"
-                                       Margin="12,0,0,0"
-                                       Foreground="{DynamicResource TextBrush}"
-                                       Opacity="0.5"
+                                       Margin="{StaticResource PlayAch.Thickness.Left.Md}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                        IsHitTestVisible="False">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
@@ -742,15 +562,15 @@
                         <StackPanel Grid.Column="1"
                                 Orientation="Horizontal"
                                 VerticalAlignment="Center"
-                                Margin="8,0,0,0"
+                                Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                 Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
                             <Button x:Name="SelectedGameTypeFilterSelectionButton"
                                     Style="{StaticResource AchievementSelectorButtonStyle}"
                                     Content="{Binding SelectedGameTypeFilterText}"
                                     Click="SelectedGameTypeFilterSelectionButton_Click"
                                     Width="120"
-                                    Height="30"
-                                    Margin="0,0,8,0"
+                                    Height="{StaticResource PlayAch.Size.Control.Height}"
+                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                                     VerticalAlignment="Center"
                                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Type}">
                                 <Button.ContextMenu>
@@ -763,8 +583,8 @@
                                     Content="{Binding SelectedGameCategoryFilterText}"
                                     Click="SelectedGameCategoryFilterSelectionButton_Click"
                                     Width="140"
-                                    Height="30"
-                                    Margin="0,0,8,0"
+                                    Height="{StaticResource PlayAch.Size.Control.Height}"
+                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                                     VerticalAlignment="Center"
                                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Label}">
                                 <Button.ContextMenu>
@@ -776,12 +596,12 @@
                                   Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
                                   IsChecked="{Binding ShowSelectedGameUnlocked}"
                                   VerticalAlignment="Center"
-                                  Margin="0,0,8,0"/>
+                                  Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                             <CheckBox x:Name="SelectedGameLockedFilterCheckBox"
                                   Content="{DynamicResource LOCPlayAch_Common_Locked}"
                                   IsChecked="{Binding ShowSelectedGameLocked}"
                                   VerticalAlignment="Center"
-                                  Margin="0,0,8,0"/>
+                                  Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
                             <CheckBox x:Name="SelectedGameHiddenFilterCheckBox"
                                   Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
                                   IsChecked="{Binding ShowSelectedGameHidden}"
@@ -795,13 +615,13 @@
                     <Border Grid.Row="0" Grid.Column="0"
                             Background="{DynamicResource Transparent}"
                             Padding="16,10,16,10"
-                            BorderBrush="{DynamicResource NormalBorderBrush}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                             BorderThickness="0,0,1,1">
                         <Grid>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        FontWeight="Bold"
-                                       Foreground="{DynamicResource TextBrush}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                                        VerticalAlignment="Center"
                                        TextTrimming="CharacterEllipsis"/>
                         </Grid>
@@ -809,7 +629,7 @@
 
                     <!-- LEFT: Games List -->
                     <Border Grid.Row="2" Grid.Column="0"
-                            BorderBrush="{DynamicResource NormalBorderBrush}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                             BorderThickness="0,0,1,0">
                         <Grid x:Name="OverviewBottomChartsGrid">
                             <Grid.RowDefinitions>
@@ -842,13 +662,13 @@
                         <!-- Header for when NO game is selected -->
                         <Border Background="{DynamicResource Transparent}"
                                 Height="38"
-                                BorderBrush="{DynamicResource NormalBorderBrush}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                                 BorderThickness="0,0,0,1"
                                 Visibility="{Binding ShowRecentAchievementsPanel, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
-                                       Style="{DynamicResource BaseTextBlockStyle}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        FontWeight="Bold"
-                                       Foreground="{DynamicResource TextBrush}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                                        VerticalAlignment="Center"
                                        Margin="16,0"/>
                         </Border>
@@ -856,7 +676,7 @@
                         <!-- Header for when a game IS selected -->
                         <Border Background="{DynamicResource Transparent}"
                                 Height="38"
-                                BorderBrush="{DynamicResource NormalBorderBrush}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                                 BorderThickness="0,0,0,1"
                                 Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
 
@@ -865,17 +685,17 @@
                                         VerticalAlignment="Center">
 
                                 <TextBlock Text="{Binding DisplayedSelectedGame.GameName}"
-                                        FontSize="{DynamicResource FontSize}"
+                                        FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                         FontWeight="Bold"
-                                        Foreground="{DynamicResource TextBrush}"
+                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                                         TextTrimming="CharacterEllipsis"
                                         VerticalAlignment="Center"/>
 
                                 <TextBlock Text="{Binding SelectedGameHeaderText}"
-                                        FontSize="{DynamicResource FontSizeSmall}"
-                                        Foreground="{DynamicResource TextBrush}"
-                                        Opacity="0.7"
-                                        Margin="8,0,0,0"
+                                        FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                        Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                        Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                         VerticalAlignment="Center"/>
 
                                 <Button x:Name="ClearGameSelectionButton"
@@ -883,7 +703,7 @@
                                         Click="ClearGameSelection_Click"
                                         Width="24"
                                         Height="24"
-                                        Padding="0"
+                                        Padding="{StaticResource PlayAch.Thickness.None}"
                                         Margin="10,0,0,0"
                                         VerticalAlignment="Bottom"/>
 
@@ -971,12 +791,12 @@
 
                                     <TextBlock Grid.Row="0"
                                                Text="{Binding TimelineSectionTitle}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.7"
-                                               Margin="0,0,0,6"/>
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                               Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
 
-                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                         <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="GlobalTimeRangeDefault"
                                                      Style="{StaticResource TimeRangeButtonStyle}"
                                                      IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=SevenDays}"
@@ -1010,15 +830,15 @@
                                                         DisableAnimations="True">
                                         <lvc:CartesianChart.Resources>
                                             <Style TargetType="lvc:ColumnSeries">
-                                                <Setter Property="Fill" Value="{DynamicResource HighlightGlyphBrush}" />
+                                                <Setter Property="Fill" Value="{DynamicResource PlayAch.Brush.Accent}" />
                                             </Style>
                                         </lvc:CartesianChart.Resources>
                                         <lvc:CartesianChart.AxisX>
                                             <lvc:Axis Labels="{Binding GlobalTimeline.TimelineLabels}"
                                                       ShowLabels="True"
                                                       LabelsRotation="45"
-                                                      FontSize="{DynamicResource FontSizeSmall}"
-                                                      Foreground="{DynamicResource TextBrush}">
+                                                      FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                                      Foreground="{DynamicResource PlayAch.Brush.Text}">
                                                 <lvc:Axis.Separator>
                                                     <lvc:Separator Step="1" IsEnabled="False"/>
                                                 </lvc:Axis.Separator>
@@ -1027,10 +847,10 @@
                                         <lvc:CartesianChart.AxisY>
                                             <lvc:Axis MinValue="0"
                                                       LabelFormatter="{Binding GlobalTimeline.YAxisFormatter}"
-                                                      FontSize="{DynamicResource FontSizeSmall}"
-                                                      Foreground="{DynamicResource TextBrush}">
+                                                      FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                                      Foreground="{DynamicResource PlayAch.Brush.Text}">
                                                 <lvc:Axis.Separator>
-                                                    <lvc:Separator Stroke="{DynamicResource NormalBorderBrush}" Opacity="0.2"/>
+                                                    <lvc:Separator Stroke="{DynamicResource PlayAch.Brush.Border}" Opacity="0.2"/>
                                                 </lvc:Axis.Separator>
                                             </lvc:Axis>
                                         </lvc:CartesianChart.AxisY>
@@ -1094,9 +914,9 @@
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0"
                                                Text="{DynamicResource LOCPlayAch_Overview_GamesPieChart}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.7"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                                HorizontalAlignment="Stretch"
                                                VerticalAlignment="Top"
                                                TextAlignment="Center"
@@ -1121,9 +941,9 @@
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0"
                                                Text="{DynamicResource LOCPlayAch_Overview_ProviderDistribution}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.7"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                                HorizontalAlignment="Stretch"
                                                VerticalAlignment="Top"
                                                TextAlignment="Center"
@@ -1149,9 +969,9 @@
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0"
                                                Text="{Binding RarityPieChartTitle}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.7"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                                HorizontalAlignment="Stretch"
                                                VerticalAlignment="Top"
                                                TextAlignment="Center"
@@ -1175,9 +995,9 @@
                                     </Grid.RowDefinitions>
                                     <TextBlock Grid.Row="0"
                                                Text="{Binding TrophyPieChartTitle}"
-                                               Style="{DynamicResource BaseTextBlockStyle}"
-                                               Foreground="{DynamicResource TextBrush}"
-                                               Opacity="0.7"
+                                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                                HorizontalAlignment="Stretch"
                                                VerticalAlignment="Top"
                                                TextAlignment="Center"
