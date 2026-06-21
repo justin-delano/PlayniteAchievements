@@ -27,8 +27,32 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly ILogger Logger = LogManager.GetLogger();
         private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
-        private const double CompactColumnMinWidth = 22;
-        private const double DefaultStatusColumnWidth = 36;
+        private const double DefaultStatusColumnWidth = 40;
+        private const double DefaultIconColumnWidth = 72;
+        private const double DefaultGameImageColumnWidth = 96;
+        private const double DefaultTrophyIconColumnWidth = 72;
+        private const double MinimumStatusColumnWidth = 28;
+        private const double MinimumGameImageColumnWidth = 56;
+        private const double MaximumStatusColumnWidth = 96;
+        private const double MaximumGameImageColumnWidth = 240;
+
+        private static readonly IReadOnlyDictionary<string, double> DefaultImageColumnWidthSeeds =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Status"] = DefaultStatusColumnWidth,
+                ["Icon"] = DefaultIconColumnWidth,
+                ["Game"] = DefaultGameImageColumnWidth,
+                ["Trophy"] = DefaultTrophyIconColumnWidth,
+                ["RarityTier"] = DefaultTrophyIconColumnWidth
+            };
+
+        private static readonly IReadOnlyDictionary<string, double> LegacyImageColumnRuntimeDefaults =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Status"] = 36,
+                ["Icon"] = 64,
+                ["Game"] = 64
+            };
 
         // Defaults are applied only when a saved layout is missing a key.
         private static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, bool>> DefaultVisibilityByColumnSettingsKey =
@@ -377,14 +401,24 @@ namespace PlayniteAchievements.Views.Controls
             var statusColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "StatusColumn") as DataGridTemplateColumn;
             if (statusColumn != null)
             {
-                SetResizableColumnVisibility(statusColumn, !HideStatusColumn, DefaultStatusColumnWidth);
+                SetResizableColumnVisibility(
+                    statusColumn,
+                    !HideStatusColumn,
+                    DefaultStatusColumnWidth,
+                    MinimumStatusColumnWidth,
+                    MaximumStatusColumnWidth);
             }
 
             // Update Game column visibility - force collapsed when ShowGameColumn is false
             var gameColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "GameColumn") as DataGridTemplateColumn;
             if (gameColumn != null)
             {
-                SetResizableColumnVisibility(gameColumn, ShowGameColumn, 64);
+                SetResizableColumnVisibility(
+                    gameColumn,
+                    ShowGameColumn,
+                    DefaultGameImageColumnWidth,
+                    MinimumGameImageColumnWidth,
+                    MaximumGameImageColumnWidth);
             }
         }
 
@@ -414,7 +448,12 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
-        private static void SetResizableColumnVisibility(DataGridColumn column, bool isVisible, double defaultWidth)
+        private static void SetResizableColumnVisibility(
+            DataGridColumn column,
+            bool isVisible,
+            double defaultWidth,
+            double minWidth,
+            double maxWidth)
         {
             if (column == null)
             {
@@ -424,8 +463,8 @@ namespace PlayniteAchievements.Views.Controls
             if (isVisible)
             {
                 column.Visibility = Visibility.Visible;
-                column.MinWidth = CompactColumnMinWidth;
-                column.MaxWidth = double.PositiveInfinity;
+                column.MinWidth = minWidth;
+                column.MaxWidth = maxWidth;
                 if (column.Width.IsAbsolute && column.Width.Value <= 0)
                 {
                     column.Width = new DataGridLength(defaultWidth, DataGridLengthUnitType.Pixel);
@@ -571,6 +610,7 @@ namespace PlayniteAchievements.Views.Controls
                         SavePluginSettings(settings);
                     }
                 },
+                defaultWidthSeeds: DefaultImageColumnWidthSeeds,
                 getOrder: () => GetOrderMap(settings),
                 setOrder: map =>
                 {
@@ -606,7 +646,8 @@ namespace PlayniteAchievements.Views.Controls
                     }
                 },
                 getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
-                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid));
+                applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(AchievementsDataGrid),
+                isRuntimeDefaultWidth: IsLegacyImageColumnRuntimeDefaultWidth);
             _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
 
             // Force collapse Game column when not shown (prevents flicker by applying during persistence)
@@ -1104,6 +1145,14 @@ namespace PlayniteAchievements.Views.Controls
         private static bool IsValidWidth(double width)
         {
             return !double.IsNaN(width) && !double.IsInfinity(width) && width > 0;
+        }
+
+        private static bool IsLegacyImageColumnRuntimeDefaultWidth(string key, double width)
+        {
+            return !string.IsNullOrWhiteSpace(key) &&
+                   LegacyImageColumnRuntimeDefaults.TryGetValue(key, out var legacyWidth) &&
+                   Math.Abs(ColumnWidthNormalization.RoundPixelWidth(width) -
+                            ColumnWidthNormalization.RoundPixelWidth(legacyWidth)) <= 0.2;
         }
 
         private static void SavePluginSettings(PlayniteAchievementsSettings settings)
