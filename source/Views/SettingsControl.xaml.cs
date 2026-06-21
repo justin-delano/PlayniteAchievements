@@ -2597,8 +2597,16 @@ namespace PlayniteAchievements.Views
             {
                 if (SetValueAndReturn(ref _mode, value))
                 {
+                    if (_mode == ResourceOverrideMode.Custom && string.IsNullOrWhiteSpace(_customValue))
+                    {
+                        _customValue = GetCurrentPlayniteValueText(Descriptor);
+                        OnPropertyChanged(nameof(CustomValue));
+                    }
+
                     Persist();
                     OnPropertyChanged(nameof(IsCustom));
+                    OnPropertyChanged(nameof(DisplayValueText));
+                    OnPropertyChanged(nameof(PreviewBrush));
                 }
             }
         }
@@ -2613,8 +2621,23 @@ namespace PlayniteAchievements.Views
                 if (SetValueAndReturn(ref _customValue, value))
                 {
                     Persist();
+                    OnPropertyChanged(nameof(DisplayValueText));
                     OnPropertyChanged(nameof(PreviewBrush));
                 }
+            }
+        }
+
+        public string DisplayValueText
+        {
+            get => IsCustom ? CustomValue : GetCurrentPlayniteValueText(Descriptor);
+            set
+            {
+                if (!IsCustom)
+                {
+                    return;
+                }
+
+                CustomValue = value;
             }
         }
 
@@ -2624,7 +2647,7 @@ namespace PlayniteAchievements.Views
             {
                 try
                 {
-                    return new SolidColorBrush((Color)ColorConverter.ConvertFromString(CustomValue));
+                    return new SolidColorBrush((Color)ColorConverter.ConvertFromString(DisplayValueText));
                 }
                 catch
                 {
@@ -2638,6 +2661,14 @@ namespace PlayniteAchievements.Views
             if (_settings.ResourceOverrides == null)
             {
                 _settings.ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (Mode == ResourceOverrideMode.FollowPlaynite)
+            {
+                _settings.ResourceOverrides.Remove(ResourceKey);
+                _settings.OnPropertyChanged(nameof(PersistedSettings.ResourceOverrides));
+                _applyResources?.Invoke();
+                return;
             }
 
             _settings.ResourceOverrides[ResourceKey] = new ResourceOverrideSetting

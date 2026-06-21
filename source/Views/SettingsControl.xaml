@@ -1264,7 +1264,7 @@
 
                                                                 <TextBox Grid.Column="1"
                                                                          MinWidth="120"
-                                                                         Text="{Binding CustomValue, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                                                         Text="{Binding DisplayValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                                                                 <Button Grid.Column="2"
                                                                         Content="Pick"
