@@ -90,7 +90,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.DynamicThemeDefaultsChanged += Settings_DynamicThemeDefaultsChanged;
 
             var openOverviewCommand = new RelayCommand(_ => OpenOverviewWindow());
-            var openSelectedGameCommand = new RelayCommand(_ => OpenSelectedGameWindow());
+            var openSelectedGameCommand = new RelayCommand(OpenSelectedGameWindowCommand);
             var openViewAchievementsCommand = new RelayCommand(OpenViewAchievementsWindowCommand);
             var openManageAchievementsCommand = new RelayCommand(OpenManageAchievementsWindow);
 
@@ -633,6 +633,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _windowService.OpenOverviewWindow();
         }
 
+        private void OpenSelectedGameWindowCommand(object parameter)
+        {
+            if (TryResolveThemeCommandGameId(parameter, out var gameId))
+            {
+                OpenViewAchievementsWindow(gameId);
+                return;
+            }
+
+            OpenSelectedGameWindow();
+        }
+
         private void OpenSelectedGameWindow()
         {
             var id = GetSingleSelectedGameId();
@@ -680,6 +691,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private bool TryResolveThemeCommandGameId(object parameter, out Guid gameId)
         {
             gameId = Guid.Empty;
+
+            if (parameter == DependencyProperty.UnsetValue)
+            {
+                parameter = null;
+            }
 
             switch (parameter)
             {

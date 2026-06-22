@@ -103,7 +103,7 @@
             
 
             <!-- Achievement Icon -->
-            <DataGridTemplateColumn Width="72" MinWidth="44" MaxWidth="180" CanUserResize="True"
+            <DataGridTemplateColumn Width="72" MinWidth="32" MaxWidth="180" CanUserResize="True"
                                     Header="{DynamicResource LOCPlayAch_Column_Icon}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Icon"
                                     CellStyle="{StaticResource AchievementGlowIconCellStyle}"
@@ -193,7 +193,7 @@
             <!-- Game Column - shown in overview recent achievements -->
             <DataGridTemplateColumn x:Name="GameColumn"
                                     Width="96"
-                                    MinWidth="56"
+                                    MinWidth="32"
                                     MaxWidth="240"
                                     CanUserResize="True"
                                     Header="{DynamicResource LOCPlayAch_Column_Game}"
@@ -236,14 +236,14 @@
             </DataGridTemplateColumn>
 
             <!-- Trophy -->
-            <DataGridTemplateColumn Width="72" MinWidth="44" MaxWidth="160" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="True" SortMemberPath="TrophyType" helpers:ColumnVisibilityHelper.ColumnKey="Trophy"
+            <DataGridTemplateColumn Width="72" MinWidth="32" MaxWidth="160" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="True" SortMemberPath="TrophyType" helpers:ColumnVisibilityHelper.ColumnKey="Trophy"
                                     CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
 
             <!-- Rarity -->
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Rarity}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="Rarity"
                                     CellTemplate="{StaticResource AchievementRarityTemplate}"/>
 
-            <DataGridTemplateColumn Width="72" MinWidth="44" MaxWidth="160" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_RarityTier}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityTier"
+            <DataGridTemplateColumn Width="72" MinWidth="32" MaxWidth="160" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_RarityTier}" SortMemberPath="RaritySortValue" helpers:ColumnVisibilityHelper.ColumnKey="RarityTier"
                                     Visibility="Collapsed"
                                     CellTemplate="{StaticResource AchievementRarityTierTemplate}">
                 <DataGridTemplateColumn.HeaderTemplate>

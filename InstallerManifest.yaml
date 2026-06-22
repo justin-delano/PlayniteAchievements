@@ -6,7 +6,7 @@ Packages:
     ReleaseDate: 2026-06-21
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.3/PlayniteAchievements_2_5_3.pext
     Changelog:
-    - "[Fixed] More performance improvements.
+    - "[Fixed] More performance improvements."
     - "[Fixed] Image columns in grids have better width defaults, minimums, and maximums."
 
   - Version: 2.5.2
