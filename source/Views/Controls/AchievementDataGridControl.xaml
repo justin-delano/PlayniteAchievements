@@ -33,7 +33,7 @@
               RowHeaderWidth="0"
               GridLinesVisibility="None"
               RowBackground="Transparent"
-              BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+              BorderThickness="0"
               BorderBrush="{DynamicResource PlayAch.Brush.Border}"
               Background="Transparent"
               CanUserAddRows="False"

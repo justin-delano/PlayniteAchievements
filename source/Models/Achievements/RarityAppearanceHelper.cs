@@ -47,7 +47,13 @@ namespace PlayniteAchievements.Models.Achievements
 
         public static Color GetCompletedColor(PersistedSettings settings = null)
         {
-            return GetCompletedStartColor(settings);
+            var persisted = settings ?? _activeSettings;
+            if (UsesDefaultCompletedColors(persisted))
+            {
+                return GetCompletedEndColor(persisted);
+            }
+
+            return GetCompletedStartColor(persisted);
         }
 
         public static Color GetCompletedStartColor(PersistedSettings settings = null)
@@ -406,6 +412,11 @@ namespace PlayniteAchievements.Models.Achievements
 
         private static bool UsesDefaultCompletedColors(PersistedSettings settings)
         {
+            if (settings?.RarityColors == null)
+            {
+                return true;
+            }
+
             return string.Equals(
                        NormalizeColorText(settings?.RarityColors?.CompletedStart),
                        NormalizeColorText(RarityColorSettings.DefaultCompletedStart),

@@ -241,21 +241,11 @@
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="GridSplitter">
-                            <Grid Background="{TemplateBinding Background}"
-                                SnapsToDevicePixels="True"
-                                UseLayoutRounding="True">
-                                <!-- Visible divider line -->
-                                <Border x:Name="Line"
-                                        Width="2"
-                                        HorizontalAlignment="Center"
-                                        Background="{DynamicResource PlayAch.Brush.Border}"
-                                        Opacity="1"/>
-                            </Grid>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Line" Property="Opacity" Value="1"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                                    BorderThickness="1,0,0,0"
+                                    SnapsToDevicePixels="True"
+                                    UseLayoutRounding="True"/>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -273,7 +263,7 @@
         <!-- ROW 0: Header with Title, Scores, and Refresh Buttons -->
         <Border Grid.Row="0"
                 Background="{DynamicResource Transparent}"
-                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                 BorderThickness="0,0,0,1"
                 Padding="16,0,16,4"
                 WindowChrome.IsHitTestVisibleInChrome="True">
@@ -352,7 +342,7 @@
                                                InfoRequested="ScoreCard_InfoRequested"
                                                Visibility="{Binding ShowOverviewCollectionScoreCard, Converter={StaticResource BoolToVis}}"/>
 
-                    <Border Background="{DynamicResource PlayAch.Brush.Border}"
+                    <Border Background="{DynamicResource PlayAch.Brush.ControlBorder}"
                             Opacity="{StaticResource PlayAch.Opacity.Disabled}"
                             VerticalAlignment="Center"
                             Width="1"
@@ -405,28 +395,11 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Divider below section headers -->
-                <Border Grid.Row="0"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="3"
-                        Height="2"
-                        VerticalAlignment="Bottom"
-                        Background="{DynamicResource PanelSeparatorBrush}"
-                        IsHitTestVisible="False"/>
-                <!-- Divider below search/filter row -->
-                <Border Grid.Row="1"
-                        Grid.Column="0"
-                        Grid.ColumnSpan="3"
-                        Height="2"
-                        VerticalAlignment="Bottom"
-                        Background="{DynamicResource PanelSeparatorBrush}"
-                        IsHitTestVisible="False"/>
-
                 <!-- LEFT: Filters Row -->
                 <Border Grid.Row="1" Grid.Column="0"
                         Background="{DynamicResource Transparent}"
-                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                        BorderThickness="0,0,1,0"
+                        BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                        BorderThickness="0,0,0,1"
                         Padding="16,10"
                         KeyboardNavigation.DirectionalNavigation="Continue">
                     <Grid>
@@ -519,8 +492,8 @@
                 <!-- RIGHT: Filters Row -->
                 <Border Grid.Row="1" Grid.Column="2"
                         Background="{DynamicResource Transparent}"
-                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                        BorderThickness="0,0,0,0"
+                        BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                        BorderThickness="0,0,0,1"
                         Padding="16,10"
                         KeyboardNavigation.DirectionalNavigation="Continue">
                     <Grid>
@@ -615,8 +588,8 @@
                     <Border Grid.Row="0" Grid.Column="0"
                             Background="{DynamicResource Transparent}"
                             Padding="16,10,16,10"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="0,0,1,1">
+                            BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                            BorderThickness="0,0,0,1">
                         <Grid>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
@@ -628,9 +601,7 @@
                     </Border>
 
                     <!-- LEFT: Games List -->
-                    <Border Grid.Row="2" Grid.Column="0"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                            BorderThickness="0,0,1,0">
+                    <Border Grid.Row="2" Grid.Column="0">
                         <Grid x:Name="OverviewBottomChartsGrid">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
@@ -661,8 +632,7 @@
                     <Grid Grid.Row="0" Grid.Column="2">
                         <!-- Header for when NO game is selected -->
                         <Border Background="{DynamicResource Transparent}"
-                                Height="38"
-                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
                                 Visibility="{Binding ShowRecentAchievementsPanel, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
@@ -675,8 +645,7 @@
 
                         <!-- Header for when a game IS selected -->
                         <Border Background="{DynamicResource Transparent}"
-                                Height="38"
-                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
                                 Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
 
@@ -710,6 +679,18 @@
                             </StackPanel>
                         </Border>
                     </Grid>
+
+                    <Border Grid.Row="0"
+                            Grid.Column="1"
+                            BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                            BorderThickness="1,0,0,1"
+                            IsHitTestVisible="False"/>
+
+                    <Border Grid.Row="1"
+                            Grid.Column="1"
+                            BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                            BorderThickness="0,0,0,1"
+                            IsHitTestVisible="False"/>
                     
                     <!-- RIGHT: Content (Recent List OR Game Details) -->
                     <Grid Grid.Row="2" Grid.Column="2">
@@ -775,11 +756,11 @@
                     <Border Grid.Row="3"
                             Grid.ColumnSpan="3"
                             MinHeight="225"
-                            Margin="-20,0,-20,-20"
-                            Padding="20,8,20,20"
+                            Margin="0,0,0,-20"
+                            Padding="0,8,0,20"
                             Background="{DynamicResource Transparent}"
-                            BorderBrush="{DynamicResource PanelSeparatorBrush}"
-                            BorderThickness="0,2,0,0">
+                            BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                            BorderThickness="0,1,0,0">
                         <Border.Resources>
                             <DataTemplate x:Key="OverviewTimelineContentTemplate">
                                 <Grid>
@@ -1062,15 +1043,6 @@
                             </Border>
                         </Grid>
                     </Border>
-
-                <!-- Visible divider line, skipping top row -->
-                <Border Grid.Column="1"
-                        Grid.Row="1"
-                        Grid.RowSpan="2"
-                        Width="3"
-                        HorizontalAlignment="Center"
-                        Background="{DynamicResource PanelSeparatorBrush}"
-                        IsHitTestVisible="False"/>
 
                 <GridSplitter Grid.Column="1"
                             Grid.Row="1"
