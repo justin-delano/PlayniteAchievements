@@ -402,8 +402,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Status_Succeeded">Erfolgreich!</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} Erfolge ({1} freigeschaltet) aus {2} Spielen</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Aktualisiere Zwischenspeicher...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Aktualisiere Erfolgsdaten ({1})... | &quot;{0}&quot;</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithIcons">Aktualisiere Erfolgsdaten ({1})... | &quot;{0}&quot; | Lade Symbole... {2}/{3}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Aktualisiere Erfolgsdaten ({1}) für &quot;{0}&quot;...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithIcons">Aktualisiere Erfolgsdaten ({1}) für &quot;{0}&quot; - Lade Symbole {2}/{3}...</sys:String>
 
     <!-- ================================================================= -->
     <!-- 10 Settings -->
@@ -436,8 +436,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_EnableArchiveScanning">Archiv-Scan aktivieren (.zip/.7z/.rar/.rvz/.cso/.ciso)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableDiscHashing">Enable disc hashing (for disc-based consoles)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableNotifications">Plugin-Benachrichtigungen aktivieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">Parallele Aktualisierung der Plattformen aktivieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">Wenn deaktiviert: Plattformen werden sequenziell in vorgegebenen Reihenfolge aktualisiert.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">Plattformen parallel aktualisieren</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">Wenn deaktiviert: Plattformen werden sequenziell in vorgegebener Reihenfolge aktualisiert.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnablePeriodicUpdates">Periodische Hintergrundaktualisierung aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CaptureButton">Tasten drücken...</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CapturePrompt">Tastenkürzel eingeben...</sys:String>
@@ -630,7 +630,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Zuletzt gespielte zur Aktualisierung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RemoveAllTags">Alle Schlagworte entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetup">Erneutes Anzeigen der einmaligen Einstiegsseite beim nächsten Öffnen der Übersicht.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Startseite zurücksetzen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ResetFirstTimeSetupButton">Einstiegsseite erneut anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings">Darstellungseinstellungen zurücksetzen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ResetDisplaySettings_Help">Setzt Tabellensichtbarkeit, Spaltenlayouts, Zeilenhöhe und Übersichtslayout auf die Standardeinstellungen zurück.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RevealHiddenDescription">Beschreibung verborgener Erfolge enthüllen</sys:String>
