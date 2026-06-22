@@ -74,6 +74,7 @@ namespace PlayniteAchievements.Models.Settings
                 : new HashSet<Guid>();
             target.ShowRarityGlow = source.ShowRarityGlow;
             target.UseUniformRarityBadges = source.UseUniformRarityBadges;
+            target.RarityColors = source.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault();
             target.UseCoverImages = source.UseCoverImages;
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
             target.ShowOverviewCollectionScoreCard = source.ShowOverviewCollectionScoreCard;

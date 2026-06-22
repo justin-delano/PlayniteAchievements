@@ -60,7 +60,7 @@
                     </Path.Style>
                 </Path>
 
-                <Image Source="{StaticResource BadgeCompletedGame}"
+                <Image Source="{DynamicResource BadgeCompletedGame}"
                        Effect="{StaticResource BadgeShadow}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center">
@@ -245,16 +245,16 @@
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding TrophyType}" Value="platinum">
-                                <Setter Property="Source" Value="{StaticResource TrophyPlatinum}"/>
+                                <Setter Property="Source" Value="{DynamicResource TrophyPlatinum}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding TrophyType}" Value="gold">
-                                <Setter Property="Source" Value="{StaticResource TrophyGold}"/>
+                                <Setter Property="Source" Value="{DynamicResource TrophyGold}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding TrophyType}" Value="silver">
-                                <Setter Property="Source" Value="{StaticResource TrophySilver}"/>
+                                <Setter Property="Source" Value="{DynamicResource TrophySilver}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding TrophyType}" Value="bronze">
-                                <Setter Property="Source" Value="{StaticResource TrophyBronze}"/>
+                                <Setter Property="Source" Value="{DynamicResource TrophyBronze}"/>
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>

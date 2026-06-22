@@ -517,10 +517,11 @@ namespace PlayniteAchievements
                 RestartBackgroundUpdater();
             }
 
-            if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges))
+            if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges) ||
+                e.PropertyName == nameof(PersistedSettings.RarityColors))
             {
-                PercentRarityHelper.ApplyBadgeApplicationResources(
-                    _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
+                RarityAppearanceHelper.ApplyBadgeApplicationResources(
+                    _settingsViewModel?.Settings?.Persisted);
             }
 
             if (e.PropertyName == nameof(PersistedSettings.EnableAchievementHotkeys) ||

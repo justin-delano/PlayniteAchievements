@@ -64,6 +64,7 @@ namespace PlayniteAchievements.Models.Settings
         private HashSet<Guid> _separateLockedIconEnabledGameIds = new HashSet<Guid>();
         private bool _showRarityGlow = true;
         private bool _useUniformRarityBadges = false;
+        private RarityColorSettings _rarityColors = RarityColorSettings.CreateDefault();
         private bool _useCoverImages = true;
         private bool _includeUnplayedGames = true;
         private bool _showOverviewCollectionScoreCard = true;
@@ -478,6 +479,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _useUniformRarityBadges;
             set => SetValue(ref _useUniformRarityBadges, value);
+        }
+
+        /// <summary>
+        /// User-selected base colors for rarity, completed game, and trophy badges.
+        /// </summary>
+        public RarityColorSettings RarityColors
+        {
+            get => _rarityColors;
+            set => SetValue(ref _rarityColors, value?.Clone() ?? RarityColorSettings.CreateDefault());
         }
 
         /// <summary>
@@ -2181,6 +2191,7 @@ namespace PlayniteAchievements.Models.Settings
                 UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
                 ShowRarityGlow = this.ShowRarityGlow,
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
+                RarityColors = this.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
                 UseCoverImages = this.UseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
@@ -2477,6 +2488,7 @@ namespace PlayniteAchievements.Models.Settings
             SeparateLockedIconEnabledGameIds = new HashSet<Guid>();
             ShowRarityGlow = defaults.ShowRarityGlow;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
+            RarityColors = RarityColorSettings.CreateDefault();
             UseCoverImages = defaults.UseCoverImages;
             ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
 

@@ -76,10 +76,16 @@
                                 <TranslateTransform X="{Binding OffsetX}" Y="{Binding OffsetY}"/>
                             </Grid.RenderTransform>
                             <!-- Badge icons -->
-                            <Image Source="{Binding IconKey, Converter={StaticResource ResourceKeyToImage}}"
-                                   Effect="{StaticResource BadgeShadow}"
+                            <Image Effect="{StaticResource BadgeShadow}"
                                    SnapsToDevicePixels="True"
-                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                <Image.Source>
+                                    <MultiBinding Converter="{StaticResource ResourceKeyToImage}">
+                                        <Binding Path="IconKey"/>
+                                        <Binding Path="IconRefreshKey"/>
+                                    </MultiBinding>
+                                </Image.Source>
+                            </Image>
                             <!-- Provider icons -->
                             <Image SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="NearestNeighbor">
                                 <Image.Source>

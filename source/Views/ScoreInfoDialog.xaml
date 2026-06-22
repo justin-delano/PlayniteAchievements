@@ -280,7 +280,7 @@
                                                 Background="{StaticResource PlayAch.Brush.Overlay.Tint.12}"
                                                 BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                                                 BorderThickness="{StaticResource PlayAch.Thickness.Border}"/>
-                                        <Image Source="{StaticResource BadgeCompletedGame}"
+                                        <Image Source="{DynamicResource BadgeCompletedGame}"
                                                Style="{StaticResource ScoreInfoTierIconStyle}"/>
                                     </Grid>
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Score_Tier_Master}"

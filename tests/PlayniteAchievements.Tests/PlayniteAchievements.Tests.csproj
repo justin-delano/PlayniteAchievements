@@ -180,6 +180,11 @@
     <Compile Include="..\..\source\Models\SelectedGameBindingContext.cs" Link="Source\Models\SelectedGameBindingContext.cs" />
     <Compile Include="..\..\source\Models\Settings\AchievementHotkeyGesture.cs" Link="Source\Models\Settings\AchievementHotkeyGesture.cs" />
     <Compile Include="..\..\source\Models\Settings\PersistedSettings.cs" Link="Source\Models\Settings\PersistedSettings.cs" />
+    <Compile Include="..\..\source\Models\Settings\RarityColorSettings.cs" Link="Source\Models\Settings\RarityColorSettings.cs" />
+    <Compile Include="..\..\source\Models\Settings\ResourceOverrideDescriptor.cs" Link="Source\Models\Settings\ResourceOverrideDescriptor.cs" />
+    <Compile Include="..\..\source\Models\Settings\ResourceOverrideMode.cs" Link="Source\Models\Settings\ResourceOverrideMode.cs" />
+    <Compile Include="..\..\source\Models\Settings\ResourceOverrideSetting.cs" Link="Source\Models\Settings\ResourceOverrideSetting.cs" />
+    <Compile Include="..\..\source\Models\Settings\ResourceOverrideValueKind.cs" Link="Source\Models\Settings\ResourceOverrideValueKind.cs" />
     <Compile Include="..\..\source\Models\Settings\WindowPlacementState.cs" Link="Source\Models\Settings\WindowPlacementState.cs" />
     <Compile Include="..\..\source\Models\Settings\GameActivityScope.cs" Link="Source\Models\Settings\GameActivityScope.cs" />
     <Compile Include="..\..\source\Models\Settings\GameProgressScope.cs" Link="Source\Models\Settings\GameProgressScope.cs" />
@@ -205,6 +210,7 @@
     <Compile Include="..\..\source\Models\Settings\ThemeMigrationCacheEntry.cs" Link="Source\Models\Settings\ThemeMigrationCacheEntry.cs" />
     <Compile Include="..\..\source\Models\Settings\ManualAchievementLink.cs" Link="Source\Models\Settings\ManualAchievementLink.cs" />
     <Compile Include="..\..\source\Models\Achievements\AchievementRarityResolver.cs" Link="Source\Models\Achievements\AchievementRarityResolver.cs" />
+    <Compile Include="..\..\source\Models\Achievements\RarityAppearanceHelper.cs" Link="Source\Models\Achievements\RarityAppearanceHelper.cs" />
     <Compile Include="..\..\source\Models\Achievements\AchievementRarityStats.cs" Link="Source\Models\Achievements\AchievementRarityStats.cs" />
     <Compile Include="..\..\source\Models\Achievements\AchievementRarityStatsCombiner.cs" Link="Source\Models\Achievements\AchievementRarityStatsCombiner.cs" />
     <Compile Include="..\..\source\Models\Achievements\AchievementCompletionPercentCalculator.cs" Link="Source\Models\Achievements\AchievementCompletionPercentCalculator.cs" />

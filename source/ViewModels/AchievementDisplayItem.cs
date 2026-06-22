@@ -974,6 +974,7 @@ namespace PlayniteAchievements.ViewModels
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
                 case nameof(PersistedSettings.ShowRarityGlow):
                 case nameof(PersistedSettings.UseUniformRarityBadges):
+                case nameof(PersistedSettings.RarityColors):
                     return true;
                 default:
                     return false;

@@ -17,6 +17,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <Style x:Key="PreviewThemeControlStyle"
                    TargetType="{x:Type base:ThemeControlBase}">
@@ -1019,10 +1020,7 @@
                                                     </ComboBox>
                                                 </StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
-                                                          IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseUniformRarityBadges}"
-                                                          IsChecked="{Binding Persisted.UseUniformRarityBadges}"/>
+                                                          IsChecked="{Binding Persisted.ShowTopMenuBarButton}"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -1178,7 +1176,7 @@
                                         <TextBlock Text="Appearance"
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                        <TextBlock Text="Each token follows the active Playnite theme by default. Set a custom value to override only that token."
+                                        <TextBlock Text="Apply a preset for a coordinated badge and interface palette, then fine tune individual colors and theme resources below."
                                                    Style="{StaticResource MutedTextStyle}"
                                                    TextWrapping="Wrap"
                                                    Margin="0"/>
@@ -1187,10 +1185,283 @@
 
                                 <Border Style="{StaticResource SectionBorderStyle}">
                                     <StackPanel>
-                                        <TextBlock Text="Theme resources"
+                                        <TextBlock Text="Appearance presets"
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="Preset"
+                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                               FontWeight="SemiBold"/>
+                                                    <TextBlock Text="Presets apply rarity badges, completed/trophy badges, and interface brushes. The selected preset is copied into editable values."
+                                                               Style="{StaticResource MutedTextStyle}"
+                                                               TextWrapping="Wrap"/>
+                                                </StackPanel>
+
+                                                <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <TextBlock Grid.Column="0"
+                                                               Text="Preset"
+                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                               FontWeight="SemiBold"
+                                                               VerticalAlignment="Center"
+                                                               Margin="0,0,10,0"/>
+
+                                                    <ComboBox x:Name="RarityPalettePresetComboBox"
+                                                              Grid.Column="1"
+                                                              MinWidth="220"
+                                                              DisplayMemberPath="Name"
+                                                              ItemsSource="{Binding RarityPalettePresets, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+
+                                                    <Button Grid.Column="2"
+                                                            Content="Apply"
+                                                            Margin="8,0,0,0"
+                                                            MinWidth="58"
+                                                            Click="ApplySelectedRarityPalettePreset_Click"/>
+
+                                                    <Button Grid.Column="3"
+                                                            Content="Reset all"
+                                                            Margin="8,0,0,0"
+                                                            MinWidth="78"
+                                                            Click="ResetAllRarityColors_Click"/>
+                                                </Grid>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <TextBlock Text="Badge colors"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="Rarity palette"
+                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                               FontWeight="SemiBold"/>
+                                                    <TextBlock Text="Each base color generates badge gradients, glows, and chart colors. Reset restores the built-in color for that entry."
+                                                               Style="{StaticResource MutedTextStyle}"
+                                                               TextWrapping="Wrap"/>
+                                                </StackPanel>
+
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseUniformRarityBadges}"
+                                                          IsChecked="{Binding Persisted.UseUniformRarityBadges}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+
+                                                <ItemsControl ItemsSource="{Binding RarityAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <StackPanel Grid.Column="0"
+                                                                            Orientation="Horizontal"
+                                                                            VerticalAlignment="Center">
+                                                                    <Image Source="{Binding PreviewBadge}"
+                                                                           Width="24"
+                                                                           Height="24"
+                                                                           Effect="{StaticResource BadgeShadow}"
+                                                                           Style="{StaticResource RarityIcon}"
+                                                                           Margin="0,0,10,0"/>
+                                                                    <TextBlock Text="{Binding DisplayName}"
+                                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                                               FontWeight="SemiBold"
+                                                                               VerticalAlignment="Center"/>
+                                                                </StackPanel>
+
+                                                                <Border Grid.Column="1"
+                                                                        Width="26"
+                                                                        Height="26"
+                                                                        Margin="14,0"
+                                                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                        Background="{Binding PreviewBrush}"
+                                                                        VerticalAlignment="Center"/>
+
+                                                                <Grid Grid.Column="2" VerticalAlignment="Center">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <TextBox Grid.Column="0"
+                                                                             MinWidth="120"
+                                                                             Text="{Binding BaseColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                                    <Button Grid.Column="1"
+                                                                            Content="Pick"
+                                                                            Margin="8,0,0,0"
+                                                                            MinWidth="58"
+                                                                            Click="PickRarityColor_Click"/>
+
+                                                                    <Button Grid.Column="2"
+                                                                            Content="Reset"
+                                                                            Margin="8,0,0,0"
+                                                                            MinWidth="58"
+                                                                            Click="ResetRarityColor_Click"/>
+                                                                </Grid>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <TextBlock Text="Completed game badge"
+                                                           Style="{StaticResource SubSectionHeaderStyle}"
+                                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
+
+                                                <ItemsControl ItemsSource="{Binding CompletedBadgeAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <StackPanel Grid.Column="0"
+                                                                            Orientation="Horizontal"
+                                                                            VerticalAlignment="Center">
+                                                                    <Image Source="{Binding PreviewBadge}"
+                                                                           Width="24"
+                                                                           Height="24"
+                                                                           Effect="{StaticResource BadgeShadow}"
+                                                                           Style="{StaticResource RarityIcon}"
+                                                                           Margin="0,0,10,0"/>
+                                                                    <TextBlock Text="{Binding DisplayName}"
+                                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                                               FontWeight="SemiBold"
+                                                                               VerticalAlignment="Center"/>
+                                                                </StackPanel>
+
+                                                                <Border Grid.Column="1"
+                                                                        Width="26"
+                                                                        Height="26"
+                                                                        Margin="14,0"
+                                                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                        Background="{Binding PreviewBrush}"
+                                                                        VerticalAlignment="Center"/>
+
+                                                                <Grid Grid.Column="2" VerticalAlignment="Center">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <TextBox Grid.Column="0"
+                                                                             MinWidth="120"
+                                                                             Text="{Binding BaseColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                                    <Button Grid.Column="1"
+                                                                            Content="Pick"
+                                                                            Margin="8,0,0,0"
+                                                                            MinWidth="58"
+                                                                            Click="PickRarityColor_Click"/>
+
+                                                                    <Button Grid.Column="2"
+                                                                            Content="Reset"
+                                                                            Margin="8,0,0,0"
+                                                                            MinWidth="58"
+                                                                            Click="ResetRarityColor_Click"/>
+                                                                </Grid>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+
+                                                <TextBlock Text="Trophy colors"
+                                                           Style="{StaticResource SubSectionHeaderStyle}"
+                                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
+
+                                                <ItemsControl ItemsSource="{Binding TrophyAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate>
+                                                            <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                                                <Grid.ColumnDefinitions>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                    <ColumnDefinition Width="Auto"/>
+                                                                    <ColumnDefinition Width="2*"/>
+                                                                </Grid.ColumnDefinitions>
+
+                                                                <StackPanel Grid.Column="0"
+                                                                            Orientation="Horizontal"
+                                                                            VerticalAlignment="Center">
+                                                                    <Image Source="{Binding PreviewBadge}"
+                                                                           Width="24"
+                                                                           Height="24"
+                                                                           Effect="{StaticResource BadgeShadow}"
+                                                                           Style="{StaticResource RarityIcon}"
+                                                                           Margin="0,0,10,0"/>
+                                                                    <TextBlock Text="{Binding DisplayName}"
+                                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                                               FontWeight="SemiBold"
+                                                                               VerticalAlignment="Center"/>
+                                                                </StackPanel>
+
+                                                                <Border Grid.Column="1"
+                                                                        Width="26"
+                                                                        Height="26"
+                                                                        Margin="14,0"
+                                                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                        Background="{Binding PreviewBrush}"
+                                                                        VerticalAlignment="Center"/>
+
+                                                                <Grid Grid.Column="2" VerticalAlignment="Center">
+                                                                    <Grid.ColumnDefinitions>
+                                                                        <ColumnDefinition Width="*"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                        <ColumnDefinition Width="Auto"/>
+                                                                    </Grid.ColumnDefinitions>
+
+                                                                    <TextBox Grid.Column="0"
+                                                                             MinWidth="120"
+                                                                             Text="{Binding BaseColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                                    <Button Grid.Column="1"
+                                                                            Content="Pick"
+                                                                            Margin="8,0,0,0"
+                                                                            MinWidth="58"
+                                                                            Click="PickRarityColor_Click"/>
+
+                                                                    <Button Grid.Column="2"
+                                                                            Content="Reset"
+                                                                            Margin="8,0,0,0"
+                                                                            MinWidth="58"
+                                                                            Click="ResetRarityColor_Click"/>
+                                                                </Grid>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <TextBlock Text="Advanced theme resources"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                                        <TextBlock Text="Override individual semantic resources after applying a preset. Follow Playnite restores that token to the active Playnite theme."
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                         <ItemsControl ItemsSource="{Binding ResourceAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                             <ItemsControl.ItemTemplate>

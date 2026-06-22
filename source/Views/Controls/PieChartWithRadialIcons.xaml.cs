@@ -599,6 +599,7 @@ namespace PlayniteAchievements.Views.Controls
                         {
                             Label = legend.Label,
                             IconKey = legend.IconKey,
+                            IconRefreshKey = legend.IconRefreshKey,
                             ColorHex = legend.ColorHex,
                             Count = legend.Count,
                             X = x,
@@ -763,6 +764,7 @@ namespace PlayniteAchievements.Views.Controls
                     var existing = IconPositions[i];
                     existing.Label = newPos.Label;
                     existing.IconKey = newPos.IconKey;
+                    existing.IconRefreshKey = newPos.IconRefreshKey;
                     existing.ColorHex = newPos.ColorHex;
                     existing.Count = newPos.Count;
                     existing.X = newPos.X;

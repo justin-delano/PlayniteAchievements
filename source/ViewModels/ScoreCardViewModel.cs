@@ -16,7 +16,6 @@ namespace PlayniteAchievements.ViewModels
     public sealed class ScoreCardViewModel : ObservableObject
     {
         private const string DefaultRank = "Bronze5";
-
         private static readonly Brush BronzeScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xD6, 0x8A, 0x45));
         private static readonly Brush SilverScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xD7, 0xE1, 0xEC));
         private static readonly Brush GoldScoreAccentBrush = CreateFrozenBrush(Color.FromRgb(0xFF, 0xD4, 0x57));
@@ -134,14 +133,16 @@ namespace PlayniteAchievements.ViewModels
 
         public void RefreshBadgeStyle(bool useUniformRarityBadges)
         {
-            if (_useUniformRarityBadges == useUniformRarityBadges)
+            if (_useUniformRarityBadges != useUniformRarityBadges)
             {
-                return;
+                _useUniformRarityBadges = useUniformRarityBadges;
+                OnPropertyChanged(nameof(UseUniformRarityBadges));
+                OnPropertyChanged(nameof(BadgeIconKey));
             }
 
-            _useUniformRarityBadges = useUniformRarityBadges;
-            OnPropertyChanged(nameof(UseUniformRarityBadges));
-            OnPropertyChanged(nameof(BadgeIconKey));
+            OnPropertyChanged(nameof(AccentBrush));
+            OnPropertyChanged(nameof(NextTierAccentBrush));
+            OnPropertyChanged(nameof(AccentBackgroundBrush));
         }
 
         private void RaiseAllPropertiesChanged()
@@ -236,7 +237,8 @@ namespace PlayniteAchievements.ViewModels
 
         private static Brush GetScoreAccentBrush(string rank)
         {
-            switch (AchievementRankPresentation.GetRarityTier(rank))
+            var tier = AchievementRankPresentation.GetRarityTier(rank);
+            switch (tier)
             {
                 case RarityTier.UltraRare:
                     return PlatinumScoreAccentBrush;
@@ -258,7 +260,8 @@ namespace PlayniteAchievements.ViewModels
 
         private static Brush GetScoreAccentBackgroundBrush(string rank)
         {
-            switch (AchievementRankPresentation.GetRarityTier(rank))
+            var tier = AchievementRankPresentation.GetRarityTier(rank);
+            switch (tier)
             {
                 case RarityTier.UltraRare:
                     return PlatinumScoreBackgroundBrush;

@@ -9,6 +9,7 @@ using System.Windows.Input;
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.UI;
@@ -38,6 +39,19 @@ namespace PlayniteAchievements.Views.Controls
                 ["Cover"] = 64,
                 ["GameSummaryPlatform"] = 36
             };
+
+        private static readonly string[] MirroredBadgeResourceKeys =
+        {
+            "BadgeCompletedGame",
+            "BadgeRarityUltraRare",
+            "BadgeRarityRare",
+            "BadgeRarityUncommon",
+            "BadgeRarityCommon",
+            "TrophyPlatinum",
+            "TrophyGold",
+            "TrophySilver",
+            "TrophyBronze"
+        };
 
         // Defaults are applied only when a saved layout is missing a key.
         private static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, bool>> DefaultVisibilityByColumnSettingsKey =
@@ -268,6 +282,9 @@ namespace PlayniteAchievements.Views.Controls
 
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
+            MirrorBadgeResources();
+            RarityAppearanceHelper.AppearanceChanged -= RarityAppearanceHelper_AppearanceChanged;
+            RarityAppearanceHelper.AppearanceChanged += RarityAppearanceHelper_AppearanceChanged;
 
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(
                 GameSummariesGrid,
@@ -335,6 +352,30 @@ namespace PlayniteAchievements.Views.Controls
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             Dispose();
+        }
+
+        private void RarityAppearanceHelper_AppearanceChanged(object sender, EventArgs e)
+        {
+            Dispatcher?.BeginInvoke(new Action(MirrorBadgeResources));
+        }
+
+        private void MirrorBadgeResources()
+        {
+            foreach (var key in MirroredBadgeResourceKeys)
+            {
+                try
+                {
+                    var resource = Application.Current?.TryFindResource(key);
+                    if (resource != null)
+                    {
+                        Resources[key] = resource;
+                    }
+                }
+                catch
+                {
+                    // Keep local fallback resources if application resources are unavailable.
+                }
+            }
         }
 
         private static void OnRowSizingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -813,6 +854,7 @@ namespace PlayniteAchievements.Views.Controls
 
             _columnPersistence?.Dispose();
             _columnPersistence = null;
+            RarityAppearanceHelper.AppearanceChanged -= RarityAppearanceHelper_AppearanceChanged;
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(GameSummariesGrid, null);
             DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(GameSummariesGrid, null);
             DataGridAlignmentBehavior.SetColumnHeaderHorizontalAlignmentOverridesProvider(GameSummariesGrid, null);

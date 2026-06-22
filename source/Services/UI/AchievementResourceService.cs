@@ -40,8 +40,7 @@ namespace PlayniteAchievements.Services.UI
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/OverviewStyles.xaml");
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/SettingsStyles.xaml");
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/MigrationStyles.xaml");
-                    PercentRarityHelper.ApplyBadgeApplicationResources(
-                        settings?.Persisted?.UseUniformRarityBadges ?? false);
+                    RarityAppearanceHelper.ApplyBadgeApplicationResources(settings?.Persisted);
                 }
 
                 if (app.Dispatcher.CheckAccess())

@@ -31,9 +31,15 @@
                     <StackPanel Orientation="Horizontal">
                         <Grid Width="18" Height="18" Margin="{StaticResource PlayAch.Thickness.Right.Compact}" VerticalAlignment="Center">
                             <!-- Badge icons: complex DrawingImages from AchievementResources.xaml -->
-                            <Image Source="{Binding ChartPoint.Instance.IconKey, Converter={StaticResource ResourceKeyToImage}}"
-                                   SnapsToDevicePixels="True"
-                                   RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                            <Image SnapsToDevicePixels="True"
+                                   RenderOptions.BitmapScalingMode="NearestNeighbor">
+                                <Image.Source>
+                                    <MultiBinding Converter="{StaticResource ResourceKeyToImage}">
+                                        <Binding Path="ChartPoint.Instance.IconKey"/>
+                                        <Binding Path="ChartPoint.Instance.IconRefreshKey"/>
+                                    </MultiBinding>
+                                </Image.Source>
+                            </Image>
                             <!-- Provider icons: created at runtime from geometry + color -->
                             <Image SnapsToDevicePixels="True" RenderOptions.BitmapScalingMode="NearestNeighbor">
                                 <Image.Source>

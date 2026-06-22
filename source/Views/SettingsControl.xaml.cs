@@ -42,6 +42,10 @@ namespace PlayniteAchievements.Views
 
         private System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem> _mockCompactListItems;
         private ObservableCollection<ResourceAppearanceItem> _resourceAppearanceItems;
+        private ObservableCollection<RarityAppearanceItem> _rarityAppearanceItems;
+        private ObservableCollection<CompletedBadgeAppearanceItem> _completedBadgeAppearanceItems;
+        private ObservableCollection<TrophyAppearanceItem> _trophyAppearanceItems;
+        private ObservableCollection<RarityPalettePreset> _rarityPalettePresets;
 
         /// <summary>
         /// Gets mock achievement items for compact list preview in settings.
@@ -77,6 +81,74 @@ namespace PlayniteAchievements.Views
                 }
 
                 return _resourceAppearanceItems;
+            }
+        }
+
+        public ObservableCollection<RarityAppearanceItem> RarityAppearanceItems
+        {
+            get
+            {
+                if (_rarityAppearanceItems == null)
+                {
+                    _rarityAppearanceItems = new ObservableCollection<RarityAppearanceItem>
+                    {
+                        new RarityAppearanceItem(RarityTier.Common, _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides),
+                        new RarityAppearanceItem(RarityTier.Uncommon, _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides),
+                        new RarityAppearanceItem(RarityTier.Rare, _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides),
+                        new RarityAppearanceItem(RarityTier.UltraRare, _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides)
+                    };
+                }
+
+                return _rarityAppearanceItems;
+            }
+        }
+
+        public ObservableCollection<CompletedBadgeAppearanceItem> CompletedBadgeAppearanceItems
+        {
+            get
+            {
+                if (_completedBadgeAppearanceItems == null)
+                {
+                    _completedBadgeAppearanceItems = new ObservableCollection<CompletedBadgeAppearanceItem>
+                    {
+                        new CompletedBadgeAppearanceItem("Gradient start", true, _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides),
+                        new CompletedBadgeAppearanceItem("Gradient end", false, _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides)
+                    };
+                }
+
+                return _completedBadgeAppearanceItems;
+            }
+        }
+
+        public ObservableCollection<TrophyAppearanceItem> TrophyAppearanceItems
+        {
+            get
+            {
+                if (_trophyAppearanceItems == null)
+                {
+                    _trophyAppearanceItems = new ObservableCollection<TrophyAppearanceItem>
+                    {
+                        new TrophyAppearanceItem("Bronze", "TrophyBronze", _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides),
+                        new TrophyAppearanceItem("Silver", "TrophySilver", _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides),
+                        new TrophyAppearanceItem("Gold", "TrophyGold", _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides),
+                        new TrophyAppearanceItem("Platinum", "TrophyPlatinum", _settingsViewModel.Settings.Persisted, ApplyRarityAppearanceOverrides)
+                    };
+                }
+
+                return _trophyAppearanceItems;
+            }
+        }
+
+        public ObservableCollection<RarityPalettePreset> RarityPalettePresets
+        {
+            get
+            {
+                if (_rarityPalettePresets == null)
+                {
+                    _rarityPalettePresets = new ObservableCollection<RarityPalettePreset>(CreateRarityPalettePresets());
+                }
+
+                return _rarityPalettePresets;
             }
         }
 
@@ -1294,8 +1366,8 @@ namespace PlayniteAchievements.Views
                 _settingsViewModel.Settings.Persisted.ResetDisplaySettingsToDefaults();
                 RebuildResourceAppearanceItems();
                 ApplyResourceAppearanceOverrides();
-                PercentRarityHelper.ApplyBadgeApplicationResources(
-                    _settingsViewModel.Settings.Persisted.UseUniformRarityBadges);
+                RefreshRarityAppearanceItems();
+                ApplyRarityAppearanceOverrides();
                 RefreshMockPreviews();
                 _plugin.SavePluginSettings(_settingsViewModel.Settings);
 
@@ -1348,6 +1420,230 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void PickRarityColor_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is RarityAppearanceItem rarityItem)
+            {
+                PickPaletteColor(
+                    rarityItem.BaseColor,
+                    color =>
+                    {
+                        rarityItem.BaseColor = color;
+                    });
+                return;
+            }
+
+            if ((sender as FrameworkElement)?.DataContext is CompletedBadgeAppearanceItem completedItem)
+            {
+                PickPaletteColor(
+                    completedItem.BaseColor,
+                    color =>
+                    {
+                        completedItem.BaseColor = color;
+                    });
+                return;
+            }
+
+            if ((sender as FrameworkElement)?.DataContext is TrophyAppearanceItem trophyItem)
+            {
+                PickPaletteColor(
+                    trophyItem.BaseColor,
+                    color =>
+                    {
+                        trophyItem.BaseColor = color;
+                    });
+            }
+        }
+
+        private void ResetRarityColor_Click(object sender, RoutedEventArgs e)
+        {
+            if ((sender as FrameworkElement)?.DataContext is RarityAppearanceItem rarityItem)
+            {
+                rarityItem.Reset();
+                return;
+            }
+
+            if ((sender as FrameworkElement)?.DataContext is CompletedBadgeAppearanceItem completedItem)
+            {
+                completedItem.Reset();
+                return;
+            }
+
+            if ((sender as FrameworkElement)?.DataContext is TrophyAppearanceItem trophyItem)
+            {
+                trophyItem.Reset();
+            }
+        }
+
+        private void ApplySelectedRarityPalettePreset_Click(object sender, RoutedEventArgs e)
+        {
+            if (RarityPalettePresetComboBox?.SelectedItem is RarityPalettePreset preset)
+            {
+                ApplyRarityPalette(preset);
+            }
+        }
+
+        private void ResetAllRarityColors_Click(object sender, RoutedEventArgs e)
+        {
+            ApplyRarityPalette(new RarityPalettePreset("Default", RarityColorSettings.CreateDefault(), null));
+        }
+
+        private void ApplyRarityPalette(RarityPalettePreset preset)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted == null || preset?.Colors == null)
+            {
+                return;
+            }
+
+            persisted.RarityColors = preset.Colors.Clone();
+            persisted.ResourceOverrides = CreateResourceOverrideSettings(preset.ResourceBrushes);
+            ApplyResourceAppearanceOverrides();
+            ApplyRarityAppearanceOverrides();
+            RebuildResourceAppearanceItems();
+        }
+
+        private static Dictionary<string, ResourceOverrideSetting> CreateResourceOverrideSettings(
+            IReadOnlyDictionary<string, string> brushes)
+        {
+            var overrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            if (brushes == null)
+            {
+                return overrides;
+            }
+
+            foreach (var pair in brushes)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Key) || string.IsNullOrWhiteSpace(pair.Value))
+                {
+                    continue;
+                }
+
+                overrides[pair.Key] = new ResourceOverrideSetting
+                {
+                    Mode = ResourceOverrideMode.Custom,
+                    CustomValue = pair.Value.Trim()
+                };
+            }
+
+            return overrides;
+        }
+
+        private static IReadOnlyList<RarityPalettePreset> CreateRarityPalettePresets()
+        {
+            return new[]
+            {
+                Preset("Default",
+                    RarityColorSettings.DefaultCommon,
+                    RarityColorSettings.DefaultUncommon,
+                    RarityColorSettings.DefaultRare,
+                    RarityColorSettings.DefaultUltraRare,
+                    RarityColorSettings.DefaultCompletedStart,
+                    RarityColorSettings.DefaultCompletedEnd),
+
+                Preset("Emerald Forest",     "#5D6B3A", "#43A047", "#00897B", "#6A1B9A", "#C0CA33", "#FDD835"),
+                Preset("Abyssal Ocean",      "#455A64", "#26A69A", "#0288D1", "#303F9F", "#00BCD4", "#B3E5FC"),
+                Preset("Desert Oasis",       "#C2A15A", "#26A69A", "#F57C00", "#C2185B", "#FFB300", "#FF7043"),
+                Preset("Frozen Aurora",      "#B0BEC5", "#4DD0E1", "#42A5F5", "#7E57C2", "#00E676", "#E1F5FE"),
+                Preset("Volcano Core",       "#5D4037", "#D84315", "#F57C00", "#B71C1C", "#FFC107", "#FF5252"),
+
+                Preset("Coral Reef",         "#80CBC4", "#00ACC1", "#FFB74D", "#FF7043", "#EC407A", "#FDD835"),
+                Preset("Jungle Ruins",       "#6D4C41", "#689F38", "#00897B", "#7B1FA2", "#D4AF37", "#A5D6A7"),
+                Preset("Moonlit Castle",     "#616161", "#455A64", "#7E57C2", "#C2185B", "#B0BEC5", "#E0E0E0"),
+                Preset("Haunted Manor",      "#757575", "#827717", "#BF360C", "#4A148C", "#FFA000", "#ECEFF1"),
+                Preset("Crystal Cavern",     "#607D8B", "#4DD0E1", "#7E57C2", "#EC407A", "#B2EBF2", "#FFFFFF"),
+
+                Preset("Sky Kingdom",        "#90A4AE", "#4FC3F7", "#1976D2", "#512DA8", "#FFD54F", "#FFFFFF"),
+                Preset("Sunken Temple",      "#78909C", "#4DB6AC", "#0277BD", "#283593", "#D4AF37", "#80DEEA"),
+                Preset("Toxic Wasteland",    "#827717", "#AFB42B", "#CDDC39", "#D50000", "#8BC34A", "#FFFF00"),
+                Preset("Neon City",          "#37474F", "#00E5FF", "#FFEA00", "#FF1744", "#AA00FF", "#FF6D00"),
+                Preset("Cosmic Nebula",      "#263238", "#00BCD4", "#3D5AFE", "#AA00FF", "#FF4081", "#E1BEE7"),
+
+                Preset("Pirate Treasure",    "#A1887F", "#558B2F", "#0277BD", "#B71C1C", "#D4AF37", "#FFF8E1"),
+                Preset("Candy Kingdom",      "#8BC34A", "#29B6F6", "#FFD54F", "#F06292", "#BA68C8", "#FF8A65"),
+                Preset("Samurai Dawn",       "#5D4037", "#2E7D32", "#3949AB", "#B71C1C", "#FFB300", "#F8BBD0"),
+                Preset("Clockwork Factory",  "#607D8B", "#A65E2E", "#C49A2C", "#1565C0", "#F9A825", "#FFE082"),
+                Preset("Fungal Grove",       "#6D6B3F", "#8BC34A", "#C0A060", "#AD1457", "#B39DDB", "#FFF8E1")
+            };
+        }
+
+        private static RarityPalettePreset Preset(
+            string name,
+            string common,
+            string uncommon,
+            string rare,
+            string ultraRare,
+            string completedStart,
+            string completedEnd)
+        {
+            return new RarityPalettePreset(
+                name,
+                new RarityColorSettings
+                {
+                    Common = common,
+                    Uncommon = uncommon,
+                    Rare = rare,
+                    UltraRare = ultraRare,
+                    CompletedStart = completedStart,
+                    CompletedEnd = completedEnd,
+                    TrophyBronze = common,
+                    TrophySilver = uncommon,
+                    TrophyGold = rare,
+                    TrophyPlatinum = ultraRare
+                },
+                string.Equals(name, "Default", StringComparison.Ordinal)
+                    ? null
+                    : CreatePresetResourceBrushes(common, uncommon, rare, ultraRare, completedStart, completedEnd));
+        }
+
+        private static IReadOnlyDictionary<string, string> CreatePresetResourceBrushes(
+            string common,
+            string uncommon,
+            string rare,
+            string ultraRare,
+            string completedStart,
+            string completedEnd)
+        {
+            return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["PlayAch.Brush.Text"] = "#F5F7FB",
+                ["PlayAch.Brush.Text.Secondary"] = "#C4CBD8",
+                ["PlayAch.Brush.Text.Tertiary"] = "#8792A3",
+                ["PlayAch.Brush.Surface"] = "#10131A",
+                ["PlayAch.Brush.Panel"] = "#171C26",
+                ["PlayAch.Brush.Border"] = common,
+                ["PlayAch.Brush.ControlBorder"] = rare,
+                ["PlayAch.Brush.Glyph"] = uncommon,
+                ["PlayAch.Brush.Accent"] = ultraRare,
+                ["PlayAch.Brush.Selection"] = completedStart
+            };
+        }
+
+        private void PickPaletteColor(string currentValue, Action<string> applyColor)
+        {
+            using (var dialog = new FormsColorDialog())
+            {
+                dialog.FullOpen = true;
+                dialog.AnyColor = true;
+                if (TryParseColor(currentValue, out var currentColor))
+                {
+                    dialog.Color = DrawingColor.FromArgb(
+                        currentColor.A,
+                        currentColor.R,
+                        currentColor.G,
+                        currentColor.B);
+                }
+
+                if (dialog.ShowDialog() != FormsDialogResult.OK)
+                {
+                    return;
+                }
+
+                var selected = dialog.Color;
+                applyColor?.Invoke($"#{selected.A:X2}{selected.R:X2}{selected.G:X2}{selected.B:X2}");
+            }
+        }
+
         private void RebuildResourceAppearanceItems()
         {
             var items = ResourceAppearanceItems;
@@ -1369,6 +1665,40 @@ namespace PlayniteAchievements.Views
                 PlayAchResourceService.Apply(
                     resources,
                     _settingsViewModel?.Settings?.Persisted?.ResourceOverrides);
+            }
+        }
+
+        private void ApplyRarityAppearanceOverrides()
+        {
+            RarityAppearanceHelper.ApplyBadgeApplicationResources(
+                _settingsViewModel?.Settings?.Persisted);
+            RefreshRarityAppearanceItems();
+        }
+
+        private void RefreshRarityAppearanceItems()
+        {
+            if (_rarityAppearanceItems != null)
+            {
+                foreach (var item in _rarityAppearanceItems)
+                {
+                    item.Refresh();
+                }
+            }
+
+            if (_completedBadgeAppearanceItems != null)
+            {
+                foreach (var item in _completedBadgeAppearanceItems)
+                {
+                    item.Refresh();
+                }
+            }
+
+            if (_trophyAppearanceItems != null)
+            {
+                foreach (var item in _trophyAppearanceItems)
+                {
+                    item.Refresh();
+                }
             }
         }
 
@@ -2418,13 +2748,13 @@ namespace PlayniteAchievements.Views
                 nameof(Models.Settings.PersistedSettings.ShowHiddenSuffix),
                 nameof(Models.Settings.PersistedSettings.ShowLockedIcon),
                 nameof(Models.Settings.PersistedSettings.UseSeparateLockedIconsWhenAvailable),
-                nameof(Models.Settings.PersistedSettings.UseUniformRarityBadges)
+                nameof(Models.Settings.PersistedSettings.UseUniformRarityBadges),
+                nameof(Models.Settings.PersistedSettings.RarityColors)
             };
 
-            if (e.PropertyName == nameof(Models.Settings.PersistedSettings.UseUniformRarityBadges))
+            if (RarityAppearanceHelper.IsAppearanceSettingPropertyName(e.PropertyName))
             {
-                PercentRarityHelper.ApplyBadgeApplicationResources(
-                    _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
+                ApplyRarityAppearanceOverrides();
             }
 
             if (e.PropertyName == nameof(Models.Settings.PersistedSettings.StartPageActivityScope) ||
@@ -2709,6 +3039,390 @@ namespace PlayniteAchievements.Views
             }
 
             return string.Empty;
+        }
+    }
+
+    public sealed class RarityAppearanceItem : PlayniteAchievements.Common.ObservableObject
+    {
+        private readonly PersistedSettings _settings;
+        private readonly Action _applyResources;
+
+        public RarityAppearanceItem(
+            RarityTier tier,
+            PersistedSettings settings,
+            Action applyResources)
+        {
+            Tier = tier;
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _applyResources = applyResources;
+
+            if (_settings.RarityColors == null)
+            {
+                _settings.RarityColors = RarityColorSettings.CreateDefault();
+            }
+        }
+
+        public RarityTier Tier { get; }
+
+        public string DisplayName => Tier.ToDisplayText();
+
+        public string BaseColor
+        {
+            get => GetColor();
+            set
+            {
+                SetColor(value);
+                _settings.OnPropertyChanged(nameof(PersistedSettings.RarityColors));
+                _applyResources?.Invoke();
+                Refresh();
+            }
+        }
+
+        public Brush PreviewBrush
+        {
+            get
+            {
+                try
+                {
+                    var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(BaseColor));
+                    if (brush.CanFreeze)
+                    {
+                        brush.Freeze();
+                    }
+
+                    return brush;
+                }
+                catch
+                {
+                    return Brushes.Transparent;
+                }
+            }
+        }
+
+        public ImageSource PreviewBadge =>
+            RarityAppearanceHelper.CreateBadgePreview(Tier, _settings);
+
+        public void Refresh()
+        {
+            OnPropertyChanged(nameof(BaseColor));
+            OnPropertyChanged(nameof(PreviewBrush));
+            OnPropertyChanged(nameof(PreviewBadge));
+        }
+
+        public void Reset()
+        {
+            SetColor(GetDefaultColor());
+            _settings.OnPropertyChanged(nameof(PersistedSettings.RarityColors));
+            _applyResources?.Invoke();
+            Refresh();
+        }
+
+        private string GetColor()
+        {
+            var colors = _settings.RarityColors ?? RarityColorSettings.CreateDefault();
+            switch (Tier)
+            {
+                case RarityTier.UltraRare:
+                    return colors.UltraRare;
+                case RarityTier.Rare:
+                    return colors.Rare;
+                case RarityTier.Uncommon:
+                    return colors.Uncommon;
+                default:
+                    return colors.Common;
+            }
+        }
+
+        private string GetDefaultColor()
+        {
+            switch (Tier)
+            {
+                case RarityTier.UltraRare:
+                    return RarityColorSettings.DefaultUltraRare;
+                case RarityTier.Rare:
+                    return RarityColorSettings.DefaultRare;
+                case RarityTier.Uncommon:
+                    return RarityColorSettings.DefaultUncommon;
+                default:
+                    return RarityColorSettings.DefaultCommon;
+            }
+        }
+
+        private void SetColor(string value)
+        {
+            if (_settings.RarityColors == null)
+            {
+                _settings.RarityColors = RarityColorSettings.CreateDefault();
+            }
+
+            switch (Tier)
+            {
+                case RarityTier.UltraRare:
+                    _settings.RarityColors.UltraRare = value;
+                    break;
+                case RarityTier.Rare:
+                    _settings.RarityColors.Rare = value;
+                    break;
+                case RarityTier.Uncommon:
+                    _settings.RarityColors.Uncommon = value;
+                    break;
+                default:
+                    _settings.RarityColors.Common = value;
+                    break;
+            }
+        }
+    }
+
+    public sealed class RarityPalettePreset
+    {
+        public RarityPalettePreset(
+            string name,
+            RarityColorSettings colors,
+            IReadOnlyDictionary<string, string> resourceBrushes)
+        {
+            Name = name;
+            Colors = colors ?? RarityColorSettings.CreateDefault();
+            ResourceBrushes = resourceBrushes;
+        }
+
+        public string Name { get; }
+
+        public RarityColorSettings Colors { get; }
+
+        public IReadOnlyDictionary<string, string> ResourceBrushes { get; }
+    }
+
+    public sealed class CompletedBadgeAppearanceItem : PlayniteAchievements.Common.ObservableObject
+    {
+        private readonly bool _isStartColor;
+        private readonly PersistedSettings _settings;
+        private readonly Action _applyResources;
+
+        public CompletedBadgeAppearanceItem(
+            string displayName,
+            bool isStartColor,
+            PersistedSettings settings,
+            Action applyResources)
+        {
+            DisplayName = displayName;
+            _isStartColor = isStartColor;
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _applyResources = applyResources;
+
+            if (_settings.RarityColors == null)
+            {
+                _settings.RarityColors = RarityColorSettings.CreateDefault();
+            }
+        }
+
+        public string DisplayName { get; }
+
+        public string BaseColor
+        {
+            get => GetColor();
+            set
+            {
+                SetColor(value);
+                _settings.OnPropertyChanged(nameof(PersistedSettings.RarityColors));
+                _applyResources?.Invoke();
+                Refresh();
+            }
+        }
+
+        public Brush PreviewBrush
+        {
+            get
+            {
+                try
+                {
+                    var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(BaseColor));
+                    if (brush.CanFreeze)
+                    {
+                        brush.Freeze();
+                    }
+
+                    return brush;
+                }
+                catch
+                {
+                    return Brushes.Transparent;
+                }
+            }
+        }
+
+        public ImageSource PreviewBadge =>
+            RarityAppearanceHelper.CreateCompletedBadgePreview(_settings);
+
+        public void Refresh()
+        {
+            OnPropertyChanged(nameof(BaseColor));
+            OnPropertyChanged(nameof(PreviewBrush));
+            OnPropertyChanged(nameof(PreviewBadge));
+        }
+
+        public void Reset()
+        {
+            SetColor(_isStartColor
+                ? RarityColorSettings.DefaultCompletedStart
+                : RarityColorSettings.DefaultCompletedEnd);
+            _settings.OnPropertyChanged(nameof(PersistedSettings.RarityColors));
+            _applyResources?.Invoke();
+            Refresh();
+        }
+
+        private string GetColor()
+        {
+            var colors = _settings.RarityColors ?? RarityColorSettings.CreateDefault();
+            return _isStartColor ? colors.CompletedStart : colors.CompletedEnd;
+        }
+
+        private void SetColor(string value)
+        {
+            if (_settings.RarityColors == null)
+            {
+                _settings.RarityColors = RarityColorSettings.CreateDefault();
+            }
+
+            if (_isStartColor)
+            {
+                _settings.RarityColors.CompletedStart = value;
+            }
+            else
+            {
+                _settings.RarityColors.CompletedEnd = value;
+            }
+        }
+    }
+
+    public sealed class TrophyAppearanceItem : PlayniteAchievements.Common.ObservableObject
+    {
+        private readonly string _trophyKey;
+        private readonly PersistedSettings _settings;
+        private readonly Action _applyResources;
+
+        public TrophyAppearanceItem(
+            string displayName,
+            string trophyKey,
+            PersistedSettings settings,
+            Action applyResources)
+        {
+            DisplayName = displayName;
+            _trophyKey = trophyKey;
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _applyResources = applyResources;
+
+            if (_settings.RarityColors == null)
+            {
+                _settings.RarityColors = RarityColorSettings.CreateDefault();
+            }
+        }
+
+        public string DisplayName { get; }
+
+        public string BaseColor
+        {
+            get => GetColor();
+            set
+            {
+                SetColor(value);
+                _settings.OnPropertyChanged(nameof(PersistedSettings.RarityColors));
+                _applyResources?.Invoke();
+                Refresh();
+            }
+        }
+
+        public Brush PreviewBrush
+        {
+            get
+            {
+                try
+                {
+                    var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(BaseColor));
+                    if (brush.CanFreeze)
+                    {
+                        brush.Freeze();
+                    }
+
+                    return brush;
+                }
+                catch
+                {
+                    return Brushes.Transparent;
+                }
+            }
+        }
+
+        public ImageSource PreviewBadge =>
+            RarityAppearanceHelper.CreateTrophyPreview(_trophyKey, _settings);
+
+        public void Refresh()
+        {
+            OnPropertyChanged(nameof(BaseColor));
+            OnPropertyChanged(nameof(PreviewBrush));
+            OnPropertyChanged(nameof(PreviewBadge));
+        }
+
+        public void Reset()
+        {
+            SetColor(GetDefaultColor());
+            _settings.OnPropertyChanged(nameof(PersistedSettings.RarityColors));
+            _applyResources?.Invoke();
+            Refresh();
+        }
+
+        private string GetColor()
+        {
+            var colors = _settings.RarityColors ?? RarityColorSettings.CreateDefault();
+            switch (_trophyKey)
+            {
+                case "TrophyPlatinum":
+                    return colors.TrophyPlatinum;
+                case "TrophyGold":
+                    return colors.TrophyGold;
+                case "TrophySilver":
+                    return colors.TrophySilver;
+                default:
+                    return colors.TrophyBronze;
+            }
+        }
+
+        private string GetDefaultColor()
+        {
+            switch (_trophyKey)
+            {
+                case "TrophyPlatinum":
+                    return RarityColorSettings.DefaultTrophyPlatinum;
+                case "TrophyGold":
+                    return RarityColorSettings.DefaultTrophyGold;
+                case "TrophySilver":
+                    return RarityColorSettings.DefaultTrophySilver;
+                default:
+                    return RarityColorSettings.DefaultTrophyBronze;
+            }
+        }
+
+        private void SetColor(string value)
+        {
+            if (_settings.RarityColors == null)
+            {
+                _settings.RarityColors = RarityColorSettings.CreateDefault();
+            }
+
+            switch (_trophyKey)
+            {
+                case "TrophyPlatinum":
+                    _settings.RarityColors.TrophyPlatinum = value;
+                    break;
+                case "TrophyGold":
+                    _settings.RarityColors.TrophyGold = value;
+                    break;
+                case "TrophySilver":
+                    _settings.RarityColors.TrophySilver = value;
+                    break;
+                default:
+                    _settings.RarityColors.TrophyBronze = value;
+                    break;
+            }
         }
     }
 

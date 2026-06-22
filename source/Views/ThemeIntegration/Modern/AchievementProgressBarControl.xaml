@@ -79,7 +79,7 @@
             </Grid.ColumnDefinitions>
 
             <Image Grid.Column="0"
-                   Source="{StaticResource BadgeCompletedGame}"
+                   Source="{DynamicResource BadgeCompletedGame}"
                    Style="{StaticResource ProgressFooterCompletedIconStyle}"
                    ToolTip="{DynamicResource LOCPlayAch_Completed}"
                    Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>

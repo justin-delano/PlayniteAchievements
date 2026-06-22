@@ -2272,7 +2272,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 SyncSelectedGameAchievementsDisplay();
             }
-            else if (propertyName == nameof(PersistedSettings.UseUniformRarityBadges))
+            else if (RarityAppearanceHelper.IsAppearanceSettingPropertyName(propertyName))
             {
                 OnPropertyChanged(nameof(UseUniformRarityBadges));
                 ApplyScoreCards();

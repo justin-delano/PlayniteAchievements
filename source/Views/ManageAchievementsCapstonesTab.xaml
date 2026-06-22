@@ -126,7 +126,7 @@
                                         CellStyle="{StaticResource ManageAchievementsIconCellStyle}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Image Source="{StaticResource BadgeCompletedGame}"
+                            <Image Source="{DynamicResource BadgeCompletedGame}"
                                    Style="{StaticResource RarityIcon}"
                                    Effect="{StaticResource BadgeShadow}"
                                    Width="18"
