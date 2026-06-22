@@ -82,7 +82,7 @@
             <Style x:Key="ScoreCardPanelStyle" TargetType="Border">
                 <Setter Property="CornerRadius" Value="6"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Padding" Value="8,2"/>
+                <Setter Property="Padding" Value="8,5"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
             </Style>
@@ -158,9 +158,9 @@
             </Border.ToolTip>
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="18"/>
+                    <RowDefinition Height="8"/>
+                    <RowDefinition Height="18"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="44"/>
@@ -209,10 +209,11 @@
                              Style="{StaticResource ScoreCardProgressBarStyle}"
                              BorderBrush="{Binding AccentBrush}"
                              Foreground="{Binding AccentBrush}"
-                             Margin="0,3,0,0"/>
+                             VerticalAlignment="Center"
+                             Margin="0"/>
                 <Grid Grid.Row="2"
                       Grid.Column="1"
-                      Margin="0,1,0,0"
+                      Margin="0"
                       ClipToBounds="True">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -230,7 +231,7 @@
                                Foreground="{Binding AccentBrush}"
                                TextAlignment="Left"
                                MaxWidth="150"
-                               Margin="10,1,0,0"/>
+                               Margin="10,0,0,0"/>
                 </Grid>
             </Grid>
         </Border>
