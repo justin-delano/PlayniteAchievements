@@ -136,7 +136,7 @@
                                                       VerticalAlignment="Center"/>
                                     <Border x:Name="indicator"
                                             Height="3"
-                                            Background="{StaticResource PlayAch.Brush.CompletionAccent}"
+                                            Background="{DynamicResource PlayAch.Brush.CompletedGame}"
                                             VerticalAlignment="Bottom"
                                             Margin="0,0,0,-10"
                                             Visibility="Collapsed"/>

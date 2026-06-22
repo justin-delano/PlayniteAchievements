@@ -20,7 +20,7 @@
                 <ControlTemplate TargetType="ContentControl">
                     <Grid UseLayoutRounding="{TemplateBinding UseLayoutRounding}"
                           SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
-                        <Border BorderBrush="{StaticResource PlayAch.Brush.CompletionAccent}"
+                        <Border BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
                                 IsHitTestVisible="False"
                                 SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
                             <Border.BorderThickness>
@@ -59,7 +59,7 @@
     </Style>
 
     <Style x:Key="GameSummariesGridCellStyle" TargetType="DataGridCell">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowBackground}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Focusable" Value="True"/>
         <Setter Property="IsTabStop" Value="True"/>
@@ -80,30 +80,30 @@
         </Setter>
         <Style.Triggers>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.30}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.30}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.40}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.30}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
             </DataTrigger>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
                 </MultiDataTrigger.Conditions>
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.50}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
             </MultiDataTrigger>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
                 </MultiDataTrigger.Conditions>
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.45}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
             </MultiDataTrigger>
         </Style.Triggers>
     </Style>
@@ -113,7 +113,7 @@
     </Style>
 
     <Style x:Key="GameSummariesGridRowBaseStyle" TargetType="DataGridRow">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
         <Setter Property="UseLayoutRounding" Value="True"/>

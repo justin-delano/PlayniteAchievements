@@ -28,9 +28,6 @@ using PlayniteAchievements.Services.UI;
 using Playnite.SDK;
 using System.Diagnostics;
 using System.Windows.Navigation;
-using DrawingColor = System.Drawing.Color;
-using FormsColorDialog = System.Windows.Forms.ColorDialog;
-using FormsDialogResult = System.Windows.Forms.DialogResult;
 
 namespace PlayniteAchievements.Views
 {
@@ -1396,27 +1393,13 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            using (var dialog = new FormsColorDialog())
+            if (AlphaColorPickerDialog.TryPickColor(
+                Window.GetWindow(this),
+                item.CustomValue,
+                out var color))
             {
-                dialog.FullOpen = true;
-                dialog.AnyColor = true;
-                if (TryParseColor(item.CustomValue, out var currentColor))
-                {
-                    dialog.Color = DrawingColor.FromArgb(
-                        currentColor.A,
-                        currentColor.R,
-                        currentColor.G,
-                        currentColor.B);
-                }
-
-                if (dialog.ShowDialog() != FormsDialogResult.OK)
-                {
-                    return;
-                }
-
-                var selected = dialog.Color;
                 item.Mode = ResourceOverrideMode.Custom;
-                item.CustomValue = $"#{selected.A:X2}{selected.R:X2}{selected.G:X2}{selected.B:X2}";
+                item.CustomValue = color;
             }
         }
 
@@ -1604,43 +1587,65 @@ namespace PlayniteAchievements.Views
             string completedStart,
             string completedEnd)
         {
+            var baseSurface = "#FF0D1018";
+            var basePanel = "#FF141925";
+            var baseStrong = "#FF070912";
+
             return new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 ["PlayAch.Brush.Text"] = "#F5F7FB",
                 ["PlayAch.Brush.Text.Secondary"] = "#C4CBD8",
                 ["PlayAch.Brush.Text.Tertiary"] = "#8792A3",
-                ["PlayAch.Brush.Surface"] = "#10131A",
-                ["PlayAch.Brush.Panel"] = "#171C26",
-                ["PlayAch.Brush.Border"] = common,
-                ["PlayAch.Brush.ControlBorder"] = rare,
-                ["PlayAch.Brush.Glyph"] = uncommon,
-                ["PlayAch.Brush.Accent"] = ultraRare,
-                ["PlayAch.Brush.Selection"] = completedStart
+                ["PlayAch.Brush.Surface"] = BlendColorText(baseSurface, common, 0.10),
+                ["PlayAch.Brush.Panel"] = BlendColorText(basePanel, rare, 0.12),
+                ["PlayAch.Brush.Border"] = WithAlpha(common, 0xCC),
+                ["PlayAch.Brush.ControlBorder"] = WithAlpha(rare, 0xD8),
+                ["PlayAch.Brush.Glyph"] = WithAlpha(uncommon, 0xF0),
+                ["PlayAch.Brush.Accent"] = WithAlpha(ultraRare, 0xFF),
+                ["PlayAch.Brush.Selection"] = WithAlpha(completedStart, 0xFF),
+                ["PlayAch.Brush.ControlSurface"] = BlendColorText(basePanel, uncommon, 0.18),
+                ["PlayAch.Brush.PopupSurface"] = BlendColorText(basePanel, ultraRare, 0.16),
+                ["PlayAch.Brush.PopupBorder"] = WithAlpha(completedEnd, 0xD8),
+                ["PlayAch.Brush.StrongSurface"] = BlendColorText(baseStrong, rare, 0.10)
             };
+        }
+
+        private static string BlendColorText(string from, string to, double amount)
+        {
+            if (!TryParseColor(from, out var fromColor) ||
+                !TryParseColor(to, out var toColor))
+            {
+                return from;
+            }
+
+            amount = Math.Max(0, Math.Min(1, amount));
+            return ColorToText(Color.FromArgb(
+                0xFF,
+                (byte)Math.Round(fromColor.R + ((toColor.R - fromColor.R) * amount)),
+                (byte)Math.Round(fromColor.G + ((toColor.G - fromColor.G) * amount)),
+                (byte)Math.Round(fromColor.B + ((toColor.B - fromColor.B) * amount))));
+        }
+
+        private static string WithAlpha(string value, byte alpha)
+        {
+            return TryParseColor(value, out var color)
+                ? ColorToText(Color.FromArgb(alpha, color.R, color.G, color.B))
+                : value;
+        }
+
+        private static string ColorToText(Color color)
+        {
+            return $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
         }
 
         private void PickPaletteColor(string currentValue, Action<string> applyColor)
         {
-            using (var dialog = new FormsColorDialog())
+            if (AlphaColorPickerDialog.TryPickColor(
+                Window.GetWindow(this),
+                currentValue,
+                out var color))
             {
-                dialog.FullOpen = true;
-                dialog.AnyColor = true;
-                if (TryParseColor(currentValue, out var currentColor))
-                {
-                    dialog.Color = DrawingColor.FromArgb(
-                        currentColor.A,
-                        currentColor.R,
-                        currentColor.G,
-                        currentColor.B);
-                }
-
-                if (dialog.ShowDialog() != FormsDialogResult.OK)
-                {
-                    return;
-                }
-
-                var selected = dialog.Color;
-                applyColor?.Invoke($"#{selected.A:X2}{selected.R:X2}{selected.G:X2}{selected.B:X2}");
+                applyColor?.Invoke(color);
             }
         }
 
@@ -3013,7 +3018,7 @@ namespace PlayniteAchievements.Views
 
         private static string GetCurrentPlayniteValueText(ResourceOverrideDescriptor descriptor)
         {
-            var value = Application.Current?.TryFindResource(descriptor.PlayniteResourceKey);
+            var value = FindPlayniteResourceValue(descriptor);
             switch (descriptor.ValueKind)
             {
                 case ResourceOverrideValueKind.Brush:
@@ -3028,6 +3033,26 @@ namespace PlayniteAchievements.Views
                 default:
                     return string.Empty;
             }
+        }
+
+        private static object FindPlayniteResourceValue(ResourceOverrideDescriptor descriptor)
+        {
+            var value = Application.Current?.TryFindResource(descriptor.PlayniteResourceKey);
+            if (value != null)
+            {
+                return value;
+            }
+
+            foreach (var fallbackKey in descriptor.FallbackPlayniteResourceKeys)
+            {
+                value = Application.Current?.TryFindResource(fallbackKey);
+                if (value != null)
+                {
+                    return value;
+                }
+            }
+
+            return null;
         }
 
         private static string BrushToText(Brush brush)

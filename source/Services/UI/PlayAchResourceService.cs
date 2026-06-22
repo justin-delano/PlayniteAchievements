@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Media;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services.UI
@@ -16,48 +17,97 @@ namespace PlayniteAchievements.Services.UI
                 string resourceKey,
                 string displayName,
                 ResourceOverrideValueKind kind,
-                string playniteResourceKey)
+                string playniteResourceKey,
+                bool isUserVisible,
+                bool allowsOverride,
+                params string[] fallbackPlayniteResourceKeys)
             {
                 ResourceKey = resourceKey;
                 DisplayName = displayName;
                 Kind = kind;
                 PlayniteResourceKey = playniteResourceKey;
+                IsUserVisible = isUserVisible;
+                AllowsOverride = allowsOverride;
+                FallbackPlayniteResourceKeys = fallbackPlayniteResourceKeys ?? Array.Empty<string>();
             }
 
             public string ResourceKey { get; }
             public string DisplayName { get; }
             public ResourceOverrideValueKind Kind { get; }
             public string PlayniteResourceKey { get; }
+            public bool IsUserVisible { get; }
+            public bool AllowsOverride { get; }
+            public IReadOnlyList<string> FallbackPlayniteResourceKeys { get; }
+        }
+
+        private sealed class AliasDefinition
+        {
+            public AliasDefinition(string resourceKey, string sourceResourceKey, byte? alpha)
+            {
+                ResourceKey = resourceKey;
+                SourceResourceKey = sourceResourceKey;
+                Alpha = alpha;
+            }
+
+            public string ResourceKey { get; }
+            public string SourceResourceKey { get; }
+            public byte? Alpha { get; }
         }
 
         private static readonly TokenDefinition[] Tokens =
         {
             Brush("PlayAch.Brush.Text", "Text", "TextBrush"),
-            Brush("PlayAch.Brush.Text.Secondary", "Secondary text", "TextBrushDarker"),
-            Brush("PlayAch.Brush.Text.Tertiary", "Tertiary text", "TextBrushDark"),
+            Brush("PlayAch.Brush.Text.Secondary", "Secondary text", "TextBrushDarker", "TextBrush"),
+            Brush("PlayAch.Brush.Text.Tertiary", "Tertiary text", "TextBrushDark", "TextBrushDarker", "TextBrush"),
             Brush("PlayAch.Brush.Surface", "Surface", "ControlBackgroundBrush"),
-            Brush("PlayAch.Brush.Panel", "Panel", "PanelBackgroundBrush"),
+            Brush("PlayAch.Brush.Panel", "Panel", "PanelBackgroundBrush", "ControlBackgroundBrush"),
             Brush("PlayAch.Brush.Border", "Border", "NormalBorderBrush"),
             Brush("PlayAch.Brush.ControlBorder", "Control border", "NormalBrush"),
             Brush("PlayAch.Brush.Glyph", "Glyph", "GlyphBrush"),
             Brush("PlayAch.Brush.Accent", "Accent", "HighlightGlyphBrush"),
-            Brush("PlayAch.Brush.Selection", "Selection", "SelectionLightBrush"),
+            Brush("PlayAch.Brush.Selection", "Selection", "SelectionLightBrush", "GlyphBrush"),
+            Brush("PlayAch.Brush.ControlSurface", "Control surface", "ButtonBackgroundBrush", "ControlBackgroundBrush"),
+            Brush("PlayAch.Brush.PopupSurface", "Popup surface", "PopupBackgroundBrush", "PanelBackgroundBrush", "ControlBackgroundBrush"),
+            Brush("PlayAch.Brush.PopupBorder", "Popup border", "PopupBorderBrush", "NormalBorderBrush"),
+            Brush("PlayAch.Brush.StrongSurface", "Strong surface", "NormalBrushDark", "NormalBrush"),
 
             FontSize("PlayAch.FontSize.Caption", "Caption size", "FontSizeSmall"),
             FontSize("PlayAch.FontSize.Body", "Body size", "FontSize"),
             FontSize("PlayAch.FontSize.Title", "Title size", "FontSizeLarge"),
 
             FontFamily("PlayAch.FontFamily.Body", "Body font", "FontFamily"),
-            FontFamily("PlayAch.FontFamily.Icon", "Icon font", "FontIcoFont")
+            StaticFontFamily("PlayAch.FontFamily.Icon", "Icon font", "FontIcoFont")
+        };
+
+        private static readonly AliasDefinition[] Aliases =
+        {
+            Alias("PlayAch.Brush.Button.Background", "PlayAch.Brush.ControlSurface"),
+            Alias("PlayAch.Brush.Button.Background.Hover", "PlayAch.Brush.Selection", 0x30),
+            Alias("PlayAch.Brush.Button.Background.Selected", "PlayAch.Brush.Selection", 0x45),
+            Alias("PlayAch.Brush.Button.Background.Pressed", "PlayAch.Brush.StrongSurface", 0x54),
+            Alias("PlayAch.Brush.Button.Border", "PlayAch.Brush.ControlBorder"),
+            Alias("PlayAch.Brush.Input.Background", "PlayAch.Brush.Surface"),
+            Alias("PlayAch.Brush.Input.Border", "PlayAch.Brush.ControlBorder"),
+            Alias("PlayAch.Brush.Grid.Background", "PlayAch.Brush.Surface"),
+            Alias("PlayAch.Brush.Grid.HeaderBackground", "PlayAch.Brush.ControlSurface"),
+            Alias("PlayAch.Brush.Grid.RowBackground", "PlayAch.Brush.Surface"),
+            Alias("PlayAch.Brush.Grid.RowHoverBackground", "PlayAch.Brush.Selection", 0x30),
+            Alias("PlayAch.Brush.Grid.RowSelectedBackground", "PlayAch.Brush.Selection", 0x45),
+            Alias("PlayAch.Brush.Dialog.Background", "PlayAch.Brush.PopupSurface"),
+            Alias("PlayAch.Brush.Dialog.Border", "PlayAch.Brush.PopupBorder"),
+            Alias("PlayAch.Brush.Chrome.Background", "PlayAch.Brush.ControlSurface", 0x1F),
+            Alias("PlayAch.Brush.Chrome.StrongBackground", "PlayAch.Brush.StrongSurface", 0x54)
         };
 
         public static IReadOnlyList<ResourceOverrideDescriptor> ResourceDescriptors { get; } =
             Tokens
+                .Where(token => token.IsUserVisible)
                 .Select(token => new ResourceOverrideDescriptor(
                     token.ResourceKey,
                     token.DisplayName,
                     token.Kind,
-                    token.PlayniteResourceKey))
+                    token.PlayniteResourceKey,
+                    token.FallbackPlayniteResourceKeys.ToArray()))
                 .ToList()
                 .AsReadOnly();
 
@@ -72,18 +122,29 @@ namespace PlayniteAchievements.Services.UI
             {
                 resources[token.ResourceKey] = ResolveToken(token, overrides);
             }
+
+            foreach (var alias in Aliases)
+            {
+                resources[alias.ResourceKey] = ResolveAlias(resources, alias);
+            }
+
+            RarityAppearanceHelper.ApplyCompletedGameBrushResource(resources);
         }
 
         private static TokenDefinition Brush(
             string resourceKey,
             string displayName,
-            string playniteResourceKey)
+            string playniteResourceKey,
+            params string[] fallbackPlayniteResourceKeys)
         {
             return new TokenDefinition(
                 resourceKey,
                 displayName,
                 ResourceOverrideValueKind.Brush,
-                playniteResourceKey);
+                playniteResourceKey,
+                true,
+                true,
+                fallbackPlayniteResourceKeys);
         }
 
         private static TokenDefinition FontSize(
@@ -95,7 +156,14 @@ namespace PlayniteAchievements.Services.UI
                 resourceKey,
                 displayName,
                 ResourceOverrideValueKind.FontSize,
-                playniteResourceKey);
+                playniteResourceKey,
+                true,
+                true);
+        }
+
+        private static AliasDefinition Alias(string resourceKey, string sourceResourceKey, byte? alpha = null)
+        {
+            return new AliasDefinition(resourceKey, sourceResourceKey, alpha);
         }
 
         private static TokenDefinition FontFamily(
@@ -107,20 +175,92 @@ namespace PlayniteAchievements.Services.UI
                 resourceKey,
                 displayName,
                 ResourceOverrideValueKind.FontFamily,
-                playniteResourceKey);
+                playniteResourceKey,
+                true,
+                true);
+        }
+
+        private static TokenDefinition StaticFontFamily(
+            string resourceKey,
+            string displayName,
+            string playniteResourceKey)
+        {
+            return new TokenDefinition(
+                resourceKey,
+                displayName,
+                ResourceOverrideValueKind.FontFamily,
+                playniteResourceKey,
+                false,
+                false);
         }
 
         private static object ResolveToken(TokenDefinition token, IDictionary<string, ResourceOverrideSetting> overrides)
         {
             var setting = GetSetting(token.ResourceKey, overrides);
-            if (setting?.Mode == ResourceOverrideMode.Custom &&
+            if (token.AllowsOverride &&
+                setting?.Mode == ResourceOverrideMode.Custom &&
                 TryParseCustomValue(token, setting.CustomValue, out var customValue))
             {
                 return customValue;
             }
 
-            var playniteValue = Application.Current?.TryFindResource(token.PlayniteResourceKey);
+            var playniteValue = FindPlayniteResource(token);
             return CoerceValue(token, playniteValue);
+        }
+
+        private static object FindPlayniteResource(TokenDefinition token)
+        {
+            var value = Application.Current?.TryFindResource(token.PlayniteResourceKey);
+            if (value != null)
+            {
+                return value;
+            }
+
+            foreach (var fallbackKey in token.FallbackPlayniteResourceKeys)
+            {
+                value = Application.Current?.TryFindResource(fallbackKey);
+                if (value != null)
+                {
+                    return value;
+                }
+            }
+
+            return null;
+        }
+
+        private static object ResolveAlias(ResourceDictionary resources, AliasDefinition alias)
+        {
+            if (!resources.Contains(alias.SourceResourceKey))
+            {
+                return null;
+            }
+
+            var value = resources[alias.SourceResourceKey];
+            if (!alias.Alpha.HasValue || !(value is Brush brush))
+            {
+                return value;
+            }
+
+            return CreateBrushWithAlpha(brush, alias.Alpha.Value);
+        }
+
+        private static Brush CreateBrushWithAlpha(Brush brush, byte alpha)
+        {
+            if (brush is SolidColorBrush solid)
+            {
+                var color = solid.Color;
+                color.A = (byte)Math.Round(color.A * (alpha / 255.0));
+                return CreateBrush(color);
+            }
+
+            var clone = brush.CloneCurrentValue();
+            clone.Opacity = clone.Opacity * (alpha / 255.0);
+            if (clone.CanFreeze)
+            {
+                clone.Freeze();
+            }
+
+            return clone;
         }
 
         private static ResourceOverrideSetting GetSetting(

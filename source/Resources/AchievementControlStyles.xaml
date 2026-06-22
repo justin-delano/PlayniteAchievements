@@ -16,7 +16,7 @@
     <Style x:Key="SearchTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
         <Setter Property="VerticalContentAlignment" Value="Center"/>
         <Setter Property="Padding" Value="6,4"/>
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Input.Background}"/>
     </Style>
 
     <Style x:Key="ClearableSearchTextBoxStyle"
@@ -58,18 +58,20 @@
 
     <!-- Time range button style -->
     <Style x:Key="TimeRangeButtonStyle" TargetType="RadioButton">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Button.Border}"/>
         <Setter Property="Padding" Value="8,4"/>
         <Setter Property="Margin" Value="0,0,4,0"/>
         <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
         <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
                     <Border x:Name="border"
                             Background="{TemplateBinding Background}"
-                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{StaticResource PlayAch.Thickness.Border}"
                             CornerRadius="3"
                             Padding="{TemplateBinding Padding}">
@@ -77,16 +79,38 @@
                                           VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="{StaticResource PlayAch.Brush.CompletionAccent}"/>
-                            <Setter Property="Foreground" Value="White"/>
-                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.20}"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Selection}"/>
-                            <Setter TargetName="border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.20}"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsChecked" Value="True"/>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                        </MultiTrigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsChecked" Value="True"/>
+                                <Condition Property="IsKeyboardFocused" Value="True"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.45"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -107,7 +131,7 @@
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Shade.14}"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
@@ -132,16 +156,16 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Shade.12}"/>
+                            <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
                             <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                             <Setter Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Shade.1E}"/>
+                            <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Pressed}"/>
                             <Setter Property="Opacity" Value="1"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Chrome" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.20}"/>
+                            <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
                             <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                             <Setter Property="Opacity" Value="1"/>
                         </Trigger>

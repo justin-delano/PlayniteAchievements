@@ -58,8 +58,8 @@
     </Style>
 
     <Style x:Key="MetaChipStyle" TargetType="Border">
-        <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.1F}"/>
-        <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.Overlay.Tint.30}"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Chrome.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.ControlBorder}"/>
         <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}"/>
         <Setter Property="CornerRadius" Value="12"/>
         <Setter Property="Padding" Value="{StaticResource PlayAch.Thickness.ButtonPadding.Compact}"/>
@@ -238,8 +238,8 @@
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Left.Sm}"/>
         <Setter Property="FontSize" Value="{StaticResource PlayAch.FontSize.InlineIcon}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Panel}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Button.Border}"/>
         <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
@@ -248,7 +248,7 @@
                 <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
             </Trigger>
             <Trigger Property="IsPressed" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Shade.18}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Pressed}"/>
             </Trigger>
         </Style.Triggers>
     </Style>
@@ -258,8 +258,8 @@
         <Setter Property="KeyboardNavigation.IsTabStop" Value="True"/>
         <Setter Property="Padding" Value="{StaticResource PlayAch.Thickness.EditorTextBoxPadding}"/>
         <Setter Property="MinHeight" Value="{StaticResource PlayAch.Size.Control.LargeHeight}"/>
-        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Panel}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Glyph}"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Input.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Input.Border}"/>
         <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="CaretBrush" Value="{DynamicResource PlayAch.Brush.Text}"/>
@@ -295,7 +295,7 @@
         <Setter Property="CornerRadius" Value="{StaticResource PlayAch.Radius.PillSmall}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
         <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}"/>
-        <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Shade.12}"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Chrome.Background}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
@@ -333,7 +333,7 @@
                 <Setter Property="Cursor" Value="Hand"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListBoxItem}, Path=IsMouseOver}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Shade.14}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
             </DataTrigger>
         </Style.Triggers>

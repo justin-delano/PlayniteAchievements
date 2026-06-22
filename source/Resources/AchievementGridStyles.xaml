@@ -18,7 +18,7 @@
 
     <!-- Column Header Style with Sort Arrow and Resize Grippers -->
     <Style x:Key="AchievementColumnHeaderStyle" TargetType="DataGridColumnHeader">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.HeaderBackground}"/>
         <Setter Property="Focusable" Value="True"/>
         <Setter Property="IsTabStop" Value="True"/>
         <Setter Property="KeyboardNavigation.IsTabStop" Value="True"/>
@@ -59,13 +59,13 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.18}"/>
+                            <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
                         </Trigger>
                         <Trigger Property="HorizontalContentAlignment" Value="Right">
                             <Setter Property="Padding" Value="10,6,26,6"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.20}"/>
+                            <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
                         </Trigger>
                         <Trigger Property="SortDirection" Value="Ascending">
                             <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
@@ -101,7 +101,7 @@
 
     <!-- DataGrid Cell Style -->
     <Style x:Key="AchievementCellStyle" TargetType="DataGridCell">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowBackground}"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Focusable" Value="True"/>
         <Setter Property="IsTabStop" Value="True"/>
@@ -123,30 +123,30 @@
         </Setter>
         <Style.Triggers>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.30}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.30}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.40}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
             </DataTrigger>
             <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.30}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
             </DataTrigger>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
                 </MultiDataTrigger.Conditions>
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.50}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
             </MultiDataTrigger>
             <MultiDataTrigger>
                 <MultiDataTrigger.Conditions>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
                     <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
                 </MultiDataTrigger.Conditions>
-                <Setter Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.45}"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
             </MultiDataTrigger>
         </Style.Triggers>
     </Style>
@@ -258,7 +258,7 @@
 
     <!-- DataGrid Row Style -->
     <Style x:Key="AchievementRowStyle" TargetType="DataGridRow">
-        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowBackground}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
         <Setter Property="BorderThickness" Value="0,0,0,1"/>
         <Setter Property="UseLayoutRounding" Value="True"/>
@@ -297,8 +297,8 @@
     <Style x:Key="AchievementSelectorButtonStyle"
            TargetType="Button"
            BasedOn="{StaticResource {x:Type Button}}">
-        <Setter Property="Background" Value="Transparent"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.ControlBorder}"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Button.Border}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="Padding" Value="10,4"/>
@@ -338,14 +338,14 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                            <Setter TargetName="Border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Shade.10}"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Selection}"/>
-                            <Setter TargetName="Border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Tint.20}"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Border" Property="Background" Value="{StaticResource PlayAch.Brush.Overlay.Shade.18}"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Pressed}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Border" Property="Opacity" Value="0.55"/>
@@ -410,12 +410,12 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
-                            <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource MenuHighlightBrush}"/>
+                            <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
                             <Setter TargetName="MenuItemBorder" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                             <Setter Property="Foreground" Value="White"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                            <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource MenuHighlightBrush}"/>
+                            <Setter TargetName="MenuItemBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
                             <Setter TargetName="MenuItemBorder" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                             <Setter Property="Foreground" Value="White"/>
                         </Trigger>

@@ -37,7 +37,7 @@
     <Color x:Key="PlayAch.Color.AuthPending">#FBBF24</Color>
     <Color x:Key="PlayAch.Color.AuthSuccess">#06FFA5</Color>
     <Color x:Key="PlayAch.Color.ActionLink">#4CC9F0</Color>
-    <Color x:Key="PlayAch.Color.CompletionAccent">#2196F3</Color>
+    <Color x:Key="PlayAch.Color.CompletedGame">#2196F3</Color>
     <Color x:Key="PlayAch.Color.ErrorText">#FFE07070</Color>
     <Color x:Key="PlayAch.Color.ProviderSteam">#B0B0B0</Color>
     <Color x:Key="PlayAch.Color.ProviderBattleNet">#14B8A6</Color>
@@ -102,7 +102,7 @@
     <SolidColorBrush x:Key="PlayAch.Brush.AuthPending" Color="{StaticResource PlayAch.Color.AuthPending}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.AuthSuccess" Color="{StaticResource PlayAch.Color.AuthSuccess}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.ActionLink" Color="{StaticResource PlayAch.Color.ActionLink}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.CompletionAccent" Color="{StaticResource PlayAch.Color.CompletionAccent}"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.CompletedGame" Color="{StaticResource PlayAch.Color.CompletedGame}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.ErrorText" Color="{StaticResource PlayAch.Color.ErrorText}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.ProviderSteam" Color="{StaticResource PlayAch.Color.ProviderSteam}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.ProviderBattleNet" Color="{StaticResource PlayAch.Color.ProviderBattleNet}"/>

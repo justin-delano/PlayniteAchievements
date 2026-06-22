@@ -79,7 +79,7 @@ namespace PlayniteAchievements.ViewModels
         public string NextTierThresholdText => FormatNextTierThreshold(
             AchievementLevelCalculator.CalculateModern(Score));
 
-        public string BadgeIconKey => AchievementRankPresentation.GetBadgeIconKey(
+        public string BadgeIconKey => AchievementRankPresentation.GetScoreCardBadgeIconKey(
             Rank,
             UseUniformRarityBadges);
 

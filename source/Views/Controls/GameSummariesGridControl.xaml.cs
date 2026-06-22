@@ -42,6 +42,7 @@ namespace PlayniteAchievements.Views.Controls
 
         private static readonly string[] MirroredBadgeResourceKeys =
         {
+            "PlayAch.Brush.CompletedGame",
             "BadgeCompletedGame",
             "BadgeRarityUltraRare",
             "BadgeRarityRare",

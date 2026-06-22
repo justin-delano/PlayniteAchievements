@@ -56,6 +56,21 @@ namespace PlayniteAchievements.Models.Achievements
             return GetCompletedStartColor(persisted);
         }
 
+        public static SolidColorBrush GetCompletedBrush(PersistedSettings settings = null)
+        {
+            return CreateSolidBrush(GetCompletedColor(settings));
+        }
+
+        public static void ApplyCompletedGameBrushResource(ResourceDictionary resources, PersistedSettings settings = null)
+        {
+            if (resources == null)
+            {
+                return;
+            }
+
+            resources["PlayAch.Brush.CompletedGame"] = GetCompletedBrush(settings);
+        }
+
         public static Color GetCompletedStartColor(PersistedSettings settings = null)
         {
             var persisted = settings ?? _activeSettings;
@@ -198,15 +213,33 @@ namespace PlayniteAchievements.Models.Achievements
             SetGeneratedBadge(resources, RarityTier.Rare, "BadgeGoldPentagon");
             SetGeneratedBadge(resources, RarityTier.Rare, "BadgeGoldHexagon");
             SetGeneratedBadge(resources, RarityTier.UltraRare, "BadgePlatinumHexagon");
+            ApplyCompletedGameBrushResource(resources, settings);
             resources["BadgeCompletedGame"] = CreateCompletedBadgeImage(settings);
             resources["TrophyBronze"] = CreateTrophyImage("TrophyBronze", settings);
             resources["TrophySilver"] = CreateTrophyImage("TrophySilver", settings);
             resources["TrophyGold"] = CreateTrophyImage("TrophyGold", settings);
             resources["TrophyPlatinum"] = CreateTrophyImage("TrophyPlatinum", settings);
+            SetStaticScoreBadge(resources, "ScoreBadgeBronzeTriangle", "BadgeBronzeTriangle");
+            SetStaticScoreBadge(resources, "ScoreBadgeBronzeHexagon", "BadgeBronzeHexagon");
+            SetStaticScoreBadge(resources, "ScoreBadgeSilverSquare", "BadgeSilverSquare");
+            SetStaticScoreBadge(resources, "ScoreBadgeSilverHexagon", "BadgeSilverHexagon");
+            SetStaticScoreBadge(resources, "ScoreBadgeGoldPentagon", "BadgeGoldPentagon");
+            SetStaticScoreBadge(resources, "ScoreBadgeGoldHexagon", "BadgeGoldHexagon");
+            SetStaticScoreBadge(resources, "ScoreBadgePlatinumHexagon", "BadgePlatinumHexagon");
+            SetStaticScoreBadge(resources, "ScoreBadgeCompletedGame", "BadgeCompletedGame");
 
             void SetGeneratedBadge(ResourceDictionary target, RarityTier tier, string badgeKey)
             {
                 target[badgeKey] = CreateBadgeImage(tier, GetGeometryKeyForBadge(badgeKey), settings);
+            }
+
+            void SetStaticScoreBadge(ResourceDictionary target, string scoreBadgeKey, string defaultBadgeKey)
+            {
+                var image = TryGetDefaultImage(defaultBadgeKey);
+                if (image != null)
+                {
+                    target[scoreBadgeKey] = image;
+                }
             }
         }
 
@@ -222,15 +255,26 @@ namespace PlayniteAchievements.Models.Achievements
                 "BadgeGoldHexagon",
                 "BadgePlatinumHexagon",
                 "BadgeCompletedGame",
+                "ScoreBadgeBronzeTriangle",
+                "ScoreBadgeBronzeHexagon",
+                "ScoreBadgeSilverSquare",
+                "ScoreBadgeSilverHexagon",
+                "ScoreBadgeGoldPentagon",
+                "ScoreBadgeGoldHexagon",
+                "ScoreBadgePlatinumHexagon",
+                "ScoreBadgeCompletedGame",
                 "TrophyBronze",
                 "TrophySilver",
                 "TrophyGold",
                 "TrophyPlatinum"
             })
             {
-                var image = key.StartsWith("Trophy", StringComparison.Ordinal)
+                var defaultKey = key.StartsWith("ScoreBadge", StringComparison.Ordinal)
+                    ? key.Substring("Score".Length)
+                    : key;
+                var image = defaultKey.StartsWith("Trophy", StringComparison.Ordinal)
                     ? TryGetDefaultTrophyImage(key)
-                    : TryGetDefaultImage(key);
+                    : TryGetDefaultImage(defaultKey);
                 if (image != null)
                 {
                     resources[key] = image;
@@ -451,6 +495,11 @@ namespace PlayniteAchievements.Models.Achievements
         {
             var color = Blend(baseColor, Colors.White, 0.78);
             color.A = 0xF2;
+            return CreateSolidBrush(color);
+        }
+
+        private static SolidColorBrush CreateSolidBrush(Color color)
+        {
             var brush = new SolidColorBrush(color);
             if (brush.CanFreeze)
             {
