@@ -114,6 +114,85 @@ namespace PlayniteAchievements.Providers.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_LegacyXmlUnixTimestamp_ParsesUnlockTime()
+        {
+            var tempDir = CreateTempDirectory();
+            var legacyGameDataPath = Path.Combine(tempDir, "user", "game_data");
+            var installDir = Path.Combine(tempDir, "Games", "CUSA03173");
+
+            try
+            {
+                CreateLegacyTrophyData(
+                    legacyGameDataPath,
+                    "CUSA03173",
+                    "Chalice of Pthumeru",
+                    timestamp: "1781207673");
+
+                var provider = CreateProvider(legacyGameDataPath);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Bloodborne",
+                    InstallDirectory = installDir
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(1, data.Achievements.Count);
+
+                var trophy = data.Achievements[0];
+                Assert.IsTrue(trophy.Unlocked);
+                Assert.AreEqual(
+                    DateTimeOffset.FromUnixTimeSeconds(1781207673).UtcDateTime,
+                    trophy.UnlockTimeUtc);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_LegacyXmlFalseUnlockState_DoesNotMarkUnlocked()
+        {
+            var tempDir = CreateTempDirectory();
+            var legacyGameDataPath = Path.Combine(tempDir, "user", "game_data");
+            var installDir = Path.Combine(tempDir, "Games", "CUSA03173");
+
+            try
+            {
+                CreateLegacyTrophyData(
+                    legacyGameDataPath,
+                    "CUSA03173",
+                    "Locked Trophy",
+                    unlockState: "false",
+                    timestamp: "1781207673");
+
+                var provider = CreateProvider(legacyGameDataPath);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Bloodborne",
+                    InstallDirectory = installDir
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(1, data.Achievements.Count);
+                Assert.IsFalse(data.Achievements[0].Unlocked);
+                Assert.IsNull(data.Achievements[0].UnlockTimeUtc);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_OverrideMissingData_DoesNotFallBackToAutoDetection()
         {
             var tempDir = CreateTempDirectory();
@@ -372,13 +451,18 @@ namespace PlayniteAchievements.Providers.Tests
             File.WriteAllBytes(Path.Combine(iconDir, $"TROP{trophyId.PadLeft(3, '0')}.PNG"), new byte[] { 0 });
         }
 
-        private static void CreateLegacyTrophyData(string legacyGameDataPath, string titleId, string trophyName)
+        private static void CreateLegacyTrophyData(
+            string legacyGameDataPath,
+            string titleId,
+            string trophyName,
+            string unlockState = "1",
+            string timestamp = "0")
         {
             var xmlDir = Path.Combine(legacyGameDataPath, titleId, "trophyfiles", "trophy00", "Xml");
             Directory.CreateDirectory(xmlDir);
             File.WriteAllText(
                 Path.Combine(xmlDir, "TROP.XML"),
-                BuildLegacyFormatXml(trophyName));
+                BuildLegacyFormatXml(trophyName, unlockState, timestamp));
         }
 
         private static void CreateNpbindFile(string installDir, string npCommId)
@@ -427,10 +511,10 @@ namespace PlayniteAchievements.Providers.Tests
 </trophyconf>";
         }
 
-        private static string BuildLegacyFormatXml(string trophyName)
+        private static string BuildLegacyFormatXml(string trophyName, string unlockState, string timestamp)
         {
             return $@"<trophyconf>
-  <trophy id=""1"" ttype=""B"" hidden=""no"" unlockstate=""1"" timestamp=""0"">
+  <trophy id=""1"" ttype=""B"" hidden=""no"" unlockstate=""{unlockState}"" timestamp=""{timestamp}"">
     <name>{trophyName}</name>
     <detail>Description</detail>
   </trophy>

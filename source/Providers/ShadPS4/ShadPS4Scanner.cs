@@ -25,9 +25,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         // PS4's RTC epoch is January 1, 2008 00:00:00 UTC
         private static readonly DateTime Ps4Epoch = new DateTime(2008, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
-        // ShadPS4-specific year offset correction
-        private const int YearOffset = 2007;
+        private const long UnixTimestampMaxReasonableSeconds = 4102444800; // 2100-01-01 00:00:00 UTC
 
         private static readonly System.Text.RegularExpressions.Regex TitleIdPattern =
             new System.Text.RegularExpressions.Regex(@"\b([A-Z]{4}\d{5})\b",
@@ -320,11 +318,11 @@ namespace PlayniteAchievements.Providers.ShadPS4
                     }
                     else
                     {
-                        isUnlocked = trophyElement.Attribute("unlockstate") != null;
+                        isUnlocked = IsUnlocked(trophyElement.Attribute("unlockstate")?.Value);
                         if (isUnlocked)
                         {
                             unlockedCount++;
-                            unlockTime = ConvertPs4Timestamp(trophyElement.Attribute("timestamp")?.Value);
+                            unlockTime = ConvertShadPs4Timestamp(trophyElement.Attribute("timestamp")?.Value);
                         }
                     }
 
@@ -407,28 +405,41 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
 
         /// <summary>
-        /// Converts a PS4 RTC timestamp (microseconds since 2008-01-01 epoch)
-        /// with ShadPS4-specific year offset correction.
+        /// Converts ShadPS4 trophy XML timestamps. Current XML stores Unix seconds,
+        /// while older/emulator formats may use PS4 RTC microseconds since 2008-01-01.
         /// </summary>
-        private DateTime? ConvertPs4Timestamp(string timestamp)
+        private static DateTime? ConvertShadPs4Timestamp(string timestamp)
         {
             if (string.IsNullOrEmpty(timestamp)) return null;
             try
             {
-                var milliseconds = (long)(ulong.Parse(timestamp) / 1000);
-                var utcTime = Ps4Epoch.AddMilliseconds(milliseconds);
-
-                if (utcTime.Year > YearOffset)
+                var rawTimestamp = ulong.Parse(timestamp);
+                if (rawTimestamp == 0)
                 {
-                    return new DateTime(
-                        utcTime.Year - YearOffset, utcTime.Month, utcTime.Day,
-                        utcTime.Hour, utcTime.Minute, utcTime.Second, utcTime.Millisecond,
-                        DateTimeKind.Utc);
+                    return null;
                 }
 
-                return utcTime;
+                if (rawTimestamp <= UnixTimestampMaxReasonableSeconds)
+                {
+                    return DateTimeOffset.FromUnixTimeSeconds((long)rawTimestamp).UtcDateTime;
+                }
+
+                var milliseconds = (long)(rawTimestamp / 1000);
+                return Ps4Epoch.AddMilliseconds(milliseconds);
             }
             catch { return null; }
+        }
+
+        private static bool IsUnlocked(string unlockState)
+        {
+            if (string.IsNullOrWhiteSpace(unlockState))
+            {
+                return false;
+            }
+
+            var normalized = unlockState.Trim();
+            return normalized.Equals("true", StringComparison.OrdinalIgnoreCase) ||
+                   normalized.Equals("1", StringComparison.OrdinalIgnoreCase);
         }
 
         #endregion
