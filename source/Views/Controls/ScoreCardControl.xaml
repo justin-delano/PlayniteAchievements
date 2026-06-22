@@ -176,7 +176,7 @@
                        Style="{StaticResource RarityIcon}"/>
                 <Grid Grid.Row="0"
                       Grid.Column="1"
-                      Margin="0,-1,0,0">
+                      Margin="0,-3,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
