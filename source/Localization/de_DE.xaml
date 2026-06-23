@@ -226,22 +226,22 @@ This will remove the manual achievement link, delete all manually set unlock tim
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Herausfiltern</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">In Übersichten herausfiltern</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Header">Filterung</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Erfolge aus Erfolgsansichten oder nur aus Übersichten herausfiltern.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Unfiltered">Ungefiltert</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_HasNote">Notiz hinzugefügt</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Header">Erfolgsnotizen</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Hint">Add personal notes for this game's achievements. Formatting supports **bold**, *italic*, and __underline__ markers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Hint">Persönliche Notizen für diesen Erfolg hinzufügen. Die Formatierung unterstützt Markierungen in **fett**, *kursiv* und __untersrichen__.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_NoNote">Keine Notiz</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Note">Notiz</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithNotes">Mit Notizen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_WithoutNotes">Ohne Notizen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_LinkSummary">{0} ({1})</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_LinkSummary_None">Keine manuelle Verknüpfung konfiguriert.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_ReplaceProviderWarning">Manual tracking can replace cached achievement data from {0}. Continue?</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_ReplaceProviderWarning">Die manuelle Verfolgung kann zwischengespeicherte Erfolgsdaten von &quot;{0}&quot; ersetzen. Fortfahren?</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_Source">Manuelle Quelle</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Manual_Unlink">Manuelle Verfolgung aufheben</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_Header">Benutzerdefinierte Erfolgsreihenfolge</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_Hint">Drag and drop rows to define the default order. Multi-select with Shift/Ctrl is supported. Changes are saved immediately.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Order_Hint">Festlegung der Standardreihenfolge durch Drag &amp; Drop der Zeilen. Mehrfachauswahl mit Umschalt/Steuerung möglich. Änderungen werden sofort gespeichert.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ClearCustomDataButton">Benutzerdefinierte Daten entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ClearCustomDataConfirm">Clear all custom data for &quot;{0}&quot;?
 
@@ -272,7 +272,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia">Xenia Title ID</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase">Exophase Game ID oder Slug</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHeader">Ausschluss aus Übersichten</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint">Exclude this game from overview and all-games summary data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Overrides_SummaryExclusionHint">Dieses Spiel aus Übersichten und spieleübergreifenden Daten ausschließen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Current">Aktueller Vollendungserfolg: &quot;{0}&quot;</sys:String>
     <sys:String x:Key="LOCPlayAch_Capstone_Subtitle">Lege einen Erfolg als Vollendungserfolg fest. Die Freischaltung eines Vollendungserfolges wird das Spiel als vervollständigt markieren.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Overview_Capstone">Aktueller Vollendungserfolg</sys:String>
@@ -314,17 +314,17 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Edit_Header">Check off achievements you've unlocked and set unlock times. Changes are saved when you click OK.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthCheckFailed">Unable to verify Exophase authentication for manual linking. Retry, or re-authenticate with Exophase in plugin settings.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_ExophaseAuthRequired">Exophase login is required for manual linking. Authenticate with Exophase in plugin settings, then try again.</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired">Steam login is required to fetch achievement data. Authenticate with Steam in plugin settings, then try again.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_SteamAuthRequired">Anmeldung bei Steam zum Abfragen der Erfolgsdaten erforderlich. Steam-Authentifizierung in den Plugin-Einstellungen durchführen und erneut versuchen.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Schema_NoAchievements">Das ausgewählte Spiel verfügt über keine Erfolge.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_Header">Search for a game to link achievements from. The selected game's achievements will be linked to this Playnite game.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_NoResults">Keine Spiele gefunden. Versuche einen anderen Suchbegriff.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManualAchievements_Search_ResultsFormat">{0} Spiel(e) gefunden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">Import manual links from SuccessStory (Legacy). Import is add-only and never overwrites existing manual links or cached provider data.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">Legacy Manual Import</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">Import Legacy Manual Links</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Description">Manuelle Verknüpfungen aus SuccessStory importieren. Der Import ist additiv und überschreibt niemals manuelle Verknüpfungen oder zwischengespeicherte Anbieterdaten.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_Header">Manueller SuccessStory-Import</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_ImportButton">Manuelle Verknüpfungen aus SuccessStory importieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_PathHint">Standard: Playnite ExtensionsData\cebe6d32-8c46-4459-b993-5a5189d60788\SuccessStory</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_PathLabel">Legacy folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummaryHeader">Legacy import complete.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummaryHeader">Import aus SuccessStory abgeschlossen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummaryImported">Importiert: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummaryParseFailed">Parsing-Fehler: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Manual_Legacy_SummaryScanned">Analysiert: {0}</sys:String>
@@ -419,8 +419,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_BarChartPreview">Histogramm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Schaltfläche</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_ProgressClearing">Entferne zwischengespeicherte Erfolgsdaten...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_ClearDescription">Remove cached achievement data. Refresh again to rebuild it from providers.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Description">Clear cached achievement records without touching icon files.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_ClearDescription">Zwischengespeicherte Erfolgsdaten entfernen. Aktualisierung durchführen, um sie erneut von den Anbietern abzufragen.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Description">Zwischengespeicherte Erfolgsdaten entfernen. Symboldateien bleiben unberührt.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Title">Zwischengespeicherte Erfolgsdaten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Kompakte Liste</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactLockedListPreview">Kompakte Liste gesperrter Erfolge</sys:String>
@@ -446,10 +446,10 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Hotkeys_Enable">Tastenkürzel aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_EnableGlobal">Globale Tastenkürzel verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalHelp">Global hotkeys work outside Playnite for modifier shortcuts and function keys. Bare letters and digits stay focused-only.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalRegistrationFailed">Global shortcut unavailable: {0}. Another app may already be using the same key.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_InvalidShortcut">Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Select one game or start a game before using achievement hotkeys.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_None">None</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_GlobalRegistrationFailed">Globales Tastenkürzel nicht verfügbar: {0}. Eine andere Anwendung könnte sie bereits verwenden.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_InvalidShortcut">Tastenkürzel nicht unterstützt. Buchstabe, Zahl, Funktionstaste oder modifiziertes Kürzel eingeben.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Vor der Verwendung von Erfolgstastenkürzel ein Spiel auswählen oder starten.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_None">Keines</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Title">Tastenkürzel</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Schlagwortsynchronisation aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Ungespielte Spiele enthalten</sys:String>
@@ -492,17 +492,17 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">Tracker-Exportdateien</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optional public tracker exports used to mark achievements unlocked. Without an export file, refresh still downloads definitions and keeps achievements locked.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">How to Get the JSON</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Prefix">1. Open the </sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter">StarDB achievement importer</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Suffix"> and log in.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Prefix">2. Download and run </sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Prefix">1. StarDB Achievement Importer </sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter">öffnen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Suffix"> und anmelden.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Prefix">2. Herunterladen und ausführen </sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbExporter">stardb-exporter</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Suffix">, then follow its prompts until the export JSON is copied to your clipboard.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step3">3. Save the copied text as a .json file and select it below for the matching game.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step4">4. Optionally paste the copied JSON into StarDB too, so your StarDB tracker stays synced.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Suffix">Den Anweisungen folgen bis die Export-JSON in die Zwischenablage kopiert wurde.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step3">3. Den kopierten Text als .json-Datei sichern und unten für das passende Spiel auswählen.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step4">4. Optional: Das kopierte JSON ebenfalls in StarDB einfügen, um den StarDB Tracker synchron zu halten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Note">Unterstützte Dateien: rohes stardb-exporter JSON, StarDB JSON, Paimon.moe JSON, SEELIE.me JSON, Star Rail Station .dat und rng.moe JSON.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_InvalidExportPath">Eine oder mehrere konfigurierte Exportdateien existieren nicht.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">No export file configured. Refresh will import locked achievement definitions only.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_NoExportConfigured">Keine Exportdatei konfiguriert. Die Aktualisierung wird lediglich Daten gesperrter Erfolge importieren.</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabase">Datenbank zur Fehleranalyse als CSV exportieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ExportDatabaseButton">CSV exportieren</sys:String>
@@ -743,7 +743,7 @@ Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werd
     <sys:String x:Key="LOCPlayAch_Landing_HasDataMessage">Bestehende Erfolgsdaten gefunden. In der Erfolgsansicht fortfahren, um die Verfolgung zu starten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_HasDataTitle">Willkommen zurück</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Language">Erfolgssprache</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Your credentials are configured. Begin your first refresh to track achievements across your library.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_NeedsRefreshMessage">Die Zugangsdaten sind konfiguriert. Starte die erste Aktualisierung, um die Erfolgsdaten der Bibliothek zu verfolgen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthMessage">Bei einer Plattform anmelden, um Erfolge zu verfolgen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Konten konfigurieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Plugin-Einstellungen öffnen</sys:String>
@@ -796,7 +796,7 @@ Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werd
     <!-- ================================================================= -->
     <!-- 17 Errors and Notifications -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">No platforms are authenticated. Please configure at least one platform in settings before refreshing.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Error_NoAuthenticatedProviders">Keine Plattform authentifiziert. Vor der Aktualisierung muss mindestens eine Plattform in den Einstellungen konfigurieren sein.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_NotifySubscribers">Benachrichtigung der Subscriber fehlgeschlagen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_InitialCheckFailed">Initialprüfung der periodischen Aktualisierung fehlgeschlagen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_Periodic_UpdateFailed">Periodische Aktualisierung fehlgeschlagen.</sys:String>
