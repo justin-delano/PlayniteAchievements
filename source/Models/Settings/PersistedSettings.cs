@@ -62,10 +62,15 @@ namespace PlayniteAchievements.Models.Settings
         private bool _preserveAchievementIconResolution = false;
         private bool _useSeparateLockedIconsWhenAvailable = false;
         private HashSet<Guid> _separateLockedIconEnabledGameIds = new HashSet<Guid>();
-        private bool _showRarityGlow = true;
+        private bool _overviewRecentAchievementsShowRarityGlow = true;
+        private bool _overviewSelectedGameShowRarityGlow = true;
+        private bool _modernDataGridShowRarityGlow = true;
+        private bool _modernCompactListShowRarityGlow = true;
+        private bool _modernUnlockedListShowRarityGlow = true;
         private bool _useUniformRarityBadges = false;
         private RarityColorSettings _rarityColors = RarityColorSettings.CreateDefault();
-        private bool _useCoverImages = true;
+        private bool _overviewGameSummariesUseCoverImages = true;
+        private bool _overviewRecentAchievementsUseCoverImages = true;
         private bool _includeUnplayedGames = true;
         private bool _showOverviewCollectionScoreCard = true;
         private bool _showOverviewPrestigeScoreCard = true;
@@ -464,12 +469,50 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, unlocked achievement icons display rarity-based glow effects.
+        /// When true, the Overview "Recent Achievements" grid shows rarity glow on unlocked icons.
         /// </summary>
-        public bool ShowRarityGlow
+        public bool OverviewRecentAchievementsShowRarityGlow
         {
-            get => _showRarityGlow;
-            set => SetValue(ref _showRarityGlow, value);
+            get => _overviewRecentAchievementsShowRarityGlow;
+            set => SetValue(ref _overviewRecentAchievementsShowRarityGlow, value);
+        }
+
+        /// <summary>
+        /// When true, the Overview "Selected Game Achievements" grid (and the Manage Achievements
+        /// window, which follows it) shows rarity glow on unlocked icons.
+        /// </summary>
+        public bool OverviewSelectedGameShowRarityGlow
+        {
+            get => _overviewSelectedGameShowRarityGlow;
+            set => SetValue(ref _overviewSelectedGameShowRarityGlow, value);
+        }
+
+        /// <summary>
+        /// When true, the modern theme-integrated achievement data grid shows rarity glow on unlocked icons.
+        /// </summary>
+        public bool ModernDataGridShowRarityGlow
+        {
+            get => _modernDataGridShowRarityGlow;
+            set => SetValue(ref _modernDataGridShowRarityGlow, value);
+        }
+
+        /// <summary>
+        /// When true, the modern compact list (and the legacy SuccessStory-compatible lists, which
+        /// follow it) shows rarity glow on unlocked icons.
+        /// </summary>
+        public bool ModernCompactListShowRarityGlow
+        {
+            get => _modernCompactListShowRarityGlow;
+            set => SetValue(ref _modernCompactListShowRarityGlow, value);
+        }
+
+        /// <summary>
+        /// When true, the modern unlocked list shows rarity glow on unlocked icons.
+        /// </summary>
+        public bool ModernUnlockedListShowRarityGlow
+        {
+            get => _modernUnlockedListShowRarityGlow;
+            set => SetValue(ref _modernUnlockedListShowRarityGlow, value);
         }
 
         /// <summary>
@@ -491,12 +534,21 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, use Playnite cover images instead of icons/logos in the games list.
+        /// When true, the Overview "Game Summaries" grid uses Playnite cover images instead of icons.
         /// </summary>
-        public bool UseCoverImages
+        public bool OverviewGameSummariesUseCoverImages
         {
-            get => _useCoverImages;
-            set => SetValue(ref _useCoverImages, value);
+            get => _overviewGameSummariesUseCoverImages;
+            set => SetValue(ref _overviewGameSummariesUseCoverImages, value);
+        }
+
+        /// <summary>
+        /// When true, the Overview "Recent Achievements" grid uses Playnite cover images instead of icons.
+        /// </summary>
+        public bool OverviewRecentAchievementsUseCoverImages
+        {
+            get => _overviewRecentAchievementsUseCoverImages;
+            set => SetValue(ref _overviewRecentAchievementsUseCoverImages, value);
         }
 
         public bool IncludeUnplayedGames
@@ -2189,10 +2241,15 @@ namespace PlayniteAchievements.Models.Settings
                 ShowLockedIcon = this.ShowLockedIcon,
                 PreserveAchievementIconResolution = this.PreserveAchievementIconResolution,
                 UseSeparateLockedIconsWhenAvailable = this.UseSeparateLockedIconsWhenAvailable,
-                ShowRarityGlow = this.ShowRarityGlow,
+                OverviewRecentAchievementsShowRarityGlow = this.OverviewRecentAchievementsShowRarityGlow,
+                OverviewSelectedGameShowRarityGlow = this.OverviewSelectedGameShowRarityGlow,
+                ModernDataGridShowRarityGlow = this.ModernDataGridShowRarityGlow,
+                ModernCompactListShowRarityGlow = this.ModernCompactListShowRarityGlow,
+                ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
                 RarityColors = this.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
-                UseCoverImages = this.UseCoverImages,
+                OverviewGameSummariesUseCoverImages = this.OverviewGameSummariesUseCoverImages,
+                OverviewRecentAchievementsUseCoverImages = this.OverviewRecentAchievementsUseCoverImages,
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
                 ShowOverviewPrestigeScoreCard = this.ShowOverviewPrestigeScoreCard,
@@ -2486,10 +2543,15 @@ namespace PlayniteAchievements.Models.Settings
             PreserveAchievementIconResolution = defaults.PreserveAchievementIconResolution;
             UseSeparateLockedIconsWhenAvailable = defaults.UseSeparateLockedIconsWhenAvailable;
             SeparateLockedIconEnabledGameIds = new HashSet<Guid>();
-            ShowRarityGlow = defaults.ShowRarityGlow;
+            OverviewRecentAchievementsShowRarityGlow = defaults.OverviewRecentAchievementsShowRarityGlow;
+            OverviewSelectedGameShowRarityGlow = defaults.OverviewSelectedGameShowRarityGlow;
+            ModernDataGridShowRarityGlow = defaults.ModernDataGridShowRarityGlow;
+            ModernCompactListShowRarityGlow = defaults.ModernCompactListShowRarityGlow;
+            ModernUnlockedListShowRarityGlow = defaults.ModernUnlockedListShowRarityGlow;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
             RarityColors = RarityColorSettings.CreateDefault();
-            UseCoverImages = defaults.UseCoverImages;
+            OverviewGameSummariesUseCoverImages = defaults.OverviewGameSummariesUseCoverImages;
+            OverviewRecentAchievementsUseCoverImages = defaults.OverviewRecentAchievementsUseCoverImages;
             ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
 
             ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
