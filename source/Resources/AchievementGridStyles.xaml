@@ -31,32 +31,37 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridColumnHeader">
-                    <Grid Background="{TemplateBinding Background}">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="Center"
-                                          Margin="{TemplateBinding Padding}"
-                                          TextElement.Foreground="{TemplateBinding Foreground}"/>
-                        <Path x:Name="SortArrow"
-                              HorizontalAlignment="Right"
-                              Fill="{DynamicResource PlayAch.Brush.Text}"
-                              Width="8"
-                              Height="6"
-                              Data="M 0,0 L 4,6 L 8,0"
-                              VerticalAlignment="Center"
-                              Margin="0,0,10,0"
-                              RenderTransformOrigin="0.5,0.5"
-                              Visibility="Collapsed"/>
-                        <Thumb x:Name="PART_LeftHeaderGripper"
-                               Width="0"
-                               Background="Transparent"
-                               IsHitTestVisible="False"
-                               Focusable="False"/>
-                        <Thumb x:Name="PART_RightHeaderGripper"
-                               HorizontalAlignment="Right"
-                               Width="8"
-                               Cursor="SizeWE"
-                               Background="Transparent"/>
-                    </Grid>
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            BorderThickness="0,0,0,1"
+                            SnapsToDevicePixels="True">
+                        <Grid>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                            <Path x:Name="SortArrow"
+                                  HorizontalAlignment="Right"
+                                  Fill="{DynamicResource PlayAch.Brush.Text}"
+                                  Width="8"
+                                  Height="6"
+                                  Data="M 0,0 L 4,6 L 8,0"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,10,0"
+                                  RenderTransformOrigin="0.5,0.5"
+                                  Visibility="Collapsed"/>
+                            <Thumb x:Name="PART_LeftHeaderGripper"
+                                   Width="0"
+                                   Background="Transparent"
+                                   IsHitTestVisible="False"
+                                   Focusable="False"/>
+                            <Thumb x:Name="PART_RightHeaderGripper"
+                                   HorizontalAlignment="Right"
+                                   Width="8"
+                                   Cursor="SizeWE"
+                                   Background="Transparent"/>
+                        </Grid>
+                    </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>

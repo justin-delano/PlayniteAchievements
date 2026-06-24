@@ -826,6 +826,12 @@ namespace PlayniteAchievements.ViewModels
                 if (series == null)
                 {
                     series = new LiveCharts.Wpf.PieSeries();
+
+                    // Slice separators follow the themed control-border color instead of
+                    // LiveCharts' default white. A resource reference keeps it in sync with
+                    // theme and appearance-override changes.
+                    series.SetResourceReference(LiveCharts.Wpf.Series.StrokeProperty, "PlayAch.Brush.ControlBorder");
+
                     if (i < PieSeries.Count)
                     {
                         PieSeries[i] = series;
