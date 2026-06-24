@@ -461,6 +461,7 @@
                                              RevealCommand="{Binding RevealAchievementCommand}"
                                              ColumnSettingsKey="SingleGame"
                                              DataGridMaxHeight="{x:Static sys:Double.NaN}"
+                                             ShowRarityGlow="{Binding ShowRarityGlow}"
                                              FixedRowHeight="{Binding SingleGameGridRowHeight}"
                                              UseExternalSorting="True"
                                              Sorting="OnGridSorting"

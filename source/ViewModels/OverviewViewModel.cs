@@ -871,7 +871,13 @@ namespace PlayniteAchievements.ViewModels
             ? ResourceProvider.GetString("LOCPlayAch_Button_Cancel")
             : RefreshActionButtonText;
 
-        public bool UseCoverImages => _settings?.Persisted?.UseCoverImages ?? false;
+        public bool UseCoverImagesGameSummaries => _settings?.Persisted?.OverviewGameSummariesUseCoverImages ?? true;
+
+        public bool UseCoverImagesRecentAchievements => _settings?.Persisted?.OverviewRecentAchievementsUseCoverImages ?? true;
+
+        public bool ShowRarityGlowRecentAchievements => _settings?.Persisted?.OverviewRecentAchievementsShowRarityGlow ?? true;
+
+        public bool ShowRarityGlowSelectedGame => _settings?.Persisted?.OverviewSelectedGameShowRarityGlow ?? true;
 
         public bool ShowOverviewCollectionScoreCard => _settings?.Persisted?.ShowOverviewCollectionScoreCard ?? true;
 
@@ -2175,7 +2181,10 @@ namespace PlayniteAchievements.ViewModels
         {
             if (string.IsNullOrWhiteSpace(propertyName))
             {
-                OnPropertyChanged(nameof(UseCoverImages));
+                OnPropertyChanged(nameof(UseCoverImagesGameSummaries));
+                OnPropertyChanged(nameof(UseCoverImagesRecentAchievements));
+                OnPropertyChanged(nameof(ShowRarityGlowRecentAchievements));
+                OnPropertyChanged(nameof(ShowRarityGlowSelectedGame));
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
                 RaiseOverviewScoreCardVisibilityChanged();
                 ApplyOverviewPieSmallSliceMode();
@@ -2199,9 +2208,21 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            if (propertyName == nameof(PersistedSettings.UseCoverImages))
+            if (propertyName == nameof(PersistedSettings.OverviewGameSummariesUseCoverImages))
             {
-                OnPropertyChanged(nameof(UseCoverImages));
+                OnPropertyChanged(nameof(UseCoverImagesGameSummaries));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewRecentAchievementsUseCoverImages))
+            {
+                OnPropertyChanged(nameof(UseCoverImagesRecentAchievements));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewRecentAchievementsShowRarityGlow))
+            {
+                OnPropertyChanged(nameof(ShowRarityGlowRecentAchievements));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameShowRarityGlow))
+            {
+                OnPropertyChanged(nameof(ShowRarityGlowSelectedGame));
             }
             else if (propertyName == nameof(PersistedSettings.IncludeUnplayedGames))
             {
