@@ -96,7 +96,7 @@
                                 Rarity="{Binding Rarity}"
                                 RarityText="{Binding RarityText}"
                                 EnableRaretyIndicator="True"
-                                ShowRarityGlow="{Binding Persisted.ShowRarityGlow, FallbackValue=True}"
+                                ShowRarityGlow="{Binding Persisted.ModernCompactListShowRarityGlow, FallbackValue=True}"
                                 DisplayRaretyValue="True">
                                 <localControls:AchievementImage.Icon>
                                     <MultiBinding Converter="{StaticResource HiddenIconConverter}">

@@ -757,7 +757,9 @@ namespace PlayniteAchievements.ViewModels
                 ShowLockedIcon = persisted?.ShowLockedIcon ?? true,
                 UseSeparateLockedIconsWhenAvailable = resolvedUseSeparateLockedIcons ??
                     GameCustomDataLookup.ShouldUseSeparateLockedIcons(resolvedGameId, persisted),
-                ShowRarityGlow = persisted?.ShowRarityGlow ?? true,
+                // Glow visibility is resolved per-surface via control dependency properties; the
+                // per-item value is left enabled and no longer drives rendering.
+                ShowRarityGlow = true,
                 ShowRarityBar = persisted?.ShowCompactListRarityBar ?? true
             };
         }
@@ -972,7 +974,6 @@ namespace PlayniteAchievements.ViewModels
                 case nameof(PersistedSettings.ShowLockedIcon):
                 case nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable):
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
-                case nameof(PersistedSettings.ShowRarityGlow):
                 case nameof(PersistedSettings.UseUniformRarityBadges):
                 case nameof(PersistedSettings.RarityColors):
                     return true;

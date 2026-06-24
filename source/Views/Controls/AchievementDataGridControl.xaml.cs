@@ -248,6 +248,23 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
+        /// Identifies the ShowRarityGlow dependency property.
+        /// When true, unlocked achievement icons in this grid display rarity-based glow effects.
+        /// </summary>
+        public static readonly DependencyProperty ShowRarityGlowProperty =
+            DependencyProperty.Register(nameof(ShowRarityGlow), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(true));
+
+        /// <summary>
+        /// Gets or sets whether unlocked achievement icons in this grid display rarity glow.
+        /// </summary>
+        public bool ShowRarityGlow
+        {
+            get => (bool)GetValue(ShowRarityGlowProperty);
+            set => SetValue(ShowRarityGlowProperty, value);
+        }
+
+        /// <summary>
         /// Identifies the DataGridMaxHeight dependency property.
         /// When set, limits the maximum height of the internal DataGrid.
         /// </summary>

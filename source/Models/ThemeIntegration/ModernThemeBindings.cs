@@ -399,7 +399,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 var showHiddenSuffix = persisted?.ShowHiddenSuffix ?? true;
                 var showLockedIcon = persisted?.ShowLockedIcon ?? true;
                 var useSeparateLockedIcons = persisted?.UseSeparateLockedIconsWhenAvailable ?? false;
-                var showRarityGlow = persisted?.ShowRarityGlow ?? true;
+                // Rarity glow visibility is resolved per-surface via control dependency properties,
+                // so the per-item appearance value is left enabled and no longer read for rendering.
+                var showRarityGlow = true;
                 var showRarityBar = persisted?.ShowCompactListRarityBar ?? true;
 
                 var items = new List<AchievementDisplayItem>(_allAchievements.Count);
