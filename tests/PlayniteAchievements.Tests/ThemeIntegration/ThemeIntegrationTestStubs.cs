@@ -416,7 +416,6 @@ namespace PlayniteAchievements.ViewModels
             bool showHiddenSuffix,
             bool showLockedIcon,
             bool useSeparateLockedIconsWhenAvailable,
-            bool showRarityGlow,
             bool showRarityBar = true,
             string sortingName = null,
             string gameIconPath = null,

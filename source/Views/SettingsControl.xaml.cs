@@ -55,7 +55,7 @@ namespace PlayniteAchievements.Views
                 {
                     _mockCompactListItems = new System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem>(
                         MockDataHelper.CreateMockCompactListItems(
-                            GetShowRarityBar(), GetShowRarityGlow(),
+                            GetShowRarityBar(),
                             GetShowHiddenIcon(), GetShowHiddenTitle(),
                             GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon()));
                 }
@@ -162,7 +162,7 @@ namespace PlayniteAchievements.Views
                 {
                     _mockCompactUnlockedListItems = new System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem>(
                         MockDataHelper.CreateMockUnlockedListItems(
-                            GetShowRarityBar(), GetShowRarityGlow(), GetShowLockedIcon()));
+                            GetShowRarityBar(), GetShowLockedIcon()));
                 }
                 return _mockCompactUnlockedListItems;
             }
@@ -181,7 +181,7 @@ namespace PlayniteAchievements.Views
                 {
                     _mockCompactLockedListItems = new System.Collections.ObjectModel.ObservableCollection<AchievementDisplayItem>(
                         MockDataHelper.CreateMockLockedListItems(
-                            GetShowRarityBar(), GetShowRarityGlow(),
+                            GetShowRarityBar(),
                             GetShowHiddenIcon(), GetShowHiddenTitle(),
                             GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon()));
                 }
@@ -201,7 +201,7 @@ namespace PlayniteAchievements.Views
                 if (_mockDataGridItems == null)
                 {
                     _mockDataGridItems = MockDataHelper.CreateMockDataGridItems(
-                        GetShowRarityBar(), GetShowRarityGlow(),
+                        GetShowRarityBar(),
                         GetShowHiddenIcon(), GetShowHiddenTitle(),
                         GetShowHiddenDescription(), GetShowHiddenSuffix(), GetShowLockedIcon());
                 }
@@ -277,9 +277,6 @@ namespace PlayniteAchievements.Views
 
         // Helper methods to get settings values with defaults
         private bool GetShowRarityBar() => _settingsViewModel?.Settings?.Persisted?.ShowCompactListRarityBar ?? true;
-        // Mock preview glow is resolved per-surface via control dependency properties bound in XAML;
-        // the per-item appearance value stays enabled and no longer drives rendering.
-        private bool GetShowRarityGlow() => true;
         private bool GetShowHiddenIcon() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenIcon ?? true;
         private bool GetShowHiddenTitle() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenTitle ?? true;
         private bool GetShowHiddenDescription() => _settingsViewModel?.Settings?.Persisted?.ShowHiddenDescription ?? true;
@@ -300,7 +297,7 @@ namespace PlayniteAchievements.Views
             {
                 _mockCompactListItems.Clear();
                 var newItems = MockDataHelper.CreateMockCompactListItems(
-                    settings.ShowCompactListRarityBar, GetShowRarityGlow(),
+                    settings.ShowCompactListRarityBar,
                     settings.ShowHiddenIcon, settings.ShowHiddenTitle,
                     settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
                 foreach (var item in newItems)
@@ -312,7 +309,7 @@ namespace PlayniteAchievements.Views
             {
                 _mockCompactUnlockedListItems.Clear();
                 var newItems = MockDataHelper.CreateMockUnlockedListItems(
-                    settings.ShowCompactListRarityBar, GetShowRarityGlow(), settings.ShowLockedIcon);
+                    settings.ShowCompactListRarityBar, settings.ShowLockedIcon);
                 foreach (var item in newItems)
                     _mockCompactUnlockedListItems.Add(item);
             }
@@ -322,7 +319,7 @@ namespace PlayniteAchievements.Views
             {
                 _mockCompactLockedListItems.Clear();
                 var newItems = MockDataHelper.CreateMockLockedListItems(
-                    settings.ShowCompactListRarityBar, GetShowRarityGlow(),
+                    settings.ShowCompactListRarityBar,
                     settings.ShowHiddenIcon, settings.ShowHiddenTitle,
                     settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
                 foreach (var item in newItems)
@@ -333,7 +330,7 @@ namespace PlayniteAchievements.Views
             if (_mockDataGridItems != null)
             {
                 _mockDataGridItems = MockDataHelper.CreateMockDataGridItems(
-                    settings.ShowCompactListRarityBar, GetShowRarityGlow(),
+                    settings.ShowCompactListRarityBar,
                     settings.ShowHiddenIcon, settings.ShowHiddenTitle,
                     settings.ShowHiddenDescription, settings.ShowHiddenSuffix, settings.ShowLockedIcon);
                 // For List<T>, need to raise property changed - but since binding uses ItemsSource,
@@ -343,16 +340,16 @@ namespace PlayniteAchievements.Views
             // Refresh the preview modern theme bindings used by modern controls
             _previewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
-                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, GetShowRarityGlow(), settings.ShowCompactListRarityBar);
+                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
             _unlockedPreviewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
-                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, GetShowRarityGlow(), settings.ShowCompactListRarityBar);
+                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
             _hiddenPreviewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
-                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, GetShowRarityGlow(), settings.ShowCompactListRarityBar);
+                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
             _lockedPreviewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
-                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, GetShowRarityGlow(), settings.ShowCompactListRarityBar);
+                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
         }
 
         // Theme migration UI state properties

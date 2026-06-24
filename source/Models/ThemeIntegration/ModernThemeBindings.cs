@@ -399,9 +399,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 var showHiddenSuffix = persisted?.ShowHiddenSuffix ?? true;
                 var showLockedIcon = persisted?.ShowLockedIcon ?? true;
                 var useSeparateLockedIcons = persisted?.UseSeparateLockedIconsWhenAvailable ?? false;
-                // Rarity glow visibility is resolved per-surface via control dependency properties,
-                // so the per-item appearance value is left enabled and no longer read for rendering.
-                var showRarityGlow = true;
                 var showRarityBar = persisted?.ShowCompactListRarityBar ?? true;
 
                 var items = new List<AchievementDisplayItem>(_allAchievements.Count);
@@ -420,7 +417,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                         showHiddenSuffix,
                         showLockedIcon,
                         ResolveUseSeparateLockedIcons(persisted, gameId, useSeparateLockedIcons),
-                        showRarityGlow,
                         showRarityBar);
                     items.Add(item);
                 }
@@ -437,7 +433,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             bool showHiddenSuffix,
             bool showLockedIcon,
             bool useSeparateLockedIconsWhenAvailable,
-            bool showRarityGlow,
             bool showRarityBar)
         {
             if (_allAchievements == null || _allAchievements.Count == 0)
@@ -464,7 +459,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                     showHiddenSuffix,
                     showLockedIcon,
                     ResolveUseSeparateLockedIcons(persisted, gameId, useSeparateLockedIconsWhenAvailable),
-                    showRarityGlow,
                     showRarityBar);
                 items.Add(item);
             }

@@ -1492,9 +1492,6 @@ namespace PlayniteAchievements.Models
                 persisted.ShowHiddenSuffix,
                 persisted.ShowLockedIcon,
                 persisted.UseSeparateLockedIconsWhenAvailable,
-                // Glow is resolved per-surface via control dependency properties; the per-item
-                // appearance value stays enabled and no longer drives rendering.
-                true,
                 persisted.ShowCompactListRarityBar);
         }
 

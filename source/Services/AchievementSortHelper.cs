@@ -1040,7 +1040,6 @@ namespace PlayniteAchievements.Services
                 showHiddenSuffix: true,
                 showLockedIcon: true,
                 useSeparateLockedIconsWhenAvailable: false,
-                showRarityGlow: false,
                 showRarityBar: false,
                 sortingName: detail?.Game?.Name,
                 gameIconPath: null,
