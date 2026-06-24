@@ -1046,11 +1046,6 @@
                                                     ThemeDataOverride="{Binding UnlockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     PreviewMaxHeightOverride="122"
                                                     Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                                <TextBlock Text="SETTINGS"
-                                                           Style="{StaticResource ContextLabelStyle}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
-                                                          IsChecked="{Binding Persisted.ShowRarityGlow}"
-                                                          VerticalAlignment="Center"/>
                                             </StackPanel>
                                         </Border>
 
@@ -1603,9 +1598,6 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion}"
                                                           IsChecked="{Binding Persisted.ShowOverviewGameMetadata}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
-                                                          IsChecked="{Binding Persisted.UseCoverImages}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
                                                           IsChecked="{Binding Persisted.ShowCompletionBorder}"/>
                                             </StackPanel>
@@ -1689,6 +1681,9 @@
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
+                                                          IsChecked="{Binding Persisted.OverviewGameSummariesUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewGameSummariesGridColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
@@ -1756,6 +1751,12 @@
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
+                                                          IsChecked="{Binding Persisted.OverviewRecentAchievementsUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
+                                                          IsChecked="{Binding Persisted.OverviewRecentAchievementsShowRarityGlow}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewRecentAchievementsGridColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
@@ -1788,6 +1789,9 @@
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
+                                                          IsChecked="{Binding Persisted.OverviewSelectedGameShowRarityGlow}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewSelectedGameGridColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
@@ -1970,6 +1974,9 @@
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders}"
                                                   IsChecked="{Binding Persisted.ShowDesktopThemeAchievementGridColumnHeaders}"
                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
+                                                  IsChecked="{Binding Persisted.ModernDataGridShowRarityGlow}"
+                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementDataGridMaxHeight}"
                                                        VerticalAlignment="Center"/>
@@ -2065,6 +2072,9 @@
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompactListRarityBar}"
                                                   IsChecked="{Binding Persisted.ShowCompactListRarityBar}"
                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
+                                                  IsChecked="{Binding Persisted.ModernCompactListShowRarityGlow}"
+                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -2136,6 +2146,9 @@
                                             Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <TextBlock Text="SETTINGS"
                                                    Style="{StaticResource ContextLabelStyle}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
+                                                  IsChecked="{Binding Persisted.ModernUnlockedListShowRarityGlow}"
+                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
@@ -2608,6 +2621,9 @@
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
                                                           IsChecked="{Binding Persisted.StartPageRecentUnlocksGrid.UseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
+                                                          IsChecked="{Binding Persisted.StartPageRecentUnlocksGrid.ShowRarityGlow}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.StartPageRecentUnlocksGrid.ShowColumnHeaders}"
