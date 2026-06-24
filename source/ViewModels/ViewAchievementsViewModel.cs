@@ -378,6 +378,9 @@ namespace PlayniteAchievements.ViewModels
 
         public double? SingleGameGridRowHeight => _settings?.Persisted?.SingleGameGridRowHeight;
 
+        // The Manage Achievements window follows the Overview "Selected Game Achievements" glow setting.
+        public bool ShowRarityGlow => _settings?.Persisted?.OverviewSelectedGameShowRarityGlow ?? true;
+
         public string SearchText
         {
             get => _searchText;
@@ -927,6 +930,12 @@ namespace PlayniteAchievements.ViewModels
             if (e?.PropertyName == nameof(PersistedSettings.SingleGameGridRowHeight))
             {
                 OnPropertyChanged(nameof(SingleGameGridRowHeight));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.OverviewSelectedGameShowRarityGlow))
+            {
+                OnPropertyChanged(nameof(ShowRarityGlow));
                 return;
             }
 

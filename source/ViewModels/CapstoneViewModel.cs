@@ -266,7 +266,7 @@ namespace PlayniteAchievements.ViewModels
                 var game = _playniteApi?.Database?.Games?.Get(_gameId);
                 GameName = game?.Name ?? ResourceProvider.GetString("LOCPlayAch_Text_UnknownGame") ?? "Unknown Game";
 
-                UseCoverAspect = _settings?.Persisted?.UseCoverImages ?? false;
+                UseCoverAspect = _settings?.Persisted?.OverviewGameSummariesUseCoverImages ?? true;
 
                 if (game != null)
                 {
@@ -367,7 +367,6 @@ namespace PlayniteAchievements.ViewModels
                 ShowHiddenIcon = projected.ShowHiddenIcon,
                 ShowHiddenTitle = projected.ShowHiddenTitle,
                 ShowHiddenDescription = projected.ShowHiddenDescription,
-                ShowRarityGlow = projected.ShowRarityGlow,
                 ShowRarityBar = projected.ShowRarityBar,
                 ShowHiddenSuffix = projected.ShowHiddenSuffix,
                 ShowLockedIcon = projected.ShowLockedIcon,

@@ -72,10 +72,15 @@ namespace PlayniteAchievements.Models.Settings
             target.SeparateLockedIconEnabledGameIds = source.SeparateLockedIconEnabledGameIds != null
                 ? new HashSet<Guid>(source.SeparateLockedIconEnabledGameIds)
                 : new HashSet<Guid>();
-            target.ShowRarityGlow = source.ShowRarityGlow;
+            target.OverviewRecentAchievementsShowRarityGlow = source.OverviewRecentAchievementsShowRarityGlow;
+            target.OverviewSelectedGameShowRarityGlow = source.OverviewSelectedGameShowRarityGlow;
+            target.ModernDataGridShowRarityGlow = source.ModernDataGridShowRarityGlow;
+            target.ModernCompactListShowRarityGlow = source.ModernCompactListShowRarityGlow;
+            target.ModernUnlockedListShowRarityGlow = source.ModernUnlockedListShowRarityGlow;
             target.UseUniformRarityBadges = source.UseUniformRarityBadges;
             target.RarityColors = source.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault();
-            target.UseCoverImages = source.UseCoverImages;
+            target.OverviewGameSummariesUseCoverImages = source.OverviewGameSummariesUseCoverImages;
+            target.OverviewRecentAchievementsUseCoverImages = source.OverviewRecentAchievementsUseCoverImages;
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
             target.ShowOverviewCollectionScoreCard = source.ShowOverviewCollectionScoreCard;
             target.ShowOverviewPrestigeScoreCard = source.ShowOverviewPrestigeScoreCard;

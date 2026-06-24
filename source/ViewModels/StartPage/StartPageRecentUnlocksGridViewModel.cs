@@ -25,6 +25,8 @@ namespace PlayniteAchievements.ViewModels.StartPage
 
         public bool UseCoverImages => WidgetSettings.UseCoverImages;
 
+        public bool ShowRarityGlow => WidgetSettings.ShowRarityGlow;
+
         public bool ShowColumnHeaders => WidgetSettings.ShowColumnHeaders;
 
         public double? RowHeight => WidgetSettings.RowHeight;
@@ -36,6 +38,7 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 PersistedSettings,
                 appearanceSettings: Settings));
             OnPropertyChanged(nameof(UseCoverImages));
+            OnPropertyChanged(nameof(ShowRarityGlow));
             OnPropertyChanged(nameof(ShowColumnHeaders));
             OnPropertyChanged(nameof(RowHeight));
         }
@@ -46,6 +49,12 @@ namespace PlayniteAchievements.ViewModels.StartPage
                 IsWidgetSettingsProperty(propertyName, nameof(StartPageRecentUnlocksGridSettings.UseCoverImages)))
             {
                 OnPropertyChanged(nameof(UseCoverImages));
+            }
+
+            if (string.IsNullOrEmpty(propertyName) ||
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageRecentUnlocksGridSettings.ShowRarityGlow)))
+            {
+                OnPropertyChanged(nameof(ShowRarityGlow));
             }
 
             if (string.IsNullOrEmpty(propertyName) ||

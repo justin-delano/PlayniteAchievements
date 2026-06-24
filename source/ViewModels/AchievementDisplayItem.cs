@@ -31,8 +31,6 @@ namespace PlayniteAchievements.ViewModels
 
             public bool UseSeparateLockedIconsWhenAvailable { get; set; }
 
-            public bool ShowRarityGlow { get; set; }
-
             public bool ShowRarityBar { get; set; }
         }
 
@@ -380,13 +378,6 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private bool _showRarityGlow = true;
-        public bool ShowRarityGlow
-        {
-            get => _showRarityGlow;
-            set => SetValue(ref _showRarityGlow, value);
-        }
-
         private bool _showRarityBar = true;
         public bool ShowRarityBar
         {
@@ -640,7 +631,6 @@ namespace PlayniteAchievements.ViewModels
             bool showHiddenSuffix,
             bool showLockedIcon,
             bool useSeparateLockedIconsWhenAvailable,
-            bool showRarityGlow,
             bool showRarityBar = true,
             string sortingName = null,
             string gameIconPath = null,
@@ -658,7 +648,6 @@ namespace PlayniteAchievements.ViewModels
                 showHiddenSuffix,
                 showLockedIcon,
                 useSeparateLockedIconsWhenAvailable,
-                showRarityGlow,
                 showRarityBar);
             PointsValue = source?.Points;
             CategoryType = source?.CategoryType;
@@ -687,7 +676,6 @@ namespace PlayniteAchievements.ViewModels
                 sourceItem.ShowHiddenSuffix,
                 sourceItem.ShowLockedIcon,
                 sourceItem.UseSeparateLockedIconsWhenAvailable,
-                sourceItem.ShowRarityGlow,
                 sourceItem.ShowRarityBar,
                 sourceItem.SortingName,
                 sourceItem.GameIconPath,
@@ -706,7 +694,6 @@ namespace PlayniteAchievements.ViewModels
             bool showHiddenSuffix,
             bool showLockedIcon,
             bool useSeparateLockedIconsWhenAvailable,
-            bool showRarityGlow,
             bool showRarityBar = true)
         {
             ShowHiddenIcon = showHiddenIcon;
@@ -715,7 +702,6 @@ namespace PlayniteAchievements.ViewModels
             ShowHiddenSuffix = showHiddenSuffix;
             ShowLockedIcon = showLockedIcon;
             UseSeparateLockedIconsWhenAvailable = useSeparateLockedIconsWhenAvailable;
-            ShowRarityGlow = showRarityGlow;
             ShowRarityBar = showRarityBar;
         }
 
@@ -737,7 +723,6 @@ namespace PlayniteAchievements.ViewModels
                 resolved.ShowHiddenSuffix,
                 resolved.ShowLockedIcon,
                 resolved.UseSeparateLockedIconsWhenAvailable,
-                resolved.ShowRarityGlow,
                 resolved.ShowRarityBar);
         }
 
@@ -757,7 +742,6 @@ namespace PlayniteAchievements.ViewModels
                 ShowLockedIcon = persisted?.ShowLockedIcon ?? true,
                 UseSeparateLockedIconsWhenAvailable = resolvedUseSeparateLockedIcons ??
                     GameCustomDataLookup.ShouldUseSeparateLockedIcons(resolvedGameId, persisted),
-                ShowRarityGlow = persisted?.ShowRarityGlow ?? true,
                 ShowRarityBar = persisted?.ShowCompactListRarityBar ?? true
             };
         }
@@ -900,7 +884,6 @@ namespace PlayniteAchievements.ViewModels
             clone.ShowHiddenSuffix = _showHiddenSuffix;
             clone.ShowLockedIcon = _showLockedIcon;
             clone.UseSeparateLockedIconsWhenAvailable = _useSeparateLockedIconsWhenAvailable;
-            clone.ShowRarityGlow = _showRarityGlow;
             clone.ShowRarityBar = _showRarityBar;
             clone.CategoryType = _categoryType;
             clone.CategoryLabel = _categoryLabel;
@@ -972,7 +955,6 @@ namespace PlayniteAchievements.ViewModels
                 case nameof(PersistedSettings.ShowLockedIcon):
                 case nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable):
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
-                case nameof(PersistedSettings.ShowRarityGlow):
                 case nameof(PersistedSettings.UseUniformRarityBadges):
                 case nameof(PersistedSettings.RarityColors):
                     return true;

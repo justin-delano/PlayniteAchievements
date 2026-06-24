@@ -168,7 +168,6 @@ namespace PlayniteAchievements.ViewModels
                         ShowHiddenIcon = projected.ShowHiddenIcon,
                         ShowHiddenTitle = projected.ShowHiddenTitle,
                         ShowHiddenDescription = projected.ShowHiddenDescription,
-                        ShowRarityGlow = projected.ShowRarityGlow,
                         ShowRarityBar = projected.ShowRarityBar,
                         ShowHiddenSuffix = projected.ShowHiddenSuffix,
                         ShowLockedIcon = projected.ShowLockedIcon,

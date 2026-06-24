@@ -1492,7 +1492,6 @@ namespace PlayniteAchievements.Models
                 persisted.ShowHiddenSuffix,
                 persisted.ShowLockedIcon,
                 persisted.UseSeparateLockedIconsWhenAvailable,
-                persisted.ShowRarityGlow,
                 persisted.ShowCompactListRarityBar);
         }
 

@@ -144,8 +144,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 VerticalAlignment = VerticalAlignment.Center
             };
 
-            // Bind ShowRarityGlow directly to settings - automatic updates with no manual sync needed
-            var glowBinding = new Binding("Settings.Persisted.ShowRarityGlow")
+            // Legacy unlocked compact lists follow the modern unlocked list glow setting.
+            var glowBinding = new Binding("Settings.Persisted.ModernUnlockedListShowRarityGlow")
             {
                 Source = Plugin,
                 Mode = BindingMode.OneWay,

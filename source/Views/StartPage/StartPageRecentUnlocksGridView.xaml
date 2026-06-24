@@ -10,6 +10,7 @@
                                              x:Name="RecentUnlocksGrid"
                                              ShowGameColumn="True"
                                              UseCoverImages="{Binding UseCoverImages}"
+                                             ShowRarityGlow="{Binding ShowRarityGlow}"
                                              ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                              FixedRowHeight="{Binding RowHeight}"
                                              SortScope="{x:Static services:AchievementSortScope.RecentAchievements}"

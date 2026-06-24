@@ -80,6 +80,7 @@ namespace PlayniteAchievements.Models.Settings
     public sealed class StartPageRecentUnlocksGridSettings : ObservableObject
     {
         private bool _useCoverImages = true;
+        private bool _showRarityGlow = true;
         private bool _showColumnHeaders = true;
         private double? _rowHeight;
         private int? _maxRows = PersistedSettings.DefaultStartPageGridMaxRows;
@@ -90,6 +91,12 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _useCoverImages;
             set => SetValue(ref _useCoverImages, value);
+        }
+
+        public bool ShowRarityGlow
+        {
+            get => _showRarityGlow;
+            set => SetValue(ref _showRarityGlow, value);
         }
 
         public bool ShowColumnHeaders
@@ -127,6 +134,7 @@ namespace PlayniteAchievements.Models.Settings
             return new StartPageRecentUnlocksGridSettings
             {
                 UseCoverImages = UseCoverImages,
+                ShowRarityGlow = ShowRarityGlow,
                 ShowColumnHeaders = ShowColumnHeaders,
                 RowHeight = RowHeight,
                 MaxRows = MaxRows,

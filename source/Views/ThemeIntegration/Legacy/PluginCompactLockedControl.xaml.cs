@@ -125,8 +125,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Legacy
                 Tag = achievement // Store achievement for click handler
             };
 
-            // Bind ShowRarityGlow directly to settings - automatic updates with no manual sync needed
-            var glowBinding = new Binding("Settings.Persisted.ShowRarityGlow")
+            // Legacy lists follow the modern compact list glow setting (locked icons never glow).
+            var glowBinding = new Binding("Settings.Persisted.ModernCompactListShowRarityGlow")
             {
                 Source = Plugin,
                 Mode = BindingMode.OneWay,

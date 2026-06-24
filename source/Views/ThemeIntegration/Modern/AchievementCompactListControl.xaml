@@ -7,7 +7,8 @@
                    xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
                    xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
                    mc:Ignorable="d"
-                   d:DesignHeight="82" d:DesignWidth="600">
+                   d:DesignHeight="82" d:DesignWidth="600"
+                   ShowRarityGlow="{Binding Persisted.ModernCompactListShowRarityGlow}">
 
     <modern:AchievementCompactListControlBase.Resources>
         <ResourceDictionary>

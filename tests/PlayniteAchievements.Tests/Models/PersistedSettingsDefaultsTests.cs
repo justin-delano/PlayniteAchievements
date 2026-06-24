@@ -517,9 +517,14 @@ namespace PlayniteAchievements.Models.Tests
                 },
 
                 ShowHiddenIcon = true,
-                ShowRarityGlow = false,
+                OverviewRecentAchievementsShowRarityGlow = false,
+                OverviewSelectedGameShowRarityGlow = false,
+                ModernDataGridShowRarityGlow = false,
+                ModernCompactListShowRarityGlow = false,
+                ModernUnlockedListShowRarityGlow = false,
                 UseUniformRarityBadges = true,
-                UseCoverImages = false,
+                OverviewGameSummariesUseCoverImages = false,
+                OverviewRecentAchievementsUseCoverImages = false,
                 ShowOverviewCollectionScoreCard = false,
                 ShowOverviewPrestigeScoreCard = false,
                 ShowOverviewPieCharts = false,
@@ -593,9 +598,14 @@ namespace PlayniteAchievements.Models.Tests
             settings.ResetDisplaySettingsToDefaults();
 
             Assert.AreEqual(defaults.ShowHiddenIcon, settings.ShowHiddenIcon);
-            Assert.AreEqual(defaults.ShowRarityGlow, settings.ShowRarityGlow);
+            Assert.AreEqual(defaults.OverviewRecentAchievementsShowRarityGlow, settings.OverviewRecentAchievementsShowRarityGlow);
+            Assert.AreEqual(defaults.OverviewSelectedGameShowRarityGlow, settings.OverviewSelectedGameShowRarityGlow);
+            Assert.AreEqual(defaults.ModernDataGridShowRarityGlow, settings.ModernDataGridShowRarityGlow);
+            Assert.AreEqual(defaults.ModernCompactListShowRarityGlow, settings.ModernCompactListShowRarityGlow);
+            Assert.AreEqual(defaults.ModernUnlockedListShowRarityGlow, settings.ModernUnlockedListShowRarityGlow);
             Assert.AreEqual(defaults.UseUniformRarityBadges, settings.UseUniformRarityBadges);
-            Assert.AreEqual(defaults.UseCoverImages, settings.UseCoverImages);
+            Assert.AreEqual(defaults.OverviewGameSummariesUseCoverImages, settings.OverviewGameSummariesUseCoverImages);
+            Assert.AreEqual(defaults.OverviewRecentAchievementsUseCoverImages, settings.OverviewRecentAchievementsUseCoverImages);
             Assert.AreEqual(defaults.ShowOverviewCollectionScoreCard, settings.ShowOverviewCollectionScoreCard);
             Assert.AreEqual(defaults.ShowOverviewPrestigeScoreCard, settings.ShowOverviewPrestigeScoreCard);
             Assert.AreEqual(defaults.ShowOverviewPieCharts, settings.ShowOverviewPieCharts);
