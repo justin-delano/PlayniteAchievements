@@ -315,6 +315,11 @@ namespace PlayniteAchievements.Views
             ProviderFilterPopup.IsOpen = !ProviderFilterPopup.IsOpen;
         }
 
+        private void ProviderFilterPopup_Closed(object sender, EventArgs e)
+        {
+            _viewModel?.CollapseUnselectedProviderFilters();
+        }
+
         private void CompletenessFilterSelectionButton_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel == null)
