@@ -90,6 +90,7 @@
                                                ShowColumnHeaders="{Binding SummaryShowColumnHeaders}"
                                                FixedRowHeight="{Binding SummaryGridRowHeight}"
                                                DelayInitialRenderUntilNormalized="True"
+                                               DisableRowSelection="True"
                                                RowPreviewMouseRightButtonDown="GameSummaryRow_PreviewMouseRightButtonDown"
                                                RowPreviewMouseRightButtonUp="GameSummaryRow_PreviewMouseRightButtonUp"/>
             <TextBlock Text="{Binding RefreshStatusMessage}"

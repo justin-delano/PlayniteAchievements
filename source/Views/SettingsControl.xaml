@@ -1713,39 +1713,6 @@
 
                                 <Border Style="{StaticResource SectionBorderStyle}">
                                     <StackPanel>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ViewAchievementsGameSummaryGrid}"
-                                                   Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-                                        <Border Style="{StaticResource SettingGroupCardStyle}">
-                                            <StackPanel>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
-                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesUseCoverImages}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion}"
-                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesShowGameMetadata}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
-                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesShowCompletionBorder}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
-                                                          IsChecked="{Binding Persisted.ShowViewAchievementsGameSummariesGridColumnHeaders}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
-                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
-                                                               VerticalAlignment="Center"/>
-                                                    <TextBox Text="{Binding Persisted.ViewAchievementsGameSummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
-                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Border>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource SectionBorderStyle}">
-                                    <StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_OverviewRecentAchievementsGrid}"
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
@@ -1871,6 +1838,39 @@
                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_LibrarySection}"
                                                Style="{StaticResource SectionHeaderStyle}"
                                                Margin="0"/>
+                                </Border>
+
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
+                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion}"
+                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesShowGameMetadata}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
+                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesShowCompletionBorder}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowViewAchievementsGameSummariesGridColumnHeaders}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.ViewAchievementsGameSummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
                                 </Border>
 
                                 <Border Style="{StaticResource SectionBorderStyle}">

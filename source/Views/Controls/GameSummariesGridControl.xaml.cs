@@ -200,6 +200,20 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(GameSummariesGridControl),
                 new PropertyMetadata(true, OnShowColumnHeadersChanged));
 
+        public static readonly DependencyProperty DisableRowSelectionProperty =
+            DependencyProperty.Register(
+                nameof(DisableRowSelection),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(false));
+
+        // When true, rows cannot stay selected/highlighted (used by informational single-row surfaces).
+        public bool DisableRowSelection
+        {
+            get => (bool)GetValue(DisableRowSelectionProperty);
+            set => SetValue(DisableRowSelectionProperty, value);
+        }
+
         public bool ShowColumnHeaders
         {
             get => (bool)GetValue(ShowColumnHeadersProperty);
@@ -781,6 +795,19 @@ namespace PlayniteAchievements.Views.Controls
 
         private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (DisableRowSelection && GameSummariesGrid?.SelectedItem != null)
+            {
+                // Defer to avoid re-entrant selection changes; keeps informational rows unselected.
+                Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    if (GameSummariesGrid != null)
+                    {
+                        GameSummariesGrid.SelectedIndex = -1;
+                    }
+                }));
+                return;
+            }
+
             SelectionChanged?.Invoke(sender, e);
         }
 
