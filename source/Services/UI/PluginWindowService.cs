@@ -1098,7 +1098,9 @@ namespace PlayniteAchievements.Services.UI
                     _achievementDataService,
                     _api,
                     _logger,
-                    _settings);
+                    _settings,
+                    _achievementOverridesService,
+                    _cacheManager);
 
                 var windowOptions = new WindowOptions
                 {
