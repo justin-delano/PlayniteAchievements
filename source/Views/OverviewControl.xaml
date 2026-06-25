@@ -310,9 +310,18 @@
         <Border Grid.Row="0"
                 Background="{DynamicResource Transparent}"
                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                BorderThickness="0,0,0,1"
                 Padding="16,0,16,4"
                 WindowChrome.IsHitTestVisibleInChrome="True">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding ShowProgress}" Value="True">
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="24"/>
@@ -413,7 +422,7 @@
                 BorderThickness="0,0,0,1"
                 Padding="16,8"
                 Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
-            <StackPanel>
+            <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="{Binding ProgressMessage}"
                            Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                            Foreground="{DynamicResource PlayAch.Brush.Text}"
@@ -645,7 +654,8 @@
                 <!-- LEFT: Header (Row 0) -->
                     <Border Grid.Row="0" Grid.Column="0"
                             Background="{DynamicResource Transparent}"
-                            Padding="16,10,16,10"
+                            Height="{StaticResource PlayAch.Size.Header.Height}"
+                            Padding="16,0"
                             BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                             BorderThickness="0,0,0,1">
                         <Grid>
@@ -692,7 +702,8 @@
                         <Border Background="{DynamicResource Transparent}"
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
-                                Padding="16,10,16,10"
+                                Height="{StaticResource PlayAch.Size.Header.Height}"
+                                Padding="16,0"
                                 Visibility="{Binding ShowRecentAchievementsPanel, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
@@ -705,7 +716,8 @@
                         <Border Background="{DynamicResource Transparent}"
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
-                                Padding="16,10,16,10"
+                                Height="{StaticResource PlayAch.Size.Header.Height}"
+                                Padding="16,0"
                                 Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
 
                             <StackPanel Orientation="Horizontal"

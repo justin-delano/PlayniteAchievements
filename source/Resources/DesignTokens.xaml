@@ -155,6 +155,9 @@
     <sys:Double x:Key="PlayAch.Size.Control.SmallHeight">24</sys:Double>
     <sys:Double x:Key="PlayAch.Size.Control.Height">30</sys:Double>
     <sys:Double x:Key="PlayAch.Size.Control.LargeHeight">34</sys:Double>
+    <!-- Constant height for overview header rows so toggling game selection cannot
+         resize the (Auto) header row and cause layout jitter. Content is centered. -->
+    <sys:Double x:Key="PlayAch.Size.Header.Height">39</sys:Double>
     <sys:Double x:Key="PlayAch.Size.Input.NarrowWidth">50</sys:Double>
     <sys:Double x:Key="PlayAch.Size.Button.ResetMinWidth">74</sys:Double>
     <sys:Double x:Key="PlayAch.Size.AuthColumnWidth">180</sys:Double>
