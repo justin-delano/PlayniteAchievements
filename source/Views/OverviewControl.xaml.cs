@@ -307,12 +307,12 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            OpenMultiSelectFilterContextMenu(
-                ProviderFilterSelectionButton,
-                _viewModel.ProviderFilterOptions,
-                option => _viewModel.IsProviderFilterSelected(option),
-                (option, isSelected) => _viewModel.SetProviderFilterSelected(option, isSelected),
-                option => _viewModel.GetProviderFilterDisplayName(option));
+            if (ProviderFilterPopup == null)
+            {
+                return;
+            }
+
+            ProviderFilterPopup.IsOpen = !ProviderFilterPopup.IsOpen;
         }
 
         private void CompletenessFilterSelectionButton_Click(object sender, RoutedEventArgs e)
