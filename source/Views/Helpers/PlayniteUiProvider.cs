@@ -2,6 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Views.Helpers
@@ -75,7 +76,31 @@ namespace PlayniteAchievements.Views.Helpers
 
             windowExtension.PreviewKeyDown += new KeyEventHandler(HandleEsc);
 
+            ApplyChromeBrushes(windowExtension);
+
             return windowExtension;
+        }
+
+        // Retheme the Playnite-drawn window chrome (title strip and 1px border) to match the
+        // plugin's surfaces by overriding the chrome resource keys in the window's own scope.
+        // This reuses the existing plugin brushes rather than introducing chrome-specific tokens.
+        private static void ApplyChromeBrushes(Window window)
+        {
+            var app = Application.Current;
+            if (window == null || app == null)
+            {
+                return;
+            }
+
+            if (app.TryFindResource("PlayAch.Brush.WindowSurface") is Brush windowSurface)
+            {
+                window.Resources["WindowBackgourndBrush"] = windowSurface;
+            }
+
+            if (app.TryFindResource("PlayAch.Brush.PopupBorder") is Brush borderBrush)
+            {
+                window.Resources["PopupBorderBrush"] = borderBrush;
+            }
         }
 
         private static Window CreateFullscreenWindow(string title, UserControl content, WindowOptions windowOptions)
