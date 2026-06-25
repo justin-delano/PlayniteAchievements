@@ -206,13 +206,30 @@ namespace PlayniteAchievements.Services.UI
             }
 
             var playniteValue = FindPlayniteResource(token);
-            return CoerceValue(token, playniteValue);
+            return EnsureOpaqueIfRequired(token, CoerceValue(token, playniteValue));
+        }
+
+        // Last-resort guarantee for popup/menu surfaces: if every brush in the fallback chain was
+        // transparent, keep the theme's color but force it opaque so the floating surface is never
+        // see-through. No-op for every other token.
+        private static object EnsureOpaqueIfRequired(TokenDefinition token, object value)
+        {
+            if (!OpaqueRequiredTokens.Contains(token.ResourceKey) ||
+                !(value is SolidColorBrush solid) ||
+                solid.Color.A != 0)
+            {
+                return value;
+            }
+
+            var color = solid.Color;
+            color.A = 255;
+            return CreateBrush(color);
         }
 
         private static object FindPlayniteResource(TokenDefinition token)
         {
             var value = Application.Current?.TryFindResource(token.PlayniteResourceKey);
-            if (value != null)
+            if (IsUsableResource(token, value))
             {
                 return value;
             }
@@ -220,13 +237,53 @@ namespace PlayniteAchievements.Services.UI
             foreach (var fallbackKey in token.FallbackPlayniteResourceKeys)
             {
                 value = Application.Current?.TryFindResource(fallbackKey);
-                if (value != null)
+                if (IsUsableResource(token, value))
                 {
                     return value;
                 }
             }
 
-            return null;
+            return value;
+        }
+
+        // Surfaces that float over other content (dropdown popups, context menus) must be opaque
+        // to stay readable. Themes often define their panel/surface brushes as transparent so they
+        // overlay the window background; that is fine for inline surfaces but unusable for a popup.
+        // For these tokens only, treat a fully transparent brush as missing so the fallback chain
+        // continues to a solid surface. Other tokens keep any transparency the theme intends.
+        private static readonly HashSet<string> OpaqueRequiredTokens = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "PlayAch.Brush.PopupSurface"
+        };
+
+        private static bool IsUsableResource(TokenDefinition token, object value)
+        {
+            if (value == null)
+            {
+                return false;
+            }
+
+            if (OpaqueRequiredTokens.Contains(token.ResourceKey) && IsFullyTransparent(value as Brush))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool IsFullyTransparent(Brush brush)
+        {
+            if (brush == null)
+            {
+                return false;
+            }
+
+            if (brush.Opacity <= 0.0)
+            {
+                return true;
+            }
+
+            return brush is SolidColorBrush solid && solid.Color.A == 0;
         }
 
         private static object ResolveAlias(ResourceDictionary resources, AliasDefinition alias)

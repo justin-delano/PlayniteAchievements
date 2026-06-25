@@ -16,7 +16,6 @@
     <Style TargetType="ListBox" BasedOn="{StaticResource PlayAch.ListBox.BaseStyle}"/>
     <Style TargetType="ListBoxItem" BasedOn="{StaticResource PlayAch.ListBoxItem.BaseStyle}"/>
     <Style TargetType="ScrollViewer" BasedOn="{StaticResource PlayAch.ScrollViewer.BaseStyle}"/>
-    <Style TargetType="ScrollBar" BasedOn="{StaticResource PlayAch.ScrollBar.BaseStyle}"/>
     <Style TargetType="ProgressBar" BasedOn="{StaticResource PlayAch.ProgressBar.BaseStyle}"/>
 
 </ResourceDictionary>

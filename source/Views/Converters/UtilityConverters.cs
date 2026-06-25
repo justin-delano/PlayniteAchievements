@@ -8,45 +8,6 @@ using System.Windows.Media;
 
 namespace PlayniteAchievements.Views.Converters
 {
-    public class ComboBoxSelectionDisplayConverter : IMultiValueConverter
-    {
-        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-        {
-            var selectedItem = values != null && values.Length > 0 ? values[0] : null;
-            var displayMemberPath = values != null && values.Length > 1 ? values[1] as string : null;
-            var fallback = values != null && values.Length > 2 ? values[2] : selectedItem;
-
-            if (selectedItem == null || string.IsNullOrWhiteSpace(displayMemberPath))
-            {
-                return fallback;
-            }
-
-            var current = selectedItem;
-            foreach (var segment in displayMemberPath.Split('.'))
-            {
-                if (current == null || string.IsNullOrWhiteSpace(segment))
-                {
-                    return fallback;
-                }
-
-                var property = current.GetType().GetProperty(segment);
-                if (property == null)
-                {
-                    return fallback;
-                }
-
-                current = property.GetValue(current, null);
-            }
-
-            return current ?? fallback;
-        }
-
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     /// <summary>
     /// Converts control height to font size (approximately 1/3 of height).
     /// Used for dynamically sizing text based on parent control height.

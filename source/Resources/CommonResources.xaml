@@ -18,7 +18,6 @@
     <converters:IntToVisibilityConverter x:Key="IntToVis"/>
     <converters:ResourceKeyToImageSourceConverter x:Key="ResourceKeyToImage"/>
     <converters:ProviderIconConverter x:Key="ProviderIconConverter"/>
-    <converters:ComboBoxSelectionDisplayConverter x:Key="ComboBoxSelectionDisplayConverter"/>
     <converters:DefaultGameImageConverter x:Key="DefaultGameImage"/>
     <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlow"/>
     <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlowConverter"/>
@@ -370,10 +369,7 @@
                             BorderThickness="{StaticResource PlayAch.Thickness.Border}"
                             CornerRadius="{StaticResource PlayAch.Radius.Tiny}"
                             SnapsToDevicePixels="True">
-                        <ContentPresenter Content="{TemplateBinding Content}"
-                                          ContentTemplate="{TemplateBinding ContentTemplate}"
-                                          ContentStringFormat="{TemplateBinding ContentStringFormat}"
-                                          Margin="{TemplateBinding Padding}"
+                        <ContentPresenter Margin="{TemplateBinding Padding}"
                                           HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
                                           RecognizesAccessKey="True"/>
@@ -414,6 +410,8 @@
                 <ControlTemplate TargetType="ComboBox">
                     <Grid SnapsToDevicePixels="True">
                         <ToggleButton x:Name="Toggle"
+                                      OverridesDefaultStyle="True"
+                                      Style="{x:Null}"
                                       Focusable="False"
                                       IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
                                       ClickMode="Press"
@@ -422,32 +420,41 @@
                                       BorderThickness="{TemplateBinding BorderThickness}"
                                       Foreground="{TemplateBinding Foreground}"
                                       Padding="{TemplateBinding Padding}">
+                            <ToggleButton.Template>
+                                <ControlTemplate TargetType="ToggleButton">
+                                    <Border Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="{StaticResource PlayAch.Radius.Small}"
+                                            SnapsToDevicePixels="True">
+                                        <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                          HorizontalAlignment="Stretch"
+                                                          VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </ToggleButton.Template>
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="18"/>
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter x:Name="ContentSite"
+                                                  IsHitTestVisible="False"
+                                                  Content="{TemplateBinding SelectionBoxItem}"
                                                   ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                  ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
                                                   ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"
                                                   HorizontalAlignment="Left"
                                                   VerticalAlignment="Center"
-                                                  Margin="0">
-                                    <ContentPresenter.Content>
-                                        <MultiBinding Converter="{StaticResource ComboBoxSelectionDisplayConverter}">
-                                            <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="SelectedItem"/>
-                                            <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="DisplayMemberPath"/>
-                                            <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="SelectionBoxItem"/>
-                                        </MultiBinding>
-                                    </ContentPresenter.Content>
-                                </ContentPresenter>
+                                                  Margin="0"/>
                                 <Path Grid.Column="1"
                                       Data="M 0,0 L 4,4 L 8,0"
                                       Fill="{TemplateBinding Foreground}"
                                       Width="8"
                                       Height="4"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"/>
+                                      HorizontalAlignment="Right"
+                                      VerticalAlignment="Center"
+                                      Margin="0,0,4,0"/>
                             </Grid>
                         </ToggleButton>
                         <Popup x:Name="PART_Popup"
@@ -458,8 +465,8 @@
                                PopupAnimation="Fade">
                             <Border MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}"
                                     MaxHeight="{TemplateBinding MaxDropDownHeight}"
-                                    Background="{DynamicResource PlayAch.Brush.Panel}"
-                                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                    Background="{DynamicResource PlayAch.Brush.PopupSurface}"
+                                    BorderBrush="{DynamicResource PlayAch.Brush.PopupBorder}"
                                     BorderThickness="{StaticResource PlayAch.Thickness.Border}"
                                     CornerRadius="{StaticResource PlayAch.Radius.Small}">
                                 <ScrollViewer Margin="2"
@@ -538,80 +545,6 @@
     <Style x:Key="PlayAch.ScrollViewer.BaseStyle" TargetType="ScrollViewer">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
-    </Style>
-
-    <!-- Scrollbar thumb with explicit normal / hover / interact (drag) states. -->
-    <Style x:Key="PlayAch.ScrollBar.Thumb" TargetType="Thumb">
-        <Setter Property="OverridesDefaultStyle" Value="True"/>
-        <Setter Property="IsTabStop" Value="False"/>
-        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.ControlBorder}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="Thumb">
-                    <Border x:Name="ThumbBorder"
-                            Background="{TemplateBinding Background}"
-                            CornerRadius="4"
-                            SnapsToDevicePixels="True"/>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="ThumbBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Glyph}"/>
-                        </Trigger>
-                        <Trigger Property="IsDragging" Value="True">
-                            <Setter TargetName="ThumbBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <!-- Transparent page-track buttons (no arrow buttons; overlay-style scrollbar). -->
-    <Style x:Key="PlayAch.ScrollBar.PageButton" TargetType="RepeatButton">
-        <Setter Property="OverridesDefaultStyle" Value="True"/>
-        <Setter Property="IsTabStop" Value="False"/>
-        <Setter Property="Focusable" Value="False"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="RepeatButton">
-                    <Border Background="Transparent"/>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
-    <Style x:Key="PlayAch.ScrollBar.BaseStyle" TargetType="ScrollBar">
-        <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
-        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Surface}"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ScrollBar">
-                  <Border Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
-                    <Track x:Name="PART_Track" Orientation="Vertical" IsDirectionReversed="True" Width="12">
-                        <Track.Thumb>
-                            <Thumb Style="{StaticResource PlayAch.ScrollBar.Thumb}" Width="8" MinHeight="24"/>
-                        </Track.Thumb>
-                        <Track.DecreaseRepeatButton>
-                            <RepeatButton x:Name="UpButton" Style="{StaticResource PlayAch.ScrollBar.PageButton}" Command="ScrollBar.PageUpCommand"/>
-                        </Track.DecreaseRepeatButton>
-                        <Track.IncreaseRepeatButton>
-                            <RepeatButton x:Name="DownButton" Style="{StaticResource PlayAch.ScrollBar.PageButton}" Command="ScrollBar.PageDownCommand"/>
-                        </Track.IncreaseRepeatButton>
-                    </Track>
-                  </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="Orientation" Value="Horizontal">
-                            <Setter Property="LayoutTransform" TargetName="PART_Track">
-                                <Setter.Value>
-                                    <RotateTransform Angle="-90"/>
-                                </Setter.Value>
-                            </Setter>
-                            <Setter TargetName="UpButton" Property="Command" Value="ScrollBar.PageLeftCommand"/>
-                            <Setter TargetName="DownButton" Property="Command" Value="ScrollBar.PageRightCommand"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
     </Style>
 
     <Style x:Key="PlayAch.TabControl.BaseStyle" TargetType="TabControl">
