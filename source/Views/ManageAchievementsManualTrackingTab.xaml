@@ -337,10 +337,10 @@
                               VirtualizingStackPanel.VirtualizationMode="Recycling"
                               VirtualizingStackPanel.ScrollUnit="Pixel"
                               ScrollViewer.CanContentScroll="True"
-                              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
                               ColumnHeaderStyle="{StaticResource ManageAchievementsColumnHeaderStyle}"
                               helpers:DataGridHoverScrollBarBehavior.IsEnabled="True"
-                              helpers:DataGridAlignmentBehavior.IsEnabled="True"
+                              helpers:DataGridAlignmentBehavior.IsEnabled="False"
                               Tag="ControllerCellFocus">
                         <DataGrid.CellStyle>
                             <Style TargetType="DataGridCell" BasedOn="{StaticResource ManageAchievementsControllerCellStyle}"/>
@@ -363,6 +363,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding IsUnlocked, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                                  Style="{StaticResource ManageAchievementsManualCheckBoxStyle}"
                                                   HorizontalAlignment="Center"
                                                   VerticalAlignment="Center"
                                                   Focusable="False"
@@ -394,7 +395,12 @@
                                                     Width="*"
                                                     SortMemberPath="DisplayName"
                                                     IsReadOnly="True"
-                                                    CellStyle="{StaticResource StretchCellStyle}">
+                                                    HeaderStyle="{StaticResource AchievementColumnHeaderLeftStyle}"
+                                                    CellStyle="{StaticResource StretchCellStyle}"
+                                                    helpers:DataGridAlignmentBehavior.CellHorizontalAlignment="Left"
+                                                    helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center"
+                                                    helpers:DataGridAlignmentBehavior.CellTextAlignment="Left"
+                                                    helpers:DataGridAlignmentBehavior.HeaderHorizontalAlignment="Left">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid HorizontalAlignment="Stretch"
@@ -406,7 +412,7 @@
                                             helpers:DataGridAlignmentBehavior.CellVerticalAlignment="Center"
                                             helpers:DataGridAlignmentBehavior.CellTextAlignment="Left">
                                             <ContentControl Content="{Binding}"
-                                                            ContentTemplate="{StaticResource AchievementInfoTemplate}"
+                                                            ContentTemplate="{StaticResource ManageAchievementInfoTemplate}"
                                                             HorizontalAlignment="Left"
                                                             VerticalAlignment="Center" />
                                         </Grid>
@@ -416,14 +422,15 @@
 
                             <!-- Unlock time set/null + date/time editor -->
                             <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_UnlockTime}"
-                                                    Width="300"
+                                                    Width="360"
+                                                    MinWidth="340"
                                                     SortMemberPath="UnlockTime"
                                                     HeaderStyle="{StaticResource ManageAchievementsColumnHeaderStyle}"
-                                                    CellStyle="{StaticResource ManageAchievementsControllerCellStyle}">
+                                                    CellStyle="{StaticResource ManageAchievementsUnlockTimeCellStyle}">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid VerticalAlignment="Center"
-                                              Margin="4,0">
+                                              HorizontalAlignment="Center">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
@@ -431,6 +438,7 @@
                                             <CheckBox Grid.Column="0"
                                                       IsChecked="{Binding HasUnlockTime, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                                                       IsEnabled="{Binding IsUnlocked}"
+                                                      Style="{StaticResource ManageAchievementsManualCheckBoxStyle}"
                                                       HorizontalAlignment="Center"
                                                       VerticalAlignment="Center"
                                                       Focusable="False"
@@ -445,22 +453,16 @@
                                                            VerticalAlignment="Center"
                                                            Visibility="{Binding CanEditUnlockTime, Converter={StaticResource InvertedBooleanToVisibilityConverter}}"/>
                                                 <StackPanel Orientation="Horizontal"
-                                                            HorizontalAlignment="Center"
+                                                            HorizontalAlignment="Left"
                                                             VerticalAlignment="Center"
                                                             Visibility="{Binding CanEditUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}">
                                                 <DatePicker SelectedDate="{Binding UnlockDate, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center"
-                                                            Padding="4,2"
+                                                            Style="{StaticResource ManageAchievementsUnlockDatePickerStyle}"
                                                             Margin="{StaticResource PlayAch.Thickness.Right.Compact}"/>
                                                 <TextBox Text="{Binding TimeText, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
-                                                         Width="62"
-                                                         VerticalContentAlignment="Center"
-                                                         HorizontalContentAlignment="Center"
-                                                         Padding="4,0"
                                                          MaxLength="5">
                                                     <TextBox.Style>
-                                                        <Style TargetType="TextBox" BasedOn="{StaticResource PlayAch.TextBox.BaseStyle}">
+                                                        <Style TargetType="TextBox" BasedOn="{StaticResource ManageAchievementsUnlockTimeTextBoxStyle}">
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding IsValidTime}" Value="False">
                                                                     <Setter Property="BorderBrush" Value="Red"/>
@@ -473,9 +475,7 @@
                                                 <ComboBox ItemsSource="{Binding AvailableTimeModes}"
                                                           SelectedItem="{Binding SelectedTimeModeText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                           SelectionChanged="TimeModeComboBox_SelectionChanged"
-                                                          Width="74"
-                                                          VerticalContentAlignment="Center"
-                                                          Padding="4,0"
+                                                          Style="{StaticResource ManageAchievementsUnlockTimeModeComboBoxStyle}"
                                                           Margin="2,0,0,0"/>
                                                 </StackPanel>
                                             </Grid>

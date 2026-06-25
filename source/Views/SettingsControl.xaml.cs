@@ -210,9 +210,7 @@ namespace PlayniteAchievements.Views
         }
 
         private ModernThemeBindings _previewThemeData;
-        private ModernThemeBindings _unlockedPreviewThemeData;
-        private ModernThemeBindings _hiddenPreviewThemeData;
-        private ModernThemeBindings _lockedPreviewThemeData;
+        private ModernThemeBindings _achievementVisibilityPreviewThemeData;
 
         /// <summary>
         /// Gets modern theme bindings populated with mock achievements for modern control previews.
@@ -231,47 +229,17 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Gets modern theme bindings with a single unlocked achievement for visibility preview.
+        /// Gets modern theme bindings with locked and hidden achievements for visibility preview.
         /// </summary>
-        public ModernThemeBindings UnlockedPreviewThemeData
+        public ModernThemeBindings AchievementVisibilityPreviewThemeData
         {
             get
             {
-                if (_unlockedPreviewThemeData == null)
+                if (_achievementVisibilityPreviewThemeData == null)
                 {
-                    _unlockedPreviewThemeData = MockDataHelper.GetUnlockedPreviewThemeData();
+                    _achievementVisibilityPreviewThemeData = MockDataHelper.GetAchievementVisibilityPreviewThemeData();
                 }
-                return _unlockedPreviewThemeData;
-            }
-        }
-
-        /// <summary>
-        /// Gets modern theme bindings with a single hidden achievement for visibility preview.
-        /// </summary>
-        public ModernThemeBindings HiddenPreviewThemeData
-        {
-            get
-            {
-                if (_hiddenPreviewThemeData == null)
-                {
-                    _hiddenPreviewThemeData = MockDataHelper.GetHiddenPreviewThemeData();
-                }
-                return _hiddenPreviewThemeData;
-            }
-        }
-
-        /// <summary>
-        /// Gets modern theme bindings with a single locked achievement for visibility preview.
-        /// </summary>
-        public ModernThemeBindings LockedPreviewThemeData
-        {
-            get
-            {
-                if (_lockedPreviewThemeData == null)
-                {
-                    _lockedPreviewThemeData = MockDataHelper.GetLockedPreviewThemeData();
-                }
-                return _lockedPreviewThemeData;
+                return _achievementVisibilityPreviewThemeData;
             }
         }
 
@@ -341,13 +309,7 @@ namespace PlayniteAchievements.Views
             _previewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
                 settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
-            _unlockedPreviewThemeData?.RefreshDisplayItems(
-                settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
-                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
-            _hiddenPreviewThemeData?.RefreshDisplayItems(
-                settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
-                settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
-            _lockedPreviewThemeData?.RefreshDisplayItems(
+            _achievementVisibilityPreviewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
                 settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
         }

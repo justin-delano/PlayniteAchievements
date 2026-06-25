@@ -300,6 +300,47 @@
         </Setter>
     </Style>
 
+    <Style x:Key="ManageAchievementsUnlockTimeCellStyle"
+           TargetType="DataGridCell"
+           BasedOn="{StaticResource ManageAchievementsControllerCellStyle}">
+        <Setter Property="Padding" Value="8,6"/>
+        <Setter Property="ClipToBounds" Value="False"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="ManageAchievementsUnlockDatePickerStyle"
+           TargetType="DatePicker"
+           BasedOn="{StaticResource PlayAch.DatePicker.BaseStyle}">
+        <Setter Property="Width" Value="132"/>
+        <Setter Property="Height" Value="{StaticResource PlayAch.Size.Control.Height}"/>
+        <Setter Property="MinHeight" Value="{StaticResource PlayAch.Size.Control.Height}"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="Padding" Value="6,0,2,0"/>
+    </Style>
+
+    <Style x:Key="ManageAchievementsUnlockTimeTextBoxStyle"
+           TargetType="TextBox"
+           BasedOn="{StaticResource PlayAch.TextBox.BaseStyle}">
+        <Setter Property="Width" Value="62"/>
+        <Setter Property="Height" Value="{StaticResource PlayAch.Size.Control.Height}"/>
+        <Setter Property="MinHeight" Value="{StaticResource PlayAch.Size.Control.Height}"/>
+        <Setter Property="Padding" Value="4,0"/>
+        <Setter Property="TextAlignment" Value="Center"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="ManageAchievementsUnlockTimeModeComboBoxStyle"
+           TargetType="ComboBox"
+           BasedOn="{StaticResource PlayAch.ComboBox.BaseStyle}">
+        <Setter Property="Width" Value="82"/>
+        <Setter Property="Height" Value="{StaticResource PlayAch.Size.Control.Height}"/>
+        <Setter Property="MinHeight" Value="{StaticResource PlayAch.Size.Control.Height}"/>
+        <Setter Property="Padding" Value="4,0"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
     <Style x:Key="ManageAchievementsHeaderCardStyle" TargetType="Border" BasedOn="{StaticResource CardBorderStyle}">
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
     </Style>

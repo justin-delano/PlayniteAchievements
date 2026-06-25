@@ -219,63 +219,61 @@ namespace PlayniteAchievements.Views.Helpers
         }
 
         /// <summary>
-        /// Gets modern theme bindings with a single unlocked achievement for preview.
+        /// Gets modern theme bindings for the achievement visibility preview.
         /// </summary>
-        public static ModernThemeBindings GetUnlockedPreviewThemeData()
+        public static ModernThemeBindings GetAchievementVisibilityPreviewThemeData()
         {
-            return CreateSingleAchievementThemeData(unlocked: true, hidden: false);
+            return CreateAchievementVisibilityThemeData();
         }
 
-        /// <summary>
-        /// Gets modern theme bindings with a single locked+hidden achievement for preview.
-        /// </summary>
-        public static ModernThemeBindings GetHiddenPreviewThemeData()
+        private static ModernThemeBindings CreateAchievementVisibilityThemeData()
         {
-            return CreateSingleAchievementThemeData(unlocked: false, hidden: true);
-        }
-
-        /// <summary>
-        /// Gets modern theme bindings with a single locked (non-hidden) achievement for preview.
-        /// </summary>
-        public static ModernThemeBindings GetLockedPreviewThemeData()
-        {
-            return CreateSingleAchievementThemeData(unlocked: false, hidden: false);
-        }
-
-        private static ModernThemeBindings CreateSingleAchievementThemeData(bool unlocked, bool hidden)
-        {
-            var achievement = new AchievementDetail
+            var achievements = new List<AchievementDetail>
             {
-                ApiName = unlocked ? "preview_unlocked" : (hidden ? "preview_hidden" : "preview_locked"),
-                DisplayName = unlocked ? "Unlocked Achievement" : (hidden ? "Hidden Secret" : "Locked Challenge"),
-                Description = unlocked ? "You accomplished this goal" : (hidden ? "Discover the mystery" : "Complete this to unlock"),
-                UnlockedIconPath = UnlockedIconPath,
-                LockedIconPath = UnlockedIconPath,
-                Unlocked = unlocked,
-                Hidden = hidden,
-                GlobalPercentUnlocked = unlocked ? 8.0 : (hidden ? 15.0 : 25.0),
-                Rarity = unlocked ? RarityTier.Rare : (hidden ? RarityTier.Rare : RarityTier.Uncommon),
-                UnlockTimeUtc = unlocked ? DateTime.UtcNow.AddDays(-1) : (DateTime?)null
+                new AchievementDetail
+                {
+                    ApiName = "preview_locked",
+                    DisplayName = "Locked Challenge",
+                    Description = "Complete this to unlock",
+                    UnlockedIconPath = UnlockedIconPath,
+                    LockedIconPath = UnlockedIconPath,
+                    Unlocked = false,
+                    Hidden = false,
+                    GlobalPercentUnlocked = 25.0,
+                    Rarity = RarityTier.Uncommon
+                },
+                new AchievementDetail
+                {
+                    ApiName = "preview_hidden",
+                    DisplayName = "Hidden Secret",
+                    Description = "Discover the mystery",
+                    UnlockedIconPath = UnlockedIconPath,
+                    LockedIconPath = UnlockedIconPath,
+                    Unlocked = false,
+                    Hidden = true,
+                    GlobalPercentUnlocked = 15.0,
+                    Rarity = RarityTier.Rare
+                }
             };
 
             var themeData = new ModernThemeBindings
             {
                 HasAchievements = true,
-                IsCompleted = unlocked,
-                AchievementCount = 1,
-                UnlockedCount = unlocked ? 1 : 0,
-                LockedCount = unlocked ? 0 : 1,
-                ProgressPercentage = unlocked ? 100.0 : 0.0,
-                AllAchievements = new List<AchievementDetail> { achievement }
+                IsCompleted = false,
+                AchievementCount = achievements.Count,
+                UnlockedCount = 0,
+                LockedCount = achievements.Count,
+                ProgressPercentage = 0.0,
+                AllAchievements = achievements
             };
 
-            themeData.RareAndUltraRare = new AchievementRarityStats
-            {
-                Total = 1,
-                Unlocked = unlocked ? 1 : 0,
-                Locked = unlocked ? 0 : 1
-            };
-
+            themeData.Rare = new AchievementRarityStats { Unlocked = 0, Locked = 1, Total = 1 };
+            themeData.Uncommon = new AchievementRarityStats { Unlocked = 0, Locked = 1, Total = 1 };
+            themeData.RareAndUltraRare = new AchievementRarityStats { Unlocked = 0, Locked = 1, Total = 1 };
+            themeData.TotalUncommon = new AchievementRarityStats { Unlocked = 0, Locked = 1, Total = 1 };
+            themeData.TotalRare = new AchievementRarityStats { Unlocked = 0, Locked = 1, Total = 1 };
+            themeData.TotalRareAndUltraRare = new AchievementRarityStats { Unlocked = 0, Locked = 1, Total = 1 };
+            themeData.TotalOverall = new AchievementRarityStats { Unlocked = 0, Locked = achievements.Count, Total = achievements.Count };
             PopulateOrderedAchievementLists(themeData);
 
             return themeData;

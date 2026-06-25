@@ -1033,45 +1033,6 @@
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
-                                        <!-- Unlocked Achievement Visibility -->
-                                        <Border Style="{StaticResource SettingGroupCardStyle}">
-                                            <StackPanel>
-                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockedAchievements}"
-                                                           Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                <TextBlock Text="PREVIEW"
-                                                           Style="{StaticResource ContextLabelStyle}"/>
-                                                <modern:AchievementDataGridControl
-                                                    Style="{StaticResource PreviewThemeControlStyle}"
-                                                    ThemeDataOverride="{Binding UnlockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    PreviewMaxHeightOverride="122"
-                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                            </StackPanel>
-                                        </Border>
-
-                                        <!-- Locked Achievement Visibility -->
-                                        <Border Style="{StaticResource SettingGroupCardStyle}">
-                                            <StackPanel>
-                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements}"
-                                                           Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LockedAchievements_Description}"
-                                                           Style="{StaticResource MutedTextStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                <TextBlock Text="PREVIEW"
-                                                           Style="{StaticResource ContextLabelStyle}"/>
-                                                <modern:AchievementDataGridControl
-                                                    Style="{StaticResource PreviewThemeControlStyle}"
-                                                    ThemeDataOverride="{Binding LockedPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    PreviewMaxHeightOverride="122"
-                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                                <TextBlock Text="SETTINGS"
-                                                           Style="{StaticResource ContextLabelStyle}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealLockedIcon}"
-                                                          IsChecked="{Binding Persisted.ShowLockedIcon}"
-                                                          VerticalAlignment="Center"/>
-                                            </StackPanel>
-                                        </Border>
-
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Title}"
@@ -1098,7 +1059,7 @@
                                             </StackPanel>
                                         </Border>
 
-                                        <!-- Hidden Achievement Visibility -->
+                                        <!-- Achievement Visibility -->
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements}"
@@ -1110,12 +1071,15 @@
                                                            Style="{StaticResource ContextLabelStyle}"/>
                                                 <modern:AchievementDataGridControl
                                                     Style="{StaticResource PreviewThemeControlStyle}"
-                                                    ThemeDataOverride="{Binding HiddenPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    PreviewMaxHeightOverride="122"
+                                                    ThemeDataOverride="{Binding AchievementVisibilityPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    PreviewMaxHeightOverride="220"
                                                     Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <TextBlock Text="SETTINGS"
                                                            Style="{StaticResource ContextLabelStyle}"/>
                                                 <StackPanel>
+                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealLockedIcon}"
+                                                              IsChecked="{Binding Persisted.ShowLockedIcon}"
+                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
                                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenIcon}"
                                                               IsChecked="{Binding Persisted.ShowHiddenIcon}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
                                                     <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenTitle}"
