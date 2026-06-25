@@ -8,6 +8,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
 
@@ -38,6 +39,7 @@ namespace PlayniteAchievements.Services.Overview
         private readonly IReadOnlyList<IDataProvider> _providers;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
+        private readonly GameSummaryItemBuilder _summaryBuilder;
 
         public OverviewDataBuilder(
             AchievementDataService achievementDataService,
@@ -49,6 +51,7 @@ namespace PlayniteAchievements.Services.Overview
             _providers = providers ?? new List<IDataProvider>();
             _playniteApi = playniteApi;
             _logger = logger;
+            _summaryBuilder = new GameSummaryItemBuilder(_providers, _playniteApi, _logger);
         }
 
         public OverviewDataSnapshot Build(
@@ -420,19 +423,12 @@ namespace PlayniteAchievements.Services.Overview
                 playniteGame = _playniteApi?.Database?.Games?.Get(gameData.PlayniteGameId.Value);
             }
 
-            providerLookup ??= BuildProviderLookup();
             var providerKey = gameData.EffectiveProviderKey;
-
             providerKey = string.IsNullOrWhiteSpace(providerKey) ? "Unknown" : providerKey;
             var providerName = ProviderRegistry.GetLocalizedName(providerKey);
             if (string.IsNullOrWhiteSpace(providerName))
             {
                 providerName = providerKey;
-            }
-
-            if (!providerLookup.TryGetValue(providerKey, out var providerMetadata))
-            {
-                providerMetadata = ("ProviderIcon" + providerKey, "#888888");
             }
 
             var presentation = CreateGamePresentation(playniteGame);
@@ -476,7 +472,6 @@ namespace PlayniteAchievements.Services.Overview
             int gamePrestigeScore = 0;
             int gameCollectionScoreTotal = 0;
             int gamePrestigeScoreTotal = 0;
-            DateTime? lastUnlockUtc = null;
 
             for (var i = 0; i < achievements.Count; i++)
             {
@@ -527,10 +522,6 @@ namespace PlayniteAchievements.Services.Overview
                         var unlockUtc = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value);
                         var unlockDate = unlockUtc.Date;
                         Increment(fragment.UnlockCountsByDate, unlockDate);
-                        if (!lastUnlockUtc.HasValue || unlockUtc > lastUnlockUtc.Value)
-                        {
-                            lastUnlockUtc = unlockUtc;
-                        }
 
                         if (gameData.PlayniteGameId.HasValue)
                         {
@@ -577,47 +568,10 @@ namespace PlayniteAchievements.Services.Overview
 
             fragment.IsCompleted = gameData.IsCompleted;
 
-            fragment.GameSummary = new GameSummaryItem
-            {
-                GameName = gameData.GameName ?? "Unknown",
-                SortingName = presentation.SortingName ?? gameData.GameName ?? "Unknown",
-                GameLogo = gameIconPath,
-                GameCoverPath = gameCoverPath,
-                PlatformText = presentation.PlatformText,
-                RegionText = presentation.RegionText,
-                PlaytimeSeconds = presentation.PlaytimeSeconds,
-                AppId = gameData.AppId,
-                PlayniteGameId = gameData.PlayniteGameId,
-                TotalAchievements = gameTotal,
-                UnlockedAchievements = gameUnlocked,
-                CommonCount = gameCommon,
-                UncommonCount = gameUncommon,
-                RareCount = gameRare,
-                UltraRareCount = gameUltraRare,
-                CollectionScore = gameCollectionScore,
-                PrestigeScore = gamePrestigeScore,
-                CollectionScoreTotal = gameCollectionScoreTotal,
-                PrestigeScoreTotal = gamePrestigeScoreTotal,
-                TotalCommonPossible = gameTotalCommon,
-                TotalUncommonPossible = gameTotalUncommon,
-                TotalRarePossible = gameTotalRare,
-                TotalUltraRarePossible = gameTotalUltraRare,
-                TrophyPlatinumCount = gameTrophyPlatinum,
-                TrophyGoldCount = gameTrophyGold,
-                TrophySilverCount = gameTrophySilver,
-                TrophyBronzeCount = gameTrophyBronze,
-                TrophyPlatinumTotal = gameTrophyPlatinumTotal,
-                TrophyGoldTotal = gameTrophyGoldTotal,
-                TrophySilverTotal = gameTrophySilverTotal,
-                TrophyBronzeTotal = gameTrophyBronzeTotal,
-                LastUnlockUtc = lastUnlockUtc,
-                LastPlayed = presentation.LastPlayed,
-                IsCompleted = gameData.IsCompleted,
-                Provider = providerName,
-                ProviderKey = providerKey,
-                ProviderIconKey = providerMetadata.iconKey,
-                ProviderColorHex = providerMetadata.colorHex
-            };
+            // GameSummaryItem projection is owned by the shared, Overview-independent builder so
+            // every surface produces an identical row. The fragment keeps its own aggregates above
+            // for the Overview-only cross-game rollups, per-date counts, and recent achievements.
+            fragment.GameSummary = _summaryBuilder.Build(gameData, settings);
 
             return fragment;
         }
