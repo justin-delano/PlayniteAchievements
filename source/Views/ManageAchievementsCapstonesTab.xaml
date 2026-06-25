@@ -164,7 +164,7 @@
 
                                 <Grid Width="18" Height="18">
                                     <Path Data="M 3,9 L 7,13 L 15,5"
-                                          Stroke="{DynamicResource GlyphBrush}"
+                                          Stroke="{DynamicResource PlayAch.Brush.Glyph}"
                                           StrokeThickness="2.3"
                                           StrokeStartLineCap="Round"
                                           StrokeEndLineCap="Round"
@@ -174,7 +174,7 @@
                                           Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
 
                                     <Path Data="{StaticResource GeoLock}"
-                                          Fill="{DynamicResource GlyphBrush}"
+                                          Fill="{DynamicResource PlayAch.Brush.Glyph}"
                                           Stretch="Uniform"
                                           Width="18"
                                           Height="18"
