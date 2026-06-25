@@ -38,6 +38,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly Action<Guid> _toggleViewAchievementsWindow;
         private readonly Action<Guid> _toggleManageAchievementsWindow;
         private readonly Action _toggleOverviewWindow;
+        private readonly Func<bool> _tryRefreshFocusedView;
         private readonly Dictionary<int, AchievementHotkeyAction> _registeredGlobalHotkeys =
             new Dictionary<int, AchievementHotkeyAction>();
 
@@ -59,7 +60,8 @@ namespace PlayniteAchievements.Services.UI
             ILogger logger,
             Action<Guid> toggleViewAchievementsWindow,
             Action<Guid> toggleManageAchievementsWindow,
-            Action toggleOverviewWindow)
+            Action toggleOverviewWindow,
+            Func<bool> tryRefreshFocusedView = null)
         {
             _api = api;
             _settings = settings;
@@ -68,6 +70,7 @@ namespace PlayniteAchievements.Services.UI
             _toggleViewAchievementsWindow = toggleViewAchievementsWindow ?? throw new ArgumentNullException(nameof(toggleViewAchievementsWindow));
             _toggleManageAchievementsWindow = toggleManageAchievementsWindow ?? throw new ArgumentNullException(nameof(toggleManageAchievementsWindow));
             _toggleOverviewWindow = toggleOverviewWindow ?? throw new ArgumentNullException(nameof(toggleOverviewWindow));
+            _tryRefreshFocusedView = tryRefreshFocusedView;
         }
 
         private Dispatcher UiDispatcher =>
@@ -171,11 +174,26 @@ namespace PlayniteAchievements.Services.UI
         private void OnPreProcessInput(object sender, PreProcessInputEventArgs e)
         {
             if (_disposed ||
-                _settings?.Persisted?.EnableAchievementHotkeys != true ||
                 e?.StagingItem?.Input is not KeyEventArgs keyArgs ||
                 keyArgs.RoutedEvent != Keyboard.KeyDownEvent ||
                 keyArgs.IsRepeat ||
-                keyArgs.Handled ||
+                keyArgs.Handled)
+            {
+                return;
+            }
+
+            // Fixed F5 -> refresh, scoped to the plugin's own views via focus. Handled here
+            // (before the routed KeyDown) so it preempts Playnite's F5 InputBinding. Independent
+            // of the configurable achievement-hotkey feature and active even in a focused search box.
+            if (GetEffectiveKey(keyArgs) == Key.F5 &&
+                Keyboard.Modifiers == ModifierKeys.None &&
+                _tryRefreshFocusedView?.Invoke() == true)
+            {
+                keyArgs.Handled = true;
+                return;
+            }
+
+            if (_settings?.Persisted?.EnableAchievementHotkeys != true ||
                 IsTextInputFocused())
             {
                 return;
