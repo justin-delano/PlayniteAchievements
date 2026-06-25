@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows;
+using System.Windows.Input;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Tagging;
@@ -172,6 +173,34 @@ namespace PlayniteAchievements
             }) ?? Task.CompletedTask;
         }
 
+        // Invoked by AchievementHotkeyService on F5. Refreshes the plugin view that currently
+        // holds keyboard focus (Overview or single-game View Achievements). Returns true when a
+        // plugin view handled it, so the service can suppress Playnite's own F5 library update.
+        private bool TryRefreshFocusedPluginView()
+        {
+            var focused = Keyboard.FocusedElement as DependencyObject;
+            if (focused == null)
+            {
+                return false;
+            }
+
+            var overview = VisualTreeHelpers.FindVisualParent<OverviewControl>(focused);
+            if (overview != null)
+            {
+                overview.TriggerHotkeyRefresh();
+                return true;
+            }
+
+            var singleGame = VisualTreeHelpers.FindVisualParent<ViewAchievementsControl>(focused);
+            if (singleGame != null)
+            {
+                singleGame.TriggerHotkeyRefresh();
+                return true;
+            }
+
+            return false;
+        }
+
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
         {
             // Initialize logging system first
@@ -286,7 +315,8 @@ namespace PlayniteAchievements
                         _logger,
                         gameId => _windowService.ToggleViewAchievementsWindowFromHotkey(gameId),
                         gameId => _windowService.ToggleManageAchievementsViewFromHotkey(gameId),
-                        ToggleOverviewWindowFromHotkey);
+                        ToggleOverviewWindowFromHotkey,
+                        TryRefreshFocusedPluginView);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
                         _logger,
