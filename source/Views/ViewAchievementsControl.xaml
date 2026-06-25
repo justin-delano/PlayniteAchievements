@@ -135,7 +135,7 @@
                             Orientation="Horizontal"
                             VerticalAlignment="Center"
                             Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}">
-                    <Image Source="{DynamicResource BadgeCompletedGame}"
+                    <Image Source="{DynamicResource BadgeRarityCompleted}"
                            Style="{StaticResource RarityIcon}"
                            Effect="{StaticResource BadgeShadow}"
                            Width="24" Height="24"/>

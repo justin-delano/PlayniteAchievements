@@ -60,25 +60,14 @@
                     </Path.Style>
                 </Path>
 
-                <Image Effect="{StaticResource BadgeShadow}"
+                <Image Source="{DynamicResource BadgeRarityCompleted}"
+                       Effect="{StaticResource BadgeShadow}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center">
                     <Image.Style>
                         <Style TargetType="Image" BasedOn="{StaticResource RarityIcon}">
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.UltraRare}">
-                                    <Setter Property="Source" Value="{DynamicResource BadgeRarityUltraRare}"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Rare}">
-                                    <Setter Property="Source" Value="{DynamicResource BadgeRarityRare}"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Uncommon}">
-                                    <Setter Property="Source" Value="{DynamicResource BadgeRarityUncommon}"/>
-                                </DataTrigger>
-                                <DataTrigger Binding="{Binding Rarity}" Value="{x:Static models:RarityTier.Common}">
-                                    <Setter Property="Source" Value="{DynamicResource BadgeRarityCommon}"/>
-                                </DataTrigger>
                                 <MultiDataTrigger>
                                     <MultiDataTrigger.Conditions>
                                         <Condition Binding="{Binding Unlocked}" Value="True"/>
@@ -111,7 +100,7 @@
                         </Style>
                     </Grid.Style>
                     <Path Stretch="None"
-                          Fill="{StaticResource PlayAch.Brush.ProviderSteam}"
+                          Fill="{DynamicResource PlayAch.Brush.Glyph}"
                           UseLayoutRounding="True"
                           SnapsToDevicePixels="True"
                           HorizontalAlignment="Center"
@@ -133,25 +122,29 @@
                     </Path>
                 </Grid>
 
-                <Image Source="{StaticResource BadgeLocked}"
-                       Opacity="0.65"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center">
-                    <Image.Style>
-                        <Style TargetType="Image">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Style.Triggers>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="False"/>
-                                    <Condition Binding="{Binding IsCapstone}" Value="False"/>
-                                </MultiDataTrigger.Conditions>
-                                <Setter Property="Visibility" Value="Visible"/>
-                            </MultiDataTrigger>
-                        </Style.Triggers>
+                <Path Data="{StaticResource GeoLock}"
+                      Fill="{DynamicResource PlayAch.Brush.Glyph}"
+                      Stretch="Uniform"
+                      Width="18"
+                      Height="18"
+                      Opacity="0.65"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center">
+                    <Path.Style>
+                        <Style TargetType="Path">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding Unlocked}" Value="False"/>
+                                        <Condition Binding="{Binding IsCapstone}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
                         </Style>
-                    </Image.Style>
-                </Image>
+                    </Path.Style>
+                </Path>
             </Grid>
         </Viewbox>
     </DataTemplate>

@@ -247,7 +247,7 @@
                                             </Grid.ColumnDefinitions>
     
                                             <Image Grid.Column="0"
-                                                   Source="{DynamicResource BadgeCompletedGame}"
+                                                   Source="{DynamicResource BadgeRarityCompleted}"
                                                    Style="{StaticResource OverviewCompletedFooterIconStyle}"
                                                    ToolTip="{DynamicResource LOCPlayAch_Completed}"
                                                    Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>

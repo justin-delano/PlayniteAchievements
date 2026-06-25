@@ -126,7 +126,7 @@
                                         CellStyle="{StaticResource ManageAchievementsIconCellStyle}">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Image Source="{DynamicResource BadgeCompletedGame}"
+                            <Image Source="{DynamicResource BadgeRarityCompleted}"
                                    Style="{StaticResource RarityIcon}"
                                    Effect="{StaticResource BadgeShadow}"
                                    Width="18"
@@ -173,11 +173,15 @@
                                           VerticalAlignment="Center"
                                           Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}"/>
 
-                                    <Image Source="{StaticResource BadgeLocked}"
-                                           Opacity="0.65"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"
-                                           Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}"/>
+                                    <Path Data="{StaticResource GeoLock}"
+                                          Fill="{DynamicResource GlyphBrush}"
+                                          Stretch="Uniform"
+                                          Width="18"
+                                          Height="18"
+                                          Opacity="0.65"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"
+                                          Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}"/>
                                 </Grid>
                             </Viewbox>
                         </DataTemplate>

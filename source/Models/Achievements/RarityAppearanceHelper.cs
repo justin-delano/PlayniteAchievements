@@ -224,7 +224,13 @@ namespace PlayniteAchievements.Models.Achievements
             SetGeneratedBadge(resources, RarityTier.Rare, "BadgeGoldHexagon");
             SetGeneratedBadge(resources, RarityTier.UltraRare, "BadgePlatinumHexagon");
             ApplyCompletedGameBrushResource(resources, settings);
-            resources["BadgeCompletedGame"] = CreateCompletedBadgeImage(settings);
+            var completedBadge = CreateCompletedBadgeImage(settings);
+            resources["BadgeCompletedGame"] = completedBadge;
+            // Runtime-only alias with no static definition in RarityBadges.xaml, mirroring the
+            // BadgeRarity* aliases. Controls that merge the default RarityBadges dictionary would
+            // shadow "BadgeCompletedGame" with its static default; consuming this alias via
+            // DynamicResource instead resolves the user-customized image at the application scope.
+            resources["BadgeRarityCompleted"] = completedBadge;
             resources["TrophyBronze"] = CreateTrophyImage("TrophyBronze", settings);
             resources["TrophySilver"] = CreateTrophyImage("TrophySilver", settings);
             resources["TrophyGold"] = CreateTrophyImage("TrophyGold", settings);
