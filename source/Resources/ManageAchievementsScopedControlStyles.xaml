@@ -14,6 +14,7 @@
     <Style TargetType="ComboBoxItem" BasedOn="{StaticResource PlayAch.ComboBoxItem.BaseStyle}"/>
     <Style TargetType="ListBox" BasedOn="{StaticResource PlayAch.ListBox.BaseStyle}"/>
     <Style TargetType="ListBoxItem" BasedOn="{StaticResource PlayAch.ListBoxItem.BaseStyle}"/>
+    <Style TargetType="ScrollBar" BasedOn="{StaticResource PlayAch.ScrollBar.BaseStyle}"/>
     <Style TargetType="ProgressBar" BasedOn="{StaticResource PlayAch.ProgressBar.BaseStyle}"/>
 
 </ResourceDictionary>

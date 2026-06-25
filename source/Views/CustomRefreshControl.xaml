@@ -12,6 +12,8 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <Style TargetType="ScrollBar" BasedOn="{StaticResource PlayAch.ScrollBar.BaseStyle}"/>
         </ResourceDictionary>
     </UserControl.Resources>
     <Border Background="{DynamicResource PlayAch.Brush.Window.Background}" Padding="12">
