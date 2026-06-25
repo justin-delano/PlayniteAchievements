@@ -12,6 +12,14 @@ namespace PlayniteAchievements.Services
             return JoinDisplayNames(game?.Platforms?.Select(platform => platform?.Name));
         }
 
+        /// <summary>
+        /// Returns the game's platform names, deduplicated and trimmed, preserving order.
+        /// </summary>
+        public static IReadOnlyList<string> GetPlatformNames(Game game)
+        {
+            return DistinctDisplayNames(game?.Platforms?.Select(platform => platform?.Name));
+        }
+
         public static string GetRegionText(Game game)
         {
             return JoinDisplayNames(game?.Regions?.Select(region => region?.Name));
@@ -19,9 +27,15 @@ namespace PlayniteAchievements.Services
 
         public static string JoinDisplayNames(IEnumerable<string> names)
         {
+            var values = DistinctDisplayNames(names);
+            return values.Count > 0 ? string.Join(", ", values) : string.Empty;
+        }
+
+        private static IReadOnlyList<string> DistinctDisplayNames(IEnumerable<string> names)
+        {
             if (names == null)
             {
-                return string.Empty;
+                return Array.Empty<string>();
             }
 
             var values = new List<string>();
@@ -37,7 +51,7 @@ namespace PlayniteAchievements.Services
                 values.Add(normalized);
             }
 
-            return values.Count > 0 ? string.Join(", ", values) : string.Empty;
+            return values;
         }
 
         public static string FormatPlaytime(ulong playtimeSeconds)
