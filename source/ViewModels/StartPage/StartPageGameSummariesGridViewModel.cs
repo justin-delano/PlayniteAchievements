@@ -23,7 +23,11 @@ namespace PlayniteAchievements.ViewModels.StartPage
         private StartPageGameSummariesGridSettings WidgetSettings =>
             PersistedSettings?.StartPageGameSummariesGrid ?? new StartPageGameSummariesGridSettings();
 
-        public bool ShowGameMetadata => WidgetSettings.ShowGameMetadata;
+        public bool ShowMetadataPlatform => WidgetSettings.ShowMetadataPlatform;
+
+        public bool ShowMetadataPlaytime => WidgetSettings.ShowMetadataPlaytime;
+
+        public bool ShowMetadataRegion => WidgetSettings.ShowMetadataRegion;
 
         public bool UseCoverImages => WidgetSettings.UseCoverImages;
 
@@ -38,7 +42,9 @@ namespace PlayniteAchievements.ViewModels.StartPage
             Items.ReplaceAll(StartPageWidgetProjection.ProjectGameSummaries(
                 snapshot?.GameSummaries,
                 PersistedSettings));
-            OnPropertyChanged(nameof(ShowGameMetadata));
+            OnPropertyChanged(nameof(ShowMetadataPlatform));
+            OnPropertyChanged(nameof(ShowMetadataPlaytime));
+            OnPropertyChanged(nameof(ShowMetadataRegion));
             OnPropertyChanged(nameof(UseCoverImages));
             OnPropertyChanged(nameof(ShowCompletionBorder));
             OnPropertyChanged(nameof(ShowColumnHeaders));
@@ -48,9 +54,21 @@ namespace PlayniteAchievements.ViewModels.StartPage
         protected override void OnPersistedSettingsChanged(string propertyName)
         {
             if (string.IsNullOrEmpty(propertyName) ||
-                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.ShowGameMetadata)))
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.ShowMetadataPlatform)))
             {
-                OnPropertyChanged(nameof(ShowGameMetadata));
+                OnPropertyChanged(nameof(ShowMetadataPlatform));
+            }
+
+            if (string.IsNullOrEmpty(propertyName) ||
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.ShowMetadataPlaytime)))
+            {
+                OnPropertyChanged(nameof(ShowMetadataPlaytime));
+            }
+
+            if (string.IsNullOrEmpty(propertyName) ||
+                IsWidgetSettingsProperty(propertyName, nameof(StartPageGameSummariesGridSettings.ShowMetadataRegion)))
+            {
+                OnPropertyChanged(nameof(ShowMetadataRegion));
             }
 
             if (string.IsNullOrEmpty(propertyName) ||

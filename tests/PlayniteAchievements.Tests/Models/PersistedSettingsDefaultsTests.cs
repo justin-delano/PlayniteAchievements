@@ -529,7 +529,9 @@ namespace PlayniteAchievements.Models.Tests
                 ShowOverviewPrestigeScoreCard = false,
                 ShowOverviewPieCharts = false,
                 ShowOverviewBarCharts = false,
-                ShowOverviewGameMetadata = false,
+                ShowOverviewGameMetadataPlatform = false,
+                ShowOverviewGameMetadataPlaytime = false,
+                ShowOverviewGameMetadataRegion = false,
                 ShowTopMenuBarButton = false,
                 ShowCompactListRarityBar = false,
                 ShowCompletionBorder = false,
@@ -614,7 +616,9 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.ShowOverviewRarityPieChart, settings.ShowOverviewRarityPieChart);
             Assert.AreEqual(defaults.ShowOverviewTrophyPieChart, settings.ShowOverviewTrophyPieChart);
             Assert.AreEqual(defaults.ShowOverviewBarCharts, settings.ShowOverviewBarCharts);
-            Assert.AreEqual(defaults.ShowOverviewGameMetadata, settings.ShowOverviewGameMetadata);
+            Assert.AreEqual(defaults.ShowOverviewGameMetadataPlatform, settings.ShowOverviewGameMetadataPlatform);
+            Assert.AreEqual(defaults.ShowOverviewGameMetadataPlaytime, settings.ShowOverviewGameMetadataPlaytime);
+            Assert.AreEqual(defaults.ShowOverviewGameMetadataRegion, settings.ShowOverviewGameMetadataRegion);
             Assert.AreEqual(defaults.ShowTopMenuBarButton, settings.ShowTopMenuBarButton);
             Assert.AreEqual(defaults.ShowCompactListRarityBar, settings.ShowCompactListRarityBar);
             Assert.AreEqual(defaults.ShowCompletionBorder, settings.ShowCompletionBorder);

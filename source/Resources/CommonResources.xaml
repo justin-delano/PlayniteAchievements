@@ -26,6 +26,7 @@
     <converters:PercentToRarityBadgeConverter x:Key="PercentToRarityBadgeConverter"/>
     <converters:LockedIconSelectorConverter x:Key="LockedIconSelectorConverter"/>
     <converters:ImageFitDimensionConverter x:Key="ImageFitDimension"/>
+    <converters:GameMetadataTextConverter x:Key="GameMetadataText"/>
     <converters:DataGridCompletedBorderThicknessConverter x:Key="OverviewCompletedBorderThickness"/>
     <converters:LocalDateTimeConverter x:Key="LocalDateTimeConverter"/>
     <converters:HeightToFontSizeConverter x:Key="HeightToFontSizeConverter"/>

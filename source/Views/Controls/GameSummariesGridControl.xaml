@@ -131,10 +131,29 @@
                                     <TextBlock Text="{Binding GameName}"
                                                HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                                Style="{StaticResource GameSummaryNameTextStyle}"/>
-                                    <TextBlock Text="{Binding SecondaryMetadataText}"
-                                               HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
-                                               Style="{StaticResource OverviewGameMetadataTextStyle}"
-                                               Visibility="{Binding ShowGameMetadata, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}, Converter={StaticResource BoolToVis}}"/>
+                                    <TextBlock HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                               Style="{StaticResource OverviewGameMetadataTextStyle}">
+                                        <TextBlock.Text>
+                                            <MultiBinding Converter="{StaticResource GameMetadataText}">
+                                                <Binding Path="PlatformText"/>
+                                                <Binding Path="PlaytimeText"/>
+                                                <Binding Path="RegionText"/>
+                                                <Binding Path="ShowMetadataPlatform" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                                <Binding Path="ShowMetadataPlaytime" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                                <Binding Path="ShowMetadataRegion" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                        <TextBlock.Visibility>
+                                            <MultiBinding Converter="{StaticResource GameMetadataText}">
+                                                <Binding Path="PlatformText"/>
+                                                <Binding Path="PlaytimeText"/>
+                                                <Binding Path="RegionText"/>
+                                                <Binding Path="ShowMetadataPlatform" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                                <Binding Path="ShowMetadataPlaytime" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                                <Binding Path="ShowMetadataRegion" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                            </MultiBinding>
+                                        </TextBlock.Visibility>
+                                    </TextBlock>
                                 </StackPanel>
                             </Grid>
                         </ContentControl>

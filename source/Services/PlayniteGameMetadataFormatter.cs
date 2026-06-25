@@ -61,18 +61,35 @@ namespace PlayniteAchievements.Services
             string playtimeText,
             string regionText)
         {
+            return BuildOverviewMetadataText(
+                platformText,
+                playtimeText,
+                regionText,
+                showPlatform: true,
+                showPlaytime: true,
+                showRegion: true);
+        }
+
+        public static string BuildOverviewMetadataText(
+            string platformText,
+            string playtimeText,
+            string regionText,
+            bool showPlatform,
+            bool showPlaytime,
+            bool showRegion)
+        {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(platformText))
+            if (showPlatform && !string.IsNullOrWhiteSpace(platformText))
             {
                 parts.Add(platformText.Trim());
             }
 
-            if (!string.IsNullOrWhiteSpace(playtimeText))
+            if (showPlaytime && !string.IsNullOrWhiteSpace(playtimeText))
             {
                 parts.Add(playtimeText.Trim());
             }
 
-            if (!string.IsNullOrWhiteSpace(regionText))
+            if (showRegion && !string.IsNullOrWhiteSpace(regionText))
             {
                 parts.Add(regionText.Trim());
             }

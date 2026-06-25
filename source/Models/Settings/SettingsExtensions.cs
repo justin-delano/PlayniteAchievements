@@ -92,7 +92,9 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowOverviewPiePercentages = source.ShowOverviewPiePercentages;
             target.OverviewPieSmallSliceMode = source.OverviewPieSmallSliceMode;
             target.ShowOverviewBarCharts = source.ShowOverviewBarCharts;
-            target.ShowOverviewGameMetadata = source.ShowOverviewGameMetadata;
+            target.ShowOverviewGameMetadataPlatform = source.ShowOverviewGameMetadataPlatform;
+            target.ShowOverviewGameMetadataPlaytime = source.ShowOverviewGameMetadataPlaytime;
+            target.ShowOverviewGameMetadataRegion = source.ShowOverviewGameMetadataRegion;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
             target.ShowCompletionBorder = source.ShowCompletionBorder;

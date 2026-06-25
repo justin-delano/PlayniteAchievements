@@ -154,17 +154,43 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(FixedRowHeightProperty, value);
         }
 
-        public static readonly DependencyProperty ShowGameMetadataProperty =
+        public static readonly DependencyProperty ShowMetadataPlatformProperty =
             DependencyProperty.Register(
-                nameof(ShowGameMetadata),
+                nameof(ShowMetadataPlatform),
                 typeof(bool),
                 typeof(GameSummariesGridControl),
                 new PropertyMetadata(true));
 
-        public bool ShowGameMetadata
+        public bool ShowMetadataPlatform
         {
-            get => (bool)GetValue(ShowGameMetadataProperty);
-            set => SetValue(ShowGameMetadataProperty, value);
+            get => (bool)GetValue(ShowMetadataPlatformProperty);
+            set => SetValue(ShowMetadataPlatformProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowMetadataPlaytimeProperty =
+            DependencyProperty.Register(
+                nameof(ShowMetadataPlaytime),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowMetadataPlaytime
+        {
+            get => (bool)GetValue(ShowMetadataPlaytimeProperty);
+            set => SetValue(ShowMetadataPlaytimeProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowMetadataRegionProperty =
+            DependencyProperty.Register(
+                nameof(ShowMetadataRegion),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowMetadataRegion
+        {
+            get => (bool)GetValue(ShowMetadataRegionProperty);
+            set => SetValue(ShowMetadataRegionProperty, value);
         }
 
         public static readonly DependencyProperty ShowCompletionBorderProperty =

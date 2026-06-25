@@ -23,26 +23,14 @@ namespace PlayniteAchievements.ViewModels
         public string PlatformText
         {
             get => _platformText;
-            set
-            {
-                if (SetValueAndReturn(ref _platformText, value))
-                {
-                    OnPropertyChanged(nameof(SecondaryMetadataText));
-                }
-            }
+            set => SetValue(ref _platformText, value);
         }
 
         private string _regionText;
         public string RegionText
         {
             get => _regionText;
-            set
-            {
-                if (SetValueAndReturn(ref _regionText, value))
-                {
-                    OnPropertyChanged(nameof(SecondaryMetadataText));
-                }
-            }
+            set => SetValue(ref _regionText, value);
         }
 
         private ulong _playtimeSeconds;
@@ -54,7 +42,6 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _playtimeSeconds, value))
                 {
                     OnPropertyChanged(nameof(PlaytimeText));
-                    OnPropertyChanged(nameof(SecondaryMetadataText));
                 }
             }
         }
@@ -243,11 +230,6 @@ namespace PlayniteAchievements.ViewModels
         public string PrestigeScoreFractionText => FormatScoreFraction(PrestigeScore, PrestigeScoreTotal);
 
         public string PlaytimeText => PlayniteGameMetadataFormatter.FormatPlaytime(PlaytimeSeconds);
-
-        public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildOverviewMetadataText(
-            PlatformText,
-            PlaytimeText,
-            RegionText);
 
         public string LastPlayedText => LastPlayed.HasValue
             ? LastPlayed.Value.ToLocalTime().ToString("g")

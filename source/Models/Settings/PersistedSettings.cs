@@ -49,6 +49,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
         private int _recentRefreshGamesCount = 10;
+        private RefreshModeType _defaultOverviewRefreshMode = RefreshModeType.Installed;
         private bool _enableAchievementHotkeys = true;
         private bool _enableGlobalAchievementHotkeys = false;
         private string _viewAchievementsHotkey = DefaultViewAchievementsHotkey;
@@ -84,7 +85,9 @@ namespace PlayniteAchievements.Models.Settings
         private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
         private bool _overviewPieChartVisibilityInitializedFromIndividualSettings;
         private bool _showOverviewBarCharts = true;
-        private bool _showOverviewGameMetadata = true;
+        private bool _showOverviewGameMetadataPlatform = true;
+        private bool _showOverviewGameMetadataPlaytime = true;
+        private bool _showOverviewGameMetadataRegion = true;
         private bool _showTopMenuBarButton = true;
         private bool _showCompactListRarityBar = true;
         private bool _showCompletionBorder = true;
@@ -163,7 +166,9 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, GridVerticalAlignment> _overviewGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _overviewGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private bool _viewAchievementsGameSummariesUseCoverImages = false;
-        private bool _viewAchievementsGameSummariesShowGameMetadata = true;
+        private bool _viewAchievementsGameSummariesShowMetadataPlatform = true;
+        private bool _viewAchievementsGameSummariesShowMetadataPlaytime = true;
+        private bool _viewAchievementsGameSummariesShowMetadataRegion = true;
         private bool _viewAchievementsGameSummariesShowCompletionBorder = true;
         private bool _showViewAchievementsGameSummariesGridColumnHeaders = true;
         private double? _viewAchievementsGameSummariesGridRowHeight;
@@ -286,6 +291,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _recentRefreshGamesCount;
             set => SetValue(ref _recentRefreshGamesCount, Math.Max(1, value));
+        }
+
+        /// <summary>
+        /// Refresh mode the Overview view's refresh dropdown defaults to on open.
+        /// </summary>
+        public RefreshModeType DefaultOverviewRefreshMode
+        {
+            get => _defaultOverviewRefreshMode;
+            set => SetValue(ref _defaultOverviewRefreshMode, value);
         }
 
         /// <summary>
@@ -704,12 +718,30 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, shows platform/playtime/region metadata under game names in the overview game summaries.
+        /// When true, shows the platform in the metadata line under game names in the overview game summaries.
         /// </summary>
-        public bool ShowOverviewGameMetadata
+        public bool ShowOverviewGameMetadataPlatform
         {
-            get => _showOverviewGameMetadata;
-            set => SetValue(ref _showOverviewGameMetadata, value);
+            get => _showOverviewGameMetadataPlatform;
+            set => SetValue(ref _showOverviewGameMetadataPlatform, value);
+        }
+
+        /// <summary>
+        /// When true, shows the playtime in the metadata line under game names in the overview game summaries.
+        /// </summary>
+        public bool ShowOverviewGameMetadataPlaytime
+        {
+            get => _showOverviewGameMetadataPlaytime;
+            set => SetValue(ref _showOverviewGameMetadataPlaytime, value);
+        }
+
+        /// <summary>
+        /// When true, shows the region in the metadata line under game names in the overview game summaries.
+        /// </summary>
+        public bool ShowOverviewGameMetadataRegion
+        {
+            get => _showOverviewGameMetadataRegion;
+            set => SetValue(ref _showOverviewGameMetadataRegion, value);
         }
 
         /// <summary>
@@ -1737,12 +1769,30 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, shows platform/playtime/region metadata under the game name in the View Achievements summary grid.
+        /// When true, shows the platform in the metadata line under the game name in the View Achievements summary grid.
         /// </summary>
-        public bool ViewAchievementsGameSummariesShowGameMetadata
+        public bool ViewAchievementsGameSummariesShowMetadataPlatform
         {
-            get => _viewAchievementsGameSummariesShowGameMetadata;
-            set => SetValue(ref _viewAchievementsGameSummariesShowGameMetadata, value);
+            get => _viewAchievementsGameSummariesShowMetadataPlatform;
+            set => SetValue(ref _viewAchievementsGameSummariesShowMetadataPlatform, value);
+        }
+
+        /// <summary>
+        /// When true, shows the playtime in the metadata line under the game name in the View Achievements summary grid.
+        /// </summary>
+        public bool ViewAchievementsGameSummariesShowMetadataPlaytime
+        {
+            get => _viewAchievementsGameSummariesShowMetadataPlaytime;
+            set => SetValue(ref _viewAchievementsGameSummariesShowMetadataPlaytime, value);
+        }
+
+        /// <summary>
+        /// When true, shows the region in the metadata line under the game name in the View Achievements summary grid.
+        /// </summary>
+        public bool ViewAchievementsGameSummariesShowMetadataRegion
+        {
+            get => _viewAchievementsGameSummariesShowMetadataRegion;
+            set => SetValue(ref _viewAchievementsGameSummariesShowMetadataRegion, value);
         }
 
         /// <summary>
@@ -2406,13 +2456,17 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewPiePercentages = this.ShowOverviewPiePercentages,
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 ShowOverviewBarCharts = this.ShowOverviewBarCharts,
-                ShowOverviewGameMetadata = this.ShowOverviewGameMetadata,
+                ShowOverviewGameMetadataPlatform = this.ShowOverviewGameMetadataPlatform,
+                ShowOverviewGameMetadataPlaytime = this.ShowOverviewGameMetadataPlaytime,
+                ShowOverviewGameMetadataRegion = this.ShowOverviewGameMetadataRegion,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ShowCompletionBorder = this.ShowCompletionBorder,
                 ShowOverviewGameSummariesGridColumnHeaders = this.ShowOverviewGameSummariesGridColumnHeaders,
                 ViewAchievementsGameSummariesUseCoverImages = this.ViewAchievementsGameSummariesUseCoverImages,
-                ViewAchievementsGameSummariesShowGameMetadata = this.ViewAchievementsGameSummariesShowGameMetadata,
+                ViewAchievementsGameSummariesShowMetadataPlatform = this.ViewAchievementsGameSummariesShowMetadataPlatform,
+                ViewAchievementsGameSummariesShowMetadataPlaytime = this.ViewAchievementsGameSummariesShowMetadataPlaytime,
+                ViewAchievementsGameSummariesShowMetadataRegion = this.ViewAchievementsGameSummariesShowMetadataRegion,
                 ViewAchievementsGameSummariesShowCompletionBorder = this.ViewAchievementsGameSummariesShowCompletionBorder,
                 ShowViewAchievementsGameSummariesGridColumnHeaders = this.ShowViewAchievementsGameSummariesGridColumnHeaders,
                 ShowOverviewRecentAchievementsGridColumnHeaders = this.ShowOverviewRecentAchievementsGridColumnHeaders,
@@ -2733,14 +2787,18 @@ namespace PlayniteAchievements.Models.Settings
             ShowOverviewPiePercentages = defaults.ShowOverviewPiePercentages;
             OverviewPieSmallSliceMode = defaults.OverviewPieSmallSliceMode;
             ShowOverviewBarCharts = defaults.ShowOverviewBarCharts;
-            ShowOverviewGameMetadata = defaults.ShowOverviewGameMetadata;
+            ShowOverviewGameMetadataPlatform = defaults.ShowOverviewGameMetadataPlatform;
+            ShowOverviewGameMetadataPlaytime = defaults.ShowOverviewGameMetadataPlaytime;
+            ShowOverviewGameMetadataRegion = defaults.ShowOverviewGameMetadataRegion;
             ShowTopMenuBarButton = defaults.ShowTopMenuBarButton;
             ShowCompactListRarityBar = defaults.ShowCompactListRarityBar;
             ShowCompletionBorder = defaults.ShowCompletionBorder;
 
             ShowOverviewGameSummariesGridColumnHeaders = defaults.ShowOverviewGameSummariesGridColumnHeaders;
             ViewAchievementsGameSummariesUseCoverImages = defaults.ViewAchievementsGameSummariesUseCoverImages;
-            ViewAchievementsGameSummariesShowGameMetadata = defaults.ViewAchievementsGameSummariesShowGameMetadata;
+            ViewAchievementsGameSummariesShowMetadataPlatform = defaults.ViewAchievementsGameSummariesShowMetadataPlatform;
+            ViewAchievementsGameSummariesShowMetadataPlaytime = defaults.ViewAchievementsGameSummariesShowMetadataPlaytime;
+            ViewAchievementsGameSummariesShowMetadataRegion = defaults.ViewAchievementsGameSummariesShowMetadataRegion;
             ViewAchievementsGameSummariesShowCompletionBorder = defaults.ViewAchievementsGameSummariesShowCompletionBorder;
             ShowViewAchievementsGameSummariesGridColumnHeaders = defaults.ShowViewAchievementsGameSummariesGridColumnHeaders;
             ShowOverviewRecentAchievementsGridColumnHeaders = defaults.ShowOverviewRecentAchievementsGridColumnHeaders;

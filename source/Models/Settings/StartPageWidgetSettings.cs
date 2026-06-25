@@ -4,7 +4,9 @@ namespace PlayniteAchievements.Models.Settings
 {
     public sealed class StartPageGameSummariesGridSettings : ObservableObject
     {
-        private bool _showGameMetadata = true;
+        private bool _showMetadataPlatform = true;
+        private bool _showMetadataPlaytime = true;
+        private bool _showMetadataRegion = true;
         private bool _useCoverImages = true;
         private bool _showCompletionBorder = true;
         private bool _showColumnHeaders = true;
@@ -13,10 +15,22 @@ namespace PlayniteAchievements.Models.Settings
         private GameSummariesSortMode _sortMode = GameSummariesSortMode.RecentUnlock;
         private bool _sortDescending = true;
 
-        public bool ShowGameMetadata
+        public bool ShowMetadataPlatform
         {
-            get => _showGameMetadata;
-            set => SetValue(ref _showGameMetadata, value);
+            get => _showMetadataPlatform;
+            set => SetValue(ref _showMetadataPlatform, value);
+        }
+
+        public bool ShowMetadataPlaytime
+        {
+            get => _showMetadataPlaytime;
+            set => SetValue(ref _showMetadataPlaytime, value);
+        }
+
+        public bool ShowMetadataRegion
+        {
+            get => _showMetadataRegion;
+            set => SetValue(ref _showMetadataRegion, value);
         }
 
         public bool UseCoverImages
@@ -65,7 +79,9 @@ namespace PlayniteAchievements.Models.Settings
         {
             return new StartPageGameSummariesGridSettings
             {
-                ShowGameMetadata = ShowGameMetadata,
+                ShowMetadataPlatform = ShowMetadataPlatform,
+                ShowMetadataPlaytime = ShowMetadataPlaytime,
+                ShowMetadataRegion = ShowMetadataRegion,
                 UseCoverImages = UseCoverImages,
                 ShowCompletionBorder = ShowCompletionBorder,
                 ShowColumnHeaders = ShowColumnHeaders,

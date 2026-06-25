@@ -119,6 +119,25 @@ namespace PlayniteAchievements.Models.Settings
                     changed |= MoveProperty(persisted, rename.OldName, rename.NewName);
                 }
 
+                changed |= FanOutGameMetadataToggle(
+                    persisted,
+                    "ShowOverviewGameMetadata",
+                    "ShowOverviewGameMetadataPlatform",
+                    "ShowOverviewGameMetadataPlaytime",
+                    "ShowOverviewGameMetadataRegion");
+                changed |= FanOutGameMetadataToggle(
+                    persisted,
+                    "ViewAchievementsGameSummariesShowGameMetadata",
+                    "ViewAchievementsGameSummariesShowMetadataPlatform",
+                    "ViewAchievementsGameSummariesShowMetadataPlaytime",
+                    "ViewAchievementsGameSummariesShowMetadataRegion");
+                changed |= FanOutGameMetadataToggle(
+                    persisted["StartPageGameSummariesGrid"] as JObject,
+                    "ShowGameMetadata",
+                    "ShowMetadataPlatform",
+                    "ShowMetadataPlaytime",
+                    "ShowMetadataRegion");
+
                 changed |= CopyLegacyAchievementGridHeaderVisibility(persisted);
 
                 foreach (var dictionaryName in GameSummaryColumnDictionaries)
@@ -136,6 +155,36 @@ namespace PlayniteAchievements.Models.Settings
             {
                 return json;
             }
+        }
+
+        /// <summary>
+        /// Splits a single combined game-metadata visibility toggle into the three per-field
+        /// toggles (platform/playtime/region), copying the old value into each new key when absent
+        /// so an existing on/off choice is preserved, then removing the old key.
+        /// </summary>
+        private static bool FanOutGameMetadataToggle(
+            JObject obj,
+            string oldName,
+            string platformName,
+            string playtimeName,
+            string regionName)
+        {
+            if (obj == null || obj[oldName] == null)
+            {
+                return false;
+            }
+
+            var value = obj[oldName];
+            foreach (var targetName in new[] { platformName, playtimeName, regionName })
+            {
+                if (obj[targetName] == null)
+                {
+                    obj[targetName] = value.DeepClone();
+                }
+            }
+
+            obj.Remove(oldName);
+            return true;
         }
 
         private static bool MoveProperty(JObject obj, string oldName, string newName)

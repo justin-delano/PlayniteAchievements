@@ -13,7 +13,9 @@ namespace PlayniteAchievements.Tests.Models
             var settings = new PersistedSettings();
 
             Assert.IsFalse(settings.ViewAchievementsGameSummariesUseCoverImages);
-            Assert.IsTrue(settings.ViewAchievementsGameSummariesShowGameMetadata);
+            Assert.IsTrue(settings.ViewAchievementsGameSummariesShowMetadataPlatform);
+            Assert.IsTrue(settings.ViewAchievementsGameSummariesShowMetadataPlaytime);
+            Assert.IsTrue(settings.ViewAchievementsGameSummariesShowMetadataRegion);
             Assert.IsTrue(settings.ViewAchievementsGameSummariesShowCompletionBorder);
             Assert.IsTrue(settings.ShowViewAchievementsGameSummariesGridColumnHeaders);
             Assert.IsNull(settings.ViewAchievementsGameSummariesGridRowHeight);
@@ -40,7 +42,9 @@ namespace PlayniteAchievements.Tests.Models
             var settings = new PersistedSettings
             {
                 ViewAchievementsGameSummariesUseCoverImages = true,
-                ViewAchievementsGameSummariesShowGameMetadata = false,
+                ViewAchievementsGameSummariesShowMetadataPlatform = false,
+                ViewAchievementsGameSummariesShowMetadataPlaytime = false,
+                ViewAchievementsGameSummariesShowMetadataRegion = false,
                 ViewAchievementsGameSummariesGridRowHeight = 48,
                 ViewAchievementsGameSummariesColumnWidths =
                     new Dictionary<string, double> { ["Cover"] = 120 }
@@ -49,7 +53,9 @@ namespace PlayniteAchievements.Tests.Models
             var clone = settings.Clone();
 
             Assert.IsTrue(clone.ViewAchievementsGameSummariesUseCoverImages);
-            Assert.IsFalse(clone.ViewAchievementsGameSummariesShowGameMetadata);
+            Assert.IsFalse(clone.ViewAchievementsGameSummariesShowMetadataPlatform);
+            Assert.IsFalse(clone.ViewAchievementsGameSummariesShowMetadataPlaytime);
+            Assert.IsFalse(clone.ViewAchievementsGameSummariesShowMetadataRegion);
             Assert.AreEqual(48, clone.ViewAchievementsGameSummariesGridRowHeight);
             Assert.AreEqual(120, clone.ViewAchievementsGameSummariesColumnWidths["Cover"]);
 

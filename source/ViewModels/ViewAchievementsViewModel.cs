@@ -278,7 +278,11 @@ namespace PlayniteAchievements.ViewModels
 
         public bool SummaryUseCoverImages => _settings?.Persisted?.ViewAchievementsGameSummariesUseCoverImages ?? false;
 
-        public bool SummaryShowGameMetadata => _settings?.Persisted?.ViewAchievementsGameSummariesShowGameMetadata ?? true;
+        public bool SummaryShowMetadataPlatform => _settings?.Persisted?.ViewAchievementsGameSummariesShowMetadataPlatform ?? true;
+
+        public bool SummaryShowMetadataPlaytime => _settings?.Persisted?.ViewAchievementsGameSummariesShowMetadataPlaytime ?? true;
+
+        public bool SummaryShowMetadataRegion => _settings?.Persisted?.ViewAchievementsGameSummariesShowMetadataRegion ?? true;
 
         public bool SummaryShowCompletionBorder => _settings?.Persisted?.ViewAchievementsGameSummariesShowCompletionBorder ?? true;
 
@@ -792,7 +796,9 @@ namespace PlayniteAchievements.ViewModels
         private void RaiseSummaryAppearanceProperties()
         {
             OnPropertyChanged(nameof(SummaryUseCoverImages));
-            OnPropertyChanged(nameof(SummaryShowGameMetadata));
+            OnPropertyChanged(nameof(SummaryShowMetadataPlatform));
+            OnPropertyChanged(nameof(SummaryShowMetadataPlaytime));
+            OnPropertyChanged(nameof(SummaryShowMetadataRegion));
             OnPropertyChanged(nameof(SummaryShowCompletionBorder));
             OnPropertyChanged(nameof(SummaryShowColumnHeaders));
             OnPropertyChanged(nameof(SummaryGridRowHeight));
@@ -968,7 +974,9 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesUseCoverImages) ||
-                e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesShowGameMetadata) ||
+                e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesShowMetadataPlatform) ||
+                e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesShowMetadataPlaytime) ||
+                e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesShowMetadataRegion) ||
                 e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesShowCompletionBorder) ||
                 e?.PropertyName == nameof(PersistedSettings.ShowViewAchievementsGameSummariesGridColumnHeaders) ||
                 e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesGridRowHeight))

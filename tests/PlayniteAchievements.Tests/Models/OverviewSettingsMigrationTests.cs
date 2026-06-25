@@ -38,7 +38,10 @@ namespace PlayniteAchievements.Models.Tests
             var persisted = (JObject)migrated["Persisted"];
 
             Assert.AreEqual(false, persisted["ShowOverviewCollectionScoreCard"].Value<bool>());
-            Assert.AreEqual(false, persisted["ShowOverviewGameMetadata"].Value<bool>());
+            Assert.IsNull(persisted["ShowOverviewGameMetadata"]);
+            Assert.AreEqual(false, persisted["ShowOverviewGameMetadataPlatform"].Value<bool>());
+            Assert.AreEqual(false, persisted["ShowOverviewGameMetadataPlaytime"].Value<bool>());
+            Assert.AreEqual(false, persisted["ShowOverviewGameMetadataRegion"].Value<bool>());
             Assert.AreEqual("Hide", persisted["OverviewPieSmallSliceMode"].Value<string>());
             Assert.AreEqual("Alphabetical", persisted["OverviewGameSummariesGridSortMode"].Value<string>());
             Assert.AreEqual(false, persisted["OverviewGameSummariesGridSortDescending"].Value<bool>());
@@ -114,7 +117,10 @@ namespace PlayniteAchievements.Models.Tests
             var persisted = (JObject)migrated["Persisted"];
             var order = (JObject)persisted["OverviewGameSummariesColumnOrder"];
 
-            Assert.AreEqual(true, persisted["ShowOverviewGameMetadata"].Value<bool>());
+            Assert.IsNull(persisted["ShowOverviewGameMetadata"]);
+            Assert.AreEqual(true, persisted["ShowOverviewGameMetadataPlatform"].Value<bool>());
+            Assert.AreEqual(true, persisted["ShowOverviewGameMetadataPlaytime"].Value<bool>());
+            Assert.AreEqual(true, persisted["ShowOverviewGameMetadataRegion"].Value<bool>());
             Assert.AreEqual(1, order["GameSummaryName"].Value<int>());
             Assert.IsNull(persisted["ShowSidebarGameMetadata"]);
             Assert.IsNull(persisted["GamesOverviewColumnOrder"]);
@@ -214,6 +220,40 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsNull(selectedVisibility["Title"]);
             Assert.IsFalse(singleGameVisibility["Points"].Value<bool>());
             Assert.IsNull(singleGameVisibility["Title"]);
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_FansOutGameMetadataTogglesAcrossSurfaces()
+        {
+            const string json =
+                @"{
+                    ""Persisted"": {
+                        ""ShowOverviewGameMetadata"": false,
+                        ""ViewAchievementsGameSummariesShowGameMetadata"": true,
+                        ""StartPageGameSummariesGrid"": {
+                            ""ShowGameMetadata"": false
+                        }
+                    }
+                }";
+
+            var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
+            var persisted = (JObject)migrated["Persisted"];
+            var startPage = (JObject)persisted["StartPageGameSummariesGrid"];
+
+            Assert.IsNull(persisted["ShowOverviewGameMetadata"]);
+            Assert.AreEqual(false, persisted["ShowOverviewGameMetadataPlatform"].Value<bool>());
+            Assert.AreEqual(false, persisted["ShowOverviewGameMetadataPlaytime"].Value<bool>());
+            Assert.AreEqual(false, persisted["ShowOverviewGameMetadataRegion"].Value<bool>());
+
+            Assert.IsNull(persisted["ViewAchievementsGameSummariesShowGameMetadata"]);
+            Assert.AreEqual(true, persisted["ViewAchievementsGameSummariesShowMetadataPlatform"].Value<bool>());
+            Assert.AreEqual(true, persisted["ViewAchievementsGameSummariesShowMetadataPlaytime"].Value<bool>());
+            Assert.AreEqual(true, persisted["ViewAchievementsGameSummariesShowMetadataRegion"].Value<bool>());
+
+            Assert.IsNull(startPage["ShowGameMetadata"]);
+            Assert.AreEqual(false, startPage["ShowMetadataPlatform"].Value<bool>());
+            Assert.AreEqual(false, startPage["ShowMetadataPlaytime"].Value<bool>());
+            Assert.AreEqual(false, startPage["ShowMetadataRegion"].Value<bool>());
         }
     }
 }

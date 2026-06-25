@@ -156,6 +156,13 @@ namespace PlayniteAchievements.ViewModels
             RefreshModes = new ObservableCollection<RefreshMode>(
                 _refreshService.GetRefreshModes().Where(m => m.Type != RefreshModeType.LibrarySelected));
 
+            // Seed the dropdown from the user's configured default, if it's a valid overview mode.
+            var configuredDefault = _settings?.Persisted?.DefaultOverviewRefreshMode ?? RefreshModeType.Installed;
+            if (RefreshModes.Any(m => m.Type == configuredDefault))
+            {
+                _selectedRefreshMode = configuredDefault.GetKey();
+            }
+
             GlobalTimeline = new TimelineViewModel();
             SelectedGameTimeline = new TimelineViewModel();
             InitializeTimelineRangePersistence();
@@ -909,7 +916,11 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewBarCharts => _settings?.Persisted?.ShowOverviewBarCharts ?? true;
 
-        public bool ShowOverviewGameMetadata => _settings?.Persisted?.ShowOverviewGameMetadata ?? true;
+        public bool ShowOverviewGameMetadataPlatform => _settings?.Persisted?.ShowOverviewGameMetadataPlatform ?? true;
+
+        public bool ShowOverviewGameMetadataPlaytime => _settings?.Persisted?.ShowOverviewGameMetadataPlaytime ?? true;
+
+        public bool ShowOverviewGameMetadataRegion => _settings?.Persisted?.ShowOverviewGameMetadataRegion ?? true;
 
         public bool ShowCompletionBorder => _settings?.Persisted?.ShowCompletionBorder ?? true;
 
@@ -2191,7 +2202,9 @@ namespace PlayniteAchievements.ViewModels
                 RaiseOverviewPieChartVisibilityChanged();
                 OnPropertyChanged(nameof(ShowOverviewPiePercentages));
                 OnPropertyChanged(nameof(ShowOverviewBarCharts));
-                OnPropertyChanged(nameof(ShowOverviewGameMetadata));
+                OnPropertyChanged(nameof(ShowOverviewGameMetadataPlatform));
+                OnPropertyChanged(nameof(ShowOverviewGameMetadataPlaytime));
+                OnPropertyChanged(nameof(ShowOverviewGameMetadataRegion));
                 OnPropertyChanged(nameof(ShowCompletionBorder));
                 OnPropertyChanged(nameof(ShowOverviewGameSummariesGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridColumnHeaders));
@@ -2249,9 +2262,17 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(ShowOverviewBarCharts));
             }
-            else if (propertyName == nameof(PersistedSettings.ShowOverviewGameMetadata))
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewGameMetadataPlatform))
             {
-                OnPropertyChanged(nameof(ShowOverviewGameMetadata));
+                OnPropertyChanged(nameof(ShowOverviewGameMetadataPlatform));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewGameMetadataPlaytime))
+            {
+                OnPropertyChanged(nameof(ShowOverviewGameMetadataPlaytime));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewGameMetadataRegion))
+            {
+                OnPropertyChanged(nameof(ShowOverviewGameMetadataRegion));
             }
             else if (propertyName == nameof(PersistedSettings.ShowCompletionBorder))
             {

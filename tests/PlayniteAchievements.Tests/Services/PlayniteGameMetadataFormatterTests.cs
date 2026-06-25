@@ -82,5 +82,41 @@ namespace PlayniteAchievements.Services.Tests
                 "4h • Japan",
                 PlayniteGameMetadataFormatter.BuildOverviewMetadataText(string.Empty, "4h", "Japan"));
         }
+
+        [TestMethod]
+        public void BuildOverviewMetadataText_WithFlags_IncludesOnlyEnabledSegments()
+        {
+            Assert.AreEqual(
+                "PlayStation 3 • Japan",
+                PlayniteGameMetadataFormatter.BuildOverviewMetadataText(
+                    "PlayStation 3", "125h28m", "Japan",
+                    showPlatform: true, showPlaytime: false, showRegion: true));
+
+            Assert.AreEqual(
+                "125h28m",
+                PlayniteGameMetadataFormatter.BuildOverviewMetadataText(
+                    "PlayStation 3", "125h28m", "Japan",
+                    showPlatform: false, showPlaytime: true, showRegion: false));
+        }
+
+        [TestMethod]
+        public void BuildOverviewMetadataText_WithAllFlagsDisabled_ReturnsEmpty()
+        {
+            Assert.AreEqual(
+                string.Empty,
+                PlayniteGameMetadataFormatter.BuildOverviewMetadataText(
+                    "PlayStation 3", "125h28m", "Japan",
+                    showPlatform: false, showPlaytime: false, showRegion: false));
+        }
+
+        [TestMethod]
+        public void BuildOverviewMetadataText_WithFlagEnabledButSegmentEmpty_OmitsSegment()
+        {
+            Assert.AreEqual(
+                "PlayStation 3",
+                PlayniteGameMetadataFormatter.BuildOverviewMetadataText(
+                    "PlayStation 3", string.Empty, string.Empty,
+                    showPlatform: true, showPlaytime: true, showRegion: true));
+        }
     }
 }
