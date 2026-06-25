@@ -234,55 +234,6 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _gameName, value);
         }
 
-        private string _gameIconPath;
-        public string GameIconPath
-        {
-            get => _gameIconPath;
-            private set => SetValue(ref _gameIconPath, value);
-        }
-
-        private string _platformText;
-        public string PlatformText
-        {
-            get => _platformText;
-            private set
-            {
-                if (SetValueAndReturn(ref _platformText, value))
-                {
-                    OnPropertyChanged(nameof(SecondaryMetadataText));
-                    OnPropertyChanged(nameof(HasSecondaryMetadataText));
-                }
-            }
-        }
-
-        private string _regionText;
-        public string RegionText
-        {
-            get => _regionText;
-            private set
-            {
-                if (SetValueAndReturn(ref _regionText, value))
-                {
-                    OnPropertyChanged(nameof(SecondaryMetadataText));
-                    OnPropertyChanged(nameof(HasSecondaryMetadataText));
-                }
-            }
-        }
-
-        private string _playtimeText;
-        public string PlaytimeText
-        {
-            get => _playtimeText;
-            private set
-            {
-                if (SetValueAndReturn(ref _playtimeText, value))
-                {
-                    OnPropertyChanged(nameof(SecondaryMetadataText));
-                    OnPropertyChanged(nameof(HasSecondaryMetadataText));
-                }
-            }
-        }
-
         private int _totalAchievements;
         public int TotalAchievements
         {
@@ -295,88 +246,6 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
         }
-
-        private int _unlockedAchievements;
-        public int UnlockedAchievements
-        {
-            get => _unlockedAchievements;
-            private set => SetValue(ref _unlockedAchievements, value);
-        }
-
-        public string HeaderText => $"({UnlockedAchievements}/{TotalAchievements})";
-
-        private bool _isCompleted;
-        public bool IsCompleted
-        {
-            get => _isCompleted;
-            private set => SetValue(ref _isCompleted, value);
-        }
-
-        private int _commonCount;
-        public int CommonCount
-        {
-            get => _commonCount;
-            private set => SetValue(ref _commonCount, value);
-        }
-
-        private int _uncommonCount;
-        public int UncommonCount
-        {
-            get => _uncommonCount;
-            private set => SetValue(ref _uncommonCount, value);
-        }
-
-        private int _rareCount;
-        public int RareCount
-        {
-            get => _rareCount;
-            private set => SetValue(ref _rareCount, value);
-        }
-
-        private int _ultraRareCount;
-        public int UltraRareCount
-        {
-            get => _ultraRareCount;
-            private set => SetValue(ref _ultraRareCount, value);
-        }
-
-        // Trophy counts for PlayStation games
-        private int _trophyPlatinumCount;
-        public int TrophyPlatinumCount
-        {
-            get => _trophyPlatinumCount;
-            private set => SetValue(ref _trophyPlatinumCount, value);
-        }
-
-        private int _trophyGoldCount;
-        public int TrophyGoldCount
-        {
-            get => _trophyGoldCount;
-            private set => SetValue(ref _trophyGoldCount, value);
-        }
-
-        private int _trophySilverCount;
-        public int TrophySilverCount
-        {
-            get => _trophySilverCount;
-            private set => SetValue(ref _trophySilverCount, value);
-        }
-
-        private int _trophyBronzeCount;
-        public int TrophyBronzeCount
-        {
-            get => _trophyBronzeCount;
-            private set => SetValue(ref _trophyBronzeCount, value);
-        }
-
-        /// <summary>
-        /// True if this game has PlayStation trophy type data.
-        /// </summary>
-        public bool HasTrophyTypes => TrophyPlatinumCount > 0 || TrophyGoldCount > 0 || TrophySilverCount > 0 || TrophyBronzeCount > 0;
-
-        public int Progression => AchievementCompletionPercentCalculator.ComputeRoundedPercent(UnlockedAchievements, TotalAchievements);
-
-        public string ProgressionText => $"{Progression}%";
 
         public TimelineViewModel Timeline { get; private set; }
 
@@ -439,21 +308,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private bool _isStatsVisible = true;
-        public bool IsStatsVisible
-        {
-            get => _isStatsVisible;
-            set => SetValue(ref _isStatsVisible, value);
-        }
-
         public bool HasAchievements => TotalAchievements > 0;
-
-        public string SecondaryMetadataText => PlayniteGameMetadataFormatter.BuildOverviewMetadataText(
-            PlatformText,
-            PlaytimeText,
-            RegionText);
-
-        public bool HasSecondaryMetadataText => !string.IsNullOrWhiteSpace(SecondaryMetadataText);
 
         public bool HasCustomAchievementOrder
         {
@@ -789,14 +644,11 @@ namespace PlayniteAchievements.ViewModels
                 if (game == null)
                 {
                     _logger?.Warn($"Game not found: {_gameId}");
-                    ApplyGameMetadata(null);
                     UpdateSummaryItem(null, null);
                     return;
                 }
 
                 GameName = game.Name;
-                GameIconPath = (!string.IsNullOrEmpty(game.Icon)) ? _playniteApi.Database.GetFullFilePath(game.Icon) : null;
-                ApplyGameMetadata(game);
 
                 var gameData = _achievementDataService.GetVisibleGameAchievementData(_gameId);
                 UpdateSummaryItem(game, gameData);
@@ -805,12 +657,6 @@ namespace PlayniteAchievements.ViewModels
                     _logger?.Info($"No achievement data for game: {game.Name}");
 
                     TotalAchievements = 0;
-                    UnlockedAchievements = 0;
-                    IsCompleted = false;
-                    CommonCount = 0;
-                    UncommonCount = 0;
-                    RareCount = 0;
-                    UltraRareCount = 0;
                     _allAchievements = new List<AchievementDisplayItem>();
                     UpdateAchievementFilterOptions(null);
                     HasCustomAchievementOrder = false;
@@ -820,9 +666,6 @@ namespace PlayniteAchievements.ViewModels
                         Achievements.Clear();
                     });
 
-                    OnPropertyChanged(nameof(Progression));
-                    OnPropertyChanged(nameof(ProgressionText));
-
                     Timeline.SetCounts(null);
                     return;
                 }
@@ -831,13 +674,7 @@ namespace PlayniteAchievements.ViewModels
                 var hasCustomOrder = gameData.AchievementOrder != null && gameData.AchievementOrder.Count > 0;
                 HasCustomAchievementOrder = hasCustomOrder;
                 TotalAchievements = achievements.Count;
-                UnlockedAchievements = achievements.Count(a => a.Unlocked);
-                IsCompleted = gameData.IsCompleted;
 
-                // Calculate rarity counts
-                int common = 0, uncommon = 0, rare = 0, ultraRare = 0;
-                // Calculate trophy counts (for PlayStation games)
-                int trophyPlatinum = 0, trophyGold = 0, trophySilver = 0, trophyBronze = 0;
                 var displayItems = new List<AchievementDisplayItem>();
                 var unlockCounts = new Dictionary<DateTime, int>();
 
@@ -852,24 +689,17 @@ namespace PlayniteAchievements.ViewModels
 
                 foreach (var ach in projectionOrder)
                 {
-                    if (ach.Unlocked)
+                    if (ach.Unlocked && ach.UnlockTimeUtc.HasValue)
                     {
-                        if (ach.UnlockTimeUtc.HasValue)
+                        var date = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
+                        if (unlockCounts.TryGetValue(date, out var existing))
                         {
-                            var date = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value).Date;
-                            if (unlockCounts.TryGetValue(date, out var existing))
-                            {
-                                unlockCounts[date] = existing + 1;
-                            }
-                            else
-                            {
-                                unlockCounts[date] = 1;
-                            }
+                            unlockCounts[date] = existing + 1;
                         }
-
-                        // Only count rarity if data is available (null means no rarity info for this provider)
-                        AchievementDisplayItem.AccumulateRarity(ach, ref common, ref uncommon, ref rare, ref ultraRare);
-                        AchievementDisplayItem.AccumulateTrophy(ach, ref trophyPlatinum, ref trophyGold, ref trophySilver, ref trophyBronze);
+                        else
+                        {
+                            unlockCounts[date] = 1;
+                        }
                     }
 
                     var item = AchievementDisplayItem.Create(gameData, ach, _settings, playniteGameIdOverride: _gameId);
@@ -879,24 +709,10 @@ namespace PlayniteAchievements.ViewModels
                     }
                 }
 
-                CommonCount = common;
-                UncommonCount = uncommon;
-                RareCount = rare;
-                UltraRareCount = ultraRare;
-
-                // Set trophy counts
-                TrophyPlatinumCount = trophyPlatinum;
-                TrophyGoldCount = trophyGold;
-                TrophySilverCount = trophySilver;
-                TrophyBronzeCount = trophyBronze;
-
                 _allAchievements = displayItems;
 
                 UpdateAchievementFilterOptions(_allAchievements);
                 ApplySearchFilter();
-
-                OnPropertyChanged(nameof(Progression));
-                OnPropertyChanged(nameof(ProgressionText));
 
                 Timeline.SetCounts(unlockCounts);
             }
@@ -967,21 +783,6 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(SummaryShowCompletionBorder));
             OnPropertyChanged(nameof(SummaryShowColumnHeaders));
             OnPropertyChanged(nameof(SummaryGridRowHeight));
-        }
-
-        private void ApplyGameMetadata(Playnite.SDK.Models.Game game)
-        {
-            if (game == null)
-            {
-                PlatformText = string.Empty;
-                RegionText = string.Empty;
-                PlaytimeText = string.Empty;
-                return;
-            }
-
-            PlatformText = PlayniteGameMetadataFormatter.GetPlatformText(game);
-            RegionText = PlayniteGameMetadataFormatter.GetRegionText(game);
-            PlaytimeText = PlayniteGameMetadataFormatter.FormatPlaytime(game.Playtime);
         }
 
         private void DismissStatus()

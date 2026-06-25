@@ -218,13 +218,12 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            // Manage Achievements is omitted: this is the Manage Achievements window.
             var menu = GameRowContextMenuBuilder.BuildGameMenu(
                 row.DataContext,
                 this,
                 ViewModel?.RefreshGameCommand,
                 ViewModel?.OpenGameInLibraryCommand,
-                openManageAchievements: null,
+                gameId => PlayniteAchievementsPlugin.Instance?.OpenManageAchievementsView(gameId),
                 _playniteApi,
                 _achievementOverridesService,
                 _cacheManager,
