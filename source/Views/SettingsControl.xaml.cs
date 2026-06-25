@@ -1606,8 +1606,7 @@ namespace PlayniteAchievements.Views
                 ["PlayAch.Brush.Selection"] = WithAlpha(completedStart, 0xFF),
                 ["PlayAch.Brush.ControlSurface"] = BlendColorText(basePanel, uncommon, 0.18),
                 ["PlayAch.Brush.PopupSurface"] = BlendColorText(basePanel, ultraRare, 0.16),
-                ["PlayAch.Brush.PopupBorder"] = WithAlpha(completedEnd, 0xD8),
-                ["PlayAch.Brush.StrongSurface"] = BlendColorText(baseStrong, rare, 0.10)
+                ["PlayAch.Brush.PopupBorder"] = WithAlpha(completedEnd, 0xD8)
             };
         }
 

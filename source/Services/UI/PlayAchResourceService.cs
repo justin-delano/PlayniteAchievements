@@ -71,7 +71,6 @@ namespace PlayniteAchievements.Services.UI
             Brush("PlayAch.Brush.ControlSurface", "Control surface", "ButtonBackgroundBrush", "ControlBackgroundBrush"),
             Brush("PlayAch.Brush.PopupSurface", "Popup surface", "PopupBackgroundBrush", "PanelBackgroundBrush", "ControlBackgroundBrush"),
             Brush("PlayAch.Brush.PopupBorder", "Popup border", "PopupBorderBrush", "NormalBorderBrush"),
-            Brush("PlayAch.Brush.StrongSurface", "Strong surface", "NormalBrushDark", "NormalBrush"),
 
             FontSize("PlayAch.FontSize.Caption", "Caption size", "FontSizeSmall"),
             FontSize("PlayAch.FontSize.Body", "Body size", "FontSize"),
@@ -86,7 +85,7 @@ namespace PlayniteAchievements.Services.UI
             Alias("PlayAch.Brush.Button.Background", "PlayAch.Brush.ControlSurface"),
             Alias("PlayAch.Brush.Button.Background.Hover", "PlayAch.Brush.Selection", 0x30),
             Alias("PlayAch.Brush.Button.Background.Selected", "PlayAch.Brush.Selection", 0x45),
-            Alias("PlayAch.Brush.Button.Background.Pressed", "PlayAch.Brush.StrongSurface", 0x54),
+            Alias("PlayAch.Brush.Button.Background.Pressed", "PlayAch.Brush.Selection", 0x60),
             Alias("PlayAch.Brush.Button.Border", "PlayAch.Brush.ControlBorder"),
             Alias("PlayAch.Brush.Input.Background", "PlayAch.Brush.Surface"),
             Alias("PlayAch.Brush.Input.Border", "PlayAch.Brush.ControlBorder"),
@@ -98,8 +97,7 @@ namespace PlayniteAchievements.Services.UI
             Alias("PlayAch.Brush.Window.Background", "PlayAch.Brush.WindowSurface"),
             Alias("PlayAch.Brush.Dialog.Background", "PlayAch.Brush.PopupSurface"),
             Alias("PlayAch.Brush.Dialog.Border", "PlayAch.Brush.PopupBorder"),
-            Alias("PlayAch.Brush.Chrome.Background", "PlayAch.Brush.ControlSurface", 0x1F),
-            Alias("PlayAch.Brush.Chrome.StrongBackground", "PlayAch.Brush.StrongSurface", 0x54)
+            Alias("PlayAch.Brush.Chrome.Background", "PlayAch.Brush.ControlSurface", 0x1F)
         };
 
         public static IReadOnlyList<ResourceOverrideDescriptor> ResourceDescriptors { get; } =
