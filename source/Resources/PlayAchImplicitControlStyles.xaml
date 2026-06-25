@@ -35,5 +35,6 @@
     <Style TargetType="TabControl" BasedOn="{StaticResource PlayAch.TabControl.BaseStyle}"/>
     <Style TargetType="TabItem" BasedOn="{StaticResource PlayAch.TabItem.BaseStyle}"/>
     <Style TargetType="ProgressBar" BasedOn="{StaticResource PlayAch.ProgressBar.BaseStyle}"/>
+    <Style TargetType="Expander" BasedOn="{StaticResource PlayAch.Expander.BaseStyle}"/>
 
 </ResourceDictionary>
