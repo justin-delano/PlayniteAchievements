@@ -90,8 +90,8 @@
             <!-- Compact, square close button for the selected-game header (kept small so it
                  does not expand the header row like the larger circular NavigationButtonStyle). -->
             <Style x:Key="ClearGameSelectionButtonStyle" TargetType="Button">
-                <Setter Property="Width" Value="22"/>
-                <Setter Property="Height" Value="22"/>
+                <Setter Property="Width" Value="18"/>
+                <Setter Property="Height" Value="18"/>
                 <Setter Property="Padding" Value="0"/>
                 <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
