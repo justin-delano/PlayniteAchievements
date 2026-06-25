@@ -102,7 +102,7 @@
                            Opacity="{StaticResource PlayAch.Opacity.Secondary}"
                            TextTrimming="CharacterEllipsis"
                            Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
-                <ProgressBar Value="{Binding ProgressPercent}"
+                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
                              Height="6"
                              Minimum="0"
                              Maximum="100"/>
