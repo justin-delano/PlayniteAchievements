@@ -34,7 +34,7 @@
     </Window.Resources>
 
     <Border Padding="16"
-            Background="{DynamicResource PlayAch.Brush.Dialog.Background}"
+            Background="{DynamicResource PlayAch.Brush.Window.Background}"
             BorderBrush="{DynamicResource PlayAch.Brush.Dialog.Border}"
             BorderThickness="1">
         <StackPanel>
