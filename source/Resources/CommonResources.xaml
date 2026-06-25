@@ -551,7 +551,6 @@
                     <Border x:Name="ThumbBorder"
                             Background="{TemplateBinding Background}"
                             CornerRadius="4"
-                            Margin="2"
                             SnapsToDevicePixels="True"/>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -590,7 +589,7 @@
                     <Grid Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
                         <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="True">
                             <Track.Thumb>
-                                <Thumb x:Name="PART_Thumb" Style="{StaticResource PlayAch.ScrollBar.Thumb}" MinHeight="24"/>
+                                <Thumb x:Name="PART_Thumb" Style="{StaticResource PlayAch.ScrollBar.Thumb}" MinHeight="24" Margin="2,0"/>
                             </Track.Thumb>
                             <Track.DecreaseRepeatButton>
                                 <RepeatButton x:Name="UpButton" Style="{StaticResource PlayAch.ScrollBar.PageButton}" Command="ScrollBar.PageUpCommand"/>
@@ -605,6 +604,7 @@
                             <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/>
                             <Setter TargetName="PART_Thumb" Property="MinHeight" Value="0"/>
                             <Setter TargetName="PART_Thumb" Property="MinWidth" Value="24"/>
+                            <Setter TargetName="PART_Thumb" Property="Margin" Value="0,2"/>
                             <Setter TargetName="UpButton" Property="Command" Value="ScrollBar.PageLeftCommand"/>
                             <Setter TargetName="DownButton" Property="Command" Value="ScrollBar.PageRightCommand"/>
                         </Trigger>
