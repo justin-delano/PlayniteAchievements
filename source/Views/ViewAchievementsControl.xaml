@@ -13,6 +13,10 @@
              d:DesignHeight="700" d:DesignWidth="600"
              Loaded="OnLoaded">
 
+    <UserControl.InputBindings>
+        <KeyBinding Key="F5" Command="{Binding RefreshGameCommand}" />
+    </UserControl.InputBindings>
+
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

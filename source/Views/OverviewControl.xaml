@@ -16,6 +16,10 @@
              SnapsToDevicePixels="True"
              Loaded="OnLoaded">
 
+    <UserControl.InputBindings>
+        <KeyBinding Key="F5" Command="{Binding RefreshCommand}" />
+    </UserControl.InputBindings>
+
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
