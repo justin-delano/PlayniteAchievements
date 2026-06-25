@@ -259,9 +259,9 @@ namespace PlayniteAchievements
 
             menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
                 () => OpenStartPageGameInLibrary(gameId)));
-            menu.Items.Add(new Separator());
             menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ManageAchievements",
                 () => OpenManageAchievementsView(gameId)));
+            menu.Items.Add(new Separator());
 
             var game = PlayniteApi?.Database?.Games?.Get(gameId);
             if (game != null)
