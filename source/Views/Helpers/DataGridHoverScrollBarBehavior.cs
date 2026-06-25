@@ -84,6 +84,7 @@ namespace PlayniteAchievements.Views.Helpers
             private readonly DispatcherTimer _scrollRevealTimer;
             private readonly List<TrackedScrollBar> _scrollBars = new List<TrackedScrollBar>();
             private ScrollViewer _scrollViewer;
+            private DataGridColumnHeadersPresenter _columnHeadersPresenter;
             private bool _isAttached;
             private bool _isMouseOverRightmostColumn;
             private bool _isScrollRevealActive;
@@ -242,6 +243,10 @@ namespace PlayniteAchievements.Views.Helpers
                 ClearTrackedScrollBars();
                 AttachScrollViewer(scrollViewer);
 
+                _columnHeadersPresenter =
+                    scrollViewer.Template?.FindName("PART_ColumnHeadersPresenter", scrollViewer) as DataGridColumnHeadersPresenter
+                    ?? VisualTreeHelpers.FindVisualChild<DataGridColumnHeadersPresenter>(_grid);
+
                 var seen = new HashSet<ScrollBar>();
                 foreach (var scrollBar in FindDataGridScrollBars(scrollViewer))
                 {
@@ -277,6 +282,7 @@ namespace PlayniteAchievements.Views.Helpers
 
                 _scrollViewer.ScrollChanged -= OnScrollViewerScrollChanged;
                 _scrollViewer = null;
+                _columnHeadersPresenter = null;
             }
 
             private void ClearTrackedScrollBars()
@@ -333,12 +339,23 @@ namespace PlayniteAchievements.Views.Helpers
                     return false;
                 }
 
+                var position = e.GetPosition(_grid);
+
+                // Guard against the source walk missing the header (e.g. when the revealed scrollbar
+                // overlays the header band): exclude the headers' vertical band outright. The body's
+                // partially scrolled top row renders into this band because the grid template disables
+                // clipping, so its cell bounds would otherwise register as a body hover here.
+                if (IsPointWithinColumnHeaders(position))
+                {
+                    return false;
+                }
+
                 if (IsSourceWithinColumn(source, rightmostColumn))
                 {
                     return true;
                 }
 
-                return IsPointWithinColumnBounds(rightmostColumn, e.GetPosition(_grid));
+                return IsPointWithinColumnBounds(rightmostColumn, position);
             }
 
             private DataGridColumn GetRightmostVisibleColumn()
@@ -366,6 +383,18 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 return source != null &&
                        VisualTreeHelpers.FindVisualParent<DataGridColumnHeadersPresenter>(source) != null;
+            }
+
+            private bool IsPointWithinColumnHeaders(Point point)
+            {
+                var presenter = _columnHeadersPresenter;
+                if (presenter == null || presenter.ActualHeight <= 0)
+                {
+                    return false;
+                }
+
+                var origin = presenter.TranslatePoint(new Point(0, 0), _grid);
+                return point.Y >= origin.Y && point.Y <= origin.Y + presenter.ActualHeight;
             }
 
             private static bool IsSourceWithinColumn(DependencyObject source, DataGridColumn column)
