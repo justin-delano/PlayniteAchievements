@@ -322,7 +322,18 @@ namespace PlayniteAchievements.Views.Helpers
                     return false;
                 }
 
-                if (IsSourceWithinColumn(e.OriginalSource as DependencyObject, rightmostColumn))
+                var source = e.OriginalSource as DependencyObject;
+
+                // The pointer is over the column headers, not the scrollable body. Treat this as
+                // not hovering so the scrollbar hides. A point-bounds check alone is insufficient
+                // here: the grid template disables clipping, so a partially scrolled top row renders
+                // up into the header band and its bounds would otherwise capture header positions.
+                if (IsSourceWithinColumnHeaders(source))
+                {
+                    return false;
+                }
+
+                if (IsSourceWithinColumn(source, rightmostColumn))
                 {
                     return true;
                 }
@@ -351,6 +362,12 @@ namespace PlayniteAchievements.Views.Helpers
                 return rightmostColumn;
             }
 
+            private static bool IsSourceWithinColumnHeaders(DependencyObject source)
+            {
+                return source != null &&
+                       VisualTreeHelpers.FindVisualParent<DataGridColumnHeadersPresenter>(source) != null;
+            }
+
             private static bool IsSourceWithinColumn(DependencyObject source, DataGridColumn column)
             {
                 if (source == null || column == null)
@@ -364,8 +381,7 @@ namespace PlayniteAchievements.Views.Helpers
                     return true;
                 }
 
-                var header = VisualTreeHelpers.FindVisualParent<DataGridColumnHeader>(source);
-                return ReferenceEquals(header?.Column, column);
+                return false;
             }
 
             private bool IsPointWithinColumnBounds(DataGridColumn column, Point point)
@@ -380,22 +396,6 @@ namespace PlayniteAchievements.Views.Helpers
                     return false;
                 }
 
-                foreach (var header in EnumerateVisualDescendants<DataGridColumnHeader>(_grid))
-                {
-                    if (!ReferenceEquals(header.Column, column) ||
-                        header.ActualWidth <= 0)
-                    {
-                        continue;
-                    }
-
-                    var headerOrigin = header.TranslatePoint(new Point(0, 0), _grid);
-                    if (point.X >= headerOrigin.X &&
-                        point.X <= headerOrigin.X + header.ActualWidth)
-                    {
-                        return true;
-                    }
-                }
-
                 foreach (var cell in EnumerateVisualDescendants<DataGridCell>(_grid))
                 {
                     if (!ReferenceEquals(cell.Column, column) ||
@@ -406,7 +406,9 @@ namespace PlayniteAchievements.Views.Helpers
 
                     var cellOrigin = cell.TranslatePoint(new Point(0, 0), _grid);
                     if (point.X >= cellOrigin.X &&
-                        point.X <= cellOrigin.X + cell.ActualWidth)
+                        point.X <= cellOrigin.X + cell.ActualWidth &&
+                        point.Y >= cellOrigin.Y &&
+                        point.Y <= cellOrigin.Y + cell.ActualHeight)
                     {
                         return true;
                     }
