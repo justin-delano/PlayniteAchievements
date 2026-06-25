@@ -138,6 +138,7 @@
 
                                 <!-- No note: centered in the cell -->
                                 <TextBlock Text="{Binding NoteStatusText}"
+                                        Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
                                         Foreground="{DynamicResource PlayAch.Brush.Text}"
                                         FontWeight="SemiBold"
                                         Opacity="0.85"
@@ -151,6 +152,7 @@
                                             VerticalAlignment="Top"
                                             Visibility="{Binding HasAchievementNote, Converter={StaticResource BoolToVis}}">
                                     <TextBlock Text="{Binding NoteStatusText}"
+                                            Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
                                             Foreground="{DynamicResource PlayAch.Brush.Text}"
                                             FontWeight="SemiBold"
                                             Opacity="0.85"
@@ -171,6 +173,7 @@
                                                     HorizontalScrollBarVisibility="Disabled"
                                                     PanningMode="VerticalOnly">
                                             <TextBlock helpers:AchievementNoteInlineFormatter.FormattedText="{Binding AchievementNote}"
+                                                    Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
                                                     Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                     Opacity="0.68"
                                                     TextWrapping="Wrap"

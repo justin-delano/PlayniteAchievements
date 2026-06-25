@@ -186,7 +186,6 @@
             </Image>
             <TextBlock Text="{Binding GlobalPercentText}"
                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                        FontWeight="SemiBold"
                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                        Opacity="{StaticResource PlayAch.Opacity.Secondary}"/>
@@ -272,7 +271,6 @@
                 </Image.Style>
             </Image>
             <TextBlock Text="—"
-                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                        Opacity="0.4"
                        VerticalAlignment="Center"
@@ -298,7 +296,6 @@
                    VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                    TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                    FontWeight="SemiBold"
                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                    Opacity="{StaticResource PlayAch.Opacity.Secondary}"/>
@@ -434,6 +431,7 @@
                        helpers:AchievementNoteInlineFormatter.NoteToolTip="{Binding AchievementNote}">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
+                        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
                         <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
                         <Setter Property="Opacity" Value="0.7"/>
                         <Style.Triggers>
@@ -449,15 +447,14 @@
                 <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
                 <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
                      FontStyle="Italic"
-                     FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                      Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
                 <Run Text="{Binding AchievementNoteInlineMarker, Mode=OneWay}"
                      FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                     FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                      Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
             </TextBlock>
             <TextBlock Text="{Binding DescriptionResolved}"
-                       FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                       FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
+                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                        Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                        TextWrapping="Wrap"
@@ -504,7 +501,6 @@
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                        FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                         FontWeight="SemiBold"
                         Foreground="White"
                         Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>

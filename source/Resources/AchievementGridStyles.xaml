@@ -28,6 +28,9 @@
         <Setter Property="HorizontalContentAlignment"
                 Value="{Binding RelativeSource={RelativeSource Self}, Path=Column.(helpers:DataGridAlignmentBehavior.HeaderHorizontalAlignment)}"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
+        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="DataGridColumnHeader">
@@ -39,7 +42,10 @@
                             <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Center"
                                               Margin="{TemplateBinding Padding}"
-                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              TextElement.FontFamily="{TemplateBinding FontFamily}"
+                                              TextElement.FontSize="{TemplateBinding FontSize}"
+                                              TextElement.FontWeight="{TemplateBinding FontWeight}"/>
                             <Path x:Name="SortArrow"
                                   HorizontalAlignment="Right"
                                   Fill="{DynamicResource PlayAch.Brush.Text}"
@@ -283,6 +289,8 @@
     <Style x:Key="WrappedDataGridTextStyle"
            TargetType="TextBlock"
            BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
+        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="TextTrimming" Value="None"/>
         <Setter Property="VerticalAlignment"

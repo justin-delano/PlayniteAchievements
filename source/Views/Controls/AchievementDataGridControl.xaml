@@ -125,6 +125,7 @@
                     <DataTemplate>
                         <TextBlock Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    TextWrapping="Wrap"
+                                   FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
                                    VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                                    HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                    helpers:AchievementNoteInlineFormatter.NoteToolTip="{Binding AchievementNote}">
@@ -147,11 +148,9 @@
                             <Run Text="{Binding DisplayNameResolved, Mode=OneWay}"/>
                             <Run Text="{Binding HiddenTitleSuffix, Mode=OneWay}"
                                  FontStyle="Italic"
-                                 FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                  Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
                             <Run Text="{Binding AchievementNoteInlineMarker, Mode=OneWay}"
                                  FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                 FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                  Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
                         </TextBlock>
                     </DataTemplate>
@@ -173,7 +172,8 @@
                                        HorizontalAlignment="Stretch">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
+                                        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
+                                        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
                                         <Setter Property="Opacity" Value="0.7"/>
                                         <Setter Property="TextAlignment"
                                                 Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>

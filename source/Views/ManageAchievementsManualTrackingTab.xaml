@@ -439,6 +439,7 @@
                                                   Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                                   VerticalAlignment="Center">
                                                 <TextBlock Text="—"
+                                                           Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
                                                            Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                                            HorizontalAlignment="Center"
                                                            VerticalAlignment="Center"

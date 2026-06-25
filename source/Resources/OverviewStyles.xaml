@@ -138,6 +138,7 @@
     </Style>
 
     <Style x:Key="GameSummaryNameTextStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
         <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
@@ -147,7 +148,8 @@
     </Style>
 
     <Style x:Key="OverviewGameMetadataTextStyle" TargetType="TextBlock">
-        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
+        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Muted}"/>
         <Setter Property="Margin" Value="0,4,0,0"/>
@@ -228,7 +230,7 @@
     </Style>
 
     <Style x:Key="OverviewMiniBadgeTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
-        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
+        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
