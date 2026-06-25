@@ -94,11 +94,20 @@
                                                DisableRowSelection="True"
                                                RowPreviewMouseRightButtonDown="GameSummaryRow_PreviewMouseRightButtonDown"
                                                RowPreviewMouseRightButtonUp="GameSummaryRow_PreviewMouseRightButtonUp"/>
-            <TextBlock Text="{Binding RefreshStatusMessage}"
-                       Margin="4,4,0,0"
-                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                       Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                       Visibility="{Binding IsStatusMessageVisible, Converter={StaticResource BoolToVis}}"/>
+            <!-- Standard refresh progress bar (mirrors the Overview window) -->
+            <StackPanel Margin="4,4,0,0"
+                        Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding ProgressMessage}"
+                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Secondary}"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                <ProgressBar Value="{Binding ProgressPercent}"
+                             Height="6"
+                             Minimum="0"
+                             Maximum="100"/>
+            </StackPanel>
         </StackPanel>
 
         <!-- Timeline -->
@@ -296,6 +305,12 @@
                            TextWrapping="Wrap"
                            HorizontalAlignment="Center"
                            FontSize="{DynamicResource PlayAch.FontSize.Caption}"/>
+                <Button x:Name="EmptyStateRefreshButton"
+                        Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                        Command="{Binding RefreshGameCommand}"
+                        Style="{StaticResource PlayAch.Button.BaseStyle}"
+                        HorizontalAlignment="Center"
+                        Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
             </StackPanel>
         </Grid>
 
