@@ -358,14 +358,10 @@ namespace PlayniteAchievements.Views.Helpers
                     return false;
                 }
 
+                // Only body cells count; a header hover (including its resize grippers)
+                // must not reveal the scrollbar.
                 var cell = VisualTreeHelpers.FindVisualParent<DataGridCell>(source);
-                if (ReferenceEquals(cell?.Column, column))
-                {
-                    return true;
-                }
-
-                var header = VisualTreeHelpers.FindVisualParent<DataGridColumnHeader>(source);
-                return ReferenceEquals(header?.Column, column);
+                return ReferenceEquals(cell?.Column, column);
             }
 
             private bool IsPointWithinColumnBounds(DataGridColumn column, Point point)
@@ -380,20 +376,10 @@ namespace PlayniteAchievements.Views.Helpers
                     return false;
                 }
 
-                foreach (var header in EnumerateVisualDescendants<DataGridColumnHeader>(_grid))
+                // Points within the header band are not part of the column body.
+                if (point.Y < GetColumnBodyTop())
                 {
-                    if (!ReferenceEquals(header.Column, column) ||
-                        header.ActualWidth <= 0)
-                    {
-                        continue;
-                    }
-
-                    var headerOrigin = header.TranslatePoint(new Point(0, 0), _grid);
-                    if (point.X >= headerOrigin.X &&
-                        point.X <= headerOrigin.X + header.ActualWidth)
-                    {
-                        return true;
-                    }
+                    return false;
                 }
 
                 foreach (var cell in EnumerateVisualDescendants<DataGridCell>(_grid))
@@ -413,6 +399,23 @@ namespace PlayniteAchievements.Views.Helpers
                 }
 
                 return false;
+            }
+
+            /// <summary>
+            /// Returns the Y coordinate (in grid space) of the bottom of the column headers
+            /// region, i.e. the top of the column body. Falls back to 0 when the headers
+            /// presenter is not yet realized.
+            /// </summary>
+            private double GetColumnBodyTop()
+            {
+                var presenter = VisualTreeHelpers.FindVisualChild<DataGridColumnHeadersPresenter>(_grid);
+                if (presenter == null || presenter.ActualHeight <= 0)
+                {
+                    return 0d;
+                }
+
+                var origin = presenter.TranslatePoint(new Point(0, 0), _grid);
+                return origin.Y + presenter.ActualHeight;
             }
 
             private static bool IsFinite(double value)
