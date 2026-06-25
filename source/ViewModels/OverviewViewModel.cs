@@ -80,7 +80,6 @@ namespace PlayniteAchievements.ViewModels
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>();
         private List<string> _availableProviders = new List<string>();
-        private readonly HashSet<string> _selectedProviderFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedCompletenessFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedPlayStatusFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedGameTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -638,34 +637,15 @@ namespace PlayniteAchievements.ViewModels
                 ? (ListSortDirection?)null
                 : _recentSortDirection;
 
-        private ObservableCollection<string> _providerFilterOptions;
-        public ObservableCollection<string> ProviderFilterOptions
+        private ObservableCollection<ProviderFilterGroup> _providerFilterGroups
+            = new ObservableCollection<ProviderFilterGroup>();
+        public ObservableCollection<ProviderFilterGroup> ProviderFilterGroups
         {
-            get => _providerFilterOptions;
-            private set => SetValue(ref _providerFilterOptions, value);
+            get => _providerFilterGroups;
+            private set => SetValue(ref _providerFilterGroups, value);
         }
 
         public string SelectedProviderFilterText => GetSelectedProviderFilterText();
-
-        public bool IsProviderFilterSelected(string providerKey)
-        {
-            return IsFilterSelected(_selectedProviderFilters, providerKey);
-        }
-
-        public void SetProviderFilterSelected(string providerKey, bool isSelected)
-        {
-            if (!SetFilterSelection(_selectedProviderFilters, providerKey, isSelected))
-            {
-                return;
-            }
-
-            OnPropertyChanged(nameof(SelectedProviderFilterText));
-            UpdateOverviewPieChartSelectionStates();
-            // Defer filter application to avoid interfering with menu click handling.
-            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
-                new Action(() => ApplyLeftFilters()),
-                System.Windows.Threading.DispatcherPriority.ContextIdle);
-        }
 
         public string GetProviderFilterDisplayName(string providerKey)
         {
@@ -679,14 +659,13 @@ namespace PlayniteAchievements.ViewModels
             return string.IsNullOrWhiteSpace(localized) ? normalized : localized;
         }
 
-        public void ClearProviderFilters()
+        /// <summary>
+        /// Invoked by a provider group whenever its platform selection changes. Refreshes the box
+        /// text and pie-chart highlight immediately and defers the grid filter to avoid interfering
+        /// with the click that triggered it.
+        /// </summary>
+        private void OnProviderFilterSelectionChanged()
         {
-            if (_selectedProviderFilters.Count == 0)
-            {
-                return;
-            }
-
-            _selectedProviderFilters.Clear();
             OnPropertyChanged(nameof(SelectedProviderFilterText));
             UpdateOverviewPieChartSelectionStates();
             System.Windows.Application.Current?.Dispatcher?.BeginInvoke(
@@ -694,8 +673,22 @@ namespace PlayniteAchievements.ViewModels
                 System.Windows.Threading.DispatcherPriority.ContextIdle);
         }
 
+        public void ClearProviderFilters()
+        {
+            var groups = ProviderFilterGroups;
+            if (groups == null)
+            {
+                return;
+            }
+
+            foreach (var group in groups.Where(g => g.HasAnySelected))
+            {
+                group.SetAll(false);
+            }
+        }
+
         /// <summary>
-        /// Toggles a provider filter when a pie slice is clicked.
+        /// Toggles all platforms for a provider when its pie slice is clicked.
         /// </summary>
         /// <param name="sliceLabel">The display label from the clicked slice</param>
         public void ToggleProviderFilterFromPieChart(string sliceLabel)
@@ -719,14 +712,9 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            if (ProviderFilterOptions == null ||
-                !ProviderFilterOptions.Any(p => string.Equals(p, providerKey, StringComparison.OrdinalIgnoreCase)))
-            {
-                return;
-            }
-
-            var currentlySelected = IsProviderFilterSelected(providerKey);
-            SetProviderFilterSelected(providerKey, !currentlySelected);
+            var group = ProviderFilterGroups?.FirstOrDefault(
+                g => string.Equals(g.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase));
+            group?.ToggleAll();
         }
 
         private ObservableCollection<string> _completenessFilterOptions;
@@ -2091,24 +2079,85 @@ namespace PlayniteAchievements.ViewModels
 
         private void UpdateProviderFilterOptions(List<GameSummaryItem> games)
         {
-            var providers = (games ?? new List<GameSummaryItem>())
-                .Select(g => g?.ProviderKey)
-                .Where(p => !string.IsNullOrEmpty(p))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .OrderBy(p => p, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var providerOptions = new List<string>(providers);
+            var gameList = games ?? new List<GameSummaryItem>();
 
-            if (ProviderFilterOptions == null)
+            // Snapshot prior selections and expansion so they survive the rebuild.
+            var priorSelections = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            var priorExpanded = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var priorSelectedCount = 0;
+            foreach (var existing in ProviderFilterGroups ?? Enumerable.Empty<ProviderFilterGroup>())
             {
-                ProviderFilterOptions = new ObservableCollection<string>(providerOptions);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(ProviderFilterOptions, providerOptions);
+                var selected = existing.SelectedPlatformNames.ToList();
+                if (selected.Count > 0)
+                {
+                    priorSelections[existing.ProviderKey] =
+                        new HashSet<string>(selected, StringComparer.OrdinalIgnoreCase);
+                    priorSelectedCount += selected.Count;
+                }
+
+                if (existing.IsExpanded)
+                {
+                    priorExpanded.Add(existing.ProviderKey);
+                }
             }
 
-            if (PruneFilterSelections(_selectedProviderFilters, ProviderFilterOptions))
+            // Group games by provider, collecting the distinct platform names each provider has.
+            var platformsByProvider = new Dictionary<string, SortedSet<string>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var game in gameList)
+            {
+                var providerKey = game?.ProviderKey;
+                if (string.IsNullOrWhiteSpace(providerKey))
+                {
+                    continue;
+                }
+
+                if (!platformsByProvider.TryGetValue(providerKey, out var platforms))
+                {
+                    platforms = new SortedSet<string>(StringComparer.CurrentCultureIgnoreCase);
+                    platformsByProvider[providerKey] = platforms;
+                }
+
+                foreach (var platform in game.Platforms ?? Array.Empty<string>())
+                {
+                    if (!string.IsNullOrWhiteSpace(platform))
+                    {
+                        platforms.Add(platform.Trim());
+                    }
+                }
+            }
+
+            var groups = new List<ProviderFilterGroup>();
+            var newSelectedCount = 0;
+            foreach (var providerKey in platformsByProvider.Keys
+                .OrderBy(GetProviderFilterDisplayName, StringComparer.CurrentCultureIgnoreCase))
+            {
+                var platformNames = platformsByProvider[providerKey].ToList();
+                if (platformNames.Count == 0)
+                {
+                    // Provider with no platform metadata: a single synthetic option lets the parent
+                    // checkbox select/clear the provider as a whole.
+                    platformNames.Add(GetProviderFilterDisplayName(providerKey));
+                }
+
+                priorSelections.TryGetValue(providerKey, out var selectedSet);
+                var group = new ProviderFilterGroup(
+                    providerKey,
+                    GetProviderFilterDisplayName(providerKey),
+                    platformNames,
+                    name => selectedSet != null && selectedSet.Contains(name),
+                    OnProviderFilterSelectionChanged)
+                {
+                    IsExpanded = priorExpanded.Contains(providerKey)
+                };
+                groups.Add(group);
+                newSelectedCount += group.SelectedPlatformNames.Count();
+            }
+
+            ProviderFilterGroups = new ObservableCollection<ProviderFilterGroup>(groups);
+
+            // A drop in the selected count means a previously-selected platform/provider disappeared,
+            // so the visible game set may have changed and the grid filter must be reapplied.
+            if (newSelectedCount != priorSelectedCount)
             {
                 ApplyLeftFilters();
             }
@@ -2863,12 +2912,50 @@ namespace PlayniteAchievements.ViewModels
                     g.GameName?.IndexOf(LeftSearchText, StringComparison.OrdinalIgnoreCase) >= 0);
             }
 
-            // Provider filter
-            if (_selectedProviderFilters.Count > 0)
+            // Provider + platform filter
+            var activeGroups = ProviderFilterGroups?
+                .Where(group => group.HasAnySelected)
+                .ToList();
+            if (activeGroups != null && activeGroups.Count > 0)
             {
+                var fullySelectedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var selectedPlatformsByProvider =
+                    new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+                foreach (var group in activeGroups)
+                {
+                    if (group.IsFullySelected)
+                    {
+                        fullySelectedProviders.Add(group.ProviderKey);
+                    }
+                    else
+                    {
+                        selectedPlatformsByProvider[group.ProviderKey] =
+                            new HashSet<string>(group.SelectedPlatformNames, StringComparer.OrdinalIgnoreCase);
+                    }
+                }
+
                 filtered = filtered.Where(g =>
-                    !string.IsNullOrWhiteSpace(g.ProviderKey) &&
-                    _selectedProviderFilters.Contains(g.ProviderKey));
+                {
+                    if (string.IsNullOrWhiteSpace(g.ProviderKey))
+                    {
+                        return false;
+                    }
+
+                    // Fully-selected provider: every game of that provider passes, even ones with no
+                    // platform metadata.
+                    if (fullySelectedProviders.Contains(g.ProviderKey))
+                    {
+                        return true;
+                    }
+
+                    // Partially-selected provider: only games whose platforms overlap the selection.
+                    if (selectedPlatformsByProvider.TryGetValue(g.ProviderKey, out var selectedPlatforms))
+                    {
+                        return g.Platforms != null && g.Platforms.Any(selectedPlatforms.Contains);
+                    }
+
+                    return false;
+                });
             }
 
             filtered = OverviewGameSummaryFilters.ApplyActivityAndProgressFilters(
@@ -2907,8 +2994,9 @@ namespace PlayniteAchievements.ViewModels
         private void UpdateOverviewPieChartSelectionStates()
         {
             ProviderPieChart?.SetSelectedLabels(
-                _selectedProviderFilters
-                    .Select(GetProviderFilterDisplayName)
+                (ProviderFilterGroups ?? Enumerable.Empty<ProviderFilterGroup>())
+                    .Where(group => group.HasAnySelected)
+                    .Select(group => group.DisplayName)
                     .Where(label => !string.IsNullOrWhiteSpace(label)));
             GamesPieChart?.SetSelectedLabels(GetGamesPieChartSelectedLabels());
         }
@@ -3400,28 +3488,34 @@ namespace PlayniteAchievements.ViewModels
 
         private string GetSelectedProviderFilterText()
         {
-            if (_selectedProviderFilters == null || _selectedProviderFilters.Count == 0)
+            var groups = ProviderFilterGroups;
+            if (groups == null || !groups.Any(g => g.HasAnySelected))
             {
                 return L("LOCPlayAch_Common_Label_Platform", "Platform");
             }
 
-            var orderedDisplayNames = new List<string>();
-            foreach (var option in ProviderFilterOptions ?? Enumerable.Empty<string>())
+            var parts = new List<string>();
+            foreach (var group in groups)
             {
-                if (!string.IsNullOrWhiteSpace(option) && _selectedProviderFilters.Contains(option))
+                if (!group.HasAnySelected)
                 {
-                    orderedDisplayNames.Add(GetProviderFilterDisplayName(option));
+                    continue;
+                }
+
+                // Fully selected shows the provider name; a partial selection lists the platforms.
+                if (group.IsFullySelected)
+                {
+                    parts.Add(group.DisplayName);
+                }
+                else
+                {
+                    parts.AddRange(group.SelectedPlatformNames);
                 }
             }
 
-            if (orderedDisplayNames.Count == 0)
-            {
-                orderedDisplayNames.AddRange(_selectedProviderFilters
-                    .OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
-                    .Select(GetProviderFilterDisplayName));
-            }
-
-            return string.Join(", ", orderedDisplayNames);
+            return parts.Count > 0
+                ? string.Join(", ", parts)
+                : L("LOCPlayAch_Common_Label_Platform", "Platform");
         }
 
         private void ApplyRightFilters(bool skipDefaultSort = false)
