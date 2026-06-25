@@ -103,6 +103,7 @@
                         HorizontalAlignment="Right">
                 <Button Content="{DynamicResource LOCPlayAch_Common_Hide}"
                         Command="{Binding HideCommand}"
+                        Style="{StaticResource PlayAch.Button.BaseStyle}"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="80"
                         Margin="{StaticResource PlayAch.Thickness.Right.Compact}"
@@ -110,6 +111,7 @@
 
                 <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                         Command="{Binding CancelCommand}"
+                        Style="{StaticResource PlayAch.Button.BaseStyle}"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="80"
                         Margin="{StaticResource PlayAch.Thickness.Right.Compact}"
@@ -117,6 +119,7 @@
 
                 <Button Content="{DynamicResource LOCPlayAch_Common_Continue}"
                         Command="{Binding ContinueCommand}"
+                        Style="{StaticResource PlayAch.Button.BaseStyle}"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="80"
                         Margin="{StaticResource PlayAch.Thickness.Right.Compact}"
@@ -125,6 +128,7 @@
 
                 <Button Content="{DynamicResource LOCPlayAch_Progress_ButtonViewAchievements}"
                         Command="{Binding OpenViewAchievementsCommand}"
+                        Style="{StaticResource PlayAch.Button.BaseStyle}"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                         MinWidth="120"
                         Visibility="{Binding ShowOpenViewAchievementsButton, Converter={StaticResource BooleanToVisibilityConverter}}"/>
