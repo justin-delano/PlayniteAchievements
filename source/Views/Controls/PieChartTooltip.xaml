@@ -19,8 +19,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Border Background="{DynamicResource PopupBackgroundBrush}"
-            BorderBrush="{DynamicResource PopupBorderBrush}"
+    <Border Background="{DynamicResource PlayAch.Brush.PopupSurface}"
+            BorderBrush="{DynamicResource PlayAch.Brush.PopupBorder}"
             BorderThickness="{StaticResource PlayAch.Thickness.Border}"
             CornerRadius="4"
             IsHitTestVisible="False"
