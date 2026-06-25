@@ -7,7 +7,6 @@ using System.Reflection;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows;
-using System.Windows.Input;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Tagging;
@@ -173,28 +172,35 @@ namespace PlayniteAchievements
             }) ?? Task.CompletedTask;
         }
 
-        // Invoked by AchievementHotkeyService on F5. Refreshes the plugin view that currently
-        // holds keyboard focus (Overview or single-game View Achievements). Returns true when a
-        // plugin view handled it, so the service can suppress Playnite's own F5 library update.
-        private bool TryRefreshFocusedPluginView()
+        // Invoked by AchievementHotkeyService on F5. Refreshes the plugin view shown in the
+        // active/topmost window (the single-game View Achievements window, or the Overview as a
+        // standalone window or open sidebar view) regardless of which element holds focus.
+        // Returns true when a plugin view handled it, so the service can suppress Playnite's own
+        // F5 library update.
+        private bool TryRefreshActivePluginView()
         {
-            var focused = Keyboard.FocusedElement as DependencyObject;
-            if (focused == null)
+            var window = Application.Current?.Windows
+                .OfType<Window>()
+                .FirstOrDefault(w => w.IsActive)
+                ?? Application.Current?.MainWindow;
+            if (window == null)
             {
                 return false;
             }
 
-            var overview = VisualTreeHelpers.FindVisualParent<OverviewControl>(focused);
-            if (overview != null)
+            // View Achievements is always its own window; the Overview is either its own window
+            // or hosted inside Playnite's main window as the sidebar view.
+            var singleGame = VisualTreeHelpers.FindVisualChild<ViewAchievementsControl>(window);
+            if (singleGame != null && singleGame.IsVisible)
             {
-                overview.TriggerHotkeyRefresh();
+                singleGame.TriggerHotkeyRefresh();
                 return true;
             }
 
-            var singleGame = VisualTreeHelpers.FindVisualParent<ViewAchievementsControl>(focused);
-            if (singleGame != null)
+            var overview = VisualTreeHelpers.FindVisualChild<OverviewControl>(window);
+            if (overview != null && overview.IsVisible)
             {
-                singleGame.TriggerHotkeyRefresh();
+                overview.TriggerHotkeyRefresh();
                 return true;
             }
 
@@ -316,7 +322,7 @@ namespace PlayniteAchievements
                         gameId => _windowService.ToggleViewAchievementsWindowFromHotkey(gameId),
                         gameId => _windowService.ToggleManageAchievementsViewFromHotkey(gameId),
                         ToggleOverviewWindowFromHotkey,
-                        TryRefreshFocusedPluginView);
+                        TryRefreshActivePluginView);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
                         _logger,
