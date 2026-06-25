@@ -87,6 +87,51 @@
                 </Setter>
             </Style>
 
+            <!-- Compact, square close button for the selected-game header (kept small so it
+                 does not expand the header row like the larger circular NavigationButtonStyle). -->
+            <Style x:Key="ClearGameSelectionButtonStyle" TargetType="Button">
+                <Setter Property="Width" Value="22"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Padding" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Opacity" Value="0.72"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Chrome"
+                                    Background="{TemplateBinding Background}"
+                                    CornerRadius="{StaticResource PlayAch.Radius.Small}"
+                                    SnapsToDevicePixels="True">
+                                <TextBlock Text="{TemplateBinding Content}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           FontSize="{TemplateBinding FontSize}"
+                                           FontWeight="{TemplateBinding FontWeight}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter Property="Opacity" Value="1"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                                    <Setter Property="Opacity" Value="1"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <!-- Invisible button style for click areas -->
             <Style x:Key="InvisibleButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
@@ -679,8 +724,8 @@
                                         VerticalAlignment="Center"/>
 
                                 <Button x:Name="ClearGameSelectionButton"
-                                        Content="&#xE711;"
-                                        Style="{StaticResource NavigationButtonStyle}"
+                                        Content="✕"
+                                        Style="{StaticResource ClearGameSelectionButtonStyle}"
                                         Click="ClearGameSelection_Click"
                                         Margin="10,0,0,0"/>
 
