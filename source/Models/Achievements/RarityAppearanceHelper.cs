@@ -434,14 +434,22 @@ namespace PlayniteAchievements.Models.Achievements
                 }
             }
 
+            var startColor = GetCompletedStartColor(settings);
+            var endColor = GetCompletedEndColor(settings);
+
             var brush = new LinearGradientBrush
             {
                 StartPoint = new Point(0, 0),
                 EndPoint = new Point(1, 1)
             };
 
-            brush.GradientStops.Add(new GradientStop(GetCompletedStartColor(settings), 0.00));
-            brush.GradientStops.Add(new GradientStop(GetCompletedEndColor(settings), 1.00));
+            // Mirror CreateGradientBrush's bright highlight band at 0.55 so the
+            // diagonal shine reads as strongly as the metal rarity badges, while
+            // keeping the user's chosen start/end colors at the edges.
+            brush.GradientStops.Add(new GradientStop(startColor, 0.00));
+            brush.GradientStops.Add(new GradientStop(Blend(startColor, endColor, 0.35), 0.35));
+            brush.GradientStops.Add(new GradientStop(Blend(Blend(startColor, endColor, 0.55), Colors.White, 0.72), 0.55));
+            brush.GradientStops.Add(new GradientStop(endColor, 1.00));
             if (brush.CanFreeze)
             {
                 brush.Freeze();
