@@ -12,6 +12,7 @@
     <Style TargetType="CheckBox" BasedOn="{StaticResource PlayAch.CheckBox.BaseStyle}"/>
     <Style TargetType="ComboBox" BasedOn="{StaticResource PlayAch.ComboBox.BaseStyle}"/>
     <Style TargetType="ComboBoxItem" BasedOn="{StaticResource PlayAch.ComboBoxItem.BaseStyle}"/>
+    <Style TargetType="DatePicker" BasedOn="{StaticResource PlayAch.DatePicker.BaseStyle}"/>
     <Style TargetType="ListBox" BasedOn="{StaticResource PlayAch.ListBox.BaseStyle}"/>
     <Style TargetType="ListBoxItem" BasedOn="{StaticResource PlayAch.ListBoxItem.BaseStyle}"/>
     <Style TargetType="ScrollBar" BasedOn="{StaticResource PlayAch.ScrollBar.BaseStyle}"/>
