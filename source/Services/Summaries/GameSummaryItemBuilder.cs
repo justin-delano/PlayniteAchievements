@@ -25,6 +25,7 @@ namespace PlayniteAchievements.Services.Summaries
             public string CoverPath { get; set; }
             public DateTime? LastPlayed { get; set; }
             public string PlatformText { get; set; }
+            public IReadOnlyList<string> Platforms { get; set; }
             public string RegionText { get; set; }
             public ulong PlaytimeSeconds { get; set; }
             public Playnite.SDK.Models.Game Game { get; set; }
@@ -85,6 +86,7 @@ namespace PlayniteAchievements.Services.Summaries
                 GameLogo = presentation.IconPath,
                 GameCoverPath = presentation.CoverPath,
                 PlatformText = presentation.PlatformText,
+                Platforms = presentation.Platforms,
                 RegionText = presentation.RegionText,
                 PlaytimeSeconds = presentation.PlaytimeSeconds,
                 AppId = gameData.AppId,
@@ -233,6 +235,7 @@ namespace PlayniteAchievements.Services.Summaries
                     : null,
                 LastPlayed = playniteGame?.LastActivity,
                 PlatformText = PlayniteGameMetadataFormatter.GetPlatformText(playniteGame),
+                Platforms = PlayniteGameMetadataFormatter.GetPlatformNames(playniteGame),
                 RegionText = PlayniteGameMetadataFormatter.GetRegionText(playniteGame),
                 PlaytimeSeconds = playniteGame?.Playtime ?? 0
             };
