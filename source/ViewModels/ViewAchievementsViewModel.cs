@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
@@ -30,6 +31,13 @@ namespace PlayniteAchievements.ViewModels
         private readonly Guid _gameId;
         private Guid? _activeRefreshOperationId;
         private bool _isApplyingTimelineState;
+
+        // Standard refresh-progress UI state (mirrors OverviewViewModel). The progress bar stays
+        // visible while a refresh runs, lingers at 100% briefly on completion, then auto-hides.
+        private static readonly TimeSpan ProgressHideDelay = TimeSpan.FromSeconds(3);
+        private DispatcherTimer _progressHideTimer;
+        private bool _refreshInitiated;
+        private bool _showCompletedProgress;
 
         // Sort state tracking for quick reverse
         private string _currentSortPath;
@@ -90,8 +98,10 @@ namespace PlayniteAchievements.ViewModels
 
             // Initialize commands
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
-            DismissStatusCommand = new RelayCommand(_ => DismissStatus(), _ => CanDismissStatus);
             OpenGameInLibraryCommand = new RelayCommand(_ => OpenGameInLibrary());
+
+            _progressHideTimer = new DispatcherTimer { Interval = ProgressHideDelay };
+            _progressHideTimer.Tick += OnProgressHideTimerTick;
 
             RefreshGameCommand = new RelayCommand(
                 async (param) =>
@@ -99,9 +109,13 @@ namespace PlayniteAchievements.ViewModels
                     if (IsRefreshing) return;
 
                     IsRefreshing = true;
+                    _refreshInitiated = true;
                     _activeRefreshOperationId = null;
-                    RefreshStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
-                    IsStatusMessageVisible = true;
+                    CancelProgressHideTimer(clearCompletedProgress: false);
+                    _showCompletedProgress = false;
+                    ProgressPercent = 0;
+                    ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
+                    OnPropertyChanged(nameof(ShowProgress));
 
                     try
                     {
@@ -110,13 +124,14 @@ namespace PlayniteAchievements.ViewModels
                         // Load updated data
                         LoadGameData();
 
-                        // Simple success message
-                        RefreshStatusMessage = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
+                        // Surface a final snapshot so the bar reaches 100% before auto-hiding.
+                        ProgressPercent = 100;
+                        ProgressMessage = ResourceProvider.GetString("LOCPlayAch_Status_RefreshComplete");
                     }
                     catch (Exception ex)
                     {
                         _logger.Error(ex, $"Failed to refresh game {_gameId}.");
-                        RefreshStatusMessage = string.Format(
+                        ProgressMessage = string.Format(
                             ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed"),
                             ex.Message);
                     }
@@ -124,8 +139,14 @@ namespace PlayniteAchievements.ViewModels
                     {
                         IsRefreshing = false;
                         _activeRefreshOperationId = null;
-                        await Task.Delay(3000);
-                        IsStatusMessageVisible = false;
+
+                        // Linger at the final state, then auto-hide (matches Overview behavior).
+                        if (_refreshInitiated)
+                        {
+                            _showCompletedProgress = true;
+                            StartProgressHideTimer();
+                        }
+                        OnPropertyChanged(nameof(ShowProgress));
                     }
                 },
                 _ => !_refreshService.IsRebuilding);
@@ -272,28 +293,21 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _IsRefreshing, value);
         }
 
-        private string _RefreshStatusMessage;
-        public string RefreshStatusMessage
+        private double _progressPercent;
+        public double ProgressPercent
         {
-            get => _RefreshStatusMessage;
-            private set => SetValue(ref _RefreshStatusMessage, value);
+            get => _progressPercent;
+            private set => SetValue(ref _progressPercent, value);
         }
 
-        private bool _isStatusMessageVisible;
-        public bool IsStatusMessageVisible
+        private string _progressMessage;
+        public string ProgressMessage
         {
-            get => _isStatusMessageVisible;
-            private set
-            {
-                if (SetValueAndReturn(ref _isStatusMessageVisible, value))
-                {
-                    OnPropertyChanged(nameof(CanDismissStatus));
-                    (DismissStatusCommand as RelayCommand)?.RaiseCanExecuteChanged();
-                }
-            }
+            get => _progressMessage;
+            private set => SetValue(ref _progressMessage, value);
         }
 
-        public bool CanDismissStatus => IsStatusMessageVisible;
+        public bool ShowProgress => _refreshInitiated || IsRefreshing || _showCompletedProgress;
 
         private bool _isTimelineVisible = false;
         public bool IsTimelineVisible
@@ -430,7 +444,6 @@ namespace PlayniteAchievements.ViewModels
 
         public ICommand RevealAchievementCommand { get; }
         public ICommand RefreshGameCommand { get; }
-        public ICommand DismissStatusCommand { get; }
         public ICommand OpenGameInLibraryCommand { get; }
 
         #endregion
@@ -785,11 +798,6 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(SummaryGridRowHeight));
         }
 
-        private void DismissStatus()
-        {
-            IsStatusMessageVisible = false;
-        }
-
         private void OnGameCacheUpdated(object sender, GameCacheUpdatedEventArgs e)
         {
             if (e.GameId == _gameId.ToString())
@@ -811,8 +819,6 @@ namespace PlayniteAchievements.ViewModels
         private void OnRebuildProgress(object sender, ProgressReport report)
         {
             if (report == null) return;
-            var refreshStatus = _refreshService.GetRefreshStatusSnapshot(report);
-            var statusMessage = refreshStatus.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
 
             var isForOurGame = report.CurrentGameId.HasValue && report.CurrentGameId.Value == _gameId;
             if (isForOurGame && report.OperationId.HasValue)
@@ -824,35 +830,97 @@ namespace PlayniteAchievements.ViewModels
                                      report.OperationId.HasValue &&
                                      _activeRefreshOperationId.Value == report.OperationId.Value;
 
-            if (isForOurGame || isTrackedOperation)
-            {
-                RefreshStatusMessage = statusMessage;
-                OnPropertyChanged(nameof(RefreshStatusMessage));
-            }
-            else
+            // Only this game's refresh drives the progress bar; ignore unrelated reports.
+            if (!isForOurGame && !isTrackedOperation)
             {
                 return;
             }
 
-            // Handle completion
-            if (refreshStatus.IsCanceled)
+            var refreshStatus = _refreshService.GetRefreshStatusSnapshot(report);
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
             {
-                IsRefreshing = false;
-                _activeRefreshOperationId = null;
-                RefreshStatusMessage = statusMessage;
-                OnPropertyChanged(nameof(IsRefreshing));
-                OnPropertyChanged(nameof(RefreshStatusMessage));
-            }
-            else if (refreshStatus.IsFinal)
+                try
+                {
+                    ApplyRefreshStatus(refreshStatus);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug($"Progress UI update error: {ex.Message}");
+                }
+            }));
+        }
+
+        private void ApplyRefreshStatus(RefreshStatusSnapshot status)
+        {
+            if (status == null)
             {
-                IsRefreshing = false;
-                _activeRefreshOperationId = null;
-                RefreshStatusMessage = statusMessage;
-                OnPropertyChanged(nameof(IsRefreshing));
-                OnPropertyChanged(nameof(RefreshStatusMessage));
+                return;
             }
 
+            ProgressPercent = status.ProgressPercent;
+            ProgressMessage = status.Message ?? ResourceProvider.GetString("LOCPlayAch_Status_Refreshing");
+
+            var isComplete = status.IsCanceled || status.IsFinal || !status.IsRefreshing;
+            if (!isComplete)
+            {
+                IsRefreshing = true;
+                _refreshInitiated = true;
+                CancelProgressHideTimer(clearCompletedProgress: false);
+                _showCompletedProgress = false;
+            }
+            else if (_refreshInitiated)
+            {
+                IsRefreshing = false;
+                _activeRefreshOperationId = null;
+                _showCompletedProgress = true;
+                StartProgressHideTimer();
+            }
+            else
+            {
+                IsRefreshing = false;
+                _showCompletedProgress = false;
+            }
+
+            OnPropertyChanged(nameof(IsRefreshing));
+            OnPropertyChanged(nameof(ShowProgress));
             (RefreshGameCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void StartProgressHideTimer()
+        {
+            if (_progressHideTimer == null)
+            {
+                return;
+            }
+
+            _progressHideTimer.Stop();
+            _progressHideTimer.Start();
+        }
+
+        private void CancelProgressHideTimer(bool clearCompletedProgress)
+        {
+            _progressHideTimer?.Stop();
+
+            if (clearCompletedProgress)
+            {
+                _refreshInitiated = false;
+                if (_showCompletedProgress)
+                {
+                    _showCompletedProgress = false;
+                    OnPropertyChanged(nameof(ShowProgress));
+                }
+            }
+        }
+
+        private void OnProgressHideTimerTick(object sender, EventArgs e)
+        {
+            _progressHideTimer?.Stop();
+            _refreshInitiated = false;
+            if (_showCompletedProgress)
+            {
+                _showCompletedProgress = false;
+                OnPropertyChanged(nameof(ShowProgress));
+            }
         }
 
         private void OnSettingsChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -1107,6 +1175,12 @@ namespace PlayniteAchievements.ViewModels
             _refreshService.GameCacheUpdated -= OnGameCacheUpdated;
             _refreshService.CacheDeltaUpdated -= OnCacheDeltaUpdated;
             _refreshService.RebuildProgress -= OnRebuildProgress;
+            if (_progressHideTimer != null)
+            {
+                _progressHideTimer.Stop();
+                _progressHideTimer.Tick -= OnProgressHideTimerTick;
+                _progressHideTimer = null;
+            }
             if (Timeline != null)
             {
                 Timeline.PropertyChanged -= Timeline_PropertyChanged;
