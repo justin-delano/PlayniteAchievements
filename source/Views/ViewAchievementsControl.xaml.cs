@@ -83,6 +83,24 @@ namespace PlayniteAchievements.Views
             UpdateDefaultSortIndicator();
         }
 
+        private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // F5 refreshes this single game. Handle on the tunneling event so it is marked
+            // handled before it can bubble to Playnite's main-window F5 binding.
+            if (e.Key != Key.F5)
+            {
+                return;
+            }
+
+            var command = ViewModel?.RefreshGameCommand;
+            if (command != null && command.CanExecute(null))
+            {
+                command.Execute(null);
+            }
+
+            e.Handled = true;
+        }
+
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
             if (e == null)
