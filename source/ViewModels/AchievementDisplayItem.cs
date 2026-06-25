@@ -201,6 +201,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(RaritySortValue));
                     OnPropertyChanged(nameof(CollectionScore));
                     OnPropertyChanged(nameof(PrestigeScore));
+                    OnPropertyChanged(nameof(DisplayNameBrush));
                 }
             }
         }
@@ -228,11 +229,17 @@ namespace PlayniteAchievements.ViewModels
         public bool IsCapstone
         {
             get => _source?.IsCapstone == true;
-            set => SetSourceValue(
-                source => source.IsCapstone,
-                (source, next) => source.IsCapstone = next,
-                value,
-                nameof(IsCapstone));
+            set
+            {
+                if (SetSourceValue(
+                    source => source.IsCapstone,
+                    (source, next) => source.IsCapstone = next,
+                    value,
+                    nameof(IsCapstone)))
+                {
+                    OnPropertyChanged(nameof(DisplayNameBrush));
+                }
+            }
         }
 
         public bool Hidden
@@ -579,6 +586,26 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        /// <summary>
+        /// Foreground brush for the achievement name. When "color names by rarity" is enabled, returns the rarity tier brush
+        /// (or the completed color for capstone achievements, which takes precedence). Otherwise returns the theme text brush.
+        /// </summary>
+        public System.Windows.Media.Brush DisplayNameBrush
+        {
+            get
+            {
+                var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+                if (persisted?.ColorAchievementNamesByRarity == true)
+                {
+                    return IsCapstone
+                        ? RarityAppearanceHelper.GetCompletedBrush(persisted)
+                        : RarityAppearanceHelper.GetBrush(Rarity, persisted);
+                }
+
+                return System.Windows.Application.Current?.TryFindResource("PlayAch.Brush.Text") as System.Windows.Media.Brush;
+            }
+        }
+
         public string HiddenTitleSuffix
         {
             get
@@ -703,6 +730,7 @@ namespace PlayniteAchievements.ViewModels
             ShowLockedIcon = showLockedIcon;
             UseSeparateLockedIconsWhenAvailable = useSeparateLockedIconsWhenAvailable;
             ShowRarityBar = showRarityBar;
+            OnPropertyChanged(nameof(DisplayNameBrush));
         }
 
         public void ApplyAppearanceSettings(PlayniteAchievementsSettings settings, Guid? playniteGameId = null)
@@ -956,6 +984,7 @@ namespace PlayniteAchievements.ViewModels
                 case nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable):
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
                 case nameof(PersistedSettings.UseUniformRarityBadges):
+                case nameof(PersistedSettings.ColorAchievementNamesByRarity):
                 case nameof(PersistedSettings.RarityColors):
                     return true;
                 default:
@@ -1084,6 +1113,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(GamerScore));
             OnPropertyChanged(nameof(Unlocked));
             OnPropertyChanged(nameof(IsCapstone));
+            OnPropertyChanged(nameof(DisplayNameBrush));
             OnPropertyChanged(nameof(Hidden));
             OnPropertyChanged(nameof(IsUnlock));
             OnPropertyChanged(nameof(ApiName));

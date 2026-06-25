@@ -68,6 +68,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _modernCompactListShowRarityGlow = true;
         private bool _modernUnlockedListShowRarityGlow = true;
         private bool _useUniformRarityBadges = false;
+        private bool _colorAchievementNamesByRarity = false;
         private RarityColorSettings _rarityColors = RarityColorSettings.CreateDefault();
         private bool _overviewGameSummariesUseCoverImages = true;
         private bool _overviewRecentAchievementsUseCoverImages = true;
@@ -522,6 +523,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _useUniformRarityBadges;
             set => SetValue(ref _useUniformRarityBadges, value);
+        }
+
+        /// <summary>
+        /// When true, achievement name text is colored by rarity tier (capstone achievements use the completed color), instead of the default text color.
+        /// </summary>
+        public bool ColorAchievementNamesByRarity
+        {
+            get => _colorAchievementNamesByRarity;
+            set => SetValue(ref _colorAchievementNamesByRarity, value);
         }
 
         /// <summary>
@@ -2247,6 +2257,7 @@ namespace PlayniteAchievements.Models.Settings
                 ModernCompactListShowRarityGlow = this.ModernCompactListShowRarityGlow,
                 ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
+                ColorAchievementNamesByRarity = this.ColorAchievementNamesByRarity,
                 RarityColors = this.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
                 OverviewGameSummariesUseCoverImages = this.OverviewGameSummariesUseCoverImages,
                 OverviewRecentAchievementsUseCoverImages = this.OverviewRecentAchievementsUseCoverImages,
@@ -2549,6 +2560,7 @@ namespace PlayniteAchievements.Models.Settings
             ModernCompactListShowRarityGlow = defaults.ModernCompactListShowRarityGlow;
             ModernUnlockedListShowRarityGlow = defaults.ModernUnlockedListShowRarityGlow;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
+            ColorAchievementNamesByRarity = defaults.ColorAchievementNamesByRarity;
             RarityColors = RarityColorSettings.CreateDefault();
             OverviewGameSummariesUseCoverImages = defaults.OverviewGameSummariesUseCoverImages;
             OverviewRecentAchievementsUseCoverImages = defaults.OverviewRecentAchievementsUseCoverImages;

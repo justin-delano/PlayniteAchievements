@@ -1216,6 +1216,10 @@
                                                           IsChecked="{Binding Persisted.UseUniformRarityBadges}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorAchievementNamesByRarity}"
+                                                          IsChecked="{Binding Persisted.ColorAchievementNamesByRarity}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+
                                                 <ItemsControl ItemsSource="{Binding RarityAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
