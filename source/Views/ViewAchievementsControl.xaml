@@ -16,7 +16,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/ViewAchievementsScopedControlStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Style for Expander Header ToggleButton -->
