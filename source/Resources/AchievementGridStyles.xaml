@@ -12,6 +12,36 @@
          Overridden in FullscreenResources.xaml for dark backgrounds. -->
     <SolidColorBrush x:Key="MenuHighlightBrush" Color="{StaticResource PlayAch.Color.Overlay.Shade.14}" />
 
+    <!-- Column header resize gripper: transparent hit-area with a hover-only
+         separator line that respects custom theme colors. -->
+    <Style x:Key="AchievementHeaderGripperStyle" TargetType="Thumb">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border Background="Transparent" SnapsToDevicePixels="True">
+                        <Border x:Name="Line"
+                                Width="1"
+                                HorizontalAlignment="Right"
+                                Background="{DynamicResource PlayAch.Brush.Accent}"
+                                Visibility="Hidden"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Line" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="Line" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- =======================
          DATAGRID STYLES
          ======================= -->
@@ -57,15 +87,14 @@
                                   RenderTransformOrigin="0.5,0.5"
                                   Visibility="Collapsed"/>
                             <Thumb x:Name="PART_LeftHeaderGripper"
+                                   Style="{StaticResource AchievementHeaderGripperStyle}"
                                    Width="0"
-                                   Background="Transparent"
-                                   IsHitTestVisible="False"
-                                   Focusable="False"/>
+                                   IsHitTestVisible="False"/>
                             <Thumb x:Name="PART_RightHeaderGripper"
+                                   Style="{StaticResource AchievementHeaderGripperStyle}"
                                    HorizontalAlignment="Right"
                                    Width="8"
-                                   Cursor="SizeWE"
-                                   Background="Transparent"/>
+                                   Cursor="SizeWE"/>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
