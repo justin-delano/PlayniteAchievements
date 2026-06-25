@@ -8,10 +8,6 @@
         <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
-    <!-- Menu highlight brush used by AchievementMultiSelectMenuItemStyle.
-         Overridden in FullscreenResources.xaml for dark backgrounds. -->
-    <SolidColorBrush x:Key="MenuHighlightBrush" Color="{StaticResource PlayAch.Color.Overlay.Shade.14}" />
-
     <!-- =======================
          DATAGRID STYLES
          ======================= -->

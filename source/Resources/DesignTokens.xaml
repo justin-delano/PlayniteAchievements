@@ -55,17 +55,6 @@
     <Color x:Key="PlayAch.Color.ProviderXbox">#107C10</Color>
     <Color x:Key="PlayAch.Color.ProviderXenia">#92C83E</Color>
     <Color x:Key="PlayAch.Color.ProviderApple">#E5E5E5</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Chrome">#FF8D919D</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Highlight">#FFEC6200</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.SecondaryText">#FF757575</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.PopupBackground">#FF121830</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Highlight.10">#10EC6200</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Highlight.15">#15EC6200</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Highlight.18">#18EC6200</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Highlight.20">#20EC6200</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Highlight.25">#25EC6200</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Highlight.35">#35EC6200</Color>
-    <Color x:Key="PlayAch.Color.Fullscreen.Highlight.88">#88EC6200</Color>
     <Color x:Key="PlayAch.Color.MigrationAccent">#FF37A7C8</Color>
     <Color x:Key="PlayAch.Color.MigrationAccentPressed">#FF2D8FAB</Color>
 
@@ -120,17 +109,6 @@
     <SolidColorBrush x:Key="PlayAch.Brush.ProviderXbox" Color="{StaticResource PlayAch.Color.ProviderXbox}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.ProviderXenia" Color="{StaticResource PlayAch.Color.ProviderXenia}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.ProviderApple" Color="{StaticResource PlayAch.Color.ProviderApple}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Chrome" Color="{StaticResource PlayAch.Color.Fullscreen.Chrome}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Highlight" Color="{StaticResource PlayAch.Color.Fullscreen.Highlight}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.SecondaryText" Color="{StaticResource PlayAch.Color.Fullscreen.SecondaryText}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.PopupBackground" Color="{StaticResource PlayAch.Color.Fullscreen.PopupBackground}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Highlight.10" Color="{StaticResource PlayAch.Color.Fullscreen.Highlight.10}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Highlight.15" Color="{StaticResource PlayAch.Color.Fullscreen.Highlight.15}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Highlight.18" Color="{StaticResource PlayAch.Color.Fullscreen.Highlight.18}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Highlight.20" Color="{StaticResource PlayAch.Color.Fullscreen.Highlight.20}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Highlight.25" Color="{StaticResource PlayAch.Color.Fullscreen.Highlight.25}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Highlight.35" Color="{StaticResource PlayAch.Color.Fullscreen.Highlight.35}"/>
-    <SolidColorBrush x:Key="PlayAch.Brush.Fullscreen.Highlight.88" Color="{StaticResource PlayAch.Color.Fullscreen.Highlight.88}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.MigrationAccent" Color="{StaticResource PlayAch.Color.MigrationAccent}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.MigrationAccentPressed" Color="{StaticResource PlayAch.Color.MigrationAccentPressed}"/>
 

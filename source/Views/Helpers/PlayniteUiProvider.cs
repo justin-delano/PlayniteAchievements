@@ -135,13 +135,6 @@ namespace PlayniteAchievements.Views.Helpers
             window.Height = parent != null && parent.Height > 0 ? parent.Height : SystemParameters.PrimaryScreenHeight;
             window.Width = parent != null && parent.Width > 0 ? parent.Width : SystemParameters.PrimaryScreenWidth;
 
-            // Merge fullscreen resource fallbacks so desktop-only DynamicResource keys resolve.
-            window.Resources.MergedDictionaries.Add(
-                new ResourceDictionary
-                {
-                    Source = new Uri("/PlayniteAchievements;component/Resources/FullscreenResources.xaml", UriKind.Relative)
-                });
-
             // Determine sizing mode based on the content type.
             var sizeMode = content is RefreshProgressControl
                 ? FullscreenSizeMode.Dialog
