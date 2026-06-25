@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using PlayniteAchievements.Common;
+using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.ViewModels
 {
