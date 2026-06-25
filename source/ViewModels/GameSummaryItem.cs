@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.ViewModels
 {
@@ -32,6 +34,12 @@ namespace PlayniteAchievements.ViewModels
             get => _regionText;
             set => SetValue(ref _regionText, value);
         }
+
+        /// <summary>
+        /// Distinct Playnite platform names for this game (e.g. "Game Boy", "NES").
+        /// Set once at build time; used by the provider/platform filter.
+        /// </summary>
+        public IReadOnlyList<string> Platforms { get; set; } = Array.Empty<string>();
 
         private ulong _playtimeSeconds;
         public ulong PlaytimeSeconds

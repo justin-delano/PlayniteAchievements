@@ -28,6 +28,8 @@ namespace PlayniteAchievements.Services.Overview
 
             public string PlatformText { get; set; }
 
+            public IReadOnlyList<string> Platforms { get; set; }
+
             public string RegionText { get; set; }
 
             public ulong PlaytimeSeconds { get; set; }
@@ -274,6 +276,7 @@ namespace PlayniteAchievements.Services.Overview
                     GameLogo = presentation.IconPath,
                     GameCoverPath = presentation.CoverPath,
                     PlatformText = presentation.PlatformText,
+                    Platforms = presentation.Platforms ?? Array.Empty<string>(),
                     RegionText = presentation.RegionText,
                     PlaytimeSeconds = presentation.PlaytimeSeconds,
                     AppId = game.AppId,
@@ -747,6 +750,7 @@ namespace PlayniteAchievements.Services.Overview
                     : null,
                 LastPlayed = playniteGame?.LastActivity,
                 PlatformText = PlayniteGameMetadataFormatter.GetPlatformText(playniteGame),
+                Platforms = PlayniteGameMetadataFormatter.GetPlatformNames(playniteGame),
                 RegionText = PlayniteGameMetadataFormatter.GetRegionText(playniteGame),
                 PlaytimeSeconds = playniteGame?.Playtime ?? 0
             };
