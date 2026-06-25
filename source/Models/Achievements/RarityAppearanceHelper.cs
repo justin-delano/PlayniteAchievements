@@ -173,13 +173,23 @@ namespace PlayniteAchievements.Models.Achievements
 
             _activeSettings = settings;
 
-            ApplyGeneratedBadgeResources(resources, settings);
+            ApplyBadgeResources(resources, settings);
 
+            AppearanceChanged?.Invoke(null, EventArgs.Empty);
+        }
+
+        public static void ApplyBadgeResources(ResourceDictionary resources, PersistedSettings settings)
+        {
+            if (resources == null)
+            {
+                return;
+            }
+
+            ApplyGeneratedBadgeResources(resources, settings);
             ApplyBadgeAlias(resources, RarityTier.Common, settings?.UseUniformRarityBadges ?? false);
             ApplyBadgeAlias(resources, RarityTier.Uncommon, settings?.UseUniformRarityBadges ?? false);
             ApplyBadgeAlias(resources, RarityTier.Rare, settings?.UseUniformRarityBadges ?? false);
             ApplyBadgeAlias(resources, RarityTier.UltraRare, settings?.UseUniformRarityBadges ?? false);
-            AppearanceChanged?.Invoke(null, EventArgs.Empty);
         }
 
         public static ImageSource CreateBadgePreview(RarityTier tier, PersistedSettings settings)

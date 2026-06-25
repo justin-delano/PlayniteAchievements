@@ -368,6 +368,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 return false;
             }
 
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
             row.ContextMenu = menu;
             menu.PlacementTarget = row;
             menu.IsOpen = true;

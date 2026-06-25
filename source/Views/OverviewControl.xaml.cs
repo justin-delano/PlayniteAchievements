@@ -1424,6 +1424,7 @@ namespace PlayniteAchievements.Views
             var menu = BuildRowContextMenu(row.DataContext);
             if (menu == null || menu.Items.Count == 0) return false;
 
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
             row.ContextMenu = menu;
             if (useControllerPlacement)
             {

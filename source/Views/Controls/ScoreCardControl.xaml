@@ -54,7 +54,7 @@
                 </Setter>
             </Style>
 
-            <Style x:Key="ScoreCardLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Style x:Key="ScoreCardLabelTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
                 <Setter Property="FontWeight" Value="Bold"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
@@ -62,14 +62,14 @@
                 <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             </Style>
 
-            <Style x:Key="ScoreCardTierTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Style x:Key="ScoreCardTierTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
                 <Setter Property="FontWeight" Value="ExtraBold"/>
                 <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
                 <Setter Property="VerticalAlignment" Value="Center"/>
             </Style>
 
-            <Style x:Key="ScoreCardMetricTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Style x:Key="ScoreCardMetricTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
                 <Setter Property="FontWeight" Value="Bold"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
@@ -108,7 +108,7 @@
                 <Setter Property="HorizontalAlignment" Value="Stretch"/>
             </Style>
 
-            <Style x:Key="ScoreCardTooltipLineTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+            <Style x:Key="ScoreCardTooltipLineTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Title}"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>

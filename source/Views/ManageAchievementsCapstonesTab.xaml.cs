@@ -1,4 +1,5 @@
 using Playnite.SDK;
+using PlayniteAchievements.Models.Achievements;
 using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
@@ -19,6 +20,7 @@ namespace PlayniteAchievements.Views
     public partial class ManageAchievementsCapstonesTab : UserControl, IFullscreenControllerNavigable
     {
         private readonly CapstoneViewModel _viewModel;
+        private readonly PlayniteAchievementsSettings _settings;
 
         public event EventHandler<CapstoneChangedEventArgs> CapstoneChanged;
 
@@ -30,9 +32,12 @@ namespace PlayniteAchievements.Views
             ILogger logger,
             PlayniteAchievementsSettings settings)
         {
+            _settings = settings;
             _viewModel = new CapstoneViewModel(gameId, achievementOverridesService, gameDataSnapshotProvider, playniteApi, logger, settings);
             DataContext = _viewModel;
             InitializeComponent();
+            ApplyScopedBadgeResources();
+            RarityAppearanceHelper.AppearanceChanged += RarityAppearanceHelper_AppearanceChanged;
             _viewModel.CapstoneChanged += ViewModel_CapstoneChanged;
         }
 
@@ -43,10 +48,28 @@ namespace PlayniteAchievements.Views
 
         public void Cleanup()
         {
+            RarityAppearanceHelper.AppearanceChanged -= RarityAppearanceHelper_AppearanceChanged;
+
             if (_viewModel != null)
             {
                 _viewModel.CapstoneChanged -= ViewModel_CapstoneChanged;
             }
+        }
+
+        private void RarityAppearanceHelper_AppearanceChanged(object sender, EventArgs e)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(new Action(ApplyScopedBadgeResources));
+                return;
+            }
+
+            ApplyScopedBadgeResources();
+        }
+
+        private void ApplyScopedBadgeResources()
+        {
+            RarityAppearanceHelper.ApplyBadgeResources(Resources, _settings?.Persisted);
         }
 
         private void ViewModel_CapstoneChanged(object sender, CapstoneChangedEventArgs e)

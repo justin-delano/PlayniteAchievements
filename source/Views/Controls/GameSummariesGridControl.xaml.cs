@@ -803,6 +803,7 @@ namespace PlayniteAchievements.Views.Controls
                 return false;
             }
 
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(owner, menu);
             if (useControllerPlacement)
             {
                 return FullscreenControllerNavigationService.OpenContextMenu(owner, menu);

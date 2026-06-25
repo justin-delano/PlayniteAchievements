@@ -165,7 +165,7 @@
             </Style>
 
             <!-- Button style that disables during refresh -->
-            <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
                 <Setter Property="Padding" Value="10,3"/>
                 <Setter Property="MinWidth" Value="88"/>
                 <Setter Property="Height" Value="24"/>
@@ -315,6 +315,7 @@
                                 VerticalAlignment="Center">
                             <Button.ContextMenu>
                                 <ContextMenu x:Name="RefreshModeSelectionContextMenu"
+                                             Style="{StaticResource AchievementSelectorContextMenuStyle}"
                                              ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                             </Button.ContextMenu>
                         </Button>
@@ -452,7 +453,8 @@
                                 VerticalAlignment="Center">
                         <Button.ContextMenu>
                             <ContextMenu x:Name="ProviderFilterSelectionContextMenu"
-                                             ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                                         Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                         </Button.ContextMenu>
                     </Button>
 
@@ -467,7 +469,8 @@
                                 VerticalAlignment="Center">
                         <Button.ContextMenu>
                             <ContextMenu x:Name="CompletenessFilterSelectionContextMenu"
-                                             ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                                         Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                         </Button.ContextMenu>
                     </Button>
 
@@ -482,7 +485,8 @@
                                 VerticalAlignment="Center">
                         <Button.ContextMenu>
                             <ContextMenu x:Name="PlayStatusFilterSelectionContextMenu"
-                                             ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                                         Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                         </Button.ContextMenu>
                     </Button>
 
@@ -548,6 +552,7 @@
                                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Type}">
                                 <Button.ContextMenu>
                                     <ContextMenu x:Name="SelectedGameTypeFilterSelectionContextMenu"
+                                                 Style="{StaticResource AchievementSelectorContextMenuStyle}"
                                                  ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                                 </Button.ContextMenu>
                             </Button>
@@ -562,6 +567,7 @@
                                     ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Label}">
                                 <Button.ContextMenu>
                                     <ContextMenu x:Name="SelectedGameCategoryFilterSelectionContextMenu"
+                                                 Style="{StaticResource AchievementSelectorContextMenuStyle}"
                                                  ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                                 </Button.ContextMenu>
                             </Button>

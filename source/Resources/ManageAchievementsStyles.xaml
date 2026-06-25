@@ -12,19 +12,19 @@
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
     </Style>
 
-    <Style x:Key="ManageAchievementsHeaderTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+    <Style x:Key="ManageAchievementsHeaderTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
     </Style>
 
-    <Style x:Key="ManageAchievementsHeaderHintStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+    <Style x:Key="ManageAchievementsHeaderHintStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Hint}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Top.Compact}"/>
     </Style>
 
-    <Style x:Key="ManageAchievementsHeaderActionButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+    <Style x:Key="ManageAchievementsHeaderActionButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Left.Md}"/>
         <Setter Property="VerticalAlignment" Value="Top"/>
     </Style>
@@ -200,7 +200,7 @@
         </StackPanel>
     </DataTemplate>
 
-    <Style x:Key="HiddenAchievementTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+    <Style x:Key="HiddenAchievementTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
         <Setter Property="Cursor" Value="Arrow"/>
         <Style.Triggers>
             <DataTrigger Binding="{Binding CanReveal}" Value="True">
@@ -229,7 +229,7 @@
         <Setter Property="VerticalContentAlignment" Value="Stretch"/>
     </Style>
 
-    <Style x:Key="InlineBrowseButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+    <Style x:Key="InlineBrowseButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
         <Setter Property="Width" Value="{StaticResource PlayAch.Size.Control.LargeHeight}"/>
         <Setter Property="Height" Value="{StaticResource PlayAch.Size.Control.LargeHeight}"/>
         <Setter Property="Focusable" Value="True"/>

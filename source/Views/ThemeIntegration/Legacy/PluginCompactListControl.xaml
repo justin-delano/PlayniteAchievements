@@ -30,7 +30,7 @@
           Height="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=CompactHeight}"
           Tag="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=IconHeight}">
         <ListBox x:Name="lbAchievements"
-                 Style="{StaticResource {x:Type ListBox}}"
+                 Style="{StaticResource PlayAch.ListBox.BaseStyle}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                  ScrollViewer.CanContentScroll="True"
@@ -40,7 +40,7 @@
                  Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}"
                  ItemsSource="{Binding LegacyTheme.ListAchievements, Mode=OneWay}">
             <ListBox.ItemContainerStyle>
-                <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource {x:Type ListBoxItem}}">
+                <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource PlayAch.ListBoxItem.BaseStyle}">
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <Setter Property="Template">
                         <Setter.Value>

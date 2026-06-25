@@ -1490,7 +1490,7 @@ namespace PlayniteAchievements.ViewModels
                 new ProviderOverrideOption
                 {
                     ProviderKey = ProviderOverrideNoneKey,
-                    DisplayName = L("LOCPlayAch_CustomRefresh_None", "None")
+                    DisplayName = L("LOCPlayAch_Common_None", "None")
                 },
                 new ProviderOverrideOption
                 {
@@ -1530,7 +1530,7 @@ namespace PlayniteAchievements.ViewModels
             var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
             if (string.Equals(normalizedKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase))
             {
-                return L("LOCPlayAch_CustomRefresh_None", "None");
+                return L("LOCPlayAch_Common_None", "None");
             }
 
             return ProviderRegistry.GetLocalizedName(normalizedKey);

@@ -390,6 +390,7 @@
                         ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Type}">
                     <Button.ContextMenu>
                         <ContextMenu x:Name="CategoryTypeFilterSelectionContextMenu"
+                                     Style="{StaticResource AchievementSelectorContextMenuStyle}"
                                      ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                     </Button.ContextMenu>
                 </Button>
@@ -404,6 +405,7 @@
                         ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Label}">
                     <Button.ContextMenu>
                         <ContextMenu x:Name="CategoryLabelFilterSelectionContextMenu"
+                                     Style="{StaticResource AchievementSelectorContextMenuStyle}"
                                      ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                     </Button.ContextMenu>
                 </Button>

@@ -1516,6 +1516,22 @@ namespace PlayniteAchievements.Views.Helpers
             };
 
             item.Header = CreateAlignmentButtonRow(contextColumn, refreshRow);
+            KeyboardNavigation.SetIsTabStop(item, false);
+            item.PreviewGotKeyboardFocus += (_, e) =>
+            {
+                if (e.NewFocus is DependencyObject focused &&
+                    item.Header is DependencyObject header &&
+                    IsDescendantOf(focused, header))
+                {
+                    return;
+                }
+
+                if (TryFocusFirstAlignmentButton(item))
+                {
+                    e.Handled = true;
+                }
+            };
+
             return item.Header == null ? null : item;
         }
 
@@ -1650,6 +1666,60 @@ namespace PlayniteAchievements.Views.Helpers
             };
 
             return button;
+        }
+
+        private static bool TryFocusFirstAlignmentButton(MenuItem item)
+        {
+            if (!(item?.Header is DependencyObject header))
+            {
+                return false;
+            }
+
+            var button = FindDescendant<Button>(header);
+            return button != null && button.Focus();
+        }
+
+        private static bool IsDescendantOf(DependencyObject current, DependencyObject ancestor)
+        {
+            while (current != null)
+            {
+                if (ReferenceEquals(current, ancestor))
+                {
+                    return true;
+                }
+
+                current = VisualTreeHelpers.GetParentForHitTesting(current) ??
+                          (current as FrameworkElement)?.Parent;
+            }
+
+            return false;
+        }
+
+        private static T FindDescendant<T>(DependencyObject current)
+            where T : DependencyObject
+        {
+            if (current == null)
+            {
+                return null;
+            }
+
+            if (current is T typed)
+            {
+                return typed;
+            }
+
+            var childCount = VisualTreeHelper.GetChildrenCount(current);
+            for (var i = 0; i < childCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(current, i);
+                var nested = FindDescendant<T>(child);
+                if (nested != null)
+                {
+                    return nested;
+                }
+            }
+
+            return null;
         }
 
         private bool AddVisibilitySection(ContextMenu menu)

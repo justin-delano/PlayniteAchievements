@@ -370,6 +370,7 @@ namespace PlayniteAchievements.Views
                 FocusRowByApiName(item.ApiName);
             }));
 
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
             row.ContextMenu = menu;
             return FullscreenControllerNavigationService.OpenContextMenu(row, menu);
         }

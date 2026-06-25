@@ -358,6 +358,7 @@ namespace PlayniteAchievements.ViewModels
                 LockedIconPath = projected.LockedIconPath,
                 UnlockTimeUtc = projected.UnlockTimeUtc,
                 GlobalPercentUnlocked = projected.GlobalPercentUnlocked,
+                Rarity = projected.Rarity,
                 PointsValue = projected.PointsValue,
                 ProgressNum = projected.ProgressNum,
                 ProgressDenom = projected.ProgressDenom,

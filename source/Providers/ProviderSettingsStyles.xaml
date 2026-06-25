@@ -18,7 +18,7 @@
         <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Bottom.Lg}"/>
     </Style>
 
-    <Style x:Key="ProviderTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}">
+    <Style x:Key="ProviderTitleTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
         <Setter Property="FontSize" Value="{StaticResource PlayAch.FontSize.ProviderTitle}"/>
         <Setter Property="FontWeight" Value="Bold"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
@@ -55,7 +55,7 @@
         </Style.Triggers>
     </Style>
 
-    <Style x:Key="AuthActionButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+    <Style x:Key="AuthActionButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
         <Style.Triggers>
             <DataTrigger Binding="{Binding AuthBusy, RelativeSource={RelativeSource AncestorType=UserControl}}"
                          Value="True">

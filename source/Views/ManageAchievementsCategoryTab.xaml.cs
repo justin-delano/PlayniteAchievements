@@ -386,6 +386,7 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
             row.ContextMenu = menu;
             if (useControllerPlacement)
             {

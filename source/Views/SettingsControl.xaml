@@ -16,7 +16,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/SettingsScopedControlStyles.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/RarityBadges.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <Style x:Key="PreviewThemeControlStyle"
@@ -1538,7 +1538,7 @@
                                                                         MinWidth="58"
                                                                         Click="PickResourceColor_Click">
                                                                     <Button.Style>
-                                                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                            <Style TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
                                                                             <Setter Property="Visibility" Value="Collapsed"/>
                                                                             <Style.Triggers>
                                                                                 <DataTrigger Binding="{Binding IsBrush}" Value="True">
@@ -2503,6 +2503,7 @@
                                                 <Button x:Name="StartPageActivityScopeSelectionButton"
                                                         Grid.Row="0"
                                                         Grid.Column="1"
+                                                        Style="{StaticResource AchievementSelectorButtonStyle}"
                                                         Content="{Binding StartPageActivityScopeText, ElementName=SettingsControlRoot}"
                                                         Click="StartPageActivityScopeSelectionButton_Click"
                                                         MinWidth="220"
@@ -2510,7 +2511,9 @@
                                                         Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"
                                                         HorizontalAlignment="Left">
                                                     <Button.ContextMenu>
-                                                        <ContextMenu x:Name="StartPageActivityScopeSelectionContextMenu"/>
+                                                        <ContextMenu x:Name="StartPageActivityScopeSelectionContextMenu"
+                                                                     Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                                                     ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                                                     </Button.ContextMenu>
                                                 </Button>
 
@@ -2522,13 +2525,16 @@
                                                 <Button x:Name="StartPageProgressScopeSelectionButton"
                                                         Grid.Row="1"
                                                         Grid.Column="1"
+                                                        Style="{StaticResource AchievementSelectorButtonStyle}"
                                                         Content="{Binding StartPageProgressScopeText, ElementName=SettingsControlRoot}"
                                                         Click="StartPageProgressScopeSelectionButton_Click"
                                                         MinWidth="220"
                                                         Height="{StaticResource PlayAch.Size.Control.Height}"
                                                         HorizontalAlignment="Left">
                                                     <Button.ContextMenu>
-                                                        <ContextMenu x:Name="StartPageProgressScopeSelectionContextMenu"/>
+                                                        <ContextMenu x:Name="StartPageProgressScopeSelectionContextMenu"
+                                                                     Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                                                     ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                                                     </Button.ContextMenu>
                                                 </Button>
                                             </Grid>
