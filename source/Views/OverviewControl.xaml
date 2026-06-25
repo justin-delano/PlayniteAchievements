@@ -19,7 +19,7 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/OverviewStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/OverviewScopedControlStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Shared LegendItem DataTemplate for all pie charts -->
@@ -679,13 +679,10 @@
                                         VerticalAlignment="Center"/>
 
                                 <Button x:Name="ClearGameSelectionButton"
-                                        Content="✕"
+                                        Content="&#xE711;"
+                                        Style="{StaticResource NavigationButtonStyle}"
                                         Click="ClearGameSelection_Click"
-                                        Width="24"
-                                        Height="24"
-                                        Padding="{StaticResource PlayAch.Thickness.None}"
-                                        Margin="10,0,0,0"
-                                        VerticalAlignment="Bottom"/>
+                                        Margin="10,0,0,0"/>
 
                             </StackPanel>
                         </Border>
