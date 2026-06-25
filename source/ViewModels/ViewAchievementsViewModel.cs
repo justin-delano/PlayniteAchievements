@@ -10,6 +10,8 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Summaries;
+using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
@@ -24,6 +26,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly GameSummaryItemBuilder _summaryBuilder;
         private readonly Guid _gameId;
         private Guid? _activeRefreshOperationId;
         private bool _isApplyingTimelineState;
@@ -75,6 +78,7 @@ namespace PlayniteAchievements.ViewModels
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings;
+            _summaryBuilder = new GameSummaryItemBuilder(_refreshService.Providers, _playniteApi, _logger);
 
             Timeline = new TimelineViewModel();
             ApplySavedTimelineState();
@@ -87,6 +91,7 @@ namespace PlayniteAchievements.ViewModels
             // Initialize commands
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
             DismissStatusCommand = new RelayCommand(_ => DismissStatus(), _ => CanDismissStatus);
+            OpenGameInLibraryCommand = new RelayCommand(_ => OpenGameInLibrary());
 
             RefreshGameCommand = new RelayCommand(
                 async (param) =>
@@ -378,6 +383,19 @@ namespace PlayniteAchievements.ViewModels
         // Achievement list
         public ObservableCollection<AchievementDisplayItem> Achievements { get; } = new ObservableCollection<AchievementDisplayItem>();
 
+        // Single-row game summary grid (standardized header surface).
+        public ObservableCollection<GameSummaryItem> SummaryItems { get; } = new ObservableCollection<GameSummaryItem>();
+
+        public bool SummaryUseCoverImages => _settings?.Persisted?.ViewAchievementsGameSummariesUseCoverImages ?? false;
+
+        public bool SummaryShowGameMetadata => _settings?.Persisted?.ViewAchievementsGameSummariesShowGameMetadata ?? true;
+
+        public bool SummaryShowCompletionBorder => _settings?.Persisted?.ViewAchievementsGameSummariesShowCompletionBorder ?? true;
+
+        public bool SummaryShowColumnHeaders => _settings?.Persisted?.ShowViewAchievementsGameSummariesGridColumnHeaders ?? true;
+
+        public double? SummaryGridRowHeight => _settings?.Persisted?.ViewAchievementsGameSummariesGridRowHeight;
+
         private bool _IsRefreshing;
         public bool IsRefreshing
         {
@@ -558,6 +576,7 @@ namespace PlayniteAchievements.ViewModels
         public ICommand RevealAchievementCommand { get; }
         public ICommand RefreshGameCommand { get; }
         public ICommand DismissStatusCommand { get; }
+        public ICommand OpenGameInLibraryCommand { get; }
 
         #endregion
 
@@ -771,6 +790,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     _logger?.Warn($"Game not found: {_gameId}");
                     ApplyGameMetadata(null);
+                    UpdateSummaryItem(null, null);
                     return;
                 }
 
@@ -779,6 +799,7 @@ namespace PlayniteAchievements.ViewModels
                 ApplyGameMetadata(game);
 
                 var gameData = _achievementDataService.GetVisibleGameAchievementData(_gameId);
+                UpdateSummaryItem(game, gameData);
                 if (gameData == null || !gameData.HasAchievements || gameData.Achievements == null)
                 {
                     _logger?.Info($"No achievement data for game: {game.Name}");
@@ -891,6 +912,63 @@ namespace PlayniteAchievements.ViewModels
             item?.ToggleReveal();
         }
 
+        private void OpenGameInLibrary()
+        {
+            try
+            {
+                PlayniteUiProvider.RestoreMainView();
+                _playniteApi?.MainView?.SelectGame(_gameId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to open game in Playnite library: {_gameId}");
+            }
+        }
+
+        // Builds the single-row game summary that replaces the legacy header/stats cards.
+        private void UpdateSummaryItem(Playnite.SDK.Models.Game game, GameAchievementData gameData)
+        {
+            GameSummaryItem item = null;
+
+            if (gameData != null)
+            {
+                if (gameData.Game == null)
+                {
+                    gameData.Game = game;
+                }
+
+                item = _summaryBuilder.Build(gameData, _settings, allowEmpty: true);
+            }
+            else if (game != null)
+            {
+                var stub = new GameAchievementData
+                {
+                    GameName = game.Name,
+                    PlayniteGameId = _gameId,
+                    Game = game,
+                    HasAchievements = false,
+                    Achievements = new List<AchievementDetail>()
+                };
+                item = _summaryBuilder.Build(stub, _settings, allowEmpty: true);
+            }
+
+            var items = item != null
+                ? new List<GameSummaryItem> { item }
+                : new List<GameSummaryItem>();
+
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                CollectionHelper.SynchronizeCollection(SummaryItems, items));
+        }
+
+        private void RaiseSummaryAppearanceProperties()
+        {
+            OnPropertyChanged(nameof(SummaryUseCoverImages));
+            OnPropertyChanged(nameof(SummaryShowGameMetadata));
+            OnPropertyChanged(nameof(SummaryShowCompletionBorder));
+            OnPropertyChanged(nameof(SummaryShowColumnHeaders));
+            OnPropertyChanged(nameof(SummaryGridRowHeight));
+        }
+
         private void ApplyGameMetadata(Playnite.SDK.Models.Game game)
         {
             if (game == null)
@@ -988,6 +1066,7 @@ namespace PlayniteAchievements.ViewModels
 
                 ApplyAppearanceSettingsToAchievements();
                 OnPropertyChanged(nameof(SingleGameGridRowHeight));
+                RaiseSummaryAppearanceProperties();
                 ApplySavedTimelineState();
                 ApplySearchFilter(skipDefaultSort: CurrentSortDirection.HasValue);
             }
@@ -1016,6 +1095,16 @@ namespace PlayniteAchievements.ViewModels
             if (e?.PropertyName == nameof(PersistedSettings.SingleGameGridMaxRows))
             {
                 SyncAchievementsDisplay();
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesUseCoverImages) ||
+                e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesShowGameMetadata) ||
+                e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesShowCompletionBorder) ||
+                e?.PropertyName == nameof(PersistedSettings.ShowViewAchievementsGameSummariesGridColumnHeaders) ||
+                e?.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesGridRowHeight))
+            {
+                RaiseSummaryAppearanceProperties();
                 return;
             }
 
