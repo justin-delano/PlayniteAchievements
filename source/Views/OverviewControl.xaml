@@ -51,21 +51,101 @@
                 </StackPanel>
             </DataTemplate>
 
-            <!-- Chevron toggle for expanding a provider's platform sub-list. Points right when
-                 collapsed and down when expanded. -->
-            <Style x:Key="ProviderFilterChevronToggleStyle" TargetType="ToggleButton">
+            <!-- Clickable filter row styled like the multi-select dropdown menu items: an outlined
+                 check box (with a dash for the tri-state "some selected" parent), a label, and a
+                 full-row hover highlight. Supports tri-state via IsThreeState on the instance. -->
+            <Style x:Key="ProviderFilterRowToggleStyle" TargetType="ToggleButton">
                 <Setter Property="OverridesDefaultStyle" Value="True"/>
                 <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Width" Value="20"/>
-                <Setter Property="Height" Value="20"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
+                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Focusable" Value="False"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleButton">
-                            <Border Background="Transparent" SnapsToDevicePixels="True">
+                            <Border x:Name="RowBorder"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="Transparent"
+                                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                    CornerRadius="3"
+                                    SnapsToDevicePixels="True">
+                                <Grid Margin="4,5,10,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="6"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid Grid.Column="0" Width="16" Height="16" SnapsToDevicePixels="True">
+                                        <Border x:Name="CheckBorder"
+                                                Background="{DynamicResource PlayAch.Brush.Control.Background}"
+                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                BorderThickness="1"
+                                                CornerRadius="3"/>
+                                        <Path x:Name="CheckMark"
+                                              Data="M 3.5 8 L 6.5 11 L 12.5 5"
+                                              Stroke="{DynamicResource PlayAch.Brush.Accent}"
+                                              StrokeThickness="2"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Visibility="Collapsed"/>
+                                        <Path x:Name="DashMark"
+                                              Data="M 3.5 8 L 12.5 8"
+                                              Stroke="{DynamicResource PlayAch.Brush.Accent}"
+                                              StrokeThickness="2"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              Visibility="Collapsed"/>
+                                    </Grid>
+                                    <ContentPresenter Grid.Column="2"
+                                                      VerticalAlignment="Center"
+                                                      HorizontalAlignment="Left"
+                                                      RecognizesAccessKey="True"
+                                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="CheckBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Control.Background.Hover}"/>
+                                    <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="{x:Null}">
+                                    <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="CheckBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Control.Background.Hover}"/>
+                                    <Setter TargetName="DashMark" Property="Visibility" Value="Visible"/>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
+                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- Chevron toggle that fills its square so the whole area is clickable. Points right
+                 when collapsed and down when expanded. -->
+            <Style x:Key="ProviderFilterChevronToggleStyle" TargetType="ToggleButton">
+                <Setter Property="OverridesDefaultStyle" Value="True"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Width" Value="30"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="ChevronBorder"
+                                    Background="Transparent"
+                                    CornerRadius="3"
+                                    SnapsToDevicePixels="True">
                                 <Path x:Name="Arrow"
                                       Width="8" Height="5"
                                       Data="M 0,0 L 8,0 L 4,5 Z"
@@ -87,6 +167,7 @@
                                     </Setter>
                                 </Trigger>
                                 <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ChevronBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
                                     <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
@@ -95,52 +176,36 @@
                 </Setter>
             </Style>
 
-            <!-- Hover highlight for a filter row, matching the dropdown menu feel. -->
-            <Style x:Key="ProviderFilterRowBorderStyle" TargetType="Border">
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="CornerRadius" Value="3"/>
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Style.Triggers>
-                    <Trigger Property="IsMouseOver" Value="True">
-                        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
-                    </Trigger>
-                </Style.Triggers>
-            </Style>
-
             <!-- One selectable platform (console) under a provider. -->
             <DataTemplate x:Key="PlatformFilterOptionTemplate" DataType="{x:Type vm:PlatformFilterOption}">
-                <Border Style="{StaticResource ProviderFilterRowBorderStyle}" Padding="8,5">
-                    <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                <ToggleButton Style="{StaticResource ProviderFilterRowToggleStyle}"
+                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
                               Content="{Binding PlatformName}"/>
-                </Border>
             </DataTemplate>
 
-            <!-- A provider row: tri-state parent checkbox, name, optional expander, and the
-                 indented platform sub-list shown when expanded. -->
+            <!-- A provider row: tri-state parent toggle (selects/clears all platforms), name, an
+                 optional expander, and the indented platform sub-list shown when expanded. -->
             <DataTemplate x:Key="ProviderFilterGroupTemplate" DataType="{x:Type vm:ProviderFilterGroup}">
                 <StackPanel>
-                    <Border Style="{StaticResource ProviderFilterRowBorderStyle}" Padding="8,6">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <CheckBox Grid.Column="0"
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton Grid.Column="0"
+                                      Style="{StaticResource ProviderFilterRowToggleStyle}"
                                       IsThreeState="True"
                                       IsChecked="{Binding SelectionState, Mode=OneWay}"
                                       Command="{Binding ToggleAllCommand}"
-                                      Content="{Binding DisplayName}"
-                                      VerticalAlignment="Center"/>
-                            <ToggleButton Grid.Column="1"
-                                          Margin="8,0,0,0"
-                                          IsChecked="{Binding IsExpanded, Mode=TwoWay}"
-                                          Style="{StaticResource ProviderFilterChevronToggleStyle}"
-                                          Visibility="{Binding HasMultiplePlatforms, Converter={StaticResource BoolToVis}}"/>
-                        </Grid>
-                    </Border>
+                                      Content="{Binding DisplayName}"/>
+                        <ToggleButton Grid.Column="1"
+                                      IsChecked="{Binding IsExpanded, Mode=TwoWay}"
+                                      Style="{StaticResource ProviderFilterChevronToggleStyle}"
+                                      Visibility="{Binding HasMultiplePlatforms, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
                     <ItemsControl ItemsSource="{Binding Platforms}"
                                   ItemTemplate="{StaticResource PlatformFilterOptionTemplate}"
-                                  Margin="20,0,0,2"
+                                  Margin="18,0,0,0"
                                   Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
             </DataTemplate>
@@ -607,6 +672,7 @@
                             <Popup x:Name="ProviderFilterPopup"
                                    PlacementTarget="{Binding ElementName=ProviderFilterSelectionButton}"
                                    Placement="Bottom"
+                                   Closed="ProviderFilterPopup_Closed"
                                    StaysOpen="False"
                                    AllowsTransparency="True"
                                    Focusable="False"
