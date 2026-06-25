@@ -538,6 +538,15 @@ namespace PlayniteAchievements.Tests.Views
         private static void RaiseMouseMove(UIElement element)
         {
             Assert.IsNotNull(Mouse.PrimaryDevice);
+
+            // Real WPF input raises the tunneling preview first, then the bubbling event.
+            // The behavior listens on PreviewMouseMove so it observes the cursor even when a
+            // descendant (e.g. a column header) marks the bubbling MouseMove handled, so the
+            // test must raise the preview event to exercise the production path.
+            element.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
+            {
+                RoutedEvent = Mouse.PreviewMouseMoveEvent
+            });
             element.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
             {
                 RoutedEvent = Mouse.MouseMoveEvent
