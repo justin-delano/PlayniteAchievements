@@ -13,12 +13,9 @@
 
     <UserControl.Resources>
         <ResourceDictionary>
-            <converters:BooleanConverter x:Key="InvertedBooleanToVisibilityConverter" Mode="InvertedToVisibility" />
-            <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
-            <converters:LocalDateTimeConverter x:Key="LocalDateTimeConverter" />
-            <converters:PercentToRarityGlowConverter x:Key="PercentToRarityGlowConverter" />
-            <converters:PercentToRarityBadgeConverter x:Key="PercentToRarityBadgeConverter" />
-            <converters:LockedIconSelectorConverter x:Key="LockedIconSelectorConverter" />
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -97,7 +94,7 @@
                    Foreground="Black"
                    Visibility="Collapsed">
             <TextBlock.Effect>
-                <DropShadowEffect Color="White" Opacity="0.75" BlurRadius="3" ShadowDepth="0" />
+                <DropShadowEffect Color="White" Opacity="{StaticResource PlayAch.Opacity.Hint}" BlurRadius="3" ShadowDepth="0" />
             </TextBlock.Effect>
         </TextBlock>
 

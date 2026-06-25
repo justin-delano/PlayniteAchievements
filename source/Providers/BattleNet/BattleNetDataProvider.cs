@@ -20,7 +20,19 @@ namespace PlayniteAchievements.Providers.BattleNet
         private readonly ILogger _logger;
         private BattleNetSettings _providerSettings;
 
-        public BattleNetDataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
+        public BattleNetDataProvider(
+            ILogger logger,
+            PlayniteAchievementsSettings settings,
+            IPlayniteAPI playniteApi)
+            : this(logger, settings, playniteApi, null)
+        {
+        }
+
+        public BattleNetDataProvider(
+            ILogger logger,
+            PlayniteAchievementsSettings settings,
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
@@ -28,8 +40,15 @@ namespace PlayniteAchievements.Providers.BattleNet
             _logger = logger;
             _apiClient = new BattleNetApiClient(logger);
             _sessionManager = new BattleNetSessionManager(playniteApi, _apiClient, logger);
-            _scanner = new BattleNetScanner(_apiClient, _sessionManager, settings, logger);
             _providerSettings = ProviderRegistry.Settings<BattleNetSettings>();
+            _scanner = new BattleNetScanner(
+                _apiClient,
+                _sessionManager,
+                settings,
+                _providerSettings,
+                logger,
+                playniteApi,
+                pluginUserDataPath);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet");
@@ -105,7 +124,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return string.Format(
-                "enabled={0}, apiClientId={1}, apiClientSecret={2}, sc2Region={3}, sc2Realm={4}, sc2Profile={5}, wowRegion={6}, wowRealmSlug={7}, wowCharacter={8}",
+                "enabled={0}, apiClientId={1}, apiClientSecret={2}, sc2Region={3}, sc2Realm={4}, sc2Profile={5}, wowRegion={6}, wowRealmSlug={7}, wowCharacter={8}, useExophaseForRarity={9}",
                 Bool(settings.IsEnabled),
                 Presence(settings.BattleNetClientId),
                 Presence(settings.BattleNetClientSecret),
@@ -114,7 +133,8 @@ namespace PlayniteAchievements.Providers.BattleNet
                 settings.Sc2ProfileId > 0 ? MaskId(settings.Sc2ProfileId.ToString()) : "<none>",
                 string.IsNullOrWhiteSpace(settings.WowRegion) ? "<none>" : settings.WowRegion,
                 string.IsNullOrWhiteSpace(settings.WowRealmSlug) ? "<none>" : settings.WowRealmSlug,
-                Presence(settings.WowCharacter));
+                Presence(settings.WowCharacter),
+                Bool(settings.UseExophaseForRarity));
         }
     }
 }

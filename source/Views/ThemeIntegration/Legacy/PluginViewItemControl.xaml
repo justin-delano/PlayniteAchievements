@@ -14,8 +14,11 @@
         DataContext is inherited from parent (the Game for this row).
     -->
     <controls:PluginUserControl.Resources>
-        <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
-        <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </controls:PluginUserControl.Resources>
 
     <Grid Name="PART_GridContener">

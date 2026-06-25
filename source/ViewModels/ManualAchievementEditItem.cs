@@ -60,6 +60,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(IsDescriptionHidden));
                     OnPropertyChanged(nameof(DisplayNameResolved));
                     OnPropertyChanged(nameof(DescriptionResolved));
+                    OnPropertyChanged(nameof(ApiNameResolved));
                     OnPropertyChanged(nameof(CanEditUnlockTime));
 
                     // Clear unlock time when locking
@@ -166,6 +167,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(DisplayIcon));
                     OnPropertyChanged(nameof(DisplayNameResolved));
                     OnPropertyChanged(nameof(DescriptionResolved));
+                    OnPropertyChanged(nameof(ApiNameResolved));
                 }
             }
         }
@@ -183,6 +185,11 @@ namespace PlayniteAchievements.ViewModels
         public string DescriptionResolved => IsHidden
             ? ResourceProvider.GetString("LOCPlayAch_Achievements_ClickToReveal")
             : Description;
+
+        /// <summary>
+        /// API name, hidden until a hidden achievement is revealed.
+        /// </summary>
+        public string ApiNameResolved => IsHidden ? string.Empty : ApiName;
 
         /// <summary>
         /// Toggles the reveal state if the achievement can be revealed.
@@ -230,6 +237,7 @@ namespace PlayniteAchievements.ViewModels
                         OnPropertyChanged(nameof(IsDescriptionHidden));
                         OnPropertyChanged(nameof(DisplayNameResolved));
                         OnPropertyChanged(nameof(DescriptionResolved));
+                        OnPropertyChanged(nameof(ApiNameResolved));
                         OnPropertyChanged(nameof(CanEditUnlockTime));
                     }
                 }

@@ -1,6 +1,75 @@
 AddonId: PlayniteAchievements
 Packages:
 
+  - Version: 2.5.3
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-06-21
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.3/PlayniteAchievements_2_5_3.pext
+    Changelog:
+    - "[Fixed] More performance improvements."
+    - "[Fixed] Image columns in grids have better width defaults, minimums, and maximums."
+
+  - Version: 2.5.2
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-06-19
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.2/PlayniteAchievements_2_5_2.pext
+    Changelog:
+    - "[Fixed] Performance improvements when editing in Manage Achievements window."
+    - "[Fixed] Memory leak during large library refreshes."
+
+  - Version: 2.5.1
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-06-18
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.1/PlayniteAchievements_2_5_1.pext
+    Changelog:
+    - "[New] Added Note marker and Note column to achievement grids."
+    - "[New] Notes now support hyperlinking."
+    - "[New] Added Exophase metadata support for native Battle.net platform."
+    - "[New] Added Hotkeys section to Settings. View or manage achievements while in game, or in Playnite. Hotkeys can be customized."
+    - "[New] Greatly expanded functionality of Dynamic Lists for theme devs. Check the wiki for more information, but this is the new best way to access achievement data in themes."
+    - "[Fixed] Fixed case where some RetroAchievements subsets were not being shared between games."
+    - "[Fixed] Fixed column widths adjustment when window is resized."
+    - "[Fixed] Triggering platform authentication checks in settings is more clear."
+    - "As always, many additional improvements and fixes behind the scenes."
+
+  - Version: 2.5.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-06-15
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.5.0/PlayniteAchievements_2_5_0.pext
+    Changelog:
+    - "A massive customization update!"
+    - "[New] Added native StartPage support! All PlayniteAchievements summary features are now available on the StartPage. StartPage widget configuration is separate from main settings, allowing for further customization."
+    - "[New] Added Notes tab to Game Options, allowing you to save custom notes for each achievement."
+    - "[Adjusted] Moved the Ignored and SummaryIgnored categories to a new Filters tab, for clarity."
+    - "[Adjusted] Tweaked the calculations for Collection and Prestige scores, and new columns show scores per achievement. You may notice some differences in your scores now, but they will remain stable unless I get critical feedback."
+    - "[Adjusted] Prestige and Collection levels now go up to 250, and tiers are set at every 10 levels. This should lead to more consistent progression."
+    - "[New] MANY new grid customization options. Per grid maximum rows count, per grid row height, per column and global text alignment settings, to name a few."
+    - "[New] Redesigned the Display tab of Settings to match the Platforms tab."
+    - "[Adjusted] Image columns can now be resized in all grids."
+    - "[Adjusted] The Sidebar view has been renamed to the Overview and Games Overview (left of sidebar) has been renamed to Game Summaries, for clarity."
+    - "[Adjusted] Game Options has been renamed to Manage Achievements and the View Achievements window naming is more consistent."
+    - "[New] Added command for themes to open Manage Achievements window."
+    - "[Fixed] Fixed 3-way sorting issues in grids"
+    - "[New] Window positions and sizes are now saved between uses."
+    - "[New] Capstone achievements are now marked in the Status column of grids."
+    - "[Fixed] Colors in the Overview are improved."
+    - "[Fixed] RetroAchievements overrides now should find Subsets."
+    - "Localization updates."
+    - "As always, many additional improvements and fixes behind the scenes."
+
+  - Version: 2.4.0
+    RequiredApiVersion: 6.14.0
+    ReleaseDate: 2026-06-02
+    PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.4.0/PlayniteAchievements_2_4_0.pext
+    Changelog:
+    - "Added native support for EA achievements. These do not come with Icons or Rarity data natively at the moment, but this additional data can be fetched from Exophase."
+    - "Added new Library Scores in the Overview. The Collection Score prioritizes the total number of earned achievements, weighted by rarity, while the Prestige Score highly prioritizes rare achievements, and deprioritizes common achievements. More granular scoring display may follow, to show much each achievement boosts your score."
+    - "Middle divider position in the Overview now saves its position."
+    - "Added option in Display to hide Score cards."
+    - "Fixed issue where Exophase was trying to provide data even when it was not enabled. A refresh may be necessary to fix any games which were affected."
+    - "Fixed issue where some PC Gamepass Games were not being detected."
+    - "Localization updates."
+
   - Version: 2.3.0
     RequiredApiVersion: 6.14.0
     ReleaseDate: 2026-05-30
@@ -21,11 +90,11 @@ Packages:
     Changelog:
     - "Added native support for World of Warcraft achievements. This now allows for localized achievements that Exophase does not provide. Seeking beta testers for other Battle.net games!"
     - "Redesigned the platform settings tab."
-    - "Added experimental fullscreen controller support for the Achievement Overview (sidebar), Single Game view, and Game Options window. This is still a work in progress, but should allow for basic navigation and interaction."
+    - "Added experimental fullscreen controller support for the Achievement Overview (overview), Single Game view, and Game Options window. This is still a work in progress, but should allow for basic navigation and interaction."
     - "Added a Source Page button in the Game Options Overview tab, which links to the web page where achievement data is sourced for that game."
     - "Added .cue file support for RetroAchievements."
     - "Improved Steam authentication."
-    - "Fixed issue where sidebar grids did not take the full window height."
+    - "Fixed issue where overview grids did not take the full window height."
     - "Fixed issue where RetroAchievements override was not being respected."
     - "Added German localization! Thanks to @afroemberg for the contribution!"
 
@@ -45,12 +114,12 @@ Packages:
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.4/PlayniteAchievements_2_1_4.pext
     Changelog:
     - "Added three-way clicking to datagrids, to allow for easier sorting and filtering. Clicking on a column header will now cycle between ascending, descending, and unsorted states."
-    - "Added SummaryIgnored category type. Now, Ignored achievements will be excluded from all UI, and SummaryIgnored achievements will be excluded from sidebar summaries and pie charts. Full games can still be excluded from refreshes or summaries, and this allows for more granular control."
+    - "Added SummaryIgnored category type. Now, Ignored achievements will be excluded from all UI, and SummaryIgnored achievements will be excluded from overview summaries and pie charts. Full games can still be excluded from refreshes or summaries, and this allows for more granular control."
     - "Added display option for Uniform Rarity badges, which will use the same badge shape for each rarity tier, but with the existing color schemes."
     - "Added experimental support for Exophase to supply rarity data for platforms that don't provide it themselves. This is still a work in progress, please provide feedback if you have any issues."
     - "ShadPS4 will now show achievement data for games without any unlocked achievements."
     - "Fixed text wrapping in some datagrid columns."
-    - "Fixed many pixel rounding issues in the sidebar, and improved icon quality."
+    - "Fixed many pixel rounding issues in the overview, and improved icon quality."
     - "Fixed integration with fullscreen child windows."
     - "More legacy manual tracking import fixes."
     - "Fixed some Steam achievements not showing up when they contained whitespace in the Steam API."
@@ -63,7 +132,7 @@ Packages:
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.3/PlayniteAchievements_2_1_3.pext
     Changelog:
     - "Steam authentication fixes."
-    - "Sidebar Games Overview sort options added"
+    - "Overview Game Summaries sort options added"
     - "RetroAchievements subset fix for when multiple games share a subset"
 
   - Version: 2.1.2
@@ -75,7 +144,7 @@ Packages:
     - "Steam - removed need for Web API key."
     - "ShadPS4 - Improved path handling again"
     - "PSN - Removed extraneous authentication checks."
-    - "Display - Added new default grid sorting options to Sidebar/Single Game/Theme grids."
+    - "Display - Added new default grid sorting options to Overview/Single Game/Theme grids."
     - "Settings - Hidden games can now be automatically excluded from tracking and refreshes. This reeplaces existing logic tied to Tags."
     - "Game Options - Added new Ignored category type, which hides achievements from all displays and tracking."
     - "Fullscreen themes can now implement customized achievement orders."
@@ -89,7 +158,7 @@ Packages:
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v2.1.1/PlayniteAchievements_2_1_1.pext
     Changelog:
     - "RetroAchievements - Restored option to automatically assign capstones (default: Disabled). A refresh will be required to update these capstones."
-    - "Fix - Capstone completion will now show correctly show in the Sidebar"
+    - "Fix - Capstone completion will now show correctly show in the Overview"
     - "Fix - Made sorting of theme elements (compact lists, datagrids) more consistent."
     - "Fix - Legacy manual tracking import bug fixes."
     - "Fix - Adjusted dependencies to better match Playnite's."
@@ -104,7 +173,7 @@ Packages:
     - "Display - Added basic default Fullscreen theme support."
     - "Display - Added options to disable individual theme elements."
     - "Display - Added compact list sorting controls (Unlock Time, Rarity)."
-    - "Display - Added option to show platform/playtime/region metadata in sidebar and single-game views."
+    - "Display - Added option to show platform/playtime/region metadata in overview and single-game views."
     - "Display - Added Show Completion Border option for completed games."
     - "Display - Added more icon options (download full resolution/compressed, download separate locked icons or greyscale the unlocked icons)"
     - "Game Options - Added override to download locked icons for specified game"
@@ -148,7 +217,7 @@ Packages:
         - "Theme Integration: New modern theme controls for better integration with existing themes and easier use in new themes. The theme migration tool has been updated to support this Full migration mode, as well as a Custom migration mode, if your theme needs more granular updates."
         - "Github now has a full Wiki with documentation for using the plugin, troubleshooting, and developing themes. Check it out here: https://github.com/justin-delano/PlayniteAchievements/wiki"
         - "Community localization is now set up via Crowdin, and the plugin is available for translation into more languages! If you'd like to contribute a translation, head over to the Crowdin page here: https://crowdin.com/project/playniteachievements"
-        - "Display settings tab now shows previews for each of the new theme controls, and adds additional new settings for pie chart display and other sidebar options."
+        - "Display settings tab now shows previews for each of the new theme controls, and adds additional new settings for pie chart display and other overview options."
         - "Playnite Tagging support added. From the General settings tab, you can now automatically tag games with achievement data. Completing a game's achievements will now also add the builtin Completion Status."
         - "RetroAchievements subset support option added, allowing automatic categorization of achievements."
         - "Massive code refactor and optimization under the hood, improving performance and stability across the board, and setting the stage for future features and platforms."
@@ -162,7 +231,7 @@ Packages:
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.6.2/PlayniteAchievements_1_6_2.pext
     Changelog:
         - "Fixed issues with new cache creation."
-        - "Fixed issues with Pie Charts and Sidebar Display settings."
+        - "Fixed issues with Pie Charts and Overview Display settings."
         - "Added option to hide top menu button."
 
   - Version: 1.6.1
@@ -172,8 +241,8 @@ Packages:
     Changelog:
         - "Manual achievement tracking now supports Exophase linking (with experimental SuccessStory legacy import)"
         - "New Collectable, Missable, Difficulty, and Stackable category types"
-        - "Sidebar popout window accessible from top panel"
-        - "Sidebar ShowGamesWithNoUnlocks and ShowUnplayedGames options now moved to Display settings"
+        - "Overview popout window accessible from top panel"
+        - "Overview ShowGamesWithNoUnlocks and ShowUnplayedGames options now moved to Display settings"
         - "ShowGamesWithNoUnlocks and ShowUnplayedGames settings now apply to aggregate pie charts"
         - "Rare startup crashes should be fixed."
         - "Daylight Savings Time bugs fixed for Steam achievements, refreshes will fix any incorrect unlock times"
@@ -189,10 +258,10 @@ Packages:
        - "SuccessStory Import - Import manual tracking data from SuccessStory via Settings > Manual (do this first if you have existing data!)"
        - "Achievement Categories - Organize achievements into custom categories"
        - "Achievement Sort Order - Customize display order per game"
-       - "Multi-Select Filters - Filter sidebar by multiple providers, completion status, game type, and category"
+       - "Multi-Select Filters - Filter overview by multiple providers, completion status, game type, and category"
        - "Contextual Pie Charts - Trophy pie chart for PSN games, pie charts have more interactability, and rarity/trophy charts now reflect the selected game."
        - "New Platform, Type, and Category columns"
-       - "Summary Exclusions - Exclude games from sidebar summaries"
+       - "Summary Exclusions - Exclude games from overview summaries"
        - "Exclude Hidden Games - New option to automatically remove achievement data and exclude games from refreshes when hiding them in Playnite"
        - "PSN Provider Fixes - Improved authentication and DLC trophy tracking"
        - "Various other UI improvements, bug fixes, and optimizations throughout"
@@ -219,7 +288,7 @@ Packages:
       - "PlayStation Trophy System added in addition to rarity & points"
       - "Enhanced Pie Charts: New hover tooltips and icon placement"
       - "Custom Refresh Dialog - New unified refresh UI allowing for full customization of which games and platforms are refreshed"
-      - "Started to implement Display settings via a new tab in settings, with options to hide some Sidebar charts."
+      - "Started to implement Display settings via a new tab in settings, with options to hide some Overview charts."
       - "Performance - Parallel platform refresh option (enabled by default) and various optimizations throughout"
       - "Theme Migration - Auto-migrate upgraded themes that had been migrated, and notifications on startup"
       - "New Logging - Dedicated plugin data folder & log file accessible from settings"
@@ -259,7 +328,7 @@ Packages:
     Changelog:
       - PlayStation Network (PSN) support! Track trophies from your PlayStation library with full authentication flow in settings.
       - New data grid options - resize and hide columns to customize your view, plus a new score column for gamerscore/rarity display.
-      - Right-click context menus - new polish in the sidebar view, allowing you to edit visible columns, open or scan games, via right clicking.
+      - Right-click context menus - new polish in the overview view, allowing you to edit visible columns, open or scan games, via right clicking.
       - Steam datetime parsing improvements - better handling of unlock times with automatic retry on Steam redirects and expanded language support.
       - Improved parsing of legacy Steam achievement pages for users with older games
       - Epic Games localization fixed - API clients now properly handle localization across all supported providers.
@@ -272,7 +341,7 @@ Packages:
     PackageUrl: https://github.com/justin-delano/PlayniteAchievements/releases/download/v1.3.0/PlayniteAchievements_1_3_0.pext
     Changelog:
       - Epic Games support! XP is being tracked, but UI is not quite prepared for displaying it yet.
-      - Critical Fix - database syncing fix, where scans could show achievements for single games, but not appear in the sidebar overview, or disappear completely.
+      - Critical Fix - database syncing fix, where scans could show achievements for single games, but not appear in the overview overview, or disappear completely.
       - The database has changed again, and data should automatically migrate. If you encounter any issues, please report them, and try clearing your cache from settings and rescanning for achievements. 
       - Steam - progress bar fallback should actually work now.
       - More language fixes and global language setting. Please report any other datetime parsing issues you encounter.
@@ -315,7 +384,7 @@ Packages:
       - Happy Valentine's Day!
       - Achievement lists - added unlocked/locked/hidden visibility filters and a new status column with lock/check icons
       - Sorting UX - improved default sort indicators and reset behavior when selecting or clearing games
-      - Sidebar/single-game UI - moved search above stats and refined spacing, margins, and control styling
+      - Overview/single-game UI - moved search above stats and refined spacing, margins, and control styling
       - Steam and RetroAchievements - improved icon fallback, emulator path expansion, and console/path resolution
       - Performance and stability - improved async threading and added Steam session warmup for smoother scans
       - GOG support coming soon!

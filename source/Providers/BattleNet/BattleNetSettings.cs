@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private string _wowRealmSlug;
         private string _wowCharacter;
         private bool _wowAggregateAccountCharacters = true;
+        private bool _useExophaseForRarity;
 
         public string BattleNetClientId
         {
@@ -118,6 +119,15 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             get => _wowAggregateAccountCharacters;
             set => SetValue(ref _wowAggregateAccountCharacters, value);
+        }
+
+        /// <summary>
+        /// When true, enriches Battle.net achievement rarity from Exophase after native scanning.
+        /// </summary>
+        public bool UseExophaseForRarity
+        {
+            get => _useExophaseForRarity;
+            set => SetValue(ref _useExophaseForRarity, value);
         }
     }
 }

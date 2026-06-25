@@ -1,0 +1,337 @@
+<UserControl x:Class="PlayniteAchievements.Views.ViewAchievementsControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
+             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:models="clr-namespace:PlayniteAchievements.Models.Achievements"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="600"
+             Loaded="OnLoaded">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/ViewAchievementsScopedControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Style for Expander Header ToggleButton -->
+            <Style x:Key="ExpanderHeaderStyle" TargetType="ToggleButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="Padding" Value="0,0,0,6"/>
+                <Setter Property="HorizontalContentAlignment" Value="Left"/>
+                <Setter Property="VerticalContentAlignment" Value="Center"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <ContentPresenter Grid.Column="0" 
+                                                      HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" 
+                                                      VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                                    <Path x:Name="Arrow" Grid.Column="1"
+                                          Data="M 0,0 L 4,4 L 8,0"
+                                          Stroke="{TemplateBinding Foreground}"
+                                          StrokeThickness="1.5"
+                                          VerticalAlignment="Center"
+                                          RenderTransformOrigin="0.5,0.5">
+                                        <Path.RenderTransform>
+                                            <RotateTransform Angle="180"/>
+                                        </Path.RenderTransform>
+                                    </Path>
+                                </Grid>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsChecked" Value="False">
+                                    <Setter TargetName="Arrow" Property="RenderTransform">
+                                        <Setter.Value>
+                                            <RotateTransform Angle="0"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Trigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="0.8"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource PlayAch.Brush.Window.Background}" Padding="20">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Game Summary (standardized one-row grid; replaces the legacy header/stats cards) -->
+        <StackPanel Grid.Row="0" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+            <controls:GameSummariesGridControl x:Name="GameSummaryGridControl"
+                                               ItemsSource="{Binding SummaryItems}"
+                                               ColumnSettingsKey="ViewAchievementsGameSummaries"
+                                               UseCoverImages="{Binding SummaryUseCoverImages}"
+                                               ShowMetadataPlatform="{Binding SummaryShowMetadataPlatform}"
+                                               ShowMetadataPlaytime="{Binding SummaryShowMetadataPlaytime}"
+                                               ShowMetadataRegion="{Binding SummaryShowMetadataRegion}"
+                                               ShowCompletionBorder="{Binding SummaryShowCompletionBorder}"
+                                               ShowColumnHeaders="{Binding SummaryShowColumnHeaders}"
+                                               FixedRowHeight="{Binding SummaryGridRowHeight}"
+                                               DelayInitialRenderUntilNormalized="True"
+                                               DisableRowSelection="True"
+                                               RowPreviewMouseRightButtonDown="GameSummaryRow_PreviewMouseRightButtonDown"
+                                               RowPreviewMouseRightButtonUp="GameSummaryRow_PreviewMouseRightButtonUp"/>
+            <!-- Standard refresh progress bar (mirrors the Overview window) -->
+            <StackPanel Margin="4,4,0,0"
+                        Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding ProgressMessage}"
+                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Secondary}"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                <ProgressBar Value="{Binding ProgressPercent, Mode=OneWay}"
+                             Height="6"
+                             Minimum="0"
+                             Maximum="100"/>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Timeline -->
+        <Border Grid.Row="1"
+            Style="{StaticResource CardBorderStyle}"
+            Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"
+            Padding="16,12,16,12"
+                Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <!-- Timeline Header -->
+                <ToggleButton x:Name="TimelineToggleButton"
+                              IsChecked="{Binding IsTimelineVisible, Mode=TwoWay}"
+                              Style="{StaticResource ExpanderHeaderStyle}">
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Section_Timeline}"
+                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
+                </ToggleButton>
+
+                <!-- Collapsible Timeline Section -->
+                <StackPanel Margin="0,12,0,0"
+                            Visibility="{Binding IsTimelineVisible, Converter={StaticResource BoolToVis}}">
+                    <!-- Time Range Buttons -->
+                    <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                        <RadioButton x:Name="TimelineRangeSevenDaysButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_7D}" GroupName="TimeRange"
+                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                     IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=SevenDays}"
+                                     Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="SevenDays"/>
+                        <RadioButton x:Name="TimelineRangeFourteenDaysButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_14D}" GroupName="TimeRange"
+                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                     IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=FourteenDays}"
+                                     Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="FourteenDays"/>
+                        <RadioButton x:Name="TimelineRangeOneMonthButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_1M}" GroupName="TimeRange"
+                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                     IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneMonth}"
+                                     Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="OneMonth"/>
+                        <RadioButton x:Name="TimelineRangeThreeMonthsButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_3M}" GroupName="TimeRange"
+                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                     IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=ThreeMonths}"
+                                     Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="ThreeMonths"/>
+                        <RadioButton x:Name="TimelineRangeOneYearButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_1Y}" GroupName="TimeRange"
+                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                     IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneYear}"
+                                     Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="OneYear"/>
+                        <RadioButton x:Name="TimelineRangeAllButton"
+                                     Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="TimeRange"
+                                     Style="{StaticResource TimeRangeButtonStyle}"
+                                     IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=All}"
+                                     Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="All"/>
+                    </StackPanel>
+
+                    <!-- LiveCharts Timeline -->
+                    <lvc:CartesianChart Height="120"
+                                        Series="{Binding Timeline.TimelineSeries}"
+                                        LegendLocation="None"
+                                        Hoverable="True"
+                                        DisableAnimations="True">
+                        <lvc:CartesianChart.Resources>
+                            <Style TargetType="lvc:ColumnSeries">
+                                <Setter Property="Fill" Value="{DynamicResource PlayAch.Brush.Accent}" />
+                            </Style>
+                        </lvc:CartesianChart.Resources>
+                        <lvc:CartesianChart.AxisX>
+                            <lvc:Axis Labels="{Binding Timeline.TimelineLabels}"
+                                      ShowLabels="True"
+                                      LabelsRotation="45"
+                                      FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                      Foreground="{DynamicResource PlayAch.Brush.Text}">
+                                <lvc:Axis.Separator>
+                                    <lvc:Separator Step="1" IsEnabled="False"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisX>
+                        <lvc:CartesianChart.AxisY>
+                            <lvc:Axis MinValue="0"
+                                      LabelFormatter="{Binding Timeline.YAxisFormatter}"
+                                      FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                      Foreground="{DynamicResource PlayAch.Brush.Text}">
+                                <lvc:Axis.Separator>
+                                    <lvc:Separator Stroke="{DynamicResource PlayAch.Brush.Border}" Opacity="0.2"/>
+                                </lvc:Axis.Separator>
+                            </lvc:Axis>
+                        </lvc:CartesianChart.AxisY>
+                    </lvc:CartesianChart>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- Search Achievements -->
+        <Border Grid.Row="2"
+                Style="{StaticResource CardBorderStyle}"
+                Margin="16,0,16,8"
+                Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0">
+                    <TextBox x:Name="SearchTextBox"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             Style="{StaticResource ClearableSearchTextBoxStyle}"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
+                               VerticalAlignment="Center"
+                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
+                               IsHitTestVisible="False" Style="{StaticResource SearchPlaceholderTextStyle}"/>
+                    <Button x:Name="ClearSearchButton"
+                            Tag="{Binding SearchText}"
+                            Click="ClearSearch_Click"
+                            Style="{StaticResource ClearSearchButtonStyle}"/>
+                </Grid>
+
+                <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                <Button x:Name="CategoryTypeFilterSelectionButton"
+                        Style="{StaticResource AchievementSelectorButtonStyle}"
+                        Content="{Binding SelectedCategoryTypeFilterText}"
+                        Click="CategoryTypeFilterSelectionButton_Click"
+                        Width="120"
+                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
+                        VerticalAlignment="Center"
+                        ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Type}">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="CategoryTypeFilterSelectionContextMenu"
+                                     Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                     ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                    </Button.ContextMenu>
+                </Button>
+                <Button x:Name="CategoryLabelFilterSelectionButton"
+                        Style="{StaticResource AchievementSelectorButtonStyle}"
+                        Content="{Binding SelectedCategoryLabelFilterText}"
+                        Click="CategoryLabelFilterSelectionButton_Click"
+                        Width="140"
+                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
+                        VerticalAlignment="Center"
+                        ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Label}">
+                    <Button.ContextMenu>
+                        <ContextMenu x:Name="CategoryLabelFilterSelectionContextMenu"
+                                     Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                     ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                    </Button.ContextMenu>
+                </Button>
+                <CheckBox x:Name="ShowUnlockedCheckBox"
+                      Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
+                      IsChecked="{Binding ShowUnlocked}"
+                      VerticalAlignment="Center"
+                      Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
+                <CheckBox x:Name="ShowLockedCheckBox"
+                      Content="{DynamicResource LOCPlayAch_Common_Locked}"
+                      IsChecked="{Binding ShowLocked}"
+                      VerticalAlignment="Center"
+                      Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
+                <CheckBox x:Name="ShowHiddenCheckBox"
+                      Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
+                      IsChecked="{Binding ShowHidden}"
+                      VerticalAlignment="Center"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
+        <!-- No Achievements Placeholder -->
+        <Grid Grid.Row="3"
+              Visibility="{Binding HasAchievements, Converter={StaticResource InverseBoolToVis}}">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40">
+                <TextBlock Text="{DynamicResource LOCPlayAch_NoAchievementsTitle}"
+                           FontSize="{DynamicResource PlayAch.FontSize.Title}"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           HorizontalAlignment="Center"
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                <TextBlock Text="{DynamicResource LOCPlayAch_NoAchievementsMessage}"
+                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                           TextWrapping="Wrap"
+                           HorizontalAlignment="Center"
+                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                <TextBlock Text="{DynamicResource LOCPlayAch_NoAchievementsMessageAlt}"
+                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                           Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
+                           TextWrapping="Wrap"
+                           HorizontalAlignment="Center"
+                           FontSize="{DynamicResource PlayAch.FontSize.Caption}"/>
+                <Button x:Name="EmptyStateRefreshButton"
+                        Content="{DynamicResource LOCPlayAch_Button_Refresh}"
+                        Command="{Binding RefreshGameCommand}"
+                        Style="{StaticResource PlayAch.Button.BaseStyle}"
+                        HorizontalAlignment="Center"
+                        Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Achievements List -->
+        <controls:AchievementDataGridControl x:Name="AchievementsDataGridControl"
+                                             Grid.Row="3"
+                                             Margin="16,0,16,0"
+                                             Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}"
+                                             ItemsSource="{Binding Achievements}"
+                                             RevealCommand="{Binding RevealAchievementCommand}"
+                                             ColumnSettingsKey="SingleGame"
+                                             DataGridMaxHeight="{x:Static sys:Double.NaN}"
+                                             ShowRarityGlow="{Binding ShowRarityGlow}"
+                                             FixedRowHeight="{Binding SingleGameGridRowHeight}"
+                                             UseExternalSorting="True"
+                                             Sorting="OnGridSorting"
+                                             RowPreviewMouseRightButtonDown="AchievementRow_PreviewMouseRightButtonDown"
+                                             RowPreviewMouseRightButtonUp="AchievementRow_PreviewMouseRightButtonUp"/>
+    </Grid>
+    </Border>
+</UserControl>
+
+

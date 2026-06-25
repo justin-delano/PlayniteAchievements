@@ -11,17 +11,14 @@
     <base:ThemeControlBase.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementTemplates.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
-            <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
-            <converters:BooleanConverter x:Key="InverseBoolToVisConverter" Mode="InvertedToVisibility" />
-            <converters:HeightToFontSizeConverter x:Key="HeightToFontSizeConverter" />
         </ResourceDictionary>
     </base:ThemeControlBase.Resources>
 
     <Button x:Name="PART_PluginButton" Click="PART_PluginButton_Click">
         <Button.Style>
-            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Style TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding DataContext.Persisted.EnableAchievementButtonControl, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}}"
                                  Value="False">
@@ -38,7 +35,7 @@
 
             <!-- Trophy icon (shown when DisplayDetails=False) -->
             <TextBlock Grid.Column="0"
-                       Text="&#xedd7;" FontFamily="{DynamicResource FontIcoFont}"
+                       Text="&#xedd7;" FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                        VerticalAlignment="Center"
                        Visibility="{Binding DisplayDetails, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Converter={StaticResource InverseBoolToVisConverter}}"
                        FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, FallbackValue=14}"/>
@@ -89,7 +86,7 @@
                                  Maximum="{Binding AchievementCount, Mode=OneWay, FallbackValue=100}"
                                  Value="{Binding UnlockedCount, Mode=OneWay, FallbackValue=30}">
                         <ProgressBar.Style>
-                            <Style TargetType="{x:Type ProgressBar}" BasedOn="{StaticResource {x:Type ProgressBar}}">
+                            <Style TargetType="{x:Type ProgressBar}" BasedOn="{StaticResource PlayAch.ProgressBar.BaseStyle}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=IsMouseOver}" Value="True">
                                         <Setter Property="Foreground" Value="{Binding ElementName=PART_PluginButton, Path=Foreground}"/>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Playnite.SDK;
 
 namespace PlayniteAchievements.Services
 {
@@ -8,8 +9,6 @@ namespace PlayniteAchievements.Services
     {
         public const string DefaultCategoryType = "Default";
         public const string DefaultCategoryLabel = "Default";
-        public const string IgnoredCategoryType = "Ignored";
-        public const string SummaryIgnoredCategoryType = "SummaryIgnored";
 
         private static readonly string[] CanonicalOrder =
         {
@@ -21,9 +20,7 @@ namespace PlayniteAchievements.Services
             "Collectable",
             "Missable",
             "Difficulty",
-            "Stackable",
-            SummaryIgnoredCategoryType,
-            IgnoredCategoryType
+            "Stackable"
         };
 
         private static readonly Dictionary<string, string> CanonicalByAlias =
@@ -46,13 +43,7 @@ namespace PlayniteAchievements.Services
                 ["diff"] = "Difficulty",
                 ["stackable"] = "Stackable",
                 ["stack"] = "Stackable",
-                ["stacking"] = "Stackable",
-                ["ignored"] = IgnoredCategoryType,
-                ["ignore"] = IgnoredCategoryType,
-                ["summaryignored"] = SummaryIgnoredCategoryType,
-                ["summary_ignored"] = SummaryIgnoredCategoryType,
-                ["summary ignored"] = SummaryIgnoredCategoryType,
-                ["si"] = SummaryIgnoredCategoryType
+                ["stacking"] = "Stackable"
             };
 
         public static IReadOnlyList<string> AllowedCategoryTypes => CanonicalOrder;
@@ -133,27 +124,55 @@ namespace PlayniteAchievements.Services
         public static string ToDisplayText(string rawValue)
         {
             var values = ParseValues(NormalizeOrDefault(rawValue));
-            return values.Count == 0 ? DefaultCategoryType : string.Join(", ", values);
+            return ToDisplayText(values);
         }
 
-        public static bool IsIgnored(string rawValue)
+        public static string ToDisplayText(IEnumerable<string> categoryTypes)
         {
-            return ParseValues(rawValue)
-                .Any(value => string.Equals(value, IgnoredCategoryType, StringComparison.OrdinalIgnoreCase));
+            var values = (categoryTypes ?? Enumerable.Empty<string>())
+                .SelectMany(value => ParseValues(NormalizeOrDefault(value)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (values.Count == 0)
+            {
+                values.Add(DefaultCategoryType);
+            }
+
+            return string.Join(
+                ", ",
+                CanonicalOrder
+                    .Where(values.Contains)
+                    .Select(ToCategoryTypeDisplayText));
         }
 
-        public static bool IsSummaryIgnored(string rawValue)
+        public static string ToCategoryTypeDisplayText(string categoryType)
         {
-            return ParseValues(rawValue)
-                .Any(value => string.Equals(value, SummaryIgnoredCategoryType, StringComparison.OrdinalIgnoreCase));
+            var values = ParseValues(NormalizeOrDefault(categoryType));
+            var canonical = values.Count == 0 ? DefaultCategoryType : values[0];
+            return L($"LOCPlayAch_ManageAchievements_Category_Type_{canonical}", canonical);
         }
 
-        public static bool IsExcludedFromSummary(string rawValue)
+        public static string ToCategoryLabelDisplayText(string rawValue)
         {
-            var values = ParseValues(rawValue);
-            return values.Any(value =>
-                string.Equals(value, IgnoredCategoryType, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(value, SummaryIgnoredCategoryType, StringComparison.OrdinalIgnoreCase));
+            var label = NormalizeCategoryOrDefault(rawValue);
+            return string.Equals(label, DefaultCategoryLabel, StringComparison.OrdinalIgnoreCase)
+                ? L("LOCPlayAch_Common_Default", DefaultCategoryLabel)
+                : label;
+        }
+
+        private static string L(string key, string fallback)
+        {
+            var value = ResourceProvider.GetString(key);
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return fallback;
+            }
+
+            return value.Length > 4 &&
+                value.StartsWith("<!", StringComparison.Ordinal) &&
+                value.EndsWith("!>", StringComparison.Ordinal)
+                ? fallback
+                : value;
         }
 
         private static bool TryCanonicalize(string rawValue, out string canonical)

@@ -47,6 +47,23 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             set => SetValue(IconSizeProperty, value);
         }
 
+        /// <summary>
+        /// Identifies the ShowRarityGlow dependency property.
+        /// When true, unlocked achievement icons in this list display rarity-based glow effects.
+        /// </summary>
+        public static readonly DependencyProperty ShowRarityGlowProperty =
+            DependencyProperty.Register(nameof(ShowRarityGlow), typeof(bool), typeof(AchievementCompactListControlBase),
+                new PropertyMetadata(true));
+
+        /// <summary>
+        /// Gets or sets whether unlocked achievement icons in this list display rarity glow.
+        /// </summary>
+        public bool ShowRarityGlow
+        {
+            get => (bool)GetValue(ShowRarityGlowProperty);
+            set => SetValue(ShowRarityGlowProperty, value);
+        }
+
         #endregion
 
         #region VisibleCount Property

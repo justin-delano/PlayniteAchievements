@@ -1,0 +1,189 @@
+using PlayniteAchievements.Common;
+
+namespace PlayniteAchievements.Models.Settings
+{
+    public sealed class StartPageGameSummariesGridSettings : ObservableObject
+    {
+        private bool _showMetadataPlatform = true;
+        private bool _showMetadataPlaytime = true;
+        private bool _showMetadataRegion = true;
+        private bool _useCoverImages = true;
+        private bool _showCompletionBorder = true;
+        private bool _showColumnHeaders = true;
+        private double? _rowHeight;
+        private int? _maxRows = PersistedSettings.DefaultStartPageGridMaxRows;
+        private GameSummariesSortMode _sortMode = GameSummariesSortMode.RecentUnlock;
+        private bool _sortDescending = true;
+
+        public bool ShowMetadataPlatform
+        {
+            get => _showMetadataPlatform;
+            set => SetValue(ref _showMetadataPlatform, value);
+        }
+
+        public bool ShowMetadataPlaytime
+        {
+            get => _showMetadataPlaytime;
+            set => SetValue(ref _showMetadataPlaytime, value);
+        }
+
+        public bool ShowMetadataRegion
+        {
+            get => _showMetadataRegion;
+            set => SetValue(ref _showMetadataRegion, value);
+        }
+
+        public bool UseCoverImages
+        {
+            get => _useCoverImages;
+            set => SetValue(ref _useCoverImages, value);
+        }
+
+        public bool ShowCompletionBorder
+        {
+            get => _showCompletionBorder;
+            set => SetValue(ref _showCompletionBorder, value);
+        }
+
+        public bool ShowColumnHeaders
+        {
+            get => _showColumnHeaders;
+            set => SetValue(ref _showColumnHeaders, value);
+        }
+
+        public double? RowHeight
+        {
+            get => _rowHeight;
+            set => SetValue(ref _rowHeight, PersistedSettings.NormalizeGridRowHeight(value));
+        }
+
+        public int? MaxRows
+        {
+            get => _maxRows;
+            set => SetValue(ref _maxRows, PersistedSettings.NormalizeGridMaxRows(value));
+        }
+
+        public GameSummariesSortMode SortMode
+        {
+            get => _sortMode;
+            set => SetValue(ref _sortMode, value);
+        }
+
+        public bool SortDescending
+        {
+            get => _sortDescending;
+            set => SetValue(ref _sortDescending, value);
+        }
+
+        public StartPageGameSummariesGridSettings Clone()
+        {
+            return new StartPageGameSummariesGridSettings
+            {
+                ShowMetadataPlatform = ShowMetadataPlatform,
+                ShowMetadataPlaytime = ShowMetadataPlaytime,
+                ShowMetadataRegion = ShowMetadataRegion,
+                UseCoverImages = UseCoverImages,
+                ShowCompletionBorder = ShowCompletionBorder,
+                ShowColumnHeaders = ShowColumnHeaders,
+                RowHeight = RowHeight,
+                MaxRows = MaxRows,
+                SortMode = SortMode,
+                SortDescending = SortDescending
+            };
+        }
+    }
+
+    public sealed class StartPageRecentUnlocksGridSettings : ObservableObject
+    {
+        private bool _useCoverImages = true;
+        private bool _showRarityGlow = true;
+        private bool _showColumnHeaders = true;
+        private double? _rowHeight;
+        private int? _maxRows = PersistedSettings.DefaultStartPageGridMaxRows;
+        private CompactListSortMode _sortMode = CompactListSortMode.UnlockTime;
+        private bool _sortDescending = true;
+
+        public bool UseCoverImages
+        {
+            get => _useCoverImages;
+            set => SetValue(ref _useCoverImages, value);
+        }
+
+        public bool ShowRarityGlow
+        {
+            get => _showRarityGlow;
+            set => SetValue(ref _showRarityGlow, value);
+        }
+
+        public bool ShowColumnHeaders
+        {
+            get => _showColumnHeaders;
+            set => SetValue(ref _showColumnHeaders, value);
+        }
+
+        public double? RowHeight
+        {
+            get => _rowHeight;
+            set => SetValue(ref _rowHeight, PersistedSettings.NormalizeGridRowHeight(value));
+        }
+
+        public int? MaxRows
+        {
+            get => _maxRows;
+            set => SetValue(ref _maxRows, PersistedSettings.NormalizeGridMaxRows(value));
+        }
+
+        public CompactListSortMode SortMode
+        {
+            get => _sortMode;
+            set => SetValue(ref _sortMode, value);
+        }
+
+        public bool SortDescending
+        {
+            get => _sortDescending;
+            set => SetValue(ref _sortDescending, value);
+        }
+
+        public StartPageRecentUnlocksGridSettings Clone()
+        {
+            return new StartPageRecentUnlocksGridSettings
+            {
+                UseCoverImages = UseCoverImages,
+                ShowRarityGlow = ShowRarityGlow,
+                ShowColumnHeaders = ShowColumnHeaders,
+                RowHeight = RowHeight,
+                MaxRows = MaxRows,
+                SortMode = SortMode,
+                SortDescending = SortDescending
+            };
+        }
+    }
+
+    public sealed class StartPagePieWidgetSettings : ObservableObject
+    {
+        private bool _showCenterPercentage = true;
+        private OverviewPieSmallSliceMode _smallSliceMode = OverviewPieSmallSliceMode.Round;
+
+        public bool ShowCenterPercentage
+        {
+            get => _showCenterPercentage;
+            set => SetValue(ref _showCenterPercentage, value);
+        }
+
+        public OverviewPieSmallSliceMode SmallSliceMode
+        {
+            get => _smallSliceMode;
+            set => SetValue(ref _smallSliceMode, value);
+        }
+
+        public StartPagePieWidgetSettings Clone()
+        {
+            return new StartPagePieWidgetSettings
+            {
+                ShowCenterPercentage = ShowCenterPercentage,
+                SmallSliceMode = SmallSliceMode
+            };
+        }
+    }
+}

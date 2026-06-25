@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -40,6 +41,32 @@ namespace PlayniteAchievements.Views.Helpers
         }
 
         /// <summary>
+        /// Enumerates all visual descendants of the specified type, depth-first.
+        /// </summary>
+        public static IEnumerable<T> FindVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+        {
+            if (parent == null)
+            {
+                yield break;
+            }
+
+            var count = VisualTreeHelper.GetChildrenCount(parent);
+            for (var i = 0; i < count; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+                if (child is T typed)
+                {
+                    yield return typed;
+                }
+
+                foreach (var nested in FindVisualChildren<T>(child))
+                {
+                    yield return nested;
+                }
+            }
+        }
+
+        /// <summary>
         /// Finds a visual parent of the specified type by walking up the visual tree.
         /// </summary>
         public static T FindVisualParent<T>(DependencyObject child) where T : DependencyObject
@@ -76,18 +103,28 @@ namespace PlayniteAchievements.Views.Helpers
         /// </summary>
         public static bool IsColumnResizeThumbHit(DependencyObject source)
         {
+            return TryFindColumnResizeThumb(source, out _);
+        }
+
+        /// <summary>
+        /// Finds the column resize thumb for the specified source element.
+        /// </summary>
+        public static bool TryFindColumnResizeThumb(DependencyObject source, out Thumb resizeThumb)
+        {
             while (source != null)
             {
                 if (source is Thumb thumb &&
                     (string.Equals(thumb.Name, "PART_LeftHeaderGripper", System.StringComparison.Ordinal) ||
                      string.Equals(thumb.Name, "PART_RightHeaderGripper", System.StringComparison.Ordinal)))
                 {
+                    resizeThumb = thumb;
                     return true;
                 }
 
                 source = GetParentForHitTesting(source);
             }
 
+            resizeThumb = null;
             return false;
         }
 

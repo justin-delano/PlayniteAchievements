@@ -12,6 +12,14 @@ namespace PlayniteAchievements.Services
             return JoinDisplayNames(game?.Platforms?.Select(platform => platform?.Name));
         }
 
+        /// <summary>
+        /// Returns the game's platform names, deduplicated and trimmed, preserving order.
+        /// </summary>
+        public static IReadOnlyList<string> GetPlatformNames(Game game)
+        {
+            return DistinctDisplayNames(game?.Platforms?.Select(platform => platform?.Name));
+        }
+
         public static string GetRegionText(Game game)
         {
             return JoinDisplayNames(game?.Regions?.Select(region => region?.Name));
@@ -19,9 +27,15 @@ namespace PlayniteAchievements.Services
 
         public static string JoinDisplayNames(IEnumerable<string> names)
         {
+            var values = DistinctDisplayNames(names);
+            return values.Count > 0 ? string.Join(", ", values) : string.Empty;
+        }
+
+        private static IReadOnlyList<string> DistinctDisplayNames(IEnumerable<string> names)
+        {
             if (names == null)
             {
-                return string.Empty;
+                return Array.Empty<string>();
             }
 
             var values = new List<string>();
@@ -37,7 +51,7 @@ namespace PlayniteAchievements.Services
                 values.Add(normalized);
             }
 
-            return values.Count > 0 ? string.Join(", ", values) : string.Empty;
+            return values;
         }
 
         public static string FormatPlaytime(ulong playtimeSeconds)
@@ -56,23 +70,40 @@ namespace PlayniteAchievements.Services
             return $"{totalMinutes}m";
         }
 
-        public static string BuildSidebarMetadataText(
+        public static string BuildOverviewMetadataText(
             string platformText,
             string playtimeText,
             string regionText)
         {
+            return BuildOverviewMetadataText(
+                platformText,
+                playtimeText,
+                regionText,
+                showPlatform: true,
+                showPlaytime: true,
+                showRegion: true);
+        }
+
+        public static string BuildOverviewMetadataText(
+            string platformText,
+            string playtimeText,
+            string regionText,
+            bool showPlatform,
+            bool showPlaytime,
+            bool showRegion)
+        {
             var parts = new List<string>();
-            if (!string.IsNullOrWhiteSpace(platformText))
+            if (showPlatform && !string.IsNullOrWhiteSpace(platformText))
             {
                 parts.Add(platformText.Trim());
             }
 
-            if (!string.IsNullOrWhiteSpace(playtimeText))
+            if (showPlaytime && !string.IsNullOrWhiteSpace(playtimeText))
             {
                 parts.Add(playtimeText.Trim());
             }
 
-            if (!string.IsNullOrWhiteSpace(regionText))
+            if (showRegion && !string.IsNullOrWhiteSpace(regionText))
             {
                 parts.Add(regionText.Trim());
             }

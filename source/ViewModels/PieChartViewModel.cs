@@ -56,11 +56,12 @@ namespace PlayniteAchievements.ViewModels
         public ObservableCollection<LegendItem> LegendItems { get; } = new ObservableCollection<LegendItem>();
 
         private ObservableCollection<string> _highlightedLabels = new ObservableCollection<string>();
-        private SidebarPieSmallSliceMode _smallSliceMode = SidebarPieSmallSliceMode.Round;
+        private OverviewPieSmallSliceMode _smallSliceMode = OverviewPieSmallSliceMode.Round;
         private int _exactUnlockedCount;
         private int _exactTotalCount;
         private bool _alwaysShowSmallSliceIcons;
         private int _minimumSeriesCount;
+        private int _appearanceRefreshVersion;
 
         // Maps display labels to provider keys for provider pie chart slice click handling
         private readonly Dictionary<string, string> _labelToProviderKey = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -70,7 +71,7 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _highlightedLabels, value);
         }
 
-        public SidebarPieSmallSliceMode SmallSliceMode
+        public OverviewPieSmallSliceMode SmallSliceMode
         {
             get => _smallSliceMode;
             set => SetValue(ref _smallSliceMode, value);
@@ -103,10 +104,16 @@ namespace PlayniteAchievements.ViewModels
         // Consistent transparent locked color for all pie charts
         private static readonly Color LockedTransparent = Color.FromArgb(0, 102, 102, 102);
         private const string LockedLegendColor = "#666666";
-        private static readonly Color UltraRarePieColor = Color.FromRgb(135, 206, 250);
-        private static readonly Color RarePieColor = Color.FromRgb(255, 193, 7);
-        private static readonly Color UncommonPieColor = Color.FromRgb(158, 158, 158);
-        private static readonly Color CommonPieColor = Color.FromRgb(139, 69, 19);
+
+        public PieChartViewModel()
+        {
+            RarityAppearanceHelper.AppearanceChanged += RarityAppearanceHelper_AppearanceChanged;
+        }
+
+        private void RarityAppearanceHelper_AppearanceChanged(object sender, System.EventArgs e)
+        {
+            RefreshAppearanceColors();
+        }
 
         public void SetSelectedLabels(IEnumerable<string> labels)
         {
@@ -159,7 +166,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = completedLabel,
                     Count = completedGames,
                     IconKey = "BadgeCompletedGame",
-                    Color = Color.FromRgb(33, 150, 243),
+                    Color = RarityAppearanceHelper.GetCompletedColor(),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = completedGames,
                     TotalCount = completedGames,
@@ -199,7 +206,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = ultraRareLabel,
                     Count = ultraRareUnlocked,
                     IconKey = RarityTier.UltraRare.ToIconKey(useUniformRarityBadges),
-                    Color = UltraRarePieColor,
+                    Color = RarityAppearanceHelper.GetPieColor(RarityTier.UltraRare),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = ultraRareUnlocked,
                     TotalCount = ultraRareTotal,
@@ -214,7 +221,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = rareLabel,
                     Count = rareUnlocked,
                     IconKey = RarityTier.Rare.ToIconKey(useUniformRarityBadges),
-                    Color = RarePieColor,
+                    Color = RarityAppearanceHelper.GetPieColor(RarityTier.Rare),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = rareUnlocked,
                     TotalCount = rareTotal,
@@ -229,7 +236,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = uncommonLabel,
                     Count = uncommonUnlocked,
                     IconKey = RarityTier.Uncommon.ToIconKey(useUniformRarityBadges),
-                    Color = UncommonPieColor,
+                    Color = RarityAppearanceHelper.GetPieColor(RarityTier.Uncommon),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = uncommonUnlocked,
                     TotalCount = uncommonTotal,
@@ -244,7 +251,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = commonLabel,
                     Count = commonUnlocked,
                     IconKey = RarityTier.Common.ToIconKey(useUniformRarityBadges),
-                    Color = CommonPieColor,
+                    Color = RarityAppearanceHelper.GetPieColor(RarityTier.Common),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = commonUnlocked,
                     TotalCount = commonTotal,
@@ -396,7 +403,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = platinumLabel,
                     Count = platinumUnlocked,
                     IconKey = "TrophyPlatinum",
-                    Color = UltraRarePieColor,
+                    Color = RarityAppearanceHelper.GetTrophyPieColor("TrophyPlatinum"),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = platinumUnlocked,
                     TotalCount = platinumTotal,
@@ -411,7 +418,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = goldLabel,
                     Count = goldUnlocked,
                     IconKey = "TrophyGold",
-                    Color = RarePieColor,
+                    Color = RarityAppearanceHelper.GetTrophyPieColor("TrophyGold"),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = goldUnlocked,
                     TotalCount = goldTotal,
@@ -426,7 +433,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = silverLabel,
                     Count = silverUnlocked,
                     IconKey = "TrophySilver",
-                    Color = UncommonPieColor,
+                    Color = RarityAppearanceHelper.GetTrophyPieColor("TrophySilver"),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = silverUnlocked,
                     TotalCount = silverTotal,
@@ -441,7 +448,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = bronzeLabel,
                     Count = bronzeUnlocked,
                     IconKey = "TrophyBronze",
-                    Color = CommonPieColor,
+                    Color = RarityAppearanceHelper.GetTrophyPieColor("TrophyBronze"),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = bronzeUnlocked,
                     TotalCount = bronzeTotal,
@@ -498,16 +505,16 @@ namespace PlayniteAchievements.ViewModels
         {
             switch (SmallSliceMode)
             {
-                case SidebarPieSmallSliceMode.Exact:
+                case OverviewPieSmallSliceMode.Exact:
                     return BuildExactSlices(
                         dataPoints,
                         minSlice,
                         pieTotalCount,
                         hideSmallIcons: false,
                         suppressOnCollision: !AlwaysShowSmallSliceIcons);
-                case SidebarPieSmallSliceMode.Hide:
+                case OverviewPieSmallSliceMode.Hide:
                     return BuildHiddenSlices(dataPoints, minSlice, pieTotalCount);
-                case SidebarPieSmallSliceMode.Round:
+                case OverviewPieSmallSliceMode.Round:
                 default:
                     if (TryBuildRoundedSlices(dataPoints, minSlice, pieTotalCount, out var roundedSlices))
                     {
@@ -669,7 +676,7 @@ namespace PlayniteAchievements.ViewModels
                 return dataPoint.Count.ToString();
             }
 
-            return $"{dataPoint.UnlockedCount} / {dataPoint.TotalCount}";
+            return $"{dataPoint.UnlockedCount}/{dataPoint.TotalCount}";
         }
 
         private static string FormatSecondaryMetricText(PieSliceInputData dataPoint, int pieTotalCount)
@@ -712,6 +719,83 @@ namespace PlayniteAchievements.ViewModels
             return $"#{dataPoint.Color.R:X2}{dataPoint.Color.G:X2}{dataPoint.Color.B:X2}";
         }
 
+        private void RefreshAppearanceColors()
+        {
+            _appearanceRefreshVersion++;
+
+            for (int i = 0; i < PieSeries.Count; i++)
+            {
+                if (!(PieSeries[i] is LiveCharts.Wpf.PieSeries series))
+                {
+                    continue;
+                }
+
+                var values = series.Values as ChartValues<PieSliceChartData>;
+                var chartData = values != null && values.Count > 0 ? values[0] : null;
+                var color = ResolveCurrentColor(chartData?.IconKey, out var canRefresh);
+                if (!canRefresh)
+                {
+                    continue;
+                }
+
+                series.Fill = new SolidColorBrush(color);
+                if (chartData != null)
+                {
+                    chartData.ColorHex = ToColorHex(color);
+                    chartData.IconRefreshKey = _appearanceRefreshVersion;
+                }
+            }
+
+            foreach (var item in LegendItems)
+            {
+                var color = ResolveCurrentColor(item.IconKey, out var canRefresh);
+                if (canRefresh)
+                {
+                    item.ColorHex = ToColorHex(color);
+                    item.IconRefreshKey = _appearanceRefreshVersion;
+                }
+            }
+
+        }
+
+        private static Color ResolveCurrentColor(string iconKey, out bool canRefresh)
+        {
+            canRefresh = true;
+            switch (iconKey)
+            {
+                case "BadgeCompletedGame":
+                    return RarityAppearanceHelper.GetCompletedColor();
+                case "BadgePlatinumHexagon":
+                case "BadgeRarityUltraRare":
+                    return RarityAppearanceHelper.GetPieColor(RarityTier.UltraRare);
+                case "BadgeGoldPentagon":
+                case "BadgeGoldHexagon":
+                case "BadgeRarityRare":
+                    return RarityAppearanceHelper.GetPieColor(RarityTier.Rare);
+                case "BadgeSilverSquare":
+                case "BadgeSilverHexagon":
+                case "BadgeRarityUncommon":
+                    return RarityAppearanceHelper.GetPieColor(RarityTier.Uncommon);
+                case "BadgeBronzeTriangle":
+                case "BadgeBronzeHexagon":
+                case "BadgeRarityCommon":
+                    return RarityAppearanceHelper.GetPieColor(RarityTier.Common);
+                case "TrophyPlatinum":
+                case "TrophyGold":
+                case "TrophySilver":
+                case "TrophyBronze":
+                    return RarityAppearanceHelper.GetTrophyPieColor(iconKey);
+                default:
+                    canRefresh = false;
+                    return Colors.Transparent;
+            }
+        }
+
+        private static string ToColorHex(Color color)
+        {
+            return $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+        }
+
         private void UpdateExactCounts(int unlockedCount, int totalCount)
         {
             ExactUnlockedCount = Math.Max(0, unlockedCount);
@@ -742,6 +826,12 @@ namespace PlayniteAchievements.ViewModels
                 if (series == null)
                 {
                     series = new LiveCharts.Wpf.PieSeries();
+
+                    // Slice separators follow the themed control-border color instead of
+                    // LiveCharts' default white. A resource reference keeps it in sync with
+                    // theme and appearance-override changes.
+                    series.SetResourceReference(LiveCharts.Wpf.Series.StrokeProperty, "PlayAch.Brush.ControlBorder");
+
                     if (i < PieSeries.Count)
                     {
                         PieSeries[i] = series;
@@ -794,11 +884,12 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private static void ApplySliceChartData(PieSliceChartData chartData, PieSliceData slice)
+        private void ApplySliceChartData(PieSliceChartData chartData, PieSliceData slice)
         {
             chartData.Label = slice?.Label ?? string.Empty;
             chartData.Count = slice?.Count ?? 0;
             chartData.IconKey = slice?.IconKey ?? string.Empty;
+            chartData.IconRefreshKey = _appearanceRefreshVersion;
             chartData.ColorHex = slice?.ColorHex ?? string.Empty;
             chartData.ChartValue = slice?.ChartValue ?? 0;
             chartData.UnlockedCount = slice?.UnlockedCount ?? 0;
@@ -822,6 +913,7 @@ namespace PlayniteAchievements.ViewModels
                 item.Label = slice.Label;
                 item.Count = slice.Count;
                 item.IconKey = slice.IconKey;
+                item.IconRefreshKey = _appearanceRefreshVersion;
                 item.ColorHex = slice.ColorHex;
 
                 if (isNew)

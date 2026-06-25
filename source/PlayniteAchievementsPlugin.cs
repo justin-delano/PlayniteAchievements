@@ -85,11 +85,15 @@ namespace PlayniteAchievements
         private readonly FullscreenWindowService _fullscreenWindowService;
         private readonly ThemeIntegrationService _themeIntegrationService;
         private readonly ThemeControlRegistry _themeControlRegistry;
+        private readonly AchievementResourceService _resourceService;
         private readonly PluginWindowService _windowService;
+        private readonly AchievementHotkeyTargetResolver _achievementHotkeyTargetResolver;
+        private readonly AchievementHotkeyService _achievementHotkeyService;
         private readonly FullscreenControllerNavigationService _fullscreenControllerNavigationService;
         private readonly ThemeAutoMigrationService _themeAutoMigrationService;
 
         // Tagging
+        private readonly object _tagSyncGate = new object();
         private TagSyncService _tagSyncService;
 
         public override Guid Id { get; } =
@@ -169,12 +173,48 @@ namespace PlayniteAchievements
             }) ?? Task.CompletedTask;
         }
 
+        // Invoked by AchievementHotkeyService on F5. Refreshes the plugin view shown in the
+        // active/topmost window (the single-game View Achievements window, or the Overview as a
+        // standalone window or open sidebar view) regardless of which element holds focus.
+        // Returns true when a plugin view handled it, so the service can suppress Playnite's own
+        // F5 library update.
+        private bool TryRefreshActivePluginView()
+        {
+            var window = Application.Current?.Windows
+                .OfType<Window>()
+                .FirstOrDefault(w => w.IsActive)
+                ?? Application.Current?.MainWindow;
+            if (window == null)
+            {
+                return false;
+            }
+
+            // View Achievements is always its own window; the Overview is either its own window
+            // or hosted inside Playnite's main window as the sidebar view.
+            var singleGame = VisualTreeHelpers.FindVisualChild<ViewAchievementsControl>(window);
+            if (singleGame != null && singleGame.IsVisible)
+            {
+                singleGame.TriggerHotkeyRefresh();
+                return true;
+            }
+
+            var overview = VisualTreeHelpers.FindVisualChild<OverviewControl>(window);
+            if (overview != null && overview.IsVisible)
+            {
+                overview.TriggerHotkeyRefresh();
+                return true;
+            }
+
+            return false;
+        }
+
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
         {
             // Initialize logging system first
             PluginLogger.Initialize(GetPluginUserDataPath());
             _logger = PluginLogger.GetLogger(nameof(PlayniteAchievementsPlugin));
             _themeControlRegistry = new ThemeControlRegistry();
+            _resourceService = new AchievementResourceService(_logger);
 
             using (PerfScope.StartStartup(_logger, "PluginCtor.Total", thresholdMs: 50))
             {
@@ -229,12 +269,12 @@ namespace PlayniteAchievements
                     _cacheManager.CacheInvalidated += (_, __) =>
                     {
                         try { _imageService?.Clear(); } catch { }
+                        InvalidateStartPageData();
                     };
                     _achievementOverridesService = new AchievementOverridesService(
                         _gameCustomDataStore,
                         _cacheManager,
-                        _logger,
-                        force => _cacheManager.NotifyCacheInvalidated());
+                        _logger);
                     _achievementDataService = new AchievementDataService(
                         _cacheManager,
                         PlayniteApi,
@@ -269,10 +309,22 @@ namespace PlayniteAchievements
                         PersistSettingsForUi,
                         _achievementOverridesService,
                         _achievementDataService,
+                        _gameCustomDataStore,
                         _settingsViewModel.Settings,
                         _manualSourceRegistry,
-                        EnsureAchievementResourcesLoaded,
+                        () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
                         _fullscreenControllerNavigationService);
+
+                    _achievementHotkeyTargetResolver = new AchievementHotkeyTargetResolver(PlayniteApi, _logger);
+                    _achievementHotkeyService = new AchievementHotkeyService(
+                        PlayniteApi,
+                        _settingsViewModel.Settings,
+                        _achievementHotkeyTargetResolver,
+                        _logger,
+                        gameId => _windowService.ToggleViewAchievementsWindowFromHotkey(gameId),
+                        gameId => _windowService.ToggleManageAchievementsViewFromHotkey(gameId),
+                        ToggleOverviewWindowFromHotkey,
+                        TryRefreshActivePluginView);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
                         _logger,
@@ -302,7 +354,8 @@ namespace PlayniteAchievements
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
                         _logger,
-                        _windowService.RunRefreshWithGlobalProgressAsync);
+                        _windowService.RunRefreshWithGlobalProgressAsync,
+                        gameId => _windowService.OpenManageAchievementsView(gameId, ManageAchievementsTab.Overview));
 
                     SubscribeDatabaseEventHandlers();
 
@@ -321,7 +374,7 @@ namespace PlayniteAchievements
 
                 // Initialize top panel item for popout window
                 _topPanelItem = new PlayniteAchievementsTopPanelItem(
-                    PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings);
+                    OpenOverviewWindow);
 
                 _logger.Info("PlayniteAchievementsPlugin initialized.");
             }
@@ -353,7 +406,7 @@ namespace PlayniteAchievements
             }
         }
 
-        // === Sidebar ===
+        // === Overview ===
 
         public override IEnumerable<SidebarItem> GetSidebarItems()
         {
@@ -361,11 +414,11 @@ namespace PlayniteAchievements
             {
                 Title = ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 Type = SiderbarItemType.View,
-                Icon = GetSidebarIcon(),
+                Icon = GetOverviewIcon(),
                 Opened = () =>
                 {
-                    return new SidebarHostControl(
-                        () => new SidebarControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _refreshCoordinator, _settingsViewModel.Settings),
+                    return new OverviewHostControl(
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings),
                         _logger,
                         PlayniteApi,
                         _refreshService,
@@ -374,7 +427,7 @@ namespace PlayniteAchievements
             };
         }
 
-        private TextBlock GetSidebarIcon()
+        private TextBlock GetOverviewIcon()
         {
             var tb = new TextBlock
             {
@@ -399,8 +452,29 @@ namespace PlayniteAchievements
             }
         }
 
+        public override void OnGameStarted(OnGameStartedEventArgs args)
+        {
+            try
+            {
+                _achievementHotkeyTargetResolver?.NotifyGameStarted(args?.Game);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to track started game for achievement hotkeys.");
+            }
+        }
+
         public override void OnGameStopped(OnGameStoppedEventArgs args)
         {
+            try
+            {
+                _achievementHotkeyTargetResolver?.NotifyGameStopped(args?.Game);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to track stopped game for achievement hotkeys.");
+            }
+
             _logger.Info($"Game stopped: {args.Game.Name}. Triggering refresh.");
             _ = _refreshCoordinator.ExecuteAsync(new RefreshRequest
             {
@@ -457,6 +531,8 @@ namespace PlayniteAchievements
                     // ignore
                 }
 
+                _achievementHotkeyService?.Start();
+
                 // Auto-migrate themes that have been updated since the last migration.
                 _themeAutoMigrationService?.ScheduleAutoMigration();
 
@@ -477,12 +553,23 @@ namespace PlayniteAchievements
                 RestartBackgroundUpdater();
             }
 
-            if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges))
+            if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges) ||
+                e.PropertyName == nameof(PersistedSettings.RarityColors))
             {
-                PercentRarityHelper.ApplyBadgeApplicationResources(
-                    _settingsViewModel?.Settings?.Persisted?.UseUniformRarityBadges ?? false);
+                RarityAppearanceHelper.ApplyBadgeApplicationResources(
+                    _settingsViewModel?.Settings?.Persisted);
             }
 
+            if (e.PropertyName == nameof(PersistedSettings.EnableAchievementHotkeys) ||
+                e.PropertyName == nameof(PersistedSettings.EnableGlobalAchievementHotkeys) ||
+                e.PropertyName == nameof(PersistedSettings.ViewAchievementsHotkey) ||
+                e.PropertyName == nameof(PersistedSettings.ManageAchievementsHotkey) ||
+                e.PropertyName == nameof(PersistedSettings.OverviewHotkey))
+            {
+                _achievementHotkeyService?.RefreshConfiguration();
+            }
+
+            InvalidateStartPageData();
             _tagSyncService?.HandlePersistedSettingsPropertyChanged(e);
         }
 
@@ -519,12 +606,15 @@ namespace PlayniteAchievements
 
             _backgroundUpdates.Stop();
 
+            try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
+            try { _windowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowService"); }
             try { _imageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose imageService"); }
             try { _diskImageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose diskImageService"); }
             try { _manualSourceRegistry?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose manualSourceRegistry"); }
             try { _fullscreenControllerNavigationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenControllerNavigationService"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
+            DisposeStartPageViews();
 
             // Shutdown logging system
             try { PluginLogger.Shutdown(); } catch (Exception ex) { System.Diagnostics.Trace.TraceError($"Failed to shutdown logger: {ex}"); }
@@ -641,7 +731,7 @@ namespace PlayniteAchievements
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
             {
-                _tagSyncService.SyncTagsForGames(new List<Guid> { e.PlayniteGameId });
+                QueueTagSync(e.PlayniteGameId);
             }
 
             try
@@ -652,6 +742,37 @@ namespace PlayniteAchievements
             {
                 _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={e.PlayniteGameId}.");
             }
+
+            InvalidateStartPageData();
+        }
+
+        private void QueueTagSync(Guid gameId)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var tagSyncService = _tagSyncService;
+            if (tagSyncService == null)
+            {
+                return;
+            }
+
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    lock (_tagSyncGate)
+                    {
+                        tagSyncService.SyncTagsForGames(new List<Guid> { gameId });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"Failed to sync tags after custom-data change for gameId={gameId}.");
+                }
+            });
         }
 
         private void OnAchievementGameRefreshed(Guid gameId)
@@ -661,6 +782,8 @@ namespace PlayniteAchievements
             {
                 _tagSyncService.SyncTagsForGames(new List<Guid> { gameId });
             }
+
+            InvalidateStartPageData();
         }
 
         private void HandleRefreshAuthNotifications(RebuildPayload payload)

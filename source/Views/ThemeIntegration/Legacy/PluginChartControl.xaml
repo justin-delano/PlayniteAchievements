@@ -14,8 +14,72 @@
                    MaxHeight="{Binding RelativeSource={RelativeSource AncestorType=ContentControl}, Path=MaxHeight}">
 
     <local:ThemeControlBase.Resources>
-        <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" Mode="ToVisibility" />
-        <converters:BooleanConverter x:Key="InvertedBooleanToVisibilityConverter" Mode="InvertedToVisibility" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="LegacyChartRangeToggleButtonStyle" TargetType="ToggleButton">
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Button.Border}"/>
+                <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="Chrome"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="3"
+                                    Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                </Trigger>
+                                <Trigger Property="IsKeyboardFocused" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Selection}"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Trigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsChecked" Value="True"/>
+                                        <Condition Property="IsMouseOver" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                </MultiTrigger>
+                                <MultiTrigger>
+                                    <MultiTrigger.Conditions>
+                                        <Condition Property="IsChecked" Value="True"/>
+                                        <Condition Property="IsKeyboardFocused" Value="True"/>
+                                    </MultiTrigger.Conditions>
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                </MultiTrigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter Property="Opacity" Value="0.45"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
     </local:ThemeControlBase.Resources>
 
     <Grid>
@@ -33,11 +97,13 @@
             </Grid.ColumnDefinitions>
 
             <ToggleButton Grid.Column="1" Content="{DynamicResource LOCPlayAch_ChartCut}" IsChecked="{Binding CutPeriod}" IsEnabled="{Binding CutEnabled}"
+                          Style="{StaticResource LegacyChartRangeToggleButtonStyle}"
                           Visibility="{Binding ElementName=PART_AllPeriod, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"
                           Click="ToggleButtonCut_Click" />
 
             <ToggleButton Grid.Column="3" Content="{DynamicResource LOCPlayAch_TimeRange_All}" IsChecked="{Binding AllPeriod, FallbackValue=True}"
                           Name="PART_AllPeriod"
+                          Style="{StaticResource LegacyChartRangeToggleButtonStyle}"
                           Click="ToggleButtonAllPeriod_Click" />
         </Grid>
 

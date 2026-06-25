@@ -77,6 +77,12 @@ namespace PlayniteAchievements.Models.Achievements
 
         public bool IsCapstone { get; set; }
 
+        public bool IsFiltered { get; set; }
+
+        public bool IsFilteredFromSummaries { get; set; }
+
+        public string AchievementNote { get; set; }
+
         public DateTime? UnlockTimeUtc { get; set; }
 
         public double? GlobalPercentUnlocked { get; set; }
@@ -120,6 +126,12 @@ namespace PlayniteAchievements.Models.Achievements
                     : band + 999_999;
             }
         }
+
+        public int CollectionScore =>
+            PlayniteAchievements.Models.Achievements.Scoring.AchievementScoreCalculator.GetCollectionValue(Rarity);
+
+        public int PrestigeScore =>
+            PlayniteAchievements.Models.Achievements.Scoring.AchievementScoreCalculator.GetPrestigeValue(GlobalPercentUnlocked, Rarity);
     }
 
     public sealed class GameAchievementData
@@ -208,6 +220,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
         }
 
+        public void OpenViewAchievementsWindow(Guid gameId)
+        {
+        }
+
         public void CloseOverlayWindowIfOpen()
         {
         }
@@ -218,6 +234,10 @@ namespace PlayniteAchievements.ViewModels
 {
     public class AchievementDisplayItem
     {
+        public sealed class AppearanceSettingsSnapshot
+        {
+        }
+
         public string DisplayName { get; set; }
 
         public string Name => DisplayName;
@@ -228,6 +248,8 @@ namespace PlayniteAchievements.ViewModels
 
         public string GameName { get; set; }
 
+        public string ProviderKey { get; set; }
+
         public Guid? PlayniteGameId { get; set; }
 
         public string ApiName { get; set; }
@@ -237,6 +259,10 @@ namespace PlayniteAchievements.ViewModels
         public string CategoryType { get; set; }
 
         public string CategoryLabel { get; set; }
+
+        public bool HasAchievementNote { get; set; }
+
+        public bool IsCapstone { get; set; }
 
         public bool Hidden { get; set; }
 
@@ -255,6 +281,10 @@ namespace PlayniteAchievements.ViewModels
 
         public double RaritySortValue { get; set; }
 
+        public int CollectionScore { get; set; }
+
+        public int PrestigeScore { get; set; }
+
         public int? PointsValue { get; set; }
 
         public int Points => PointsValue ?? 0;
@@ -263,6 +293,11 @@ namespace PlayniteAchievements.ViewModels
 
         public int? ProgressDenom { get; set; }
 
+        public double ProgressPercent =>
+            ProgressNum.HasValue && ProgressDenom.HasValue && ProgressDenom.Value > 0
+                ? ProgressNum.Value * 100.0 / ProgressDenom.Value
+                : 0;
+
         public bool ShowHiddenSuffix { get; set; }
 
         public static AchievementDisplayItem Create(
@@ -270,7 +305,8 @@ namespace PlayniteAchievements.ViewModels
             PlayniteAchievements.Models.Achievements.AchievementDetail achievement,
             PlayniteAchievements.Models.PlayniteAchievementsSettings settings,
             ISet<string> revealedKeys = null,
-            Guid? playniteGameIdOverride = null)
+            Guid? playniteGameIdOverride = null,
+            AppearanceSettingsSnapshot appearanceSettings = null)
         {
             return new AchievementDisplayItem();
         }
@@ -280,9 +316,18 @@ namespace PlayniteAchievements.ViewModels
             PlayniteAchievements.Models.Achievements.AchievementDetail achievement,
             PlayniteAchievements.Models.PlayniteAchievementsSettings settings,
             string gameIconPath,
-            string gameCoverPath)
+            string gameCoverPath,
+            AppearanceSettingsSnapshot appearanceSettings = null)
         {
             return new AchievementDisplayItem();
+        }
+
+        public static AppearanceSettingsSnapshot CreateAppearanceSettingsSnapshot(
+            PlayniteAchievements.Models.PlayniteAchievementsSettings settings,
+            Guid? playniteGameId,
+            bool? resolvedUseSeparateLockedIcons)
+        {
+            return new AppearanceSettingsSnapshot();
         }
 
         public static bool IsAppearanceSettingPropertyName(string propertyName)
@@ -327,6 +372,40 @@ namespace PlayniteAchievements.ViewModels
         {
         }
 
+        public void ApplyAppearanceSettings(AppearanceSettingsSnapshot snapshot)
+        {
+        }
+
+        public AchievementDisplayItem Clone()
+        {
+            return new AchievementDisplayItem
+            {
+                DisplayName = DisplayName,
+                Description = Description,
+                SortingName = SortingName,
+                GameName = GameName,
+                ProviderKey = ProviderKey,
+                PlayniteGameId = PlayniteGameId,
+                ApiName = ApiName,
+                TrophyType = TrophyType,
+                CategoryType = CategoryType,
+                CategoryLabel = CategoryLabel,
+                Hidden = Hidden,
+                IsCapstone = IsCapstone,
+                Unlocked = Unlocked,
+                UnlockTimeUtc = UnlockTimeUtc,
+                GlobalPercentUnlocked = GlobalPercentUnlocked,
+                Rarity = Rarity,
+                RaritySortValue = RaritySortValue,
+                CollectionScore = CollectionScore,
+                PrestigeScore = PrestigeScore,
+                PointsValue = PointsValue,
+                ProgressNum = ProgressNum,
+                ProgressDenom = ProgressDenom,
+                ShowHiddenSuffix = ShowHiddenSuffix
+            };
+        }
+
         public void UpdateFrom(
             PlayniteAchievements.Models.Achievements.AchievementDetail source,
             string gameName,
@@ -337,9 +416,35 @@ namespace PlayniteAchievements.ViewModels
             bool showHiddenSuffix,
             bool showLockedIcon,
             bool useSeparateLockedIconsWhenAvailable,
-            bool showRarityGlow,
-            bool showRarityBar)
+            bool showRarityBar = true,
+            string sortingName = null,
+            string gameIconPath = null,
+            string gameCoverPath = null)
         {
+            DisplayName = source?.DisplayName;
+            Description = source?.Description;
+            GameName = gameName;
+            SortingName = sortingName ?? gameName;
+            ProviderKey = source?.ProviderKey;
+            PlayniteGameId = playniteGameId;
+            ApiName = source?.ApiName;
+            TrophyType = source?.TrophyType;
+            CategoryType = source?.CategoryType;
+            CategoryLabel = source?.Category;
+            Hidden = source?.Hidden == true;
+            IsCapstone = source?.IsCapstone == true;
+            Unlocked = source?.Unlocked == true;
+            UnlockTimeUtc = source?.UnlockTimeUtc;
+            GlobalPercentUnlocked = source?.GlobalPercentUnlocked;
+            Rarity = source?.Rarity ?? PlayniteAchievements.Models.Achievements.RarityTier.Common;
+            RaritySortValue = source?.RaritySortValue ?? 0;
+            CollectionScore = source?.CollectionScore ?? 0;
+            PrestigeScore = source?.PrestigeScore ?? 0;
+            PointsValue = source?.Points;
+            ProgressNum = source?.ProgressNum;
+            ProgressDenom = source?.ProgressDenom;
+            HasAchievementNote = !string.IsNullOrWhiteSpace(source?.AchievementNote);
+            ShowHiddenSuffix = showHiddenSuffix;
         }
     }
 }

@@ -31,8 +31,6 @@ namespace PlayniteAchievements.ViewModels
 
             public bool UseSeparateLockedIconsWhenAvailable { get; set; }
 
-            public bool ShowRarityGlow { get; set; }
-
             public bool ShowRarityBar { get; set; }
         }
 
@@ -168,6 +166,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(RarityPercentValue));
                     OnPropertyChanged(nameof(Percent));
                     OnPropertyChanged(nameof(RaritySortValue));
+                    OnPropertyChanged(nameof(PrestigeScore));
                 }
             }
         }
@@ -200,6 +199,9 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(RarityDetailText));
                     OnPropertyChanged(nameof(GamerScore));
                     OnPropertyChanged(nameof(RaritySortValue));
+                    OnPropertyChanged(nameof(CollectionScore));
+                    OnPropertyChanged(nameof(PrestigeScore));
+                    OnPropertyChanged(nameof(DisplayNameBrush));
                 }
             }
         }
@@ -220,6 +222,22 @@ namespace PlayniteAchievements.ViewModels
                     NotifyTitleDisplayChanged();
                     NotifyDescriptionDisplayChanged();
                     OnPropertyChanged(nameof(IsUnlock));
+                }
+            }
+        }
+
+        public bool IsCapstone
+        {
+            get => _source?.IsCapstone == true;
+            set
+            {
+                if (SetSourceValue(
+                    source => source.IsCapstone,
+                    (source, next) => source.IsCapstone = next,
+                    value,
+                    nameof(IsCapstone)))
+                {
+                    OnPropertyChanged(nameof(DisplayNameBrush));
                 }
             }
         }
@@ -258,6 +276,25 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
         }
+
+        public string AchievementNote
+        {
+            get => _source?.AchievementNote;
+            set
+            {
+                SetSourceValue(
+                    source => source.AchievementNote,
+                    (source, next) => source.AchievementNote = next,
+                    AchievementNoteHelper.NormalizeNote(value),
+                    nameof(AchievementNote),
+                    nameof(HasAchievementNote),
+                    nameof(AchievementNoteInlineMarker));
+            }
+        }
+
+        public bool HasAchievementNote => !string.IsNullOrWhiteSpace(AchievementNote);
+
+        public string AchievementNoteInlineMarker => HasAchievementNote ? " \uEFB6" : string.Empty;
 
         // Hidden achievement visibility settings
         private bool _showHiddenIcon;
@@ -346,13 +383,6 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(ImageLocked));
                 }
             }
-        }
-
-        private bool _showRarityGlow = true;
-        public bool ShowRarityGlow
-        {
-            get => _showRarityGlow;
-            set => SetValue(ref _showRarityGlow, value);
         }
 
         private bool _showRarityBar = true;
@@ -464,12 +494,20 @@ namespace PlayniteAchievements.ViewModels
         public string CategoryLabel
         {
             get => _categoryLabel;
-            set => SetValue(ref _categoryLabel, value);
+            set
+            {
+                if (SetValueAndReturn(ref _categoryLabel, value))
+                {
+                    OnPropertyChanged(nameof(CategoryLabelDisplay));
+                }
+            }
         }
+
+        public string CategoryLabelDisplay => AchievementCategoryTypeHelper.ToCategoryLabelDisplayText(CategoryLabel);
 
         /// <summary>
         /// Path to the game's icon image.
-        /// Used by the Game column in sidebar recent achievements.
+        /// Used by the Game column in overview recent achievements.
         /// </summary>
         public string GameIconPath
         {
@@ -479,7 +517,7 @@ namespace PlayniteAchievements.ViewModels
 
         /// <summary>
         /// Path to the game's cover image.
-        /// Used by the Game column in sidebar recent achievements when UseCoverImages is true.
+        /// Used by the Game column in overview recent achievements when UseCoverImages is true.
         /// </summary>
         public string GameCoverPath
         {
@@ -500,7 +538,7 @@ namespace PlayniteAchievements.ViewModels
         /// <summary>
         /// Text representation of progress as "ProgressNum / ProgressDenom".
         /// </summary>
-        public string ProgressText => HasProgress ? $"{ProgressNum.Value} / {ProgressDenom.Value}" : string.Empty;
+        public string ProgressText => HasProgress ? $"{ProgressNum.Value}/{ProgressDenom.Value}" : string.Empty;
 
         /// <summary>
         /// Progress percentage (0-100) for progress bar binding.
@@ -545,6 +583,26 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (IsHidden && Hidden && !ShowHiddenTitle) return ResourceProvider.GetString("LOCPlayAch_Achievements_HiddenTitle");
                 return DisplayName;
+            }
+        }
+
+        /// <summary>
+        /// Foreground brush for the achievement name. When "color names by rarity" is enabled, returns the rarity tier brush
+        /// (or the completed color for capstone achievements, which takes precedence). Otherwise returns the theme text brush.
+        /// </summary>
+        public System.Windows.Media.Brush DisplayNameBrush
+        {
+            get
+            {
+                var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+                if (persisted?.ColorAchievementNamesByRarity == true)
+                {
+                    return IsCapstone
+                        ? RarityAppearanceHelper.GetCompletedBrush(persisted)
+                        : RarityAppearanceHelper.GetBrush(Rarity, persisted);
+                }
+
+                return System.Windows.Application.Current?.TryFindResource("PlayAch.Brush.Text") as System.Windows.Media.Brush;
             }
         }
 
@@ -600,7 +658,6 @@ namespace PlayniteAchievements.ViewModels
             bool showHiddenSuffix,
             bool showLockedIcon,
             bool useSeparateLockedIconsWhenAvailable,
-            bool showRarityGlow,
             bool showRarityBar = true,
             string sortingName = null,
             string gameIconPath = null,
@@ -618,7 +675,6 @@ namespace PlayniteAchievements.ViewModels
                 showHiddenSuffix,
                 showLockedIcon,
                 useSeparateLockedIconsWhenAvailable,
-                showRarityGlow,
                 showRarityBar);
             PointsValue = source?.Points;
             CategoryType = source?.CategoryType;
@@ -647,7 +703,6 @@ namespace PlayniteAchievements.ViewModels
                 sourceItem.ShowHiddenSuffix,
                 sourceItem.ShowLockedIcon,
                 sourceItem.UseSeparateLockedIconsWhenAvailable,
-                sourceItem.ShowRarityGlow,
                 sourceItem.ShowRarityBar,
                 sourceItem.SortingName,
                 sourceItem.GameIconPath,
@@ -666,7 +721,6 @@ namespace PlayniteAchievements.ViewModels
             bool showHiddenSuffix,
             bool showLockedIcon,
             bool useSeparateLockedIconsWhenAvailable,
-            bool showRarityGlow,
             bool showRarityBar = true)
         {
             ShowHiddenIcon = showHiddenIcon;
@@ -675,8 +729,8 @@ namespace PlayniteAchievements.ViewModels
             ShowHiddenSuffix = showHiddenSuffix;
             ShowLockedIcon = showLockedIcon;
             UseSeparateLockedIconsWhenAvailable = useSeparateLockedIconsWhenAvailable;
-            ShowRarityGlow = showRarityGlow;
             ShowRarityBar = showRarityBar;
+            OnPropertyChanged(nameof(DisplayNameBrush));
         }
 
         public void ApplyAppearanceSettings(PlayniteAchievementsSettings settings, Guid? playniteGameId = null)
@@ -697,7 +751,6 @@ namespace PlayniteAchievements.ViewModels
                 resolved.ShowHiddenSuffix,
                 resolved.ShowLockedIcon,
                 resolved.UseSeparateLockedIconsWhenAvailable,
-                resolved.ShowRarityGlow,
                 resolved.ShowRarityBar);
         }
 
@@ -717,7 +770,6 @@ namespace PlayniteAchievements.ViewModels
                 ShowLockedIcon = persisted?.ShowLockedIcon ?? true,
                 UseSeparateLockedIconsWhenAvailable = resolvedUseSeparateLockedIcons ??
                     GameCustomDataLookup.ShouldUseSeparateLockedIcons(resolvedGameId, persisted),
-                ShowRarityGlow = persisted?.ShowRarityGlow ?? true,
                 ShowRarityBar = persisted?.ShowCompactListRarityBar ?? true
             };
         }
@@ -737,6 +789,10 @@ namespace PlayniteAchievements.ViewModels
         public int Points => PointsValue ?? 0;
 
         public string PointsText => PointsValue.HasValue ? PointsValue.Value.ToString() : "-";
+
+        public int CollectionScore => _source?.CollectionScore ?? 0;
+
+        public int PrestigeScore => _source?.PrestigeScore ?? 0;
 
         private static string DefaultIcon => AchievementIconResolver.GetDefaultIcon();
 
@@ -856,7 +912,6 @@ namespace PlayniteAchievements.ViewModels
             clone.ShowHiddenSuffix = _showHiddenSuffix;
             clone.ShowLockedIcon = _showLockedIcon;
             clone.UseSeparateLockedIconsWhenAvailable = _useSeparateLockedIconsWhenAvailable;
-            clone.ShowRarityGlow = _showRarityGlow;
             clone.ShowRarityBar = _showRarityBar;
             clone.CategoryType = _categoryType;
             clone.CategoryLabel = _categoryLabel;
@@ -928,8 +983,9 @@ namespace PlayniteAchievements.ViewModels
                 case nameof(PersistedSettings.ShowLockedIcon):
                 case nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable):
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
-                case nameof(PersistedSettings.ShowRarityGlow):
                 case nameof(PersistedSettings.UseUniformRarityBadges):
+                case nameof(PersistedSettings.ColorAchievementNamesByRarity):
+                case nameof(PersistedSettings.RarityColors):
                     return true;
                 default:
                     return false;
@@ -1051,12 +1107,19 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(RarityPercentValue));
             OnPropertyChanged(nameof(Percent));
             OnPropertyChanged(nameof(RaritySortValue));
+            OnPropertyChanged(nameof(CollectionScore));
+            OnPropertyChanged(nameof(PrestigeScore));
             OnPropertyChanged(nameof(Rarity));
             OnPropertyChanged(nameof(GamerScore));
             OnPropertyChanged(nameof(Unlocked));
+            OnPropertyChanged(nameof(IsCapstone));
+            OnPropertyChanged(nameof(DisplayNameBrush));
             OnPropertyChanged(nameof(Hidden));
             OnPropertyChanged(nameof(IsUnlock));
             OnPropertyChanged(nameof(ApiName));
+            OnPropertyChanged(nameof(AchievementNote));
+            OnPropertyChanged(nameof(HasAchievementNote));
+            OnPropertyChanged(nameof(AchievementNoteInlineMarker));
             OnPropertyChanged(nameof(ProgressNum));
             OnPropertyChanged(nameof(ProgressDenom));
             OnPropertyChanged(nameof(HasProgress));

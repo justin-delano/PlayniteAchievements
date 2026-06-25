@@ -111,6 +111,71 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void ResolveSelectedGameAchievements_DynamicSortUsesDefaultSourceInsteadOfPrecomputedLists()
+        {
+            var common = CreateDetail("Common", unlocked: true, globalPercentUnlocked: 80);
+            var rare = CreateDetail("Rare", unlocked: true, globalPercentUnlocked: 5);
+            var poison = CreateDetail("Precomputed", unlocked: true, globalPercentUnlocked: 1);
+            var source = new List<AchievementDetail> { common, rare };
+            var state = new SelectedGameRuntimeState(
+                Guid.NewGuid(),
+                DateTime.UtcNow,
+                hasAchievements: true,
+                achievementCount: source.Count,
+                unlockedCount: source.Count,
+                lockedCount: 0,
+                progressPercentage: 100,
+                isCompleted: true,
+                hasCustomAchievementOrder: false,
+                achievementDefaultOrder: source,
+                allAchievements: source,
+                achievementsOldestFirst: new List<AchievementDetail>(),
+                achievementsNewestFirst: new List<AchievementDetail>(),
+                achievementsRarityAsc: new List<AchievementDetail> { poison },
+                achievementsRarityDesc: new List<AchievementDetail> { poison },
+                common: new AchievementRarityStats(),
+                uncommon: new AchievementRarityStats(),
+                rare: new AchievementRarityStats(),
+                ultraRare: new AchievementRarityStats(),
+                rareAndUltraRare: new AchievementRarityStats());
+
+            var resolved = AchievementSortHelper.ResolveSelectedGameAchievements(
+                state,
+                DynamicThemeViewKeys.Rarity,
+                DynamicThemeViewKeys.Ascending);
+
+            CollectionAssert.AreEqual(
+                new[] { "Rare", "Common" },
+                resolved.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void ResolveLibraryAchievements_DynamicSortUsesCanonicalSourceInsteadOfPrecomputedLists()
+        {
+            var common = CreateDetail("Common", unlocked: true, globalPercentUnlocked: 80);
+            var rare = CreateDetail("Rare", unlocked: true, globalPercentUnlocked: 5);
+            var poison = CreateDetail("Precomputed", unlocked: true, globalPercentUnlocked: 1);
+            var state = new LibraryRuntimeState
+            {
+                TotalTrophies = 2,
+                AllAchievements = new List<AchievementDetail> { common, rare },
+                AllAchievementsRarityAsc = new List<AchievementDetail> { poison },
+                AllAchievementsRarityDesc = new List<AchievementDetail> { poison },
+                AllAchievementsUnlockAsc = new List<AchievementDetail> { poison },
+                AllAchievementsUnlockDesc = new List<AchievementDetail> { poison }
+            };
+
+            var resolved = AchievementSortHelper.ResolveLibraryAchievements(
+                state,
+                DynamicThemeViewKeys.Rarity,
+                DynamicThemeViewKeys.Ascending);
+
+            CollectionAssert.AreEqual(
+                new[] { "Rare", "Common" },
+                resolved.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
         public void ResolveGridSortAction_DefaultNone_CyclesAscendingDescendingThenReset()
         {
             var settings = new PersistedSettings
@@ -181,26 +246,107 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void ResolveGridSortAction_DefaultOnSameColumn_SkipsDefaultDirectionAndThenResets()
+        public void ResolveGridSortAction_DefaultRarityDescending_CyclesDefaultAscendingNoneDefault()
         {
             var settings = new PersistedSettings
             {
-                SingleGameGridSortMode = CompactListSortMode.UnlockTime,
-                SingleGameGridSortDescending = true
+                AchievementDataGridSortMode = CompactListSortMode.Rarity,
+                AchievementDataGridSortDescending = true
             };
 
+            var first = AchievementSortHelper.ResolveGridSortAction(
+                "RaritySortValue",
+                currentSortPath: null,
+                currentSortDirection: null,
+                settings,
+                AchievementSortSurface.AchievementDataGrid,
+                visibleSortDirection: ListSortDirection.Descending);
+            var second = AchievementSortHelper.ResolveGridSortAction(
+                "RaritySortValue",
+                first.SortMemberPath,
+                first.Direction,
+                settings,
+                AchievementSortSurface.AchievementDataGrid,
+                visibleSortDirection: first.Direction);
+            var third = AchievementSortHelper.ResolveGridSortAction(
+                "RaritySortValue",
+                currentSortPath: null,
+                currentSortDirection: null,
+                settings,
+                AchievementSortSurface.AchievementDataGrid,
+                visibleSortDirection: null);
+            var fourth = AchievementSortHelper.ResolveGridSortAction(
+                "RaritySortValue",
+                third.SortMemberPath,
+                third.Direction,
+                settings,
+                AchievementSortSurface.AchievementDataGrid,
+                visibleSortDirection: third.Direction);
+
+            Assert.AreEqual(AchievementGridSortActionKind.ApplySort, first.Kind);
+            Assert.AreEqual(ListSortDirection.Ascending, first.Direction);
+            Assert.AreEqual(AchievementGridSortActionKind.ResetToDefault, second.Kind);
+            Assert.AreEqual(AchievementGridSortActionKind.ApplySort, third.Kind);
+            Assert.AreEqual(ListSortDirection.Descending, third.Direction);
+            Assert.AreEqual(AchievementGridSortActionKind.ApplySort, fourth.Kind);
+            Assert.AreEqual(ListSortDirection.Ascending, fourth.Direction);
+        }
+
+        [TestMethod]
+        public void ResolveGridSortAction_DefaultRarityAscending_CyclesDefaultDescendingNoneDefault()
+        {
+            var settings = new PersistedSettings
+            {
+                AchievementDataGridSortMode = CompactListSortMode.Rarity,
+                AchievementDataGridSortDescending = false
+            };
+
+            var first = AchievementSortHelper.ResolveGridSortAction(
+                "RaritySortValue",
+                currentSortPath: null,
+                currentSortDirection: null,
+                settings,
+                AchievementSortSurface.AchievementDataGrid,
+                visibleSortDirection: ListSortDirection.Ascending);
+            var second = AchievementSortHelper.ResolveGridSortAction(
+                "RaritySortValue",
+                first.SortMemberPath,
+                first.Direction,
+                settings,
+                AchievementSortSurface.AchievementDataGrid,
+                visibleSortDirection: first.Direction);
+            var third = AchievementSortHelper.ResolveGridSortAction(
+                "RaritySortValue",
+                currentSortPath: null,
+                currentSortDirection: null,
+                settings,
+                AchievementSortSurface.AchievementDataGrid,
+                visibleSortDirection: null);
+
+            Assert.AreEqual(AchievementGridSortActionKind.ApplySort, first.Kind);
+            Assert.AreEqual(ListSortDirection.Descending, first.Direction);
+            Assert.AreEqual(AchievementGridSortActionKind.ResetToDefault, second.Kind);
+            Assert.AreEqual(AchievementGridSortActionKind.ApplySort, third.Kind);
+            Assert.AreEqual(ListSortDirection.Ascending, third.Direction);
+        }
+
+        [TestMethod]
+        public void ResolveGridSortAction_OverviewRecentDefaultOnSameColumn_CyclesAscendingThenReset()
+        {
             var first = AchievementSortHelper.ResolveGridSortAction(
                 "UnlockTime",
                 currentSortPath: null,
                 currentSortDirection: null,
-                settings,
-                AchievementSortSurface.SingleGame);
+                settings: new PersistedSettings(),
+                AchievementSortSurface.OverviewRecentAchievements,
+                visibleSortDirection: ListSortDirection.Descending);
             var second = AchievementSortHelper.ResolveGridSortAction(
                 "UnlockTime",
                 first.SortMemberPath,
                 first.Direction,
-                settings,
-                AchievementSortSurface.SingleGame);
+                settings: new PersistedSettings(),
+                AchievementSortSurface.OverviewRecentAchievements,
+                visibleSortDirection: first.Direction);
 
             Assert.AreEqual(AchievementGridSortActionKind.ApplySort, first.Kind);
             Assert.AreEqual(ListSortDirection.Ascending, first.Direction);
@@ -208,24 +354,37 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void ResolveGridSortAction_SidebarRecentDefaultOnSameColumn_SkipsDefaultDirectionAndThenResets()
+        public void ResolveSelectedGameAchievements_CompactLockedRarityUsesConfiguredDirection()
         {
-            var first = AchievementSortHelper.ResolveGridSortAction(
-                "UnlockTime",
-                currentSortPath: null,
-                currentSortDirection: null,
-                settings: new PersistedSettings(),
-                AchievementSortSurface.SidebarRecentAchievements);
-            var second = AchievementSortHelper.ResolveGridSortAction(
-                "UnlockTime",
-                first.SortMemberPath,
-                first.Direction,
-                settings: new PersistedSettings(),
-                AchievementSortSurface.SidebarRecentAchievements);
+            var rare = CreateDetail("Rare", unlocked: false, globalPercentUnlocked: 5);
+            var common = CreateDetail("Common", unlocked: false, globalPercentUnlocked: 80);
+            var theme = new ModernThemeBindings
+            {
+                HasAchievements = true,
+                AllAchievements = new List<AchievementDetail> { common, rare },
+                AchievementDefaultOrder = new List<AchievementDetail> { common, rare },
+                AchievementsRarityAsc = new List<AchievementDetail> { rare, common },
+                AchievementsRarityDesc = new List<AchievementDetail> { common, rare }
+            };
 
-            Assert.AreEqual(AchievementGridSortActionKind.ApplySort, first.Kind);
-            Assert.AreEqual(ListSortDirection.Ascending, first.Direction);
-            Assert.AreEqual(AchievementGridSortActionKind.ResetToDefault, second.Kind);
+            var settings = new PersistedSettings
+            {
+                CompactLockedListSortMode = CompactListSortMode.Rarity,
+                CompactLockedListSortDescending = true
+            };
+
+            var descending = AchievementSortHelper.ResolveSelectedGameAchievements(
+                theme,
+                settings,
+                AchievementSortSurface.CompactLockedList);
+            settings.CompactLockedListSortDescending = false;
+            var ascending = AchievementSortHelper.ResolveSelectedGameAchievements(
+                theme,
+                settings,
+                AchievementSortSurface.CompactLockedList);
+
+            CollectionAssert.AreEqual(new[] { common, rare }, descending);
+            CollectionAssert.AreEqual(new[] { rare, common }, ascending);
         }
 
         [TestMethod]
@@ -275,14 +434,67 @@ namespace PlayniteAchievements.Services.Tests
                 items,
                 new PersistedSettings
                 {
-                    SidebarSelectedGameGridSortMode = CompactListSortMode.None,
-                    SidebarSelectedGameGridSortDescending = false
+                    OverviewSelectedGameGridSortMode = CompactListSortMode.None,
+                    OverviewSelectedGameGridSortDescending = false
                 },
-                AchievementSortSurface.SidebarSelectedGame,
+                AchievementSortSurface.OverviewSelectedGame,
                 AchievementSortScope.GameAchievements);
 
             CollectionAssert.AreEqual(
                 new[] { "Gamma", "Alpha" },
+                items.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void CollectionScore_SortsByComputedColumnValue()
+        {
+            var items = new List<AchievementDisplayItem>
+            {
+                CreateItem("Low", DateTime.UtcNow, raritySortValue: 80, trophyType: "bronze", points: 10, collectionScore: 15),
+                CreateItem("High", DateTime.UtcNow, raritySortValue: 10, trophyType: "gold", points: 10, collectionScore: 180)
+            };
+
+            string sortPath = null;
+            ListSortDirection? sortDirection = null;
+
+            var handled = AchievementSortHelper.TrySortItems(
+                items,
+                "CollectionScore",
+                ListSortDirection.Descending,
+                AchievementSortScope.GameAchievements,
+                ref sortPath,
+                ref sortDirection);
+
+            Assert.IsTrue(handled);
+            CollectionAssert.AreEqual(
+                new[] { "High", "Low" },
+                items.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void PrestigeScore_SortsByComputedColumnValue()
+        {
+            var items = new List<AchievementDisplayItem>
+            {
+                CreateItem("Mid", DateTime.UtcNow, raritySortValue: 40, trophyType: "silver", points: 10, prestigeScore: 75),
+                CreateItem("Low", DateTime.UtcNow, raritySortValue: 80, trophyType: "bronze", points: 10, prestigeScore: 30),
+                CreateItem("High", DateTime.UtcNow, raritySortValue: 10, trophyType: "gold", points: 10, prestigeScore: 250)
+            };
+
+            string sortPath = null;
+            ListSortDirection? sortDirection = null;
+
+            var handled = AchievementSortHelper.TrySortItems(
+                items,
+                "PrestigeScore",
+                ListSortDirection.Ascending,
+                AchievementSortScope.GameAchievements,
+                ref sortPath,
+                ref sortDirection);
+
+            Assert.IsTrue(handled);
+            CollectionAssert.AreEqual(
+                new[] { "Low", "Mid", "High" },
                 items.Select(item => item.DisplayName).ToArray());
         }
 
@@ -293,7 +505,9 @@ namespace PlayniteAchievements.Services.Tests
             string trophyType,
             int points,
             Guid? gameId = null,
-            string gameName = "Test Game")
+            string gameName = "Test Game",
+            int collectionScore = 0,
+            int prestigeScore = 0)
         {
             return new AchievementDisplayItem
             {
@@ -305,6 +519,8 @@ namespace PlayniteAchievements.Services.Tests
                 RaritySortValue = raritySortValue,
                 TrophyType = trophyType,
                 PointsValue = points,
+                CollectionScore = collectionScore,
+                PrestigeScore = prestigeScore,
                 Unlocked = true
             };
         }

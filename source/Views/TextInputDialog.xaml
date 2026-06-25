@@ -7,21 +7,30 @@
              d:DesignHeight="160" d:DesignWidth="420"
              FocusManager.FocusedElement="{Binding ElementName=InputTextBox}">
 
-    <Grid Margin="16">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Border Background="{DynamicResource PlayAch.Brush.Window.Background}" Padding="16">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Content Section -->
-        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+        <StackPanel Grid.Row="0" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
             <!-- Hint Text -->
             <TextBlock Text="{Binding Hint}"
-                       Style="{DynamicResource BaseTextBlockStyle}"
-                       Foreground="{DynamicResource TextBrush}"
-                       Opacity="0.75"
+                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       Opacity="{StaticResource PlayAch.Opacity.Hint}"
                        TextWrapping="Wrap"
-                       Margin="0,0,0,12"/>
+                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
             <!-- Input TextBox -->
             <TextBox x:Name="InputTextBox"
@@ -37,16 +46,17 @@
                     HorizontalAlignment="Right">
             <Button Content="{DynamicResource LOCPlayAch_Button_Ok}"
                     Click="OkButton_Click"
-                    Padding="12,6"
+                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                     MinWidth="80"
-                    Margin="0,0,8,0"
+                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
                     IsDefault="True"/>
 
             <Button Content="{DynamicResource LOCPlayAch_Button_Cancel}"
                     Click="CancelButton_Click"
-                    Padding="12,6"
+                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"
                     MinWidth="80"
                     IsCancel="True"/>
         </StackPanel>
     </Grid>
+    </Border>
 </UserControl>
