@@ -461,8 +461,8 @@
                                IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
                                Placement="Right"
                                PopupAnimation="Fade">
-                            <Border Background="{DynamicResource PlayAch.Brush.Surface}"
-                                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            <Border Background="{DynamicResource PlayAch.Brush.PopupSurface}"
+                                    BorderBrush="{DynamicResource PlayAch.Brush.PopupBorder}"
                                     BorderThickness="1"
                                     CornerRadius="5"
                                     Padding="4"

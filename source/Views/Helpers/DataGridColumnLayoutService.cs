@@ -1467,7 +1467,13 @@ namespace PlayniteAchievements.Views.Helpers
                 menu.Items.Insert(separatorIndex, new Separator { Margin = new Thickness(8, 8, 8, 0) });
             }
 
-            return hasAlignmentSection || hasVisibilitySection ? menu : null;
+            if (!hasAlignmentSection && !hasVisibilitySection)
+            {
+                return null;
+            }
+
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(_grid, menu);
+            return menu;
         }
 
         private bool AddAlignmentSection(ContextMenu menu, DataGridColumn contextColumn)

@@ -97,7 +97,11 @@ namespace PlayniteAchievements.Services.UI
             Alias("PlayAch.Brush.Window.Background", "PlayAch.Brush.WindowSurface"),
             Alias("PlayAch.Brush.Dialog.Background", "PlayAch.Brush.PopupSurface"),
             Alias("PlayAch.Brush.Dialog.Border", "PlayAch.Brush.PopupBorder"),
-            Alias("PlayAch.Brush.Chrome.Background", "PlayAch.Brush.ControlSurface", 0x1F)
+            Alias("PlayAch.Brush.Chrome.Background", "PlayAch.Brush.ControlSurface", 0x1F),
+            Alias("PlayAch.Brush.ScrollBar.Track", "PlayAch.Brush.Surface"),
+            Alias("PlayAch.Brush.ScrollBar.Thumb", "PlayAch.Brush.ControlBorder"),
+            Alias("PlayAch.Brush.ScrollBar.Thumb.Hover", "PlayAch.Brush.Glyph"),
+            Alias("PlayAch.Brush.ScrollBar.Thumb.Pressed", "PlayAch.Brush.Accent")
         };
 
         public static IReadOnlyList<ResourceOverrideDescriptor> ResourceDescriptors { get; } =

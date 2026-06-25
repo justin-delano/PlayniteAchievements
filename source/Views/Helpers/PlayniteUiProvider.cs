@@ -101,6 +101,11 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 window.Resources["PopupBorderBrush"] = borderBrush;
             }
+
+            if (app.TryFindResource("PlayAch.Brush.PopupSurface") is Brush popupSurface)
+            {
+                window.Resources["PopupBackgroundBrush"] = popupSurface;
+            }
         }
 
         private static Window CreateFullscreenWindow(string title, UserControl content, WindowOptions windowOptions)
