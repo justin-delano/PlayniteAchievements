@@ -72,7 +72,9 @@ namespace PlayniteAchievements.Views.Controls
                     playtime: false,
                     total: false,
                     collectionScore: false,
-                    prestigeScore: false)
+                    prestigeScore: false),
+                // Single-game summary: Cover, Game, Progress, Total visible; the rest hidden.
+                ["ViewAchievementsGameSummaries"] = CreateGameSummaryVisibility()
             };
 
         private static IReadOnlyDictionary<string, bool> CreateGameSummaryVisibility(
@@ -197,6 +199,20 @@ namespace PlayniteAchievements.Views.Controls
                 typeof(bool),
                 typeof(GameSummariesGridControl),
                 new PropertyMetadata(true, OnShowColumnHeadersChanged));
+
+        public static readonly DependencyProperty DisableRowSelectionProperty =
+            DependencyProperty.Register(
+                nameof(DisableRowSelection),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(false));
+
+        // When true, rows cannot stay selected/highlighted (used by informational single-row surfaces).
+        public bool DisableRowSelection
+        {
+            get => (bool)GetValue(DisableRowSelectionProperty);
+            set => SetValue(DisableRowSelectionProperty, value);
+        }
 
         public bool ShowColumnHeaders
         {
@@ -448,9 +464,15 @@ namespace PlayniteAchievements.Views.Controls
                 return null;
             }
 
-            return IsStartPageScope()
-                ? settings.Persisted.StartPageGameSummariesColumnWidths
-                : settings.Persisted.OverviewGameSummariesColumnWidths;
+            switch (ResolveSurface())
+            {
+                case GridSurface.StartPage:
+                    return settings.Persisted.StartPageGameSummariesColumnWidths;
+                case GridSurface.ViewAchievements:
+                    return settings.Persisted.ViewAchievementsGameSummariesColumnWidths;
+                default:
+                    return settings.Persisted.OverviewGameSummariesColumnWidths;
+            }
         }
 
         private void SetWidthsByKey(PlayniteAchievementsSettings settings, Dictionary<string, double> map)
@@ -460,13 +482,17 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (IsStartPageScope())
+            switch (ResolveSurface())
             {
-                settings.Persisted.StartPageGameSummariesColumnWidths = map;
-            }
-            else
-            {
-                settings.Persisted.OverviewGameSummariesColumnWidths = map;
+                case GridSurface.StartPage:
+                    settings.Persisted.StartPageGameSummariesColumnWidths = map;
+                    break;
+                case GridSurface.ViewAchievements:
+                    settings.Persisted.ViewAchievementsGameSummariesColumnWidths = map;
+                    break;
+                default:
+                    settings.Persisted.OverviewGameSummariesColumnWidths = map;
+                    break;
             }
         }
 
@@ -477,9 +503,15 @@ namespace PlayniteAchievements.Views.Controls
                 return null;
             }
 
-            return IsStartPageScope()
-                ? settings.Persisted.StartPageGameSummariesColumnOrder
-                : settings.Persisted.OverviewGameSummariesColumnOrder;
+            switch (ResolveSurface())
+            {
+                case GridSurface.StartPage:
+                    return settings.Persisted.StartPageGameSummariesColumnOrder;
+                case GridSurface.ViewAchievements:
+                    return settings.Persisted.ViewAchievementsGameSummariesColumnOrder;
+                default:
+                    return settings.Persisted.OverviewGameSummariesColumnOrder;
+            }
         }
 
         private void SetOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
@@ -489,13 +521,17 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (IsStartPageScope())
+            switch (ResolveSurface())
             {
-                settings.Persisted.StartPageGameSummariesColumnOrder = map;
-            }
-            else
-            {
-                settings.Persisted.OverviewGameSummariesColumnOrder = map;
+                case GridSurface.StartPage:
+                    settings.Persisted.StartPageGameSummariesColumnOrder = map;
+                    break;
+                case GridSurface.ViewAchievements:
+                    settings.Persisted.ViewAchievementsGameSummariesColumnOrder = map;
+                    break;
+                default:
+                    settings.Persisted.OverviewGameSummariesColumnOrder = map;
+                    break;
             }
         }
 
@@ -506,9 +542,19 @@ namespace PlayniteAchievements.Views.Controls
                 return null;
             }
 
-            var map = IsStartPageScope()
-                ? settings.Persisted.StartPageGameSummariesColumnVisibility
-                : settings.Persisted.OverviewGameSummariesColumnVisibility;
+            Dictionary<string, bool> map;
+            switch (ResolveSurface())
+            {
+                case GridSurface.StartPage:
+                    map = settings.Persisted.StartPageGameSummariesColumnVisibility;
+                    break;
+                case GridSurface.ViewAchievements:
+                    map = settings.Persisted.ViewAchievementsGameSummariesColumnVisibility;
+                    break;
+                default:
+                    map = settings.Persisted.OverviewGameSummariesColumnVisibility;
+                    break;
+            }
 
             return ApplyDefaultVisibility(settings, map);
         }
@@ -565,13 +611,17 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (IsStartPageScope())
+            switch (ResolveSurface())
             {
-                settings.Persisted.StartPageGameSummariesColumnVisibility = map;
-            }
-            else
-            {
-                settings.Persisted.OverviewGameSummariesColumnVisibility = map;
+                case GridSurface.StartPage:
+                    settings.Persisted.StartPageGameSummariesColumnVisibility = map;
+                    break;
+                case GridSurface.ViewAchievements:
+                    settings.Persisted.ViewAchievementsGameSummariesColumnVisibility = map;
+                    break;
+                default:
+                    settings.Persisted.OverviewGameSummariesColumnVisibility = map;
+                    break;
             }
         }
 
@@ -582,9 +632,15 @@ namespace PlayniteAchievements.Views.Controls
                 return null;
             }
 
-            return IsStartPageScope()
-                ? settings.Persisted.StartPageGameSummariesColumnAlignments
-                : settings.Persisted.OverviewGameSummariesColumnAlignments;
+            switch (ResolveSurface())
+            {
+                case GridSurface.StartPage:
+                    return settings.Persisted.StartPageGameSummariesColumnAlignments;
+                case GridSurface.ViewAchievements:
+                    return settings.Persisted.ViewAchievementsGameSummariesColumnAlignments;
+                default:
+                    return settings.Persisted.OverviewGameSummariesColumnAlignments;
+            }
         }
 
         private void SetAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
@@ -594,13 +650,17 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (IsStartPageScope())
+            switch (ResolveSurface())
             {
-                settings.Persisted.StartPageGameSummariesColumnAlignments = map;
-            }
-            else
-            {
-                settings.Persisted.OverviewGameSummariesColumnAlignments = map;
+                case GridSurface.StartPage:
+                    settings.Persisted.StartPageGameSummariesColumnAlignments = map;
+                    break;
+                case GridSurface.ViewAchievements:
+                    settings.Persisted.ViewAchievementsGameSummariesColumnAlignments = map;
+                    break;
+                default:
+                    settings.Persisted.OverviewGameSummariesColumnAlignments = map;
+                    break;
             }
         }
 
@@ -611,9 +671,15 @@ namespace PlayniteAchievements.Views.Controls
                 return null;
             }
 
-            return IsStartPageScope()
-                ? settings.Persisted.StartPageGameSummariesColumnVerticalAlignments
-                : settings.Persisted.OverviewGameSummariesColumnVerticalAlignments;
+            switch (ResolveSurface())
+            {
+                case GridSurface.StartPage:
+                    return settings.Persisted.StartPageGameSummariesColumnVerticalAlignments;
+                case GridSurface.ViewAchievements:
+                    return settings.Persisted.ViewAchievementsGameSummariesColumnVerticalAlignments;
+                default:
+                    return settings.Persisted.OverviewGameSummariesColumnVerticalAlignments;
+            }
         }
 
         private void SetCellVerticalAlignmentsByKey(
@@ -625,13 +691,17 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (IsStartPageScope())
+            switch (ResolveSurface())
             {
-                settings.Persisted.StartPageGameSummariesColumnVerticalAlignments = map;
-            }
-            else
-            {
-                settings.Persisted.OverviewGameSummariesColumnVerticalAlignments = map;
+                case GridSurface.StartPage:
+                    settings.Persisted.StartPageGameSummariesColumnVerticalAlignments = map;
+                    break;
+                case GridSurface.ViewAchievements:
+                    settings.Persisted.ViewAchievementsGameSummariesColumnVerticalAlignments = map;
+                    break;
+                default:
+                    settings.Persisted.OverviewGameSummariesColumnVerticalAlignments = map;
+                    break;
             }
         }
 
@@ -642,9 +712,15 @@ namespace PlayniteAchievements.Views.Controls
                 return null;
             }
 
-            return IsStartPageScope()
-                ? settings.Persisted.StartPageGameSummariesColumnHeaderAlignments
-                : settings.Persisted.OverviewGameSummariesColumnHeaderAlignments;
+            switch (ResolveSurface())
+            {
+                case GridSurface.StartPage:
+                    return settings.Persisted.StartPageGameSummariesColumnHeaderAlignments;
+                case GridSurface.ViewAchievements:
+                    return settings.Persisted.ViewAchievementsGameSummariesColumnHeaderAlignments;
+                default:
+                    return settings.Persisted.OverviewGameSummariesColumnHeaderAlignments;
+            }
         }
 
         private void SetHeaderAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
@@ -654,20 +730,41 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (IsStartPageScope())
+            switch (ResolveSurface())
             {
-                settings.Persisted.StartPageGameSummariesColumnHeaderAlignments = map;
-            }
-            else
-            {
-                settings.Persisted.OverviewGameSummariesColumnHeaderAlignments = map;
+                case GridSurface.StartPage:
+                    settings.Persisted.StartPageGameSummariesColumnHeaderAlignments = map;
+                    break;
+                case GridSurface.ViewAchievements:
+                    settings.Persisted.ViewAchievementsGameSummariesColumnHeaderAlignments = map;
+                    break;
+                default:
+                    settings.Persisted.OverviewGameSummariesColumnHeaderAlignments = map;
+                    break;
             }
         }
 
-        private bool IsStartPageScope()
+        private enum GridSurface
         {
-            return string.Equals(ColumnSettingsKey, "StartPageGameSummaries", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(ColumnSettingsKey, "StartPageOverview", StringComparison.OrdinalIgnoreCase);
+            Overview,
+            StartPage,
+            ViewAchievements
+        }
+
+        private GridSurface ResolveSurface()
+        {
+            if (string.Equals(ColumnSettingsKey, "StartPageGameSummaries", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ColumnSettingsKey, "StartPageOverview", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.StartPage;
+            }
+
+            if (string.Equals(ColumnSettingsKey, "ViewAchievementsGameSummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.ViewAchievements;
+            }
+
+            return GridSurface.Overview;
         }
 
         private static bool IsLegacyImageColumnRuntimeDefaultWidth(string key, double width)
@@ -698,6 +795,19 @@ namespace PlayniteAchievements.Views.Controls
 
         private void DataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (DisableRowSelection && GameSummariesGrid?.SelectedItem != null)
+            {
+                // Defer to avoid re-entrant selection changes; keeps informational rows unselected.
+                Dispatcher?.BeginInvoke(new Action(() =>
+                {
+                    if (GameSummariesGrid != null)
+                    {
+                        GameSummariesGrid.SelectedIndex = -1;
+                    }
+                }));
+                return;
+            }
+
             SelectionChanged?.Invoke(sender, e);
         }
 

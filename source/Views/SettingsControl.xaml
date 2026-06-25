@@ -1846,6 +1846,38 @@
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
+                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGamePlatformPlaytimeRegion}"
+                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesShowGameMetadata}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
+                                                          IsChecked="{Binding Persisted.ViewAchievementsGameSummariesShowCompletionBorder}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowViewAchievementsGameSummariesGridColumnHeaders}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.ViewAchievementsGameSummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Achievements}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">

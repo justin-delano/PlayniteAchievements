@@ -21,6 +21,9 @@ namespace PlayniteAchievements.Views
     {
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _playniteApi;
+        private readonly AchievementOverridesService _achievementOverridesService;
+        private readonly ICacheManager _cacheManager;
         private DataGridRow _pendingRightClickRow;
 
         public ViewAchievementsControl()
@@ -34,12 +37,17 @@ namespace PlayniteAchievements.Views
             AchievementDataService achievementDataService,
             IPlayniteAPI playniteApi,
             ILogger logger,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsSettings settings,
+            AchievementOverridesService achievementOverridesService,
+            ICacheManager cacheManager)
         {
             InitializeComponent();
 
             _settings = settings;
             _logger = logger;
+            _playniteApi = playniteApi;
+            _achievementOverridesService = achievementOverridesService;
+            _cacheManager = cacheManager;
             DataContext = new ViewAchievementsViewModel(gameId, refreshRuntime, achievementDataService, playniteApi, logger, settings);
             if (ViewModel != null)
             {
@@ -179,6 +187,56 @@ namespace PlayniteAchievements.Views
             }
 
             return false;
+        }
+
+        private DataGridRow _pendingSummaryRightClickRow;
+
+        private void GameSummaryRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                _pendingSummaryRightClickRow = row;
+            }
+        }
+
+        private void GameSummaryRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                var targetRow = _pendingSummaryRightClickRow ?? row;
+                _pendingSummaryRightClickRow = null;
+                OpenGameSummaryContextMenu(targetRow);
+            }
+        }
+
+        private void OpenGameSummaryContextMenu(DataGridRow row)
+        {
+            if (row == null || row.DataContext == null)
+            {
+                return;
+            }
+
+            var menu = GameRowContextMenuBuilder.BuildGameMenu(
+                row.DataContext,
+                this,
+                ViewModel?.RefreshGameCommand,
+                ViewModel?.OpenGameInLibraryCommand,
+                gameId => PlayniteAchievementsPlugin.Instance?.OpenManageAchievementsView(gameId),
+                _playniteApi,
+                _achievementOverridesService,
+                _cacheManager,
+                _logger);
+            if (menu == null || menu.Items.Count == 0)
+            {
+                return;
+            }
+
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
+            row.ContextMenu = menu;
+            menu.PlacementTarget = row;
+            menu.IsOpen = true;
         }
 
         private void AchievementRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)

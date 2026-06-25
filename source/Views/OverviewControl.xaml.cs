@@ -1445,19 +1445,16 @@ namespace PlayniteAchievements.Views
 
         private ContextMenu BuildGameMenu(object data)
         {
-            var menu = new ContextMenu();
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_RefreshGame",
-                () => ExecuteCommand(_viewModel?.RefreshSingleGameCommand, data)));
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_OpenGameInLibrary",
-                () => ExecuteCommand(_viewModel?.OpenGameInLibraryCommand, data)));
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ManageAchievements", () => OpenManageAchievements(data)));
-            menu.Items.Add(new Separator());
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ClearData", () => ClearGameData(data)));
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Common_Action_ExcludeFromSummaries", () => ExcludeGameFromSummaries(data)));
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ExcludeFromRefreshes", () => ExcludeGameFromRefreshes(data, clearDataWhenExcluding: false)));
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData", () => ExcludeGameFromRefreshes(data, clearDataWhenExcluding: true)));
-
-            return menu;
+            return GameRowContextMenuBuilder.BuildGameMenu(
+                data,
+                this,
+                _viewModel?.RefreshSingleGameCommand,
+                _viewModel?.OpenGameInLibraryCommand,
+                gameId => PlayniteAchievementsPlugin.Instance?.OpenManageAchievementsView(gameId),
+                _playniteApi,
+                _achievementOverridesService,
+                _cacheManager,
+                _logger);
         }
 
         private ContextMenu BuildAchievementMenu(object data)
@@ -1465,16 +1462,16 @@ namespace PlayniteAchievements.Views
             var menu = new ContextMenu();
             if (data is RecentAchievementItem)
             {
-                menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_ViewAchievements",
-                    () => ExecuteCommand(_viewModel?.OpenGameInOverviewCommand, data)));
+                menu.Items.Add(GameRowContextMenuBuilder.CreateMenuItem(this, "LOCPlayAch_Menu_ViewAchievements",
+                    () => GameRowContextMenuBuilder.ExecuteCommand(_viewModel?.OpenGameInOverviewCommand, data)));
             }
             else if (!IsCurrentGame(data))
             {
-                menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_OpenGameInOverview",
-                    () => ExecuteCommand(_viewModel?.OpenGameInOverviewCommand, data)));
+                menu.Items.Add(GameRowContextMenuBuilder.CreateMenuItem(this, "LOCPlayAch_Menu_OpenGameInOverview",
+                    () => GameRowContextMenuBuilder.ExecuteCommand(_viewModel?.OpenGameInOverviewCommand, data)));
             }
-            menu.Items.Add(CreateMenuItem("LOCPlayAch_Menu_OpenGameInLibrary",
-                () => ExecuteCommand(_viewModel?.OpenGameInLibraryCommand, data)));
+            menu.Items.Add(GameRowContextMenuBuilder.CreateMenuItem(this, "LOCPlayAch_Menu_OpenGameInLibrary",
+                () => GameRowContextMenuBuilder.ExecuteCommand(_viewModel?.OpenGameInLibraryCommand, data)));
             AchievementRowOptionsMenuBuilder.AppendAchievementOptions(
                 menu,
                 data,
@@ -1486,129 +1483,8 @@ namespace PlayniteAchievements.Views
         private bool IsCurrentGame(object data)
         {
             if (_viewModel?.SelectedGame?.PlayniteGameId.HasValue != true) return false;
-            if (!TryGetGameId(data, out var rowGameId)) return false;
+            if (!GameRowContextMenuBuilder.TryGetGameId(data, out var rowGameId)) return false;
             return rowGameId == _viewModel.SelectedGame.PlayniteGameId.Value;
-        }
-
-        private static bool TryGetGameId(object data, out Guid gameId)
-        {
-            switch (data)
-            {
-                case GameSummaryItem game when game.PlayniteGameId.HasValue:
-                    gameId = game.PlayniteGameId.Value; return true;
-                case AchievementDisplayItem ach when ach.PlayniteGameId.HasValue:
-                    gameId = ach.PlayniteGameId.Value; return true;
-                case RecentAchievementItem recent when recent.PlayniteGameId.HasValue:
-                    gameId = recent.PlayniteGameId.Value; return true;
-                case Guid id when id != Guid.Empty:
-                    gameId = id; return true;
-                default:
-                    gameId = Guid.Empty; return false;
-            }
-        }
-
-        private MenuItem CreateMenuItem(string resourceKey, Action onClick)
-        {
-            var text = TryFindResource(resourceKey) as string ?? resourceKey;
-            var item = new MenuItem { Header = text };
-            item.Click += (_, __) => onClick?.Invoke();
-            return item;
-        }
-
-        private static void ExecuteCommand(System.Windows.Input.ICommand command, object parameter)
-        {
-            if (command != null && command.CanExecute(parameter))
-                command.Execute(parameter);
-        }
-
-        private void OpenManageAchievements(object data)
-        {
-            if (TryGetGameId(data, out var gameId))
-            {
-                PlayniteAchievementsPlugin.Instance?.OpenManageAchievementsView(gameId);
-            }
-        }
-
-        private void ClearGameData(object data)
-        {
-            if (!TryGetGameId(data, out var gameId)) return;
-            var game = _playniteApi?.Database?.Games?.Get(gameId);
-            if (game == null) return;
-
-            var result = _playniteApi?.Dialogs?.ShowMessage(
-                string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_ClearData_ConfirmSingle"), game.Name),
-                ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                MessageBoxButton.YesNo, MessageBoxImage.Warning) ?? MessageBoxResult.None;
-
-            if (result != MessageBoxResult.Yes) return;
-
-            try
-            {
-                if (_achievementOverridesService != null)
-                {
-                    _achievementOverridesService.ClearGameData(game.Id, game.Name);
-                }
-                else
-                {
-                    _cacheManager.RemoveGameCache(game.Id);
-                }
-
-                _playniteApi?.Dialogs?.ShowMessage(
-                    ResourceProvider.GetString("LOCPlayAch_Status_Succeeded"),
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, $"Failed to clear data for game '{game.Name}' ({game.Id}).");
-                _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_Status_Failed"), ex.Message),
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ExcludeGameFromSummaries(object data)
-        {
-            if (!TryGetGameId(data, out var gameId))
-            {
-                return;
-            }
-
-            _achievementOverridesService?.SetExcludedFromSummaries(gameId, true);
-        }
-
-        private void ExcludeGameFromRefreshes(object data, bool clearDataWhenExcluding)
-        {
-            if (!TryGetGameId(data, out var gameId))
-            {
-                return;
-            }
-
-            var game = _playniteApi?.Database?.Games?.Get(gameId);
-            if (game == null)
-            {
-                return;
-            }
-
-            if (clearDataWhenExcluding)
-            {
-                var result = _playniteApi?.Dialogs?.ShowMessage(
-                    string.Format(ResourceProvider.GetString("LOCPlayAch_Menu_Exclude_ConfirmSingle"), game.Name),
-                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Warning) ?? MessageBoxResult.None;
-
-                if (result != MessageBoxResult.Yes)
-                {
-                    return;
-                }
-            }
-
-            _achievementOverridesService?.SetExcludedByUser(
-                gameId,
-                excluded: true,
-                clearCachedDataWhenExcluding: clearDataWhenExcluding);
         }
 
         #endregion
