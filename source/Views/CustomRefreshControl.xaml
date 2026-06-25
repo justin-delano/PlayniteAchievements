@@ -14,9 +14,8 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <Grid Margin="12"
-          Background="{DynamicResource PlayAch.Brush.Surface}"
-          TextElement.Foreground="{DynamicResource PlayAch.Brush.Text}">
+    <Border Background="{DynamicResource PlayAch.Brush.Window.Background}" Padding="12">
+    <Grid TextElement.Foreground="{DynamicResource PlayAch.Brush.Text}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -298,5 +297,6 @@
                     IsCancel="True" />
         </StackPanel>
     </Grid>
+    </Border>
 </UserControl>
 
