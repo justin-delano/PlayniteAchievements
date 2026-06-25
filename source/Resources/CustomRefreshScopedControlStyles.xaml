@@ -2,25 +2,12 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <!--
-        Scoped control styles for the Custom Refresh window. Declares implicit styles so the window's
-        plain controls (combo boxes, check boxes, text boxes, game lists, buttons) pick up the
-        plugin's custom look instead of Playnite defaults. Scoped per-window (like the
-        Settings/ViewAchievements/ManageAchievements equivalents) so the implicit styles never leak
-        into theme-integration contexts that merge CommonResources directly.
+        Scoped control styles for the Custom Refresh window. Pulls the shared implicit control styles.
+        Scoped per-window so the implicit styles never leak into theme-integration contexts that merge
+        CommonResources directly.
     -->
     <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+        <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/PlayAchImplicitControlStyles.xaml"/>
     </ResourceDictionary.MergedDictionaries>
-
-    <Style TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}"/>
-    <Style TargetType="ToggleButton" BasedOn="{StaticResource PlayAch.ToggleButton.BaseStyle}"/>
-    <Style TargetType="RadioButton" BasedOn="{StaticResource PlayAch.RadioButton.BaseStyle}"/>
-    <Style TargetType="TextBox" BasedOn="{StaticResource PlayAch.TextBox.BaseStyle}"/>
-    <Style TargetType="CheckBox" BasedOn="{StaticResource PlayAch.CheckBox.BaseStyle}"/>
-    <Style TargetType="ComboBox" BasedOn="{StaticResource PlayAch.ComboBox.BaseStyle}"/>
-    <Style TargetType="ComboBoxItem" BasedOn="{StaticResource PlayAch.ComboBoxItem.BaseStyle}"/>
-    <Style TargetType="ListBox" BasedOn="{StaticResource PlayAch.ListBox.BaseStyle}"/>
-    <Style TargetType="ListBoxItem" BasedOn="{StaticResource PlayAch.ListBoxItem.BaseStyle}"/>
-    <Style TargetType="ProgressBar" BasedOn="{StaticResource PlayAch.ProgressBar.BaseStyle}"/>
 
 </ResourceDictionary>

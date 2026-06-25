@@ -633,8 +633,6 @@
         </Setter>
     </Style>
 
-    <Style TargetType="ScrollBar" BasedOn="{StaticResource PlayAch.ScrollBar.BaseStyle}"/>
-
     <Style x:Key="PlayAch.ListBox.BaseStyle" TargetType="ListBox">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
