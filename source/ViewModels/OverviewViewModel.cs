@@ -2913,50 +2913,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             // Provider + platform filter
-            var activeGroups = ProviderFilterGroups?
-                .Where(group => group.HasAnySelected)
-                .ToList();
-            if (activeGroups != null && activeGroups.Count > 0)
-            {
-                var fullySelectedProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                var selectedPlatformsByProvider =
-                    new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
-                foreach (var group in activeGroups)
-                {
-                    if (group.IsFullySelected)
-                    {
-                        fullySelectedProviders.Add(group.ProviderKey);
-                    }
-                    else
-                    {
-                        selectedPlatformsByProvider[group.ProviderKey] =
-                            new HashSet<string>(group.SelectedPlatformNames, StringComparer.OrdinalIgnoreCase);
-                    }
-                }
-
-                filtered = filtered.Where(g =>
-                {
-                    if (string.IsNullOrWhiteSpace(g.ProviderKey))
-                    {
-                        return false;
-                    }
-
-                    // Fully-selected provider: every game of that provider passes, even ones with no
-                    // platform metadata.
-                    if (fullySelectedProviders.Contains(g.ProviderKey))
-                    {
-                        return true;
-                    }
-
-                    // Partially-selected provider: only games whose platforms overlap the selection.
-                    if (selectedPlatformsByProvider.TryGetValue(g.ProviderKey, out var selectedPlatforms))
-                    {
-                        return g.Platforms != null && g.Platforms.Any(selectedPlatforms.Contains);
-                    }
-
-                    return false;
-                });
-            }
+            filtered = OverviewGameSummaryFilters.ApplyProviderPlatformFilter(filtered, ProviderFilterGroups);
 
             filtered = OverviewGameSummaryFilters.ApplyActivityAndProgressFilters(
                 filtered,
@@ -3488,34 +3445,9 @@ namespace PlayniteAchievements.ViewModels
 
         private string GetSelectedProviderFilterText()
         {
-            var groups = ProviderFilterGroups;
-            if (groups == null || !groups.Any(g => g.HasAnySelected))
-            {
-                return L("LOCPlayAch_Common_Label_Platform", "Platform");
-            }
-
-            var parts = new List<string>();
-            foreach (var group in groups)
-            {
-                if (!group.HasAnySelected)
-                {
-                    continue;
-                }
-
-                // Fully selected shows the provider name; a partial selection lists the platforms.
-                if (group.IsFullySelected)
-                {
-                    parts.Add(group.DisplayName);
-                }
-                else
-                {
-                    parts.AddRange(group.SelectedPlatformNames);
-                }
-            }
-
-            return parts.Count > 0
-                ? string.Join(", ", parts)
-                : L("LOCPlayAch_Common_Label_Platform", "Platform");
+            return OverviewGameSummaryFilters.BuildProviderFilterText(
+                ProviderFilterGroups,
+                L("LOCPlayAch_Common_Label_Platform", "Platform"));
         }
 
         private void ApplyRightFilters(bool skipDefaultSort = false)
