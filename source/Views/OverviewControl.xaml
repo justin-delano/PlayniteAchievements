@@ -409,6 +409,8 @@
         <!-- ROW 1: Progress Bar -->
         <Border Grid.Row="1"
                 Background="Transparent"
+                BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                BorderThickness="0,0,0,1"
                 Padding="16,8"
                 Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
             <StackPanel>

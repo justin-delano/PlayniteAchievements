@@ -96,6 +96,7 @@
     </ControlTemplate>
 
     <Style TargetType="{x:Type DataGrid}">
+        <Setter Property="helpers:DataGridColumnGripperBehavior.IsEnabled" Value="True"/>
         <Style.Triggers>
             <Trigger Property="helpers:DataGridHoverScrollBarBehavior.IsEnabled"
                      Value="True">
@@ -130,6 +131,11 @@
                                 Opacity="0"/>
                     </Grid>
                     <ControlTemplate.Triggers>
+                        <!-- Faintly hinted when the owning header is hovered (both of the column's boundary grippers). -->
+                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType={x:Type DataGridColumnHeader}}}" Value="True">
+                            <Setter TargetName="GripChrome" Property="Opacity" Value="0.55"/>
+                        </DataTrigger>
+                        <!-- Solid when the gripper itself is hovered. -->
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="GripChrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.HeaderGripper.Hover}"/>
                             <Setter TargetName="GripChrome" Property="Opacity" Value="1"/>
@@ -144,6 +150,13 @@
         </Setter>
     </Style>
 
+    <!--
+        Each header carries both grippers, centered on its boundaries, so hovering a column
+        reveals and exposes both edges from that column. WPF's SetLeftGripperVisibility
+        auto-collapses the first column's left gripper (no resizable column to its left), and
+        DataGridColumnGripperBehavior collapses the last visible column's right gripper so there
+        is no orphan gripper at the grid's trailing edge.
+    -->
     <Style x:Key="AchievementColumnHeaderLeftGripperStyle"
            TargetType="Thumb"
            BasedOn="{StaticResource AchievementColumnHeaderGripperStyle}">
