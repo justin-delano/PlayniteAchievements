@@ -585,11 +585,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ScrollBar">
-                  <!-- Border and Track are siblings (not parent/child): the Grid arranges the
-                       Track to full size so it stays the directly-sized layout root and its
-                       thumb is never clipped, while the Border paints the rounded track behind it. -->
-                  <Grid SnapsToDevicePixels="True">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="6"/>
+                  <Border Background="{TemplateBinding Background}" CornerRadius="6" SnapsToDevicePixels="True">
                     <Track x:Name="PART_Track" Orientation="Vertical" IsDirectionReversed="True" Width="12">
                         <Track.Thumb>
                             <Thumb Style="{StaticResource PlayAch.ScrollBar.Thumb}" Width="8" MinHeight="24"/>
@@ -601,7 +597,7 @@
                             <RepeatButton x:Name="DownButton" Style="{StaticResource PlayAch.ScrollBar.PageButton}" Command="ScrollBar.PageDownCommand"/>
                         </Track.IncreaseRepeatButton>
                     </Track>
-                  </Grid>
+                  </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="Orientation" Value="Horizontal">
                             <Setter Property="LayoutTransform" TargetName="PART_Track">
