@@ -11,8 +11,7 @@
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="600"
-             Loaded="OnLoaded"
-             PreviewKeyDown="OnPreviewKeyDown">
+             Loaded="OnLoaded">
 
     <UserControl.Resources>
         <ResourceDictionary>

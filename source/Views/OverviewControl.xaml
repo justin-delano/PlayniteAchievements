@@ -14,8 +14,7 @@
              d:DesignHeight="700" d:DesignWidth="900"
              UseLayoutRounding="True"
              SnapsToDevicePixels="True"
-             Loaded="OnLoaded"
-             PreviewKeyDown="OnPreviewKeyDown">
+             Loaded="OnLoaded">
 
     <UserControl.Resources>
         <ResourceDictionary>
