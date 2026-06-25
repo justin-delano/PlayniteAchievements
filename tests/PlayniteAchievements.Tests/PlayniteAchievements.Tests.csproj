@@ -165,6 +165,7 @@
     <Compile Include="..\..\source\Common\RelayCommand.cs" Link="Source\Common\RelayCommand.cs" />
     <Compile Include="..\..\source\Common\WebViewExtensions.cs" Link="Source\Common\WebViewExtensions.cs" />
     <Compile Include="..\..\source\ViewModels\GameSummaryItem.cs" Link="Source\ViewModels\GameSummaryItem.cs" />
+    <Compile Include="..\..\source\ViewModels\ProviderPlatformFilter.cs" Link="Source\ViewModels\ProviderPlatformFilter.cs" />
     <Compile Include="..\..\source\ViewModels\ScoreCardViewModel.cs" Link="Source\ViewModels\ScoreCardViewModel.cs" />
     <Compile Include="..\..\source\ViewModels\ManualAchievementEditItem.cs" Link="Source\ViewModels\ManualAchievementEditItem.cs" />
     <Compile Include="..\..\source\Views\Converters\PercentToRarityGlowConverter.cs" Link="Source\Views\Converters\PercentToRarityGlowConverter.cs" />
