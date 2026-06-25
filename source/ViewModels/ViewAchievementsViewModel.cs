@@ -43,6 +43,24 @@ namespace PlayniteAchievements.ViewModels
         private readonly HashSet<string> _selectedCategoryTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedCategoryLabelFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
+        // In-memory sort/filter state for the most recently viewed game. Restored when the
+        // window reopens for the same game, overwritten on every close, and reset when a
+        // different game is opened. Process-lifetime only; clears on Playnite restart.
+        private sealed class GridStateSnapshot
+        {
+            public Guid GameId;
+            public string SortPath;
+            public ListSortDirection SortDirection;
+            public string SearchText;
+            public bool ShowUnlocked;
+            public bool ShowLocked;
+            public bool ShowHidden;
+            public List<string> CategoryTypeFilters;
+            public List<string> CategoryLabelFilters;
+        }
+
+        private static GridStateSnapshot _lastGridState;
+
         public ViewAchievementsViewModel(
             Guid gameId,
             RefreshRuntime refreshRuntime,
@@ -120,8 +138,64 @@ namespace PlayniteAchievements.ViewModels
             _refreshService.CacheDeltaUpdated += OnCacheDeltaUpdated;
             _refreshService.RebuildProgress += OnRebuildProgress;
 
+            // Restore the previous session's sort/filter state for this game (if any) before
+            // the initial load so the first display reflects it.
+            RestoreGridStateIfMatching();
+
             // Load data
             LoadGameData();
+        }
+
+        private void RestoreGridStateIfMatching()
+        {
+            var snapshot = _lastGridState;
+            if (snapshot == null || snapshot.GameId != _gameId)
+            {
+                return;
+            }
+
+            // Assign the backing fields directly to avoid triggering ApplySearchFilter
+            // repeatedly; LoadGameData applies the combined state once.
+            _currentSortPath = snapshot.SortPath;
+            _currentSortDirection = snapshot.SortDirection;
+            _searchText = snapshot.SearchText ?? string.Empty;
+            _showUnlocked = snapshot.ShowUnlocked;
+            _showLocked = snapshot.ShowLocked;
+            _showHidden = snapshot.ShowHidden;
+
+            _selectedCategoryTypeFilters.Clear();
+            if (snapshot.CategoryTypeFilters != null)
+            {
+                foreach (var value in snapshot.CategoryTypeFilters)
+                {
+                    _selectedCategoryTypeFilters.Add(value);
+                }
+            }
+
+            _selectedCategoryLabelFilters.Clear();
+            if (snapshot.CategoryLabelFilters != null)
+            {
+                foreach (var value in snapshot.CategoryLabelFilters)
+                {
+                    _selectedCategoryLabelFilters.Add(value);
+                }
+            }
+        }
+
+        private void SaveGridState()
+        {
+            _lastGridState = new GridStateSnapshot
+            {
+                GameId = _gameId,
+                SortPath = _currentSortPath,
+                SortDirection = _currentSortDirection,
+                SearchText = _searchText,
+                ShowUnlocked = _showUnlocked,
+                ShowLocked = _showLocked,
+                ShowHidden = _showHidden,
+                CategoryTypeFilters = _selectedCategoryTypeFilters.ToList(),
+                CategoryLabelFilters = _selectedCategoryLabelFilters.ToList(),
+            };
         }
 
         private async Task ExecuteSingleGameRefreshAsync()
@@ -1130,6 +1204,8 @@ namespace PlayniteAchievements.ViewModels
 
         public void Dispose()
         {
+            SaveGridState();
+
             if (_settings != null)
             {
                 _settings.PropertyChanged -= OnSettingsChanged;
