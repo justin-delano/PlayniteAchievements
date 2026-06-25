@@ -369,7 +369,7 @@
     </Style>
 
     <Style x:Key="ManageAchievementsSearchTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ClearableSearchTextBoxStyle}">
-        <Setter Property="Height" Value="{StaticResource PlayAch.Size.Control.Height}"/>
+        <Setter Property="MinHeight" Value="{StaticResource PlayAch.Size.Control.Height}"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
@@ -434,7 +434,7 @@
     <Style x:Key="ManageAchievementsSearchPlaceholderTextStyle" TargetType="TextBlock" BasedOn="{StaticResource SearchPlaceholderTextStyle}">
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="HorizontalAlignment" Value="Left"/>
-        <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Left.Md}"/>
+        <Setter Property="Margin" Value="{StaticResource PlayAch.Thickness.Left.Sm}"/>
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
         <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Placeholder}"/>
         <Setter Property="IsHitTestVisible" Value="False"/>

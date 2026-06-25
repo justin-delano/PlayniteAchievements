@@ -15,14 +15,14 @@
     <!-- Search TextBox Style -->
     <Style x:Key="SearchTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource PlayAch.TextBox.BaseStyle}">
         <Setter Property="VerticalContentAlignment" Value="Center"/>
-        <Setter Property="Padding" Value="6,4"/>
+        <Setter Property="Padding" Value="6,2"/>
         <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Input.Background}"/>
     </Style>
 
     <Style x:Key="ClearableSearchTextBoxStyle"
            TargetType="TextBox"
            BasedOn="{StaticResource SearchTextBoxStyle}">
-        <Setter Property="Padding" Value="8,4,30,4"/>
+        <Setter Property="Padding" Value="7,2,30,2"/>
     </Style>
 
     <!-- Progress bar style -->

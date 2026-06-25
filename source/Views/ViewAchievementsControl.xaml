@@ -194,7 +194,7 @@
         <!-- Search Achievements -->
         <Border Grid.Row="2"
                 Style="{StaticResource CardBorderStyle}"
-                Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"
+                Margin="16,0,16,8"
                 Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -208,7 +208,7 @@
                              Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
                                VerticalAlignment="Center"
-                               Margin="{StaticResource PlayAch.Thickness.Left.Md}"
+                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                IsHitTestVisible="False" Style="{StaticResource SearchPlaceholderTextStyle}"/>
@@ -301,6 +301,7 @@
         <!-- Achievements List -->
         <controls:AchievementDataGridControl x:Name="AchievementsDataGridControl"
                                              Grid.Row="3"
+                                             Margin="16,0,16,0"
                                              Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}"
                                              ItemsSource="{Binding Achievements}"
                                              RevealCommand="{Binding RevealAchievementCommand}"

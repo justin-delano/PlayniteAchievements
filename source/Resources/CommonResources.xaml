@@ -165,7 +165,6 @@
                             CornerRadius="{StaticResource PlayAch.Radius.Small}"
                             SnapsToDevicePixels="True">
                         <ScrollViewer x:Name="PART_ContentHost"
-                                      Margin="{TemplateBinding Padding}"
                                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
                     </Border>
                     <ControlTemplate.Triggers>
@@ -807,6 +806,8 @@
     </Style>
 
     <Style x:Key="SearchPlaceholderTextStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
+        <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
         <Setter Property="Visibility" Value="Collapsed"/>
         <Style.Triggers>
             <DataTrigger Binding="{Binding SearchText}" Value="">

@@ -419,8 +419,10 @@
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
                                        VerticalAlignment="Center"
-                                       Margin="{StaticResource PlayAch.Thickness.Left.Md}"
+                                       Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                       FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
                                        Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                        IsHitTestVisible="False">
                                 <TextBlock.Style>
@@ -513,8 +515,10 @@
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
                                        VerticalAlignment="Center"
-                                       Margin="{StaticResource PlayAch.Thickness.Left.Md}"
+                                       Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                       FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
                                        Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                        IsHitTestVisible="False">
                                 <TextBlock.Style>
