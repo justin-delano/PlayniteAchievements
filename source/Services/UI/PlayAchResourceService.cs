@@ -91,6 +91,8 @@ namespace PlayniteAchievements.Services.UI
             Alias("PlayAch.Brush.Input.Border", "PlayAch.Brush.ControlBorder"),
             Alias("PlayAch.Brush.Grid.Background", "PlayAch.Brush.GridSurface"),
             Alias("PlayAch.Brush.Grid.HeaderBackground", "PlayAch.Brush.GridSurface"),
+            Alias("PlayAch.Brush.Grid.HeaderGripper.Hover", "PlayAch.Brush.Accent"),
+            Alias("PlayAch.Brush.Grid.HeaderGripper.Pressed", "PlayAch.Brush.Selection"),
             Alias("PlayAch.Brush.Grid.RowBackground", "PlayAch.Brush.GridSurface"),
             Alias("PlayAch.Brush.Grid.RowHoverBackground", "PlayAch.Brush.Selection", 0x30),
             Alias("PlayAch.Brush.Grid.RowSelectedBackground", "PlayAch.Brush.Selection", 0x45),

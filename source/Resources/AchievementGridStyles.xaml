@@ -16,6 +16,55 @@
          DATAGRID STYLES
          ======================= -->
 
+    <Style x:Key="AchievementColumnHeaderGripperStyle" TargetType="Thumb">
+        <Setter Property="Width" Value="14"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Cursor" Value="SizeWE"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="Panel.ZIndex" Value="10"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Grid Background="{TemplateBinding Background}"
+                          SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                        <Border x:Name="GripChrome"
+                                Width="10"
+                                HorizontalAlignment="Center"
+                                Background="{DynamicResource PlayAch.Brush.Grid.HeaderGripper.Hover}"
+                                CornerRadius="5"
+                                Opacity="0"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="GripChrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.HeaderGripper.Hover}"/>
+                            <Setter TargetName="GripChrome" Property="Opacity" Value="1"/>
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="GripChrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.HeaderGripper.Pressed}"/>
+                            <Setter TargetName="GripChrome" Property="Opacity" Value="1"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="AchievementColumnHeaderLeftGripperStyle"
+           TargetType="Thumb"
+           BasedOn="{StaticResource AchievementColumnHeaderGripperStyle}">
+        <Setter Property="HorizontalAlignment" Value="Left"/>
+        <Setter Property="Margin" Value="-7,0,0,0"/>
+    </Style>
+
+    <Style x:Key="AchievementColumnHeaderRightGripperStyle"
+           TargetType="Thumb"
+           BasedOn="{StaticResource AchievementColumnHeaderGripperStyle}">
+        <Setter Property="HorizontalAlignment" Value="Right"/>
+        <Setter Property="Margin" Value="0,0,-7,0"/>
+    </Style>
+
     <!-- Column Header Style with Sort Arrow and Resize Grippers -->
     <Style x:Key="AchievementColumnHeaderStyle" TargetType="DataGridColumnHeader">
         <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.HeaderBackground}"/>
@@ -57,27 +106,27 @@
                                   RenderTransformOrigin="0.5,0.5"
                                   Visibility="Collapsed"/>
                             <Thumb x:Name="PART_LeftHeaderGripper"
-                                   Width="0"
-                                   Background="Transparent"
-                                   IsHitTestVisible="False"
-                                   Focusable="False"/>
+                                   Style="{StaticResource AchievementColumnHeaderLeftGripperStyle}"/>
                             <Thumb x:Name="PART_RightHeaderGripper"
-                                   HorizontalAlignment="Right"
-                                   Width="8"
-                                   Cursor="SizeWE"
-                                   Background="Transparent"/>
+                                   Style="{StaticResource AchievementColumnHeaderRightGripperStyle}"/>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
+                            <Setter Property="Panel.ZIndex" Value="20"/>
                         </Trigger>
                         <Trigger Property="HorizontalContentAlignment" Value="Right">
                             <Setter Property="Padding" Value="10,6,26,6"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
                             <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
+                            <Setter Property="Panel.ZIndex" Value="20"/>
                         </Trigger>
+                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=Column.DisplayIndex}" Value="0">
+                            <Setter TargetName="PART_LeftHeaderGripper" Property="Width" Value="0"/>
+                            <Setter TargetName="PART_LeftHeaderGripper" Property="IsHitTestVisible" Value="False"/>
+                        </DataTrigger>
                         <Trigger Property="SortDirection" Value="Ascending">
                             <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
                             <Setter TargetName="SortArrow" Property="RenderTransform">

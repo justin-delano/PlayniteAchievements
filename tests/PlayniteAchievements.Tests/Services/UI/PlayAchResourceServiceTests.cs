@@ -13,8 +13,10 @@ namespace PlayniteAchievements.Tests.Services.UI
     public class PlayAchResourceServiceTests
     {
         [TestMethod]
-        public void ResourceDescriptors_DoesNotExposeScrollbarBrushes()
+        public void ResourceDescriptors_DoesNotExposeDerivedChromeBrushes()
         {
+            AssertNoDescriptor("PlayAch.Brush.Grid.HeaderGripper.Hover");
+            AssertNoDescriptor("PlayAch.Brush.Grid.HeaderGripper.Pressed");
             AssertNoDescriptor("PlayAch.Brush.ScrollBar.Track");
             AssertNoDescriptor("PlayAch.Brush.ScrollBar.Thumb");
             AssertNoDescriptor("PlayAch.Brush.ScrollBar.Thumb.Hover");
@@ -40,6 +42,23 @@ namespace PlayniteAchievements.Tests.Services.UI
             AssertBrush(resources, "PlayAch.Brush.ScrollBar.Thumb", Color.FromRgb(0x33, 0x44, 0x55));
             AssertBrush(resources, "PlayAch.Brush.ScrollBar.Thumb.Hover", Color.FromRgb(0x55, 0x66, 0x77));
             AssertBrush(resources, "PlayAch.Brush.ScrollBar.Thumb.Pressed", Color.FromRgb(0x77, 0x88, 0x99));
+        }
+
+        [TestMethod]
+        public void Apply_DerivesHeaderGripperBrushesFromCustomAppearanceBrushes()
+        {
+            var resources = new ResourceDictionary();
+            var overrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["PlayAch.Brush.Accent"] = CreateBrushOverride("#FF405060"),
+                ["PlayAch.Brush.Selection"] = CreateBrushOverride("#FF708090"),
+                ["PlayAch.Brush.Grid.HeaderGripper.Hover"] = CreateBrushOverride("#FFFFFFFF")
+            };
+
+            PlayAchResourceService.Apply(resources, overrides);
+
+            AssertBrush(resources, "PlayAch.Brush.Grid.HeaderGripper.Hover", Color.FromRgb(0x40, 0x50, 0x60));
+            AssertBrush(resources, "PlayAch.Brush.Grid.HeaderGripper.Pressed", Color.FromRgb(0x70, 0x80, 0x90));
         }
 
         private static void AssertNoDescriptor(string resourceKey)
