@@ -80,6 +80,25 @@ namespace PlayniteAchievements.Views
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
         }
 
+        private void OnPreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // F5 inside the Overview triggers the main refresh (honoring the refresh-mode
+            // selector). Handle on the tunneling event so it is marked handled before it can
+            // bubble to Playnite's main-window F5 binding when the Overview is hosted as a sidebar view.
+            if (e.Key != Key.F5)
+            {
+                return;
+            }
+
+            var command = _viewModel?.RefreshCommand;
+            if (command != null && command.CanExecute(null))
+            {
+                command.Execute(null);
+            }
+
+            e.Handled = true;
+        }
+
         private void ScoreCard_InfoRequested(object sender, RoutedEventArgs e)
         {
             e.Handled = true;

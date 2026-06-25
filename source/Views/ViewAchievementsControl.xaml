@@ -11,11 +11,8 @@
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
              mc:Ignorable="d"
              d:DesignHeight="700" d:DesignWidth="600"
-             Loaded="OnLoaded">
-
-    <UserControl.InputBindings>
-        <KeyBinding Key="F5" Command="{Binding RefreshGameCommand}" />
-    </UserControl.InputBindings>
+             Loaded="OnLoaded"
+             PreviewKeyDown="OnPreviewKeyDown">
 
     <UserControl.Resources>
         <ResourceDictionary>
