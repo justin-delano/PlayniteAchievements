@@ -616,7 +616,7 @@
                             </Grid.RowDefinitions>
                         <controls:GameSummariesGridControl x:Name="GameSummariesGridControl"
                                                                 Grid.Row="0"
-                                                                Margin="16,0,0,0"
+                                                                Margin="16,0,16,0"
                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
                                                                 ItemsSource="{Binding GameSummaries}"
                                                                 SelectedItem="{Binding SelectedGame, Mode=OneWay}"
@@ -641,23 +641,23 @@
                         <Border Background="{DynamicResource Transparent}"
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
+                                Padding="16,10,16,10"
                                 Visibility="{Binding ShowRecentAchievementsPanel, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        FontWeight="Bold"
                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       VerticalAlignment="Center"
-                                       Margin="16,0"/>
+                                       VerticalAlignment="Center"/>
                         </Border>
 
                         <!-- Header for when a game IS selected -->
                         <Border Background="{DynamicResource Transparent}"
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
+                                Padding="16,10,16,10"
                                 Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
 
-                            <StackPanel Margin="16,0"
-                                        Orientation="Horizontal"
+                            <StackPanel Orientation="Horizontal"
                                         VerticalAlignment="Center">
 
                                 <TextBlock Text="{Binding DisplayedSelectedGame.GameName}"
@@ -717,7 +717,7 @@
 
                             <controls:AchievementDataGridControl x:Name="RecentAchievementsDataGrid"
                                                                  Grid.Row="0"
-                                                                 Margin="16,0,0,0"
+                                                                 Margin="16,0,16,0"
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding RecentAchievements}"
                                                                  ColumnSettingsKey="OverviewRecentAchievements"
@@ -744,7 +744,7 @@
                             <!-- Game Achievements List -->
                             <controls:AchievementDataGridControl x:Name="GameAchievementsGrid"
                                                                  Grid.Row="0"
-                                                                 Margin="16,0,0,0"
+                                                                 Margin="16,0,16,0"
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
                                                                  ColumnSettingsKey="OverviewSelectedGameAchievements"

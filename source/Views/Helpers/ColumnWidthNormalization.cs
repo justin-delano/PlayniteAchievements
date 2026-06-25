@@ -14,7 +14,6 @@ namespace PlayniteAchievements.Views.Helpers
     public static class ColumnWidthNormalization
     {
         private const double MinimumColumnWidthRatio = 0.1;
-        private const double WidthNormalizationSafetyPadding = 1.0;
 
         private static readonly ConditionalWeakTable<DataGridColumn, ConfiguredColumnMinWidth> ConfiguredMinWidths =
             new ConditionalWeakTable<DataGridColumn, ConfiguredColumnMinWidth>();
@@ -79,7 +78,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return 0;
             }
 
-            var chrome = grid.BorderThickness.Left + grid.BorderThickness.Right + grid.Padding.Left + grid.Padding.Right + 2;
+            var chrome = grid.BorderThickness.Left + grid.BorderThickness.Right + grid.Padding.Left + grid.Padding.Right;
             var availableWidth = Math.Max(0, width - chrome);
             var scrollViewer = VisualTreeHelpers.FindVisualChild<ScrollViewer>(grid);
             if (scrollViewer != null && IsValidWidth(scrollViewer.ActualWidth))
@@ -91,15 +90,6 @@ namespace PlayniteAchievements.Views.Helpers
             if (IsValidWidth(viewportWidth))
             {
                 return Math.Max(0, Math.Min(viewportWidth, availableWidth));
-            }
-
-            if (scrollViewer != null)
-            {
-                if (scrollViewer.ComputedVerticalScrollBarVisibility == Visibility.Visible ||
-                    scrollViewer.VerticalScrollBarVisibility == ScrollBarVisibility.Visible)
-                {
-                    availableWidth -= SystemParameters.VerticalScrollBarWidth;
-                }
             }
 
             return Math.Max(0, availableWidth);
@@ -142,7 +132,7 @@ namespace PlayniteAchievements.Views.Helpers
             var fixedWidth = visibleColumns
                 .Where(column => column == null || !column.CanUserResize || string.IsNullOrWhiteSpace(GetColumnKey(column)))
                 .Sum(GetCurrentWidth);
-            var availableForResizable = Math.Max(1, availableWidth - fixedWidth - WidthNormalizationSafetyPadding);
+            var availableForResizable = Math.Max(1, availableWidth - fixedWidth);
             var maxFittableMinimum = Math.Max(1, availableForResizable / resizableColumns.Count);
             return Math.Max(1, Math.Min(preferredMinimumWidth, maxFittableMinimum));
         }
@@ -555,13 +545,105 @@ namespace PlayniteAchievements.Views.Helpers
                 }
             }
 
-            normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
-            for (var i = 0; i < normalizedKeys.Count; i++)
-            {
-                normalized[normalizedKeys[i]] = Math.Max(RoundPixelWidth(floors[i]), RoundPixelWidth(widths[i]));
-            }
+            normalized = RoundWidthsToTarget(
+                normalizedKeys,
+                widths,
+                floors,
+                protectedKey,
+                preferredAbsorberKey,
+                targetWidth);
 
             return true;
+        }
+
+        private static Dictionary<string, double> RoundWidthsToTarget(
+            IReadOnlyList<string> keys,
+            IReadOnlyList<double> widths,
+            IReadOnlyList<double> floorWidths,
+            string protectedKey,
+            string preferredAbsorberKey,
+            double targetWidth)
+        {
+            var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            var roundedWidths = new List<double>(keys.Count);
+            var roundedFloors = new List<double>(keys.Count);
+
+            for (var i = 0; i < keys.Count; i++)
+            {
+                var roundedFloor = RoundPixelWidth(floorWidths[i]);
+                roundedFloors.Add(roundedFloor);
+                roundedWidths.Add(Math.Max(roundedFloor, RoundPixelWidth(widths[i])));
+            }
+
+            var roundedTarget = RoundPixelWidth(targetWidth);
+            var delta = roundedTarget - roundedWidths.Sum();
+            if (Math.Abs(delta) > 0.2)
+            {
+                DistributeRoundedDelta(roundedWidths, roundedFloors, keys, protectedKey, preferredAbsorberKey, delta);
+            }
+
+            for (var i = 0; i < keys.Count; i++)
+            {
+                normalized[keys[i]] = Math.Max(roundedFloors[i], roundedWidths[i]);
+            }
+
+            return normalized;
+        }
+
+        private static void DistributeRoundedDelta(
+            IList<double> widths,
+            IReadOnlyList<double> floorWidths,
+            IReadOnlyList<string> keys,
+            string protectedKey,
+            string preferredAbsorberKey,
+            double delta)
+        {
+            var absorberOrder = BuildAbsorberOrder(keys, protectedKey, preferredAbsorberKey);
+            if (absorberOrder.Count == 0)
+            {
+                return;
+            }
+
+            if (delta > 0)
+            {
+                widths[absorberOrder[0]] += delta;
+                return;
+            }
+
+            foreach (var index in absorberOrder)
+            {
+                var capacity = widths[index] - floorWidths[index];
+                if (capacity <= 0)
+                {
+                    continue;
+                }
+
+                var take = Math.Min(capacity, -delta);
+                widths[index] -= take;
+                delta += take;
+                if (delta >= -0.2)
+                {
+                    return;
+                }
+            }
+
+            for (var i = 0; i < widths.Count && delta < -0.2; i++)
+            {
+                if (absorberOrder.Contains(i))
+                {
+                    continue;
+                }
+
+                var capacity = widths[i] - floorWidths[i];
+                if (capacity <= 0)
+                {
+                    continue;
+                }
+
+                var take = Math.Min(capacity, -delta);
+                widths[i] -= take;
+                delta += take;
+            }
         }
 
         public static bool TryBuildNormalizedWidths(
@@ -642,7 +724,7 @@ namespace PlayniteAchievements.Views.Helpers
                 .Where(c => string.IsNullOrWhiteSpace(GetColumnKey(c)) || !c.CanUserResize)
                 .Sum(c => Math.Max(GetColumnMinimumWidth(minimumWidths, c, minimumWidth), GetCurrentWidth(c)));
 
-            var targetWidth = Math.Max(0, availableWidth - fixedWidth - WidthNormalizationSafetyPadding);
+            var targetWidth = Math.Max(0, availableWidth - fixedWidth);
             if (targetWidth <= 0)
             {
                 return false;

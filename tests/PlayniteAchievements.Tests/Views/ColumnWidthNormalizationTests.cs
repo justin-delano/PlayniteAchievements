@@ -165,5 +165,26 @@ namespace PlayniteAchievements.Tests.Views
             Assert.IsFalse(result);
             Assert.IsNull(normalized);
         }
+
+        [TestMethod]
+        public void TryBuildNormalizedWidths_RoundingRemainderMatchesRoundedTarget()
+        {
+            var keys = new[] { "A", "B", "C" };
+            var seedWidths = new[] { 10d, 10d, 10d };
+            var floorWidths = new[] { 1d, 1d, 1d };
+
+            var result = ColumnWidthNormalization.TryBuildNormalizedWidths(
+                keys,
+                seedWidths,
+                floorWidths,
+                protectedKey: null,
+                rescaleAll: true,
+                targetWidth: 100d,
+                out var normalized);
+
+            Assert.IsTrue(result);
+            Assert.AreEqual(100d, normalized.Values.Sum());
+            Assert.IsTrue(normalized.Values.All(width => width >= 1d));
+        }
     }
 }
