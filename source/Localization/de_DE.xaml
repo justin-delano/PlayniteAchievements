@@ -491,7 +491,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableZzz">&quot;Zenless Zone Zero&quot; aktivieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles">Tracker-Exportdateien</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_ExportFiles_Help">Optional public tracker exports used to mark achievements unlocked. Without an export file, refresh still downloads definitions and keeps achievements locked.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">How to Get the JSON</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions">Anleitung für die JSON-Datei</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Prefix">1. StarDB Achievement Importer </sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter">öffnen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Suffix"> und anmelden.</sys:String>
@@ -529,7 +529,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_LanguageHint">Die Sprache für Erfolgstexte. Die Plattformen werden diese Sprache verwenden, sofern unterstützt. Ansonsten wird Englisch als Fallback verwendet.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements">Sichtbarkeit gesperrter Erfolge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LockedAchievements_Description">Symboldarstellung gesperrter Erfolge.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Description">Tools for clearing cached plugin data and opening support or debugging utilities.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Description">Werkzeuge für Zwischenspeicherbereinigung, Support und Debugging.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Maintenance_Title">Wartung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotifyOnRebuild">Benachrichtigung bei Abschluss/Fehler von Aktualisierungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_NotifyPeriodicUpdates">Benachrichtigung bei periodischen Aktualisierungen</sys:String>
