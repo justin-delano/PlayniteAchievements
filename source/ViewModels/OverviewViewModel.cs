@@ -688,6 +688,21 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
+        /// Collapses provider sections that have no platform selected. Called when the dropdown
+        /// closes so reopening it shows a tidy list with only the in-use sections expanded.
+        /// </summary>
+        public void CollapseUnselectedProviderFilters()
+        {
+            foreach (var group in ProviderFilterGroups ?? Enumerable.Empty<ProviderFilterGroup>())
+            {
+                if (!group.HasAnySelected)
+                {
+                    group.IsExpanded = false;
+                }
+            }
+        }
+
+        /// <summary>
         /// Toggles all platforms for a provider when its pie slice is clicked.
         /// </summary>
         /// <param name="sliceLabel">The display label from the clicked slice</param>
