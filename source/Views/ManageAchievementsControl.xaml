@@ -54,7 +54,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid Margin="12">
+    <Border Background="{DynamicResource PlayAch.Brush.Window.Background}" Padding="12">
+    <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="245" />
             <ColumnDefinition Width="12" />
@@ -288,4 +289,5 @@
             </Grid>
         </Border>
     </Grid>
+    </Border>
 </UserControl>
