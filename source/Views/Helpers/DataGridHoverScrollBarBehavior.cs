@@ -109,7 +109,12 @@ namespace PlayniteAchievements.Views.Helpers
                 _grid.Loaded += OnLoaded;
                 _grid.Unloaded += OnUnloaded;
                 _grid.MouseEnter += OnMouseEnter;
-                _grid.MouseMove += OnMouseMove;
+                // Use the tunneling PreviewMouseMove so the grid always observes the cursor
+                // first, before any descendant can mark the event handled. The column headers'
+                // resize/reorder logic handles the bubbling MouseMove, which would otherwise
+                // freeze the hover state the moment the cursor leaves the body and prevent it
+                // from updating back to "not over a body cell".
+                _grid.PreviewMouseMove += OnMouseMove;
                 _grid.MouseLeave += OnMouseLeave;
                 _grid.PreviewMouseWheel += OnPreviewMouseWheel;
 
@@ -132,7 +137,7 @@ namespace PlayniteAchievements.Views.Helpers
                 _grid.Loaded -= OnLoaded;
                 _grid.Unloaded -= OnUnloaded;
                 _grid.MouseEnter -= OnMouseEnter;
-                _grid.MouseMove -= OnMouseMove;
+                _grid.PreviewMouseMove -= OnMouseMove;
                 _grid.MouseLeave -= OnMouseLeave;
                 _grid.PreviewMouseWheel -= OnPreviewMouseWheel;
 
