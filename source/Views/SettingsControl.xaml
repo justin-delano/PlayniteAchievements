@@ -1842,10 +1842,14 @@
 
                                 <Border Style="{StaticResource SectionBorderStyle}">
                                     <StackPanel>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ViewAchievementsWindow}"
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
@@ -1860,7 +1864,7 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowViewAchievementsGameSummariesGridColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                                <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
                                                     <TextBox Text="{Binding Persisted.ViewAchievementsGameSummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
@@ -1870,15 +1874,10 @@
                                                 </StackPanel>
                                             </StackPanel>
                                         </Border>
-                                    </StackPanel>
-                                </Border>
 
-                                <Border Style="{StaticResource SectionBorderStyle}">
-                                    <StackPanel>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ViewAchievementsWindow}"
-                                                   Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Achievements}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
