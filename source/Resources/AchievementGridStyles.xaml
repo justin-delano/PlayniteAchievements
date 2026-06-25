@@ -93,7 +93,7 @@
                             <Thumb x:Name="PART_RightHeaderGripper"
                                    Style="{StaticResource AchievementHeaderGripperStyle}"
                                    HorizontalAlignment="Right"
-                                   Width="8"
+                                   Width="12"
                                    Cursor="SizeWE"/>
                         </Grid>
                     </Border>
