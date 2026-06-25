@@ -540,6 +540,88 @@
         <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
     </Style>
 
+    <!-- Scrollbar thumb with explicit normal / hover / interact (drag) states. -->
+    <Style x:Key="PlayAch.ScrollBar.Thumb" TargetType="Thumb">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.ControlBorder}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Border x:Name="ThumbBorder"
+                            Background="{TemplateBinding Background}"
+                            CornerRadius="4"
+                            Margin="2"
+                            SnapsToDevicePixels="True"/>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="ThumbBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Glyph}"/>
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="ThumbBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Transparent page-track buttons (no arrow buttons; overlay-style scrollbar). -->
+    <Style x:Key="PlayAch.ScrollBar.PageButton" TargetType="RepeatButton">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="IsTabStop" Value="False"/>
+        <Setter Property="Focusable" Value="False"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RepeatButton">
+                    <Border Background="Transparent"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="PlayAch.ScrollBar.BaseStyle" TargetType="ScrollBar">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Width" Value="12"/>
+        <Setter Property="MinWidth" Value="12"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ScrollBar">
+                    <Grid Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                        <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="True">
+                            <Track.Thumb>
+                                <Thumb x:Name="PART_Thumb" Style="{StaticResource PlayAch.ScrollBar.Thumb}" MinHeight="24"/>
+                            </Track.Thumb>
+                            <Track.DecreaseRepeatButton>
+                                <RepeatButton x:Name="UpButton" Style="{StaticResource PlayAch.ScrollBar.PageButton}" Command="ScrollBar.PageUpCommand"/>
+                            </Track.DecreaseRepeatButton>
+                            <Track.IncreaseRepeatButton>
+                                <RepeatButton x:Name="DownButton" Style="{StaticResource PlayAch.ScrollBar.PageButton}" Command="ScrollBar.PageDownCommand"/>
+                            </Track.IncreaseRepeatButton>
+                        </Track>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/>
+                            <Setter TargetName="PART_Thumb" Property="MinHeight" Value="0"/>
+                            <Setter TargetName="PART_Thumb" Property="MinWidth" Value="24"/>
+                            <Setter TargetName="UpButton" Property="Command" Value="ScrollBar.PageLeftCommand"/>
+                            <Setter TargetName="DownButton" Property="Command" Value="ScrollBar.PageRightCommand"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Width" Value="Auto"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="MinHeight" Value="12"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="PlayAch.TabControl.BaseStyle" TargetType="TabControl">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Border}"/>
