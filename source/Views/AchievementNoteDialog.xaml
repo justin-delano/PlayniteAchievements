@@ -17,7 +17,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
-    <Grid Margin="16">
+    <Border Background="{DynamicResource PlayAch.Brush.Window.Background}" Padding="16">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
@@ -191,4 +192,5 @@
                     IsDefault="True" />
         </StackPanel>
     </Grid>
+    </Border>
 </UserControl>
