@@ -2494,6 +2494,7 @@ namespace PlayniteAchievements.Models.Settings
                 IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 RecentRefreshGamesCount = this.RecentRefreshGamesCount,
+                DefaultOverviewRefreshMode = this.DefaultOverviewRefreshMode,
                 CustomRefreshPresets = this.CustomRefreshPresets != null
                     ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(this.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
                     : new List<CustomRefreshPreset>(),
@@ -2558,6 +2559,14 @@ namespace PlayniteAchievements.Models.Settings
                 GridColumnHeaderAlignment = this.GridColumnHeaderAlignment,
                 GridCellAlignment = this.GridCellAlignment,
                 GridCellVerticalAlignment = this.GridCellVerticalAlignment,
+                OverviewGameSummariesLastPlayedDateMode = this.OverviewGameSummariesLastPlayedDateMode,
+                ViewAchievementsGameSummariesLastPlayedDateMode = this.ViewAchievementsGameSummariesLastPlayedDateMode,
+                StartPageGameSummariesLastPlayedDateMode = this.StartPageGameSummariesLastPlayedDateMode,
+                OverviewRecentAchievementsUnlockDateMode = this.OverviewRecentAchievementsUnlockDateMode,
+                OverviewSelectedGameAchievementsUnlockDateMode = this.OverviewSelectedGameAchievementsUnlockDateMode,
+                ViewAchievementsAchievementsUnlockDateMode = this.ViewAchievementsAchievementsUnlockDateMode,
+                StartPageAchievementsUnlockDateMode = this.StartPageAchievementsUnlockDateMode,
+                DesktopThemeAchievementsUnlockDateMode = this.DesktopThemeAchievementsUnlockDateMode,
                 EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
                 EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,

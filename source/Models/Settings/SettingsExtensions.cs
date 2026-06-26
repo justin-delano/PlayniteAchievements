@@ -45,6 +45,7 @@ namespace PlayniteAchievements.Models.Settings
             target.IncludeHiddenGamesInBulkScans = source.IncludeHiddenGamesInBulkScans;
             target.PeriodicUpdateHours = source.PeriodicUpdateHours;
             target.RecentRefreshGamesCount = source.RecentRefreshGamesCount;
+            target.DefaultOverviewRefreshMode = source.DefaultOverviewRefreshMode;
             target.CustomRefreshPresets = source.CustomRefreshPresets != null
                 ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(source.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
                 : new List<CustomRefreshPreset>();
@@ -78,6 +79,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ModernCompactListShowRarityGlow = source.ModernCompactListShowRarityGlow;
             target.ModernUnlockedListShowRarityGlow = source.ModernUnlockedListShowRarityGlow;
             target.UseUniformRarityBadges = source.UseUniformRarityBadges;
+            target.ColorAchievementNamesByRarity = source.ColorAchievementNamesByRarity;
             target.RarityColors = source.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault();
             target.OverviewGameSummariesUseCoverImages = source.OverviewGameSummariesUseCoverImages;
             target.OverviewRecentAchievementsUseCoverImages = source.OverviewRecentAchievementsUseCoverImages;
@@ -99,12 +101,36 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
             target.ShowCompletionBorder = source.ShowCompletionBorder;
             target.ShowOverviewGameSummariesGridColumnHeaders = source.ShowOverviewGameSummariesGridColumnHeaders;
+            target.ViewAchievementsGameSummariesUseCoverImages = source.ViewAchievementsGameSummariesUseCoverImages;
+            target.ViewAchievementsGameSummariesShowMetadataPlatform = source.ViewAchievementsGameSummariesShowMetadataPlatform;
+            target.ViewAchievementsGameSummariesShowMetadataPlaytime = source.ViewAchievementsGameSummariesShowMetadataPlaytime;
+            target.ViewAchievementsGameSummariesShowMetadataRegion = source.ViewAchievementsGameSummariesShowMetadataRegion;
+            target.ViewAchievementsGameSummariesShowCompletionBorder = source.ViewAchievementsGameSummariesShowCompletionBorder;
+            target.ShowViewAchievementsGameSummariesGridColumnHeaders = source.ShowViewAchievementsGameSummariesGridColumnHeaders;
             target.ShowOverviewRecentAchievementsGridColumnHeaders = source.ShowOverviewRecentAchievementsGridColumnHeaders;
             target.ShowOverviewSelectedGameGridColumnHeaders = source.ShowOverviewSelectedGameGridColumnHeaders;
             target.ShowDesktopThemeAchievementGridColumnHeaders = source.ShowDesktopThemeAchievementGridColumnHeaders;
             target.GridColumnHeaderAlignment = source.GridColumnHeaderAlignment;
             target.GridCellAlignment = source.GridCellAlignment;
             target.GridCellVerticalAlignment = source.GridCellVerticalAlignment;
+            target.OverviewGameSummariesLastPlayedDateMode = source.OverviewGameSummariesLastPlayedDateMode;
+            target.ViewAchievementsGameSummariesLastPlayedDateMode = source.ViewAchievementsGameSummariesLastPlayedDateMode;
+            target.StartPageGameSummariesLastPlayedDateMode = source.StartPageGameSummariesLastPlayedDateMode;
+            target.OverviewRecentAchievementsUnlockDateMode = source.OverviewRecentAchievementsUnlockDateMode;
+            target.OverviewSelectedGameAchievementsUnlockDateMode = source.OverviewSelectedGameAchievementsUnlockDateMode;
+            target.ViewAchievementsAchievementsUnlockDateMode = source.ViewAchievementsAchievementsUnlockDateMode;
+            target.StartPageAchievementsUnlockDateMode = source.StartPageAchievementsUnlockDateMode;
+            target.DesktopThemeAchievementsUnlockDateMode = source.DesktopThemeAchievementsUnlockDateMode;
+            target.EnableAchievementCompactListControl = source.EnableAchievementCompactListControl;
+            target.EnableAchievementDataGridControl = source.EnableAchievementDataGridControl;
+            target.EnableAchievementCompactUnlockedListControl = source.EnableAchievementCompactUnlockedListControl;
+            target.EnableAchievementCompactLockedListControl = source.EnableAchievementCompactLockedListControl;
+            target.EnableAchievementProgressBarControl = source.EnableAchievementProgressBarControl;
+            target.EnableAchievementStatsControl = source.EnableAchievementStatsControl;
+            target.EnableAchievementButtonControl = source.EnableAchievementButtonControl;
+            target.EnableAchievementViewItemControl = source.EnableAchievementViewItemControl;
+            target.EnableAchievementPieChartControl = source.EnableAchievementPieChartControl;
+            target.EnableAchievementBarChartControl = source.EnableAchievementBarChartControl;
             target.CompactListSortMode = source.CompactListSortMode;
             target.CompactListSortDescending = source.CompactListSortDescending;
             target.CompactUnlockedListSortMode = source.CompactUnlockedListSortMode;
@@ -122,6 +148,7 @@ namespace PlayniteAchievements.Models.Settings
             target.AchievementDataGridMaxHeight = source.AchievementDataGridMaxHeight;
             target.SingleGameGridRowHeight = source.SingleGameGridRowHeight;
             target.OverviewGameSummariesGridRowHeight = source.OverviewGameSummariesGridRowHeight;
+            target.ViewAchievementsGameSummariesGridRowHeight = source.ViewAchievementsGameSummariesGridRowHeight;
             target.OverviewRecentAchievementsGridRowHeight = source.OverviewRecentAchievementsGridRowHeight;
             target.OverviewSelectedGameGridRowHeight = source.OverviewSelectedGameGridRowHeight;
             target.StartPageGameSummariesGridRowHeight = source.StartPageGameSummariesGridRowHeight;
@@ -145,6 +172,12 @@ namespace PlayniteAchievements.Models.Settings
             target.EnableParallelProviderRefresh = source.EnableParallelProviderRefresh;
             target.ScanDelayMs = source.ScanDelayMs;
             target.MaxRetryAttempts = source.MaxRetryAttempts;
+            target.ResourceOverrides = source.ResourceOverrides != null
+                ? source.ResourceOverrides.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value?.Clone(),
+                    StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
 
             // UI Column Settings
             target.DataGridColumnVisibility = source.DataGridColumnVisibility != null
@@ -242,6 +275,24 @@ namespace PlayniteAchievements.Models.Settings
                 : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
             target.OverviewGameSummariesColumnHeaderAlignments = source.OverviewGameSummariesColumnHeaderAlignments != null
                 ? new Dictionary<string, GridAlignment>(source.OverviewGameSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.ViewAchievementsGameSummariesColumnVisibility = source.ViewAchievementsGameSummariesColumnVisibility != null
+                ? new Dictionary<string, bool>(source.ViewAchievementsGameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.ViewAchievementsGameSummariesColumnWidths = source.ViewAchievementsGameSummariesColumnWidths != null
+                ? new Dictionary<string, double>(source.ViewAchievementsGameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.ViewAchievementsGameSummariesColumnOrder = source.ViewAchievementsGameSummariesColumnOrder != null
+                ? new Dictionary<string, int>(source.ViewAchievementsGameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.ViewAchievementsGameSummariesColumnAlignments = source.ViewAchievementsGameSummariesColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.ViewAchievementsGameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.ViewAchievementsGameSummariesColumnVerticalAlignments = source.ViewAchievementsGameSummariesColumnVerticalAlignments != null
+                ? new Dictionary<string, GridVerticalAlignment>(source.ViewAchievementsGameSummariesColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.ViewAchievementsGameSummariesColumnHeaderAlignments = source.ViewAchievementsGameSummariesColumnHeaderAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.ViewAchievementsGameSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.StartPageAchievementColumnVisibility = source.StartPageAchievementColumnVisibility != null
                 ? new Dictionary<string, bool>(source.StartPageAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
