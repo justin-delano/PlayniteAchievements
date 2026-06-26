@@ -2892,7 +2892,7 @@ namespace PlayniteAchievements.Views
         }
 
         public ResourceOverrideDescriptor Descriptor { get; }
-        public string DisplayName => Descriptor.DisplayName;
+        public string DisplayName => ResourceProvider.GetString(Descriptor.DisplayName);
         public string ResourceKey => Descriptor.ResourceKey;
         public string PlayniteResourceKey => Descriptor.PlayniteResourceKey;
         public bool IsBrush => Descriptor.ValueKind == ResourceOverrideValueKind.Brush;
