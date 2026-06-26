@@ -494,6 +494,45 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public async Task WowFetch_BackfillsIconForLockedIndexOnlyAchievement()
+        {
+            var settingsRoot = new PlayniteAchievementsSettings();
+            var registry = new ProviderRegistry(settingsRoot, new[] { "BattleNet" }, new NullLogger());
+            var battleNetSettings = registry.GetSettings<BattleNetSettings>();
+            battleNetSettings.WowRegion = "us";
+            battleNetSettings.WowRealmSlug = "dalaran";
+            battleNetSettings.WowCharacter = "Noshotz";
+            battleNetSettings.BattleNetClientId = "client-id";
+            battleNetSettings.BattleNetClientSecret = "client-secret";
+            battleNetSettings.WowAggregateAccountCharacters = false;
+            registry.Save(battleNetSettings);
+
+            var handler = new RecordingHandler();
+            GameAchievementData data;
+            using (var httpClient = new HttpClient(handler))
+            using (var client = new BattleNetApiClient(new NullLogger(), httpClient))
+            {
+                var strategy = new WowGameStrategy(client, null, new NullLogger());
+                data = await strategy.FetchAchievementsAsync(
+                    BattleNetGame("World of Warcraft"),
+                    "en-US",
+                    CancellationToken.None);
+            }
+
+            Assert.IsNotNull(data);
+
+            // Achievement 2 reaches the list only via the official index (it is absent from
+            // the public character page) and is not earned, so it is added as a locked
+            // achievement with no icon. The enrichment pass must backfill its icon from the
+            // media endpoint rather than leaving it on the placeholder.
+            var lockedIndexOnly = data.Achievements.Single(item => item.ApiName == "2");
+            Assert.IsFalse(lockedIndexOnly.Unlocked);
+            Assert.AreEqual("https://render.worldofwarcraft.test/unobtainable-icon.jpg", lockedIndexOnly.UnlockedIconPath);
+            Assert.IsTrue(handler.Requests.Any(request =>
+                request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/media/achievement/2?namespace=static-us"));
+        }
+
+        [TestMethod]
         public async Task WowFetch_SkipsOfficialGuildRunAchievements()
         {
             var settingsRoot = new PlayniteAchievementsSettings();
