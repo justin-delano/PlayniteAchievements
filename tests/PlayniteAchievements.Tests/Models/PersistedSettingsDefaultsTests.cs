@@ -182,6 +182,22 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void CloneAndCopyFrom_PreserveDefaultOverviewRefreshMode()
+        {
+            var source = new PersistedSettings
+            {
+                DefaultOverviewRefreshMode = RefreshModeType.Recent
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.AreEqual(RefreshModeType.Recent, clone.DefaultOverviewRefreshMode);
+            Assert.AreEqual(RefreshModeType.Recent, target.DefaultOverviewRefreshMode);
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveOverviewScoreCardVisibility()
         {
             var source = new PersistedSettings
