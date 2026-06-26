@@ -22,6 +22,36 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsProgressColumnToRightAcrossSurfaces()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsTrue(settings.ProgressColumnAlignmentDefaulted);
+            Assert.AreEqual(
+                GridAlignment.Right,
+                settings.OverviewGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+            Assert.AreEqual(
+                GridAlignment.Right,
+                settings.StartPageGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+            Assert.AreEqual(
+                GridAlignment.Right,
+                settings.ViewAchievementsGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveProgressColumnAlignmentDefaultedFlag()
+        {
+            var source = new PersistedSettings { ProgressColumnAlignmentDefaulted = false };
+
+            var clone = source.Clone();
+            Assert.IsFalse(clone.ProgressColumnAlignmentDefaulted);
+
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+            Assert.IsFalse(target.ProgressColumnAlignmentDefaulted);
+        }
+
+        [TestMethod]
         public void Constructor_DefaultsOverviewColumnRatio()
         {
             var settings = new PersistedSettings();
@@ -789,7 +819,10 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(0, settings.OverviewGameSummariesColumnVisibility.Count);
             Assert.AreEqual(0, settings.OverviewGameSummariesColumnWidths.Count);
             Assert.AreEqual(0, settings.OverviewGameSummariesColumnOrder.Count);
-            Assert.AreEqual(0, settings.OverviewGameSummariesColumnAlignments.Count);
+            // Progress column defaults to Right alignment (seeded in the ctor) so the footer keeps its
+            // legacy layout now that it responds to alignment.
+            Assert.AreEqual(1, settings.OverviewGameSummariesColumnAlignments.Count);
+            Assert.AreEqual(GridAlignment.Right, settings.OverviewGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
             Assert.AreEqual(0, settings.StartPageAchievementColumnVisibility.Count);
             Assert.AreEqual(0, settings.StartPageAchievementColumnWidths.Count);
             Assert.AreEqual(0, settings.StartPageAchievementColumnOrder.Count);
@@ -797,7 +830,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(0, settings.StartPageGameSummariesColumnVisibility.Count);
             Assert.AreEqual(0, settings.StartPageGameSummariesColumnWidths.Count);
             Assert.AreEqual(0, settings.StartPageGameSummariesColumnOrder.Count);
-            Assert.AreEqual(0, settings.StartPageGameSummariesColumnAlignments.Count);
+            Assert.AreEqual(1, settings.StartPageGameSummariesColumnAlignments.Count);
+            Assert.AreEqual(GridAlignment.Right, settings.StartPageGameSummariesColumnAlignments[PersistedSettings.ProgressColumnKey]);
 
             Assert.AreEqual("secret", settings.ProviderSettings["Steam"]["ApiKey"].Value<string>());
             Assert.IsFalse(settings.EnablePeriodicUpdates);

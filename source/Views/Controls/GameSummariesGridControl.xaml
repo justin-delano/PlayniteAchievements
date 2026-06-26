@@ -266,58 +266,23 @@
                                         </Grid>
     
                                         <Grid Style="{StaticResource OverviewProgressFooterStyle}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-    
-                                            <Image Grid.Column="0"
-                                                   Source="{DynamicResource BadgeRarityCompleted}"
-                                                   Style="{StaticResource OverviewCompletedFooterIconStyle}"
-                                                   ToolTip="{DynamicResource LOCPlayAch_Completed}"
-                                                   Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
-    
-                                            <StackPanel Grid.Column="1"
-                                                        Style="{StaticResource OverviewProgressMetaRowStyle}"
-                                                        Visibility="{Binding HasTrophyTypes, Converter={StaticResource InverseBoolToVis}}">
-                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}" ToolTip="Ultra Rare">
-                                                    <Image Source="{DynamicResource BadgeRarityUltraRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                    <TextBlock Text="{Binding UltraRareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                                </StackPanel>
-                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}" ToolTip="Rare">
-                                                    <Image Source="{DynamicResource BadgeRarityRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                    <TextBlock Text="{Binding RareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                                </StackPanel>
-                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}" ToolTip="Uncommon">
-                                                    <Image Source="{DynamicResource BadgeRarityUncommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                    <TextBlock Text="{Binding UncommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                                </StackPanel>
-                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}" ToolTip="Common">
-                                                    <Image Source="{DynamicResource BadgeRarityCommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                    <TextBlock Text="{Binding CommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                                </StackPanel>
-                                            </StackPanel>
-    
-                                            <StackPanel Grid.Column="1"
-                                                        Style="{StaticResource OverviewProgressMetaRowStyle}"
-                                                        Visibility="{Binding HasTrophyTypes, Converter={StaticResource BoolToVis}}">
-                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}" ToolTip="Platinum">
-                                                    <Image Source="{DynamicResource TrophyPlatinum}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                    <TextBlock Text="{Binding TrophyPlatinumCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                                </StackPanel>
-                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}" ToolTip="Gold">
-                                                    <Image Source="{DynamicResource TrophyGold}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                    <TextBlock Text="{Binding TrophyGoldCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                                </StackPanel>
-                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}" ToolTip="Silver">
-                                                    <Image Source="{DynamicResource TrophySilver}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                    <TextBlock Text="{Binding TrophySilverCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                                </StackPanel>
-                                                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}" ToolTip="Bronze">
-                                                    <Image Source="{DynamicResource TrophyBronze}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
-                                                    <TextBlock Text="{Binding TrophyBronzeCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
-                                                </StackPanel>
-                                            </StackPanel>
+                                            <ContentControl Content="{Binding}"
+                                                            HorizontalContentAlignment="Stretch"
+                                                            VerticalContentAlignment="Center">
+                                                <ContentControl.Style>
+                                                    <Style TargetType="ContentControl">
+                                                        <Setter Property="ContentTemplate" Value="{StaticResource ProgressFooterRightTemplate}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}" Value="Center">
+                                                                <Setter Property="ContentTemplate" Value="{StaticResource ProgressFooterCenterTemplate}"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}" Value="Left">
+                                                                <Setter Property="ContentTemplate" Value="{StaticResource ProgressFooterLeftTemplate}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </ContentControl.Style>
+                                            </ContentControl>
                                         </Grid>
                                     </StackPanel>
                                 </Grid>

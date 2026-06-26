@@ -147,6 +147,8 @@ namespace PlayniteAchievements.Models.Settings
 
                 changed |= CopyLegacyAchievementColumnVisibility(persisted);
 
+                changed |= ForceProgressColumnRightDefault(persisted);
+
                 return changed
                     ? root.ToString(Formatting.None)
                     : json;
@@ -228,6 +230,44 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             return changed;
+        }
+
+        /// <summary>
+        /// Seeds the Progress column to Right alignment across all three game-summaries surfaces so an
+        /// updating user keeps the legacy footer layout, now that the footer responds to the column's
+        /// horizontal alignment. Runs once: gated by the <c>ProgressColumnAlignmentDefaulted</c> flag,
+        /// which is set afterward so a user's own later alignment choice is never re-forced. Forces the
+        /// value (overwriting any prior inert setting) since alignment had no effect on this column
+        /// before. Values are written as integers to match how the GridAlignment enum is serialized.
+        /// </summary>
+        private static bool ForceProgressColumnRightDefault(JObject persisted)
+        {
+            const string flagName = nameof(PersistedSettings.ProgressColumnAlignmentDefaulted);
+
+            var flag = persisted[flagName];
+            if (flag != null && flag.Type == JTokenType.Boolean && flag.Value<bool>())
+            {
+                return false;
+            }
+
+            foreach (var dictionaryName in new[]
+            {
+                nameof(PersistedSettings.OverviewGameSummariesColumnAlignments),
+                nameof(PersistedSettings.StartPageGameSummariesColumnAlignments),
+                nameof(PersistedSettings.ViewAchievementsGameSummariesColumnAlignments)
+            })
+            {
+                if (!(persisted[dictionaryName] is JObject dictionary))
+                {
+                    dictionary = new JObject();
+                    persisted[dictionaryName] = dictionary;
+                }
+
+                dictionary[PersistedSettings.ProgressColumnKey] = (int)GridAlignment.Right;
+            }
+
+            persisted[flagName] = true;
+            return true;
         }
 
         private static bool CopyLegacyAchievementGridHeaderVisibility(JObject persisted)
