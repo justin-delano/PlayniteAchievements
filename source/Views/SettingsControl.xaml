@@ -2949,7 +2949,7 @@
                                     <TextBox Grid.Column="1"
                                              Height="24"
                                              Padding="6,2"
-                                             Text="{Binding ProviderSearchText, ElementName=SettingsControlRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             Text="{Binding ProviderSearchText, ElementName=SettingsControlRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=100}"
                                              ToolTip="{DynamicResource LOCPlayAch_Button_Search}"/>
                                 </Grid>
                             </Border>

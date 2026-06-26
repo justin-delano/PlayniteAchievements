@@ -215,16 +215,17 @@
 
                 <Grid Grid.Column="0">
                     <TextBox x:Name="SearchTextBox"
-                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
                              Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
+                               Tag="{Binding Text, ElementName=SearchTextBox}"
                                VerticalAlignment="Center"
                                Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
                                IsHitTestVisible="False" Style="{StaticResource SearchPlaceholderTextStyle}"/>
                     <Button x:Name="ClearSearchButton"
-                            Tag="{Binding SearchText}"
+                            Tag="{Binding Text, ElementName=SearchTextBox}"
                             Click="ClearSearch_Click"
                             Style="{StaticResource ClearSearchButtonStyle}"/>
                 </Grid>

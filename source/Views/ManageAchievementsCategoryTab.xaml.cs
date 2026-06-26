@@ -210,10 +210,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (item.CanReveal)
-            {
-                item.ToggleReveal();
-            }
+            ViewModel?.ToggleReveal(item);
 
             // Selection is controlled by the checkbox column only.
             e.Handled = true;
@@ -324,7 +321,7 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            item.ToggleReveal();
+            ViewModel?.ToggleReveal(item);
             return true;
         }
 

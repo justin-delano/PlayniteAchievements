@@ -98,10 +98,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (item.CanReveal)
-            {
-                item.ToggleReveal();
-            }
+            ViewModel?.ToggleReveal(item);
 
             e.Handled = true;
         }

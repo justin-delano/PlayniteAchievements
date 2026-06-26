@@ -62,12 +62,13 @@
 
             <Grid Grid.Row="0" Grid.Column="0">
                 <TextBox x:Name="SearchTextBox"
-                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
                          Style="{StaticResource ManageAchievementsSearchTextBoxStyle}" />
                 <TextBlock Text="{DynamicResource LOCPlayAch_Common_FilterAchievementsPlaceholder}"
+                           Tag="{Binding Text, ElementName=SearchTextBox}"
                            Style="{StaticResource ManageAchievementsSearchPlaceholderTextStyle}"/>
                 <Button x:Name="ClearSearchButton"
-                        Tag="{Binding SearchText}"
+                        Tag="{Binding Text, ElementName=SearchTextBox}"
                         Command="{Binding ClearSearchCommand}"
                         Style="{StaticResource ClearSearchButtonStyle}" />
             </Grid>

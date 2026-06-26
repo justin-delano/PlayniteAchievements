@@ -910,10 +910,10 @@
         <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
         <Setter Property="Visibility" Value="Collapsed"/>
         <Style.Triggers>
-            <DataTrigger Binding="{Binding SearchText}" Value="">
+            <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="">
                 <Setter Property="Visibility" Value="Visible"/>
             </DataTrigger>
-            <DataTrigger Binding="{Binding SearchText}" Value="{x:Null}">
+            <DataTrigger Binding="{Binding Tag, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
                 <Setter Property="Visibility" Value="Visible"/>
             </DataTrigger>
         </Style.Triggers>
