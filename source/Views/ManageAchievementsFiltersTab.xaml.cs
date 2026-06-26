@@ -58,6 +58,10 @@ namespace PlayniteAchievements.Views
                 FilterTypeSelectionButton,
                 CategoryLabelFilterSelectionButton,
                 StateFilterComboBox,
+                ShowUnlockedCheckBox,
+                ShowLockedCheckBox,
+                ShowHiddenCheckBox,
+                BulkTargetComboBox,
                 SelectAllButton,
                 DeselectAllButton,
                 FiltersDataGrid
@@ -119,13 +123,13 @@ namespace PlayniteAchievements.Views
 
         private void SelectAllButton_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel?.SetVisibleRowsFiltered(true);
+            ViewModel?.SetVisibleRowsFilterState(true);
             e.Handled = true;
         }
 
         private void DeselectAllButton_Click(object sender, RoutedEventArgs e)
         {
-            ViewModel?.SetVisibleRowsFiltered(false);
+            ViewModel?.SetVisibleRowsFilterState(false);
             e.Handled = true;
         }
 

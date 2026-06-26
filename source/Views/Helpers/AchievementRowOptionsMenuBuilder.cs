@@ -153,7 +153,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var filterOutItem = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOut", "Filter Out"),
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOut", "Filter"),
                 IsCheckable = true,
                 IsChecked = isFiltered
             };
@@ -166,7 +166,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             var summaryItem = new MenuItem
             {
-                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries", "Filter Out of Summaries"),
+                Header = L(resourceOwner, "LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries", "Filter from Summaries"),
                 IsCheckable = true,
                 IsChecked = isFiltered || isSummaryFiltered,
                 IsEnabled = !isFiltered

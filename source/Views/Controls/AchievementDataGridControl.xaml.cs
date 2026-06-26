@@ -282,6 +282,24 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         /// <summary>
+        /// Identifies the ColorNamesByRarity dependency property.
+        /// When true, achievement name text in this grid is colored by rarity tier (capstone
+        /// achievements use the completed color) instead of the default text color.
+        /// </summary>
+        public static readonly DependencyProperty ColorNamesByRarityProperty =
+            DependencyProperty.Register(nameof(ColorNamesByRarity), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        /// <summary>
+        /// Gets or sets whether achievement name text in this grid is colored by rarity.
+        /// </summary>
+        public bool ColorNamesByRarity
+        {
+            get => (bool)GetValue(ColorNamesByRarityProperty);
+            set => SetValue(ColorNamesByRarityProperty, value);
+        }
+
+        /// <summary>
         /// Identifies the DataGridMaxHeight dependency property.
         /// When set, limits the maximum height of the internal DataGrid.
         /// </summary>

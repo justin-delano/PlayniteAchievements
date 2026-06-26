@@ -49,15 +49,18 @@
         </Border>
 
         <Grid Grid.Row="1" Style="{StaticResource ManageAchievementsToolbarRowStyle}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="150" />
-                <ColumnDefinition Width="130" />
-                <ColumnDefinition Width="190" />
-                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="150" />
+                <ColumnDefinition Width="210" />
             </Grid.ColumnDefinitions>
 
-            <Grid Grid.Column="0">
+            <Grid Grid.Row="0" Grid.Column="0">
                 <TextBox x:Name="SearchTextBox"
                          Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                          Style="{StaticResource ManageAchievementsSearchTextBoxStyle}" />
@@ -71,6 +74,7 @@
 
             <Button x:Name="FilterTypeSelectionButton"
                     Style="{StaticResource AchievementSelectorButtonStyle}"
+                    Grid.Row="0"
                     Grid.Column="1"
                     Content="{Binding SelectedCategoryTypeFilterText}"
                     Click="FilterTypeSelectionButton_Click"
@@ -87,6 +91,7 @@
 
             <Button x:Name="CategoryLabelFilterSelectionButton"
                     Style="{StaticResource AchievementSelectorButtonStyle}"
+                    Grid.Row="0"
                     Grid.Column="2"
                     Content="{Binding SelectedCategoryLabelFilterText}"
                     Click="CategoryLabelFilterSelectionButton_Click"
@@ -102,6 +107,7 @@
             </Button>
 
             <ComboBox x:Name="StateFilterComboBox"
+                      Grid.Row="0"
                       Grid.Column="3"
                       ItemsSource="{Binding FilterOptions}"
                       SelectedItem="{Binding SelectedFilterOption, Mode=TwoWay}"
@@ -110,21 +116,46 @@
                       Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
                       VerticalAlignment="Center" />
 
-            <StackPanel Grid.Column="4"
+            <StackPanel Grid.Row="1"
+                        Grid.Column="0"
+                        Grid.ColumnSpan="4"
                         Orientation="Horizontal"
                         VerticalAlignment="Center"
-                        Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                        Margin="{StaticResource PlayAch.Thickness.Top.Sm}">
+                <CheckBox x:Name="ShowUnlockedCheckBox"
+                          Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
+                          IsChecked="{Binding ShowUnlocked}"
+                          VerticalAlignment="Center"
+                          Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
+                <CheckBox x:Name="ShowLockedCheckBox"
+                          Content="{DynamicResource LOCPlayAch_Common_Locked}"
+                          IsChecked="{Binding ShowLocked}"
+                          VerticalAlignment="Center"
+                          Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
+                <CheckBox x:Name="ShowHiddenCheckBox"
+                          Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
+                          IsChecked="{Binding ShowHidden}"
+                          VerticalAlignment="Center" />
+                <ComboBox x:Name="BulkTargetComboBox"
+                          ItemsSource="{Binding BulkTargetOptions}"
+                          SelectedItem="{Binding SelectedBulkTargetOption, Mode=TwoWay}"
+                          DisplayMemberPath="DisplayName"
+                          Width="170"
+                          Height="{StaticResource PlayAch.Size.Control.Height}"
+                          Margin="{StaticResource PlayAch.Thickness.Left.Md}"
+                          VerticalAlignment="Center" />
                 <Button x:Name="SelectAllButton"
                         Content="{DynamicResource LOCPlayAch_Common_SelectAll}"
                         Click="SelectAllButton_Click"
                         Height="{StaticResource PlayAch.Size.Control.Height}"
                         Padding="10,2"
-                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}" />
+                        Margin="{StaticResource PlayAch.Thickness.Left.Sm}" />
                 <Button x:Name="DeselectAllButton"
                         Content="{DynamicResource LOCPlayAch_Common_DeselectAll}"
                         Click="DeselectAllButton_Click"
                         Height="{StaticResource PlayAch.Size.Control.Height}"
-                        Padding="10,2" />
+                        Padding="10,2"
+                        Margin="{StaticResource PlayAch.Thickness.Left.Sm}" />
             </StackPanel>
         </Grid>
 

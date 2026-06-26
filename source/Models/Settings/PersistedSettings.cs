@@ -69,7 +69,9 @@ namespace PlayniteAchievements.Models.Settings
         private bool _modernCompactListShowRarityGlow = true;
         private bool _modernUnlockedListShowRarityGlow = true;
         private bool _useUniformRarityBadges = false;
-        private bool _colorAchievementNamesByRarity = false;
+        private bool _overviewRecentAchievementsColorNamesByRarity = false;
+        private bool _overviewSelectedGameColorNamesByRarity = false;
+        private bool _modernDataGridColorNamesByRarity = false;
         private RarityColorSettings _rarityColors = RarityColorSettings.CreateDefault();
         private bool _overviewGameSummariesUseCoverImages = true;
         private bool _overviewRecentAchievementsUseCoverImages = true;
@@ -562,12 +564,34 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, achievement name text is colored by rarity tier (capstone achievements use the completed color), instead of the default text color.
+        /// When true, the Overview "Recent Achievements" grid colors achievement name text by rarity tier
+        /// (capstone achievements use the completed color), instead of the default text color.
         /// </summary>
-        public bool ColorAchievementNamesByRarity
+        public bool OverviewRecentAchievementsColorNamesByRarity
         {
-            get => _colorAchievementNamesByRarity;
-            set => SetValue(ref _colorAchievementNamesByRarity, value);
+            get => _overviewRecentAchievementsColorNamesByRarity;
+            set => SetValue(ref _overviewRecentAchievementsColorNamesByRarity, value);
+        }
+
+        /// <summary>
+        /// When true, the Overview "Selected Game Achievements" grid (and the Manage Achievements window,
+        /// which follows it) colors achievement name text by rarity tier (capstone achievements use the
+        /// completed color), instead of the default text color.
+        /// </summary>
+        public bool OverviewSelectedGameColorNamesByRarity
+        {
+            get => _overviewSelectedGameColorNamesByRarity;
+            set => SetValue(ref _overviewSelectedGameColorNamesByRarity, value);
+        }
+
+        /// <summary>
+        /// When true, the modern theme-integrated achievement data grid colors achievement name text by
+        /// rarity tier (capstone achievements use the completed color), instead of the default text color.
+        /// </summary>
+        public bool ModernDataGridColorNamesByRarity
+        {
+            get => _modernDataGridColorNamesByRarity;
+            set => SetValue(ref _modernDataGridColorNamesByRarity, value);
         }
 
         /// <summary>
@@ -2525,7 +2549,9 @@ namespace PlayniteAchievements.Models.Settings
                 ModernCompactListShowRarityGlow = this.ModernCompactListShowRarityGlow,
                 ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
-                ColorAchievementNamesByRarity = this.ColorAchievementNamesByRarity,
+                OverviewRecentAchievementsColorNamesByRarity = this.OverviewRecentAchievementsColorNamesByRarity,
+                OverviewSelectedGameColorNamesByRarity = this.OverviewSelectedGameColorNamesByRarity,
+                ModernDataGridColorNamesByRarity = this.ModernDataGridColorNamesByRarity,
                 RarityColors = this.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
                 OverviewGameSummariesUseCoverImages = this.OverviewGameSummariesUseCoverImages,
                 OverviewRecentAchievementsUseCoverImages = this.OverviewRecentAchievementsUseCoverImages,
@@ -2863,7 +2889,9 @@ namespace PlayniteAchievements.Models.Settings
             ModernCompactListShowRarityGlow = defaults.ModernCompactListShowRarityGlow;
             ModernUnlockedListShowRarityGlow = defaults.ModernUnlockedListShowRarityGlow;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
-            ColorAchievementNamesByRarity = defaults.ColorAchievementNamesByRarity;
+            OverviewRecentAchievementsColorNamesByRarity = defaults.OverviewRecentAchievementsColorNamesByRarity;
+            OverviewSelectedGameColorNamesByRarity = defaults.OverviewSelectedGameColorNamesByRarity;
+            ModernDataGridColorNamesByRarity = defaults.ModernDataGridColorNamesByRarity;
             RarityColors = RarityColorSettings.CreateDefault();
             OverviewGameSummariesUseCoverImages = defaults.OverviewGameSummariesUseCoverImages;
             OverviewRecentAchievementsUseCoverImages = defaults.OverviewRecentAchievementsUseCoverImages;

@@ -97,6 +97,7 @@ namespace PlayniteAchievements.Models.Settings
     {
         private bool _useCoverImages = true;
         private bool _showRarityGlow = true;
+        private bool _colorNamesByRarity = false;
         private bool _showColumnHeaders = true;
         private double? _rowHeight;
         private int? _maxRows = PersistedSettings.DefaultStartPageGridMaxRows;
@@ -113,6 +114,12 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showRarityGlow;
             set => SetValue(ref _showRarityGlow, value);
+        }
+
+        public bool ColorNamesByRarity
+        {
+            get => _colorNamesByRarity;
+            set => SetValue(ref _colorNamesByRarity, value);
         }
 
         public bool ShowColumnHeaders
@@ -151,6 +158,7 @@ namespace PlayniteAchievements.Models.Settings
             {
                 UseCoverImages = UseCoverImages,
                 ShowRarityGlow = ShowRarityGlow,
+                ColorNamesByRarity = ColorNamesByRarity,
                 ShowColumnHeaders = ShowColumnHeaders,
                 RowHeight = RowHeight,
                 MaxRows = MaxRows,

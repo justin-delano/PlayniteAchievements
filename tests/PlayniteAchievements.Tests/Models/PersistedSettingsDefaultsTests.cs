@@ -236,7 +236,9 @@ namespace PlayniteAchievements.Models.Tests
             var source = new PersistedSettings
             {
                 // Use the inverse of each default so an omission would surface as a reset.
-                ColorAchievementNamesByRarity = !defaults.ColorAchievementNamesByRarity,
+                OverviewRecentAchievementsColorNamesByRarity = !defaults.OverviewRecentAchievementsColorNamesByRarity,
+                OverviewSelectedGameColorNamesByRarity = !defaults.OverviewSelectedGameColorNamesByRarity,
+                ModernDataGridColorNamesByRarity = !defaults.ModernDataGridColorNamesByRarity,
                 EnableAchievementCompactListControl = !defaults.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = !defaults.EnableAchievementDataGridControl,
                 EnableAchievementCompactUnlockedListControl = !defaults.EnableAchievementCompactUnlockedListControl,
@@ -270,7 +272,9 @@ namespace PlayniteAchievements.Models.Tests
 
             foreach (var copy in new[] { clone, target })
             {
-                Assert.AreEqual(source.ColorAchievementNamesByRarity, copy.ColorAchievementNamesByRarity);
+                Assert.AreEqual(source.OverviewRecentAchievementsColorNamesByRarity, copy.OverviewRecentAchievementsColorNamesByRarity);
+                Assert.AreEqual(source.OverviewSelectedGameColorNamesByRarity, copy.OverviewSelectedGameColorNamesByRarity);
+                Assert.AreEqual(source.ModernDataGridColorNamesByRarity, copy.ModernDataGridColorNamesByRarity);
                 Assert.AreEqual(source.EnableAchievementCompactListControl, copy.EnableAchievementCompactListControl);
                 Assert.AreEqual(source.EnableAchievementDataGridControl, copy.EnableAchievementDataGridControl);
                 Assert.AreEqual(source.EnableAchievementCompactUnlockedListControl, copy.EnableAchievementCompactUnlockedListControl);

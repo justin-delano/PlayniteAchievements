@@ -460,7 +460,7 @@
                     HorizontalAlignment="Left"
                     Background="Transparent">
             <TextBlock FontWeight="SemiBold"
-                       Foreground="{Binding DisplayNameBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        TextWrapping="Wrap"
                        TextAlignment="Left">
                 <TextBlock.Style>

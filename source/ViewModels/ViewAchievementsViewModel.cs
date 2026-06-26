@@ -346,6 +346,9 @@ namespace PlayniteAchievements.ViewModels
         // The Manage Achievements window follows the Overview "Selected Game Achievements" glow setting.
         public bool ShowRarityGlow => _settings?.Persisted?.OverviewSelectedGameShowRarityGlow ?? true;
 
+        // The Manage Achievements window follows the Overview "Selected Game Achievements" name-color setting.
+        public bool ColorNamesByRarity => _settings?.Persisted?.OverviewSelectedGameColorNamesByRarity ?? false;
+
         public string SearchText
         {
             get => _searchText;
@@ -964,6 +967,12 @@ namespace PlayniteAchievements.ViewModels
             if (e?.PropertyName == nameof(PersistedSettings.OverviewSelectedGameShowRarityGlow))
             {
                 OnPropertyChanged(nameof(ShowRarityGlow));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.OverviewSelectedGameColorNamesByRarity))
+            {
+                OnPropertyChanged(nameof(ColorNamesByRarity));
                 return;
             }
 

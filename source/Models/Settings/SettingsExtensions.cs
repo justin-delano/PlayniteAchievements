@@ -79,7 +79,9 @@ namespace PlayniteAchievements.Models.Settings
             target.ModernCompactListShowRarityGlow = source.ModernCompactListShowRarityGlow;
             target.ModernUnlockedListShowRarityGlow = source.ModernUnlockedListShowRarityGlow;
             target.UseUniformRarityBadges = source.UseUniformRarityBadges;
-            target.ColorAchievementNamesByRarity = source.ColorAchievementNamesByRarity;
+            target.OverviewRecentAchievementsColorNamesByRarity = source.OverviewRecentAchievementsColorNamesByRarity;
+            target.OverviewSelectedGameColorNamesByRarity = source.OverviewSelectedGameColorNamesByRarity;
+            target.ModernDataGridColorNamesByRarity = source.ModernDataGridColorNamesByRarity;
             target.RarityColors = source.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault();
             target.OverviewGameSummariesUseCoverImages = source.OverviewGameSummariesUseCoverImages;
             target.OverviewRecentAchievementsUseCoverImages = source.OverviewRecentAchievementsUseCoverImages;

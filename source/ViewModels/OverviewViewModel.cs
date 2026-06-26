@@ -889,6 +889,10 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowRarityGlowSelectedGame => _settings?.Persisted?.OverviewSelectedGameShowRarityGlow ?? true;
 
+        public bool ColorNamesByRarityRecentAchievements => _settings?.Persisted?.OverviewRecentAchievementsColorNamesByRarity ?? false;
+
+        public bool ColorNamesByRaritySelectedGame => _settings?.Persisted?.OverviewSelectedGameColorNamesByRarity ?? false;
+
         public bool ShowOverviewCollectionScoreCard => _settings?.Persisted?.ShowOverviewCollectionScoreCard ?? true;
 
         public bool ShowOverviewPrestigeScoreCard => _settings?.Persisted?.ShowOverviewPrestigeScoreCard ?? true;
@@ -2260,6 +2264,8 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(UseCoverImagesRecentAchievements));
                 OnPropertyChanged(nameof(ShowRarityGlowRecentAchievements));
                 OnPropertyChanged(nameof(ShowRarityGlowSelectedGame));
+                OnPropertyChanged(nameof(ColorNamesByRarityRecentAchievements));
+                OnPropertyChanged(nameof(ColorNamesByRaritySelectedGame));
                 OnPropertyChanged(nameof(IncludeUnplayedGames));
                 RaiseOverviewScoreCardVisibilityChanged();
                 ApplyOverviewPieSmallSliceMode();
@@ -2300,6 +2306,14 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameShowRarityGlow))
             {
                 OnPropertyChanged(nameof(ShowRarityGlowSelectedGame));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewRecentAchievementsColorNamesByRarity))
+            {
+                OnPropertyChanged(nameof(ColorNamesByRarityRecentAchievements));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameColorNamesByRarity))
+            {
+                OnPropertyChanged(nameof(ColorNamesByRaritySelectedGame));
             }
             else if (propertyName == nameof(PersistedSettings.IncludeUnplayedGames))
             {

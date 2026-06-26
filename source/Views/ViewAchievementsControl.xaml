@@ -325,6 +325,7 @@
                                              ColumnSettingsKey="SingleGame"
                                              DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                              ShowRarityGlow="{Binding ShowRarityGlow}"
+                                             ColorNamesByRarity="{Binding ColorNamesByRarity}"
                                              FixedRowHeight="{Binding SingleGameGridRowHeight}"
                                              UseExternalSorting="True"
                                              Sorting="OnGridSorting"
