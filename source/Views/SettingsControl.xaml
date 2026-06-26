@@ -1696,6 +1696,18 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewGameSummariesGridColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LastPlayedDateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.OverviewGameSummariesLastPlayedDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
@@ -1769,6 +1781,18 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewRecentAchievementsGridColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.OverviewRecentAchievementsUnlockDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
@@ -1804,6 +1828,18 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewSelectedGameGridColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.OverviewSelectedGameAchievementsUnlockDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
@@ -1916,6 +1952,18 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowViewAchievementsGameSummariesGridColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LastPlayedDateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.ViewAchievementsGameSummariesLastPlayedDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
                                                 <StackPanel Orientation="Horizontal">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
@@ -1947,6 +1995,18 @@
                                                              Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
                                                                VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.ViewAchievementsAchievementsUnlockDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
                                                 </StackPanel>
                                                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
@@ -2026,6 +2086,18 @@
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders}"
                                                   IsChecked="{Binding Persisted.ShowDesktopThemeAchievementGridColumnHeaders}"
                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                        <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
+                                                       VerticalAlignment="Center"/>
+                                            <ComboBox SelectedValue="{Binding Persisted.DesktopThemeAchievementsUnlockDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      SelectedValuePath="Tag"
+                                                      MinWidth="140"
+                                                      Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                            </ComboBox>
+                                        </StackPanel>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
                                                   IsChecked="{Binding Persisted.ModernDataGridShowRarityGlow}"
                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
@@ -2626,6 +2698,18 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.StartPageGameSummariesGrid.ShowColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LastPlayedDateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.StartPageGameSummariesLastPlayedDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
 
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
@@ -2697,6 +2781,18 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.StartPageRecentUnlocksGrid.ShowColumnHeaders}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.StartPageAchievementsUnlockDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
 
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
