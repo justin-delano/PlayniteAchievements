@@ -420,13 +420,15 @@
                    helpers:AsyncImage.Uri="{Binding DisplayIcon}"
                    helpers:AsyncImage.DecodePixel="128"/>
 
-            <!-- Solid rarity border for Hardcore achievements (replaces the glow). -->
-            <Border Margin="2"
+            <!-- Solid rarity border for Hardcore achievements (replaces the glow).
+                 Negative margin draws the border just OUTSIDE the icon (icon margin 2 - thickness 3)
+                 so it never covers or shrinks the icon, matching how the glow extended outward. -->
+            <Border Margin="-1"
                     BorderThickness="3"
                     Background="Transparent"
                     IsHitTestVisible="False"
                     SnapsToDevicePixels="True"
-                    BorderBrush="{Binding Rarity, Converter={StaticResource RarityToSolidBrush}}">
+                    BorderBrush="{Binding Rarity, Converter={StaticResource RarityToShineBrush}}">
                 <Border.Style>
                     <Style TargetType="Border">
                         <Setter Property="Visibility" Value="Collapsed"/>

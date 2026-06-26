@@ -40,6 +40,39 @@ namespace PlayniteAchievements.Models.Achievements
             return brush;
         }
 
+        /// <summary>
+        /// Glossy gradient brush in the rarity color for the Hardcore icon border. The corners
+        /// stay at the rarity color and a bright highlight sweeps diagonally through the middle,
+        /// giving a clean shine without the dark corners of the badge gradient. Returns null for
+        /// Common (no rarity treatment).
+        /// </summary>
+        public static Brush GetShineBrush(RarityTier tier, PersistedSettings settings = null)
+        {
+            if (tier == RarityTier.Common)
+            {
+                return null;
+            }
+
+            var baseColor = GetBaseColor(tier, settings);
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(1, 1)
+            };
+
+            brush.GradientStops.Add(new GradientStop(baseColor, 0.00));
+            brush.GradientStops.Add(new GradientStop(Blend(baseColor, Colors.White, 0.30), 0.35));
+            brush.GradientStops.Add(new GradientStop(Blend(baseColor, Colors.White, 0.70), 0.50));
+            brush.GradientStops.Add(new GradientStop(Blend(baseColor, Colors.White, 0.30), 0.65));
+            brush.GradientStops.Add(new GradientStop(baseColor, 1.00));
+            if (brush.CanFreeze)
+            {
+                brush.Freeze();
+            }
+
+            return brush;
+        }
+
         public static Color GetPieColor(RarityTier tier, PersistedSettings settings = null)
         {
             return GetBaseColor(tier, settings);

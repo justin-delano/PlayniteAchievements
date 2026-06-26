@@ -99,12 +99,14 @@
             </Grid>
         </Border>
 
-        <!-- Solid rarity border for Hardcore achievements (replaces the glow). -->
-        <Border BorderThickness="3"
+        <!-- Solid rarity border for Hardcore achievements (replaces the glow).
+             Negative margin draws the border just OUTSIDE the icon so it never shrinks it. -->
+        <Border Margin="-3"
+                BorderThickness="3"
                 Background="Transparent"
                 IsHitTestVisible="False"
                 SnapsToDevicePixels="True"
-                BorderBrush="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Rarity, Converter={StaticResource RarityToSolidBrush}}">
+                BorderBrush="{Binding RelativeSource={RelativeSource AncestorType=UserControl}, Path=Rarity, Converter={StaticResource RarityToShineBrush}}">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Visibility" Value="Collapsed"/>
