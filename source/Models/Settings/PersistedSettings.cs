@@ -142,7 +142,7 @@ namespace PlayniteAchievements.Models.Settings
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
         private Dictionary<string, ResourceOverrideSetting> _resourceOverrides =
-            new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            CreateDefaultResourceOverrides();
         private List<CustomRefreshPreset> _customRefreshPresets = new List<CustomRefreshPreset>();
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -2867,7 +2867,7 @@ namespace PlayniteAchievements.Models.Settings
             RarityColors = RarityColorSettings.CreateDefault();
             OverviewGameSummariesUseCoverImages = defaults.OverviewGameSummariesUseCoverImages;
             OverviewRecentAchievementsUseCoverImages = defaults.OverviewRecentAchievementsUseCoverImages;
-            ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            ResourceOverrides = CreateDefaultResourceOverrides();
 
             ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
             ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
@@ -3048,6 +3048,30 @@ namespace PlayniteAchievements.Models.Settings
             return AchievementHotkeyGesture.TryParse(value, out var gesture) && gesture != null
                 ? gesture.ToString()
                 : string.Empty;
+        }
+
+        // Tokens that ship transparent by default. Stored as a Transparent override carrying the
+        // transparent hex so resolution reuses the Custom value path (see PlayAchResourceService).
+        // Seeded only for fresh settings / display reset; deserializing existing settings replaces
+        // this dictionary, so upgrading users keep their current appearance.
+        internal static Dictionary<string, ResourceOverrideSetting> CreateDefaultResourceOverrides()
+        {
+            var defaults = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in new[]
+            {
+                "PlayAch.Brush.GridSurface",
+                "PlayAch.Brush.WindowSurface",
+                "PlayAch.Brush.ControlSurface"
+            })
+            {
+                defaults[key] = new ResourceOverrideSetting
+                {
+                    Mode = ResourceOverrideMode.Transparent,
+                    CustomValue = "#00000000"
+                };
+            }
+
+            return defaults;
         }
 
         private static Dictionary<string, ResourceOverrideSetting> NormalizeResourceOverrides(
