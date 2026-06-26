@@ -9,7 +9,10 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Services;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -149,6 +152,254 @@ namespace PlayniteAchievements.Providers.Tests
             }
         }
 
+        [TestMethod]
+        public async Task RefreshAsync_FolderCollectionRoot_AggregatesSubgameTrophiesByNpwr()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var collectionRoot = Path.Combine(tempDir, "Sly Collection");
+
+            try
+            {
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01341_00", "Sly Minigames", "Minigame Trophy");
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01435_00", "Sly 1", "Sly 1 Trophy");
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01433_00", "Sly 2", "Sly 2 Trophy");
+
+                CreateFolderCollection(
+                    collectionRoot,
+                    ("PS3_GAME", "NPWR01341_00", "Ignored Param Minigames"),
+                    ("PS3_GM01", "NPWR01435_00", "Ignored Param Sly 1"),
+                    ("PS3_GM02", "NPWR01433_00", "Ignored Param Sly 2"));
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "The Sly Collection",
+                    InstallDirectory = collectionRoot
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(3, data.Achievements.Count);
+                CollectionAssert.AreEquivalent(
+                    new[] { "NPWR01341_00:0", "NPWR01435_00:0", "NPWR01433_00:0" },
+                    data.Achievements.Select(achievement => achievement.ApiName).ToArray());
+                CollectionAssert.AreEquivalent(
+                    new[] { "Sly Minigames", "Sly 1", "Sly 2" },
+                    data.Achievements.Select(achievement => achievement.Category).ToArray());
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_FolderCollectionSubgamePath_DiscoversSiblingSubgames()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var collectionRoot = Path.Combine(tempDir, "Sly Collection");
+
+            try
+            {
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01435_00", "Sly 1", "Sly 1 Trophy");
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01433_00", "Sly 2", "Sly 2 Trophy");
+
+                CreateFolderCollection(
+                    collectionRoot,
+                    ("PS3_GAME", "NPWR01435_00", "Sly 1"),
+                    ("PS3_GM01", "NPWR01433_00", "Sly 2"));
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "The Sly Collection",
+                    InstallDirectory = Path.Combine(collectionRoot, "PS3_GM01", "USRDIR")
+                };
+                Directory.CreateDirectory(game.InstallDirectory);
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(2, data.Achievements.Count);
+                CollectionAssert.AreEquivalent(
+                    new[] { "NPWR01435_00:0", "NPWR01433_00:0" },
+                    data.Achievements.Select(achievement => achievement.ApiName).ToArray());
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_NpwrOverride_DisablesCollectionExpansion()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var collectionRoot = Path.Combine(tempDir, "Sly Collection");
+            var gameId = Guid.NewGuid();
+            var previousPlugin = PlayniteAchievementsPlugin.Instance;
+
+            try
+            {
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01435_00", "Sly 1", "Sly 1 Trophy");
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01433_00", "Sly 2", "Sly 2 Trophy");
+                CreateFolderCollection(
+                    collectionRoot,
+                    ("PS3_GAME", "NPWR01435_00", "Sly 1"),
+                    ("PS3_GM01", "NPWR01433_00", "Sly 2"));
+
+                var store = new GameCustomDataStore(Path.Combine(tempDir, "store"));
+                store.Save(gameId, new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ProviderOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = "RPCS3",
+                        Value = "NPWR01433_00"
+                    }
+                });
+
+                PlayniteAchievementsPlugin.Instance = new PlayniteAchievementsPlugin
+                {
+                    GameCustomDataStore = store
+                };
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = gameId,
+                    Name = "The Sly Collection",
+                    InstallDirectory = collectionRoot
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(1, data.Achievements.Count);
+                Assert.AreEqual("0", data.Achievements[0].ApiName);
+                Assert.AreEqual("Sly 2 Trophy", data.Achievements[0].DisplayName);
+            }
+            finally
+            {
+                PlayniteAchievementsPlugin.Instance = previousPlugin;
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_SingleGameKeepsExistingApiNames()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var gameRoot = Path.Combine(tempDir, "Single Game");
+
+            try
+            {
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR12345_00", "Single Game", "Single Trophy");
+                CreateTrpFile(Path.Combine(gameRoot, "PS3_GAME", "TROPHY", "TROPHY.TRP"), "NPWR12345_00", "Single Game", "Single Trophy");
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Single Game",
+                    InstallDirectory = gameRoot
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(1, data.Achievements.Count);
+                Assert.AreEqual("0", data.Achievements[0].ApiName);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void GamesYmlReader_ParsesQuotedWindowsIsoPaths()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var gamesYml = Path.Combine(tempDir, "games.yml");
+                File.WriteAllText(
+                    gamesYml,
+                    @"# comment
+BCUS98198: ""C:\Games\The Sly Collection.iso""
+BCUS98246: 'D:\RPCS3\Other Collection.iso' # trailing comment
+");
+
+                var map = Rpcs3GamesYmlReader.ReadTitlePathMap(gamesYml);
+
+                Assert.AreEqual(2, map.Count);
+                Assert.AreEqual(@"C:\Games\The Sly Collection.iso", map["BCUS98198"]);
+                Assert.AreEqual(@"D:\RPCS3\Other Collection.iso", map["BCUS98246"]);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void NpCommIdExtractor_RawScan_ReturnsDistinctNpwrIds()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var rawFile = Path.Combine(tempDir, "collection.iso");
+                File.WriteAllText(
+                    rawFile,
+                    "<npcommid>NPWR01435_00</npcommid> filler <npcommid>NPWR01433_00</npcommid> <npcommid>NPWR01435_00</npcommid>");
+
+                var ids = Rpcs3NpCommIdExtractor.ExtractNpCommIdsFromRawFile(rawFile);
+
+                CollectionAssert.AreEqual(
+                    new[] { "NPWR01435_00", "NPWR01433_00" },
+                    ids.ToArray());
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void ParamSfoReader_ReadsTitleAndTitleId()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var paramSfo = Path.Combine(tempDir, "PARAM.SFO");
+                CreateParamSfo(paramSfo, "Sly 1", "BCUS00001");
+
+                var values = Rpcs3ParamSfoReader.ReadStringValues(paramSfo);
+
+                Assert.AreEqual("Sly 1", values["TITLE"]);
+                Assert.AreEqual("BCUS00001", values["TITLE_ID"]);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
         private static async Task<GameAchievementData> RefreshSingleGameAsync(Rpcs3DataProvider provider, Game game)
         {
             GameAchievementData captured = null;
@@ -205,6 +456,92 @@ namespace PlayniteAchievements.Providers.Tests
     <detail>Description</detail>
   </trophy>
 </trophyconf>";
+        }
+
+        private static void CreateFolderCollection(
+            string collectionRoot,
+            params (string SubdirectoryName, string NpCommId, string Title)[] subgames)
+        {
+            Directory.CreateDirectory(collectionRoot);
+            File.WriteAllText(Path.Combine(collectionRoot, "PS3_DISC.SFB"), "SFB");
+
+            foreach (var subgame in subgames)
+            {
+                var subgameRoot = Path.Combine(collectionRoot, subgame.SubdirectoryName);
+                Directory.CreateDirectory(subgameRoot);
+                CreateParamSfo(Path.Combine(subgameRoot, "PARAM.SFO"), subgame.Title, "BCUS00000");
+                CreateTrpFile(
+                    Path.Combine(subgameRoot, "TROPHY", "TROPHY.TRP"),
+                    subgame.NpCommId,
+                    subgame.Title,
+                    $"{subgame.Title} Trophy");
+            }
+        }
+
+        private static void CreateTrpFile(string trpPath, string npCommId, string titleName, string trophyName)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(trpPath));
+            File.WriteAllText(trpPath, BuildTropconfXml(npCommId, titleName, trophyName));
+        }
+
+        private static void CreateParamSfo(string path, string title, string titleId)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+
+            var entries = new Dictionary<string, string>
+            {
+                ["TITLE"] = title,
+                ["TITLE_ID"] = titleId
+            };
+
+            var keys = entries.Keys.ToArray();
+            var keyTable = new List<byte>();
+            var dataTable = new List<byte>();
+            var entryData = new List<Tuple<ushort, ushort, uint, uint, uint>>();
+
+            foreach (var key in keys)
+            {
+                var keyOffset = (ushort)keyTable.Count;
+                keyTable.AddRange(Encoding.ASCII.GetBytes(key));
+                keyTable.Add(0);
+
+                var valueOffset = (uint)dataTable.Count;
+                var valueBytes = Encoding.UTF8.GetBytes(entries[key] ?? string.Empty);
+                dataTable.AddRange(valueBytes);
+                dataTable.Add(0);
+
+                entryData.Add(Tuple.Create(
+                    keyOffset,
+                    (ushort)0x0204,
+                    (uint)(valueBytes.Length + 1),
+                    (uint)(valueBytes.Length + 1),
+                    valueOffset));
+            }
+
+            var keyTableOffset = 20 + (entryData.Count * 16);
+            var dataTableOffset = keyTableOffset + keyTable.Count;
+
+            using (var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
+            using (var writer = new BinaryWriter(stream, Encoding.UTF8))
+            {
+                writer.Write(0x46535000u);
+                writer.Write(0x00000101u);
+                writer.Write((uint)keyTableOffset);
+                writer.Write((uint)dataTableOffset);
+                writer.Write((uint)entryData.Count);
+
+                foreach (var entry in entryData)
+                {
+                    writer.Write(entry.Item1);
+                    writer.Write(entry.Item2);
+                    writer.Write(entry.Item3);
+                    writer.Write(entry.Item4);
+                    writer.Write(entry.Item5);
+                }
+
+                writer.Write(keyTable.ToArray());
+                writer.Write(dataTable.ToArray());
+            }
         }
 
         private static string CreateTempDirectory()
