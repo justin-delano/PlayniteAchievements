@@ -59,29 +59,32 @@ namespace PlayniteAchievements.Services.UI
             public byte? Alpha { get; }
         }
 
+        // DisplayName holds a localization key (LOCPlayAch_*) resolved for display by the
+        // settings view model. The non-user-visible Icon token is never shown, so it keeps a
+        // plain internal label rather than a localized key.
         private static readonly TokenDefinition[] Tokens =
         {
-            Brush("PlayAch.Brush.Text", "Text", "TextBrush"),
-            Brush("PlayAch.Brush.Text.Secondary", "Secondary text", "TextBrushDarker", "TextBrush"),
-            Brush("PlayAch.Brush.Text.Tertiary", "Tertiary text", "TextBrushDark", "TextBrushDarker", "TextBrush"),
-            Brush("PlayAch.Brush.Surface", "Surface", "ControlBackgroundBrush"),
-            Brush("PlayAch.Brush.Panel", "Panel", "PanelBackgroundBrush", "ControlBackgroundBrush"),
-            Brush("PlayAch.Brush.WindowSurface", "Window surface", "WindowBackgourndBrush", "ControlBackgroundBrush"),
-            Brush("PlayAch.Brush.GridSurface", "Grid surface", "GridItemBackgroundBrush", "ControlBackgroundBrush"),
-            Brush("PlayAch.Brush.Border", "Border", "NormalBorderBrush"),
-            Brush("PlayAch.Brush.ControlBorder", "Control border", "NormalBrush"),
-            Brush("PlayAch.Brush.Glyph", "Glyph", "GlyphBrush"),
-            Brush("PlayAch.Brush.Accent", "Accent", "HighlightGlyphBrush"),
-            Brush("PlayAch.Brush.Selection", "Selection", "SelectionLightBrush", "GlyphBrush"),
-            Brush("PlayAch.Brush.ControlSurface", "Control surface", "ButtonBackgroundBrush", "ControlBackgroundBrush"),
-            Brush("PlayAch.Brush.PopupSurface", "Popup surface", "PopupBackgroundBrush", "PanelBackgroundBrush", "ControlBackgroundBrush"),
-            Brush("PlayAch.Brush.PopupBorder", "Popup border", "PopupBorderBrush", "NormalBorderBrush"),
+            Brush("PlayAch.Brush.Text", "LOCPlayAch_Settings_Appearance_Resource_Text", "TextBrush"),
+            Brush("PlayAch.Brush.Text.Secondary", "LOCPlayAch_Settings_Appearance_Resource_TextSecondary", "TextBrushDarker", "TextBrush"),
+            Brush("PlayAch.Brush.Text.Tertiary", "LOCPlayAch_Settings_Appearance_Resource_TextTertiary", "TextBrushDark", "TextBrushDarker", "TextBrush"),
+            Brush("PlayAch.Brush.Surface", "LOCPlayAch_Settings_Appearance_Resource_Surface", "ControlBackgroundBrush"),
+            Brush("PlayAch.Brush.Panel", "LOCPlayAch_Settings_Appearance_Resource_Panel", "PanelBackgroundBrush", "ControlBackgroundBrush"),
+            Brush("PlayAch.Brush.WindowSurface", "LOCPlayAch_Settings_Appearance_Resource_WindowSurface", "WindowBackgourndBrush", "ControlBackgroundBrush"),
+            Brush("PlayAch.Brush.GridSurface", "LOCPlayAch_Settings_Appearance_Resource_GridSurface", "GridItemBackgroundBrush", "ControlBackgroundBrush"),
+            Brush("PlayAch.Brush.Border", "LOCPlayAch_Settings_Appearance_Resource_Border", "NormalBorderBrush"),
+            Brush("PlayAch.Brush.ControlBorder", "LOCPlayAch_Settings_Appearance_Resource_ControlBorder", "NormalBrush"),
+            Brush("PlayAch.Brush.Glyph", "LOCPlayAch_Settings_Appearance_Resource_Glyph", "GlyphBrush"),
+            Brush("PlayAch.Brush.Accent", "LOCPlayAch_Settings_Appearance_Resource_Accent", "HighlightGlyphBrush"),
+            Brush("PlayAch.Brush.Selection", "LOCPlayAch_Settings_Appearance_Resource_Selection", "SelectionLightBrush", "GlyphBrush"),
+            Brush("PlayAch.Brush.ControlSurface", "LOCPlayAch_Settings_Appearance_Resource_ControlSurface", "ButtonBackgroundBrush", "ControlBackgroundBrush"),
+            Brush("PlayAch.Brush.PopupSurface", "LOCPlayAch_Settings_Appearance_Resource_PopupSurface", "PopupBackgroundBrush", "PanelBackgroundBrush", "ControlBackgroundBrush"),
+            Brush("PlayAch.Brush.PopupBorder", "LOCPlayAch_Settings_Appearance_Resource_PopupBorder", "PopupBorderBrush", "NormalBorderBrush"),
 
-            FontSize("PlayAch.FontSize.Caption", "Caption size", "FontSizeSmall"),
-            FontSize("PlayAch.FontSize.Body", "Body size", "FontSize"),
-            FontSize("PlayAch.FontSize.Title", "Title size", "FontSizeLarge"),
+            FontSize("PlayAch.FontSize.Caption", "LOCPlayAch_Settings_Appearance_Resource_CaptionSize", "FontSizeSmall"),
+            FontSize("PlayAch.FontSize.Body", "LOCPlayAch_Settings_Appearance_Resource_BodySize", "FontSize"),
+            FontSize("PlayAch.FontSize.Title", "LOCPlayAch_Settings_Appearance_Resource_TitleSize", "FontSizeLarge"),
 
-            FontFamily("PlayAch.FontFamily.Body", "Body font", "FontFamily"),
+            FontFamily("PlayAch.FontFamily.Body", "LOCPlayAch_Settings_Appearance_Resource_BodyFont", "FontFamily"),
             StaticFontFamily("PlayAch.FontFamily.Icon", "Icon font", "FontIcoFont")
         };
 
