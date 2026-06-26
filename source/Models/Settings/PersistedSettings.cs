@@ -34,6 +34,13 @@ namespace PlayniteAchievements.Models.Settings
         public const string DefaultManageAchievementsHotkey = "Ctrl+Alt+M";
         public const string DefaultOverviewHotkey = "Ctrl+Alt+O";
 
+        /// <summary>
+        /// Column key of the Progress column in game-summaries grids (matches the XAML ColumnKey and
+        /// the canonical key produced by <see cref="OverviewSettingsMigration"/>). The footer badge
+        /// layout in this column responds to its horizontal alignment, defaulting to Right.
+        /// </summary>
+        public const string ProgressColumnKey = "GameSummaryProgression";
+
         public PersistedSettings()
         {
             AttachStartPageSettingsHandlers();
@@ -94,6 +101,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showCompactListRarityBar = true;
         private bool _showCompletionBorder = true;
         private bool _showGameSummariesGridColumnHeaders = true;
+        private bool _progressColumnAlignmentDefaulted = true;
         private bool _showOverviewRecentAchievementsGridColumnHeaders = true;
         private bool _showOverviewSelectedGameGridColumnHeaders = true;
         private bool _showDesktopThemeAchievementGridColumnHeaders = true;
@@ -175,7 +183,7 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, bool> _overviewGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _overviewGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _overviewGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _overviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _overviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase) { [ProgressColumnKey] = GridAlignment.Right };
         private Dictionary<string, GridVerticalAlignment> _overviewGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _overviewGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private bool _viewAchievementsGameSummariesUseCoverImages = false;
@@ -188,7 +196,7 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, bool> _viewAchievementsGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _viewAchievementsGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _viewAchievementsGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _viewAchievementsGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _viewAchievementsGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase) { [ProgressColumnKey] = GridAlignment.Right };
         private Dictionary<string, GridVerticalAlignment> _viewAchievementsGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _viewAchievementsGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _startPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -200,7 +208,7 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, bool> _startPageGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _startPageGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _startPageGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-        private Dictionary<string, GridAlignment> _startPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _startPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase) { [ProgressColumnKey] = GridAlignment.Right };
         private Dictionary<string, GridVerticalAlignment> _startPageGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _startPageGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private double _overviewLeftColumnRatio = DefaultOverviewLeftColumnRatio;
@@ -813,6 +821,18 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showGameSummariesGridColumnHeaders;
             set => SetValue(ref _showGameSummariesGridColumnHeaders, value);
+        }
+
+        /// <summary>
+        /// One-time bookkeeping flag: true once the Progress summary column has been seeded to Right
+        /// alignment. Migration forces Right for existing configs where this is absent/false (so an
+        /// updating user keeps the legacy footer layout) and then sets it true, after which a user's
+        /// own alignment choice is respected. Defaults to true for fresh installs (seeded in the ctor).
+        /// </summary>
+        public bool ProgressColumnAlignmentDefaulted
+        {
+            get => _progressColumnAlignmentDefaulted;
+            set => SetValue(ref _progressColumnAlignmentDefaulted, value);
         }
 
         /// <summary>
@@ -2573,6 +2593,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ShowCompletionBorder = this.ShowCompletionBorder,
                 ShowOverviewGameSummariesGridColumnHeaders = this.ShowOverviewGameSummariesGridColumnHeaders,
+                ProgressColumnAlignmentDefaulted = this.ProgressColumnAlignmentDefaulted,
                 ViewAchievementsGameSummariesUseCoverImages = this.ViewAchievementsGameSummariesUseCoverImages,
                 ViewAchievementsGameSummariesShowMetadataPlatform = this.ViewAchievementsGameSummariesShowMetadataPlatform,
                 ViewAchievementsGameSummariesShowMetadataPlaytime = this.ViewAchievementsGameSummariesShowMetadataPlaytime,
@@ -3006,13 +3027,19 @@ namespace PlayniteAchievements.Models.Settings
             OverviewGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             OverviewGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             OverviewGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            OverviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            OverviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase)
+            {
+                [ProgressColumnKey] = GridAlignment.Right
+            };
             OverviewGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
             OverviewGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             ViewAchievementsGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             ViewAchievementsGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             ViewAchievementsGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            ViewAchievementsGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            ViewAchievementsGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase)
+            {
+                [ProgressColumnKey] = GridAlignment.Right
+            };
             ViewAchievementsGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
             ViewAchievementsGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             StartPageAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
@@ -3024,7 +3051,10 @@ namespace PlayniteAchievements.Models.Settings
             StartPageGameSummariesColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             StartPageGameSummariesColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             StartPageGameSummariesColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-            StartPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            StartPageGameSummariesColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase)
+            {
+                [ProgressColumnKey] = GridAlignment.Right
+            };
             StartPageGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
             StartPageGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
 
