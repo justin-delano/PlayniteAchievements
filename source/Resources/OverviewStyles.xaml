@@ -209,7 +209,6 @@
 
     <Style x:Key="OverviewProgressMetaRowStyle" TargetType="StackPanel">
         <Setter Property="Orientation" Value="Horizontal"/>
-        <Setter Property="HorizontalAlignment" Value="Right"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
     </Style>
 
@@ -222,6 +221,9 @@
     <Style x:Key="OverviewMiniBadgeItemStyle" TargetType="StackPanel">
         <Setter Property="Orientation" Value="Horizontal"/>
         <Setter Property="Margin" Value="4,0"/>
+        <!-- Keep each badge's image+count physically left-to-right even when the badge row is
+             flipped to RightToLeft (Left progress alignment) to reverse the rarity order. -->
+        <Setter Property="FlowDirection" Value="LeftToRight"/>
     </Style>
 
     <Style x:Key="OverviewMiniBadgeImageStyle" TargetType="Image" BasedOn="{StaticResource RarityIcon}">
@@ -243,6 +245,114 @@
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Margin" Value="4,0,0,0"/>
     </Style>
+
+    <!-- Shared rarity/trophy badge row for the Progress column footer. Only one of the two
+         panels is visible at a time (rarity vs. PlayStation trophies). The host positions and
+         (for Left alignment) flips this row; the row itself stays alignment-neutral so the same
+         markup serves every alignment without duplication. -->
+    <DataTemplate x:Key="ProgressBadgeRowTemplate">
+        <Grid VerticalAlignment="Center">
+            <StackPanel Style="{StaticResource OverviewProgressMetaRowStyle}"
+                        Visibility="{Binding HasTrophyTypes, Converter={StaticResource InverseBoolToVis}}">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}" ToolTip="Ultra Rare">
+                    <Image Source="{DynamicResource BadgeRarityUltraRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                    <TextBlock Text="{Binding UltraRareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}" ToolTip="Rare">
+                    <Image Source="{DynamicResource BadgeRarityRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                    <TextBlock Text="{Binding RareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}" ToolTip="Uncommon">
+                    <Image Source="{DynamicResource BadgeRarityUncommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                    <TextBlock Text="{Binding UncommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}" ToolTip="Common">
+                    <Image Source="{DynamicResource BadgeRarityCommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                    <TextBlock Text="{Binding CommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Style="{StaticResource OverviewProgressMetaRowStyle}"
+                        Visibility="{Binding HasTrophyTypes, Converter={StaticResource BoolToVis}}">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}" ToolTip="Platinum">
+                    <Image Source="{DynamicResource TrophyPlatinum}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                    <TextBlock Text="{Binding TrophyPlatinumCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}" ToolTip="Gold">
+                    <Image Source="{DynamicResource TrophyGold}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                    <TextBlock Text="{Binding TrophyGoldCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}" ToolTip="Silver">
+                    <Image Source="{DynamicResource TrophySilver}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                    <TextBlock Text="{Binding TrophySilverCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                </StackPanel>
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}" ToolTip="Bronze">
+                    <Image Source="{DynamicResource TrophyBronze}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
+                    <TextBlock Text="{Binding TrophyBronzeCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Right alignment (default / legacy look): completed badge pinned far left, badge row
+         pinned far right in descending-rarity order. -->
+    <DataTemplate x:Key="ProgressFooterRightTemplate">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Image Grid.Column="0"
+                   Source="{DynamicResource BadgeRarityCompleted}"
+                   Style="{StaticResource OverviewCompletedFooterIconStyle}"
+                   ToolTip="{DynamicResource LOCPlayAch_Completed}"
+                   Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
+            <ContentControl Grid.Column="1"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Content="{Binding}"
+                            ContentTemplate="{StaticResource ProgressBadgeRowTemplate}"/>
+        </Grid>
+    </DataTemplate>
+
+    <!-- Center alignment: a single centered row of completed badge then descending-rarity badges. -->
+    <DataTemplate x:Key="ProgressFooterCenterTemplate">
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+            <Image Source="{DynamicResource BadgeRarityCompleted}"
+                   Style="{StaticResource OverviewCompletedFooterIconStyle}"
+                   ToolTip="{DynamicResource LOCPlayAch_Completed}"
+                   Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
+            <ContentControl VerticalAlignment="Center"
+                            Content="{Binding}"
+                            ContentTemplate="{StaticResource ProgressBadgeRowTemplate}"/>
+        </StackPanel>
+    </DataTemplate>
+
+    <!-- Left alignment (inverse of Right): badge row pinned far left in ascending-rarity order
+         (FlowDirection flip reverses the shared row), completed badge pinned far right. -->
+    <DataTemplate x:Key="ProgressFooterLeftTemplate">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <ContentControl Grid.Column="0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            FlowDirection="RightToLeft"
+                            Content="{Binding}"
+                            ContentTemplate="{StaticResource ProgressBadgeRowTemplate}"/>
+            <Image Grid.Column="1"
+                   Source="{DynamicResource BadgeRarityCompleted}"
+                   Style="{StaticResource OverviewCompletedFooterIconStyle}"
+                   HorizontalAlignment="Right"
+                   Margin="0,0,4,0"
+                   ToolTip="{DynamicResource LOCPlayAch_Completed}"
+                   Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
+        </Grid>
+    </DataTemplate>
 
     <Style x:Key="OverviewChartColumnSeriesStyle" TargetType="lvc:ColumnSeries" BasedOn="{StaticResource PlayAch.ChartColumnSeriesStyle}"/>
 
