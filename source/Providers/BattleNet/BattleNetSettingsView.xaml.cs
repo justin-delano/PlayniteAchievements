@@ -110,6 +110,11 @@ namespace PlayniteAchievements.Providers.BattleNet
             base.Initialize(settings);
             if (_battleNetSettings != null)
             {
+                if (BattleNetSettings.IsLegacyDefaultRedirectUri(_battleNetSettings.BattleNetRedirectUri))
+                {
+                    _battleNetSettings.BattleNetRedirectUri = BattleNetSettings.DefaultRedirectUri;
+                }
+
                 _battleNetSettings.PropertyChanged += BattleNetSettings_PropertyChanged;
                 ClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
                 WowClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;

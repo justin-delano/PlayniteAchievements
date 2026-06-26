@@ -5,11 +5,14 @@ namespace PlayniteAchievements.Providers.BattleNet
 {
     public sealed class BattleNetSettings : ProviderSettingsBase
     {
+        public const string DefaultRedirectUri = "http://127.0.0.1:55431/";
+        public const string LegacyDefaultRedirectUri = "https://localhost";
+
         public override string ProviderKey => "BattleNet";
 
         private string _battleNetClientId;
         private string _battleNetClientSecret;
-        private string _battleNetRedirectUri = "https://localhost";
+        private string _battleNetRedirectUri = DefaultRedirectUri;
         private string _battleNetAccessToken;
         private string _battleNetRefreshToken;
         private string _battleNetTokenType;
@@ -128,6 +131,14 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             get => _useExophaseForRarity;
             set => SetValue(ref _useExophaseForRarity, value);
+        }
+
+        public static bool IsLegacyDefaultRedirectUri(string redirectUri)
+        {
+            return string.Equals(
+                (redirectUri ?? string.Empty).Trim().TrimEnd('/'),
+                LegacyDefaultRedirectUri,
+                StringComparison.OrdinalIgnoreCase);
         }
     }
 }

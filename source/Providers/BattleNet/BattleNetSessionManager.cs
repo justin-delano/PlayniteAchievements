@@ -1,5 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
@@ -234,6 +238,8 @@ namespace PlayniteAchievements.Providers.BattleNet
                 settings.BattleNetRedirectUri,
                 state,
                 WowProfileScope);
+            LoopbackCallbackListener loopbackListener = null;
+            var callbackLock = new object();
 
             _ = _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
             {
@@ -241,6 +247,39 @@ namespace PlayniteAchievements.Providers.BattleNet
                 try
                 {
                     var callback = string.Empty;
+                    Action<string> captureCallback = address =>
+                    {
+                        if (string.IsNullOrWhiteSpace(address))
+                        {
+                            return;
+                        }
+
+                        lock (callbackLock)
+                        {
+                            if (string.IsNullOrWhiteSpace(callback))
+                            {
+                                callback = address;
+                            }
+                        }
+
+                        try
+                        {
+                            _api.MainView.UIDispatcher.BeginInvoke(new Action(() =>
+                            {
+                                try { view?.Close(); } catch { }
+                            }));
+                        }
+                        catch
+                        {
+                        }
+                    };
+
+                    loopbackListener = LoopbackCallbackListener.TryStart(
+                        settings.BattleNetRedirectUri,
+                        _logger,
+                        ct,
+                        captureCallback);
+
                     view = _api.WebViews.CreateView(new WebViewSettings
                     {
                         WindowHeight = 700,
@@ -265,8 +304,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                         if (IsAuthorizationCallback(address, settings.BattleNetRedirectUri))
                         {
-                            callback = address;
-                            try { view.Close(); } catch { }
+                            captureCallback(address);
                         }
                     };
 
@@ -279,6 +317,11 @@ namespace PlayniteAchievements.Providers.BattleNet
                     finally
                     {
                         view.LoadingChanged -= loadingChanged;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(callback) && loopbackListener?.CallbackTask.IsCompleted == true)
+                    {
+                        callback = loopbackListener.GetCompletedCallback();
                     }
 
                     if (!string.IsNullOrWhiteSpace(callback))
@@ -300,12 +343,227 @@ namespace PlayniteAchievements.Providers.BattleNet
                 }
                 finally
                 {
+                    loopbackListener?.Dispose();
                     view?.Dispose();
                 }
             }));
 
             ct.Register(() => tcs.TrySetCanceled());
             return WithTimeoutAsync(tcs.Task, InteractiveAuthTimeout, ct);
+        }
+
+        private sealed class LoopbackCallbackListener : IDisposable
+        {
+            private readonly Uri _redirectUri;
+            private readonly ILogger _logger;
+            private readonly Action<string> _onCallback;
+            private readonly TcpListener _listener;
+            private readonly TaskCompletionSource<string> _callbackTask;
+            private readonly CancellationTokenRegistration _cancellationRegistration;
+            private bool _disposed;
+
+            private LoopbackCallbackListener(Uri redirectUri, IPAddress address, ILogger logger, CancellationToken ct, Action<string> onCallback)
+            {
+                _redirectUri = redirectUri;
+                _logger = logger;
+                _onCallback = onCallback;
+                _listener = new TcpListener(address, redirectUri.Port);
+                _callbackTask = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _cancellationRegistration = ct.Register(() =>
+                {
+                    _callbackTask.TrySetCanceled();
+                    StopListener();
+                });
+            }
+
+            public Task<string> CallbackTask => _callbackTask.Task;
+
+            public static LoopbackCallbackListener TryStart(
+                string redirectUri,
+                ILogger logger,
+                CancellationToken ct,
+                Action<string> onCallback)
+            {
+                if (!TryGetLoopbackEndpoint(redirectUri, out var uri, out var address))
+                {
+                    return null;
+                }
+
+                try
+                {
+                    var listener = new LoopbackCallbackListener(uri, address, logger, ct, onCallback);
+                    listener._listener.Start();
+                    _ = Task.Run(() => listener.AcceptLoopAsync());
+                    logger?.Debug($"[BattleNetAuth] Listening for OAuth callback on {uri.GetLeftPart(UriPartial.Authority)}.");
+                    return listener;
+                }
+                catch (Exception ex)
+                {
+                    logger?.Error(ex, $"[BattleNetAuth] Failed to start local OAuth callback listener for '{redirectUri}'.");
+                    return null;
+                }
+            }
+
+            public string GetCompletedCallback()
+            {
+                if (!_callbackTask.Task.IsCompleted ||
+                    _callbackTask.Task.IsCanceled ||
+                    _callbackTask.Task.IsFaulted)
+                {
+                    return null;
+                }
+
+                return _callbackTask.Task.Result;
+            }
+
+            public void Dispose()
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _disposed = true;
+                _cancellationRegistration.Dispose();
+                StopListener();
+            }
+
+            private async Task AcceptLoopAsync()
+            {
+                while (!_callbackTask.Task.IsCompleted)
+                {
+                    TcpClient client = null;
+                    try
+                    {
+                        client = await _listener.AcceptTcpClientAsync().ConfigureAwait(false);
+                        await HandleClientAsync(client).ConfigureAwait(false);
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        return;
+                    }
+                    catch (SocketException)
+                    {
+                        if (!_disposed)
+                        {
+                            _callbackTask.TrySetResult(null);
+                        }
+
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "[BattleNetAuth] Failed while reading local OAuth callback.");
+                    }
+                    finally
+                    {
+                        try { client?.Close(); } catch { }
+                    }
+                }
+            }
+
+            private async Task HandleClientAsync(TcpClient client)
+            {
+                using (var stream = client.GetStream())
+                using (var reader = new StreamReader(stream, Encoding.ASCII, false, 1024, true))
+                {
+                    var requestLine = await reader.ReadLineAsync().ConfigureAwait(false);
+                    var callbackUrl = BuildCallbackUrl(requestLine);
+                    var isCallback = IsAuthorizationCallback(callbackUrl, _redirectUri.ToString());
+
+                    await WriteResponseAsync(stream, isCallback).ConfigureAwait(false);
+
+                    if (isCallback)
+                    {
+                        _callbackTask.TrySetResult(callbackUrl);
+                        _onCallback?.Invoke(callbackUrl);
+                        StopListener();
+                    }
+                }
+            }
+
+            private string BuildCallbackUrl(string requestLine)
+            {
+                if (string.IsNullOrWhiteSpace(requestLine))
+                {
+                    return null;
+                }
+
+                var parts = requestLine.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 2)
+                {
+                    return null;
+                }
+
+                var target = parts[1];
+                if (Uri.TryCreate(target, UriKind.Absolute, out var absolute))
+                {
+                    return absolute.ToString();
+                }
+
+                if (!target.StartsWith("/", StringComparison.Ordinal))
+                {
+                    return null;
+                }
+
+                return _redirectUri.GetLeftPart(UriPartial.Authority) + target;
+            }
+
+            private static async Task WriteResponseAsync(Stream stream, bool success)
+            {
+                var body = success
+                    ? "<!doctype html><html><body><h1>Battle.net login complete</h1><p>You can close this window and return to Playnite.</p></body></html>"
+                    : "<!doctype html><html><body><h1>Battle.net login callback not recognized</h1></body></html>";
+                var status = success ? "200 OK" : "404 Not Found";
+                var bodyBytes = Encoding.UTF8.GetBytes(body);
+                var header =
+                    $"HTTP/1.1 {status}\r\n" +
+                    "Content-Type: text/html; charset=utf-8\r\n" +
+                    $"Content-Length: {bodyBytes.Length}\r\n" +
+                    "Connection: close\r\n\r\n";
+                var headerBytes = Encoding.ASCII.GetBytes(header);
+
+                await stream.WriteAsync(headerBytes, 0, headerBytes.Length).ConfigureAwait(false);
+                await stream.WriteAsync(bodyBytes, 0, bodyBytes.Length).ConfigureAwait(false);
+                await stream.FlushAsync().ConfigureAwait(false);
+            }
+
+            private static bool TryGetLoopbackEndpoint(string redirectUri, out Uri uri, out IPAddress address)
+            {
+                uri = null;
+                address = null;
+
+                if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out uri) ||
+                    !string.Equals(uri.Scheme, Uri.UriSchemeHttp, StringComparison.OrdinalIgnoreCase) ||
+                    uri.IsDefaultPort)
+                {
+                    return false;
+                }
+
+                if (IPAddress.TryParse(uri.Host, out var parsedAddress))
+                {
+                    if (IPAddress.IsLoopback(parsedAddress))
+                    {
+                        address = parsedAddress;
+                        return true;
+                    }
+
+                    return false;
+                }
+
+                if (string.Equals(uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+                {
+                    address = IPAddress.Loopback;
+                    return true;
+                }
+
+                return false;
+            }
+
+            private void StopListener()
+            {
+                try { _listener.Stop(); } catch { }
+            }
         }
 
         private static async Task<string> WithTimeoutAsync(Task<string> task, TimeSpan timeout, CancellationToken ct)

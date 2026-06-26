@@ -111,6 +111,17 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public void Settings_DefaultsToLoopbackHttpRedirectUri()
+        {
+            var settings = new BattleNetSettings();
+
+            Assert.AreEqual("http://127.0.0.1:55431/", settings.BattleNetRedirectUri);
+            Assert.IsTrue(BattleNetSettings.IsLegacyDefaultRedirectUri("https://localhost"));
+            Assert.IsTrue(BattleNetSettings.IsLegacyDefaultRedirectUri("https://localhost/"));
+            Assert.IsFalse(BattleNetSettings.IsLegacyDefaultRedirectUri(settings.BattleNetRedirectUri));
+        }
+
+        [TestMethod]
         public void Settings_SerializesExophaseRarityFlag()
         {
             var settings = new BattleNetSettings

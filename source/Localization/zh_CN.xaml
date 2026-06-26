@@ -469,7 +469,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">Client credentials enable Blizzard's official achievement API. Login with wow.profile to merge achievements across all characters on the account.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep1Prefix">1. Open the </sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep1Suffix"> and create a client from API Access.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep2">2. Add the exact Redirect URI shown below to that client. The plugin default is https://localhost; the Blizzard sample uses localhost:8080 only for the sample app.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep2">2. Add the exact Redirect URI shown below to that client. The plugin default is http://127.0.0.1:55431/. Do not use https://localhost; the plugin listens locally on this HTTP callback.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep3">3. Copy the generated Client ID and Client Secret into the fields below.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep4">4. Click Login and authorize wow.profile to merge WoW achievements across account characters.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupSamplePrefix">Reference: </sys:String>
