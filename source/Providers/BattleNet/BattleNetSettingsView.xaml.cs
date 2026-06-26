@@ -1,8 +1,10 @@
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Navigation;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.BattleNet.Models;
@@ -306,6 +308,12 @@ namespace PlayniteAchievements.Providers.BattleNet
             {
                 ProviderRegistry.Write(_battleNetSettings, persistToDisk: true);
             }
+        }
+
+        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
+        {
+            Process.Start(e.Uri.AbsoluteUri);
+            e.Handled = true;
         }
 
         private void SetAuthBusy(bool busy)

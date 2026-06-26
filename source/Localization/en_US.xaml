@@ -469,6 +469,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_RedirectUri">Redirect URI</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_AggregateAccountCharacters">Aggregate all WoW account characters</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_OAuthHelp">Client credentials enable Blizzard's official achievement API. Login with wow.profile to merge achievements across all characters on the account.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep1Prefix">1. Open the </sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep1Suffix"> and create a client from API Access.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep2">2. Add the exact Redirect URI shown below to that client. The plugin default is https://localhost; the Blizzard sample uses localhost:8080 only for the sample app.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep3">3. Copy the generated Client ID and Client Secret into the fields below.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupStep4">4. Click Login and authorize wow.profile to merge WoW achievements across account characters.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_SetupSamplePrefix">Reference: </sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Region">Region</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Realm">Realm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Profile">Profile ID</sys:String>
