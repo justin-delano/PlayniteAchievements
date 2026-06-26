@@ -309,7 +309,7 @@ namespace PlayniteAchievements.Tests.Providers
                     "wow-token",
                     CancellationToken.None);
 
-                Assert.AreEqual(2, response.Achievements.Count);
+                Assert.AreEqual(3, response.Achievements.Count);
                 Assert.AreEqual(1, response.Achievements[0].AchievementId);
                 Assert.AreEqual(1710000000000L, response.Achievements[0].CompletedTimestamp);
             }
@@ -357,9 +357,9 @@ namespace PlayniteAchievements.Tests.Providers
                     CancellationToken.None);
 
                 Assert.AreEqual(1, stats.FetchedCharacters);
-                Assert.AreEqual(2, stats.CompletionCount);
-                Assert.AreEqual(2, stats.UpdatedCount);
-                Assert.AreEqual(1, stats.AddedCount);
+                Assert.AreEqual(3, stats.CompletionCount);
+                Assert.AreEqual(3, stats.UpdatedCount);
+                Assert.AreEqual(2, stats.AddedCount);
             }
 
             var existing = achievements.Single(item => item.ApiName == "1");
@@ -373,6 +373,12 @@ namespace PlayniteAchievements.Tests.Providers
             Assert.AreEqual("https://render.worldofwarcraft.test/icon.jpg", hiddenEarned.UnlockedIconPath);
             Assert.AreEqual(10, hiddenEarned.Points);
             Assert.AreEqual("Feats of Strength", hiddenEarned.Category);
+
+            var fallbackIcon = achievements.Single(item => item.ApiName == "4");
+            Assert.IsTrue(fallbackIcon.Unlocked);
+            Assert.AreEqual("Fallback Icon", fallbackIcon.DisplayName);
+            Assert.AreEqual("Media URL is derived.", fallbackIcon.Description);
+            Assert.AreEqual("https://render.worldofwarcraft.test/fallback-icon.jpg", fallbackIcon.UnlockedIconPath);
         }
 
         private static Game BattleNetGame(string name)
@@ -443,6 +449,11 @@ namespace PlayniteAchievements.Tests.Providers
       ""id"": 3,
       ""achievement"": { ""id"": 3, ""name"": ""Hidden Earned"", ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/3?namespace=static-us"" } },
       ""completed_timestamp"": 1710000100000
+    },
+    {
+      ""id"": 4,
+      ""achievement"": { ""id"": 4, ""name"": ""Fallback Icon"", ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/4?namespace=static-us"" } },
+      ""completed_timestamp"": 1710000200000
     }
   ]
 }");
@@ -466,6 +477,25 @@ namespace PlayniteAchievements.Tests.Providers
                     request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/media/achievement/3?namespace=static-us")
                 {
                     return JsonResponse(@"{""assets"":[{""key"":""icon"",""value"":""https://render.worldofwarcraft.test/icon.jpg""}]}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement/4?namespace=static-us&locale=en_US")
+                {
+                    return JsonResponse(@"
+{
+  ""id"": 4,
+  ""name"": ""Fallback Icon"",
+  ""description"": ""Media URL is derived."",
+  ""points"": 5,
+  ""category"": { ""id"": 81, ""name"": ""Feats of Strength"" }
+}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/media/achievement/4?namespace=static-us")
+                {
+                    return JsonResponse(@"{""assets"":[{""key"":""default"",""value"":""https://render.worldofwarcraft.test/fallback-icon.jpg""}]}");
                 }
 
                 return new HttpResponseMessage(HttpStatusCode.NotFound);

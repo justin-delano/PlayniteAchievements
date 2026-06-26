@@ -239,6 +239,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                     {
                         detail = await CreateMissingOfficialAchievementAsync(
                             progress,
+                            character.Region,
                             apiLocale,
                             bearerToken,
                             definitionCache,
@@ -266,6 +267,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private async Task<AchievementDetail> CreateMissingOfficialAchievementAsync(
             WowOfficialAchievementProgress progress,
+            string region,
             string locale,
             string bearerToken,
             Dictionary<string, WowOfficialAchievementDefinition> definitionCache,
@@ -301,22 +303,32 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             var iconUrl = default(string);
             var mediaHref = definition?.Media?.Href;
-            if (!string.IsNullOrWhiteSpace(mediaHref) &&
-                !mediaCache.TryGetValue(mediaHref, out iconUrl))
+            if (!string.IsNullOrWhiteSpace(mediaHref))
             {
-                try
-                {
-                    iconUrl = (await _client.GetWowOfficialAchievementMediaAsync(
-                        mediaHref,
-                        bearerToken,
-                        ct).ConfigureAwait(false))?.GetIconUrl();
-                }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    _logger?.Debug(ex, $"[BattleNet/WoW] Failed to fetch achievement media for id={id}.");
-                }
+                iconUrl = await TryGetOfficialAchievementIconAsync(
+                    mediaHref,
+                    bearerToken,
+                    mediaCache,
+                    id,
+                    ct).ConfigureAwait(false);
+            }
 
-                mediaCache[mediaHref] = iconUrl;
+            var fallbackMediaHref = BuildOfficialAchievementMediaHref(definitionHref, region, id);
+            if (string.IsNullOrWhiteSpace(iconUrl) &&
+                !string.IsNullOrWhiteSpace(fallbackMediaHref) &&
+                !string.Equals(mediaHref, fallbackMediaHref, StringComparison.OrdinalIgnoreCase))
+            {
+                iconUrl = await TryGetOfficialAchievementIconAsync(
+                    fallbackMediaHref,
+                    bearerToken,
+                    mediaCache,
+                    id,
+                    ct).ConfigureAwait(false);
+            }
+
+            if (string.IsNullOrWhiteSpace(iconUrl))
+            {
+                _logger?.Debug($"[BattleNet/WoW] No official achievement icon resolved for id={id}.");
             }
 
             return new AchievementDetail
@@ -330,6 +342,98 @@ namespace PlayniteAchievements.Providers.BattleNet
                 ProviderKey = "BattleNet",
                 Unlocked = false
             };
+        }
+
+        private async Task<string> TryGetOfficialAchievementIconAsync(
+            string mediaHref,
+            string bearerToken,
+            Dictionary<string, string> mediaCache,
+            int achievementId,
+            CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(mediaHref))
+            {
+                return null;
+            }
+
+            if (mediaCache.TryGetValue(mediaHref, out var iconUrl))
+            {
+                return iconUrl;
+            }
+
+            try
+            {
+                iconUrl = (await _client.GetWowOfficialAchievementMediaAsync(
+                    mediaHref,
+                    bearerToken,
+                    ct).ConfigureAwait(false))?.GetIconUrl();
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger?.Debug(ex, $"[BattleNet/WoW] Failed to fetch achievement media for id={achievementId}.");
+            }
+
+            mediaCache[mediaHref] = iconUrl;
+            return iconUrl;
+        }
+
+        internal static string BuildOfficialAchievementMediaHref(string definitionHref, string region, int achievementId)
+        {
+            if (achievementId <= 0)
+            {
+                return null;
+            }
+
+            var normalizedRegion = NormalizeOfficialRegion(region);
+            var authority = $"https://{normalizedRegion}.api.blizzard.com";
+            var namespaceValue = $"static-{normalizedRegion}";
+
+            if (Uri.TryCreate(definitionHref, UriKind.Absolute, out var uri))
+            {
+                authority = uri.GetLeftPart(UriPartial.Authority);
+                namespaceValue = FirstNonEmpty(GetQueryValue(uri.Query, "namespace"), namespaceValue);
+            }
+
+            return $"{authority}/data/wow/media/achievement/{achievementId}?namespace={Uri.EscapeDataString(namespaceValue)}";
+        }
+
+        private static string GetQueryValue(string query, string key)
+        {
+            if (string.IsNullOrWhiteSpace(query) || string.IsNullOrWhiteSpace(key))
+            {
+                return null;
+            }
+
+            var normalized = query[0] == '?' ? query.Substring(1) : query;
+            foreach (var part in normalized.Split(new[] { '&' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var pieces = part.Split(new[] { '=' }, 2);
+                var name = Uri.UnescapeDataString(pieces[0].Replace("+", " "));
+                if (string.Equals(name, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return pieces.Length > 1
+                        ? Uri.UnescapeDataString(pieces[1].Replace("+", " "))
+                        : string.Empty;
+                }
+            }
+
+            return null;
+        }
+
+        private static string NormalizeOfficialRegion(string region)
+        {
+            var value = string.IsNullOrWhiteSpace(region) ? "us" : region.Trim().ToLowerInvariant();
+            switch (value)
+            {
+                case "eu":
+                case "kr":
+                case "tw":
+                case "cn":
+                case "us":
+                    return value;
+                default:
+                    return "us";
+            }
         }
 
         private static bool ApplyOfficialCompletion(AchievementDetail detail, long completedTimestamp)
