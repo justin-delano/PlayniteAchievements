@@ -1441,7 +1441,9 @@ namespace PlayniteAchievements.Views
             }
 
             persisted.RarityColors = preset.Colors.Clone();
-            persisted.ResourceOverrides = CreateResourceOverrideSettings(preset.ResourceBrushes);
+            persisted.ResourceOverrides = preset.ResourceBrushes != null
+                ? CreateResourceOverrideSettings(preset.ResourceBrushes)
+                : PersistedSettings.CreateDefaultResourceOverrides();
             ApplyResourceAppearanceOverrides();
             ApplyRarityAppearanceOverrides();
             RebuildResourceAppearanceItems();
