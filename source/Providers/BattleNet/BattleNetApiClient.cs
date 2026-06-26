@@ -30,6 +30,8 @@ namespace PlayniteAchievements.Providers.BattleNet
         private const string WowBaseAchievementUrl = "https://worldofwarcraft.blizzard.com/{0}/character/{1}/{2}/{3}/achievements/{4}";
         private const string WowOfficialAchievementIndexUrl = "https://{0}.api.blizzard.com/data/wow/achievement/index?namespace=static-{0}&locale={1}";
         private const string WowOfficialAchievementUrl = "https://{0}.api.blizzard.com/data/wow/achievement/{1}?namespace=static-{0}&locale={2}";
+        private const string WowAchievementCategoryIndexUrl = "https://{0}.api.blizzard.com/data/wow/achievement-category/index?namespace=static-{0}&locale={1}";
+        private const string WowAchievementCategoryUrl = "https://{0}.api.blizzard.com/data/wow/achievement-category/{1}?namespace=static-{0}&locale={2}";
         private const string WowOfficialCharacterAchievementsUrl = "https://{0}.api.blizzard.com/profile/wow/character/{1}/{2}/achievements?namespace=profile-{0}&locale={3}";
         private const string WowOfficialAccountProfileUrl = "https://{0}.api.blizzard.com/profile/user/wow?namespace=profile-{0}&locale={1}";
         private const string WowGraphQlUrl = "https://worldofwarcraft.blizzard.com/graphql";
@@ -70,6 +72,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private string _cachedAccessToken;
         private DateTime _cachedAccessTokenExpiresUtc;
         private Dictionary<string, double> _cachedDataForAzerothWowRarity;
+        private Dictionary<string, HashSet<int>> _cachedWowGuildCategoryIds;
 
         public BattleNetApiClient(ILogger logger)
             : this(logger, CreateDefaultHttpClient())
@@ -296,6 +299,73 @@ namespace PlayniteAchievements.Providers.BattleNet
                 IsTransientError, ct).ConfigureAwait(false);
         }
 
+        public async Task<HashSet<int>> GetWowGuildCategoryIdsAsync(
+            string region,
+            string locale,
+            string bearerToken,
+            CancellationToken ct)
+        {
+            var apiRegion = NormalizeApiRegion(region);
+            if (_cachedWowGuildCategoryIds != null &&
+                _cachedWowGuildCategoryIds.TryGetValue(apiRegion, out var cached))
+            {
+                return cached;
+            }
+
+            var indexUrl = BuildWowAchievementCategoryIndexUrl(apiRegion, locale);
+            var index = await RateLimiter.ExecuteWithRetryAsync(
+                async () => await GetJsonAsync<WowAchievementCategoryIndexResponse>(indexUrl, ct, bearerToken).ConfigureAwait(false),
+                IsTransientError, ct).ConfigureAwait(false);
+
+            var guildIds = new HashSet<int>();
+            var pending = new Queue<WowAchievementCategoryReference>();
+            foreach (var reference in index?.GuildCategories ?? new List<WowAchievementCategoryReference>())
+            {
+                if (reference != null && reference.Id > 0 && guildIds.Add(reference.Id))
+                {
+                    pending.Enqueue(reference);
+                }
+            }
+
+            while (pending.Count > 0)
+            {
+                ct.ThrowIfCancellationRequested();
+                var reference = pending.Dequeue();
+                var resourceUrl = !string.IsNullOrWhiteSpace(reference.Key?.Href)
+                    ? AddLocaleToUrl(reference.Key.Href, locale)
+                    : BuildWowAchievementCategoryUrl(apiRegion, reference.Id, locale);
+
+                WowAchievementCategoryResource resource = null;
+                try
+                {
+                    resource = await RateLimiter.ExecuteWithRetryAsync(
+                        async () => await GetJsonAsync<WowAchievementCategoryResource>(resourceUrl, ct, bearerToken).ConfigureAwait(false),
+                        IsTransientError, ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    _logger?.Debug(ex, $"[BattleNet/WoW] Failed to expand guild achievement category id={reference.Id}.");
+                }
+
+                foreach (var sub in resource?.Subcategories ?? new List<WowAchievementCategoryReference>())
+                {
+                    if (sub != null && sub.Id > 0 && guildIds.Add(sub.Id))
+                    {
+                        pending.Enqueue(sub);
+                    }
+                }
+            }
+
+            if (_cachedWowGuildCategoryIds == null)
+            {
+                _cachedWowGuildCategoryIds = new Dictionary<string, HashSet<int>>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            _cachedWowGuildCategoryIds[apiRegion] = guildIds;
+            _logger?.Info($"[BattleNet/WoW] Loaded guild achievement category ids. count={guildIds.Count}, region={apiRegion}");
+            return guildIds;
+        }
+
         public async Task<WowOfficialAchievementDefinition> GetWowOfficialAchievementDefinitionAsync(
             string href,
             string locale,
@@ -474,6 +544,23 @@ namespace PlayniteAchievements.Providers.BattleNet
                 WowOfficialAchievementUrl,
                 NormalizeApiRegion(region),
                 achievementId,
+                Uri.EscapeDataString(string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale));
+        }
+
+        internal static string BuildWowAchievementCategoryIndexUrl(string region, string locale)
+        {
+            return string.Format(
+                WowAchievementCategoryIndexUrl,
+                NormalizeApiRegion(region),
+                Uri.EscapeDataString(string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale));
+        }
+
+        internal static string BuildWowAchievementCategoryUrl(string region, int categoryId, string locale)
+        {
+            return string.Format(
+                WowAchievementCategoryUrl,
+                NormalizeApiRegion(region),
+                categoryId,
                 Uri.EscapeDataString(string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale));
         }
 
