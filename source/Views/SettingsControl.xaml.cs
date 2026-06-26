@@ -1487,29 +1487,29 @@ namespace PlayniteAchievements.Views
                     RarityColorSettings.DefaultCompletedStart,
                     RarityColorSettings.DefaultCompletedEnd),
 
-                Preset("Emerald Forest",     "#5D6B3A", "#43A047", "#00897B", "#6A1B9A", "#C0CA33", "#FDD835"),
-                Preset("Abyssal Ocean",      "#455A64", "#26A69A", "#0288D1", "#303F9F", "#00BCD4", "#B3E5FC"),
-                Preset("Desert Oasis",       "#C2A15A", "#26A69A", "#F57C00", "#C2185B", "#FFB300", "#FF7043"),
-                Preset("Frozen Aurora",      "#B0BEC5", "#4DD0E1", "#42A5F5", "#7E57C2", "#00E676", "#E1F5FE"),
-                Preset("Volcano Core",       "#5D4037", "#D84315", "#F57C00", "#B71C1C", "#FFC107", "#FF5252"),
+                Preset("Emerald Forest",     "#53633A", "#43A047", "#00875A", "#5E2B97", "#A3E635", "#FDE68A"),
+                Preset("Abyssal Ocean",      "#40545A", "#168AAD", "#1D4ED8", "#312E81", "#22D3EE", "#BAE6FD"),
+                Preset("Desert Mirage",      "#B08D57", "#2A9D8F", "#E76F51", "#B5179E", "#F4D35E", "#FF9F1C"),
+                Preset("Frozen Aurora",      "#9FB3C8", "#67E8F9", "#60A5FA", "#7C3AED", "#34D399", "#F0ABFC"),
+                Preset("Volcano Core",       "#5C4033", "#D94A1E", "#F97316", "#7F1D1D", "#FACC15", "#EF4444"),
 
-                Preset("Coral Reef",         "#80CBC4", "#00ACC1", "#FFB74D", "#FF7043", "#EC407A", "#FDD835"),
-                Preset("Jungle Ruins",       "#6D4C41", "#689F38", "#00897B", "#7B1FA2", "#D4AF37", "#A5D6A7"),
-                Preset("Moonlit Castle",     "#616161", "#455A64", "#7E57C2", "#C2185B", "#B0BEC5", "#E0E0E0"),
-                Preset("Haunted Manor",      "#757575", "#827717", "#BF360C", "#4A148C", "#FFA000", "#ECEFF1"),
-                Preset("Crystal Cavern",     "#607D8B", "#4DD0E1", "#7E57C2", "#EC407A", "#B2EBF2", "#FFFFFF"),
+                Preset("Rose Quartz",        "#9A8C98", "#F4A7B9", "#E85D75", "#6D2E46", "#FFB4A2", "#FFF0E6"),
+                Preset("Bone Crypt",         "#A8A29E", "#556B2F", "#A44A3F", "#3B0764", "#F2D492", "#FFF8DC"),
+                Preset("Neon City",          "#263238", "#00E5FF", "#FFEA00", "#FF1744", "#AA00FF", "#FF6D00"),
+                Preset("Cosmic Nebula",      "#111827", "#14B8A6", "#4F46E5", "#C026D3", "#FB7185", "#22D3EE"),
+                Preset("Candy Shop",         "#A7C957", "#7BDFF2", "#FFCB77", "#FF5D8F", "#B388EB", "#FFD6A5"),
 
-                Preset("Sky Kingdom",        "#90A4AE", "#4FC3F7", "#1976D2", "#512DA8", "#FFD54F", "#FFFFFF"),
-                Preset("Sunken Temple",      "#78909C", "#4DB6AC", "#0277BD", "#283593", "#D4AF37", "#80DEEA"),
-                Preset("Toxic Wasteland",    "#827717", "#AFB42B", "#CDDC39", "#D50000", "#8BC34A", "#FFFF00"),
-                Preset("Neon City",          "#37474F", "#00E5FF", "#FFEA00", "#FF1744", "#AA00FF", "#FF6D00"),
-                Preset("Cosmic Nebula",      "#263238", "#00BCD4", "#3D5AFE", "#AA00FF", "#FF4081", "#E1BEE7"),
+                Preset("Noir Spotlight",     "#2F3437", "#9CA3AF", "#F4D35E", "#E63946", "#FFF7C2", "#F72585"),
+                Preset("Royal Masquerade",   "#53354A", "#2E8B57", "#1D4ED8", "#C1121F", "#F4D35E", "#FFF1A8"),
+                Preset("Autumn Court",       "#5C4033", "#606C38", "#BC6C25", "#780000", "#DDA15E", "#FFD166"),
+                Preset("Stormbreaker",       "#4B5563", "#94A3B8", "#FACC15", "#1D4ED8", "#F8FAFC", "#FDE047"),
+                Preset("Tidal Gold",         "#B08968", "#84DCC6", "#05668D", "#7B2CBF", "#F4D35E", "#FFF3B0"),
 
-                Preset("Pirate Treasure",    "#A1887F", "#558B2F", "#0277BD", "#B71C1C", "#D4AF37", "#FFF8E1"),
-                Preset("Candy Kingdom",      "#8BC34A", "#29B6F6", "#FFD54F", "#F06292", "#BA68C8", "#FF8A65"),
-                Preset("Samurai Dawn",       "#5D4037", "#2E7D32", "#3949AB", "#B71C1C", "#FFB300", "#F8BBD0"),
-                Preset("Clockwork Factory",  "#607D8B", "#A65E2E", "#C49A2C", "#1565C0", "#F9A825", "#FFE082"),
-                Preset("Fungal Grove",       "#6D6B3F", "#8BC34A", "#C0A060", "#AD1457", "#B39DDB", "#FFF8E1")
+                Preset("Industrial Rust",    "#59636B", "#A65E2E", "#C49A2C", "#1565C0", "#F97316", "#FFE082"),
+                Preset("Radioactive Lab",    "#3D3D29", "#A3E635", "#D9F99D", "#7C3AED", "#CCFF00", "#F5FF00"),
+                Preset("Sakura Night",       "#353535", "#FFB3C6", "#FF8C42", "#5A189A", "#FFC2D1", "#F8F7FF"),
+                Preset("Paper Lantern",      "#8D6E63", "#7CB342", "#E53935", "#3949AB", "#FFD166", "#FFF3B0"),
+                Preset("Prismatic Crystal",  "#607D8B", "#4DD0E1", "#7E57C2", "#EC407A", "#B2EBF2", "#FFFFFF")
             };
 
             for (int i = 0; i < presets.Length; i++)
