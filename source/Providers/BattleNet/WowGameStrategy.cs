@@ -9,6 +9,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.BattleNet.Models;
+using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
@@ -395,7 +396,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                     DisplayName = FirstNonEmpty(definition?.Name, key),
                     Description = definition?.Description,
                     Points = definition != null && definition.Points > 0 ? definition.Points : (int?)null,
-                    Category = FirstNonEmpty(definition?.Category?.Name, "Default"),
+                    Category = FirstNonEmpty(definition?.Category?.Name, AchievementCategoryTypeHelper.DefaultCategoryLabel),
                     CategoryType = IsOfficiallyUnobtainable(definition) ? "Missable" : null,
                     Hidden = definition?.IsHidden == true,
                     ProviderKey = "BattleNet",
@@ -437,8 +438,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             if (string.IsNullOrWhiteSpace(detail.Category) ||
-                string.Equals(detail.Category, "Default", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(detail.Category, "Earned", StringComparison.OrdinalIgnoreCase))
+                string.Equals(detail.Category, AchievementCategoryTypeHelper.DefaultCategoryLabel, StringComparison.OrdinalIgnoreCase))
             {
                 detail.Category = FirstNonEmpty(definition.Category?.Name, detail.Category);
             }
@@ -769,7 +769,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 Description = definition?.Description,
                 UnlockedIconPath = iconUrl,
                 Points = definition != null && definition.Points > 0 ? definition.Points : (int?)null,
-                Category = FirstNonEmpty(definition?.Category?.Name, "Earned"),
+                Category = FirstNonEmpty(definition?.Category?.Name, AchievementCategoryTypeHelper.DefaultCategoryLabel),
                 CategoryType = IsOfficiallyUnobtainable(definition) ? "Missable" : null,
                 Hidden = definition?.IsHidden == true,
                 ProviderKey = "BattleNet",
