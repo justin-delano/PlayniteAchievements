@@ -700,18 +700,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use cover images instead of icons in games list</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">View Item</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Description">Apply a preset for a coordinated badge and interface palette, then fine tune individual colors and theme resources below.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Presets">Appearance presets</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Preset">Preset</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_PresetDescription">Presets apply rarity badges, completed/trophy badges, and interface brushes. The selected preset is copied into editable values.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">Badge colors</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_RarityPalette">Rarity palette</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_RarityPaletteDescription">Each base color generates badge gradients, glows, and chart colors. Reset restores the built-in color for that entry.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_CompletedBadge">Completed game badge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_TrophyColors">Trophy colors</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResources">Advanced theme resources</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResourcesDescription">Override individual semantic resources after applying a preset. Follow Playnite restores that token to the active Playnite theme.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_PlayniteResourceFormat">Playnite: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_PlayniteResourceLabel">Playnite:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_FollowPlaynite">Follow Playnite</sys:String>
 
     <!-- ================================================================= -->
