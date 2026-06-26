@@ -35,7 +35,6 @@ namespace PlayniteAchievements.Views
         private Guid? _lastSelectedOverviewGameId;
         private DataGridRow _pendingRightClickRow;
         private bool _committingOverviewSelection;
-        private DateTime _providerFilterPopupClosedAtUtc = DateTime.MinValue;
         private DataGrid GameSummariesGrid => GameSummariesGridControl?.InternalDataGrid;
 
         public OverviewControl()
@@ -308,26 +307,22 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (ProviderFilterPopup == null)
+            var menu = ProviderFilterSelectionButton.ContextMenu;
+            if (menu == null)
             {
                 return;
             }
 
-            // StaysOpen="False" already dismissed the popup on mouse-down when the button is clicked
-            // while open; without this guard the click would immediately reopen it. The Closed event
-            // fires (and stamps the time) before this Click handler runs.
-            if (!ProviderFilterPopup.IsOpen &&
-                (DateTime.UtcNow - _providerFilterPopupClosedAtUtc).TotalMilliseconds < 250)
+            if (menu.ItemsSource == null)
             {
-                return;
+                menu.ItemsSource = _viewModel.ProviderFilterGroups;
             }
 
-            ProviderFilterPopup.IsOpen = !ProviderFilterPopup.IsOpen;
+            OpenSelectorContextMenu(ProviderFilterSelectionButton, menu);
         }
 
-        private void ProviderFilterPopup_Closed(object sender, EventArgs e)
+        private void ProviderFilterSelectionContextMenu_Closed(object sender, RoutedEventArgs e)
         {
-            _providerFilterPopupClosedAtUtc = DateTime.UtcNow;
             _viewModel?.CollapseUnselectedProviderFilters();
         }
 

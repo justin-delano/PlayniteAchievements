@@ -210,6 +210,36 @@
                 </StackPanel>
             </DataTemplate>
 
+            <!-- Hosts the provider/platform groups in a ContextMenu so it opens and dismisses with
+                 the same behavior as the other Overview filter dropdowns. The template replaces the
+                 menu's ItemsPresenter with a plain ItemsControl, so the rows are not wrapped in
+                 MenuItem chrome and the interactive toggles behave normally. -->
+            <Style x:Key="ProviderFilterContextMenuStyle" TargetType="ContextMenu">
+                <Setter Property="OverridesDefaultStyle" Value="True"/>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.PopupSurface}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.PopupBorder}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="MinWidth" Value="180"/>
+                <Setter Property="MaxWidth" Value="280"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ContextMenu">
+                            <Border Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="5"
+                                    Padding="4"
+                                    SnapsToDevicePixels="True">
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
+                                    <ItemsControl ItemsSource="{TemplateBinding ItemsSource}"
+                                                  ItemTemplate="{StaticResource ProviderFilterGroupTemplate}"/>
+                                </ScrollViewer>
+                            </Border>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <Style x:Key="NavigationButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
@@ -660,39 +690,21 @@
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>
 
-                        <Grid Grid.Column="1"
-                              Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                              VerticalAlignment="Center">
-                            <Button x:Name="ProviderFilterSelectionButton"
-                                    Style="{StaticResource AchievementSelectorButtonStyle}"
-                                    Content="{Binding SelectedProviderFilterText}"
-                                    Click="ProviderFilterSelectionButton_Click"
-                                    Width="170"
-                                    Height="{StaticResource PlayAch.Size.Control.Height}"/>
-                            <Popup x:Name="ProviderFilterPopup"
-                                   PlacementTarget="{Binding ElementName=ProviderFilterSelectionButton}"
-                                   Placement="Bottom"
-                                   Closed="ProviderFilterPopup_Closed"
-                                   StaysOpen="False"
-                                   AllowsTransparency="True"
-                                   Focusable="False"
-                                   PopupAnimation="Fade"
-                                   MinWidth="180"
-                                   MaxWidth="280">
-                                <Border Background="{DynamicResource PlayAch.Brush.PopupSurface}"
-                                        BorderBrush="{DynamicResource PlayAch.Brush.PopupBorder}"
-                                        BorderThickness="1"
-                                        CornerRadius="5"
-                                        Padding="4"
-                                        SnapsToDevicePixels="True">
-                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                                  MaxHeight="400">
-                                        <ItemsControl ItemsSource="{Binding ProviderFilterGroups}"
-                                                      ItemTemplate="{StaticResource ProviderFilterGroupTemplate}"/>
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </Grid>
+                        <Button x:Name="ProviderFilterSelectionButton"
+                                Style="{StaticResource AchievementSelectorButtonStyle}"
+                                Grid.Column="1"
+                                Content="{Binding SelectedProviderFilterText}"
+                                Click="ProviderFilterSelectionButton_Click"
+                                Width="170"
+                                Height="{StaticResource PlayAch.Size.Control.Height}"
+                                Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                VerticalAlignment="Center">
+                            <Button.ContextMenu>
+                                <ContextMenu x:Name="ProviderFilterSelectionContextMenu"
+                                             Style="{StaticResource ProviderFilterContextMenuStyle}"
+                                             Closed="ProviderFilterSelectionContextMenu_Closed"/>
+                            </Button.ContextMenu>
+                        </Button>
 
                         <Button x:Name="CompletenessFilterSelectionButton"
                                 Style="{StaticResource AchievementSelectorButtonStyle}"
