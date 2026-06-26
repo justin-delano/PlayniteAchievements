@@ -655,6 +655,7 @@ namespace PlayniteAchievements.Tests.Providers
                     achievements,
                     battleNetSettings,
                     "en-US",
+                    new HashSet<int>(),
                     CancellationToken.None);
 
                 Assert.AreEqual(1, stats.FetchedCharacters);
