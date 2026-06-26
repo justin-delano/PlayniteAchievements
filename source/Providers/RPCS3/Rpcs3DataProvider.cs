@@ -425,6 +425,20 @@ namespace PlayniteAchievements.Providers.RPCS3
         {
             var cache = GetOrBuildTrophyFolderCache();
 
+            var resolvedSources = _scanner.ResolveTrophySourcesForGame(
+                game,
+                cache,
+                CancellationToken.None,
+                allowRawIsoScan: false);
+            if (resolvedSources.Any(source =>
+                source != null &&
+                !string.IsNullOrWhiteSpace(source.NpCommId) &&
+                ((cache != null && cache.ContainsKey(source.NpCommId)) ||
+                 (!string.IsNullOrWhiteSpace(source.TrpPath) && File.Exists(source.TrpPath)))))
+            {
+                return true;
+            }
+
             var installDir = ExpandGamePath(game, game?.InstallDirectory);
             if (!string.IsNullOrWhiteSpace(installDir))
             {
@@ -637,6 +651,15 @@ namespace PlayniteAchievements.Providers.RPCS3
                 {
                     return _trophyFolderCache;
                 }
+                _trophyFolderCache = BuildTrophyFolderCache();
+                return _trophyFolderCache;
+            }
+        }
+
+        internal Dictionary<string, string> RebuildTrophyFolderCache()
+        {
+            lock (_cacheLock)
+            {
                 _trophyFolderCache = BuildTrophyFolderCache();
                 return _trophyFolderCache;
             }

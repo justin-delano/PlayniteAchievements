@@ -107,7 +107,10 @@
     <Compile Include="..\..\source\Providers\ShadPS4\ShadPS4Scanner.cs" Link="Source\Providers\ShadPS4\ShadPS4Scanner.cs" />
     <Compile Include="..\..\source\Providers\RPCS3\Rpcs3Settings.cs" Link="Source\Providers\RPCS3\Rpcs3Settings.cs" />
     <Compile Include="..\..\source\Providers\RPCS3\Rpcs3DataProvider.cs" Link="Source\Providers\RPCS3\Rpcs3DataProvider.cs" />
+    <Compile Include="..\..\source\Providers\RPCS3\Rpcs3GamesYmlReader.cs" Link="Source\Providers\RPCS3\Rpcs3GamesYmlReader.cs" />
     <Compile Include="..\..\source\Providers\RPCS3\Rpcs3MatchIdHelper.cs" Link="Source\Providers\RPCS3\Rpcs3MatchIdHelper.cs" />
+    <Compile Include="..\..\source\Providers\RPCS3\Rpcs3NpCommIdExtractor.cs" Link="Source\Providers\RPCS3\Rpcs3NpCommIdExtractor.cs" />
+    <Compile Include="..\..\source\Providers\RPCS3\Rpcs3ParamSfoReader.cs" Link="Source\Providers\RPCS3\Rpcs3ParamSfoReader.cs" />
     <Compile Include="..\..\source\Providers\RPCS3\Rpcs3Scanner.cs" Link="Source\Providers\RPCS3\Rpcs3Scanner.cs" />
     <Compile Include="..\..\source\Providers\RPCS3\Rpcs3TrophyParser.cs" Link="Source\Providers\RPCS3\Rpcs3TrophyParser.cs" />
     <Compile Include="..\..\source\Providers\RPCS3\Models\Rpcs3Trophy.cs" Link="Source\Providers\RPCS3\Models\Rpcs3Trophy.cs" />
