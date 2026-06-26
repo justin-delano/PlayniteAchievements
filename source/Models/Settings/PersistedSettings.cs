@@ -2494,6 +2494,7 @@ namespace PlayniteAchievements.Models.Settings
                 IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 RecentRefreshGamesCount = this.RecentRefreshGamesCount,
+                DefaultOverviewRefreshMode = this.DefaultOverviewRefreshMode,
                 CustomRefreshPresets = this.CustomRefreshPresets != null
                     ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(this.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
                     : new List<CustomRefreshPreset>(),
