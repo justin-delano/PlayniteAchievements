@@ -200,8 +200,9 @@ namespace PlayniteAchievements.ViewModels
             { 
                 if (_lastPlayed != value)
                 {
-                    SetValue(ref _lastPlayed, value); 
-                    OnPropertyChanged(nameof(LastPlayedText)); 
+                    SetValue(ref _lastPlayed, value);
+                    OnPropertyChanged(nameof(LastPlayedText));
+                    OnPropertyChanged(nameof(LastPlayedLocal));
                 }
             } 
         }
@@ -242,6 +243,9 @@ namespace PlayniteAchievements.ViewModels
         public string LastPlayedText => LastPlayed.HasValue
             ? LastPlayed.Value.ToLocalTime().ToString("g")
             : "";
+
+        // Local-time projection for grid display; formatting is applied by DateDisplayModeConverter.
+        public DateTime? LastPlayedLocal => LastPlayed?.ToLocalTime();
 
         private static string FormatScoreFraction(int earned, int total)
         {
