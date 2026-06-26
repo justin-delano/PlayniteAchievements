@@ -708,25 +708,25 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResources">Advanced theme resources</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PlayniteResourceLabel">Playnite:</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_FollowPlaynite">Follow Playnite</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Text">Primary text</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Text">Text</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextSecondary">Secondary text</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextTertiary">Tertiary text</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TextTertiary">Muted text</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Surface">Content background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Panel">Panel background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_WindowSurface">Window background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_GridSurface">Grid background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Border">Border</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlBorder">Control border</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Glyph">Glyph</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlBorder">Input border</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Glyph">Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Accent">Accent</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_Selection">Selection</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlSurface">Control background</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_ControlSurface">Button background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_PopupSurface">Popup background</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_PopupBorder">Popup border</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_CaptionSize">Caption font size</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_BodySize">Body font size</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TitleSize">Title font size</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_BodyFont">Body font</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_CaptionSize">Small text size</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_BodySize">Normal text size</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_TitleSize">Large text size</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Resource_BodyFont">Text font</sys:String>
 
     <!-- ================================================================= -->
     <!-- 11 Authentication -->
