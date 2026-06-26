@@ -125,6 +125,16 @@
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource CompactPercentToRarityGlow}}"/>
                             </MultiDataTrigger>
+                            <!-- Hardcore achievements use a solid border instead of the soft glow. -->
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding IsHardcore}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Setter Property="Effect" Value="{x:Null}"/>
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Image.Style>
@@ -136,6 +146,29 @@
                    Height="{Binding IconSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
                    helpers:AsyncImage.Uri="{Binding DisplayIcon, Mode=OneWay}"
                    helpers:AsyncImage.DecodePixel="256"/>
+
+            <!-- Solid rarity border for Hardcore achievements (replaces the glow). -->
+            <Border BorderThickness="3"
+                    Background="Transparent"
+                    IsHitTestVisible="False"
+                    SnapsToDevicePixels="True"
+                    BorderBrush="{Binding Rarity, Converter={StaticResource RarityToSolidBrush}}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}" Value="True"/>
+                                    <Condition Binding="{Binding IsHardcore}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
         </Grid>
 
         <!-- Rarity bar overlay at bottom - shows global unlock percentage -->

@@ -165,6 +165,7 @@
                                     RarityText="{Binding RarityText}"
                                     EnableRaretyIndicator="True"
                                     ShowRarityGlow="{Binding Persisted.ModernCompactListShowRarityGlow, FallbackValue=True}"
+                                    IsHardcore="{Binding IsHardcore}"
                                     DisplayRaretyValue="True">
                                     <localControls:AchievementImage.Icon>
                                         <MultiBinding Converter="{StaticResource HiddenIconConverter}">
