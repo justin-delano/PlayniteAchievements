@@ -1591,24 +1591,7 @@
                                                           IsChecked="{Binding Persisted.ShowOverviewCollectionScoreCard}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard}"
-                                                          IsChecked="{Binding Persisted.ShowOverviewPrestigeScoreCard}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GameMetadataHeader}"
-                                                           Style="{StaticResource SubSectionHeaderStyle}"
-                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                <StackPanel Margin="16,0,0,0">
-                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Platform}"
-                                                              IsChecked="{Binding Persisted.ShowOverviewGameMetadataPlatform}"
-                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Playtime}"
-                                                              IsChecked="{Binding Persisted.ShowOverviewGameMetadataPlaytime}"
-                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Region}"
-                                                              IsChecked="{Binding Persisted.ShowOverviewGameMetadataRegion}"
-                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                                </StackPanel>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
-                                                          IsChecked="{Binding Persisted.ShowCompletionBorder}"/>
+                                                          IsChecked="{Binding Persisted.ShowOverviewPrestigeScoreCard}"/>
                                             </StackPanel>
                                         </Border>
 
@@ -1692,6 +1675,23 @@
                                             <StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
                                                           IsChecked="{Binding Persisted.OverviewGameSummariesUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GameMetadataHeader}"
+                                                           Style="{StaticResource SubSectionHeaderStyle}"
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Margin="16,0,0,0">
+                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Platform}"
+                                                              IsChecked="{Binding Persisted.ShowOverviewGameMetadataPlatform}"
+                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Playtime}"
+                                                              IsChecked="{Binding Persisted.ShowOverviewGameMetadataPlaytime}"
+                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Region}"
+                                                              IsChecked="{Binding Persisted.ShowOverviewGameMetadataRegion}"
+                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                </StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
+                                                          IsChecked="{Binding Persisted.ShowCompletionBorder}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
                                                           IsChecked="{Binding Persisted.ShowOverviewGameSummariesGridColumnHeaders}"
