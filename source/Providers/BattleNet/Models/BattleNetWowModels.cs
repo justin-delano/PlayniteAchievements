@@ -269,6 +269,36 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
+    public sealed class WowAchievementCategoryReference
+    {
+        [DataMember(Name = "key")]
+        public WowApiKey Key { get; set; }
+
+        [DataMember(Name = "id")]
+        public int Id { get; set; }
+
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+    }
+
+    [DataContract]
+    public sealed class WowAchievementCategoryIndexResponse
+    {
+        [DataMember(Name = "guild_categories")]
+        public List<WowAchievementCategoryReference> GuildCategories { get; set; }
+    }
+
+    [DataContract]
+    public sealed class WowAchievementCategoryResource
+    {
+        [DataMember(Name = "id")]
+        public int Id { get; set; }
+
+        [DataMember(Name = "subcategories")]
+        public List<WowAchievementCategoryReference> Subcategories { get; set; }
+    }
+
+    [DataContract]
     public sealed class WowOfficialAchievementMediaResponse
     {
         [DataMember(Name = "assets")]
