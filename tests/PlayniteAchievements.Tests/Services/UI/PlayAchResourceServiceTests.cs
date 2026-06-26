@@ -61,6 +61,46 @@ namespace PlayniteAchievements.Tests.Services.UI
             AssertBrush(resources, "PlayAch.Brush.Grid.HeaderGripper.Pressed", Color.FromRgb(0x70, 0x80, 0x90));
         }
 
+        [TestMethod]
+        public void Apply_ResolvesTransparentOverrideToTransparentBrush()
+        {
+            var resources = new ResourceDictionary();
+            var overrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["PlayAch.Brush.GridSurface"] = new ResourceOverrideSetting
+                {
+                    Mode = ResourceOverrideMode.Transparent,
+                    CustomValue = PlayAchResourceService.TransparentValue
+                }
+            };
+
+            PlayAchResourceService.Apply(resources, overrides);
+
+            Assert.IsTrue(resources.Contains("PlayAch.Brush.GridSurface"));
+            var brush = resources["PlayAch.Brush.GridSurface"] as SolidColorBrush;
+            Assert.IsNotNull(brush);
+            Assert.AreEqual((byte)0, brush.Color.A);
+            Assert.IsTrue(brush.IsFrozen);
+        }
+
+        [TestMethod]
+        public void CreateDefaultResourceOverrides_SeedsSurfacesAsTransparent()
+        {
+            var defaults = PersistedSettings.CreateDefaultResourceOverrides();
+
+            foreach (var key in new[]
+            {
+                "PlayAch.Brush.GridSurface",
+                "PlayAch.Brush.WindowSurface",
+                "PlayAch.Brush.ControlSurface"
+            })
+            {
+                Assert.IsTrue(defaults.ContainsKey(key), key);
+                Assert.AreEqual(ResourceOverrideMode.Transparent, defaults[key].Mode, key);
+                Assert.AreEqual(PlayAchResourceService.TransparentValue, defaults[key].CustomValue, key);
+            }
+        }
+
         private static void AssertNoDescriptor(string resourceKey)
         {
             Assert.IsFalse(
