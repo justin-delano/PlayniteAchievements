@@ -162,6 +162,7 @@
     <Compile Include="..\..\source\Common\DispatcherExtensions.cs" Link="Source\Common\DispatcherExtensions.cs" />
     <Compile Include="..\..\source\Common\PathExpansion.cs" Link="Source\Common\PathExpansion.cs" />
     <Compile Include="..\..\source\Common\PerfScope.cs" Link="Source\Common\PerfScope.cs" />
+    <Compile Include="..\..\source\Common\RelativeDateFormatter.cs" Link="Source\Common\RelativeDateFormatter.cs" />
     <Compile Include="..\..\source\Common\RelayCommand.cs" Link="Source\Common\RelayCommand.cs" />
     <Compile Include="..\..\source\Common\WebViewExtensions.cs" Link="Source\Common\WebViewExtensions.cs" />
     <Compile Include="..\..\source\ViewModels\GameSummaryItem.cs" Link="Source\ViewModels\GameSummaryItem.cs" />
@@ -190,6 +191,7 @@
     <Compile Include="..\..\source\Models\Settings\GameActivityScope.cs" Link="Source\Models\Settings\GameActivityScope.cs" />
     <Compile Include="..\..\source\Models\Settings\GameProgressScope.cs" Link="Source\Models\Settings\GameProgressScope.cs" />
     <Compile Include="..\..\source\Models\Settings\GridAlignment.cs" Link="Source\Models\Settings\GridAlignment.cs" />
+    <Compile Include="..\..\source\Models\Settings\DateDisplayMode.cs" Link="Source\Models\Settings\DateDisplayMode.cs" />
     <Compile Include="..\..\source\Models\Settings\GridVerticalAlignment.cs" Link="Source\Models\Settings\GridVerticalAlignment.cs" />
     <Compile Include="..\..\source\Models\Settings\CompactListSortMode.cs" Link="Source\Models\Settings\CompactListSortMode.cs" />
     <Compile Include="..\..\source\Models\Settings\GameSummariesSortMode.cs" Link="Source\Models\Settings\GameSummariesSortMode.cs" />
