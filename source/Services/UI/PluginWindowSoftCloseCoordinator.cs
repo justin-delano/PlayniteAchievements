@@ -14,6 +14,7 @@ namespace PlayniteAchievements.Services.UI
         private const int WhMouseLl = 14;
         private const int WmLButtonDown = 0x0201;
         private const int WmLButtonUp = 0x0202;
+        private const uint GwOwner = 4;
 
         private readonly ILogger _logger;
         private readonly Dictionary<Window, Registration> _registrations =
@@ -167,7 +168,7 @@ namespace PlayniteAchievements.Services.UI
                     registration.Window?.IsVisible == true &&
                     registration.Window.IsActive &&
                     IsPointInsideWindow(registration.OwnerHandle, mouse.pt) &&
-                    !IsPointInsideWindow(registration.WindowHandle, mouse.pt));
+                    !IsPointInsidePopupOrOwnedWindow(registration.WindowHandle, mouse.pt));
 
             return target != null;
         }
@@ -208,6 +209,31 @@ namespace PlayniteAchievements.Services.UI
                    point.X < rect.Right &&
                    point.Y >= rect.Top &&
                    point.Y < rect.Bottom;
+        }
+
+        private static bool IsPointInsidePopupOrOwnedWindow(IntPtr windowHandle, NativePoint point)
+        {
+            if (IsPointInsideWindow(windowHandle, point))
+            {
+                return true;
+            }
+
+            // WPF Popup content (ComboBox dropdowns, context menus, etc.) renders in a separate
+            // top-level window owned by the plugin window and can extend beyond its rectangle.
+            // Walk the owner chain of the window under the cursor to recognize these as "inside".
+            var current = WindowFromPoint(point);
+            var guard = 0;
+            while (current != IntPtr.Zero && guard++ < 32)
+            {
+                if (current == windowHandle)
+                {
+                    return true;
+                }
+
+                current = GetWindow(current, GwOwner);
+            }
+
+            return false;
         }
 
         private sealed class Registration
@@ -267,6 +293,12 @@ namespace PlayniteAchievements.Services.UI
 
         [DllImport("user32.dll")]
         private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect lpRect);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr WindowFromPoint(NativePoint point);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(string lpModuleName);
