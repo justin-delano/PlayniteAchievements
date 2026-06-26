@@ -898,7 +898,7 @@
                                                    Margin="0,0,9,0"
                                                    VerticalAlignment="Center"/>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                            <TextBlock Text="Appearance"
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance}"
                                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                        FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                                        FontWeight="SemiBold"
@@ -1162,34 +1162,21 @@
                                         Background="{DynamicResource PlayAch.Brush.Panel}"
                                         BorderBrush="{DynamicResource PlayAch.Brush.Border}">
                                     <StackPanel>
-                                        <TextBlock Text="Appearance"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance}"
                                                    Style="{StaticResource SectionHeaderStyle}"
-                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                        <TextBlock Text="Apply a preset for a coordinated badge and interface palette, then fine tune individual colors and theme resources below."
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   TextWrapping="Wrap"
                                                    Margin="0"/>
                                     </StackPanel>
                                 </Border>
 
                                 <Border Style="{StaticResource SectionBorderStyle}">
                                     <StackPanel>
-                                        <TextBlock Text="Appearance presets"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_Presets}"
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
-                                                <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
-                                                    <TextBlock Text="Preset"
-                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                               FontWeight="SemiBold"/>
-                                                    <TextBlock Text="Presets apply rarity badges, completed/trophy badges, and interface brushes. The selected preset is copied into editable values."
-                                                               Style="{StaticResource MutedTextStyle}"
-                                                               TextWrapping="Wrap"/>
-                                                </StackPanel>
-
                                                 <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="Auto"/>
@@ -1199,7 +1186,7 @@
                                                     </Grid.ColumnDefinitions>
 
                                                     <TextBlock Grid.Column="0"
-                                                               Text="Preset"
+                                                               Text="{DynamicResource LOCPlayAch_Settings_Appearance_Preset}"
                                                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                                FontWeight="SemiBold"
                                                                VerticalAlignment="Center"
@@ -1212,13 +1199,13 @@
                                                               ItemsSource="{Binding RarityPalettePresets, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
 
                                                     <Button Grid.Column="2"
-                                                            Content="Apply"
+                                                            Content="{DynamicResource LOCPlayAch_Button_Apply}"
                                                             Margin="8,0,0,0"
                                                             MinWidth="58"
                                                             Click="ApplySelectedRarityPalettePreset_Click"/>
 
                                                     <Button Grid.Column="3"
-                                                            Content="Reset all"
+                                                            Content="{DynamicResource LOCPlayAch_Button_ResetAll}"
                                                             Margin="8,0,0,0"
                                                             MinWidth="78"
                                                             Click="ResetAllRarityColors_Click"/>
@@ -1226,21 +1213,17 @@
                                             </StackPanel>
                                         </Border>
 
-                                        <TextBlock Text="Badge colors"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_BadgeColors}"
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
                                         <Border Style="{StaticResource SettingGroupCardStyle}">
                                             <StackPanel>
-                                                <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
-                                                    <TextBlock Text="Rarity palette"
-                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                               FontWeight="SemiBold"/>
-                                                    <TextBlock Text="Each base color generates badge gradients, glows, and chart colors. Reset restores the built-in color for that entry."
-                                                               Style="{StaticResource MutedTextStyle}"
-                                                               TextWrapping="Wrap"/>
-                                                </StackPanel>
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Column_Rarity}"
+                                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                           FontWeight="SemiBold"
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseUniformRarityBadges}"
                                                           IsChecked="{Binding Persisted.UseUniformRarityBadges}"
@@ -1296,13 +1279,13 @@
                                                                              Text="{Binding BaseColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                                                                     <Button Grid.Column="1"
-                                                                            Content="Pick"
+                                                                            Content="{DynamicResource LOCPlayAch_Button_Pick}"
                                                                             Margin="8,0,0,0"
                                                                             MinWidth="58"
                                                                             Click="PickRarityColor_Click"/>
 
                                                                     <Button Grid.Column="2"
-                                                                            Content="Reset"
+                                                                            Content="{DynamicResource LOCPlayAch_Button_Reset}"
                                                                             Margin="8,0,0,0"
                                                                             MinWidth="58"
                                                                             Click="ResetRarityColor_Click"/>
@@ -1312,7 +1295,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
 
-                                                <TextBlock Text="Completed game badge"
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_CompletedBadge}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
                                                            Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
 
@@ -1362,13 +1345,13 @@
                                                                              Text="{Binding BaseColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                                                                     <Button Grid.Column="1"
-                                                                            Content="Pick"
+                                                                            Content="{DynamicResource LOCPlayAch_Button_Pick}"
                                                                             Margin="8,0,0,0"
                                                                             MinWidth="58"
                                                                             Click="PickRarityColor_Click"/>
 
                                                                     <Button Grid.Column="2"
-                                                                            Content="Reset"
+                                                                            Content="{DynamicResource LOCPlayAch_Button_Reset}"
                                                                             Margin="8,0,0,0"
                                                                             MinWidth="58"
                                                                             Click="ResetRarityColor_Click"/>
@@ -1378,7 +1361,7 @@
                                                     </ItemsControl.ItemTemplate>
                                                 </ItemsControl>
 
-                                                <TextBlock Text="Trophy colors"
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Column_Trophy}"
                                                            Style="{StaticResource SubSectionHeaderStyle}"
                                                            Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
 
@@ -1428,13 +1411,13 @@
                                                                              Text="{Binding BaseColor, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                                                                     <Button Grid.Column="1"
-                                                                            Content="Pick"
+                                                                            Content="{DynamicResource LOCPlayAch_Button_Pick}"
                                                                             Margin="8,0,0,0"
                                                                             MinWidth="58"
                                                                             Click="PickRarityColor_Click"/>
 
                                                                     <Button Grid.Column="2"
-                                                                            Content="Reset"
+                                                                            Content="{DynamicResource LOCPlayAch_Button_Reset}"
                                                                             Margin="8,0,0,0"
                                                                             MinWidth="58"
                                                                             Click="ResetRarityColor_Click"/>
@@ -1446,15 +1429,10 @@
                                             </StackPanel>
                                         </Border>
 
-                                        <TextBlock Text="Advanced theme resources"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_AdvancedResources}"
                                                    Style="{StaticResource SectionHeaderStyle}"
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                         <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-
-                                        <TextBlock Text="Override individual semantic resources after applying a preset. Follow Playnite restores that token to the active Playnite theme."
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   TextWrapping="Wrap"
-                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
 
                                         <ItemsControl ItemsSource="{Binding ResourceAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
                                             <ItemsControl.ItemTemplate>
@@ -1472,9 +1450,10 @@
                                                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                                                                            FontWeight="SemiBold"
                                                                            TextTrimming="CharacterEllipsis"/>
-                                                                <TextBlock Text="{Binding PlayniteResourceKey, StringFormat=Playnite: {0}}"
-                                                                           Style="{StaticResource MutedTextStyle}"
-                                                                           TextTrimming="CharacterEllipsis"/>
+                                                                <TextBlock Style="{StaticResource MutedTextStyle}"
+                                                                           TextTrimming="CharacterEllipsis">
+                                                                    <Run Text="{DynamicResource LOCPlayAch_Settings_Appearance_PlayniteResourceLabel}"/><Run Text=" "/><Run Text="{Binding PlayniteResourceKey}"/>
+                                                                </TextBlock>
                                                             </StackPanel>
 
                                                             <ComboBox Grid.Column="1"
@@ -1483,8 +1462,20 @@
                                                                       VerticalAlignment="Center"
                                                                       SelectedValue="{Binding Mode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                                       SelectedValuePath="Tag">
-                                                                <ComboBoxItem Content="Follow Playnite" Tag="{x:Static settings:ResourceOverrideMode.FollowPlaynite}"/>
-                                                                <ComboBoxItem Content="Custom" Tag="{x:Static settings:ResourceOverrideMode.Custom}"/>
+                                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_Appearance_FollowPlaynite}" Tag="{x:Static settings:ResourceOverrideMode.FollowPlaynite}"/>
+                                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Custom}" Tag="{x:Static settings:ResourceOverrideMode.Custom}"/>
+                                                                <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Transparent}" Tag="{x:Static settings:ResourceOverrideMode.Transparent}">
+                                                                    <ComboBoxItem.Style>
+                                                                        <Style TargetType="ComboBoxItem">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsBrush}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </ComboBoxItem.Style>
+                                                                </ComboBoxItem>
                                                             </ComboBox>
 
                                                             <Grid Grid.Column="2" VerticalAlignment="Center">
@@ -1531,7 +1522,7 @@
                                                                          Text="{Binding DisplayValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
 
                                                                 <Button Grid.Column="2"
-                                                                        Content="Pick"
+                                                                        Content="{DynamicResource LOCPlayAch_Button_Pick}"
                                                                         Margin="8,0,0,0"
                                                                         MinWidth="58"
                                                                         Click="PickResourceColor_Click">

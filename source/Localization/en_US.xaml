@@ -21,6 +21,8 @@
     <sys:String x:Key="LOCPlayAch_Common_Check">Check</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ClearOverrides">Clear Overrides</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Continue">Continue</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Custom">Custom</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Transparent">Transparent</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">Default</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Deselect All</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Descending">Descending</sys:String>
@@ -127,8 +129,10 @@
     <sys:String x:Key="LOCPlayAch_Button_Login">Login</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Next">Next</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Pick">Pick</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Refresh">Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Reset">Reset</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_ResetAll">Reset all</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Save">Save</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Search">Search</sys:String>
 
@@ -695,6 +699,14 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Utilities</sys:String>
     <sys:String x:Key="LOCPlayAch_UseCoverImages">Use cover images instead of icons in games list</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">View Item</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Presets">Appearance presets</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Preset">Preset</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">Badge colors</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_CompletedBadge">Completed game badge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResources">Advanced theme resources</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_PlayniteResourceLabel">Playnite:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_FollowPlaynite">Follow Playnite</sys:String>
 
     <!-- ================================================================= -->
     <!-- 11 Authentication -->

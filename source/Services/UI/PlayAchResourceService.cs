@@ -11,6 +11,11 @@ namespace PlayniteAchievements.Services.UI
 {
     internal static class PlayAchResourceService
     {
+        // Stored CustomValue for a Transparent override. Resolution reuses the Custom value
+        // path (TryParseCustomValue -> CreateBrush), so no dedicated brush branch is needed.
+        internal const string TransparentValue = "#00000000";
+
+
         private sealed class TokenDefinition
         {
             public TokenDefinition(
@@ -205,7 +210,7 @@ namespace PlayniteAchievements.Services.UI
         {
             var setting = GetSetting(token.ResourceKey, overrides);
             if (token.AllowsOverride &&
-                setting?.Mode == ResourceOverrideMode.Custom &&
+                (setting?.Mode == ResourceOverrideMode.Custom || setting?.Mode == ResourceOverrideMode.Transparent) &&
                 TryParseCustomValue(token, setting.CustomValue, out var customValue))
             {
                 return customValue;

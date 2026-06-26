@@ -2901,6 +2901,7 @@ namespace PlayniteAchievements.Views
 
                     Persist();
                     OnPropertyChanged(nameof(IsCustom));
+                    OnPropertyChanged(nameof(IsTransparent));
                     OnPropertyChanged(nameof(DisplayValueText));
                     OnPropertyChanged(nameof(PreviewBrush));
                 }
@@ -2923,9 +2924,13 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        public bool IsTransparent => Mode == ResourceOverrideMode.Transparent;
+
         public string DisplayValueText
         {
-            get => IsCustom ? CustomValue : GetCurrentPlayniteValueText(Descriptor);
+            get => IsTransparent
+                ? PlayAchResourceService.TransparentValue
+                : IsCustom ? CustomValue : GetCurrentPlayniteValueText(Descriptor);
             set
             {
                 if (!IsCustom)
@@ -2970,7 +2975,9 @@ namespace PlayniteAchievements.Views
             _settings.ResourceOverrides[ResourceKey] = new ResourceOverrideSetting
             {
                 Mode = Mode,
-                CustomValue = CustomValue
+                CustomValue = Mode == ResourceOverrideMode.Transparent
+                    ? PlayAchResourceService.TransparentValue
+                    : CustomValue
             };
 
             _settings.OnPropertyChanged(nameof(PersistedSettings.ResourceOverrides));
