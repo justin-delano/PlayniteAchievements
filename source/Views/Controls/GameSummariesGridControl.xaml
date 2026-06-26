@@ -211,14 +211,20 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
                             <Grid>
-                                <TextBlock Text="{Binding LastPlayedText}"
-                                           VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                <TextBlock VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                                            HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                                            Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                            TextWrapping="Wrap"
-                                           TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                                           TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource DateDisplayMode}">
+                                            <Binding Path="LastPlayedLocal"/>
+                                            <Binding Path="LastPlayedDateMode" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
                             </Grid>
                         </ContentControl>
                     </DataTemplate>
