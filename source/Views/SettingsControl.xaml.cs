@@ -1475,7 +1475,7 @@ namespace PlayniteAchievements.Views
 
         private static IReadOnlyList<RarityPalettePreset> CreateRarityPalettePresets()
         {
-            return new[]
+            var presets = new[]
             {
                 Preset("Default",
                     RarityColorSettings.DefaultCommon,
@@ -1509,6 +1509,17 @@ namespace PlayniteAchievements.Views
                 Preset("Clockwork Factory",  "#607D8B", "#A65E2E", "#C49A2C", "#1565C0", "#F9A825", "#FFE082"),
                 Preset("Fungal Grove",       "#6D6B3F", "#8BC34A", "#C0A060", "#AD1457", "#B39DDB", "#FFF8E1")
             };
+
+            for (int i = 0; i < presets.Length; i++)
+            {
+                presets[i].DisplayLabel = i == 0
+                    ? ResourceProvider.GetString("LOCPlayAch_Common_Default")
+                    : string.Format(
+                        ResourceProvider.GetString("LOCPlayAch_Settings_Appearance_PresetNumbered"),
+                        i);
+            }
+
+            return presets;
         }
 
         private static RarityPalettePreset Preset(
@@ -3183,6 +3194,34 @@ namespace PlayniteAchievements.Views
         public RarityColorSettings Colors { get; }
 
         public IReadOnlyDictionary<string, string> ResourceBrushes { get; }
+
+        public string DisplayLabel { get; set; }
+
+        public Brush CommonBrush => CreateSwatchBrush(Colors.Common);
+
+        public Brush UncommonBrush => CreateSwatchBrush(Colors.Uncommon);
+
+        public Brush RareBrush => CreateSwatchBrush(Colors.Rare);
+
+        public Brush UltraRareBrush => CreateSwatchBrush(Colors.UltraRare);
+
+        private static Brush CreateSwatchBrush(string colorHex)
+        {
+            try
+            {
+                var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(colorHex));
+                if (brush.CanFreeze)
+                {
+                    brush.Freeze();
+                }
+
+                return brush;
+            }
+            catch
+            {
+                return Brushes.Transparent;
+            }
+        }
     }
 
     public sealed class CompletedBadgeAppearanceItem : PlayniteAchievements.Common.ObservableObject
