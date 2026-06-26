@@ -129,7 +129,6 @@
                                   HorizontalAlignment="Left">
                             <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Casual}" Tag="casual"/>
                             <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Hardcore}" Tag="hardcore"/>
-                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_RaRarityStats_Combined}" Tag="combined"/>
                         </ComboBox>
 
                         <TextBlock Grid.Row="1" Grid.Column="1"

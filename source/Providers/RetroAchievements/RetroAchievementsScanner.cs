@@ -565,27 +565,14 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 return list;
             }
 
+            // Locked achievements derive rarity from this global setting; unlocked
+            // achievements instead follow their own unlock mode (see below).
             var useHardcoreRarity = string.Equals(rarityStats, "hardcore", StringComparison.OrdinalIgnoreCase);
-            var useCombinedRarity = string.Equals(rarityStats, "combined", StringComparison.OrdinalIgnoreCase);
 
-            var distinctPlayers = Math.Max(gameInfo.NumDistinctPlayers, 0);
-            var distinctPlayersCasual = Math.Max(gameInfo.NumDistinctPlayersCasual, 0);
-            var distinctPlayersHardcore = Math.Max(gameInfo.NumDistinctPlayersHardcore, 0);
-
-            var distinctForPercent =
-                distinctPlayersCasual > 0 ? distinctPlayersCasual :
-                distinctPlayers > 0 ? distinctPlayers :
-                distinctPlayersHardcore;
-
-            var distinctHardcoreForPercent =
-                distinctPlayersHardcore > 0 ? distinctPlayersHardcore :
-                distinctPlayers > 0 ? distinctPlayers :
-                distinctPlayersCasual;
-
-            var distinctCombinedForPercent =
-                distinctPlayers > 0 ? distinctPlayers :
-                distinctPlayersCasual > 0 ? distinctPlayersCasual :
-                distinctPlayersHardcore;
+            var totalPlayers = RetroAchievementsRarityCalculator.ResolveTotalPlayers(
+                gameInfo.NumDistinctPlayers,
+                gameInfo.NumDistinctPlayersCasual,
+                gameInfo.NumDistinctPlayersHardcore);
 
             foreach (var kvp in gameInfo.Achievements)
             {
@@ -597,65 +584,30 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 var desc = ach.Description ?? string.Empty;
                 var badge = ach.BadgeName ?? string.Empty;
 
+                // A hardcore unlock also records DateEarned, so hardcore takes precedence.
+                var earnedInHardcore = !string.IsNullOrWhiteSpace(ach.DateEarnedHardcore);
+                var earnedSoftcore = !earnedInHardcore && !string.IsNullOrWhiteSpace(ach.DateEarned);
+
                 DateTime? unlockUtc = null;
-                if (!string.IsNullOrWhiteSpace(ach.DateEarnedHardcore))
+                if (earnedInHardcore)
                 {
                     unlockUtc = ParseRaUtcTimestamp(ach.DateEarnedHardcore);
                 }
-                else if (!string.IsNullOrWhiteSpace(ach.DateEarned))
+                else if (earnedSoftcore)
                 {
                     unlockUtc = ParseRaUtcTimestamp(ach.DateEarned);
                 }
 
-                double? globalPercent = null;
-                if (useCombinedRarity)
-                {
-                    var numAwarded = Math.Max(ach.NumAwarded, 0);
-                    if (numAwarded > 0 && distinctCombinedForPercent > 0)
-                    {
-                        globalPercent = 100.0 * numAwarded / distinctCombinedForPercent;
-                    }
-                    else
-                    {
-                        var numAwardedHardcore = Math.Max(ach.NumAwardedHardcore, 0);
-                        if (numAwardedHardcore > 0 && distinctHardcoreForPercent > 0)
-                        {
-                            globalPercent = 100.0 * numAwardedHardcore / distinctHardcoreForPercent;
-                        }
-                    }
-                }
-                else if (useHardcoreRarity)
-                {
-                    var numAwardedHardcore = Math.Max(ach.NumAwardedHardcore, 0);
-                    if (numAwardedHardcore > 0 && distinctHardcoreForPercent > 0)
-                    {
-                        globalPercent = 100.0 * numAwardedHardcore / distinctHardcoreForPercent;
-                    }
-                    else
-                    {
-                        var numAwarded = Math.Max(ach.NumAwarded, 0);
-                        if (numAwarded > 0 && distinctForPercent > 0)
-                        {
-                            globalPercent = 100.0 * numAwarded / distinctForPercent;
-                        }
-                    }
-                }
-                else
-                {
-                    var numAwarded = Math.Max(ach.NumAwarded, 0);
-                    if (numAwarded > 0 && distinctForPercent > 0)
-                    {
-                        globalPercent = 100.0 * numAwarded / distinctForPercent;
-                    }
-                    else
-                    {
-                        var numAwardedHardcore = Math.Max(ach.NumAwardedHardcore, 0);
-                        if (numAwardedHardcore > 0 && distinctHardcoreForPercent > 0)
-                        {
-                            globalPercent = 100.0 * numAwardedHardcore / distinctHardcoreForPercent;
-                        }
-                    }
-                }
+                // Rarity matches the unlock mode: a hardcore unlock stores hardcore
+                // rarity, a softcore-only unlock stores casual rarity. Locked
+                // achievements fall back to the global RaRarityStats setting.
+                var globalPercent = RetroAchievementsRarityCalculator.ComputePercent(
+                    ach.NumAwarded,
+                    ach.NumAwardedHardcore,
+                    totalPlayers,
+                    earnedInHardcore,
+                    earnedSoftcore,
+                    useHardcoreRarity);
 
                 if (globalPercent.HasValue)
                 {
@@ -674,6 +626,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     Category = categoryLabel,
                     IsCapstone = enableAutomaticCapstoneAssignment &&
                                  string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
+                    // Unlocked achievements are classified by the mode they were earned in.
+                    // Locked achievements keep the default category type.
+                    CategoryType = earnedInHardcore ? "Hardcore" : earnedSoftcore ? "Softcore" : null,
                     UnlockTimeUtc = unlockUtc,
                     Hidden = false,
                     Rarity = globalPercent.HasValue

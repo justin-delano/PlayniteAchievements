@@ -10,6 +10,9 @@ namespace PlayniteAchievements.Services
         public const string DefaultCategoryType = "Default";
         public const string DefaultCategoryLabel = "Default";
 
+        public const string SoftcoreCategoryType = "Softcore";
+        public const string HardcoreCategoryType = "Hardcore";
+
         private static readonly string[] CanonicalOrder =
         {
             DefaultCategoryType,
@@ -20,8 +23,20 @@ namespace PlayniteAchievements.Services
             "Collectable",
             "Missable",
             "Difficulty",
-            "Stackable"
+            "Stackable",
+            SoftcoreCategoryType,
+            HardcoreCategoryType
         };
+
+        // Category types derived automatically from achievement state (e.g. RetroAchievements
+        // unlock mode). Recognized for normalization, display, and filtering, but excluded
+        // from the manual "Add Type" assignment menus since users do not set them by hand.
+        private static readonly HashSet<string> DerivedCategoryTypes =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                SoftcoreCategoryType,
+                HardcoreCategoryType
+            };
 
         private static readonly Dictionary<string, string> CanonicalByAlias =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -43,10 +58,22 @@ namespace PlayniteAchievements.Services
                 ["diff"] = "Difficulty",
                 ["stackable"] = "Stackable",
                 ["stack"] = "Stackable",
-                ["stacking"] = "Stackable"
+                ["stacking"] = "Stackable",
+                ["softcore"] = SoftcoreCategoryType,
+                ["casual"] = SoftcoreCategoryType,
+                ["hardcore"] = HardcoreCategoryType
             };
 
         public static IReadOnlyList<string> AllowedCategoryTypes => CanonicalOrder;
+
+        /// <summary>
+        /// Category types a user can assign manually. Excludes <see cref="DefaultCategoryType"/>
+        /// and automatically derived types (see <see cref="DerivedCategoryTypes"/>).
+        /// </summary>
+        public static IReadOnlyList<string> AssignableCategoryTypes => CanonicalOrder
+            .Where(type => !string.Equals(type, DefaultCategoryType, StringComparison.OrdinalIgnoreCase)
+                && !DerivedCategoryTypes.Contains(type))
+            .ToList();
 
         public static string Normalize(string rawValue)
         {
