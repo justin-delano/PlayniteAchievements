@@ -99,6 +99,11 @@ namespace PlayniteAchievements.Providers.BattleNet
                 catalogSignature,
                 catalog.Count,
                 ct).ConfigureAwait(false);
+            var removedGuildRun = RemoveGuildRunAchievements(achievements);
+            if (removedGuildRun > 0)
+            {
+                _logger?.Info($"[BattleNet/WoW] Skipped {removedGuildRun} guild-run achievements.");
+            }
 
             var mergeStats = await MergeOfficialAchievementDataAsync(
                 achievements,
@@ -215,12 +220,12 @@ namespace PlayniteAchievements.Providers.BattleNet
                 {
                     foreach (var subcategory in subcategories)
                     {
-                        AddAchievements(achievements, seen, subcategory?.Achievements, category);
+                        AddAchievements(achievements, seen, subcategory?.Achievements, category, subcategory?.Name);
                     }
                 }
                 else
                 {
-                    AddAchievements(achievements, seen, categoryData.AchievementsList, category);
+                    AddAchievements(achievements, seen, categoryData.AchievementsList, category, null);
                 }
             }
 
@@ -247,6 +252,17 @@ namespace PlayniteAchievements.Providers.BattleNet
                 var key = id.ToString(CultureInfo.InvariantCulture);
                 if (id <= 0)
                 {
+                    continue;
+                }
+
+                if (IsGuildRunAchievement(definition?.Name, definition?.Description, definition?.Category?.Name, null))
+                {
+                    if (byId.TryGetValue(key, out var existingGuildRun))
+                    {
+                        achievements.Remove(existingGuildRun);
+                        byId.Remove(key);
+                    }
+
                     continue;
                 }
 
@@ -590,6 +606,15 @@ namespace PlayniteAchievements.Providers.BattleNet
                 definitionCache[definitionCacheKey] = definition;
             }
 
+            if (IsGuildRunAchievement(
+                FirstNonEmpty(definition?.Name, progress.Achievement?.Name),
+                definition?.Description,
+                definition?.Category?.Name,
+                null))
+            {
+                return null;
+            }
+
             var iconUrl = default(string);
             var mediaHref = definition?.Media?.Href;
             if (!string.IsNullOrWhiteSpace(mediaHref))
@@ -828,11 +853,22 @@ namespace PlayniteAchievements.Providers.BattleNet
             List<AchievementDetail> target,
             HashSet<string> seen,
             IEnumerable<WowAchievement> source,
-            string category)
+            string category,
+            string subcategory)
         {
             foreach (var achievement in source ?? Enumerable.Empty<WowAchievement>())
             {
-                if (achievement == null || achievement.Id == 0 || !seen.Add(achievement.Id.ToString()))
+                if (achievement == null || achievement.Id == 0)
+                {
+                    continue;
+                }
+
+                if (IsGuildRunAchievement(achievement.Name, achievement.Description, category, subcategory))
+                {
+                    continue;
+                }
+
+                if (!seen.Add(achievement.Id.ToString()))
                 {
                     continue;
                 }
@@ -861,6 +897,51 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                 target.Add(detail);
             }
+        }
+
+        private static int RemoveGuildRunAchievements(List<AchievementDetail> achievements)
+        {
+            if (achievements == null || achievements.Count == 0)
+            {
+                return 0;
+            }
+
+            return achievements.RemoveAll(item => IsGuildRunAchievement(
+                item?.DisplayName,
+                item?.Description,
+                item?.Category,
+                null));
+        }
+
+        internal static bool IsGuildRunAchievement(
+            string name,
+            string description,
+            string category,
+            string subcategory)
+        {
+            if (EqualsText(category, "Guild") || EqualsText(subcategory, "Guild"))
+            {
+                return true;
+            }
+
+            return ContainsText(name, "guild run") ||
+                ContainsText(description, "guild run") ||
+                ContainsText(name, "guild group") ||
+                ContainsText(description, "guild group");
+        }
+
+        private static bool EqualsText(string value, string expected)
+        {
+            return string.Equals(
+                value?.Trim(),
+                expected,
+                StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ContainsText(string value, string expected)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                value.IndexOf(expected, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string NormalizeApiName(string value)

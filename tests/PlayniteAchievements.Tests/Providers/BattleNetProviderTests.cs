@@ -104,6 +104,68 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public void WowParser_SkipsGuildRunAchievements()
+        {
+            var publicCategory = JsonConvert.DeserializeObject<WowAchievementsData>(@"
+{
+  ""name"": ""World Events"",
+  ""achievementsList"": [
+    {
+      ""id"": 10,
+      ""name"": ""Guild Run: Test Dungeon"",
+      ""description"": ""Complete the dungeon with your guild.""
+    },
+    {
+      ""id"": 11,
+      ""name"": ""Guild Group Test"",
+      ""description"": ""Defeat the boss while in a guild group.""
+    },
+    {
+      ""id"": 12,
+      ""name"": ""The First Rule of Brawler's Guild"",
+      ""description"": ""Get invited to brawl.""
+    }
+  ]
+}");
+            var guildSubcategory = JsonConvert.DeserializeObject<WowAchievementsData>(@"
+{
+  ""name"": ""Dungeons & Raids"",
+  ""subcategories"": {
+    ""guild"": {
+      ""id"": ""guild"",
+      ""name"": ""Guild"",
+      ""achievements"": [
+        {
+          ""id"": 13,
+          ""name"": ""Test Dungeon"",
+          ""description"": ""Complete the dungeon.""
+        }
+      ]
+    },
+    ""raids"": {
+      ""id"": ""raids"",
+      ""name"": ""Raids"",
+      ""achievements"": [
+        {
+          ""id"": 14,
+          ""name"": ""Normal Raid Achievement"",
+          ""description"": ""Complete the raid.""
+        }
+      ]
+    }
+  }
+}");
+
+            var achievements = WowGameStrategy.ParseAchievements(new[] { publicCategory, guildSubcategory });
+
+            Assert.IsFalse(achievements.Any(item => item.ApiName == "10"));
+            Assert.IsFalse(achievements.Any(item => item.ApiName == "11"));
+            Assert.IsFalse(achievements.Any(item => item.ApiName == "13"));
+            Assert.IsTrue(achievements.Any(item => item.ApiName == "12"));
+            Assert.IsTrue(achievements.Any(item => item.ApiName == "14"));
+        }
+
+        [TestMethod]
         public void Settings_DefaultsDataForAzerothWowRarityOn()
         {
             var settings = new BattleNetSettings();
@@ -432,6 +494,36 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public async Task WowFetch_SkipsOfficialGuildRunAchievements()
+        {
+            var settingsRoot = new PlayniteAchievementsSettings();
+            var registry = new ProviderRegistry(settingsRoot, new[] { "BattleNet" }, new NullLogger());
+            var battleNetSettings = registry.GetSettings<BattleNetSettings>();
+            battleNetSettings.WowRegion = "us";
+            battleNetSettings.WowRealmSlug = "dalaran";
+            battleNetSettings.WowCharacter = "Noshotz";
+            battleNetSettings.BattleNetClientId = "client-id";
+            battleNetSettings.BattleNetClientSecret = "client-secret";
+            battleNetSettings.WowAggregateAccountCharacters = false;
+            registry.Save(battleNetSettings);
+
+            var handler = new RecordingHandler { IncludeOfficialGuildAchievement = true };
+            GameAchievementData data;
+            using (var httpClient = new HttpClient(handler))
+            using (var client = new BattleNetApiClient(new NullLogger(), httpClient))
+            {
+                var strategy = new WowGameStrategy(client, null, new NullLogger());
+                data = await strategy.FetchAchievementsAsync(
+                    BattleNetGame("World of Warcraft"),
+                    "en-US",
+                    CancellationToken.None);
+            }
+
+            Assert.IsNotNull(data);
+            Assert.IsFalse(data.Achievements.Any(item => item.ApiName == "5"));
+        }
+
+        [TestMethod]
         public async Task WowFetch_ReusesPersistedCatalogCacheWhenOfficialIndexUnchanged()
         {
             var tempDirectory = Path.Combine(Path.GetTempPath(), "PlayniteAchievements.Tests", Guid.NewGuid().ToString("N"));
@@ -589,6 +681,7 @@ namespace PlayniteAchievements.Tests.Providers
         private sealed class RecordingHandler : HttpMessageHandler
         {
             public List<RecordedRequest> Requests { get; } = new List<RecordedRequest>();
+            public bool IncludeOfficialGuildAchievement { get; set; }
 
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
@@ -649,6 +742,17 @@ namespace PlayniteAchievements.Tests.Providers
                 if (request.Method == HttpMethod.Get &&
                     request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement/index?namespace=static-us&locale=en_US")
                 {
+                    var guildAchievement = IncludeOfficialGuildAchievement
+                        ? @",
+    {
+      ""id"": 5,
+      ""name"": ""Guild Run: Official Test"",
+      ""description"": ""Complete the dungeon while in a guild group."",
+      ""points"": 10,
+      ""category"": { ""id"": 150, ""name"": ""Guild"" },
+      ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/5?namespace=static-us"" }
+    }"
+                        : string.Empty;
                     return JsonResponse(@"
 {
   ""achievements"": [
@@ -662,7 +766,7 @@ namespace PlayniteAchievements.Tests.Providers
       ""is_obtainable"": false,
       ""category"": { ""id"": 81, ""name"": ""Legacy"" },
       ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/2?namespace=static-us"" }
-    }
+    }" + guildAchievement + @"
   ]
 }");
                 }
