@@ -14,7 +14,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 {
     internal sealed class BattleNetWowCatalogCache
     {
-        private const int SchemaVersion = 1;
+        private const int SchemaVersion = 2;
         private static readonly TimeSpan MaxAge = TimeSpan.FromDays(7);
 
         private readonly string _cacheRoot;
