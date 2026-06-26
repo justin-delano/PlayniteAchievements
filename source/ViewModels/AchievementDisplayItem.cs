@@ -142,6 +142,7 @@ namespace PlayniteAchievements.ViewModels
                     nameof(UnlockTimeUtc)))
                 {
                     OnPropertyChanged(nameof(UnlockTimeText));
+                    OnPropertyChanged(nameof(UnlockTimeLocal));
                     OnPropertyChanged(nameof(DateUnlocked));
                     OnPropertyChanged(nameof(UnlockTime));
                 }
@@ -776,6 +777,10 @@ namespace PlayniteAchievements.ViewModels
 
         public string UnlockTimeText =>
             UnlockTimeUtc.HasValue ? $"{DateTimeUtilities.AsLocalFromUtc(UnlockTimeUtc.Value):g}" : string.Empty;
+
+        // Local-time projection for grid display; formatting is applied by DateDisplayModeConverter.
+        public DateTime? UnlockTimeLocal =>
+            UnlockTimeUtc.HasValue ? DateTimeUtilities.AsLocalFromUtc(UnlockTimeUtc.Value) : (DateTime?)null;
 
         /// <summary>
         /// True if this achievement has a real rarity percentage.

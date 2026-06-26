@@ -95,6 +95,17 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewRecentAchievementsGridColumnHeaders = true;
         private bool _showOverviewSelectedGameGridColumnHeaders = true;
         private bool _showDesktopThemeAchievementGridColumnHeaders = true;
+
+        // Per-surface date display mode for the "Last Played" (game summaries) and "Unlock Date"
+        // (achievement) grid columns. Default DateAndTime preserves the historical "g" format.
+        private DateDisplayMode _overviewGameSummariesLastPlayedDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _viewAchievementsGameSummariesLastPlayedDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _startPageGameSummariesLastPlayedDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _overviewRecentAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _overviewSelectedGameAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _viewAchievementsAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _startPageAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _desktopThemeAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
         private GridAlignment _gridColumnHeaderAlignment = GridAlignment.Center;
         private GridAlignment _gridCellAlignment = GridAlignment.Left;
         private GridVerticalAlignment _gridCellVerticalAlignment = GridVerticalAlignment.Center;
@@ -805,6 +816,78 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showDesktopThemeAchievementGridColumnHeaders;
             set => SetValue(ref _showDesktopThemeAchievementGridColumnHeaders, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Last Played" column in the overview game summaries grid.
+        /// </summary>
+        public DateDisplayMode OverviewGameSummariesLastPlayedDateMode
+        {
+            get => _overviewGameSummariesLastPlayedDateMode;
+            set => SetValue(ref _overviewGameSummariesLastPlayedDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Last Played" column in the view achievements game summaries grid.
+        /// </summary>
+        public DateDisplayMode ViewAchievementsGameSummariesLastPlayedDateMode
+        {
+            get => _viewAchievementsGameSummariesLastPlayedDateMode;
+            set => SetValue(ref _viewAchievementsGameSummariesLastPlayedDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Last Played" column in the start page game summaries grid.
+        /// </summary>
+        public DateDisplayMode StartPageGameSummariesLastPlayedDateMode
+        {
+            get => _startPageGameSummariesLastPlayedDateMode;
+            set => SetValue(ref _startPageGameSummariesLastPlayedDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in the overview recent achievements grid.
+        /// </summary>
+        public DateDisplayMode OverviewRecentAchievementsUnlockDateMode
+        {
+            get => _overviewRecentAchievementsUnlockDateMode;
+            set => SetValue(ref _overviewRecentAchievementsUnlockDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in the overview selected game achievements grid.
+        /// </summary>
+        public DateDisplayMode OverviewSelectedGameAchievementsUnlockDateMode
+        {
+            get => _overviewSelectedGameAchievementsUnlockDateMode;
+            set => SetValue(ref _overviewSelectedGameAchievementsUnlockDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in the view achievements (single game) grid.
+        /// </summary>
+        public DateDisplayMode ViewAchievementsAchievementsUnlockDateMode
+        {
+            get => _viewAchievementsAchievementsUnlockDateMode;
+            set => SetValue(ref _viewAchievementsAchievementsUnlockDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in the start page recent unlocks grid.
+        /// </summary>
+        public DateDisplayMode StartPageAchievementsUnlockDateMode
+        {
+            get => _startPageAchievementsUnlockDateMode;
+            set => SetValue(ref _startPageAchievementsUnlockDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in desktop theme achievement grids.
+        /// </summary>
+        public DateDisplayMode DesktopThemeAchievementsUnlockDateMode
+        {
+            get => _desktopThemeAchievementsUnlockDateMode;
+            set => SetValue(ref _desktopThemeAchievementsUnlockDateMode, value);
         }
 
         /// <summary>
