@@ -702,6 +702,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Appearance</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Presets">Appearance presets</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Preset">Preset</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_PresetNumbered">Preset {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">Badge colors</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_CompletedBadge">Completed game badge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_AdvancedResources">Advanced theme resources</sys:String>
