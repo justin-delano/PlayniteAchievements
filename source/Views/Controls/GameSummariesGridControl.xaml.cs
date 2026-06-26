@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly ILogger Logger = LogManager.GetLogger();
         private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
+        private PersistedSettings _subscribedPersisted;
         private const double DefaultCoverColumnWidth = 96;
         private const double DefaultPlatformColumnWidth = 44;
 
@@ -219,6 +220,20 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(ColumnSettingsKeyProperty, value);
         }
 
+        public static readonly DependencyProperty LastPlayedDateModeProperty =
+            DependencyProperty.Register(
+                nameof(LastPlayedDateMode),
+                typeof(DateDisplayMode),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(DateDisplayMode.DateAndTime));
+
+        // Resolved per-surface display mode for the "Last Played" column; bound by the cell template.
+        public DateDisplayMode LastPlayedDateMode
+        {
+            get => (DateDisplayMode)GetValue(LastPlayedDateModeProperty);
+            private set => SetValue(LastPlayedDateModeProperty, value);
+        }
+
         public static readonly DependencyProperty ShowColumnHeadersProperty =
             DependencyProperty.Register(
                 nameof(ShowColumnHeaders),
@@ -326,6 +341,13 @@ namespace PlayniteAchievements.Views.Controls
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
             MirrorBadgeResources();
+
+            UpdateLastPlayedDateMode(settings);
+            if (_subscribedPersisted == null)
+            {
+                _subscribedPersisted = settings.Persisted;
+                _subscribedPersisted.PropertyChanged += OnPersistedSettingsChanged;
+            }
             RarityAppearanceHelper.AppearanceChanged -= RarityAppearanceHelper_AppearanceChanged;
             RarityAppearanceHelper.AppearanceChanged += RarityAppearanceHelper_AppearanceChanged;
 
@@ -793,6 +815,39 @@ namespace PlayniteAchievements.Views.Controls
             return GridSurface.Overview;
         }
 
+        private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName == nameof(PersistedSettings.OverviewGameSummariesLastPlayedDateMode) ||
+                e.PropertyName == nameof(PersistedSettings.StartPageGameSummariesLastPlayedDateMode) ||
+                e.PropertyName == nameof(PersistedSettings.ViewAchievementsGameSummariesLastPlayedDateMode))
+            {
+                UpdateLastPlayedDateMode(PlayniteAchievementsPlugin.Instance?.Settings);
+            }
+        }
+
+        private void UpdateLastPlayedDateMode(PlayniteAchievementsSettings settings)
+        {
+            var persisted = settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            switch (ResolveSurface())
+            {
+                case GridSurface.StartPage:
+                    LastPlayedDateMode = persisted.StartPageGameSummariesLastPlayedDateMode;
+                    break;
+                case GridSurface.ViewAchievements:
+                    LastPlayedDateMode = persisted.ViewAchievementsGameSummariesLastPlayedDateMode;
+                    break;
+                default:
+                    LastPlayedDateMode = persisted.OverviewGameSummariesLastPlayedDateMode;
+                    break;
+            }
+        }
+
         private static bool IsLegacyImageColumnRuntimeDefaultWidth(string key, double width)
         {
             return !string.IsNullOrWhiteSpace(key) &&
@@ -992,6 +1047,11 @@ namespace PlayniteAchievements.Views.Controls
 
             _columnPersistence?.Dispose();
             _columnPersistence = null;
+            if (_subscribedPersisted != null)
+            {
+                _subscribedPersisted.PropertyChanged -= OnPersistedSettingsChanged;
+                _subscribedPersisted = null;
+            }
             RarityAppearanceHelper.AppearanceChanged -= RarityAppearanceHelper_AppearanceChanged;
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(GameSummariesGrid, null);
             DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(GameSummariesGrid, null);
