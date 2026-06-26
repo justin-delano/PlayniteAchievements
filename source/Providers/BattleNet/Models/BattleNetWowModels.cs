@@ -272,4 +272,18 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
         [DataMember(Name = "href")]
         public string Href { get; set; }
     }
+
+    [DataContract]
+    public sealed class DataForAzerothDynamicIndex
+    {
+        [DataMember(Name = "achievementsrarity")]
+        public string AchievementsRarity { get; set; }
+    }
+
+    [DataContract]
+    public sealed class DataForAzerothAchievementRarityResponse
+    {
+        [DataMember(Name = "achievements")]
+        public Dictionary<string, double> Achievements { get; set; }
+    }
 }

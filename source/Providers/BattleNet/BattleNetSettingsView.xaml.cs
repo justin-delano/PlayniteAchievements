@@ -442,7 +442,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return string.Format(
-                "enabled={0}, apiClientId={1}, apiClientSecret={2}, sc2Region={3}, sc2Realm={4}, sc2Profile={5}, wowRegion={6}, wowRealmSlug={7}, wowCharacter={8}, useExophaseForRarity={9}",
+                "enabled={0}, apiClientId={1}, apiClientSecret={2}, sc2Region={3}, sc2Realm={4}, sc2Profile={5}, wowRegion={6}, wowRealmSlug={7}, wowCharacter={8}, useDataForAzerothForWowRarity={9}",
                 Bool(settings.IsEnabled),
                 Presence(settings.BattleNetClientId),
                 Presence(settings.BattleNetClientSecret),
@@ -452,7 +452,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 string.IsNullOrWhiteSpace(settings.WowRegion) ? "<none>" : settings.WowRegion,
                 string.IsNullOrWhiteSpace(settings.WowRealmSlug) ? "<none>" : settings.WowRealmSlug,
                 Presence(settings.WowCharacter),
-                Bool(settings.UseExophaseForRarity));
+                Bool(settings.UseDataForAzerothForWowRarity));
         }
     }
 }

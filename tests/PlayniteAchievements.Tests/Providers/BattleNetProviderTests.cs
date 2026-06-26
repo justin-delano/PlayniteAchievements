@@ -103,11 +103,11 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void Settings_DefaultsExophaseRarityOff()
+        public void Settings_DefaultsDataForAzerothWowRarityOn()
         {
             var settings = new BattleNetSettings();
 
-            Assert.IsFalse(settings.UseExophaseForRarity);
+            Assert.IsTrue(settings.UseDataForAzerothForWowRarity);
         }
 
         [TestMethod]
@@ -122,110 +122,72 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void Settings_SerializesExophaseRarityFlag()
+        public void Settings_SerializesDataForAzerothWowRarityFlag()
         {
             var settings = new BattleNetSettings
             {
-                UseExophaseForRarity = true
+                UseDataForAzerothForWowRarity = false
             };
 
             var json = JObject.Parse(settings.SerializeToJson());
 
-            Assert.IsTrue(json["UseExophaseForRarity"].Value<bool>());
+            Assert.IsFalse(json["UseDataForAzerothForWowRarity"].Value<bool>());
         }
 
         [TestMethod]
-        public void Settings_RoundTripsExophaseRarityFlag()
+        public void Settings_RoundTripsDataForAzerothWowRarityFlag()
         {
             var source = new BattleNetSettings
             {
-                UseExophaseForRarity = true
+                UseDataForAzerothForWowRarity = false
             };
             var target = new BattleNetSettings();
 
             target.DeserializeFromJson(source.SerializeToJson());
 
-            Assert.IsTrue(target.UseExophaseForRarity);
+            Assert.IsFalse(target.UseDataForAzerothForWowRarity);
         }
 
         [TestMethod]
-        public void WowMetadataProjection_IsOnlyRequiredForNonEnglishLocale()
+        public void WowRarity_AppliesDataForAzerothPercentByAchievementId()
         {
-            Assert.IsFalse(WowGameStrategy.RequiresEnglishMetadataProjection("english"));
-            Assert.IsFalse(WowGameStrategy.RequiresEnglishMetadataProjection("en-US"));
-            Assert.IsTrue(WowGameStrategy.RequiresEnglishMetadataProjection("german"));
-            Assert.IsTrue(WowGameStrategy.RequiresEnglishMetadataProjection("de-DE"));
-        }
-
-        [TestMethod]
-        public void WowMetadataProjection_UsesEnglishNamesWithoutChangingNativeRows()
-        {
-            var native = new List<AchievementDetail>
+            var achievements = new List<AchievementDetail>
             {
                 new AchievementDetail
                 {
-                    ApiName = "42769",
-                    DisplayName = "Held der Morgendaemmerung",
-                    Description = "German description.",
-                    Points = 0,
-                    ProviderKey = "BattleNet"
-                }
-            };
-            var english = new List<AchievementDetail>
-            {
+                    ApiName = "157",
+                    DisplayName = "To All The Squirrels I've Loved Before",
+                    Rarity = RarityTier.Common
+                },
                 new AchievementDetail
                 {
-                    ApiName = "42769",
-                    DisplayName = "Hero of the Dawn",
-                    Description = "Outgrow the use of Hero Dawncrests during Midnight Season 1.",
-                    Points = 0,
-                    ProviderKey = "BattleNet"
-                }
-            };
-
-            var projection = WowGameStrategy.CreateEnglishMetadataProjection(native, english);
-
-            Assert.AreEqual("Held der Morgendaemmerung", native[0].DisplayName);
-            Assert.AreEqual("German description.", native[0].Description);
-            Assert.AreEqual("Hero of the Dawn", projection[0].DisplayName);
-            Assert.AreEqual(
-                "Outgrow the use of Hero Dawncrests during Midnight Season 1.",
-                projection[0].Description);
-            Assert.AreEqual("42769", projection[0].ApiName);
-        }
-
-        [TestMethod]
-        public void WowMetadataProjection_CopiesOnlyRarityBackByApiName()
-        {
-            var native = new List<AchievementDetail>
-            {
+                    ApiName = "6",
+                    DisplayName = "Level 10",
+                    Rarity = RarityTier.UltraRare
+                },
                 new AchievementDetail
                 {
-                    ApiName = "42769",
-                    DisplayName = "Held der Morgendaemmerung",
-                    Description = "German description.",
+                    ApiName = "missing",
+                    DisplayName = "Missing",
                     Rarity = RarityTier.Common
                 }
             };
-            var projection = new List<AchievementDetail>
-            {
-                new AchievementDetail
+
+            var updated = WowGameStrategy.ApplyDataForAzerothRarity(
+                achievements,
+                new Dictionary<string, double>
                 {
-                    ApiName = "42769",
-                    DisplayName = "Hero of the Dawn",
-                    Description = "English description.",
-                    GlobalPercentUnlocked = 5.79,
-                    Rarity = RarityTier.UltraRare
-                }
-            };
+                    { "157", 4.3049 },
+                    { "6", 100 }
+                });
 
-            var updated = WowGameStrategy.ApplyProjectedRarity(native, projection);
-
-            Assert.AreEqual(1, updated);
-            Assert.AreEqual("Held der Morgendaemmerung", native[0].DisplayName);
-            Assert.AreEqual("German description.", native[0].Description);
-            Assert.AreEqual(5.79, native[0].GlobalPercentUnlocked);
-            Assert.AreEqual(RarityTier.UltraRare, native[0].Rarity);
+            Assert.AreEqual(2, updated);
+            Assert.AreEqual(4.3049, achievements[0].GlobalPercentUnlocked.Value);
+            Assert.AreEqual(RarityTier.UltraRare, achievements[0].Rarity);
+            Assert.AreEqual(100d, achievements[1].GlobalPercentUnlocked.Value);
+            Assert.AreEqual(RarityTier.Common, achievements[1].Rarity);
+            Assert.IsFalse(achievements[2].GlobalPercentUnlocked.HasValue);
+            Assert.AreEqual(RarityTier.Common, achievements[2].Rarity);
         }
 
         [TestMethod]
@@ -381,6 +343,25 @@ namespace PlayniteAchievements.Tests.Providers
             Assert.AreEqual("https://render.worldofwarcraft.test/fallback-icon.jpg", fallbackIcon.UnlockedIconPath);
         }
 
+        [TestMethod]
+        public async Task DataForAzerothApiClient_LoadsAchievementRarityFromDynamicIndex()
+        {
+            var handler = new RecordingHandler();
+            using (var httpClient = new HttpClient(handler))
+            using (var client = new BattleNetApiClient(new NullLogger(), httpClient))
+            {
+                var rarity = await client.GetDataForAzerothWowAchievementRarityAsync(CancellationToken.None);
+
+                Assert.AreEqual(2, rarity.Count);
+                Assert.AreEqual(100d, rarity["6"]);
+                Assert.AreEqual(4.3049, rarity["157"]);
+            }
+
+            Assert.AreEqual(2, handler.Requests.Count);
+            Assert.AreEqual("https://dataforazeroth.com/dynamic/index.json", handler.Requests[0].RequestUri.ToString());
+            Assert.AreEqual("https://dataforazeroth.com/dynamic/achievementsrarity.hash.json", handler.Requests[1].RequestUri.ToString());
+        }
+
         private static Game BattleNetGame(string name)
         {
             return new Game
@@ -496,6 +477,18 @@ namespace PlayniteAchievements.Tests.Providers
                     request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/media/achievement/4?namespace=static-us")
                 {
                     return JsonResponse(@"{""assets"":[{""key"":""default"",""value"":""https://render.worldofwarcraft.test/fallback-icon.jpg""}]}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://dataforazeroth.com/dynamic/index.json")
+                {
+                    return JsonResponse(@"{""achievementsrarity"":""/dynamic/achievementsrarity.hash.json""}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://dataforazeroth.com/dynamic/achievementsrarity.hash.json")
+                {
+                    return JsonResponse(@"{""achievements"":{""6"":100,""157"":4.3049}}");
                 }
 
                 return new HttpResponseMessage(HttpStatusCode.NotFound);

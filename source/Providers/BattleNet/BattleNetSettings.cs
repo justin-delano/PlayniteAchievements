@@ -26,7 +26,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private string _wowRealmSlug;
         private string _wowCharacter;
         private bool _wowAggregateAccountCharacters = true;
-        private bool _useExophaseForRarity;
+        private bool _useDataForAzerothForWowRarity = true;
 
         public string BattleNetClientId
         {
@@ -125,12 +125,12 @@ namespace PlayniteAchievements.Providers.BattleNet
         }
 
         /// <summary>
-        /// When true, enriches Battle.net achievement rarity from Exophase after native scanning.
+        /// When true, enriches World of Warcraft achievement rarity from Data for Azeroth after native scanning.
         /// </summary>
-        public bool UseExophaseForRarity
+        public bool UseDataForAzerothForWowRarity
         {
-            get => _useExophaseForRarity;
-            set => SetValue(ref _useExophaseForRarity, value);
+            get => _useDataForAzerothForWowRarity;
+            set => SetValue(ref _useDataForAzerothForWowRarity, value);
         }
 
         public static bool IsLegacyDefaultRedirectUri(string redirectUri)

@@ -32,6 +32,8 @@ namespace PlayniteAchievements.Providers.BattleNet
         private const string WowOfficialAccountProfileUrl = "https://{0}.api.blizzard.com/profile/user/wow?namespace=profile-{0}&locale={1}";
         private const string WowGraphQlUrl = "https://worldofwarcraft.blizzard.com/graphql";
         private const string WowStatusUrl = "https://worldofwarcraft.blizzard.com/game/status";
+        private const string DataForAzerothBaseUrl = "https://dataforazeroth.com/";
+        private const string DataForAzerothIndexUrl = "https://dataforazeroth.com/dynamic/index.json";
         private const string DefaultApiLocale = "en_US";
 
         private const string DefaultUserAgent =
@@ -65,6 +67,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private string _cachedTokenRegion;
         private string _cachedAccessToken;
         private DateTime _cachedAccessTokenExpiresUtc;
+        private Dictionary<string, double> _cachedDataForAzerothWowRarity;
 
         public BattleNetApiClient(ILogger logger)
             : this(logger, CreateDefaultHttpClient())
@@ -255,6 +258,36 @@ namespace PlayniteAchievements.Providers.BattleNet
                 IsTransientError, ct).ConfigureAwait(false);
         }
 
+        public async Task<Dictionary<string, double>> GetDataForAzerothWowAchievementRarityAsync(CancellationToken ct)
+        {
+            if (_cachedDataForAzerothWowRarity != null)
+            {
+                return _cachedDataForAzerothWowRarity;
+            }
+
+            var index = await RateLimiter.ExecuteWithRetryAsync(
+                async () => await GetJsonAsync<DataForAzerothDynamicIndex>(DataForAzerothIndexUrl, ct).ConfigureAwait(false),
+                IsTransientError, ct).ConfigureAwait(false);
+
+            if (string.IsNullOrWhiteSpace(index?.AchievementsRarity))
+            {
+                _logger?.Warn("[BattleNet/WoW] Data for Azeroth dynamic index did not include achievementsrarity.");
+                _cachedDataForAzerothWowRarity = new Dictionary<string, double>(StringComparer.Ordinal);
+                return _cachedDataForAzerothWowRarity;
+            }
+
+            var rarityUrl = BuildDataForAzerothDynamicUrl(index.AchievementsRarity);
+            var rarity = await RateLimiter.ExecuteWithRetryAsync(
+                async () => await GetJsonAsync<DataForAzerothAchievementRarityResponse>(rarityUrl, ct).ConfigureAwait(false),
+                IsTransientError, ct).ConfigureAwait(false);
+
+            _cachedDataForAzerothWowRarity = rarity?.Achievements != null
+                ? new Dictionary<string, double>(rarity.Achievements, StringComparer.Ordinal)
+                : new Dictionary<string, double>(StringComparer.Ordinal);
+            _logger?.Info($"[BattleNet/WoW] Loaded Data for Azeroth achievement rarity. count={_cachedDataForAzerothWowRarity.Count}");
+            return _cachedDataForAzerothWowRarity;
+        }
+
         public async Task<List<WowRealm>> GetWowRealmsAsync(string region, CancellationToken ct)
         {
             var hash = await GetWowSha256HashAsync(ct).ConfigureAwait(false);
@@ -352,6 +385,18 @@ namespace PlayniteAchievements.Providers.BattleNet
                 Uri.EscapeDataString((realmSlug ?? string.Empty).Trim().ToLowerInvariant()),
                 Uri.EscapeDataString((character ?? string.Empty).Trim().ToLowerInvariant()),
                 Uri.EscapeDataString(string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale));
+        }
+
+        internal static string BuildDataForAzerothDynamicUrl(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return null;
+            }
+
+            return Uri.TryCreate(path, UriKind.Absolute, out var absolute)
+                ? absolute.ToString()
+                : new Uri(new Uri(DataForAzerothBaseUrl), path).ToString();
         }
 
         internal static string MapSc2RegionIdToApiRegion(int regionId)

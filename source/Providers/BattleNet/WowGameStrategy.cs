@@ -14,8 +14,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 {
     internal sealed class WowGameStrategy
     {
-        internal const string EnglishMetadataLocale = "en-US";
-
         private readonly BattleNetApiClient _client;
         private readonly BattleNetSessionManager _sessionManager;
         private readonly ILogger _logger;
@@ -71,6 +69,8 @@ namespace PlayniteAchievements.Providers.BattleNet
             {
                 _logger?.Info($"[BattleNet/WoW] Official achievement merge completed. characters={mergeStats.FetchedCharacters}, completions={mergeStats.CompletionCount}, updated={mergeStats.UpdatedCount}, added={mergeStats.AddedCount}, mode={mergeStats.Mode}");
             }
+
+            await EnrichDataForAzerothRarityAsync(achievements, settings, ct).ConfigureAwait(false);
 
             var data = new GameAchievementData
             {
@@ -263,6 +263,74 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return stats;
+        }
+
+        private async Task EnrichDataForAzerothRarityAsync(
+            IList<AchievementDetail> achievements,
+            BattleNetSettings settings,
+            CancellationToken ct)
+        {
+            if (settings?.UseDataForAzerothForWowRarity != true ||
+                achievements == null ||
+                achievements.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var rarity = await _client.GetDataForAzerothWowAchievementRarityAsync(ct).ConfigureAwait(false);
+                var updated = ApplyDataForAzerothRarity(achievements, rarity);
+                _logger?.Info($"[BattleNet/WoW] Applied Data for Azeroth rarity to {updated}/{achievements.Count} achievements.");
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "[BattleNet/WoW] Data for Azeroth rarity enrichment failed. Continuing without WoW global rarity percentages.");
+            }
+        }
+
+        internal static int ApplyDataForAzerothRarity(
+            IList<AchievementDetail> achievements,
+            IDictionary<string, double> rarityPercentByAchievementId)
+        {
+            if (achievements == null || rarityPercentByAchievementId == null || rarityPercentByAchievementId.Count == 0)
+            {
+                return 0;
+            }
+
+            var updated = 0;
+            foreach (var achievement in achievements)
+            {
+                var apiName = NormalizeApiName(achievement?.ApiName);
+                if (string.IsNullOrWhiteSpace(apiName) ||
+                    !rarityPercentByAchievementId.TryGetValue(apiName, out var percent))
+                {
+                    continue;
+                }
+
+                var normalized = NormalizePercent(percent);
+                if (!normalized.HasValue)
+                {
+                    continue;
+                }
+
+                var rarity = PercentRarityHelper.GetRarityTier(normalized.Value);
+                if (achievement.GlobalPercentUnlocked == normalized.Value &&
+                    achievement.Rarity == rarity)
+                {
+                    continue;
+                }
+
+                achievement.GlobalPercentUnlocked = normalized.Value;
+                achievement.Rarity = rarity;
+                updated++;
+            }
+
+            return updated;
         }
 
         private async Task<AchievementDetail> CreateMissingOfficialAchievementAsync(
@@ -527,91 +595,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
         }
 
-        internal static bool RequiresEnglishMetadataProjection(string locale)
-        {
-            var wowLocale = BattleNetLocaleMapper.ToWowWebLocale(
-                string.IsNullOrWhiteSpace(locale) ? EnglishMetadataLocale : locale);
-            return !string.Equals(wowLocale, "en-us", StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static List<AchievementDetail> CreateEnglishMetadataProjection(
-            IList<AchievementDetail> nativeAchievements,
-            IList<AchievementDetail> englishAchievements)
-        {
-            var englishByApiName = BuildAchievementLookup(englishAchievements);
-            var projection = new List<AchievementDetail>();
-
-            foreach (var nativeAchievement in nativeAchievements ?? Enumerable.Empty<AchievementDetail>())
-            {
-                if (nativeAchievement == null)
-                {
-                    projection.Add(null);
-                    continue;
-                }
-
-                var projected = CloneForMetadataProjection(nativeAchievement);
-                var apiName = NormalizeApiName(nativeAchievement.ApiName);
-                if (!string.IsNullOrWhiteSpace(apiName) &&
-                    englishByApiName.TryGetValue(apiName, out var englishAchievement))
-                {
-                    if (!string.IsNullOrWhiteSpace(englishAchievement.DisplayName))
-                    {
-                        projected.DisplayName = englishAchievement.DisplayName;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(englishAchievement.Description))
-                    {
-                        projected.Description = englishAchievement.Description;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(englishAchievement.Category))
-                    {
-                        projected.Category = englishAchievement.Category;
-                    }
-
-                    if (englishAchievement.Points.HasValue)
-                    {
-                        projected.Points = englishAchievement.Points;
-                    }
-                }
-
-                projection.Add(projected);
-            }
-
-            return projection;
-        }
-
-        internal static int ApplyProjectedRarity(
-            IList<AchievementDetail> targetAchievements,
-            IList<AchievementDetail> projectedAchievements)
-        {
-            var projectedByApiName = BuildAchievementLookup(projectedAchievements);
-            var updated = 0;
-
-            foreach (var targetAchievement in targetAchievements ?? Enumerable.Empty<AchievementDetail>())
-            {
-                var apiName = NormalizeApiName(targetAchievement?.ApiName);
-                if (string.IsNullOrWhiteSpace(apiName) ||
-                    !projectedByApiName.TryGetValue(apiName, out var projectedAchievement) ||
-                    projectedAchievement?.GlobalPercentUnlocked == null)
-                {
-                    continue;
-                }
-
-                if (targetAchievement.GlobalPercentUnlocked == projectedAchievement.GlobalPercentUnlocked &&
-                    targetAchievement.Rarity == projectedAchievement.Rarity)
-                {
-                    continue;
-                }
-
-                targetAchievement.GlobalPercentUnlocked = projectedAchievement.GlobalPercentUnlocked;
-                targetAchievement.Rarity = projectedAchievement.Rarity;
-                updated++;
-            }
-
-            return updated;
-        }
-
         private static void AddAchievements(
             List<AchievementDetail> target,
             HashSet<string> seen,
@@ -651,45 +634,29 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
         }
 
-        private static AchievementDetail CloneForMetadataProjection(AchievementDetail source)
-        {
-            return new AchievementDetail
-            {
-                ApiName = source.ApiName,
-                DisplayName = source.DisplayName,
-                Description = source.Description,
-                UnlockedIconPath = source.UnlockedIconPath,
-                LockedIconPath = source.LockedIconPath,
-                Points = source.Points,
-                ScaledPoints = source.ScaledPoints,
-                CategoryType = source.CategoryType,
-                Category = source.Category,
-                TrophyType = source.TrophyType,
-                IsCapstone = source.IsCapstone,
-                Hidden = source.Hidden,
-                UnlockTimeUtc = source.UnlockTimeUtc,
-                GlobalPercentUnlocked = source.GlobalPercentUnlocked,
-                Rarity = source.Rarity,
-                ProgressNum = source.ProgressNum,
-                ProgressDenom = source.ProgressDenom,
-                ProviderKey = source.ProviderKey,
-                Unlocked = source.Unlocked
-            };
-        }
-
-        private static Dictionary<string, AchievementDetail> BuildAchievementLookup(
-            IEnumerable<AchievementDetail> achievements)
-        {
-            return (achievements ?? Enumerable.Empty<AchievementDetail>())
-                .Where(achievement => !string.IsNullOrWhiteSpace(achievement?.ApiName))
-                .GroupBy(achievement => NormalizeApiName(achievement.ApiName), StringComparer.OrdinalIgnoreCase)
-                .Where(group => !string.IsNullOrWhiteSpace(group.Key))
-                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
-        }
-
         private static string NormalizeApiName(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+        }
+
+        private static double? NormalizePercent(double value)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return null;
+            }
+
+            if (value < 0)
+            {
+                return 0;
+            }
+
+            if (value > 100)
+            {
+                return 100;
+            }
+
+            return value;
         }
 
         private static List<WowSubcategory> ReadSubcategories(object value)

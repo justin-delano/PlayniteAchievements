@@ -66,11 +66,11 @@
                     IsEnabled="{Binding Settings.IsEnabled}"
                     Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                 <StackPanel>
-                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseExophaseForMetadata}"
-                              IsChecked="{Binding Settings.UseExophaseForRarity, Mode=TwoWay}"
+                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity}"
+                              IsChecked="{Binding Settings.UseDataForAzerothForWowRarity, Mode=TwoWay}"
                               FontWeight="SemiBold"
                               FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UseExophaseForMetadata_Help}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity_Help}"
                                Style="{StaticResource MutedTextStyle}"
                                Margin="24,8,0,0"
                                TextWrapping="Wrap"/>
