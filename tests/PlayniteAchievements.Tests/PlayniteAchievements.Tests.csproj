@@ -92,6 +92,7 @@
     <Compile Include="..\..\source\Providers\EA\EAModels.cs" Link="Source\Providers\EA\EAModels.cs" />
     <Compile Include="..\..\source\Providers\EA\EAProviderSupport.cs" Link="Source\Providers\EA\EAProviderSupport.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetApiClient.cs" Link="Source\Providers\BattleNet\BattleNetApiClient.cs" />
+    <Compile Include="..\..\source\Providers\BattleNet\BattleNetWowCatalogCache.cs" Link="Source\Providers\BattleNet\BattleNetWowCatalogCache.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetSessionManager.cs" Link="Source\Providers\BattleNet\BattleNetSessionManager.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetSupport.cs" Link="Source\Providers\BattleNet\BattleNetSupport.cs" />
     <Compile Include="..\..\source\Providers\BattleNet\BattleNetSettings.cs" Link="Source\Providers\BattleNet\BattleNetSettings.cs" />

@@ -23,7 +23,8 @@ namespace PlayniteAchievements.Providers.BattleNet
         public BattleNetDataProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            IPlayniteAPI playniteApi)
+            IPlayniteAPI playniteApi,
+            string pluginUserDataPath = null)
         {
             if (logger == null) throw new ArgumentNullException(nameof(logger));
             if (settings == null) throw new ArgumentNullException(nameof(settings));
@@ -36,7 +37,8 @@ namespace PlayniteAchievements.Providers.BattleNet
                 _apiClient,
                 _sessionManager,
                 settings,
-                logger);
+                logger,
+                pluginUserDataPath);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet");

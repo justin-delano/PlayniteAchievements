@@ -29,6 +29,67 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
+    public sealed class WowAchievementsData
+    {
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "category")]
+        public string Category { get; set; }
+
+        [DataMember(Name = "achievementsList")]
+        public List<WowAchievement> AchievementsList { get; set; }
+
+        [DataMember(Name = "subcategories")]
+        public object Subcategories { get; set; }
+    }
+
+    [DataContract]
+    public sealed class WowSubcategory
+    {
+        [DataMember(Name = "id")]
+        public string Id { get; set; }
+
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "achievements")]
+        public List<WowAchievement> Achievements { get; set; }
+    }
+
+    [DataContract]
+    public sealed class WowAchievement
+    {
+        [DataMember(Name = "id")]
+        public int Id { get; set; }
+
+        [DataMember(Name = "name")]
+        public string Name { get; set; }
+
+        [DataMember(Name = "description")]
+        public string Description { get; set; }
+
+        [DataMember(Name = "icon")]
+        public WowIcon Icon { get; set; }
+
+        [DataMember(Name = "point")]
+        public int Point { get; set; }
+
+        [DataMember(Name = "time")]
+        public DateTime? Time { get; set; }
+
+        [DataMember(Name = "accountWide")]
+        public bool AccountWide { get; set; }
+    }
+
+    [DataContract]
+    public sealed class WowIcon
+    {
+        [DataMember(Name = "url")]
+        public string Url { get; set; }
+    }
+
+    [DataContract]
     public sealed class WowAccountProfileResponse
     {
         [DataMember(Name = "wow_accounts")]
@@ -127,6 +188,27 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
 
         [DataMember(Name = "id")]
         public int Id { get; set; }
+
+        [DataMember(Name = "description")]
+        public string Description { get; set; }
+
+        [DataMember(Name = "points")]
+        public int? Points { get; set; }
+
+        [DataMember(Name = "is_hidden")]
+        public bool IsHidden { get; set; }
+
+        [DataMember(Name = "is_obtainable")]
+        public bool? IsObtainable { get; set; }
+
+        [DataMember(Name = "is_obtainable_in_game")]
+        public bool? IsObtainableInGame { get; set; }
+
+        [DataMember(Name = "category")]
+        public WowOfficialAchievementCategory Category { get; set; }
+
+        [DataMember(Name = "media")]
+        public WowApiKey Media { get; set; }
     }
 
     [DataContract]

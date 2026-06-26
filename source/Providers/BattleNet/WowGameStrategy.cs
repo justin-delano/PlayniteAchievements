@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
@@ -16,12 +17,14 @@ namespace PlayniteAchievements.Providers.BattleNet
         private readonly BattleNetApiClient _client;
         private readonly BattleNetSessionManager _sessionManager;
         private readonly ILogger _logger;
+        private readonly BattleNetWowCatalogCache _catalogCache;
 
-        public WowGameStrategy(BattleNetApiClient client, BattleNetSessionManager sessionManager, ILogger logger)
+        public WowGameStrategy(BattleNetApiClient client, BattleNetSessionManager sessionManager, ILogger logger, string pluginUserDataPath = null)
         {
             _client = client;
             _sessionManager = sessionManager;
             _logger = logger;
+            _catalogCache = new BattleNetWowCatalogCache(pluginUserDataPath, logger);
         }
 
         public bool MatchesGame(Game game)
@@ -44,10 +47,14 @@ namespace PlayniteAchievements.Providers.BattleNet
                 return null;
             }
 
+            var wowLocale = BattleNetLocaleMapper.ToWowWebLocale(effectiveLocale);
+
             if (!BattleNetGameSupport.HasApiCredentials(settings))
             {
-                _logger?.Warn("[BattleNet/WoW] Battle.net API credentials are not configured; skipping official achievement catalog fetch.");
-                return null;
+                var publicAchievements = await FetchPublicCatalogAchievementsAsync(region, realmSlug, character, wowLocale, ct).ConfigureAwait(false);
+                _logger?.Debug("[BattleNet/WoW] Battle.net API credentials are not configured; using public WoW achievement data only.");
+                await EnrichDataForAzerothRarityAsync(publicAchievements, settings, ct).ConfigureAwait(false);
+                return CreateDataOrNull(game, publicAchievements);
             }
 
             var catalogToken = default(string);
@@ -61,26 +68,37 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
             catch (Exception ex) when (!(ex is OperationCanceledException))
             {
-                _logger?.Warn(ex, "[BattleNet/WoW] Could not obtain Battle.net API token; skipping official achievement catalog fetch.");
-                return null;
+                _logger?.Warn(ex, "[BattleNet/WoW] Could not obtain Battle.net API token; using public WoW achievement data only.");
+                var publicAchievements = await FetchPublicCatalogAchievementsAsync(region, realmSlug, character, wowLocale, ct).ConfigureAwait(false);
+                await EnrichDataForAzerothRarityAsync(publicAchievements, settings, ct).ConfigureAwait(false);
+                return CreateDataOrNull(game, publicAchievements);
             }
 
-            var catalog = await _client.GetWowOfficialAchievementCatalogAsync(
-                region,
-                apiLocale,
-                catalogToken,
-                ct).ConfigureAwait(false);
-
-            var achievements = await CreateOfficialCatalogAchievementsAsync(
-                catalog,
-                region,
-                catalogToken,
-                ct).ConfigureAwait(false);
-            if (achievements.Count == 0)
+            var catalog = new List<WowOfficialAchievementDefinition>();
+            var catalogSignature = default(string);
+            try
             {
-                _logger?.Warn($"[BattleNet/WoW] Official achievement catalog contained no parsed achievements. game={GameLabel(game)}");
-                return null;
+                catalog = await _client.GetWowOfficialAchievementCatalogAsync(
+                    region,
+                    apiLocale,
+                    catalogToken,
+                    ct).ConfigureAwait(false);
+                catalogSignature = BattleNetWowCatalogCache.BuildOfficialIndexSignature(catalog);
             }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger?.Warn(ex, "[BattleNet/WoW] Could not load official achievement index; using cached or public catalog data only.");
+            }
+
+            var achievements = await LoadCatalogAchievementsAsync(
+                region,
+                realmSlug,
+                character,
+                apiLocale,
+                wowLocale,
+                catalogSignature,
+                catalog.Count,
+                ct).ConfigureAwait(false);
 
             var mergeStats = await MergeOfficialAchievementDataAsync(
                 achievements,
@@ -92,9 +110,82 @@ namespace PlayniteAchievements.Providers.BattleNet
                 _logger?.Info($"[BattleNet/WoW] Official achievement merge completed. characters={mergeStats.FetchedCharacters}, completions={mergeStats.CompletionCount}, updated={mergeStats.UpdatedCount}, added={mergeStats.AddedCount}, mode={mergeStats.Mode}");
             }
 
+            var addedFromIndex = MergeOfficialCatalogIndex(achievements, catalog);
+            if (addedFromIndex > 0)
+            {
+                _logger?.Info($"[BattleNet/WoW] Added {addedFromIndex} achievements from the official achievement index.");
+            }
+
+            if (achievements.Count == 0)
+            {
+                _logger?.Warn($"[BattleNet/WoW] No WoW achievements were parsed from public data or official index. game={GameLabel(game)}");
+                return null;
+            }
+
             await EnrichDataForAzerothRarityAsync(achievements, settings, ct).ConfigureAwait(false);
 
-            var data = new GameAchievementData
+            return CreateDataOrNull(game, achievements);
+        }
+
+        private async Task<List<AchievementDetail>> LoadCatalogAchievementsAsync(
+            string region,
+            string realmSlug,
+            string character,
+            string apiLocale,
+            string wowLocale,
+            string catalogSignature,
+            int catalogCount,
+            CancellationToken ct)
+        {
+            if (_catalogCache.TryLoad(
+                region,
+                apiLocale,
+                wowLocale,
+                catalogSignature,
+                catalogCount,
+                out var cachedAchievements,
+                out var cacheReason))
+            {
+                _logger?.Info($"[BattleNet/WoW] Loaded WoW catalog metadata from cache. achievements={cachedAchievements.Count}, scope={region}/{apiLocale}/{wowLocale}");
+                return cachedAchievements;
+            }
+
+            if (_catalogCache.IsEnabled)
+            {
+                _logger?.Debug($"[BattleNet/WoW] WoW catalog cache miss. reason={cacheReason ?? "unknown"}, scope={region}/{apiLocale}/{wowLocale}");
+            }
+
+            var achievements = await FetchPublicCatalogAchievementsAsync(region, realmSlug, character, wowLocale, ct).ConfigureAwait(false);
+            _catalogCache.Save(
+                region,
+                apiLocale,
+                wowLocale,
+                catalogSignature,
+                catalogCount,
+                achievements);
+
+            return achievements;
+        }
+
+        private async Task<List<AchievementDetail>> FetchPublicCatalogAchievementsAsync(
+            string region,
+            string realmSlug,
+            string character,
+            string wowLocale,
+            CancellationToken ct)
+        {
+            var allData = await _client.GetWowAllAchievementsAsync(region, realmSlug, character, wowLocale, ct).ConfigureAwait(false);
+            return ParseAchievements(allData);
+        }
+
+        private static GameAchievementData CreateDataOrNull(Game game, List<AchievementDetail> achievements)
+        {
+            if (achievements == null || achievements.Count == 0)
+            {
+                return null;
+            }
+
+            return new GameAchievementData
             {
                 ProviderKey = "BattleNet",
                 GameName = game.Name,
@@ -104,56 +195,135 @@ namespace PlayniteAchievements.Providers.BattleNet
                 LastUpdatedUtc = DateTime.UtcNow,
                 HasAchievements = achievements.Count > 0
             };
-            return data;
         }
 
-        private async Task<List<AchievementDetail>> CreateOfficialCatalogAchievementsAsync(
-            IEnumerable<WowOfficialAchievementDefinition> catalog,
-            string region,
-            string bearerToken,
-            CancellationToken ct)
+        internal static List<AchievementDetail> ParseAchievements(IEnumerable<WowAchievementsData> allData)
         {
             var achievements = new List<AchievementDetail>();
             var seen = new HashSet<string>(StringComparer.Ordinal);
-            var mediaCache = new Dictionary<string, string>(StringComparer.Ordinal);
 
-            foreach (var definition in catalog ?? Enumerable.Empty<WowOfficialAchievementDefinition>())
+            foreach (var categoryData in allData ?? Enumerable.Empty<WowAchievementsData>())
             {
-                ct.ThrowIfCancellationRequested();
-
-                var id = definition?.Id ?? 0;
-                var key = id.ToString(CultureInfo.InvariantCulture);
-                if (id <= 0 || !seen.Add(key))
+                if (categoryData == null)
                 {
                     continue;
                 }
 
-                var mediaHref = FirstNonEmpty(
-                    definition?.Media?.Href,
-                    BuildOfficialAchievementMediaHref(null, region, id));
-                var iconUrl = await TryGetOfficialAchievementIconAsync(
-                    mediaHref,
-                    bearerToken,
-                    mediaCache,
-                    id,
-                    ct).ConfigureAwait(false);
+                var category = categoryData.Name ?? categoryData.Category;
+                var subcategories = ReadSubcategories(categoryData.Subcategories);
+                if (subcategories.Count > 0)
+                {
+                    foreach (var subcategory in subcategories)
+                    {
+                        AddAchievements(achievements, seen, subcategory?.Achievements, category);
+                    }
+                }
+                else
+                {
+                    AddAchievements(achievements, seen, categoryData.AchievementsList, category);
+                }
+            }
 
-                achievements.Add(new AchievementDetail
+            return achievements;
+        }
+
+        private static int MergeOfficialCatalogIndex(
+            List<AchievementDetail> achievements,
+            IEnumerable<WowOfficialAchievementDefinition> catalog)
+        {
+            if (achievements == null)
+            {
+                return 0;
+            }
+
+            var byId = achievements
+                .Where(item => item != null && !string.IsNullOrWhiteSpace(item.ApiName))
+                .GroupBy(item => item.ApiName, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
+            var added = 0;
+            foreach (var definition in catalog ?? Enumerable.Empty<WowOfficialAchievementDefinition>())
+            {
+                var id = definition?.Id ?? 0;
+                var key = id.ToString(CultureInfo.InvariantCulture);
+                if (id <= 0)
+                {
+                    continue;
+                }
+
+                if (byId.TryGetValue(key, out var existing))
+                {
+                    MergeOfficialDefinitionFields(existing, definition, enrichIcon: false, iconUrl: null);
+                    continue;
+                }
+
+                var detail = new AchievementDetail
                 {
                     ApiName = key,
                     DisplayName = FirstNonEmpty(definition?.Name, key),
                     Description = definition?.Description,
-                    UnlockedIconPath = iconUrl,
                     Points = definition != null && definition.Points > 0 ? definition.Points : (int?)null,
                     Category = FirstNonEmpty(definition?.Category?.Name, "Default"),
                     CategoryType = IsOfficiallyUnobtainable(definition) ? "Missable" : null,
                     Hidden = definition?.IsHidden == true,
                     ProviderKey = "BattleNet",
                     Unlocked = false
-                });
+                };
+                achievements.Add(detail);
+                byId[key] = detail;
+                added++;
             }
 
-            return achievements;
+            return added;
+        }
+
+        private static void MergeOfficialDefinitionFields(
+            AchievementDetail detail,
+            WowOfficialAchievementDefinition definition,
+            bool enrichIcon,
+            string iconUrl)
+        {
+            if (detail == null || definition == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(detail.DisplayName) ||
+                string.Equals(detail.DisplayName, detail.ApiName, StringComparison.Ordinal))
+            {
+                detail.DisplayName = FirstNonEmpty(definition.Name, detail.DisplayName);
+            }
+
+            if (string.IsNullOrWhiteSpace(detail.Description))
+            {
+                detail.Description = definition.Description;
+            }
+
+            if (!detail.Points.HasValue && definition.Points > 0)
+            {
+                detail.Points = definition.Points;
+            }
+
+            if (string.IsNullOrWhiteSpace(detail.Category) ||
+                string.Equals(detail.Category, "Default", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(detail.Category, "Earned", StringComparison.OrdinalIgnoreCase))
+            {
+                detail.Category = FirstNonEmpty(definition.Category?.Name, detail.Category);
+            }
+
+            if (IsOfficiallyUnobtainable(definition))
+            {
+                detail.CategoryType = "Missable";
+            }
+
+            if (definition.IsHidden)
+            {
+                detail.Hidden = true;
+            }
+
+            if (enrichIcon && string.IsNullOrWhiteSpace(detail.UnlockedIconPath))
+            {
+                detail.UnlockedIconPath = iconUrl;
+            }
         }
 
         internal async Task<WowOfficialMergeStats> MergeOfficialAchievementDataAsync(
@@ -392,23 +562,32 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             var definitionHref = progress.Achievement?.Key?.Href;
             var definition = default(WowOfficialAchievementDefinition);
-            if (!string.IsNullOrWhiteSpace(definitionHref) &&
-                !definitionCache.TryGetValue(definitionHref, out definition))
+            var definitionCacheKey = FirstNonEmpty(
+                definitionHref,
+                $"{region}:{id.ToString(CultureInfo.InvariantCulture)}:{locale}");
+            if (!definitionCache.TryGetValue(definitionCacheKey, out definition))
             {
                 try
                 {
-                    definition = await _client.GetWowOfficialAchievementDefinitionAsync(
-                        definitionHref,
-                        locale,
-                        bearerToken,
-                        ct).ConfigureAwait(false);
+                    definition = !string.IsNullOrWhiteSpace(definitionHref)
+                        ? await _client.GetWowOfficialAchievementDefinitionAsync(
+                            definitionHref,
+                            locale,
+                            bearerToken,
+                            ct).ConfigureAwait(false)
+                        : await _client.GetWowOfficialAchievementDefinitionByIdAsync(
+                            region,
+                            id,
+                            locale,
+                            bearerToken,
+                            ct).ConfigureAwait(false);
                 }
                 catch (Exception ex) when (!(ex is OperationCanceledException))
                 {
                     _logger?.Debug(ex, $"[BattleNet/WoW] Failed to fetch achievement definition for id={id}.");
                 }
 
-                definitionCache[definitionHref] = definition;
+                definitionCache[definitionCacheKey] = definition;
             }
 
             var iconUrl = default(string);
@@ -645,6 +824,45 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
         }
 
+        private static void AddAchievements(
+            List<AchievementDetail> target,
+            HashSet<string> seen,
+            IEnumerable<WowAchievement> source,
+            string category)
+        {
+            foreach (var achievement in source ?? Enumerable.Empty<WowAchievement>())
+            {
+                if (achievement == null || achievement.Id == 0 || !seen.Add(achievement.Id.ToString()))
+                {
+                    continue;
+                }
+
+                var detail = new AchievementDetail
+                {
+                    ApiName = achievement.Id.ToString(CultureInfo.InvariantCulture),
+                    DisplayName = achievement.Name,
+                    Description = achievement.Description,
+                    UnlockedIconPath = achievement.Icon?.Url,
+                    Points = achievement.Point > 0 ? achievement.Point : (int?)null,
+                    Category = category,
+                    ProviderKey = "BattleNet",
+                    Unlocked = achievement.Time.HasValue && achievement.Time.Value != default
+                };
+
+                if (detail.Unlocked)
+                {
+                    var time = achievement.Time.Value;
+                    detail.UnlockTimeUtc = time.Kind == DateTimeKind.Utc
+                        ? time
+                        : time.Kind == DateTimeKind.Local
+                            ? time.ToUniversalTime()
+                            : DateTime.SpecifyKind(time, DateTimeKind.Utc);
+                }
+
+                target.Add(detail);
+            }
+        }
+
         private static string NormalizeApiName(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
@@ -693,6 +911,36 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             return value;
+        }
+
+        private static List<WowSubcategory> ReadSubcategories(object value)
+        {
+            try
+            {
+                if (value is JObject keyed)
+                {
+                    return keyed.Properties()
+                        .Select(property => property.Value?.ToObject<WowSubcategory>())
+                        .Where(item => item != null)
+                        .ToList();
+                }
+
+                if (value is JArray array)
+                {
+                    return array
+                        .Select(token => token?.ToObject<WowSubcategory>())
+                        .Where(item => item != null)
+                        .ToList();
+                }
+
+                return (value as IEnumerable<WowSubcategory>)?
+                    .Where(item => item != null)
+                    .ToList() ?? new List<WowSubcategory>();
+            }
+            catch
+            {
+                return new List<WowSubcategory>();
+            }
         }
 
         private static int StableAppId(string id)

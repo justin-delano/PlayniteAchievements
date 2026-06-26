@@ -27,6 +27,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private const string TokenUrl = "https://{0}.battle.net/oauth/token";
         private const string AuthorizeUrl = "https://{0}.battle.net/oauth/authorize";
         private const string UserInfoUrl = "https://{0}.battle.net/oauth/userinfo";
+        private const string WowBaseAchievementUrl = "https://worldofwarcraft.blizzard.com/{0}/character/{1}/{2}/{3}/achievements/{4}";
         private const string WowOfficialAchievementIndexUrl = "https://{0}.api.blizzard.com/data/wow/achievement/index?namespace=static-{0}&locale={1}";
         private const string WowOfficialAchievementUrl = "https://{0}.api.blizzard.com/data/wow/achievement/{1}?namespace=static-{0}&locale={2}";
         private const string WowOfficialCharacterAchievementsUrl = "https://{0}.api.blizzard.com/profile/wow/character/{1}/{2}/achievements?namespace=profile-{0}&locale={3}";
@@ -39,6 +40,25 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private const string DefaultUserAgent =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+        private static readonly string[] WowCategories =
+        {
+            "characters/model.json",
+            "player-vs-player/model.json",
+            "quests/model.json",
+            "exploration/model.json",
+            "world-events/model.json",
+            "dungeons-raids/model.json",
+            "professions/model.json",
+            "reputation/model.json",
+            "pet-battles/model.json",
+            "collections/model.json",
+            "expansion-features/model.json",
+            "delves/model.json",
+            "housing/model.json",
+            "feats-of-strength/model.json",
+            "legacy/model.json"
+        };
 
         private static readonly RateLimiter RateLimiter = new RateLimiter(1000, 3);
 
@@ -105,6 +125,40 @@ namespace PlayniteAchievements.Providers.BattleNet
         }
 
         // --- WoW ---
+
+        public async Task<List<WowAchievementsData>> GetWowAllAchievementsAsync(
+            string region, string realmSlug, string character, string locale, CancellationToken ct)
+        {
+            var results = new List<WowAchievementsData>();
+            var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? "en-us" : locale;
+            _logger?.Info($"[BattleNet/API] WoW public achievement categories requested. region={region ?? "<none>"}, realmSlug={realmSlug ?? "<none>"}, character={Presence(character)}, locale={effectiveLocale}");
+
+            var baseUrl = string.Format(WowBaseAchievementUrl,
+                effectiveLocale, region, realmSlug, Uri.EscapeDataString(character), "{0}");
+
+            foreach (var category in WowCategories)
+            {
+                ct.ThrowIfCancellationRequested();
+                var url = string.Format(baseUrl, category);
+                try
+                {
+                    var data = await RateLimiter.ExecuteWithRetryAsync(
+                        async () => await GetJsonAsync<WowAchievementsData>(url, ct).ConfigureAwait(false),
+                        IsTransientError, ct);
+                    if (data != null)
+                    {
+                        results.Add(data);
+                    }
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    _logger?.Debug(ex, $"[BattleNet/API] WoW public achievement category fetch failed for {UrlHostAndPath(url)}.");
+                }
+            }
+
+            _logger?.Info($"[BattleNet/API] Completed WoW public achievement category fetch. region={region ?? "<none>"}, realmSlug={realmSlug ?? "<none>"}, fetched={results.Count}/{WowCategories.Length}");
+            return results;
+        }
 
         public Task<string> GetClientCredentialsAccessTokenAsync(
             string apiRegion,
@@ -194,48 +248,21 @@ namespace PlayniteAchievements.Providers.BattleNet
                     continue;
                 }
 
-                var definition = default(WowOfficialAchievementDefinition);
-                try
-                {
-                    definition = !string.IsNullOrWhiteSpace(reference?.Key?.Href)
-                        ? await GetWowOfficialAchievementDefinitionAsync(
-                            reference.Key.Href,
-                            locale,
-                            bearerToken,
-                            ct).ConfigureAwait(false)
-                        : await GetWowOfficialAchievementDefinitionByIdAsync(
-                            region,
-                            id,
-                            locale,
-                            bearerToken,
-                            ct).ConfigureAwait(false);
-                }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                    _logger?.Debug(ex, $"[BattleNet/WoW] Failed to fetch achievement definition for catalog id={id}.");
-                }
-
-                if (definition != null)
-                {
-                    if (definition.Id <= 0)
-                    {
-                        definition.Id = id;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(definition.Name))
-                    {
-                        definition.Name = reference?.Name;
-                    }
-                }
-
-                definitions.Add(definition ?? new WowOfficialAchievementDefinition
+                definitions.Add(new WowOfficialAchievementDefinition
                 {
                     Id = id,
-                    Name = reference?.Name
+                    Name = reference?.Name,
+                    Description = reference?.Description,
+                    Points = reference?.Points ?? 0,
+                    IsHidden = reference?.IsHidden == true,
+                    IsObtainable = reference?.IsObtainable,
+                    IsObtainableInGame = reference?.IsObtainableInGame,
+                    Category = reference?.Category,
+                    Media = reference?.Media
                 });
             }
 
-            _logger?.Info($"[BattleNet/WoW] Loaded official achievement catalog. count={definitions.Count}");
+            _logger?.Info($"[BattleNet/WoW] Loaded official achievement index. count={definitions.Count}");
             return definitions;
         }
 
@@ -650,6 +677,8 @@ namespace PlayniteAchievements.Providers.BattleNet
             _disposed = true;
             _httpClient?.Dispose();
         }
+
+        private static string Presence(string value) => string.IsNullOrWhiteSpace(value) ? "missing" : "set";
 
         private static string BuildFormData(Dictionary<string, string> data)
         {

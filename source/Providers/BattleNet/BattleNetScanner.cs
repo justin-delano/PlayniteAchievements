@@ -21,10 +21,11 @@ namespace PlayniteAchievements.Providers.BattleNet
             BattleNetApiClient client,
             BattleNetSessionManager sessionManager,
             PlayniteAchievementsSettings settings,
-            ILogger logger)
+            ILogger logger,
+            string pluginUserDataPath = null)
         {
             _sc2 = new Sc2GameStrategy(client, logger);
-            _wow = new WowGameStrategy(client, sessionManager, logger);
+            _wow = new WowGameStrategy(client, sessionManager, logger, pluginUserDataPath);
             _settings = settings;
             _logger = logger;
         }
