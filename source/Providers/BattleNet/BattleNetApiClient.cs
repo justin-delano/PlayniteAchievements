@@ -27,7 +27,8 @@ namespace PlayniteAchievements.Providers.BattleNet
         private const string TokenUrl = "https://{0}.battle.net/oauth/token";
         private const string AuthorizeUrl = "https://{0}.battle.net/oauth/authorize";
         private const string UserInfoUrl = "https://{0}.battle.net/oauth/userinfo";
-        private const string WowBaseAchievementUrl = "https://worldofwarcraft.blizzard.com/{0}/character/{1}/{2}/{3}/achievements/{4}";
+        private const string WowOfficialAchievementIndexUrl = "https://{0}.api.blizzard.com/data/wow/achievement/index?namespace=static-{0}&locale={1}";
+        private const string WowOfficialAchievementUrl = "https://{0}.api.blizzard.com/data/wow/achievement/{1}?namespace=static-{0}&locale={2}";
         private const string WowOfficialCharacterAchievementsUrl = "https://{0}.api.blizzard.com/profile/wow/character/{1}/{2}/achievements?namespace=profile-{0}&locale={3}";
         private const string WowOfficialAccountProfileUrl = "https://{0}.api.blizzard.com/profile/user/wow?namespace=profile-{0}&locale={1}";
         private const string WowGraphQlUrl = "https://worldofwarcraft.blizzard.com/graphql";
@@ -38,25 +39,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private const string DefaultUserAgent =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
-        private static readonly string[] WowCategories =
-        {
-            "characters/model.json",
-            "player-vs-player/model.json",
-            "quests/model.json",
-            "exploration/model.json",
-            "world-events/model.json",
-            "dungeons-raids/model.json",
-            "professions/model.json",
-            "reputation/model.json",
-            "pet-battles/model.json",
-            "collections/model.json",
-            "expansion-features/model.json",
-            "delves/model.json",
-            "housing/model.json",
-            "feats-of-strength/model.json",
-            "legacy/model.json"
-        };
 
         private static readonly RateLimiter RateLimiter = new RateLimiter(1000, 3);
 
@@ -124,39 +106,6 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         // --- WoW ---
 
-        public async Task<List<WowAchievementsData>> GetWowAllAchievementsAsync(
-            string region, string realmSlug, string character, string locale, CancellationToken ct)
-        {
-            var results = new List<WowAchievementsData>();
-            var effectiveLocale = string.IsNullOrWhiteSpace(locale) ? "en-us" : locale;
-            _logger?.Info($"[BattleNet/API] WoW achievement categories requested. region={region ?? "<none>"}, realmSlug={realmSlug ?? "<none>"}, character={Presence(character)}, locale={effectiveLocale}");
-
-            var baseUrl = string.Format(WowBaseAchievementUrl,
-                effectiveLocale, region, realmSlug, Uri.EscapeDataString(character), "{0}");
-
-            foreach (var category in WowCategories)
-            {
-                ct.ThrowIfCancellationRequested();
-                var url = string.Format(baseUrl, category);
-                try
-                {
-                    var data = await RateLimiter.ExecuteWithRetryAsync(
-                        async () => await GetJsonAsync<WowAchievementsData>(url, ct).ConfigureAwait(false),
-                        IsTransientError, ct);
-                    if (data != null)
-                    {
-                        results.Add(data);
-                    }
-                }
-                catch (Exception ex) when (!(ex is OperationCanceledException))
-                {
-                }
-            }
-
-            _logger?.Info($"[BattleNet/API] Completed WoW achievement category fetch. region={region ?? "<none>"}, realmSlug={realmSlug ?? "<none>"}, fetched={results.Count}/{WowCategories.Length}");
-            return results;
-        }
-
         public Task<string> GetClientCredentialsAccessTokenAsync(
             string apiRegion,
             string clientId,
@@ -223,6 +172,100 @@ namespace PlayniteAchievements.Providers.BattleNet
             var url = BuildWowOfficialCharacterAchievementsUrl(region, realmSlug, character, locale);
             return await RateLimiter.ExecuteWithRetryAsync(
                 async () => await GetJsonAsync<WowCharacterAchievementsResponse>(url, ct, bearerToken).ConfigureAwait(false),
+                IsTransientError, ct).ConfigureAwait(false);
+        }
+
+        public async Task<List<WowOfficialAchievementDefinition>> GetWowOfficialAchievementCatalogAsync(
+            string region,
+            string locale,
+            string bearerToken,
+            CancellationToken ct)
+        {
+            var index = await GetWowOfficialAchievementIndexAsync(region, locale, bearerToken, ct).ConfigureAwait(false);
+            var definitions = new List<WowOfficialAchievementDefinition>();
+
+            foreach (var reference in index?.Achievements ?? new List<WowOfficialAchievementReference>())
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var id = reference?.Id ?? 0;
+                if (id <= 0)
+                {
+                    continue;
+                }
+
+                var definition = default(WowOfficialAchievementDefinition);
+                try
+                {
+                    definition = !string.IsNullOrWhiteSpace(reference?.Key?.Href)
+                        ? await GetWowOfficialAchievementDefinitionAsync(
+                            reference.Key.Href,
+                            locale,
+                            bearerToken,
+                            ct).ConfigureAwait(false)
+                        : await GetWowOfficialAchievementDefinitionByIdAsync(
+                            region,
+                            id,
+                            locale,
+                            bearerToken,
+                            ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (!(ex is OperationCanceledException))
+                {
+                    _logger?.Debug(ex, $"[BattleNet/WoW] Failed to fetch achievement definition for catalog id={id}.");
+                }
+
+                if (definition != null)
+                {
+                    if (definition.Id <= 0)
+                    {
+                        definition.Id = id;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(definition.Name))
+                    {
+                        definition.Name = reference?.Name;
+                    }
+                }
+
+                definitions.Add(definition ?? new WowOfficialAchievementDefinition
+                {
+                    Id = id,
+                    Name = reference?.Name
+                });
+            }
+
+            _logger?.Info($"[BattleNet/WoW] Loaded official achievement catalog. count={definitions.Count}");
+            return definitions;
+        }
+
+        public async Task<WowOfficialAchievementIndexResponse> GetWowOfficialAchievementIndexAsync(
+            string region,
+            string locale,
+            string bearerToken,
+            CancellationToken ct)
+        {
+            var url = BuildWowOfficialAchievementIndexUrl(region, locale);
+            return await RateLimiter.ExecuteWithRetryAsync(
+                async () => await GetJsonAsync<WowOfficialAchievementIndexResponse>(url, ct, bearerToken).ConfigureAwait(false),
+                IsTransientError, ct).ConfigureAwait(false);
+        }
+
+        public async Task<WowOfficialAchievementDefinition> GetWowOfficialAchievementDefinitionByIdAsync(
+            string region,
+            int achievementId,
+            string locale,
+            string bearerToken,
+            CancellationToken ct)
+        {
+            if (achievementId <= 0)
+            {
+                return null;
+            }
+
+            var url = BuildWowOfficialAchievementDefinitionUrl(region, achievementId, locale);
+            return await RateLimiter.ExecuteWithRetryAsync(
+                async () => await GetJsonAsync<WowOfficialAchievementDefinition>(url, ct, bearerToken).ConfigureAwait(false),
                 IsTransientError, ct).ConfigureAwait(false);
         }
 
@@ -387,6 +430,26 @@ namespace PlayniteAchievements.Providers.BattleNet
                 Uri.EscapeDataString(string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale));
         }
 
+        internal static string BuildWowOfficialAchievementIndexUrl(string region, string locale)
+        {
+            return string.Format(
+                WowOfficialAchievementIndexUrl,
+                NormalizeApiRegion(region),
+                Uri.EscapeDataString(string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale));
+        }
+
+        internal static string BuildWowOfficialAchievementDefinitionUrl(
+            string region,
+            int achievementId,
+            string locale)
+        {
+            return string.Format(
+                WowOfficialAchievementUrl,
+                NormalizeApiRegion(region),
+                achievementId,
+                Uri.EscapeDataString(string.IsNullOrWhiteSpace(locale) ? DefaultApiLocale : locale));
+        }
+
         internal static string BuildDataForAzerothDynamicUrl(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
@@ -439,8 +502,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             {
                 return _cachedAccessToken;
             }
-
-            var tokenUrl = BuildTokenUrl(normalizedRegion);
 
             var token = await PostTokenAsync(
                 normalizedRegion,
@@ -589,26 +650,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             _disposed = true;
             _httpClient?.Dispose();
         }
-
-        private static string Bool(bool value) => value ? "true" : "false";
-
-        private static string MaskId(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return "<empty>";
-            }
-
-            var trimmed = value.Trim();
-            if (trimmed.Length <= 4)
-            {
-                return "****";
-            }
-
-            return $"{new string('*', Math.Min(8, trimmed.Length - 4))}{trimmed.Substring(trimmed.Length - 4)}";
-        }
-
-        private static string Presence(string value) => string.IsNullOrWhiteSpace(value) ? "missing" : "set";
 
         private static string BuildFormData(Dictionary<string, string> data)
         {

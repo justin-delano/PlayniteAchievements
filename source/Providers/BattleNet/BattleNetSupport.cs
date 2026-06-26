@@ -80,11 +80,6 @@ namespace PlayniteAchievements.Providers.BattleNet
         private static readonly HashSet<string> SupportedWebLocales =
             new HashSet<string>(LocaleAliases.Values, StringComparer.OrdinalIgnoreCase);
 
-        public static string ToWowWebLocale(string globalLanguage)
-        {
-            return ResolveWebLocale(globalLanguage);
-        }
-
         public static string ToApiLocale(string globalLanguage)
         {
             var parts = ResolveWebLocale(globalLanguage).Split('-');

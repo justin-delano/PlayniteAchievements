@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -24,82 +23,21 @@ namespace PlayniteAchievements.Tests.Providers
         [TestMethod]
         public void LocaleMapper_MapsSteamLanguageKeys()
         {
-            Assert.AreEqual("de-de", BattleNetLocaleMapper.ToWowWebLocale("german"));
             Assert.AreEqual("de_DE", BattleNetLocaleMapper.ToApiLocale("german"));
         }
 
         [TestMethod]
         public void LocaleMapper_NormalizesExplicitLocales()
         {
-            Assert.AreEqual("de-de", BattleNetLocaleMapper.ToWowWebLocale("de-DE"));
             Assert.AreEqual("de_DE", BattleNetLocaleMapper.ToApiLocale("de-DE"));
         }
 
         [TestMethod]
         public void LocaleMapper_FallsBackToEnglish()
         {
-            Assert.AreEqual("en-us", BattleNetLocaleMapper.ToWowWebLocale(null));
             Assert.AreEqual("en_US", BattleNetLocaleMapper.ToApiLocale(""));
-            Assert.AreEqual("en-us", BattleNetLocaleMapper.ToWowWebLocale("not-a-real-language"));
             Assert.AreEqual("en_US", BattleNetLocaleMapper.ToApiLocale("not-a-real-language"));
-            Assert.AreEqual("en-us", BattleNetLocaleMapper.ToWowWebLocale("zz-ZZ"));
             Assert.AreEqual("en_US", BattleNetLocaleMapper.ToApiLocale("zz-ZZ"));
-        }
-
-        [TestMethod]
-        public void WowParser_ReadsLiveSubcategoryObjectShape()
-        {
-            var payload = JsonConvert.DeserializeObject<WowAchievementsData>(@"
-{
-  ""name"": ""Characters"",
-  ""category"": ""characters"",
-  ""achievementsList"": [
-    {
-      ""id"": 1,
-      ""name"": ""Duplicate top-level item"",
-      ""description"": ""Top-level fallback should not duplicate subcategory data."",
-      ""point"": 5
-    }
-  ],
-  ""subcategories"": {
-    ""global"": {
-      ""id"": ""global"",
-      ""name"": ""Global"",
-      ""achievements"": [
-        {
-          ""id"": 1,
-          ""name"": ""Midnight Epic"",
-          ""description"": ""Equip an epic item."",
-          ""icon"": { ""url"": ""https://example.test/icon.jpg"" },
-          ""point"": 10,
-          ""time"": ""2026-03-26T23:21:56Z""
-        },
-        {
-          ""id"": 2,
-          ""name"": ""Locked Achievement"",
-          ""description"": ""Still locked."",
-          ""point"": 0
-        }
-      ]
-    }
-  }
-}");
-
-            var achievements = WowGameStrategy.ParseAchievements(new[] { payload });
-
-            Assert.AreEqual(2, achievements.Count);
-            var unlocked = achievements.Single(item => item.ApiName == "1");
-            Assert.AreEqual("Midnight Epic", unlocked.DisplayName);
-            Assert.AreEqual("Equip an epic item.", unlocked.Description);
-            Assert.AreEqual("https://example.test/icon.jpg", unlocked.UnlockedIconPath);
-            Assert.AreEqual(10, unlocked.Points);
-            Assert.AreEqual("Characters", unlocked.Category);
-            Assert.IsTrue(unlocked.Unlocked);
-            Assert.AreEqual(DateTimeKind.Utc, unlocked.UnlockTimeUtc.Value.Kind);
-
-            var locked = achievements.Single(item => item.ApiName == "2");
-            Assert.IsFalse(locked.Unlocked);
-            Assert.IsFalse(locked.UnlockTimeUtc.HasValue);
         }
 
         [TestMethod]
@@ -191,6 +129,34 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public void WowRarity_ScalesDataForAzerothRatioValues()
+        {
+            var achievements = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "157", DisplayName = "Ratio Rare" },
+                new AchievementDetail { ApiName = "6", DisplayName = "Ratio Common" },
+                new AchievementDetail { ApiName = "0", DisplayName = "Zero" }
+            };
+
+            var updated = WowGameStrategy.ApplyDataForAzerothRarity(
+                achievements,
+                new Dictionary<string, double>
+                {
+                    { "157", 0.043049 },
+                    { "6", 1 },
+                    { "0", 0 }
+                });
+
+            Assert.AreEqual(3, updated);
+            Assert.AreEqual(4.3049, achievements[0].GlobalPercentUnlocked.Value, 0.0001);
+            Assert.AreEqual(RarityTier.UltraRare, achievements[0].Rarity);
+            Assert.AreEqual(100d, achievements[1].GlobalPercentUnlocked.Value);
+            Assert.AreEqual(RarityTier.Common, achievements[1].Rarity);
+            Assert.AreEqual(0d, achievements[2].GlobalPercentUnlocked.Value);
+            Assert.AreEqual(RarityTier.UltraRare, achievements[2].Rarity);
+        }
+
+        [TestMethod]
         public void GameSupport_OnlyAllowsWowAndConfiguredSc2()
         {
             var settings = new BattleNetSettings
@@ -257,6 +223,34 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public async Task WowApiClient_LoadsOfficialAchievementCatalogFromIndex()
+        {
+            var handler = new RecordingHandler();
+            using (var httpClient = new HttpClient(handler))
+            using (var client = new BattleNetApiClient(new NullLogger(), httpClient))
+            {
+                var catalog = await client.GetWowOfficialAchievementCatalogAsync(
+                    "us",
+                    "en_US",
+                    "wow-token",
+                    CancellationToken.None);
+
+                Assert.AreEqual(2, catalog.Count);
+                Assert.AreEqual(1, catalog[0].Id);
+                Assert.AreEqual("Account Wide Existing", catalog[0].Name);
+                Assert.AreEqual(2, catalog[1].Id);
+                Assert.AreEqual(false, catalog[1].IsObtainable);
+            }
+
+            Assert.AreEqual(3, handler.Requests.Count);
+            Assert.AreEqual("https://us.api.blizzard.com/data/wow/achievement/index?namespace=static-us&locale=en_US", handler.Requests[0].RequestUri.ToString());
+            Assert.AreEqual("Bearer", handler.Requests[0].AuthorizationScheme);
+            Assert.AreEqual("wow-token", handler.Requests[0].AuthorizationParameter);
+            Assert.AreEqual("https://us.api.blizzard.com/data/wow/achievement/1?namespace=static-us&locale=en_US", handler.Requests[1].RequestUri.ToString());
+            Assert.AreEqual("https://us.api.blizzard.com/data/wow/achievement/2?namespace=static-us&locale=en_US", handler.Requests[2].RequestUri.ToString());
+        }
+
+        [TestMethod]
         public async Task WowApiClient_UsesOfficialCharacterAchievementsEndpoint()
         {
             var handler = new RecordingHandler();
@@ -280,6 +274,47 @@ namespace PlayniteAchievements.Tests.Providers
             Assert.AreEqual("https://us.api.blizzard.com/profile/wow/character/dalaran/noshotz/achievements?namespace=profile-us&locale=en_US", handler.Requests[0].RequestUri.ToString());
             Assert.AreEqual("Bearer", handler.Requests[0].AuthorizationScheme);
             Assert.AreEqual("wow-token", handler.Requests[0].AuthorizationParameter);
+        }
+
+        [TestMethod]
+        public async Task WowFetch_UsesOfficialCatalogAndMapsUnobtainableToMissable()
+        {
+            var settingsRoot = new PlayniteAchievementsSettings();
+            var registry = new ProviderRegistry(settingsRoot, new[] { "BattleNet" }, new NullLogger());
+            var battleNetSettings = registry.GetSettings<BattleNetSettings>();
+            battleNetSettings.WowRegion = "us";
+            battleNetSettings.WowRealmSlug = "dalaran";
+            battleNetSettings.WowCharacter = "Noshotz";
+            battleNetSettings.BattleNetClientId = "client-id";
+            battleNetSettings.BattleNetClientSecret = "client-secret";
+            battleNetSettings.WowAggregateAccountCharacters = false;
+            registry.Save(battleNetSettings);
+
+            var handler = new RecordingHandler();
+            GameAchievementData data;
+            using (var httpClient = new HttpClient(handler))
+            using (var client = new BattleNetApiClient(new NullLogger(), httpClient))
+            {
+                var strategy = new WowGameStrategy(client, null, new NullLogger());
+                data = await strategy.FetchAchievementsAsync(
+                    BattleNetGame("World of Warcraft"),
+                    "en-US",
+                    CancellationToken.None);
+            }
+
+            Assert.IsNotNull(data);
+            Assert.IsTrue(data.HasAchievements);
+
+            var completed = data.Achievements.Single(item => item.ApiName == "1");
+            Assert.IsTrue(completed.Unlocked);
+            Assert.AreEqual("Account Wide Existing", completed.DisplayName);
+            Assert.AreEqual("https://render.worldofwarcraft.test/catalog-icon.jpg", completed.UnlockedIconPath);
+
+            var unobtainable = data.Achievements.Single(item => item.ApiName == "2");
+            Assert.IsFalse(unobtainable.Unlocked);
+            Assert.AreEqual("Missable", unobtainable.CategoryType);
+            Assert.IsTrue(unobtainable.Hidden);
+            Assert.AreEqual("Legacy", unobtainable.Category);
         }
 
         [TestMethod]
@@ -412,6 +447,60 @@ namespace PlayniteAchievements.Tests.Providers
                     recorded.Body == "grant_type=client_credentials")
                 {
                     return JsonResponse(@"{""access_token"":""wow-token"",""token_type"":""bearer"",""expires_in"":3600}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement/index?namespace=static-us&locale=en_US")
+                {
+                    return JsonResponse(@"
+{
+  ""achievements"": [
+    { ""id"": 1, ""name"": ""Account Wide Existing"", ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/1?namespace=static-us"" } },
+    { ""id"": 2, ""name"": ""Unobtainable Legacy"", ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/2?namespace=static-us"" } }
+  ]
+}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement/1?namespace=static-us&locale=en_US")
+                {
+                    return JsonResponse(@"
+{
+  ""id"": 1,
+  ""name"": ""Account Wide Existing"",
+  ""description"": ""Already earned from the official profile API."",
+  ""points"": 10,
+  ""category"": { ""id"": 92, ""name"": ""General"" },
+  ""media"": { ""href"": ""https://us.api.blizzard.com/data/wow/media/achievement/1?namespace=static-us"" }
+}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/media/achievement/1?namespace=static-us")
+                {
+                    return JsonResponse(@"{""assets"":[{""key"":""icon"",""value"":""https://render.worldofwarcraft.test/catalog-icon.jpg""}]}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement/2?namespace=static-us&locale=en_US")
+                {
+                    return JsonResponse(@"
+{
+  ""id"": 2,
+  ""name"": ""Unobtainable Legacy"",
+  ""description"": ""No longer available."",
+  ""points"": 5,
+  ""is_hidden"": true,
+  ""is_obtainable"": false,
+  ""category"": { ""id"": 81, ""name"": ""Legacy"" },
+  ""media"": { ""href"": ""https://us.api.blizzard.com/data/wow/media/achievement/2?namespace=static-us"" }
+}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/media/achievement/2?namespace=static-us")
+                {
+                    return JsonResponse(@"{""assets"":[{""key"":""icon"",""value"":""https://render.worldofwarcraft.test/unobtainable-icon.jpg""}]}");
                 }
 
                 if (request.Method == HttpMethod.Get &&
