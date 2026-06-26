@@ -486,11 +486,21 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _categoryType, value))
                 {
                     OnPropertyChanged(nameof(CategoryTypeDisplay));
+                    OnPropertyChanged(nameof(IsHardcore));
                 }
             }
         }
 
         public string CategoryTypeDisplay => AchievementCategoryTypeHelper.ToDisplayText(CategoryType);
+
+        /// <summary>
+        /// True when the achievement is classified as Hardcore (RetroAchievements unlock mode).
+        /// Drives the solid rarity border in place of the soft glow. Robust to category types
+        /// combined with other values.
+        /// </summary>
+        public bool IsHardcore =>
+            AchievementCategoryTypeHelper.ParseValues(CategoryType)
+                .Contains(AchievementCategoryTypeHelper.HardcoreCategoryType);
 
         public string CategoryLabel
         {

@@ -94,8 +94,7 @@ namespace PlayniteAchievements.Views.Helpers
             {
                 Header = L(resourceOwner, "LOCPlayAch_Common_AddType", "Add Type")
             };
-            foreach (var categoryType in AchievementCategoryTypeHelper.AllowedCategoryTypes.Where(type =>
-                         !string.Equals(type, AchievementCategoryTypeHelper.DefaultCategoryType, StringComparison.OrdinalIgnoreCase)))
+            foreach (var categoryType in AchievementCategoryTypeHelper.AssignableCategoryTypes)
             {
                 var capturedType = categoryType;
                 addTypeMenu.Items.Add(CreateMenuItem(

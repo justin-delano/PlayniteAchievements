@@ -398,6 +398,16 @@
                                 <Setter Property="Visibility" Value="Visible"/>
                                 <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
                             </MultiDataTrigger>
+                            <!-- Hardcore achievements use a solid border instead of the soft glow. -->
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True"/>
+                                    <Condition Binding="{Binding IsHardcore}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Setter Property="Effect" Value="{x:Null}"/>
+                            </MultiDataTrigger>
                         </Style.Triggers>
                     </Style>
                 </Image.Style>
@@ -409,6 +419,32 @@
                    SnapsToDevicePixels="True"
                    helpers:AsyncImage.Uri="{Binding DisplayIcon}"
                    helpers:AsyncImage.DecodePixel="128"/>
+
+            <!-- Solid rarity border for Hardcore achievements (replaces the glow).
+                 Negative margin draws the border just OUTSIDE the icon (icon margin 2 - thickness 3)
+                 so it never covers or shrinks the icon, matching how the glow extended outward. -->
+            <Border Margin="-1"
+                    BorderThickness="3"
+                    Background="Transparent"
+                    IsHitTestVisible="False"
+                    SnapsToDevicePixels="True"
+                    BorderBrush="{Binding Rarity, Converter={StaticResource RarityToShineBrush}}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <MultiDataTrigger>
+                                <MultiDataTrigger.Conditions>
+                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True"/>
+                                    <Condition Binding="{Binding IsHardcore}" Value="True"/>
+                                </MultiDataTrigger.Conditions>
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </MultiDataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+            </Border>
         </Grid>
     </DataTemplate>
 
