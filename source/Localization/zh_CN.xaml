@@ -221,12 +221,12 @@
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderButton">打开图标文件夹</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_OpenFolderUnavailable">扩展数据路径不可用。</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_CustomIcons_ValidationError">一个或多个图标值无效。请使用绝对 http:// 或 https:// URL，或复制到插件数据中的管理本地文件。</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">Filtered Out</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">Filtered Out of Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filter Out</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Filter Out of Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOut">Filtered</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilteredOutOfSummaries">Filtered from Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOut">Filter</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_FilterOutOfSummaries">Filter from Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Header">Filters</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Filter achievements out of achievement views or only out of summaries.</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Hint">Control which achievements appear in achievement views and summaries.</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Filters_Unfiltered">Unfiltered</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_HasNote">Note added</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Notes_Header">Achievement Notes</sys:String>

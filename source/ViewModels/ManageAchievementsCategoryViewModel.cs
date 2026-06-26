@@ -22,6 +22,14 @@ namespace PlayniteAchievements.ViewModels
         private readonly ILogger _logger;
 
         private List<ManageAchievementsCategoryItem> _allRows = new List<ManageAchievementsCategoryItem>();
+        private readonly SearchTextIndex<ManageAchievementsCategoryItem> _searchIndex =
+            new SearchTextIndex<ManageAchievementsCategoryItem>(item =>
+                SearchTextBuilder.ForManageCategory(
+                    item?.DisplayName,
+                    item?.Description,
+                    item?.ApiName,
+                    item?.Category,
+                    item?.CategoryTypeDisplay));
         private List<string> _canonicalCategoryLabelFilterOptions = new List<string>();
         private bool _hasAchievements;
         private string _searchText = string.Empty;
@@ -45,7 +53,7 @@ namespace PlayniteAchievements.ViewModels
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
 
-            AchievementRows = new ObservableCollection<ManageAchievementsCategoryItem>();
+            AchievementRows = new BulkObservableCollection<ManageAchievementsCategoryItem>();
             CategoryLabelOptions = new ObservableCollection<string>();
             CategoryLabelFilterOptions = new ObservableCollection<string>();
             TypeSelectionOptions = CreateCategoryTypeOptions(() =>
@@ -320,6 +328,7 @@ namespace PlayniteAchievements.ViewModels
                 .Where(a => a != null)
                 .ToList();
 
+                _searchIndex.Rebuild(_allRows);
                 HasAchievements = _allRows.Count > 0;
                 ApplyFilter();
                 RefreshCategoryLabelOptions();
@@ -328,8 +337,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, $"Failed loading category rows for gameId={_gameId}");
                 _allRows = new List<ManageAchievementsCategoryItem>();
+                _searchIndex.Clear();
                 _canonicalCategoryLabelFilterOptions = new List<string>();
-                CollectionHelper.SynchronizeCollection(AchievementRows, _allRows);
+                ReplaceAchievementRows(_allRows);
                 CollectionHelper.SynchronizeCollection(CategoryLabelOptions, new List<string>());
                 CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, new List<string>());
                 _selectedCategoryLabelFilters.Clear();
@@ -645,9 +655,21 @@ namespace PlayniteAchievements.ViewModels
                 .ToList();
         }
 
+        public void ToggleReveal(ManageAchievementsCategoryItem item)
+        {
+            if (item == null || !item.CanReveal)
+            {
+                return;
+            }
+
+            item.ToggleReveal();
+            _searchIndex.Invalidate(item);
+        }
+
         private void ApplyFilter()
         {
             var filtered = _allRows.AsEnumerable();
+            var searchQuery = SearchQuery.From(SearchText);
 
             if (!ShowHidden)
             {
@@ -656,14 +678,9 @@ namespace PlayniteAchievements.ViewModels
 
             filtered = filtered.Where(a => a.Unlocked ? ShowUnlocked : ShowLocked);
 
-            if (!string.IsNullOrEmpty(SearchText))
+            if (searchQuery.HasValue)
             {
-                filtered = filtered.Where(a =>
-                    (a.DisplayName?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.Description?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.ApiName?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.Category?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.CategoryTypeDisplay?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0));
+                filtered = filtered.Where(a => _searchIndex.Matches(a, searchQuery));
             }
 
             var selectedTypeFilters = GetSelectedCategoryTypeFilterValues();
@@ -696,7 +713,19 @@ namespace PlayniteAchievements.ViewModels
                         AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.Category)));
             }
 
-            CollectionHelper.SynchronizeCollection(AchievementRows, filtered.ToList());
+            ReplaceAchievementRows(filtered.ToList());
+        }
+
+        private void ReplaceAchievementRows(IEnumerable<ManageAchievementsCategoryItem> rows)
+        {
+            if (AchievementRows is BulkObservableCollection<ManageAchievementsCategoryItem> bulk)
+            {
+                bulk.ReplaceAll(rows);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(AchievementRows, rows);
+            }
         }
 
         private void RefreshCategoryLabelOptions()
@@ -775,6 +804,7 @@ namespace PlayniteAchievements.ViewModels
                 item.CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(categoryType);
             }
 
+            _searchIndex.Rebuild(_allRows);
             HasCustomOverrides =
                 (categoryOverrideMap?.Count ?? 0) > 0 ||
                 (categoryTypeOverrideMap?.Count ?? 0) > 0;

@@ -29,6 +29,15 @@ namespace PlayniteAchievements.ViewModels
         private readonly ILogger _logger;
 
         private List<ManageAchievementsNoteItem> _allRows = new List<ManageAchievementsNoteItem>();
+        private readonly SearchTextIndex<ManageAchievementsNoteItem> _searchIndex =
+            new SearchTextIndex<ManageAchievementsNoteItem>(item =>
+                SearchTextBuilder.ForManageNote(
+                    item?.DisplayName,
+                    item?.Description,
+                    item?.ApiName,
+                    item?.NotePreview,
+                    item?.CategoryDisplay,
+                    item?.CategoryTypeDisplay));
         private bool _hasAchievements;
         private bool _hasCustomNotes;
         private string _searchText = string.Empty;
@@ -47,7 +56,7 @@ namespace PlayniteAchievements.ViewModels
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _logger = logger;
 
-            AchievementRows = new ObservableCollection<ManageAchievementsNoteItem>();
+            AchievementRows = new BulkObservableCollection<ManageAchievementsNoteItem>();
             NoteOptions = new ObservableCollection<NoteStateOption>(CreateNoteOptions());
             _selectedNoteOption = NoteOptions.FirstOrDefault();
             ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty);
@@ -185,6 +194,7 @@ namespace PlayniteAchievements.ViewModels
                 .Where(a => a != null)
                 .ToList();
 
+                _searchIndex.Rebuild(_allRows);
                 HasAchievements = _allRows.Count > 0;
                 RefreshCustomNoteState();
                 ApplyFilter();
@@ -193,7 +203,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 _logger?.Error(ex, $"Failed loading note rows for gameId={_gameId}");
                 _allRows = new List<ManageAchievementsNoteItem>();
-                CollectionHelper.SynchronizeCollection(AchievementRows, _allRows);
+                _searchIndex.Clear();
+                ReplaceAchievementRows(_allRows);
                 HasAchievements = false;
                 HasCustomNotes = false;
             }
@@ -208,6 +219,7 @@ namespace PlayniteAchievements.ViewModels
 
             _achievementOverridesService.SetAchievementNote(_gameId, item.ApiName, note);
             item.SetNoteText(note);
+            _searchIndex.Invalidate(item);
             RefreshCustomNoteState();
             ApplyFilter();
         }
@@ -217,19 +229,25 @@ namespace PlayniteAchievements.ViewModels
             HasCustomNotes = _allRows.Any(row => row?.HasAchievementNote == true);
         }
 
+        public void ToggleReveal(ManageAchievementsNoteItem item)
+        {
+            if (item == null || !item.CanReveal)
+            {
+                return;
+            }
+
+            item.ToggleReveal();
+            _searchIndex.Invalidate(item);
+        }
+
         private void ApplyFilter()
         {
             var filtered = _allRows.AsEnumerable();
+            var searchQuery = SearchQuery.From(SearchText);
 
-            if (!string.IsNullOrEmpty(SearchText))
+            if (searchQuery.HasValue)
             {
-                filtered = filtered.Where(a =>
-                    (a.DisplayName?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.Description?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.ApiName?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.NotePreview?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.CategoryDisplay?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (a.CategoryTypeDisplay?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0));
+                filtered = filtered.Where(a => _searchIndex.Matches(a, searchQuery));
             }
 
             switch (SelectedNoteOption?.Value ?? AchievementNoteStateFilter.All)
@@ -242,7 +260,19 @@ namespace PlayniteAchievements.ViewModels
                     break;
             }
 
-            CollectionHelper.SynchronizeCollection(AchievementRows, filtered.ToList());
+            ReplaceAchievementRows(filtered.ToList());
+        }
+
+        private void ReplaceAchievementRows(IEnumerable<ManageAchievementsNoteItem> rows)
+        {
+            if (AchievementRows is BulkObservableCollection<ManageAchievementsNoteItem> bulk)
+            {
+                bulk.ReplaceAll(rows);
+            }
+            else
+            {
+                CollectionHelper.SynchronizeCollection(AchievementRows, rows);
+            }
         }
 
         private Dictionary<string, string> GetCurrentCategoryOverrideMap()

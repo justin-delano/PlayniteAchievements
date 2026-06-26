@@ -444,14 +444,6 @@
            TargetType="TextBlock"
            BasedOn="{StaticResource ManageAchievementsSearchPlaceholderTextStyle}">
         <Setter Property="Visibility" Value="Collapsed"/>
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding EditSearchFilter}" Value="">
-                <Setter Property="Visibility" Value="Visible"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding EditSearchFilter}" Value="{x:Null}">
-                <Setter Property="Visibility" Value="Visible"/>
-            </DataTrigger>
-        </Style.Triggers>
     </Style>
 
     <DataTemplate x:Key="ManageAchievementInfoTemplate">
@@ -460,7 +452,7 @@
                     HorizontalAlignment="Left"
                     Background="Transparent">
             <TextBlock FontWeight="SemiBold"
-                       Foreground="{Binding DisplayNameBrush}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
                        TextWrapping="Wrap"
                        TextAlignment="Left">
                 <TextBlock.Style>

@@ -11,6 +11,7 @@
                                              ShowGameColumn="True"
                                              UseCoverImages="{Binding UseCoverImages}"
                                              ShowRarityGlow="{Binding ShowRarityGlow}"
+                                             ColorNamesByRarity="{Binding ColorNamesByRarity}"
                                              ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                              FixedRowHeight="{Binding RowHeight}"
                                              SortScope="{x:Static services:AchievementSortScope.RecentAchievements}"

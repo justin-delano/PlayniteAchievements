@@ -82,9 +82,10 @@
                                  Style="{StaticResource ManageAchievementsSearchTextBoxStyle}"
                                  KeyDown="SearchTextBox_KeyDown"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
+                                   Tag="{Binding Text, ElementName=SearchTextBox}"
                                    Style="{StaticResource ManageAchievementsSearchPlaceholderTextStyle}"/>
                         <Button x:Name="ClearSearchTextButton"
-                                Tag="{Binding SearchText}"
+                                Tag="{Binding Text, ElementName=SearchTextBox}"
                                 Click="ClearSearchTextButton_Click"
                                 Style="{StaticResource ClearSearchButtonStyle}"/>
                     </Grid>
@@ -282,12 +283,13 @@
                     <Grid Grid.Column="0" HorizontalAlignment="Stretch">
                         <Grid>
                             <TextBox x:Name="EditSearchTextBox"
-                                     Text="{Binding EditSearchFilter, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
+                                     Text="{Binding EditSearchFilter, UpdateSourceTrigger=PropertyChanged, Delay=100, Mode=TwoWay}"
                                      Style="{StaticResource ManageAchievementsSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Common_FilterAchievementsPlaceholder}"
+                                       Tag="{Binding Text, ElementName=EditSearchTextBox}"
                                        Style="{StaticResource ManageAchievementsEditSearchPlaceholderTextStyle}"/>
                             <Button x:Name="ClearEditFilterButton"
-                                    Tag="{Binding EditSearchFilter}"
+                                    Tag="{Binding Text, ElementName=EditSearchTextBox}"
                                     Click="ClearEditFilterButton_Click"
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>

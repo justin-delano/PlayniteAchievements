@@ -108,6 +108,7 @@ namespace PlayniteAchievements.Tests.StartPage
             source.StartPageGameSummariesGrid.SortDescending = false;
 
             source.StartPageRecentUnlocksGrid.UseCoverImages = false;
+            source.StartPageRecentUnlocksGrid.ColorNamesByRarity = true;
             source.StartPageRecentUnlocksGrid.ShowColumnHeaders = false;
             source.StartPageRecentUnlocksGrid.RowHeight = 84d;
             source.StartPageRecentUnlocksGrid.MaxRows = 12;
@@ -135,6 +136,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsFalse(clone.StartPageGameSummariesGrid.SortDescending);
 
             Assert.IsFalse(copy.StartPageRecentUnlocksGrid.UseCoverImages);
+            Assert.IsTrue(copy.StartPageRecentUnlocksGrid.ColorNamesByRarity);
             Assert.IsFalse(copy.StartPageRecentUnlocksGrid.ShowColumnHeaders);
             Assert.AreEqual(84d, copy.StartPageRecentUnlocksGrid.RowHeight);
             Assert.AreEqual(12, copy.StartPageRecentUnlocksGrid.MaxRows);

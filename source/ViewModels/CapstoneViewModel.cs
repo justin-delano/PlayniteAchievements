@@ -35,6 +35,9 @@ namespace PlayniteAchievements.ViewModels
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private List<CapstoneOptionItem> _allOptions = new List<CapstoneOptionItem>();
+        private readonly SearchTextIndex<CapstoneOptionItem> _searchIndex =
+            new SearchTextIndex<CapstoneOptionItem>(item =>
+                SearchTextBuilder.ForCapstone(item?.DisplayName, item?.Description));
         private string _searchText = string.Empty;
         private string _persistedMarkerApiName;
         private int _capstoneWriteVersion;
@@ -62,7 +65,7 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public ObservableCollection<CapstoneOptionItem> AchievementOptions { get; } =
-            new ObservableCollection<CapstoneOptionItem>();
+            new PlayniteAchievements.Common.BulkObservableCollection<CapstoneOptionItem>();
 
         private string _gameName;
         public string GameName
@@ -161,6 +164,7 @@ namespace PlayniteAchievements.ViewModels
             if (item != null && item.CanReveal)
             {
                 item.ToggleReveal();
+                _searchIndex.Invalidate(item);
             }
         }
 
@@ -230,17 +234,26 @@ namespace PlayniteAchievements.ViewModels
         private void ApplyFilter()
         {
             var filtered = _allOptions.AsEnumerable();
+            var searchQuery = SearchQuery.From(SearchText);
 
-            if (!string.IsNullOrEmpty(SearchText))
+            if (searchQuery.HasValue)
             {
-                filtered = filtered.Where(item =>
-                    (item.DisplayName?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (item.Description?.IndexOf(SearchText, StringComparison.OrdinalIgnoreCase) >= 0));
+                filtered = filtered.Where(item => _searchIndex.Matches(item, searchQuery));
             }
 
-            PlayniteAchievements.Common.CollectionHelper.SynchronizeCollection(
-                AchievementOptions,
-                filtered.ToList());
+            ReplaceAchievementOptions(filtered.ToList());
+        }
+
+        private void ReplaceAchievementOptions(IEnumerable<CapstoneOptionItem> options)
+        {
+            if (AchievementOptions is PlayniteAchievements.Common.BulkObservableCollection<CapstoneOptionItem> bulk)
+            {
+                bulk.ReplaceAll(options);
+            }
+            else
+            {
+                PlayniteAchievements.Common.CollectionHelper.SynchronizeCollection(AchievementOptions, options);
+            }
         }
 
         public void ClearSearch()
@@ -324,6 +337,7 @@ namespace PlayniteAchievements.ViewModels
                     _allOptions.Add(option);
                 }
 
+                _searchIndex.Rebuild(_allOptions);
                 ApplyFilter();
                 _persistedMarkerApiName = currentCapstoneApiName;
                 SetCurrentMarkerText(currentMarkerOption?.DisplayName);
@@ -331,6 +345,7 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed loading capstone options for gameId={_gameId}");
+                _searchIndex.Clear();
                 SetCurrentMarkerText(null);
             }
         }

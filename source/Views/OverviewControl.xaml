@@ -660,7 +660,7 @@
 
                         <Grid Grid.Column="0">
                             <TextBox x:Name="LeftSearchTextBox"
-                                     Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
                                        VerticalAlignment="Center"
@@ -674,10 +674,10 @@
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding LeftSearchText}" Value="">
+                                            <DataTrigger Binding="{Binding Text, ElementName=LeftSearchTextBox}" Value="">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding LeftSearchText}" Value="{x:Null}">
+                                            <DataTrigger Binding="{Binding Text, ElementName=LeftSearchTextBox}" Value="{x:Null}">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -685,7 +685,7 @@
                                 </TextBlock.Style>
                             </TextBlock>
                             <Button x:Name="ClearLeftSearchButton"
-                                    Tag="{Binding LeftSearchText}"
+                                    Tag="{Binding Text, ElementName=LeftSearchTextBox}"
                                     Click="ClearLeftSearch_Click"
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>
@@ -756,7 +756,7 @@
 
                         <Grid Grid.Column="0">
                             <TextBox x:Name="RightSearchTextBox"
-                                     Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged}"
+                                     Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
                                      Style="{StaticResource ClearableSearchTextBoxStyle}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
                                        VerticalAlignment="Center"
@@ -770,10 +770,10 @@
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding RightSearchText}" Value="">
+                                            <DataTrigger Binding="{Binding Text, ElementName=RightSearchTextBox}" Value="">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
-                                            <DataTrigger Binding="{Binding RightSearchText}" Value="{x:Null}">
+                                            <DataTrigger Binding="{Binding Text, ElementName=RightSearchTextBox}" Value="{x:Null}">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -781,7 +781,7 @@
                                 </TextBlock.Style>
                             </TextBlock>
                             <Button x:Name="ClearRightSearchButton"
-                                    Tag="{Binding RightSearchText}"
+                                    Tag="{Binding Text, ElementName=RightSearchTextBox}"
                                     Click="ClearRightSearch_Click"
                                     Style="{StaticResource ClearSearchButtonStyle}"/>
                         </Grid>
@@ -975,6 +975,7 @@
                                                                  ShowGameColumn="True"
                                                                  UseCoverImages="{Binding UseCoverImagesRecentAchievements}"
                                                                  ShowRarityGlow="{Binding ShowRarityGlowRecentAchievements}"
+                                                                 ColorNamesByRarity="{Binding ColorNamesByRarityRecentAchievements}"
                                                                  ShowColumnHeaders="{Binding ShowOverviewRecentAchievementsGridColumnHeaders}"
                                                                  FixedRowHeight="{Binding OverviewRecentAchievementsGridRowHeight}"
                                                                  DataGridMaxHeight="{x:Static sys:Double.NaN}"
@@ -1001,6 +1002,7 @@
                                                                  ColumnSettingsKey="OverviewSelectedGameAchievements"
                                                                  DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                                  ShowRarityGlow="{Binding ShowRarityGlowSelectedGame}"
+                                                                 ColorNamesByRarity="{Binding ColorNamesByRaritySelectedGame}"
                                                                  ShowColumnHeaders="{Binding ShowOverviewSelectedGameGridColumnHeaders}"
                                                                  FixedRowHeight="{Binding OverviewSelectedGameGridRowHeight}"
                                                                  DelayInitialRenderUntilNormalized="True"

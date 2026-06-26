@@ -79,6 +79,9 @@ namespace PlayniteAchievements.ViewModels
         private string _sourceGameName = string.Empty;
         private string _manualSourceName = string.Empty;
         private string _saveStatusMessage = string.Empty;
+        private readonly SearchTextIndex<ManualAchievementEditItem> _editSearchIndex =
+            new SearchTextIndex<ManualAchievementEditItem>(item =>
+                SearchTextBuilder.ForManualEdit(item?.DisplayName, item?.Description, item?.ApiName));
 
         private sealed class InheritedUnlockEntry
         {
@@ -349,7 +352,7 @@ namespace PlayniteAchievements.ViewModels
             new ObservableCollection<ManualAchievementEditItem>();
 
         public ObservableCollection<ManualAchievementEditItem> FilteredAchievements { get; } =
-            new ObservableCollection<ManualAchievementEditItem>();
+            new Common.BulkObservableCollection<ManualAchievementEditItem>();
 
         public int TotalCount => AllAchievements.Count;
 
@@ -1267,6 +1270,7 @@ namespace PlayniteAchievements.ViewModels
         {
             AllAchievements.Clear();
             FilteredAchievements.Clear();
+            _editSearchIndex.Clear();
 
             if (achievements != null)
             {
@@ -1311,6 +1315,7 @@ namespace PlayniteAchievements.ViewModels
                 }
             }
 
+            _editSearchIndex.Rebuild(AllAchievements);
             FilterAchievements();
             UpdateCounts();
         }
@@ -1351,17 +1356,19 @@ namespace PlayniteAchievements.ViewModels
 
         private void FilterAchievements()
         {
-            FilteredAchievements.Clear();
+            var searchQuery = SearchQuery.From(EditSearchFilter);
+            var filtered = searchQuery.HasValue
+                ? AllAchievements.Where(item => _editSearchIndex.Matches(item, searchQuery)).ToList()
+                : AllAchievements.ToList();
 
-            var filter = EditSearchFilter?.Trim().ToLowerInvariant() ?? string.Empty;
-            var hasFilter = !string.IsNullOrEmpty(filter);
-
-            foreach (var item in AllAchievements)
+            if (FilteredAchievements is Common.BulkObservableCollection<ManualAchievementEditItem> bulk)
             {
-                if (!hasFilter ||
-                    item.DisplayName?.ToLowerInvariant().Contains(filter) == true ||
-                    item.Description?.ToLowerInvariant().Contains(filter) == true ||
-                    item.ApiName?.ToLowerInvariant().Contains(filter) == true)
+                bulk.ReplaceAll(filtered);
+            }
+            else
+            {
+                FilteredAchievements.Clear();
+                foreach (var item in filtered)
                 {
                     FilteredAchievements.Add(item);
                 }
@@ -1383,6 +1390,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             item.ToggleReveal();
+            _editSearchIndex.Invalidate(item);
         }
 
         private bool CanSave()

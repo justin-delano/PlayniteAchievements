@@ -202,7 +202,7 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(RaritySortValue));
                     OnPropertyChanged(nameof(CollectionScore));
                     OnPropertyChanged(nameof(PrestigeScore));
-                    OnPropertyChanged(nameof(DisplayNameBrush));
+                    OnPropertyChanged(nameof(RarityNameBrush));
                 }
             }
         }
@@ -238,7 +238,7 @@ namespace PlayniteAchievements.ViewModels
                     value,
                     nameof(IsCapstone)))
                 {
-                    OnPropertyChanged(nameof(DisplayNameBrush));
+                    OnPropertyChanged(nameof(RarityNameBrush));
                 }
             }
         }
@@ -588,22 +588,18 @@ namespace PlayniteAchievements.ViewModels
         }
 
         /// <summary>
-        /// Foreground brush for the achievement name. When "color names by rarity" is enabled, returns the rarity tier brush
-        /// (or the completed color for capstone achievements, which takes precedence). Otherwise returns the theme text brush.
+        /// Rarity-based foreground brush for the achievement name: the completed color for capstone
+        /// achievements (which takes precedence), otherwise the rarity tier brush. Computed unconditionally;
+        /// grids decide whether to use it via their per-grid ColorNamesByRarity toggle.
         /// </summary>
-        public System.Windows.Media.Brush DisplayNameBrush
+        public System.Windows.Media.Brush RarityNameBrush
         {
             get
             {
                 var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
-                if (persisted?.ColorAchievementNamesByRarity == true)
-                {
-                    return IsCapstone
-                        ? RarityAppearanceHelper.GetCompletedBrush(persisted)
-                        : RarityAppearanceHelper.GetBrush(Rarity, persisted);
-                }
-
-                return System.Windows.Application.Current?.TryFindResource("PlayAch.Brush.Text") as System.Windows.Media.Brush;
+                return IsCapstone
+                    ? RarityAppearanceHelper.GetCompletedBrush(persisted)
+                    : RarityAppearanceHelper.GetBrush(Rarity, persisted);
             }
         }
 
@@ -731,7 +727,7 @@ namespace PlayniteAchievements.ViewModels
             ShowLockedIcon = showLockedIcon;
             UseSeparateLockedIconsWhenAvailable = useSeparateLockedIconsWhenAvailable;
             ShowRarityBar = showRarityBar;
-            OnPropertyChanged(nameof(DisplayNameBrush));
+            OnPropertyChanged(nameof(RarityNameBrush));
         }
 
         public void ApplyAppearanceSettings(PlayniteAchievementsSettings settings, Guid? playniteGameId = null)
@@ -989,7 +985,6 @@ namespace PlayniteAchievements.ViewModels
                 case nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable):
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
                 case nameof(PersistedSettings.UseUniformRarityBadges):
-                case nameof(PersistedSettings.ColorAchievementNamesByRarity):
                 case nameof(PersistedSettings.RarityColors):
                     return true;
                 default:
@@ -1118,7 +1113,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(GamerScore));
             OnPropertyChanged(nameof(Unlocked));
             OnPropertyChanged(nameof(IsCapstone));
-            OnPropertyChanged(nameof(DisplayNameBrush));
+            OnPropertyChanged(nameof(RarityNameBrush));
             OnPropertyChanged(nameof(Hidden));
             OnPropertyChanged(nameof(IsUnlock));
             OnPropertyChanged(nameof(ApiName));

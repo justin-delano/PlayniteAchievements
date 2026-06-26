@@ -193,7 +193,7 @@
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        FontWeight="SemiBold"
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}" />
-                            <TextBox Text="{Binding IncludeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox Text="{Binding IncludeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=100}"
                                      Style="{DynamicResource SearchTextBoxStyle}"
                                      Foreground="{DynamicResource PlayAch.Brush.Text}"
                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}" />
@@ -217,7 +217,7 @@
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        FontWeight="SemiBold"
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}" />
-                            <TextBox Text="{Binding ExcludeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                            <TextBox Text="{Binding ExcludeSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=100}"
                                      Style="{DynamicResource SearchTextBoxStyle}"
                                      Foreground="{DynamicResource PlayAch.Brush.Text}"
                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}" />
