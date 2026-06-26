@@ -315,18 +315,20 @@
         </Grid>
     </DataTemplate>
 
-    <!-- Center alignment: a single centered row of completed badge then descending-rarity badges. -->
+    <!-- Center alignment: a single centered row in ascending-rarity order (badge row reversed via
+         the same FlowDirection flip as the Left layout) followed by the completed badge. -->
     <DataTemplate x:Key="ProgressFooterCenterTemplate">
         <StackPanel Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
+            <ContentControl VerticalAlignment="Center"
+                            FlowDirection="RightToLeft"
+                            Content="{Binding}"
+                            ContentTemplate="{StaticResource ProgressBadgeRowTemplate}"/>
             <Image Source="{DynamicResource BadgeRarityCompleted}"
                    Style="{StaticResource OverviewCompletedFooterIconStyle}"
                    ToolTip="{DynamicResource LOCPlayAch_Completed}"
                    Visibility="{Binding IsCompleted, Converter={StaticResource BoolToVis}}"/>
-            <ContentControl VerticalAlignment="Center"
-                            Content="{Binding}"
-                            ContentTemplate="{StaticResource ProgressBadgeRowTemplate}"/>
         </StackPanel>
     </DataTemplate>
 
