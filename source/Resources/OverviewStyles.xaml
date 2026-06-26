@@ -216,6 +216,7 @@
     <Style x:Key="OverviewProgressFooterStyle" TargetType="Grid">
         <Setter Property="HorizontalAlignment" Value="Stretch"/>
         <Setter Property="Margin" Value="0,5,0,0"/>
+        <Setter Property="MinHeight" Value="{StaticResource PlayAch.Size.Icon.Tiny}"/>
     </Style>
 
     <Style x:Key="OverviewMiniBadgeItemStyle" TargetType="StackPanel">

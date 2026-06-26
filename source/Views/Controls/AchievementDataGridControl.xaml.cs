@@ -27,6 +27,7 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly ILogger Logger = LogManager.GetLogger();
         private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
+        private PersistedSettings _subscribedPersisted;
         private const double DefaultStatusColumnWidth = 40;
         private const double DefaultIconColumnWidth = 72;
         private const double DefaultGameImageColumnWidth = 96;
@@ -166,6 +167,22 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (string)GetValue(ColumnSettingsKeyProperty);
             set => SetValue(ColumnSettingsKeyProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the UnlockDateMode dependency property.
+        /// </summary>
+        public static readonly DependencyProperty UnlockDateModeProperty =
+            DependencyProperty.Register(nameof(UnlockDateMode), typeof(DateDisplayMode),
+                typeof(AchievementDataGridControl), new PropertyMetadata(DateDisplayMode.DateAndTime));
+
+        /// <summary>
+        /// Resolved per-surface display mode for the "Unlock Date" column; bound by the cell template.
+        /// </summary>
+        public DateDisplayMode UnlockDateMode
+        {
+            get => (DateDisplayMode)GetValue(UnlockDateModeProperty);
+            private set => SetValue(UnlockDateModeProperty, value);
         }
 
         /// <summary>
@@ -509,15 +526,67 @@ namespace PlayniteAchievements.Views.Controls
             UpdateColumnVisibility();
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
+            UpdateUnlockDateMode();
 
             if (_isAttached)
             {
                 return;
             }
 
+            var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+            if (persisted != null)
+            {
+                _subscribedPersisted = persisted;
+                _subscribedPersisted.PropertyChanged += OnPersistedSettingsChanged;
+            }
+
             AttachColumnPersistence();
             // Column visibility is now handled by ForcedCollapsedKeys during Attach()
             _isAttached = true;
+        }
+
+        private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName == nameof(PersistedSettings.OverviewRecentAchievementsUnlockDateMode) ||
+                e.PropertyName == nameof(PersistedSettings.OverviewSelectedGameAchievementsUnlockDateMode) ||
+                e.PropertyName == nameof(PersistedSettings.ViewAchievementsAchievementsUnlockDateMode) ||
+                e.PropertyName == nameof(PersistedSettings.StartPageAchievementsUnlockDateMode) ||
+                e.PropertyName == nameof(PersistedSettings.DesktopThemeAchievementsUnlockDateMode))
+            {
+                UpdateUnlockDateMode();
+            }
+        }
+
+        private void UpdateUnlockDateMode()
+        {
+            var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            switch (ColumnSettingsKey)
+            {
+                case "DesktopTheme":
+                    UnlockDateMode = persisted.DesktopThemeAchievementsUnlockDateMode;
+                    break;
+                case "OverviewRecentAchievements":
+                case "Overview":
+                    UnlockDateMode = persisted.OverviewRecentAchievementsUnlockDateMode;
+                    break;
+                case "OverviewSelectedGameAchievements":
+                case "OverviewGame":
+                    UnlockDateMode = persisted.OverviewSelectedGameAchievementsUnlockDateMode;
+                    break;
+                case "StartPageAchievements":
+                    UnlockDateMode = persisted.StartPageAchievementsUnlockDateMode;
+                    break;
+                default:
+                    // "SingleGame" and any unspecified key fall back to the view-achievements grid.
+                    UnlockDateMode = persisted.ViewAchievementsAchievementsUnlockDateMode;
+                    break;
+            }
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -1441,6 +1510,11 @@ namespace PlayniteAchievements.Views.Controls
 
             _columnPersistence?.Dispose();
             _columnPersistence = null;
+            if (_subscribedPersisted != null)
+            {
+                _subscribedPersisted.PropertyChanged -= OnPersistedSettingsChanged;
+                _subscribedPersisted = null;
+            }
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(AchievementsDataGrid, null);
             DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(AchievementsDataGrid, null);
             DataGridAlignmentBehavior.SetColumnHeaderHorizontalAlignmentOverridesProvider(AchievementsDataGrid, null);

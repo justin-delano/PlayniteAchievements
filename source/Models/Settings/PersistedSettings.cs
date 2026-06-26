@@ -95,6 +95,17 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewRecentAchievementsGridColumnHeaders = true;
         private bool _showOverviewSelectedGameGridColumnHeaders = true;
         private bool _showDesktopThemeAchievementGridColumnHeaders = true;
+
+        // Per-surface date display mode for the "Last Played" (game summaries) and "Unlock Date"
+        // (achievement) grid columns. Default DateAndTime preserves the historical "g" format.
+        private DateDisplayMode _overviewGameSummariesLastPlayedDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _viewAchievementsGameSummariesLastPlayedDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _startPageGameSummariesLastPlayedDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _overviewRecentAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _overviewSelectedGameAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _viewAchievementsAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _startPageAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
+        private DateDisplayMode _desktopThemeAchievementsUnlockDateMode = DateDisplayMode.DateAndTime;
         private GridAlignment _gridColumnHeaderAlignment = GridAlignment.Center;
         private GridAlignment _gridCellAlignment = GridAlignment.Left;
         private GridVerticalAlignment _gridCellVerticalAlignment = GridVerticalAlignment.Center;
@@ -131,7 +142,7 @@ namespace PlayniteAchievements.Models.Settings
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
         private Dictionary<string, ResourceOverrideSetting> _resourceOverrides =
-            new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            CreateDefaultResourceOverrides();
         private List<CustomRefreshPreset> _customRefreshPresets = new List<CustomRefreshPreset>();
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
@@ -805,6 +816,78 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showDesktopThemeAchievementGridColumnHeaders;
             set => SetValue(ref _showDesktopThemeAchievementGridColumnHeaders, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Last Played" column in the overview game summaries grid.
+        /// </summary>
+        public DateDisplayMode OverviewGameSummariesLastPlayedDateMode
+        {
+            get => _overviewGameSummariesLastPlayedDateMode;
+            set => SetValue(ref _overviewGameSummariesLastPlayedDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Last Played" column in the view achievements game summaries grid.
+        /// </summary>
+        public DateDisplayMode ViewAchievementsGameSummariesLastPlayedDateMode
+        {
+            get => _viewAchievementsGameSummariesLastPlayedDateMode;
+            set => SetValue(ref _viewAchievementsGameSummariesLastPlayedDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Last Played" column in the start page game summaries grid.
+        /// </summary>
+        public DateDisplayMode StartPageGameSummariesLastPlayedDateMode
+        {
+            get => _startPageGameSummariesLastPlayedDateMode;
+            set => SetValue(ref _startPageGameSummariesLastPlayedDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in the overview recent achievements grid.
+        /// </summary>
+        public DateDisplayMode OverviewRecentAchievementsUnlockDateMode
+        {
+            get => _overviewRecentAchievementsUnlockDateMode;
+            set => SetValue(ref _overviewRecentAchievementsUnlockDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in the overview selected game achievements grid.
+        /// </summary>
+        public DateDisplayMode OverviewSelectedGameAchievementsUnlockDateMode
+        {
+            get => _overviewSelectedGameAchievementsUnlockDateMode;
+            set => SetValue(ref _overviewSelectedGameAchievementsUnlockDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in the view achievements (single game) grid.
+        /// </summary>
+        public DateDisplayMode ViewAchievementsAchievementsUnlockDateMode
+        {
+            get => _viewAchievementsAchievementsUnlockDateMode;
+            set => SetValue(ref _viewAchievementsAchievementsUnlockDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in the start page recent unlocks grid.
+        /// </summary>
+        public DateDisplayMode StartPageAchievementsUnlockDateMode
+        {
+            get => _startPageAchievementsUnlockDateMode;
+            set => SetValue(ref _startPageAchievementsUnlockDateMode, value);
+        }
+
+        /// <summary>
+        /// Date display mode for the "Unlock Date" column in desktop theme achievement grids.
+        /// </summary>
+        public DateDisplayMode DesktopThemeAchievementsUnlockDateMode
+        {
+            get => _desktopThemeAchievementsUnlockDateMode;
+            set => SetValue(ref _desktopThemeAchievementsUnlockDateMode, value);
         }
 
         /// <summary>
@@ -2411,6 +2494,7 @@ namespace PlayniteAchievements.Models.Settings
                 IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
                 RecentRefreshGamesCount = this.RecentRefreshGamesCount,
+                DefaultOverviewRefreshMode = this.DefaultOverviewRefreshMode,
                 CustomRefreshPresets = this.CustomRefreshPresets != null
                     ? new List<CustomRefreshPreset>(CustomRefreshPreset.NormalizePresets(this.CustomRefreshPresets, CustomRefreshPreset.MaxPresetCount))
                     : new List<CustomRefreshPreset>(),
@@ -2475,6 +2559,14 @@ namespace PlayniteAchievements.Models.Settings
                 GridColumnHeaderAlignment = this.GridColumnHeaderAlignment,
                 GridCellAlignment = this.GridCellAlignment,
                 GridCellVerticalAlignment = this.GridCellVerticalAlignment,
+                OverviewGameSummariesLastPlayedDateMode = this.OverviewGameSummariesLastPlayedDateMode,
+                ViewAchievementsGameSummariesLastPlayedDateMode = this.ViewAchievementsGameSummariesLastPlayedDateMode,
+                StartPageGameSummariesLastPlayedDateMode = this.StartPageGameSummariesLastPlayedDateMode,
+                OverviewRecentAchievementsUnlockDateMode = this.OverviewRecentAchievementsUnlockDateMode,
+                OverviewSelectedGameAchievementsUnlockDateMode = this.OverviewSelectedGameAchievementsUnlockDateMode,
+                ViewAchievementsAchievementsUnlockDateMode = this.ViewAchievementsAchievementsUnlockDateMode,
+                StartPageAchievementsUnlockDateMode = this.StartPageAchievementsUnlockDateMode,
+                DesktopThemeAchievementsUnlockDateMode = this.DesktopThemeAchievementsUnlockDateMode,
                 EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
                 EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,
@@ -2775,7 +2867,7 @@ namespace PlayniteAchievements.Models.Settings
             RarityColors = RarityColorSettings.CreateDefault();
             OverviewGameSummariesUseCoverImages = defaults.OverviewGameSummariesUseCoverImages;
             OverviewRecentAchievementsUseCoverImages = defaults.OverviewRecentAchievementsUseCoverImages;
-            ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            ResourceOverrides = CreateDefaultResourceOverrides();
 
             ShowOverviewCollectionScoreCard = defaults.ShowOverviewCollectionScoreCard;
             ShowOverviewPrestigeScoreCard = defaults.ShowOverviewPrestigeScoreCard;
@@ -2956,6 +3048,30 @@ namespace PlayniteAchievements.Models.Settings
             return AchievementHotkeyGesture.TryParse(value, out var gesture) && gesture != null
                 ? gesture.ToString()
                 : string.Empty;
+        }
+
+        // Tokens that ship transparent by default. Stored as a Transparent override carrying the
+        // transparent hex so resolution reuses the Custom value path (see PlayAchResourceService).
+        // Seeded only for fresh settings / display reset; deserializing existing settings replaces
+        // this dictionary, so upgrading users keep their current appearance.
+        internal static Dictionary<string, ResourceOverrideSetting> CreateDefaultResourceOverrides()
+        {
+            var defaults = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in new[]
+            {
+                "PlayAch.Brush.GridSurface",
+                "PlayAch.Brush.WindowSurface",
+                "PlayAch.Brush.ControlSurface"
+            })
+            {
+                defaults[key] = new ResourceOverrideSetting
+                {
+                    Mode = ResourceOverrideMode.Transparent,
+                    CustomValue = "#00000000"
+                };
+            }
+
+            return defaults;
         }
 
         private static Dictionary<string, ResourceOverrideSetting> NormalizeResourceOverrides(
