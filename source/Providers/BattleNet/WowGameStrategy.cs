@@ -90,6 +90,20 @@ namespace PlayniteAchievements.Providers.BattleNet
                 _logger?.Warn(ex, "[BattleNet/WoW] Could not load official achievement index; using cached or public catalog data only.");
             }
 
+            var guildCategoryIds = new HashSet<int>();
+            try
+            {
+                guildCategoryIds = await _client.GetWowGuildCategoryIdsAsync(
+                    region,
+                    apiLocale,
+                    catalogToken,
+                    ct).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (!(ex is OperationCanceledException))
+            {
+                _logger?.Warn(ex, "[BattleNet/WoW] Could not load guild achievement categories; guild achievements may not be excluded.");
+            }
+
             var achievements = await LoadOrBuildFullCatalogAsync(
                 region,
                 realmSlug,
@@ -99,12 +113,14 @@ namespace PlayniteAchievements.Providers.BattleNet
                 catalogSignature,
                 catalog,
                 catalogToken,
+                guildCategoryIds,
                 ct).ConfigureAwait(false);
 
             var mergeStats = await MergeOfficialAchievementDataAsync(
                 achievements,
                 settings,
                 effectiveLocale,
+                guildCategoryIds,
                 ct).ConfigureAwait(false);
             if (mergeStats.FetchedCharacters > 0)
             {
@@ -131,6 +147,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             string catalogSignature,
             List<WowOfficialAchievementDefinition> catalog,
             string bearerToken,
+            HashSet<int> guildCategoryIds,
             CancellationToken ct)
         {
             var catalogCount = catalog?.Count ?? 0;
@@ -154,13 +171,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             var achievements = await FetchPublicCatalogAchievementsAsync(region, realmSlug, character, wowLocale, ct).ConfigureAwait(false);
 
-            var removedGuildRun = RemoveGuildRunAchievements(achievements);
-            if (removedGuildRun > 0)
-            {
-                _logger?.Info($"[BattleNet/WoW] Skipped {removedGuildRun} guild-run achievements.");
-            }
-
-            var addedFromIndex = MergeOfficialCatalogIndex(achievements, catalog);
+            var addedFromIndex = MergeOfficialCatalogIndex(achievements, catalog, guildCategoryIds);
             if (addedFromIndex > 0)
             {
                 _logger?.Info($"[BattleNet/WoW] Added {addedFromIndex} achievements from the official achievement index.");
@@ -337,12 +348,12 @@ namespace PlayniteAchievements.Providers.BattleNet
                 {
                     foreach (var subcategory in subcategories)
                     {
-                        AddAchievements(achievements, seen, subcategory?.Achievements, category, subcategory?.Name);
+                        AddAchievements(achievements, seen, subcategory?.Achievements, category);
                     }
                 }
                 else
                 {
-                    AddAchievements(achievements, seen, categoryData.AchievementsList, category, null);
+                    AddAchievements(achievements, seen, categoryData.AchievementsList, category);
                 }
             }
 
@@ -351,7 +362,8 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private static int MergeOfficialCatalogIndex(
             List<AchievementDetail> achievements,
-            IEnumerable<WowOfficialAchievementDefinition> catalog)
+            IEnumerable<WowOfficialAchievementDefinition> catalog,
+            HashSet<int> guildCategoryIds)
         {
             if (achievements == null)
             {
@@ -372,11 +384,11 @@ namespace PlayniteAchievements.Providers.BattleNet
                     continue;
                 }
 
-                if (IsGuildRunAchievement(definition?.Name, definition?.Description, definition?.Category?.Name, null))
+                if (IsGuildCategory(definition?.Category, guildCategoryIds))
                 {
-                    if (byId.TryGetValue(key, out var existingGuildRun))
+                    if (byId.TryGetValue(key, out var existingGuildAchievement))
                     {
-                        achievements.Remove(existingGuildRun);
+                        achievements.Remove(existingGuildAchievement);
                         byId.Remove(key);
                     }
 
@@ -461,6 +473,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             List<AchievementDetail> achievements,
             BattleNetSettings settings,
             string locale,
+            HashSet<int> guildCategoryIds,
             CancellationToken ct)
         {
             var stats = new WowOfficialMergeStats();
@@ -586,6 +599,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                             bearerToken,
                             definitionCache,
                             mediaCache,
+                            guildCategoryIds,
                             ct).ConfigureAwait(false);
                         if (detail == null)
                         {
@@ -683,6 +697,7 @@ namespace PlayniteAchievements.Providers.BattleNet
             string bearerToken,
             Dictionary<string, WowOfficialAchievementDefinition> definitionCache,
             Dictionary<string, string> mediaCache,
+            HashSet<int> guildCategoryIds,
             CancellationToken ct)
         {
             var id = progress?.AchievementId ?? 0;
@@ -721,11 +736,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 definitionCache[definitionCacheKey] = definition;
             }
 
-            if (IsGuildRunAchievement(
-                FirstNonEmpty(definition?.Name, progress.Achievement?.Name),
-                definition?.Description,
-                definition?.Category?.Name,
-                null))
+            if (IsGuildCategory(definition?.Category, guildCategoryIds))
             {
                 return null;
             }
@@ -968,17 +979,11 @@ namespace PlayniteAchievements.Providers.BattleNet
             List<AchievementDetail> target,
             HashSet<string> seen,
             IEnumerable<WowAchievement> source,
-            string category,
-            string subcategory)
+            string category)
         {
             foreach (var achievement in source ?? Enumerable.Empty<WowAchievement>())
             {
                 if (achievement == null || achievement.Id == 0)
-                {
-                    continue;
-                }
-
-                if (IsGuildRunAchievement(achievement.Name, achievement.Description, category, subcategory))
                 {
                     continue;
                 }
@@ -1014,49 +1019,14 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
         }
 
-        private static int RemoveGuildRunAchievements(List<AchievementDetail> achievements)
+        internal static bool IsGuildCategory(
+            WowOfficialAchievementCategory category,
+            HashSet<int> guildCategoryIds)
         {
-            if (achievements == null || achievements.Count == 0)
-            {
-                return 0;
-            }
-
-            return achievements.RemoveAll(item => IsGuildRunAchievement(
-                item?.DisplayName,
-                item?.Description,
-                item?.Category,
-                null));
-        }
-
-        internal static bool IsGuildRunAchievement(
-            string name,
-            string description,
-            string category,
-            string subcategory)
-        {
-            if (EqualsText(category, "Guild") || EqualsText(subcategory, "Guild"))
-            {
-                return true;
-            }
-
-            return ContainsText(name, "guild run") ||
-                ContainsText(description, "guild run") ||
-                ContainsText(name, "guild group") ||
-                ContainsText(description, "guild group");
-        }
-
-        private static bool EqualsText(string value, string expected)
-        {
-            return string.Equals(
-                value?.Trim(),
-                expected,
-                StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool ContainsText(string value, string expected)
-        {
-            return !string.IsNullOrWhiteSpace(value) &&
-                value.IndexOf(expected, StringComparison.OrdinalIgnoreCase) >= 0;
+            return category != null &&
+                guildCategoryIds != null &&
+                category.Id > 0 &&
+                guildCategoryIds.Contains(category.Id);
         }
 
         private static string NormalizeApiName(string value)
