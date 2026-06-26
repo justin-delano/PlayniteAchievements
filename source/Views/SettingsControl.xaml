@@ -1485,6 +1485,18 @@
                                                                       SelectedValuePath="Tag">
                                                                 <ComboBoxItem Content="Follow Playnite" Tag="{x:Static settings:ResourceOverrideMode.FollowPlaynite}"/>
                                                                 <ComboBoxItem Content="Custom" Tag="{x:Static settings:ResourceOverrideMode.Custom}"/>
+                                                                <ComboBoxItem Content="Transparent" Tag="{x:Static settings:ResourceOverrideMode.Transparent}">
+                                                                    <ComboBoxItem.Style>
+                                                                        <Style TargetType="ComboBoxItem">
+                                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsBrush}" Value="True">
+                                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </ComboBoxItem.Style>
+                                                                </ComboBoxItem>
                                                             </ComboBox>
 
                                                             <Grid Grid.Column="2" VerticalAlignment="Center">
