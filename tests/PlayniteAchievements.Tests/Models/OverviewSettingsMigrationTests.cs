@@ -223,6 +223,73 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void MigrateFromJson_ForcesProgressColumnRightAcrossSurfacesWhenFlagAbsent()
+        {
+            const string json =
+                @"{
+                    ""Persisted"": {
+                        ""OverviewGameSummariesColumnAlignments"": { ""GameSummaryName"": 1 }
+                    }
+                }";
+
+            var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
+            var persisted = (JObject)migrated["Persisted"];
+
+            Assert.AreEqual(
+                (int)GridAlignment.Right,
+                persisted["OverviewGameSummariesColumnAlignments"]["GameSummaryProgression"].Value<int>());
+            Assert.AreEqual(
+                (int)GridAlignment.Right,
+                persisted["StartPageGameSummariesColumnAlignments"]["GameSummaryProgression"].Value<int>());
+            Assert.AreEqual(
+                (int)GridAlignment.Right,
+                persisted["ViewAchievementsGameSummariesColumnAlignments"]["GameSummaryProgression"].Value<int>());
+            // Pre-existing entries on a touched dictionary are preserved.
+            Assert.AreEqual(1, persisted["OverviewGameSummariesColumnAlignments"]["GameSummaryName"].Value<int>());
+            Assert.IsTrue(persisted["ProgressColumnAlignmentDefaulted"].Value<bool>());
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_RenamesLegacyProgressionKeyThenForcesRight()
+        {
+            // Legacy key with an inert non-Right value: rename to canonical key, then force Right.
+            const string json =
+                @"{
+                    ""Persisted"": {
+                        ""GamesOverviewColumnAlignments"": { ""OverviewProgression"": 1 }
+                    }
+                }";
+
+            var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
+            var persisted = (JObject)migrated["Persisted"];
+            var alignments = (JObject)persisted["OverviewGameSummariesColumnAlignments"];
+
+            Assert.IsNull(alignments["OverviewProgression"]);
+            Assert.AreEqual((int)GridAlignment.Right, alignments["GameSummaryProgression"].Value<int>());
+            Assert.IsTrue(persisted["ProgressColumnAlignmentDefaulted"].Value<bool>());
+        }
+
+        [TestMethod]
+        public void MigrateFromJson_RespectsProgressAlignmentOnceFlagIsSet()
+        {
+            const string json =
+                @"{
+                    ""Persisted"": {
+                        ""ProgressColumnAlignmentDefaulted"": true,
+                        ""OverviewGameSummariesColumnAlignments"": { ""GameSummaryProgression"": 1 }
+                    }
+                }";
+
+            var migrated = JObject.Parse(OverviewSettingsMigration.MigrateFromJson(json));
+            var persisted = (JObject)migrated["Persisted"];
+
+            // Already defaulted: the user's own choice (Center) is left untouched.
+            Assert.AreEqual(
+                (int)GridAlignment.Center,
+                persisted["OverviewGameSummariesColumnAlignments"]["GameSummaryProgression"].Value<int>());
+        }
+
+        [TestMethod]
         public void MigrateFromJson_FansOutGameMetadataTogglesAcrossSurfaces()
         {
             const string json =
