@@ -1194,9 +1194,35 @@
 
                                                     <ComboBox x:Name="RarityPalettePresetComboBox"
                                                               Grid.Column="1"
-                                                              MinWidth="220"
-                                                              DisplayMemberPath="Name"
-                                                              ItemsSource="{Binding RarityPalettePresets, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                              MinWidth="240"
+                                                              ItemsSource="{Binding RarityPalettePresets, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                                        <ComboBox.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                                    <Border Width="16" Height="16" Margin="0,0,1,0"
+                                                                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                            Background="{Binding CommonBrush}"/>
+                                                                    <Border Width="16" Height="16" Margin="0,0,1,0"
+                                                                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                            Background="{Binding UncommonBrush}"/>
+                                                                    <Border Width="16" Height="16" Margin="0,0,1,0"
+                                                                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                            Background="{Binding RareBrush}"/>
+                                                                    <Border Width="16" Height="16"
+                                                                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                            Background="{Binding UltraRareBrush}"/>
+                                                                    <TextBlock Text="{Binding DisplayLabel}"
+                                                                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                                               VerticalAlignment="Center"
+                                                                               Margin="8,0,0,0"/>
+                                                                </StackPanel>
+                                                            </DataTemplate>
+                                                        </ComboBox.ItemTemplate>
+                                                    </ComboBox>
 
                                                     <Button Grid.Column="2"
                                                             Content="{DynamicResource LOCPlayAch_Button_Apply}"
@@ -1452,7 +1478,7 @@
                                                                            TextTrimming="CharacterEllipsis"/>
                                                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                                                            TextTrimming="CharacterEllipsis">
-                                                                    <Run Text="{DynamicResource LOCPlayAch_Settings_Appearance_PlayniteResourceLabel}"/><Run Text=" "/><Run Text="{Binding PlayniteResourceKey}"/>
+                                                                    <Run Text="{DynamicResource LOCPlayAch_Settings_Appearance_PlayniteResourceLabel}"/><Run Text=" "/><Run Text="{Binding PlayniteResourceKey, Mode=OneWay}"/>
                                                                 </TextBlock>
                                                             </StackPanel>
 
