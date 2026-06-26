@@ -198,6 +198,104 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void CloneAndCopyFrom_PreservePerSurfaceDateDisplayModes()
+        {
+            var source = new PersistedSettings
+            {
+                OverviewGameSummariesLastPlayedDateMode = DateDisplayMode.DateOnly,
+                ViewAchievementsGameSummariesLastPlayedDateMode = DateDisplayMode.Relative,
+                StartPageGameSummariesLastPlayedDateMode = DateDisplayMode.DateOnly,
+                OverviewRecentAchievementsUnlockDateMode = DateDisplayMode.Relative,
+                OverviewSelectedGameAchievementsUnlockDateMode = DateDisplayMode.DateOnly,
+                ViewAchievementsAchievementsUnlockDateMode = DateDisplayMode.Relative,
+                StartPageAchievementsUnlockDateMode = DateDisplayMode.DateOnly,
+                DesktopThemeAchievementsUnlockDateMode = DateDisplayMode.Relative
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.OverviewGameSummariesLastPlayedDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.ViewAchievementsGameSummariesLastPlayedDateMode);
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.StartPageGameSummariesLastPlayedDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.OverviewRecentAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.OverviewSelectedGameAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.ViewAchievementsAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.DateOnly, copy.StartPageAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.DesktopThemeAchievementsUnlockDateMode);
+            }
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveControlTogglesAndViewAchievementsGameSummaries()
+        {
+            var defaults = new PersistedSettings();
+            var source = new PersistedSettings
+            {
+                // Use the inverse of each default so an omission would surface as a reset.
+                ColorAchievementNamesByRarity = !defaults.ColorAchievementNamesByRarity,
+                EnableAchievementCompactListControl = !defaults.EnableAchievementCompactListControl,
+                EnableAchievementDataGridControl = !defaults.EnableAchievementDataGridControl,
+                EnableAchievementCompactUnlockedListControl = !defaults.EnableAchievementCompactUnlockedListControl,
+                EnableAchievementCompactLockedListControl = !defaults.EnableAchievementCompactLockedListControl,
+                EnableAchievementProgressBarControl = !defaults.EnableAchievementProgressBarControl,
+                EnableAchievementStatsControl = !defaults.EnableAchievementStatsControl,
+                EnableAchievementButtonControl = !defaults.EnableAchievementButtonControl,
+                EnableAchievementViewItemControl = !defaults.EnableAchievementViewItemControl,
+                EnableAchievementPieChartControl = !defaults.EnableAchievementPieChartControl,
+                EnableAchievementBarChartControl = !defaults.EnableAchievementBarChartControl,
+                ViewAchievementsGameSummariesUseCoverImages = !defaults.ViewAchievementsGameSummariesUseCoverImages,
+                ViewAchievementsGameSummariesShowMetadataPlatform = !defaults.ViewAchievementsGameSummariesShowMetadataPlatform,
+                ViewAchievementsGameSummariesShowMetadataPlaytime = !defaults.ViewAchievementsGameSummariesShowMetadataPlaytime,
+                ViewAchievementsGameSummariesShowMetadataRegion = !defaults.ViewAchievementsGameSummariesShowMetadataRegion,
+                ViewAchievementsGameSummariesShowCompletionBorder = !defaults.ViewAchievementsGameSummariesShowCompletionBorder,
+                ShowViewAchievementsGameSummariesGridColumnHeaders = !defaults.ShowViewAchievementsGameSummariesGridColumnHeaders,
+                ViewAchievementsGameSummariesGridRowHeight = 88d,
+                ViewAchievementsGameSummariesColumnVisibility = new System.Collections.Generic.Dictionary<string, bool>
+                {
+                    ["GameSummaryName"] = false
+                },
+                ViewAchievementsGameSummariesColumnOrder = new System.Collections.Generic.Dictionary<string, int>
+                {
+                    ["GameSummaryName"] = 3
+                }
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            foreach (var copy in new[] { clone, target })
+            {
+                Assert.AreEqual(source.ColorAchievementNamesByRarity, copy.ColorAchievementNamesByRarity);
+                Assert.AreEqual(source.EnableAchievementCompactListControl, copy.EnableAchievementCompactListControl);
+                Assert.AreEqual(source.EnableAchievementDataGridControl, copy.EnableAchievementDataGridControl);
+                Assert.AreEqual(source.EnableAchievementCompactUnlockedListControl, copy.EnableAchievementCompactUnlockedListControl);
+                Assert.AreEqual(source.EnableAchievementCompactLockedListControl, copy.EnableAchievementCompactLockedListControl);
+                Assert.AreEqual(source.EnableAchievementProgressBarControl, copy.EnableAchievementProgressBarControl);
+                Assert.AreEqual(source.EnableAchievementStatsControl, copy.EnableAchievementStatsControl);
+                Assert.AreEqual(source.EnableAchievementButtonControl, copy.EnableAchievementButtonControl);
+                Assert.AreEqual(source.EnableAchievementViewItemControl, copy.EnableAchievementViewItemControl);
+                Assert.AreEqual(source.EnableAchievementPieChartControl, copy.EnableAchievementPieChartControl);
+                Assert.AreEqual(source.EnableAchievementBarChartControl, copy.EnableAchievementBarChartControl);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesUseCoverImages, copy.ViewAchievementsGameSummariesUseCoverImages);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataPlatform, copy.ViewAchievementsGameSummariesShowMetadataPlatform);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataPlaytime, copy.ViewAchievementsGameSummariesShowMetadataPlaytime);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataRegion, copy.ViewAchievementsGameSummariesShowMetadataRegion);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowCompletionBorder, copy.ViewAchievementsGameSummariesShowCompletionBorder);
+                Assert.AreEqual(source.ShowViewAchievementsGameSummariesGridColumnHeaders, copy.ShowViewAchievementsGameSummariesGridColumnHeaders);
+                Assert.AreEqual(88d, copy.ViewAchievementsGameSummariesGridRowHeight);
+                Assert.IsFalse(copy.ViewAchievementsGameSummariesColumnVisibility["GameSummaryName"]);
+                Assert.AreEqual(3, copy.ViewAchievementsGameSummariesColumnOrder["GameSummaryName"]);
+                Assert.AreNotSame(source.ViewAchievementsGameSummariesColumnVisibility, copy.ViewAchievementsGameSummariesColumnVisibility);
+                Assert.AreNotSame(source.ViewAchievementsGameSummariesColumnOrder, copy.ViewAchievementsGameSummariesColumnOrder);
+            }
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveOverviewScoreCardVisibility()
         {
             var source = new PersistedSettings
