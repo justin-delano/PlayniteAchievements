@@ -1478,7 +1478,7 @@
                                                                            TextTrimming="CharacterEllipsis"/>
                                                                 <TextBlock Style="{StaticResource MutedTextStyle}"
                                                                            TextTrimming="CharacterEllipsis">
-                                                                    <Run Text="{DynamicResource LOCPlayAch_Settings_Appearance_PlayniteResourceLabel}"/><Run Text=" "/><Run Text="{Binding PlayniteResourceKey}"/>
+                                                                    <Run Text="{DynamicResource LOCPlayAch_Settings_Appearance_PlayniteResourceLabel}"/><Run Text=" "/><Run Text="{Binding PlayniteResourceKey, Mode=OneWay}"/>
                                                                 </TextBlock>
                                                             </StackPanel>
 
