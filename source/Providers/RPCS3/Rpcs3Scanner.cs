@@ -36,6 +36,13 @@ namespace PlayniteAchievements.Providers.RPCS3
         public string SourceTitle { get; set; }
     }
 
+    internal sealed class GamePathCandidate
+    {
+        public string Path { get; set; }
+
+        public bool AllowDirectoryIsoEnumeration { get; set; } = true;
+    }
+
     /// <summary>
     /// Scanner for RPCS3 PlayStation 3 emulator trophy data.
     /// Orchestrates trophy folder discovery and game matching.
@@ -74,7 +81,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             Dictionary<string, string> trophyFolderCache;
             if (_provider != null)
             {
-                trophyFolderCache = _provider.GetOrBuildTrophyFolderCache();
+                trophyFolderCache = _provider.RebuildTrophyFolderCache();
             }
             else
             {
@@ -426,6 +433,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             new System.Text.RegularExpressions.Regex(@"\b([A-Z]{2,4}\d{5})\b",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
+        // npcommid pattern: NPWR05920_00 format (in TROPDIR subdirectory names)
+        private static readonly System.Text.RegularExpressions.Regex NpCommIdPathPattern =
+            new System.Text.RegularExpressions.Regex(@"\b([A-Z]{4}\d{5}_\d{2})\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
         // Pattern to extract npcommid from TROPHY.TRP file content
         private static readonly System.Text.RegularExpressions.Regex NpCommIdPattern =
             new System.Text.RegularExpressions.Regex(@"<npcommid>(.*?)<\/npcommid>",
@@ -490,7 +502,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 cancel.ThrowIfCancellationRequested();
 
-                foreach (var source in FindFolderCollectionSources(candidate))
+                foreach (var source in FindFolderCollectionSources(candidate.Path))
                 {
                     AddStrictTrophySource(sources, seen, source, trophyFolderCache);
                 }
@@ -597,11 +609,18 @@ namespace PlayniteAchievements.Providers.RPCS3
         }
 
         private IEnumerable<GameTrophySource> FindIsoCollectionSourcesForCandidate(
-            string candidatePath,
+            GamePathCandidate candidate,
             Dictionary<string, string> trophyFolderCache,
             bool allowRawIsoScan)
         {
-            foreach (var isoPath in ResolveIsoFilesForCandidate(candidatePath))
+            if (candidate == null)
+            {
+                yield break;
+            }
+
+            foreach (var isoPath in ResolveIsoFilesForCandidate(
+                candidate.Path,
+                candidate.AllowDirectoryIsoEnumeration))
             {
                 foreach (var source in FindIsoTrophySources(isoPath, trophyFolderCache, allowRawIsoScan))
                 {
@@ -669,7 +688,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             return sources;
         }
 
-        private IEnumerable<string> ResolveSharedIsoPathsFromGamesYml(IReadOnlyList<string> candidatePaths)
+        private IEnumerable<string> ResolveSharedIsoPathsFromGamesYml(IReadOnlyList<GamePathCandidate> candidatePaths)
         {
             var rpcs3Root = GetRpcs3Root();
             if (string.IsNullOrWhiteSpace(rpcs3Root))
@@ -677,8 +696,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                 yield break;
             }
 
-            var gamesYmlPath = Path.Combine(rpcs3Root, "games.yml");
-            var map = Rpcs3GamesYmlReader.ReadTitlePathMap(gamesYmlPath, _logger);
+            var map = ReadRpcs3GamesYmlTitlePathMap(rpcs3Root);
             if (map.Count == 0)
             {
                 yield break;
@@ -696,11 +714,37 @@ namespace PlayniteAchievements.Providers.RPCS3
                     continue;
                 }
 
-                if (candidatePaths.Any(candidate => PathsEqual(candidate, isoPath)))
+                if (candidatePaths.Any(candidate => PathsEqual(candidate?.Path, isoPath)))
                 {
                     yield return isoPath;
                 }
             }
+        }
+
+        private IReadOnlyDictionary<string, string> ReadRpcs3GamesYmlTitlePathMap(string rpcs3Root)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var gamesYmlPath in EnumerateRpcs3GamesYmlPaths(rpcs3Root))
+            {
+                foreach (var kvp in Rpcs3GamesYmlReader.ReadTitlePathMap(gamesYmlPath, _logger))
+                {
+                    map[kvp.Key] = kvp.Value;
+                }
+            }
+
+            return map;
+        }
+
+        private static IEnumerable<string> EnumerateRpcs3GamesYmlPaths(string rpcs3Root)
+        {
+            if (string.IsNullOrWhiteSpace(rpcs3Root))
+            {
+                yield break;
+            }
+
+            yield return Path.Combine(rpcs3Root, "games.yml");
+            yield return Path.Combine(rpcs3Root, "config", "games.yml");
         }
 
         private string ResolveFolderCollectionRoot(string candidatePath)
@@ -805,13 +849,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             return Rpcs3ParamSfoReader.ReadStringValue(paramSfoPath, "TITLE", _logger);
         }
 
-        private IReadOnlyList<string> ResolveGamePathCandidates(Game game)
+        private IReadOnlyList<GamePathCandidate> ResolveGamePathCandidates(Game game)
         {
-            var candidates = new List<string>();
+            var candidates = new List<GamePathCandidate>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var installDir = ExpandGamePath(game, game?.InstallDirectory);
-
-            AddCandidate(candidates, seen, installDir, installDir);
 
             if (game?.Roms != null)
             {
@@ -825,17 +867,31 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 foreach (var action in game.GameActions)
                 {
-                    AddActionPathCandidates(game, action, candidates, seen, installDir);
+                    AddActionArgumentPathCandidates(game, action, candidates, seen, installDir);
+                }
+            }
+
+            var hasExplicitGamePath = candidates.Any(candidate => IsGameSpecificCandidate(candidate?.Path));
+            if (!hasExplicitGamePath || IsGameSpecificCandidate(installDir))
+            {
+                AddCandidate(candidates, seen, installDir, installDir);
+            }
+
+            if (game?.GameActions != null)
+            {
+                foreach (var action in game.GameActions)
+                {
+                    AddActionExecutablePathCandidates(game, action, candidates, seen, installDir, hasExplicitGamePath);
                 }
             }
 
             return candidates;
         }
 
-        private void AddActionPathCandidates(
+        private void AddActionArgumentPathCandidates(
             Game game,
             GameAction action,
-            List<string> candidates,
+            List<GamePathCandidate> candidates,
             HashSet<string> seen,
             string installDir)
         {
@@ -844,14 +900,29 @@ namespace PlayniteAchievements.Providers.RPCS3
                 return;
             }
 
-            AddCandidate(candidates, seen, ExpandGamePath(game, action.Path), installDir);
-            AddCandidate(candidates, seen, ExpandGamePath(game, action.WorkingDir), installDir);
             AddCandidatesFromArgumentText(candidates, seen, ExpandGamePath(game, action.Arguments), installDir);
             AddCandidatesFromArgumentText(candidates, seen, ExpandGamePath(game, action.AdditionalArguments), installDir);
         }
 
+        private void AddActionExecutablePathCandidates(
+            Game game,
+            GameAction action,
+            List<GamePathCandidate> candidates,
+            HashSet<string> seen,
+            string installDir,
+            bool hasExplicitGamePath)
+        {
+            if (action == null)
+            {
+                return;
+            }
+
+            AddCandidateIfAllowed(candidates, seen, ExpandGamePath(game, action.Path), installDir, hasExplicitGamePath);
+            AddCandidateIfAllowed(candidates, seen, ExpandGamePath(game, action.WorkingDir), installDir, hasExplicitGamePath);
+        }
+
         private void AddCandidatesFromArgumentText(
-            List<string> candidates,
+            List<GamePathCandidate> candidates,
             HashSet<string> seen,
             string text,
             string installDir)
@@ -876,10 +947,11 @@ namespace PlayniteAchievements.Providers.RPCS3
         }
 
         private static void AddCandidate(
-            List<string> candidates,
+            List<GamePathCandidate> candidates,
             HashSet<string> seen,
             string path,
-            string installDir)
+            string installDir,
+            bool allowDirectoryIsoEnumeration = true)
         {
             var normalized = NormalizeCandidatePath(path, installDir);
             if (string.IsNullOrWhiteSpace(normalized))
@@ -889,7 +961,24 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             if (seen.Add(normalized))
             {
-                candidates.Add(normalized);
+                candidates.Add(new GamePathCandidate
+                {
+                    Path = normalized,
+                    AllowDirectoryIsoEnumeration = allowDirectoryIsoEnumeration
+                });
+            }
+        }
+
+        private static void AddCandidateIfAllowed(
+            List<GamePathCandidate> candidates,
+            HashSet<string> seen,
+            string path,
+            string installDir,
+            bool hasExplicitGamePath)
+        {
+            if (!hasExplicitGamePath || IsGameSpecificCandidate(path))
+            {
+                AddCandidate(candidates, seen, path, installDir);
             }
         }
 
@@ -920,7 +1009,9 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
         }
 
-        private IEnumerable<string> ResolveIsoFilesForCandidate(string candidatePath)
+        private IEnumerable<string> ResolveIsoFilesForCandidate(
+            string candidatePath,
+            bool allowDirectoryIsoEnumeration = true)
         {
             if (string.IsNullOrWhiteSpace(candidatePath))
             {
@@ -934,7 +1025,7 @@ namespace PlayniteAchievements.Providers.RPCS3
                 yield break;
             }
 
-            if (!Directory.Exists(candidatePath))
+            if (!allowDirectoryIsoEnumeration || !Directory.Exists(candidatePath))
             {
                 yield break;
             }
@@ -1006,6 +1097,52 @@ namespace PlayniteAchievements.Providers.RPCS3
                 : path.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
         }
 
+        private static bool IsGameSpecificCandidate(string path)
+        {
+            var normalized = NormalizeCandidatePath(path, null);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return false;
+            }
+
+            if (Ps3IdPattern.IsMatch(normalized) ||
+                Rpcs3MatchIdHelper.Normalize(NpCommIdPathPattern.Match(normalized).Groups[1].Value) != null)
+            {
+                return true;
+            }
+
+            var extension = Path.GetExtension(normalized);
+            if (string.Equals(extension, ".iso", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(extension, ".pkg", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            if (!Directory.Exists(normalized))
+            {
+                return false;
+            }
+
+            if (File.Exists(Path.Combine(normalized, "PS3_DISC.SFB")) ||
+                File.Exists(Path.Combine(normalized, "PARAM.SFO")) ||
+                Directory.Exists(Path.Combine(normalized, "PS3_GAME")) ||
+                Directory.Exists(Path.Combine(normalized, "TROPDIR")) ||
+                Directory.Exists(Path.Combine(normalized, "TROPHY")))
+            {
+                return true;
+            }
+
+            var trimmed = TrimTrailingSeparators(normalized);
+            var directoryName = Path.GetFileName(trimmed);
+            if (string.Equals(directoryName, "USRDIR", StringComparison.OrdinalIgnoreCase))
+            {
+                var parent = Path.GetDirectoryName(trimmed);
+                return IsGameSpecificCandidate(parent);
+            }
+
+            return IsCollectionSubgameDirectory(normalized);
+        }
+
         /// <summary>
         /// Finds the npcommid for a game using multiple strategies:
         /// 1. Extract PS3 ID from the install path (e.g., BLUS12345)
@@ -1019,9 +1156,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             CancellationToken cancel,
             bool allowRawIsoScan)
         {
-            foreach (var gameDirectory in ResolveGamePathCandidates(game))
+            foreach (var candidate in ResolveGamePathCandidates(game))
             {
                 cancel.ThrowIfCancellationRequested();
+
+                var gameDirectory = candidate.Path;
 
                 // Strategy 1: Extract PS3 ID from the path and look it up in cache
                 if (!string.IsNullOrWhiteSpace(gameDirectory))
@@ -1051,7 +1190,12 @@ namespace PlayniteAchievements.Providers.RPCS3
                 }
 
                 // Strategy 2: Extract npcommid from PS3 ISO file
-                var npcommidFromIso = FindNpCommIdFromIso(game, gameDirectory, trophyFolderCache, allowRawIsoScan);
+                var npcommidFromIso = FindNpCommIdFromIso(
+                    game,
+                    gameDirectory,
+                    trophyFolderCache,
+                    allowRawIsoScan,
+                    candidate.AllowDirectoryIsoEnumeration);
                 if (!string.IsNullOrWhiteSpace(npcommidFromIso))
                 {
                     return new GameTrophySource { NpCommId = npcommidFromIso, TrpPath = null };
@@ -1073,7 +1217,8 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private string FindNpCommIdFromIso(Game game, string gameDirectory,
             Dictionary<string, string> trophyFolderCache,
-            bool allowRawIsoScan)
+            bool allowRawIsoScan,
+            bool allowDirectoryIsoEnumeration = true)
         {
             if (string.IsNullOrWhiteSpace(gameDirectory))
             {
@@ -1082,7 +1227,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             try
             {
-                var isoFiles = ResolveIsoFilesForCandidate(gameDirectory).ToList();
+                var isoFiles = ResolveIsoFilesForCandidate(gameDirectory, allowDirectoryIsoEnumeration).ToList();
                 if (isoFiles.Count == 0)
                 {
                     return null;

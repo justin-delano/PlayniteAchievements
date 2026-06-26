@@ -10,8 +10,10 @@ using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -329,6 +331,132 @@ namespace PlayniteAchievements.Providers.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_ExplicitRomPath_IsPreferredOverSharedInstallDirectory()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var romRoot = Path.Combine(tempDir, "roms", "PS3");
+
+            try
+            {
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR05636_00", "Minecraft", "Minecraft Trophy");
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01435_00", "Sly 1", "Sly Trophy");
+
+                CreateRawIsoWithNpCommIds(Path.Combine(romRoot, "0-Minecraft.iso"), "NPWR05636_00");
+                CreateRawIsoWithNpCommIds(Path.Combine(romRoot, "1-Sly.iso"), "NPWR01435_00");
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "The Sly Collection",
+                    InstallDirectory = romRoot,
+                    Roms = new ObservableCollection<GameRom>
+                    {
+                        new GameRom
+                        {
+                            Name = "Sly",
+                            Path = @"{InstallDir}\1-Sly.iso"
+                        }
+                    }
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(1, data.Achievements.Count);
+                Assert.AreEqual("Sly Trophy", data.Achievements[0].DisplayName);
+                Assert.IsFalse(data.Achievements.Any(achievement => achievement.DisplayName == "Minecraft Trophy"));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_RebuildsTrophyFolderCacheAtRefreshStart()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var romRoot = Path.Combine(tempDir, "roms", "PS3");
+            var emptyInstallDir = Path.Combine(tempDir, "empty-install");
+
+            try
+            {
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR05636_00", "Minecraft", "Minecraft Trophy");
+                CreateRawIsoWithNpCommIds(Path.Combine(romRoot, "Minecraft.iso"), "NPWR05636_00");
+                Directory.CreateDirectory(emptyInstallDir);
+
+                var provider = CreateProvider(rpcs3Root);
+                provider.GetOrBuildTrophyFolderCache();
+
+                var slyIso = Path.Combine(romRoot, "Sly.iso");
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR01435_00", "Sly 1", "Sly Trophy");
+                CreateRawIsoWithNpCommIds(slyIso, "NPWR01435_00");
+
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "The Sly Collection",
+                    InstallDirectory = emptyInstallDir,
+                    Roms = new ObservableCollection<GameRom>
+                    {
+                        new GameRom
+                        {
+                            Name = "Sly",
+                            Path = slyIso
+                        }
+                    }
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(1, data.Achievements.Count);
+                Assert.AreEqual("Sly Trophy", data.Achievements[0].DisplayName);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void Scanner_ReadsConfigGamesYmlPath()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+
+            try
+            {
+                Directory.CreateDirectory(Path.Combine(rpcs3Root, "config"));
+                File.WriteAllText(
+                    Path.Combine(rpcs3Root, "config", "games.yml"),
+                    "BCUS98246: C:/Games/Sly.iso");
+
+                var scanner = new Rpcs3Scanner(
+                    new FakeLogger(),
+                    new PlayniteAchievementsSettings(),
+                    new Rpcs3Settings { ExecutablePath = Path.Combine(rpcs3Root, "rpcs3.exe") });
+                var method = typeof(Rpcs3Scanner).GetMethod(
+                    "ReadRpcs3GamesYmlTitlePathMap",
+                    BindingFlags.Instance | BindingFlags.NonPublic);
+
+                var map = (IReadOnlyDictionary<string, string>)method.Invoke(scanner, new object[] { rpcs3Root });
+
+                Assert.AreEqual(1, map.Count);
+                Assert.AreEqual("C:/Games/Sly.iso", map["BCUS98246"]);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public void GamesYmlReader_ParsesQuotedWindowsIsoPaths()
         {
             var tempDir = CreateTempDirectory();
@@ -482,6 +610,14 @@ BCUS98246: 'D:\RPCS3\Other Collection.iso' # trailing comment
         {
             Directory.CreateDirectory(Path.GetDirectoryName(trpPath));
             File.WriteAllText(trpPath, BuildTropconfXml(npCommId, titleName, trophyName));
+        }
+
+        private static void CreateRawIsoWithNpCommIds(string isoPath, params string[] npCommIds)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(isoPath));
+            File.WriteAllText(
+                isoPath,
+                string.Join(" filler ", npCommIds.Select(npCommId => $"<npcommid>{npCommId}</npcommid>")));
         }
 
         private static void CreateParamSfo(string path, string title, string titleId)

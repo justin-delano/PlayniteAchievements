@@ -656,6 +656,15 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
         }
 
+        internal Dictionary<string, string> RebuildTrophyFolderCache()
+        {
+            lock (_cacheLock)
+            {
+                _trophyFolderCache = BuildTrophyFolderCache();
+                return _trophyFolderCache;
+            }
+        }
+
         internal void ClearTrophyFolderCache()
         {
             lock (_cacheLock)
