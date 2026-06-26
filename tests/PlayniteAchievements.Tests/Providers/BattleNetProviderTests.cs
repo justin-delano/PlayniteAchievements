@@ -104,8 +104,11 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void WowParser_SkipsGuildRunAchievements()
+        public void WowParser_DoesNotFilterByNameAtParseTime()
         {
+            // The public web catalog never fetches the guild category, and guild
+            // exclusion is now id-based at the official-merge level, so the public
+            // parser keeps every achievement it is given regardless of name.
             var publicCategory = JsonConvert.DeserializeObject<WowAchievementsData>(@"
 {
   ""name"": ""World Events"",
@@ -116,53 +119,35 @@ namespace PlayniteAchievements.Tests.Providers
       ""description"": ""Complete the dungeon with your guild.""
     },
     {
-      ""id"": 11,
-      ""name"": ""Guild Group Test"",
-      ""description"": ""Defeat the boss while in a guild group.""
-    },
-    {
       ""id"": 12,
       ""name"": ""The First Rule of Brawler's Guild"",
       ""description"": ""Get invited to brawl.""
     }
   ]
 }");
-            var guildSubcategory = JsonConvert.DeserializeObject<WowAchievementsData>(@"
-{
-  ""name"": ""Dungeons & Raids"",
-  ""subcategories"": {
-    ""guild"": {
-      ""id"": ""guild"",
-      ""name"": ""Guild"",
-      ""achievements"": [
-        {
-          ""id"": 13,
-          ""name"": ""Test Dungeon"",
-          ""description"": ""Complete the dungeon.""
-        }
-      ]
-    },
-    ""raids"": {
-      ""id"": ""raids"",
-      ""name"": ""Raids"",
-      ""achievements"": [
-        {
-          ""id"": 14,
-          ""name"": ""Normal Raid Achievement"",
-          ""description"": ""Complete the raid.""
-        }
-      ]
-    }
-  }
-}");
 
-            var achievements = WowGameStrategy.ParseAchievements(new[] { publicCategory, guildSubcategory });
+            var achievements = WowGameStrategy.ParseAchievements(new[] { publicCategory });
 
-            Assert.IsFalse(achievements.Any(item => item.ApiName == "10"));
-            Assert.IsFalse(achievements.Any(item => item.ApiName == "11"));
-            Assert.IsFalse(achievements.Any(item => item.ApiName == "13"));
+            Assert.IsTrue(achievements.Any(item => item.ApiName == "10"));
             Assert.IsTrue(achievements.Any(item => item.ApiName == "12"));
-            Assert.IsTrue(achievements.Any(item => item.ApiName == "14"));
+        }
+
+        [TestMethod]
+        public void IsGuildCategory_MatchesByCategoryId()
+        {
+            var guildIds = new HashSet<int> { 15076, 15093 };
+
+            Assert.IsTrue(WowGameStrategy.IsGuildCategory(
+                new WowOfficialAchievementCategory { Id = 15076, Name = "Guild" }, guildIds));
+            Assert.IsTrue(WowGameStrategy.IsGuildCategory(
+                new WowOfficialAchievementCategory { Id = 15093, Name = "Gilde" }, guildIds));
+            Assert.IsFalse(WowGameStrategy.IsGuildCategory(
+                new WowOfficialAchievementCategory { Id = 92, Name = "Quests" }, guildIds));
+            Assert.IsFalse(WowGameStrategy.IsGuildCategory(null, guildIds));
+            Assert.IsFalse(WowGameStrategy.IsGuildCategory(
+                new WowOfficialAchievementCategory { Id = 15076 }, null));
+            Assert.IsFalse(WowGameStrategy.IsGuildCategory(
+                new WowOfficialAchievementCategory { Id = 0, Name = "Guild" }, guildIds));
         }
 
         [TestMethod]
@@ -533,7 +518,7 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public async Task WowFetch_SkipsOfficialGuildRunAchievements()
+        public async Task WowFetch_SkipsOfficialGuildAchievementsByCategoryId()
         {
             var settingsRoot = new PlayniteAchievementsSettings();
             var registry = new ProviderRegistry(settingsRoot, new[] { "BattleNet" }, new NullLogger());
@@ -681,6 +666,10 @@ namespace PlayniteAchievements.Tests.Providers
             Assert.AreEqual("Fallback Icon", fallbackIcon.DisplayName);
             Assert.AreEqual("Media URL is derived.", fallbackIcon.Description);
             Assert.AreEqual("https://render.worldofwarcraft.test/fallback-icon.jpg", fallbackIcon.UnlockedIconPath);
+
+            // An official achievement with no category is left null (no "Earned"/"Default"
+            // sentinel); the hydrator localizes the default category at display time.
+            Assert.IsNull(fallbackIcon.Category);
         }
 
         [TestMethod]
@@ -782,14 +771,16 @@ namespace PlayniteAchievements.Tests.Providers
                 if (request.Method == HttpMethod.Get &&
                     request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement/index?namespace=static-us&locale=en_US")
                 {
+                    // The category name is non-English and the achievement name has no
+                    // "guild" text, proving exclusion is driven by the category id, not strings.
                     var guildAchievement = IncludeOfficialGuildAchievement
                         ? @",
     {
       ""id"": 5,
-      ""name"": ""Guild Run: Official Test"",
-      ""description"": ""Complete the dungeon while in a guild group."",
+      ""name"": ""Cooperative Raider"",
+      ""description"": ""Complete the dungeon with a group."",
       ""points"": 10,
-      ""category"": { ""id"": 150, ""name"": ""Guild"" },
+      ""category"": { ""id"": 150, ""name"": ""Gilde"" },
       ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement/5?namespace=static-us"" }
     }"
                         : string.Empty;
@@ -809,6 +800,23 @@ namespace PlayniteAchievements.Tests.Providers
     }" + guildAchievement + @"
   ]
 }");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement-category/index?namespace=static-us&locale=en_US")
+                {
+                    return JsonResponse(@"
+{
+  ""guild_categories"": [
+    { ""id"": 150, ""name"": ""Gilde"", ""key"": { ""href"": ""https://us.api.blizzard.com/data/wow/achievement-category/150?namespace=static-us"" } }
+  ]
+}");
+                }
+
+                if (request.Method == HttpMethod.Get &&
+                    request.RequestUri.ToString() == "https://us.api.blizzard.com/data/wow/achievement-category/150?namespace=static-us&locale=en_US")
+                {
+                    return JsonResponse(@"{ ""id"": 150, ""subcategories"": [] }");
                 }
 
                 if (request.Method == HttpMethod.Get &&
@@ -907,8 +915,7 @@ namespace PlayniteAchievements.Tests.Providers
   ""id"": 4,
   ""name"": ""Fallback Icon"",
   ""description"": ""Media URL is derived."",
-  ""points"": 5,
-  ""category"": { ""id"": 81, ""name"": ""Feats of Strength"" }
+  ""points"": 5
 }");
                 }
 
