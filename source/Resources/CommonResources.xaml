@@ -29,6 +29,7 @@
     <converters:GameMetadataTextConverter x:Key="GameMetadataText"/>
     <converters:DataGridCompletedBorderThicknessConverter x:Key="OverviewCompletedBorderThickness"/>
     <converters:LocalDateTimeConverter x:Key="LocalDateTimeConverter"/>
+    <converters:DateDisplayModeConverter x:Key="DateDisplayMode"/>
     <converters:HeightToFontSizeConverter x:Key="HeightToFontSizeConverter"/>
     <converters:ValueOperationConverter x:Key="ValueOperationConverter"/>
     <converters:NullableDoubleTextConverter x:Key="NullableDoubleTextConverter"/>
