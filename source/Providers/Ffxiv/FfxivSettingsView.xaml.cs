@@ -3,7 +3,6 @@ using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.Logging;
 using System;
 using System.ComponentModel;
-using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -11,7 +10,9 @@ using System.Windows;
 namespace PlayniteAchievements.Providers.Ffxiv
 {
     /// <summary>
-    /// Settings view for the Final Fantasy XIV provider.
+    /// Settings view for the Final Fantasy XIV provider. Character details are
+    /// entered manually and verified on demand against the Lodestone and FFXIV
+    /// Collect, following the "needs to be checked" pattern used by other providers.
     /// </summary>
     public partial class FfxivSettingsView : ProviderSettingsViewBase, IAuthRefreshable
     {
@@ -19,17 +20,21 @@ namespace PlayniteAchievements.Providers.Ffxiv
 
         private FfxivSettings _ffxivSettings;
 
-        public static readonly DependencyProperty IsAuthenticatedProperty =
-            DependencyProperty.Register(nameof(IsAuthenticated), typeof(bool), typeof(FfxivSettingsView), new PropertyMetadata(false));
+        public static readonly DependencyProperty AuthBusyProperty =
+            DependencyProperty.Register(nameof(AuthBusy), typeof(bool), typeof(FfxivSettingsView), new PropertyMetadata(false));
 
-        public bool IsAuthenticated
+        public bool AuthBusy
         {
-            get => (bool)GetValue(IsAuthenticatedProperty);
-            set => SetValue(IsAuthenticatedProperty, value);
+            get => (bool)GetValue(AuthBusyProperty);
+            set => SetValue(AuthBusyProperty, value);
         }
 
         public static readonly DependencyProperty AuthStatusProperty =
-            DependencyProperty.Register(nameof(AuthStatus), typeof(string), typeof(FfxivSettingsView), new PropertyMetadata(string.Empty));
+            DependencyProperty.Register(
+                nameof(AuthStatus),
+                typeof(string),
+                typeof(FfxivSettingsView),
+                new PropertyMetadata(ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked")));
 
         public string AuthStatus
         {
@@ -58,19 +63,14 @@ namespace PlayniteAchievements.Providers.Ffxiv
                 notify.PropertyChanged += Settings_PropertyChanged;
             }
 
-            RefreshAuthStatus();
+            SetNotChecked();
         }
 
         private void Settings_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (e == null)
-            {
-                RefreshAuthStatus();
-                return;
-            }
-
-            // Editing the character invalidates any previously resolved id.
-            if (string.Equals(e.PropertyName, nameof(FfxivSettings.CharacterName), StringComparison.Ordinal) ||
+            // Editing the character invalidates any previous check and resolved id.
+            if (e == null ||
+                string.Equals(e.PropertyName, nameof(FfxivSettings.CharacterName), StringComparison.Ordinal) ||
                 string.Equals(e.PropertyName, nameof(FfxivSettings.World), StringComparison.Ordinal) ||
                 string.Equals(e.PropertyName, nameof(FfxivSettings.Region), StringComparison.Ordinal))
             {
@@ -79,39 +79,31 @@ namespace PlayniteAchievements.Providers.Ffxiv
                     _ffxivSettings.ResolvedCharacterId = 0;
                 }
 
-                RefreshAuthStatus();
+                SetNotChecked();
             }
         }
 
-        private void RefreshAuthStatus()
+        private void SetNotChecked()
         {
-            var configured = !string.IsNullOrWhiteSpace(_ffxivSettings?.CharacterName) &&
-                             !string.IsNullOrWhiteSpace(_ffxivSettings?.World);
-
-            IsAuthenticated = configured;
-            AuthStatus = configured
-                ? ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated")
-                : ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated");
+            SetAuthStatusVisualState(pending: true, success: false);
+            AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
         }
 
-        public Task RefreshAuthStatusAsync()
-        {
-            RefreshAuthStatus();
-            return Task.CompletedTask;
-        }
-
-        private async void VerifyCharacter_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Resolves and verifies the configured character against the Lodestone and
+        /// FFXIV Collect, updating the status display. Also invoked by the global
+        /// auth-check flow.
+        /// </summary>
+        public async Task RefreshAuthStatusAsync()
         {
             if (_ffxivSettings == null ||
                 string.IsNullOrWhiteSpace(_ffxivSettings.CharacterName) ||
                 string.IsNullOrWhiteSpace(_ffxivSettings.World))
             {
-                RefreshAuthStatus();
+                SetAuthStatusVisualState(pending: false, success: false);
+                AuthStatus = ResourceProvider.GetString("LOCPlayAch_Common_NotAuthenticated");
                 return;
             }
-
-            SetAuthStatusVisualState(pending: true, success: false);
-            AuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_FFXIV_Verifying");
 
             try
             {
@@ -125,7 +117,7 @@ namespace PlayniteAchievements.Providers.Ffxiv
 
                     if (!id.HasValue || id.Value <= 0)
                     {
-                        IsAuthenticated = false;
+                        _ffxivSettings.ResolvedCharacterId = 0;
                         SetAuthStatusVisualState(pending: false, success: false);
                         AuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_FFXIV_CharacterNotFound");
                         return;
@@ -134,29 +126,56 @@ namespace PlayniteAchievements.Providers.Ffxiv
                     var character = await client.FetchCharacterAsync(id.Value, CancellationToken.None).ConfigureAwait(true);
 
                     _ffxivSettings.ResolvedCharacterId = id.Value;
-                    IsAuthenticated = true;
-                    SetAuthStatusVisualState(pending: false, success: true);
 
+                    if (character?.Achievements?.Public == false)
+                    {
+                        SetAuthStatusVisualState(pending: false, success: false);
+                        AuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_FFXIV_AchievementsPrivate");
+                        return;
+                    }
+
+                    SetAuthStatusVisualState(pending: false, success: true);
                     var displayName = character?.Name ?? _ffxivSettings.CharacterName;
                     var displayServer = character?.Server ?? _ffxivSettings.World;
                     AuthStatus = string.Format(
                         ResourceProvider.GetString("LOCPlayAch_Auth_AuthenticatedAs"),
                         $"{displayName} ({displayServer})");
-
-                    if (character?.Achievements?.Public == false)
-                    {
-                        AuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_FFXIV_AchievementsPrivate");
-                    }
                 }
             }
             catch (Exception ex)
             {
-                Logger.Error(ex, "Failed to verify FFXIV character.");
-                IsAuthenticated = false;
+                Logger.Error(ex, "Failed to check FFXIV character.");
                 SetAuthStatusVisualState(pending: false, success: false);
                 AuthStatus = string.Format(
                     ResourceProvider.GetString("LOCPlayAch_Status_Failed"),
                     ex.Message);
+            }
+        }
+
+        private async void CheckCharacter_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                SetAuthStatusVisualState(pending: true, success: false);
+                AuthStatus = ResourceProvider.GetString("LOCPlayAch_Settings_FFXIV_Verifying");
+                await RefreshAuthStatusAsync();
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
+        private void SetAuthBusy(bool busy)
+        {
+            if (Dispatcher.CheckAccess())
+            {
+                AuthBusy = busy;
+            }
+            else
+            {
+                Dispatcher.BeginInvoke(new Action(() => AuthBusy = busy));
             }
         }
     }

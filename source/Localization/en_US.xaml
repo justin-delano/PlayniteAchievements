@@ -617,13 +617,11 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
 
     <!-- Provider: FFXIV -->
     <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterName">Character name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterName_Help">Your in-game character name, e.g. "Raelys Skyborn".</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_World">World</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_World_Help">Your home world, e.g. "Behemoth". Achievements must be public on the Lodestone.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verify">Verify character</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verifying">Verifying character...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterNotFound">Character not found. Check the name, world, and region.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">Character found, but achievements are hidden on the Lodestone. Make them public to track unlocks.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_World">Home world</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_PublicNote">Achievements must be set to public on the Lodestone to be tracked.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_Verifying">Checking character...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_CharacterNotFound">No matching character found for the name, world, and region.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FFXIV_AchievementsPrivate">Character found, but achievements are private on the Lodestone.</sys:String>
 
     <!-- Provider: RetroAchievements -->
     <sys:String x:Key="LOCPlayAch_Settings_RaUsername">Username</sys:String>

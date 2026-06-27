@@ -39,11 +39,11 @@
             <!-- Provider Disabled Message -->
             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}" Style="{StaticResource ProviderDisabledMessageStyle}"/>
 
-            <!-- FFXIV Settings -->
+            <!-- FFXIV Connection Section -->
             <Border Style="{StaticResource SectionBorderStyle}"
                     IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
-                    <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}">
+                    <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180"/>
                             <ColumnDefinition Width="*"/>
@@ -56,12 +56,23 @@
                                    VerticalAlignment="Top"
                                    Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
 
-                        <Border Grid.Column="1" Style="{StaticResource ProviderConfigStatusBorderStyle}">
+                        <!-- Auth Card -->
+                        <Border Grid.Column="1" Style="{StaticResource AuthStatusBorderStyle}">
                             <StackPanel>
-                                <TextBlock Text="{Binding AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                           VerticalAlignment="Center"
-                                           TextWrapping="Wrap"
-                                           Margin="0,0,0,10"/>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <TextBlock Grid.Column="0"
+                                               Style="{StaticResource AuthStatusIconStyle}"/>
+
+                                    <TextBlock Grid.Column="1"
+                                               Text="{Binding AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="Wrap"/>
+                                </Grid>
 
                                 <Border BorderBrush="{DynamicResource PopupBorderBrush}"
                                         BorderThickness="0,1,0,0"
@@ -71,19 +82,11 @@
                                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <TextBox Text="{Binding Settings.CharacterName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  Padding="4"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FFXIV_CharacterName_Help}"
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
-                                                   TextWrapping="Wrap"/>
 
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FFXIV_World}"
                                                    Margin="0,12,0,8"/>
                                         <TextBox Text="{Binding Settings.World, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                  Padding="4"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FFXIV_World_Help}"
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
-                                                   TextWrapping="Wrap"/>
 
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Region}"
                                                    Margin="0,12,0,8"/>
@@ -98,12 +101,16 @@
                                             <ComboBoxItem Content="Japan" Tag="jp"/>
                                         </ComboBox>
 
-                                        <Button Content="{DynamicResource LOCPlayAch_Settings_FFXIV_Verify}"
-                                                Click="VerifyCharacter_Click"
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FFXIV_PublicNote}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="0,12,0,0"
+                                                   TextWrapping="Wrap"/>
+
+                                        <Button Content="{DynamicResource LOCPlayAch_Common_Check}"
+                                                Click="CheckCharacter_Click"
+                                                Style="{StaticResource AuthActionButtonStyle}"
                                                 HorizontalAlignment="Left"
-                                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
-                                                Margin="0,16,0,0"
-                                                MinWidth="90"/>
+                                                Margin="0,16,0,0"/>
                                     </StackPanel>
                                 </Border>
                             </StackPanel>
