@@ -40,7 +40,7 @@ namespace PlayniteAchievements.Providers.Ffxiv
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_FFXIV");
         public string ProviderKey => "FFXIV";
         public string ProviderIconKey => "ProviderIconFFXIV";
-        public string ProviderColorHex => "#2E7CD6";
+        public string ProviderColorHex => "#C0392B";
         public ISessionManager AuthSession => null;
 
         /// <summary>

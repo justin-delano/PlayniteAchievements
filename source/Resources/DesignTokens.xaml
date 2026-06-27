@@ -55,7 +55,7 @@
     <Color x:Key="PlayAch.Color.ProviderXbox">#107C10</Color>
     <Color x:Key="PlayAch.Color.ProviderXenia">#92C83E</Color>
     <Color x:Key="PlayAch.Color.ProviderApple">#E5E5E5</Color>
-    <Color x:Key="PlayAch.Color.ProviderFFXIV">#2E7CD6</Color>
+    <Color x:Key="PlayAch.Color.ProviderFFXIV">#C0392B</Color>
     <Color x:Key="PlayAch.Color.MigrationAccent">#FF37A7C8</Color>
     <Color x:Key="PlayAch.Color.MigrationAccentPressed">#FF2D8FAB</Color>
 
