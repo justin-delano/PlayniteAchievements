@@ -104,5 +104,21 @@ namespace PlayniteAchievements.Ffxiv.Tests
             Assert.IsNull(FfxivParsing.NormalizeIconUrl(null));
             Assert.AreEqual("https://example.com/a.png", FfxivParsing.NormalizeIconUrl("https://example.com/a.png"));
         }
+
+        [TestMethod]
+        public void ResolveCategoryType_MarksSeasonalEventsMissable()
+        {
+            Assert.AreEqual("Missable", FfxivParsing.ResolveCategoryType("Seasonal Events"));
+            Assert.AreEqual("Missable", FfxivParsing.ResolveCategoryType("seasonal events"));
+        }
+
+        [TestMethod]
+        public void ResolveCategoryType_ReturnsNull_ForRegularCategories()
+        {
+            Assert.IsNull(FfxivParsing.ResolveCategoryType("General"));
+            Assert.IsNull(FfxivParsing.ResolveCategoryType("Raids"));
+            Assert.IsNull(FfxivParsing.ResolveCategoryType(null));
+            Assert.IsNull(FfxivParsing.ResolveCategoryType(""));
+        }
     }
 }
