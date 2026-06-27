@@ -34,6 +34,7 @@ namespace PlayniteAchievements.Views.Helpers
         private readonly Dictionary<DataGridColumn, EventHandler> _columnWidthChangedHandlers = new Dictionary<DataGridColumn, EventHandler>();
         private readonly Dictionary<string, double> _pendingWidthUpdates = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string, double> _resizeObservedWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, double> _normalizedWidthOverrides = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private readonly Func<Dictionary<string, int>> _getOrder;
         private readonly Action<Dictionary<string, int>> _setOrder;
         private readonly Func<Dictionary<string, GridAlignment>> _getCellAlignments;
@@ -198,6 +199,7 @@ namespace PlayniteAchievements.Views.Helpers
             _columnWidthChangedHandlers.Clear();
             _pendingWidthUpdates.Clear();
             _resizeObservedWidths.Clear();
+            _normalizedWidthOverrides.Clear();
             DetachNormalizationHandlers();
             DetachScrollViewerHandlers();
             CancelQueuedNormalization();
@@ -771,6 +773,7 @@ namespace PlayniteAchievements.Views.Helpers
             if (TryBuildNormalizedWidths(_lastResizedColumnKey, false, out normalized))
             {
                 ApplyWidthsByKey(normalized);
+                StoreNormalizedWidthOverrides(normalized);
                 PersistVisibleWidths(normalized);
                 _pendingWidthUpdates.Clear();
                 ClearResizeTracking();
@@ -884,6 +887,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
+            _normalizedWidthOverrides.Clear();
             var preferredWidths = BuildEffectivePreferredWidths(includePending: false);
             if (preferredWidths.Count == 0)
             {
@@ -932,6 +936,7 @@ namespace PlayniteAchievements.Views.Helpers
             if (TryBuildNormalizedWidths(_lastResizedColumnKey, rescaleAll, out var normalized))
             {
                 ApplyWidthsByKey(normalized);
+                StoreNormalizedWidthOverrides(normalized);
                 _hasSuccessfulNormalization = true;
                 CompleteInitialNormalization();
                 return true;
@@ -1274,7 +1279,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            QueueNormalization(rescaleAll: false, priority);
+            QueueNormalization(rescaleAll: false, DispatcherPriority.Background);
         }
 
         private bool ShouldRescaleAll(bool requestedRescaleAll)
@@ -1379,16 +1384,11 @@ namespace PlayniteAchievements.Views.Helpers
         {
             var result = BuildPreferredWidths(includePending: false, includeDefaultSeeds: true);
 
-            if (_hasSuccessfulNormalization)
+            foreach (var pair in _normalizedWidthOverrides)
             {
-                foreach (var column in GetVisibleResizableColumns())
+                if (!string.IsNullOrWhiteSpace(pair.Key) && IsValidWidth(pair.Value))
                 {
-                    var key = GetColumnKey(column);
-                    var width = ColumnWidthNormalization.GetCurrentWidth(column);
-                    if (!string.IsNullOrWhiteSpace(key) && IsValidWidth(width))
-                    {
-                        result[key] = ColumnWidthNormalization.RoundPixelWidth(width);
-                    }
+                    result[pair.Key] = ColumnWidthNormalization.RoundPixelWidth(pair.Value);
                 }
             }
 
@@ -1420,6 +1420,23 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             return result;
+        }
+
+        private void StoreNormalizedWidthOverrides(IReadOnlyDictionary<string, double> widthsByKey)
+        {
+            _normalizedWidthOverrides.Clear();
+            if (widthsByKey == null)
+            {
+                return;
+            }
+
+            foreach (var pair in widthsByKey)
+            {
+                if (!string.IsNullOrWhiteSpace(pair.Key) && IsValidWidth(pair.Value))
+                {
+                    _normalizedWidthOverrides[pair.Key] = ColumnWidthNormalization.RoundPixelWidth(pair.Value);
+                }
+            }
         }
 
         private Dictionary<string, double> BuildPreferredWidths(bool includePending, bool includeDefaultSeeds)
