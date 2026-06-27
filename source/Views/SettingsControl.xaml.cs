@@ -43,6 +43,7 @@ namespace PlayniteAchievements.Views
         private ObservableCollection<CompletedBadgeAppearanceItem> _completedBadgeAppearanceItems;
         private ObservableCollection<TrophyAppearanceItem> _trophyAppearanceItems;
         private ObservableCollection<RarityPalettePreset> _rarityPalettePresets;
+        private PersistedSettings _subscribedPersistedSettings;
 
         /// <summary>
         /// Gets mock achievement items for compact list preview in settings.
@@ -623,7 +624,8 @@ namespace PlayniteAchievements.Views
             InitializeThemeMigrationCustomOptions();
 
             // Subscribe to settings property changes to refresh mock previews
-            _settingsViewModel.Settings.Persisted.PropertyChanged += OnSettingsPropertyChanged;
+            _settingsViewModel.Settings.PropertyChanged += OnSettingsObjectPropertyChanged;
+            SubscribeToPersistedSettings(_settingsViewModel.Settings.Persisted);
             UpdateStartPageScopeTexts();
             UpdateHotkeyButtonTexts();
 
@@ -1322,12 +1324,8 @@ namespace PlayniteAchievements.Views
                 _logger.Info("Resetting Display tab settings to defaults.");
 
                 _settingsViewModel.Settings.Persisted.ResetDisplaySettingsToDefaults();
-                RebuildResourceAppearanceItems();
-                ApplyResourceAppearanceOverrides();
-                RefreshRarityAppearanceItems();
-                ApplyRarityAppearanceOverrides();
+                RefreshAppearanceEditorFromPersisted();
                 RefreshMockPreviews();
-                _plugin.SavePluginSettings(_settingsViewModel.Settings);
 
                 _plugin.PlayniteApi.Dialogs.ShowMessage(
                     L("LOCPlayAch_Status_Succeeded", "Success!"),
@@ -1444,9 +1442,7 @@ namespace PlayniteAchievements.Views
             persisted.ResourceOverrides = preset.ResourceBrushes != null
                 ? CreateResourceOverrideSettings(preset.ResourceBrushes)
                 : PersistedSettings.CreateDefaultResourceOverrides();
-            ApplyResourceAppearanceOverrides();
-            ApplyRarityAppearanceOverrides();
-            RebuildResourceAppearanceItems();
+            RefreshAppearanceEditorFromPersisted();
         }
 
         private static Dictionary<string, ResourceOverrideSetting> CreateResourceOverrideSettings(
@@ -1626,15 +1622,77 @@ namespace PlayniteAchievements.Views
 
         private void RebuildResourceAppearanceItems()
         {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
             var items = ResourceAppearanceItems;
             items.Clear();
             foreach (var descriptor in PlayAchResourceService.ResourceDescriptors)
             {
                 items.Add(new ResourceAppearanceItem(
                     descriptor,
-                    _settingsViewModel.Settings.Persisted,
+                    persisted,
                     ApplyResourceAppearanceOverrides));
             }
+        }
+
+        private void RebuildRarityAppearanceItems()
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            var items = RarityAppearanceItems;
+            items.Clear();
+            items.Add(new RarityAppearanceItem(RarityTier.Common, persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new RarityAppearanceItem(RarityTier.Uncommon, persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new RarityAppearanceItem(RarityTier.Rare, persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new RarityAppearanceItem(RarityTier.UltraRare, persisted, ApplyRarityAppearanceOverrides));
+        }
+
+        private void RebuildCompletedBadgeAppearanceItems()
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            var items = CompletedBadgeAppearanceItems;
+            items.Clear();
+            items.Add(new CompletedBadgeAppearanceItem("Gradient start", true, persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new CompletedBadgeAppearanceItem("Gradient end", false, persisted, ApplyRarityAppearanceOverrides));
+        }
+
+        private void RebuildTrophyAppearanceItems()
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            var items = TrophyAppearanceItems;
+            items.Clear();
+            items.Add(new TrophyAppearanceItem("Bronze", "TrophyBronze", persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new TrophyAppearanceItem("Silver", "TrophySilver", persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new TrophyAppearanceItem("Gold", "TrophyGold", persisted, ApplyRarityAppearanceOverrides));
+            items.Add(new TrophyAppearanceItem("Platinum", "TrophyPlatinum", persisted, ApplyRarityAppearanceOverrides));
+        }
+
+        private void RefreshAppearanceEditorFromPersisted()
+        {
+            RebuildResourceAppearanceItems();
+            RebuildRarityAppearanceItems();
+            RebuildCompletedBadgeAppearanceItems();
+            RebuildTrophyAppearanceItems();
+            ApplyResourceAppearanceOverrides();
+            ApplyRarityAppearanceOverrides();
         }
 
         private void ApplyResourceAppearanceOverrides()
@@ -2755,16 +2813,52 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void OnSettingsObjectPropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (!string.Equals(e.PropertyName, nameof(PlayniteAchievementsSettings.Persisted), StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            SubscribeToPersistedSettings(_settingsViewModel?.Settings?.Persisted);
+            RefreshAppearanceEditorFromPersisted();
+            RefreshMockPreviews();
+            UpdateStartPageScopeTexts();
+            UpdateHotkeyButtonTexts();
+        }
+
+        private void SubscribeToPersistedSettings(PersistedSettings persisted)
+        {
+            if (ReferenceEquals(_subscribedPersistedSettings, persisted))
+            {
+                return;
+            }
+
+            if (_subscribedPersistedSettings != null)
+            {
+                _subscribedPersistedSettings.PropertyChanged -= OnSettingsPropertyChanged;
+            }
+
+            _subscribedPersistedSettings = persisted;
+
+            if (_subscribedPersistedSettings != null)
+            {
+                _subscribedPersistedSettings.PropertyChanged += OnSettingsPropertyChanged;
+            }
+        }
+
         // -----------------------------
         // IDisposable implementation
         // -----------------------------
 
         public void Dispose()
         {
-            if (_settingsViewModel?.Settings?.Persisted != null)
+            if (_settingsViewModel?.Settings != null)
             {
-                _settingsViewModel.Settings.Persisted.PropertyChanged -= OnSettingsPropertyChanged;
+                _settingsViewModel.Settings.PropertyChanged -= OnSettingsObjectPropertyChanged;
             }
+
+            SubscribeToPersistedSettings(null);
         }
 
         private static string L(string key, string fallback)

@@ -303,7 +303,7 @@ namespace PlayniteAchievements.Views.Helpers
 
                 foreach (var scrollBar in _scrollBars)
                 {
-                    scrollBar.Apply(shouldShow);
+                    scrollBar.Apply(shouldShow, _isScrollRevealActive);
                 }
             }
 
@@ -563,7 +563,7 @@ namespace PlayniteAchievements.Views.Helpers
                     }
                 }
 
-                public void Apply(bool shouldShow)
+                public void Apply(bool shouldShow, bool isScrollRevealActive)
                 {
                     if (_isDetached)
                     {
@@ -574,7 +574,7 @@ namespace PlayniteAchievements.Views.Helpers
                     {
                         RestoreOriginalValue(_scrollBar, UIElement.IsHitTestVisibleProperty, _originalHitTestVisible);
 
-                        if (_isMouseWithin || _isDragging)
+                        if (isScrollRevealActive || _isMouseWithin || _isDragging)
                         {
                             RestoreOriginalValue(_scrollBar, UIElement.OpacityProperty, _originalOpacity);
                         }

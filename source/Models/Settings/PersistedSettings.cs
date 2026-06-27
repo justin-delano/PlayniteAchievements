@@ -3108,8 +3108,7 @@ namespace PlayniteAchievements.Models.Settings
                 : string.Empty;
         }
 
-        // Tokens that ship transparent by default. Stored as a Transparent override carrying the
-        // transparent hex so resolution reuses the Custom value path (see PlayAchResourceService).
+        // Tokens that ship transparent by default.
         // Seeded only for fresh settings / display reset; deserializing existing settings replaces
         // this dictionary, so upgrading users keep their current appearance.
         internal static Dictionary<string, ResourceOverrideSetting> CreateDefaultResourceOverrides()
@@ -3125,7 +3124,7 @@ namespace PlayniteAchievements.Models.Settings
                 defaults[key] = new ResourceOverrideSetting
                 {
                     Mode = ResourceOverrideMode.Transparent,
-                    CustomValue = "#00000000"
+                    CustomValue = ResourceOverrideSetting.TransparentValue
                 };
             }
 
@@ -3149,7 +3148,34 @@ namespace PlayniteAchievements.Models.Settings
                     continue;
                 }
 
-                normalized[key] = pair.Value.Clone();
+                var setting = pair.Value;
+                switch (setting.Mode)
+                {
+                    case ResourceOverrideMode.FollowPlaynite:
+                        continue;
+
+                    case ResourceOverrideMode.Transparent:
+                        normalized[key] = new ResourceOverrideSetting
+                        {
+                            Mode = ResourceOverrideMode.Transparent,
+                            CustomValue = ResourceOverrideSetting.TransparentValue
+                        };
+                        break;
+
+                    case ResourceOverrideMode.Custom:
+                        var customValue = setting.CustomValue?.Trim();
+                        if (string.IsNullOrWhiteSpace(customValue))
+                        {
+                            continue;
+                        }
+
+                        normalized[key] = new ResourceOverrideSetting
+                        {
+                            Mode = ResourceOverrideMode.Custom,
+                            CustomValue = customValue
+                        };
+                        break;
+                }
             }
 
             return normalized;

@@ -4,6 +4,8 @@ namespace PlayniteAchievements.Models.Settings
 {
     public class ResourceOverrideSetting : ObservableObject
     {
+        internal const string TransparentValue = "#00000000";
+
         private ResourceOverrideMode _mode = ResourceOverrideMode.FollowPlaynite;
         private string _customValue;
 
