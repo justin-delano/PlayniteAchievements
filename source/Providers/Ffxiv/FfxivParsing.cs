@@ -1,5 +1,6 @@
 using HtmlAgilityPack;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
@@ -13,6 +14,17 @@ namespace PlayniteAchievements.Providers.Ffxiv
     {
         private static readonly Regex LodestoneIdRegex =
             new Regex("/lodestone/character/(\\d+)/", RegexOptions.Compiled);
+
+        /// <summary>
+        /// FFXIV Collect categories whose achievements are only obtainable during a
+        /// limited-time window, mapped to the canonical "Missable" category type.
+        /// FFXIV Collect exposes no obtainable flag, so the category is the signal.
+        /// </summary>
+        private static readonly HashSet<string> MissableCategories =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Seasonal Events"
+            };
 
         /// <summary>
         /// Extracts the Lodestone character id for an exact name + world match from a
@@ -100,6 +112,21 @@ namespace PlayniteAchievements.Providers.Ffxiv
             }
 
             return url.Replace("format=webp", "format=png");
+        }
+
+        /// <summary>
+        /// Maps an FFXIV Collect category name to a canonical achievement category
+        /// type. Limited-time categories become "Missable"; everything else returns
+        /// null so the category falls back to the default classification.
+        /// </summary>
+        public static string ResolveCategoryType(string categoryName)
+        {
+            if (!string.IsNullOrWhiteSpace(categoryName) && MissableCategories.Contains(categoryName.Trim()))
+            {
+                return "Missable";
+            }
+
+            return null;
         }
     }
 }

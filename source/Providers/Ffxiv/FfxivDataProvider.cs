@@ -219,6 +219,7 @@ namespace PlayniteAchievements.Providers.Ffxiv
                 UnlockedIconPath = achievement.Icon,
                 Points = achievement.Points,
                 Category = achievement.Category?.Name,
+                CategoryType = FfxivParsing.ResolveCategoryType(achievement.Category?.Name),
                 UnlockTimeUtc = unlockTimeUtc,
                 Unlocked = unlocked,
                 Hidden = false,
