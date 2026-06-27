@@ -309,6 +309,10 @@ namespace PlayniteAchievements.ViewModels
         public bool IsProviderOverrideProviderSelected =>
             !string.Equals(SelectedProviderOverrideKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase);
 
+        public bool IsProviderOverrideValueVisible =>
+            IsProviderOverrideProviderSelected &&
+            !string.Equals(SelectedProviderOverrideKey, "FFXIV", StringComparison.OrdinalIgnoreCase);
+
         public string ProviderOverrideInputLabel => GetProviderOverrideInputLabel(SelectedProviderOverrideKey);
 
         public string ProviderOverrideStatusText
@@ -1380,6 +1384,7 @@ namespace PlayniteAchievements.ViewModels
         private void OnProviderOverrideSelectionChanged()
         {
             OnPropertyChanged(nameof(IsProviderOverrideProviderSelected));
+            OnPropertyChanged(nameof(IsProviderOverrideValueVisible));
             OnPropertyChanged(nameof(ProviderOverrideInputLabel));
             OnPropertyChanged(nameof(ProviderOverrideStatusText));
             RaiseCommandStates();
