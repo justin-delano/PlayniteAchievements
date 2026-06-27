@@ -532,7 +532,7 @@
                             Command="{Binding CloseViewCommand}"
                             Content="&#xE72B;"
                             Style="{StaticResource NavigationButtonStyle}"
-                            ToolTip="Back to Library"/>
+                            ToolTip="{Binding CloseViewToolTip}"/>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_Title_PluginName}"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"

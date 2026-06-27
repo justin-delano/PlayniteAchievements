@@ -52,7 +52,8 @@ namespace PlayniteAchievements.Views
             AchievementDataService achievementDataService,
             GameCustomDataStore gameCustomDataStore,
             RefreshEntryPoint refreshEntryPoint,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsSettings settings,
+            OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar)
         {
             InitializeComponent();
 
@@ -73,7 +74,8 @@ namespace PlayniteAchievements.Views
                 refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint)),
                 api,
                 logger,
-                settings);
+                settings,
+                launchContext);
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.SetActive(false);
@@ -171,9 +173,6 @@ namespace PlayniteAchievements.Views
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
             ApplyOverviewColumnRatio();
-            GameSummariesGridControl?.Refresh();
-            RecentAchievementsDataGrid?.Refresh();
-            GameAchievementsGrid?.Refresh();
             ResetOverviewSortDirection();
             ResetAchievementsSortDirection();
             UpdatePieChartLayout();

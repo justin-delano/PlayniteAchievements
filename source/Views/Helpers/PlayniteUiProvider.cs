@@ -1,8 +1,10 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Shell;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Views.Helpers
@@ -92,14 +94,19 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            if (app.TryFindResource("PlayAch.Brush.WindowSurface") is Brush windowSurface)
+            var windowSurface =
+                app.TryFindResource("PlayAch.Brush.Window.Background") as Brush ??
+                app.TryFindResource("PlayAch.Brush.WindowSurface") as Brush;
+            if (windowSurface != null)
             {
                 window.Resources["WindowBackgourndBrush"] = windowSurface;
+                window.Background = windowSurface;
             }
 
-            if (app.TryFindResource("PlayAch.Brush.PopupBorder") is Brush borderBrush)
+            if (app.TryFindResource("PlayAch.Brush.ControlBorder") is Brush borderBrush)
             {
                 window.Resources["PopupBorderBrush"] = borderBrush;
+                window.Resources["NormalBorderBrush"] = borderBrush;
             }
 
             if (app.TryFindResource("PlayAch.Brush.PopupSurface") is Brush popupSurface)
@@ -121,31 +128,104 @@ namespace PlayniteAchievements.Views.Helpers
 
             window.Title = title;
             window.Tag = FullscreenWindowTag;
-            window.ShowInTaskbar = false;
-            window.WindowStyle = WindowStyle.None;
-            window.ResizeMode = ResizeMode.NoResize;
+            ConfigureBorderlessFullscreenWindow(window);
 
             var parent = API.Instance.Dialogs.GetCurrentAppWindow();
-            if (parent != null)
+            ApplyFullscreenWindowPlacement(window, parent);
+
+            if (content is RefreshProgressControl)
             {
-                window.Owner = parent;
+                window.Content = new FullscreenOverlayContainer(
+                    string.Empty,
+                    content,
+                    FullscreenSizeMode.Dialog);
             }
-            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-
-            window.Height = parent != null && parent.Height > 0 ? parent.Height : SystemParameters.PrimaryScreenHeight;
-            window.Width = parent != null && parent.Width > 0 ? parent.Width : SystemParameters.PrimaryScreenWidth;
-
-            // Determine sizing mode based on the content type.
-            var sizeMode = content is RefreshProgressControl
-                ? FullscreenSizeMode.Dialog
-                : FullscreenSizeMode.Fullscreen;
-
-            var overlay = new FullscreenOverlayContainer(title, content, sizeMode);
-            window.Content = overlay;
+            else
+            {
+                content.HorizontalAlignment = HorizontalAlignment.Stretch;
+                content.VerticalAlignment = VerticalAlignment.Stretch;
+                window.Content = content;
+            }
 
             window.PreviewKeyDown += new KeyEventHandler(HandleEsc);
 
             return window;
+        }
+
+        public static Window CreateBorderlessFullscreenWindow(IPlayniteAPI api, string title)
+        {
+            api = api ?? API.Instance;
+
+            var window = api?.Dialogs?.CreateWindow(new WindowCreationOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false,
+                ShowCloseButton = false
+            }) ?? new Window();
+
+            window.Title = title ?? string.Empty;
+            ConfigureBorderlessFullscreenWindow(window);
+            ApplyFullscreenWindowPlacement(window, api?.Dialogs?.GetCurrentAppWindow());
+            return window;
+        }
+
+        private static void ConfigureBorderlessFullscreenWindow(Window window)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            window.ShowInTaskbar = false;
+            window.WindowStyle = WindowStyle.None;
+            window.ResizeMode = ResizeMode.NoResize;
+            window.SizeToContent = SizeToContent.Manual;
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.UseLayoutRounding = true;
+            window.SnapsToDevicePixels = true;
+
+            WindowChrome.SetWindowChrome(window, new WindowChrome
+            {
+                CaptionHeight = 0,
+                CornerRadius = new CornerRadius(0),
+                GlassFrameThickness = new Thickness(0),
+                ResizeBorderThickness = new Thickness(0),
+                UseAeroCaptionButtons = false
+            });
+
+            window.Template = CreateContentOnlyWindowTemplate();
+        }
+
+        private static void ApplyFullscreenWindowPlacement(Window window, Window parent)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            if (parent != null)
+            {
+                window.Owner = parent;
+            }
+
+            window.Height = parent != null && parent.Height > 0
+                ? parent.Height
+                : SystemParameters.PrimaryScreenHeight;
+            window.Width = parent != null && parent.Width > 0
+                ? parent.Width
+                : SystemParameters.PrimaryScreenWidth;
+        }
+
+        private static ControlTemplate CreateContentOnlyWindowTemplate()
+        {
+            var adorner = new FrameworkElementFactory(typeof(AdornerDecorator));
+            var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+            adorner.AppendChild(presenter);
+
+            return new ControlTemplate(typeof(Window))
+            {
+                VisualTree = adorner
+            };
         }
     }
 

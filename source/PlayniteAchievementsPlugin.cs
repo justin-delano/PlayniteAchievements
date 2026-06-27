@@ -418,7 +418,7 @@ namespace PlayniteAchievements
                 Opened = () =>
                 {
                     return new OverviewHostControl(
-                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings),
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar),
                         _logger,
                         PlayniteApi,
                         _refreshService,

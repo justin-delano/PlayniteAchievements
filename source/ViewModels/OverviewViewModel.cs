@@ -44,6 +44,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly OverviewLaunchContext _launchContext;
 
         private readonly OverviewDataBuilder _dataBuilder;
 
@@ -113,7 +114,8 @@ namespace PlayniteAchievements.ViewModels
             RefreshEntryPoint refreshEntryPoint,
             IPlayniteAPI playniteApi,
             ILogger logger,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsSettings settings,
+            OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar)
         {
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _persistSettingsForUi = persistSettingsForUi ?? throw new ArgumentNullException(nameof(persistSettingsForUi));
@@ -123,6 +125,7 @@ namespace PlayniteAchievements.ViewModels
             _playniteApi = playniteApi;
             _logger = logger;
             _settings = settings;
+            _launchContext = launchContext;
             _dataBuilder = new OverviewDataBuilder(
                 _achievementDataService,
                 _refreshService.Providers,
@@ -211,7 +214,13 @@ namespace PlayniteAchievements.ViewModels
                 {
                     if (_playniteApi?.ApplicationInfo?.Mode == ApplicationMode.Fullscreen)
                     {
-                        CloseFullscreenWindow();
+                        CloseOverviewWindow();
+                        return;
+                    }
+
+                    if (_launchContext == OverviewLaunchContext.Popout)
+                    {
+                        CloseOverviewWindow();
                         return;
                     }
 
@@ -315,7 +324,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void CloseFullscreenWindow()
+        private void CloseOverviewWindow()
         {
             var dispatcher = Application.Current?.Dispatcher;
             if (dispatcher == null)
@@ -330,7 +339,7 @@ namespace PlayniteAchievements.ViewModels
                     var overviewWindow = ResolveOverviewWindow();
                     if (overviewWindow == null)
                     {
-                        _logger?.Debug("Fullscreen overview close requested, but no overview window was found.");
+                        _logger?.Debug("Overview close requested, but no overview window was found.");
                         return;
                     }
 
@@ -338,7 +347,7 @@ namespace PlayniteAchievements.ViewModels
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, "Failed to close fullscreen overview window.");
+                    _logger?.Debug(ex, "Failed to close overview window.");
                 }
             }));
         }
@@ -1332,6 +1341,8 @@ namespace PlayniteAchievements.ViewModels
         public ICommand OpenGameInOverviewCommand { get; }
         public ICommand RefreshSingleGameCommand { get; }
         public ICommand CloseViewCommand { get; }
+        public string CloseViewToolTip =>
+            _launchContext == OverviewLaunchContext.Sidebar ? "Back to Library" : "Close";
         public ICommand ClearGameSelectionCommand { get; }
         public ICommand NavigateToGameCommand { get; }
 

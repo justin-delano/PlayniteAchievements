@@ -90,14 +90,9 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             trophyFolderCache = trophyFolderCache ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-            var hasOverrideGames = gamesToRefresh.Any(game =>
-                game != null &&
-                GameCustomDataLookup.TryGetRpcs3MatchIdOverride(game.Id, out _));
-
-            if (trophyFolderCache.Count == 0 && !hasOverrideGames)
+            if (trophyFolderCache.Count == 0)
             {
-                _logger?.Warn("[RPCS3] No trophy folders found in RPCS3 trophy directory.");
-                return new RebuildPayload { Summary = new RebuildSummary() };
+                _logger?.Warn("[RPCS3] No cached trophy folders found; scanning game paths for TROPHY.TRP fallback.");
             }
 
             _logger?.Info($"[RPCS3] Scanning {trophyFolderCache.Count} cached trophy folders.");

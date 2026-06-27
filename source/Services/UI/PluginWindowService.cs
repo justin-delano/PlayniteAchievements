@@ -1023,7 +1023,8 @@ namespace PlayniteAchievements.Services.UI
                     _achievementDataService,
                     _gameCustomDataStore,
                     _refreshCoordinator,
-                    _settings);
+                    _settings,
+                    OverviewLaunchContext.Popout);
 
                 var windowOptions = new WindowOptions
                 {

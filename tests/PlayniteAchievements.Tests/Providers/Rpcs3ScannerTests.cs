@@ -241,6 +241,45 @@ namespace PlayniteAchievements.Providers.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_EmptyTrophyCache_UsesTrpFallbackForFolderCollection()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+            var collectionRoot = Path.Combine(tempDir, "Sly Collection");
+
+            try
+            {
+                File.WriteAllBytes(Path.Combine(CreateRpcs3Root(rpcs3Root), "rpcs3.exe"), new byte[] { 0 });
+                CreateFolderCollection(
+                    collectionRoot,
+                    ("PS3_GAME", "NPWR01435_00", "Sly 1"),
+                    ("PS3_GM01", "NPWR01433_00", "Sly 2"));
+
+                var provider = CreateProvider(rpcs3Root);
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "The Sly Collection",
+                    InstallDirectory = collectionRoot
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual(2, data.Achievements.Count);
+                CollectionAssert.AreEquivalent(
+                    new[] { "NPWR01435_00:0", "NPWR01433_00:0" },
+                    data.Achievements.Select(achievement => achievement.ApiName).ToArray());
+                Assert.IsTrue(data.Achievements.All(achievement => !achievement.Unlocked));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_NpwrOverride_DisablesCollectionExpansion()
         {
             var tempDir = CreateTempDirectory();
