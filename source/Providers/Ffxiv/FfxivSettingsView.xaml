@@ -1,0 +1,116 @@
+<settings:ProviderSettingsViewBase x:Class="PlayniteAchievements.Providers.Ffxiv.FfxivSettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:settings="clr-namespace:PlayniteAchievements.Providers.Settings"
+             mc:Ignorable="d"
+             d:DesignHeight="500"
+             d:DesignWidth="700">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Providers/ProviderSettingsScopedControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="20">
+
+            <!-- Provider Header -->
+            <StackPanel Style="{StaticResource ProviderHeaderPanelStyle}">
+                <Viewbox Style="{StaticResource ProviderHeaderIconStyle}">
+                    <Path Data="{StaticResource GeoFFXIV}" Fill="{StaticResource PlayAch.Brush.ProviderFFXIV}"/>
+                </Viewbox>
+                <TextBlock Text="{DynamicResource LOCPlayAch_Provider_FFXIV}" Style="{StaticResource ProviderTitleTextStyle}"/>
+            </StackPanel>
+
+            <!-- Provider Enable Toggle -->
+            <Border Style="{StaticResource ProviderEnableToggleBorderStyle}">
+                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ProviderEnabled}"
+                          IsChecked="{Binding Settings.IsEnabled, Mode=TwoWay}"
+                          FontWeight="SemiBold"
+                          FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
+            </Border>
+
+            <!-- Provider Disabled Message -->
+            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ProviderDisabledMessage}" Style="{StaticResource ProviderDisabledMessageStyle}"/>
+
+            <!-- FFXIV Settings -->
+            <Border Style="{StaticResource SectionBorderStyle}"
+                    IsEnabled="{Binding Settings.IsEnabled}">
+                <StackPanel>
+                    <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0"
+                                   x:Name="AuthLabel"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   TextWrapping="Wrap"
+                                   VerticalAlignment="Top"
+                                   Margin="{StaticResource PlayAch.Thickness.Top.Sm}"/>
+
+                        <Border Grid.Column="1" Style="{StaticResource ProviderConfigStatusBorderStyle}">
+                            <StackPanel>
+                                <TextBlock Text="{Binding AuthStatus, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,10"/>
+
+                                <Border BorderBrush="{DynamicResource PopupBorderBrush}"
+                                        BorderThickness="0,1,0,0"
+                                        Padding="0,12,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FFXIV_CharacterName}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                        <TextBox Text="{Binding Settings.CharacterName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Padding="4"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FFXIV_CharacterName_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
+                                                   TextWrapping="Wrap"/>
+
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FFXIV_World}"
+                                                   Margin="0,12,0,8"/>
+                                        <TextBox Text="{Binding Settings.World, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                 Padding="4"/>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FFXIV_World_Help}"
+                                                   Style="{StaticResource MutedTextStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
+                                                   TextWrapping="Wrap"/>
+
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Common_Label_Region}"
+                                                   Margin="0,12,0,8"/>
+                                        <ComboBox SelectedValue="{Binding Settings.Region, Mode=TwoWay}"
+                                                  SelectedValuePath="Tag"
+                                                  MinWidth="160"
+                                                  HorizontalAlignment="Left">
+                                            <ComboBoxItem Content="North America" Tag="na"/>
+                                            <ComboBoxItem Content="Europe" Tag="eu"/>
+                                            <ComboBoxItem Content="Germany" Tag="de"/>
+                                            <ComboBoxItem Content="France" Tag="fr"/>
+                                            <ComboBoxItem Content="Japan" Tag="jp"/>
+                                        </ComboBox>
+
+                                        <Button Content="{DynamicResource LOCPlayAch_Settings_FFXIV_Verify}"
+                                                Click="VerifyCharacter_Click"
+                                                HorizontalAlignment="Left"
+                                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
+                                                Margin="0,16,0,0"
+                                                MinWidth="90"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</settings:ProviderSettingsViewBase>
