@@ -139,18 +139,38 @@ namespace PlayniteAchievements.Providers.Ffxiv
 
             try
             {
+                // The Lodestone search is a partial match (e.g. "Mal Reynolds" also
+                // returns "Malynor Reynolds"), so match each result entry on exact
+                // name + world rather than taking the first character link.
                 var doc = new HtmlDocument();
                 doc.LoadHtml(html);
 
-                var links = doc.DocumentNode.SelectNodes("//a[@href]");
-                if (links != null)
+                var wantName = HtmlEntity.DeEntitize(name).Trim();
+                var wantWorld = world.Trim();
+
+                var entries = doc.DocumentNode.SelectNodes("//a[contains(@class, 'entry__link')]");
+                if (entries != null)
                 {
-                    foreach (var link in links)
+                    foreach (var entry in entries)
                     {
-                        var href = link.GetAttributeValue("href", string.Empty);
-                        var match = LodestoneIdRegex.Match(href);
-                        if (match.Success &&
-                            long.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+                        var href = entry.GetAttributeValue("href", string.Empty);
+                        var idMatch = LodestoneIdRegex.Match(href);
+                        if (!idMatch.Success)
+                        {
+                            continue;
+                        }
+
+                        var nameNode = entry.SelectSingleNode(".//p[contains(@class, 'entry__name')]");
+                        var worldNode = entry.SelectSingleNode(".//p[contains(@class, 'entry__world')]");
+
+                        var entryName = HtmlEntity.DeEntitize(nameNode?.InnerText ?? string.Empty).Trim();
+                        var entryWorldText = HtmlEntity.DeEntitize(worldNode?.InnerText ?? string.Empty);
+                        // entry__world reads like "Gilgamesh [Aether]"; keep the world.
+                        var entryWorld = entryWorldText.Split('[')[0].Replace(' ', ' ').Trim();
+
+                        if (string.Equals(entryName, wantName, StringComparison.OrdinalIgnoreCase) &&
+                            string.Equals(entryWorld, wantWorld, StringComparison.OrdinalIgnoreCase) &&
+                            long.TryParse(idMatch.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
                         {
                             return id;
                         }
