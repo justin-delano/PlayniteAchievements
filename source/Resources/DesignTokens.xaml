@@ -55,6 +55,7 @@
     <Color x:Key="PlayAch.Color.ProviderXbox">#107C10</Color>
     <Color x:Key="PlayAch.Color.ProviderXenia">#92C83E</Color>
     <Color x:Key="PlayAch.Color.ProviderApple">#E5E5E5</Color>
+    <Color x:Key="PlayAch.Color.ProviderFFXIV">#2E7CD6</Color>
     <Color x:Key="PlayAch.Color.MigrationAccent">#FF37A7C8</Color>
     <Color x:Key="PlayAch.Color.MigrationAccentPressed">#FF2D8FAB</Color>
 
@@ -109,6 +110,7 @@
     <SolidColorBrush x:Key="PlayAch.Brush.ProviderXbox" Color="{StaticResource PlayAch.Color.ProviderXbox}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.ProviderXenia" Color="{StaticResource PlayAch.Color.ProviderXenia}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.ProviderApple" Color="{StaticResource PlayAch.Color.ProviderApple}"/>
+    <SolidColorBrush x:Key="PlayAch.Brush.ProviderFFXIV" Color="{StaticResource PlayAch.Color.ProviderFFXIV}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.MigrationAccent" Color="{StaticResource PlayAch.Color.MigrationAccent}"/>
     <SolidColorBrush x:Key="PlayAch.Brush.MigrationAccentPressed" Color="{StaticResource PlayAch.Color.MigrationAccentPressed}"/>
 
