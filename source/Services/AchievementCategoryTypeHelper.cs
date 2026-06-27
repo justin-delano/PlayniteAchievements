@@ -190,7 +190,16 @@ namespace PlayniteAchievements.Services
         private static string L(string key, string fallback)
         {
             var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return fallback;
+            }
+
+            return value.Length > 4 &&
+                value.StartsWith("<!", StringComparison.Ordinal) &&
+                value.EndsWith("!>", StringComparison.Ordinal)
+                ? fallback
+                : value;
         }
 
         private static bool TryCanonicalize(string rawValue, out string canonical)
