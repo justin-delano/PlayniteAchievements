@@ -23,8 +23,6 @@ namespace PlayniteAchievements.Providers.Ffxiv
     internal sealed class FfxivApiClient : IDisposable
     {
         private const int MaxAttempts = 5;
-        private const int CatalogPageSize = 500;
-        private const int MaxCatalogPages = 60;
 
         private static readonly Uri ApiBase = new Uri("https://ffxivcollect.com/api/");
         private static readonly Regex LodestoneIdRegex =
@@ -63,33 +61,20 @@ namespace PlayniteAchievements.Providers.Ffxiv
         /// </summary>
         public async Task<List<FfxivAchievement>> FetchCatalogAsync(CancellationToken cancel)
         {
+            // FFXIV Collect returns the full data set by default; omit limit to get
+            // the entire catalog in one call (it does not support start/page paging).
+            var uri = new Uri(ApiBase, "achievements");
+            var json = await GetRawAsync(uri, cancel).ConfigureAwait(false);
+            var response = JsonConvert.DeserializeObject<FfxivAchievementsResponse>(json);
+
             var byId = new Dictionary<int, FfxivAchievement>();
-
-            for (var page = 1; page <= MaxCatalogPages; page++)
+            if (response?.Results != null)
             {
-                cancel.ThrowIfCancellationRequested();
-
-                var uri = new Uri(ApiBase, $"achievements?limit={CatalogPageSize}&page={page}");
-                var json = await GetRawAsync(uri, cancel).ConfigureAwait(false);
-                var response = JsonConvert.DeserializeObject<FfxivAchievementsResponse>(json);
-
-                if (response?.Results == null || response.Results.Count == 0)
-                {
-                    break;
-                }
-
-                var before = byId.Count;
                 foreach (var achievement in response.Results)
                 {
                     if (achievement == null) continue;
                     achievement.Icon = NormalizeIconUrl(achievement.Icon);
                     byId[achievement.Id] = achievement;
-                }
-
-                // No new rows means paging is unsupported or we reached the end.
-                if (byId.Count == before || response.Results.Count < CatalogPageSize)
-                {
-                    break;
                 }
             }
 
