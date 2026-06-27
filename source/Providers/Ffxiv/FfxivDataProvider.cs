@@ -80,9 +80,7 @@ namespace PlayniteAchievements.Providers.Ffxiv
 
         private static bool IsFinalFantasyXivGame(Game game)
         {
-            var name = game?.Name ?? string.Empty;
-            return name.IndexOf("Final Fantasy XIV", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                   name.IndexOf("FFXIV", StringComparison.OrdinalIgnoreCase) >= 0;
+            return FfxivParsing.IsFinalFantasyXivTitle(game?.Name);
         }
 
         public async Task<RebuildPayload> RefreshAsync(

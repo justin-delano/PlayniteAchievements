@@ -65,6 +65,28 @@ namespace PlayniteAchievements.Ffxiv.Tests
         }
 
         [DataTestMethod]
+        [DataRow("FINAL FANTASY XIV Online")]
+        [DataRow("FINAL FANTASY® XIV Online")]
+        [DataRow("Final Fantasy 14")]
+        [DataRow("FFXIV")]
+        [DataRow("FF 14")]
+        public void IsFinalFantasyXivTitle_RecognizesCommonStoreTitles(string title)
+        {
+            Assert.IsTrue(FfxivParsing.IsFinalFantasyXivTitle(title));
+        }
+
+        [DataTestMethod]
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow("Final Fantasy XV")]
+        [DataRow("Fantasy XIV")]
+        [DataRow("Final Fantasy VII Remake")]
+        public void IsFinalFantasyXivTitle_RejectsOtherTitles(string title)
+        {
+            Assert.IsFalse(FfxivParsing.IsFinalFantasyXivTitle(title));
+        }
+
+        [DataTestMethod]
         [DataRow("98%", 98.0)]
         [DataRow("0%", 0.0)]
         [DataRow("12.5%", 12.5)]

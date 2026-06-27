@@ -82,6 +82,26 @@ namespace PlayniteAchievements.Providers.Ffxiv
         }
 
         /// <summary>
+        /// Checks common Playnite/store title forms for Final Fantasy XIV.
+        /// Store metadata sometimes inserts punctuation or symbols into the title
+        /// (for example "FINAL FANTASY® XIV Online"), so matching uses a compact
+        /// letters-and-digits identity instead of raw substring checks.
+        /// </summary>
+        public static bool IsFinalFantasyXivTitle(string title)
+        {
+            var normalized = NormalizeTitleIdentity(title);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return false;
+            }
+
+            return normalized.Contains("ffxiv") ||
+                   normalized.Contains("ff14") ||
+                   normalized.Contains("finalfantasyxiv") ||
+                   normalized.Contains("finalfantasy14");
+        }
+
+        /// <summary>
         /// Parses an FFXIV Collect ownership string such as "98%" into a 0-100 value.
         /// </summary>
         public static double? ParseOwnedPercent(string owned)
@@ -98,6 +118,26 @@ namespace PlayniteAchievements.Providers.Ffxiv
             }
 
             return null;
+        }
+
+        private static string NormalizeTitleIdentity(string title)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return null;
+            }
+
+            var chars = new char[title.Length];
+            var index = 0;
+            foreach (var c in title)
+            {
+                if (char.IsLetterOrDigit(c))
+                {
+                    chars[index++] = char.ToLowerInvariant(c);
+                }
+            }
+
+            return index == 0 ? null : new string(chars, 0, index);
         }
 
         /// <summary>

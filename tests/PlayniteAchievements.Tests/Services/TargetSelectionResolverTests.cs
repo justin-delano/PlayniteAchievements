@@ -577,6 +577,47 @@ namespace PlayniteAchievements.Services.Tests
             }
         }
 
+        [TestMethod]
+        public void ResolveProviderForGame_FfxivBeforeSteam_ClaimsStoreBackedFfxivTitle()
+        {
+            var tempDir = CreateTempDirectory();
+            var gameId = Guid.NewGuid();
+            var previousPlugin = PlayniteAchievementsPlugin.Instance;
+
+            try
+            {
+                var store = new GameCustomDataStore(tempDir);
+                PlayniteAchievementsPlugin.Instance = new PlayniteAchievementsPlugin
+                {
+                    GameCustomDataStore = store
+                };
+
+                var resolver = new TargetSelectionResolver(
+                    new FakePlayniteApi(),
+                    new PlayniteAchievementsSettings(),
+                    new FakeCacheManager(),
+                    logger: null,
+                    refreshOrder: new[] { "Manual", "FFXIV", "Steam" });
+
+                var game = new Game { Id = gameId, Name = "FINAL FANTASY XIV Online" };
+                var providers = new List<IDataProvider>
+                {
+                    new FakeProvider("Steam", _ => true),
+                    new FakeProvider("FFXIV", g => (g?.Name ?? string.Empty).IndexOf("Final Fantasy XIV", StringComparison.OrdinalIgnoreCase) >= 0)
+                };
+
+                var resolved = resolver.ResolveProviderForGame(game, providers);
+
+                Assert.IsNotNull(resolved);
+                Assert.AreEqual("FFXIV", resolved.ProviderKey);
+            }
+            finally
+            {
+                PlayniteAchievementsPlugin.Instance = previousPlugin;
+                DeleteDirectory(tempDir);
+            }
+        }
+
         private static string CreateTempDirectory()
         {
             var path = Path.Combine(
