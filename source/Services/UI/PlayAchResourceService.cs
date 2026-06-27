@@ -11,9 +11,7 @@ namespace PlayniteAchievements.Services.UI
 {
     internal static class PlayAchResourceService
     {
-        // Stored CustomValue for a Transparent override. Resolution reuses the Custom value
-        // path (TryParseCustomValue -> CreateBrush), so no dedicated brush branch is needed.
-        internal const string TransparentValue = "#00000000";
+        internal const string TransparentValue = ResourceOverrideSetting.TransparentValue;
 
 
         private sealed class TokenDefinition
@@ -108,7 +106,7 @@ namespace PlayniteAchievements.Services.UI
             Alias("PlayAch.Brush.Dialog.Background", "PlayAch.Brush.PopupSurface"),
             Alias("PlayAch.Brush.Dialog.Border", "PlayAch.Brush.PopupBorder"),
             Alias("PlayAch.Brush.Chrome.Background", "PlayAch.Brush.ControlSurface", 0x1F),
-            Alias("PlayAch.Brush.ScrollBar.Track", "PlayAch.Brush.Surface"),
+            Alias("PlayAch.Brush.ScrollBar.Track", "PlayAch.Brush.GridSurface", 0x00),
             Alias("PlayAch.Brush.ScrollBar.Thumb", "PlayAch.Brush.ControlBorder"),
             Alias("PlayAch.Brush.ScrollBar.Thumb.Hover", "PlayAch.Brush.Glyph"),
             Alias("PlayAch.Brush.ScrollBar.Thumb.Pressed", "PlayAch.Brush.Accent")
@@ -212,11 +210,19 @@ namespace PlayniteAchievements.Services.UI
         private static object ResolveToken(TokenDefinition token, IDictionary<string, ResourceOverrideSetting> overrides)
         {
             var setting = GetSetting(token.ResourceKey, overrides);
-            if (token.AllowsOverride &&
-                (setting?.Mode == ResourceOverrideMode.Custom || setting?.Mode == ResourceOverrideMode.Transparent) &&
-                TryParseCustomValue(token, setting.CustomValue, out var customValue))
+            if (token.AllowsOverride && setting != null)
             {
-                return customValue;
+                if (setting.Mode == ResourceOverrideMode.Transparent &&
+                    token.Kind == ResourceOverrideValueKind.Brush)
+                {
+                    return CreateBrush(TransparentValue);
+                }
+
+                if (setting.Mode == ResourceOverrideMode.Custom &&
+                    TryParseCustomValue(token, setting.CustomValue, out var customValue))
+                {
+                    return customValue;
+                }
             }
 
             var playniteValue = FindPlayniteResource(token);

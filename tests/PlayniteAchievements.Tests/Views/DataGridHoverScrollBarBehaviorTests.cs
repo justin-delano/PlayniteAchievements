@@ -131,6 +131,41 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void MouseWheel_FullyShowsScrollbarAwayFromRightmostColumn()
+        {
+            RunOnStaThread(() =>
+            {
+                var grid = CreateScrollableGrid();
+                Window window = null;
+
+                try
+                {
+                    DataGridHoverScrollBarBehavior.SetIsEnabled(grid, true);
+                    window = ShowGrid(grid);
+
+                    var scrollBar = GetVerticalScrollBar(grid);
+                    var leftCell = GetCell(grid, displayIndex: 0);
+
+                    RaiseMouseMove(leftCell);
+                    DrainDispatcher();
+
+                    Assert.AreEqual(0d, scrollBar.Opacity, 0.001d);
+                    Assert.IsFalse(scrollBar.IsHitTestVisible);
+
+                    RaisePreviewMouseWheel(leftCell, delta: -120);
+                    DrainDispatcher();
+
+                    Assert.AreEqual(1d, scrollBar.Opacity, 0.001d);
+                    Assert.IsTrue(scrollBar.IsHitTestVisible);
+                }
+                finally
+                {
+                    window?.Close();
+                }
+            });
+        }
+
+        [TestMethod]
         public void ActiveGrid_ShowsIdleScrollbarUntilScrollbarIsHovered()
         {
             RunOnStaThread(() =>
@@ -550,6 +585,15 @@ namespace PlayniteAchievements.Tests.Views
             element.RaiseEvent(new MouseEventArgs(Mouse.PrimaryDevice, Environment.TickCount)
             {
                 RoutedEvent = Mouse.MouseMoveEvent
+            });
+        }
+
+        private static void RaisePreviewMouseWheel(UIElement element, int delta)
+        {
+            Assert.IsNotNull(Mouse.PrimaryDevice);
+            element.RaiseEvent(new MouseWheelEventArgs(Mouse.PrimaryDevice, Environment.TickCount, delta)
+            {
+                RoutedEvent = Mouse.PreviewMouseWheelEvent
             });
         }
 
