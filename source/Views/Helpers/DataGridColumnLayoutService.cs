@@ -59,7 +59,6 @@ namespace PlayniteAchievements.Views.Helpers
         private bool _isAttached;
         private bool _normalizationQueued;
         private bool _queuedNormalizationRescaleAll;
-        private bool _queuedNormalizationPreferCurrentWidths;
         private bool _initialNormalizationActive;
         private bool _initialNormalizationCompleted;
         private int _initialNormalizationAttempts;
@@ -213,7 +212,6 @@ namespace PlayniteAchievements.Views.Helpers
             _isAttached = false;
             _normalizationQueued = false;
             _queuedNormalizationRescaleAll = false;
-            _queuedNormalizationPreferCurrentWidths = false;
             _initialNormalizationActive = false;
             _initialNormalizationCompleted = false;
             _initialNormalizationAttempts = 0;
@@ -770,7 +768,7 @@ namespace PlayniteAchievements.Views.Helpers
             _saveTimer?.Stop();
 
             Dictionary<string, double> normalized;
-            if (TryBuildNormalizedWidths(_lastResizedColumnKey, false, _hasSuccessfulNormalization, out normalized))
+            if (TryBuildNormalizedWidths(_lastResizedColumnKey, false, out normalized))
             {
                 ApplyWidthsByKey(normalized);
                 PersistVisibleWidths(normalized);
@@ -911,7 +909,7 @@ namespace PlayniteAchievements.Views.Helpers
 
                     if (preferredWidths.TryGetValue(key, out var width) && IsValidWidth(width))
                     {
-                        SetColumnPixelWidthIfChanged(column, width);
+                        column.Width = new DataGridLength(ColumnWidthNormalization.RoundPixelWidth(width), DataGridLengthUnitType.Pixel);
                     }
                 }
             }
@@ -920,10 +918,10 @@ namespace PlayniteAchievements.Views.Helpers
                 _isApplyingWidths = false;
             }
 
-            NormalizeOrQueue(true, preferCurrentWidths: false);
+            NormalizeOrQueue(true);
         }
 
-        private bool NormalizeColumnsToContainer(bool rescaleAll = false, bool preferCurrentWidths = false)
+        private bool NormalizeColumnsToContainer(bool rescaleAll = false)
         {
             if (_grid == null || !_grid.IsLoaded || !_grid.IsVisible)
             {
@@ -931,7 +929,7 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             AttachScrollViewerHandlers();
-            if (TryBuildNormalizedWidths(_lastResizedColumnKey, rescaleAll, preferCurrentWidths, out var normalized))
+            if (TryBuildNormalizedWidths(_lastResizedColumnKey, rescaleAll, out var normalized))
             {
                 ApplyWidthsByKey(normalized);
                 _hasSuccessfulNormalization = true;
@@ -955,7 +953,7 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             ApplyEqualStarFallbackWidths();
-            QueueNormalization(rescaleAll: true, preferCurrentWidths: false, priority: priority);
+            QueueNormalization(rescaleAll: true, priority);
         }
 
         private void ApplyEqualStarFallbackWidths()
@@ -982,7 +980,6 @@ namespace PlayniteAchievements.Views.Helpers
         private bool TryBuildNormalizedWidths(
             string protectedKey,
             bool rescaleAll,
-            bool preferCurrentWidths,
             out Dictionary<string, double> normalized)
         {
             var effectiveProtectedKey = protectedKey;
@@ -997,7 +994,7 @@ namespace PlayniteAchievements.Views.Helpers
                 effectiveProtectedKey,
                 effectiveAbsorberKey,
                 rescaleAll,
-                BuildNormalizationPreferredWidths(includePending: true, preferCurrentWidths: preferCurrentWidths),
+                BuildNormalizationPreferredWidths(includePending: true),
                 fallbackAvailableWidth: 0,
                 useEqualWidthForMissing: true,
                 out normalized);
@@ -1237,74 +1234,15 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            if (AreWidthsAlreadyApplied(widthsByKey))
-            {
-                return;
-            }
-
             ColumnWidthNormalization.ApplyWidthsByKey(_grid, widthsByKey, ref _isApplyingWidths);
         }
 
-        private bool AreWidthsAlreadyApplied(IReadOnlyDictionary<string, double> widthsByKey)
+        private void NormalizeOrQueue(bool rescaleAll, DispatcherPriority priority = DispatcherPriority.Render)
         {
-            if (_grid == null || widthsByKey == null || widthsByKey.Count == 0)
+            if (!NormalizeColumnsToContainer(rescaleAll))
             {
-                return true;
+                QueueNormalization(rescaleAll, priority);
             }
-
-            foreach (var column in GetVisibleResizableColumns())
-            {
-                var key = GetColumnKey(column);
-                if (string.IsNullOrWhiteSpace(key) || !widthsByKey.TryGetValue(key, out var targetWidth))
-                {
-                    continue;
-                }
-
-                var currentWidth = ColumnWidthNormalization.GetCurrentWidth(column);
-                if (!IsValidWidth(currentWidth) || !IsValidWidth(targetWidth))
-                {
-                    return false;
-                }
-
-                if (Math.Abs(
-                        ColumnWidthNormalization.RoundPixelWidth(currentWidth) -
-                        ColumnWidthNormalization.RoundPixelWidth(targetWidth)) > 0.2)
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        private void NormalizeOrQueue(
-            bool rescaleAll,
-            bool preferCurrentWidths,
-            DispatcherPriority priority = DispatcherPriority.Render)
-        {
-            if (!NormalizeColumnsToContainer(rescaleAll, preferCurrentWidths))
-            {
-                QueueNormalization(rescaleAll, preferCurrentWidths, priority);
-            }
-        }
-
-        private static void SetColumnPixelWidthIfChanged(DataGridColumn column, double width)
-        {
-            if (column == null || !IsValidWidth(width))
-            {
-                return;
-            }
-
-            var rounded = ColumnWidthNormalization.RoundPixelWidth(width);
-            var current = ColumnWidthNormalization.GetCurrentWidth(column);
-            if (IsValidWidth(current) &&
-                Math.Abs(ColumnWidthNormalization.RoundPixelWidth(current) - rounded) <= 0.2 &&
-                column.Width.IsAbsolute)
-            {
-                return;
-            }
-
-            column.Width = new DataGridLength(rounded, DataGridLengthUnitType.Pixel);
         }
 
         private void ApplyCurrentLayoutMode(bool rescaleAll, DispatcherPriority priority = DispatcherPriority.Render)
@@ -1320,7 +1258,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            NormalizeOrQueue(ShouldRescaleAll(rescaleAll), preferCurrentWidths: false, priority);
+            NormalizeOrQueue(ShouldRescaleAll(rescaleAll), priority);
         }
 
         private void ApplyViewportLayoutChange(DispatcherPriority priority)
@@ -1336,7 +1274,7 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            QueueNormalization(rescaleAll: false, preferCurrentWidths: true, priority: priority);
+            QueueNormalization(rescaleAll: false, priority);
         }
 
         private bool ShouldRescaleAll(bool requestedRescaleAll)
@@ -1344,10 +1282,7 @@ namespace PlayniteAchievements.Views.Helpers
             return requestedRescaleAll && !_hasSuccessfulNormalization;
         }
 
-        private void QueueNormalization(
-            bool rescaleAll,
-            bool preferCurrentWidths,
-            DispatcherPriority priority = DispatcherPriority.Render)
+        private void QueueNormalization(bool rescaleAll, DispatcherPriority priority = DispatcherPriority.Render)
         {
             if (_grid == null)
             {
@@ -1355,8 +1290,6 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             _queuedNormalizationRescaleAll |= rescaleAll;
-            _queuedNormalizationPreferCurrentWidths = !_queuedNormalizationRescaleAll &&
-                                                       (_queuedNormalizationPreferCurrentWidths || preferCurrentWidths);
             if (_normalizationQueued)
             {
                 return;
@@ -1369,9 +1302,7 @@ namespace PlayniteAchievements.Views.Helpers
                     _queuedNormalizationOperation = null;
                     _normalizationQueued = false;
                     var shouldRescaleAll = ShouldRescaleAll(_queuedNormalizationRescaleAll);
-                    var shouldPreferCurrentWidths = _queuedNormalizationPreferCurrentWidths && !shouldRescaleAll;
                     _queuedNormalizationRescaleAll = false;
-                    _queuedNormalizationPreferCurrentWidths = false;
 
                     if (!_isAttached ||
                         _grid == null ||
@@ -1381,9 +1312,9 @@ namespace PlayniteAchievements.Views.Helpers
                         return;
                     }
 
-                    if (!NormalizeColumnsToContainer(shouldRescaleAll, shouldPreferCurrentWidths))
+                    if (!NormalizeColumnsToContainer(shouldRescaleAll))
                     {
-                        QueueInitialNormalizationRetry(shouldRescaleAll, shouldPreferCurrentWidths);
+                        QueueInitialNormalizationRetry(shouldRescaleAll);
                     }
                 }),
                 priority);
@@ -1400,10 +1331,9 @@ namespace PlayniteAchievements.Views.Helpers
             _queuedNormalizationOperation = null;
             _normalizationQueued = false;
             _queuedNormalizationRescaleAll = false;
-            _queuedNormalizationPreferCurrentWidths = false;
         }
 
-        private void QueueInitialNormalizationRetry(bool rescaleAll, bool preferCurrentWidths)
+        private void QueueInitialNormalizationRetry(bool rescaleAll)
         {
             if (!_initialNormalizationActive ||
                 _initialNormalizationCompleted ||
@@ -1422,7 +1352,7 @@ namespace PlayniteAchievements.Views.Helpers
             _initialNormalizationAttempts++;
             var priority = ResolveInitialNormalizationRetryPriority();
             QueueScrollViewerAttach(priority);
-            QueueNormalization(rescaleAll, preferCurrentWidths, priority);
+            QueueNormalization(rescaleAll, priority);
         }
 
         private DispatcherPriority ResolveInitialNormalizationRetryPriority()
@@ -1445,11 +1375,11 @@ namespace PlayniteAchievements.Views.Helpers
             return BuildPreferredWidths(includePending, includeDefaultSeeds: false);
         }
 
-        private Dictionary<string, double> BuildNormalizationPreferredWidths(bool includePending, bool preferCurrentWidths)
+        private Dictionary<string, double> BuildNormalizationPreferredWidths(bool includePending)
         {
             var result = BuildPreferredWidths(includePending: false, includeDefaultSeeds: true);
 
-            if (preferCurrentWidths)
+            if (_hasSuccessfulNormalization)
             {
                 foreach (var column in GetVisibleResizableColumns())
                 {
