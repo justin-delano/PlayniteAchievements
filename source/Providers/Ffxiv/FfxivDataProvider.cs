@@ -209,7 +209,7 @@ namespace PlayniteAchievements.Providers.Ffxiv
                 unlockTimeUtc = unlockTimeUtc.Value.ToUniversalTime();
             }
 
-            var globalPercent = ParseOwnedPercent(achievement.Owned);
+            var globalPercent = FfxivParsing.ParseOwnedPercent(achievement.Owned);
 
             return new AchievementDetail
             {
@@ -245,25 +245,6 @@ namespace PlayniteAchievements.Providers.Ffxiv
             }
 
             return map;
-        }
-
-        /// <summary>
-        /// Parses an FFXIV Collect ownership string such as "98%" into a 0-100 value.
-        /// </summary>
-        private static double? ParseOwnedPercent(string owned)
-        {
-            if (string.IsNullOrWhiteSpace(owned))
-            {
-                return null;
-            }
-
-            var trimmed = owned.Trim().TrimEnd('%').Trim();
-            if (double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
-            {
-                return Math.Max(0, Math.Min(100, value));
-            }
-
-            return null;
         }
 
         private void EnsureInitialized()
