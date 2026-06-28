@@ -7,6 +7,7 @@ namespace PlayniteAchievements.Providers.BattleNet
     internal static class BattleNetGameSupport
     {
         public static readonly Guid BattleNetPluginId = Guid.Parse("E3C26A3D-D695-4CB7-A769-5FF7612C7EDD");
+        // Master switch for StarCraft II support; set to false to disable it everywhere.
         internal const bool IsSc2Enabled = true;
 
         public static bool IsSupported(Game game, BattleNetSettings settings)
