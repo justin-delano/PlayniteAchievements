@@ -533,6 +533,7 @@ namespace PlayniteAchievements.Views
         private readonly ThemeDiscoveryService _themeDiscovery;
         private readonly ThemeMigrationService _themeMigration;
         private readonly ProviderRegistry _providerRegistry;
+        private readonly Func<Window, string, string> _pickColor;
         private ICollectionView _providerNavigationView;
         private bool _providerNavigationBuilt;
         private bool _themeMigrationLoaded;
@@ -596,12 +597,14 @@ namespace PlayniteAchievements.Views
             PlayniteAchievementsSettingsViewModel settingsViewModel,
             ILogger logger,
             PlayniteAchievementsPlugin plugin,
-            ProviderRegistry providerRegistry)
+            ProviderRegistry providerRegistry,
+            Func<Window, string, string> pickColor)
         {
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
             _logger = logger;
             _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
+            _pickColor = pickColor ?? throw new ArgumentNullException(nameof(pickColor));
 
             _themeDiscovery = new ThemeDiscoveryService(_logger, plugin.PlayniteApi);
             _themeMigration = new ThemeMigrationService(
@@ -1352,10 +1355,8 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (AlphaColorPickerDialog.TryPickColor(
-                Window.GetWindow(this),
-                item.CustomValue,
-                out var color))
+            var color = _pickColor(Window.GetWindow(this), item.CustomValue);
+            if (!string.IsNullOrEmpty(color))
             {
                 item.Mode = ResourceOverrideMode.Custom;
                 item.CustomValue = color;
@@ -1611,10 +1612,8 @@ namespace PlayniteAchievements.Views
 
         private void PickPaletteColor(string currentValue, Action<string> applyColor)
         {
-            if (AlphaColorPickerDialog.TryPickColor(
-                Window.GetWindow(this),
-                currentValue,
-                out var color))
+            var color = _pickColor(Window.GetWindow(this), currentValue);
+            if (!string.IsNullOrEmpty(color))
             {
                 applyColor?.Invoke(color);
             }

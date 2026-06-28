@@ -78,7 +78,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             windowExtension.PreviewKeyDown += new KeyEventHandler(HandleEsc);
 
-            ApplyChromeBrushes(windowExtension);
+            ApplyWindowThemeBrushes(windowExtension);
 
             return windowExtension;
         }
@@ -86,7 +86,7 @@ namespace PlayniteAchievements.Views.Helpers
         // Retheme the Playnite-drawn window chrome (title strip and 1px border) to match the
         // plugin's surfaces by overriding the chrome resource keys in the window's own scope.
         // This reuses the existing plugin brushes rather than introducing chrome-specific tokens.
-        private static void ApplyChromeBrushes(Window window)
+        public static void ApplyWindowThemeBrushes(Window window)
         {
             var app = Application.Current;
             if (window == null || app == null)
@@ -100,18 +100,50 @@ namespace PlayniteAchievements.Views.Helpers
             if (windowSurface != null)
             {
                 window.Resources["WindowBackgourndBrush"] = windowSurface;
+                window.Resources["StandardWindowBackgroundBrush"] = windowSurface;
+                window.Resources["WindowBaseBackgroundBrush"] = windowSurface;
                 window.Background = windowSurface;
             }
 
-            if (app.TryFindResource("PlayAch.Brush.ControlBorder") is Brush borderBrush)
+            var borderBrush =
+                app.TryFindResource("PlayAch.Brush.Dialog.Border") as Brush ??
+                app.TryFindResource("PlayAch.Brush.PopupBorder") as Brush ??
+                app.TryFindResource("PlayAch.Brush.ControlBorder") as Brush;
+            if (borderBrush != null)
             {
                 window.Resources["PopupBorderBrush"] = borderBrush;
                 window.Resources["NormalBorderBrush"] = borderBrush;
+                window.Resources["StandardWindowBorderBrush"] = borderBrush;
             }
 
             if (app.TryFindResource("PlayAch.Brush.PopupSurface") is Brush popupSurface)
             {
                 window.Resources["PopupBackgroundBrush"] = popupSurface;
+            }
+
+            if (app.TryFindResource("PlayAch.Brush.Text") is Brush textBrush)
+            {
+                window.Resources["TextBrush"] = textBrush;
+            }
+
+            if (app.TryFindResource("PlayAch.Brush.Text.Secondary") is Brush secondaryTextBrush)
+            {
+                window.Resources["TextBrushDarker"] = secondaryTextBrush;
+            }
+
+            if (app.TryFindResource("PlayAch.Brush.Text.Tertiary") is Brush tertiaryTextBrush)
+            {
+                window.Resources["TextBrushDark"] = tertiaryTextBrush;
+            }
+
+            if (app.TryFindResource("PlayAch.Brush.Glyph") is Brush glyphBrush)
+            {
+                window.Resources["GlyphBrush"] = glyphBrush;
+            }
+
+            if (app.TryFindResource("PlayAch.Brush.Accent") is Brush accentBrush)
+            {
+                window.Resources["HighlightGlyphBrush"] = accentBrush;
             }
         }
 
@@ -129,6 +161,7 @@ namespace PlayniteAchievements.Views.Helpers
             window.Title = title;
             window.Tag = FullscreenWindowTag;
             ConfigureBorderlessFullscreenWindow(window);
+            ApplyWindowThemeBrushes(window);
 
             var parent = API.Instance.Dialogs.GetCurrentAppWindow();
             ApplyFullscreenWindowPlacement(window, parent);
@@ -165,6 +198,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             window.Title = title ?? string.Empty;
             ConfigureBorderlessFullscreenWindow(window);
+            ApplyWindowThemeBrushes(window);
             ApplyFullscreenWindowPlacement(window, api?.Dialogs?.GetCurrentAppWindow());
             return window;
         }
@@ -218,13 +252,17 @@ namespace PlayniteAchievements.Views.Helpers
 
         private static ControlTemplate CreateContentOnlyWindowTemplate()
         {
+            var surface = new FrameworkElementFactory(typeof(Border));
+            surface.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Window.BackgroundProperty));
+
             var adorner = new FrameworkElementFactory(typeof(AdornerDecorator));
             var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
             adorner.AppendChild(presenter);
+            surface.AppendChild(adorner);
 
             return new ControlTemplate(typeof(Window))
             {
-                VisualTree = adorner
+                VisualTree = surface
             };
         }
     }

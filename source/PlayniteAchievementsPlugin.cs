@@ -395,7 +395,8 @@ namespace PlayniteAchievements
                     _settingsViewModel,
                     _logger,
                     this,
-                    _providerRegistry);
+                    _providerRegistry,
+                    (owner, currentValue) => _windowService?.PickColor(owner, currentValue));
                 _logger.Info("GetSettingsView succeeded");
                 return control;
             }

@@ -7,7 +7,7 @@ using System.Windows.Media;
 
 namespace PlayniteAchievements.Views
 {
-    public partial class AlphaColorPickerDialog : Window
+    public partial class AlphaColorPickerDialog : UserControl
     {
         private bool _isUpdating;
         private bool _isColorSpaceMouseDown;
@@ -15,6 +15,9 @@ namespace PlayniteAchievements.Views
         private double _saturation;
         private double _value;
         private Color _selectedColor;
+
+        public bool? DialogResult { get; private set; }
+        public event EventHandler RequestClose;
 
         public AlphaColorPickerDialog()
         {
@@ -35,28 +38,13 @@ namespace PlayniteAchievements.Views
 
         public string SelectedColorText => ToColorText(SelectedColor);
 
-        public static bool TryPickColor(Window owner, string currentValue, out string colorText)
+        public void SetInitialColor(string currentValue)
         {
-            colorText = null;
-            var dialog = new AlphaColorPickerDialog();
-            if (owner != null)
-            {
-                dialog.Owner = owner;
-            }
-
             if (TryParseColor(currentValue, out var color))
             {
-                dialog.UpdateHsvFromRgb(color.R, color.G, color.B);
-                dialog.SelectedColor = color;
+                UpdateHsvFromRgb(color.R, color.G, color.B);
+                SelectedColor = color;
             }
-
-            if (dialog.ShowDialog() != true)
-            {
-                return false;
-            }
-
-            colorText = dialog.SelectedColorText;
-            return true;
         }
 
         public static bool TryParseColor(string value, out Color color)
@@ -215,6 +203,13 @@ namespace PlayniteAchievements.Views
             UpdateHsvFromRgb(color.R, color.G, color.B);
             SelectedColor = color;
             DialogResult = true;
+            RequestClose?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void CancelButton_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
+            RequestClose?.Invoke(this, EventArgs.Empty);
         }
 
         private void CommitChannelTextBoxes()

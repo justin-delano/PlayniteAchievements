@@ -21,6 +21,7 @@
     </ResourceDictionary.MergedDictionaries>
 
     <Style TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}"/>
+    <Style TargetType="ToolTip" BasedOn="{StaticResource PlayAch.ToolTip.BaseStyle}"/>
     <Style TargetType="ToggleButton" BasedOn="{StaticResource PlayAch.ToggleButton.BaseStyle}"/>
     <Style TargetType="RadioButton" BasedOn="{StaticResource PlayAch.RadioButton.BaseStyle}"/>
     <Style TargetType="TextBox" BasedOn="{StaticResource PlayAch.TextBox.BaseStyle}"/>

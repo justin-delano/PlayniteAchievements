@@ -4,6 +4,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Views.Helpers;
 using System;
 using System.Collections.Generic;
@@ -462,6 +463,8 @@ namespace PlayniteAchievements.Views
         {
             options = null;
 
+            EnsureThemeResources(settings);
+
             var control = new CustomRefreshControl(api, refreshRuntime, persistSettingsForUi, settings, logger);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 ResourceProvider.GetString("LOCPlayAch_RefreshMode_Custom"),
@@ -494,6 +497,15 @@ namespace PlayniteAchievements.Views
             }
 
             return false;
+        }
+
+        private static void EnsureThemeResources(PlayniteAchievementsSettings settings)
+        {
+            var resources = Application.Current?.Resources;
+            if (resources != null)
+            {
+                PlayAchResourceService.Apply(resources, settings?.Persisted?.ResourceOverrides);
+            }
         }
 
         private void InitializeScopeOptions()

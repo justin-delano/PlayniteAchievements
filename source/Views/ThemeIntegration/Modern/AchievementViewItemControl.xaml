@@ -9,7 +9,7 @@
     <base:ThemeControlBase.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementControlStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </base:ThemeControlBase.Resources>
@@ -57,9 +57,7 @@
                          MinWidth="40"
                          Height="16"
                          VerticalAlignment="Center"
-                         Foreground="{DynamicResource PlayAch.Brush.Accent}"
-                         Background="{DynamicResource PlayAch.Brush.Surface}"
-                         BorderBrush="{DynamicResource PlayAch.Brush.Border}"/>
+                         Style="{StaticResource GameProgressBar}"/>
 
             <TextBlock Grid.Column="0"
                        Grid.ColumnSpan="2"

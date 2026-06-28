@@ -15,6 +15,7 @@
                                              ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                              FixedRowHeight="{Binding RowHeight}"
                                              SortScope="{x:Static services:AchievementSortScope.RecentAchievements}"
+                                             DelayInitialRenderUntilNormalized="True"
                                              AllowLayoutPersistence="True"
                                              AllowColumnVisibilityMenu="True"
                                              ColumnSettingsKey="StartPageAchievements"

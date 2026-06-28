@@ -46,9 +46,10 @@
         <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
     </Style>
 
-    <!-- Implicit tooltip style so all plugin tooltips use theme tokens instead of system chrome.
+    <!-- Keyed tooltip style so scoped plugin windows can opt into themed tooltips without
+         restyling every Playnite tooltip when CommonResources is merged at application scope.
          Tooltips that set Background/BorderBrush/Padding locally still win via TemplateBinding. -->
-    <Style TargetType="ToolTip">
+    <Style x:Key="PlayAch.ToolTip.BaseStyle" TargetType="ToolTip">
         <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.PopupSurface}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.PopupBorder}"/>
         <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}"/>

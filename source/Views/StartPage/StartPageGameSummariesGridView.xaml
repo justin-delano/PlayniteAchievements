@@ -16,6 +16,7 @@
                                                ShowColumnHeaders="{Binding ShowColumnHeaders}"
                                                FixedRowHeight="{Binding RowHeight}"
                                                ColumnSettingsKey="StartPageGameSummaries"
+                                               DelayInitialRenderUntilNormalized="True"
                                                RowPreviewMouseRightButtonDown="GridRow_PreviewMouseRightButtonDown"
                                                RowPreviewMouseRightButtonUp="GridRow_PreviewMouseRightButtonUp"/>
     </Grid>

@@ -12,7 +12,7 @@
     <local:ThemeControlBase.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementControlStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </local:ThemeControlBase.Resources>
@@ -41,7 +41,8 @@
                      Minimum="0"
                      Maximum="{Binding AchievementCount, FallbackValue=100}"
                      Value="{Binding UnlockedCount, Mode=OneWay, FallbackValue=30}"
-                     Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}" />
+                     Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}"
+                     Style="{StaticResource GameProgressBar}" />
 
         <!-- Percent label overlay -->
         <TextBlock Grid.Column="1"

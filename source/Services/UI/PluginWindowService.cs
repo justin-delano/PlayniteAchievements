@@ -29,6 +29,7 @@ namespace PlayniteAchievements.Services.UI
         private const string ViewAchievementsWindowPlacementKey = "SingleGameAchievements";
         private const string ManageAchievementsWindowPlacementKey = "ManageAchievements";
         private const string OverviewWindowPlacementKey = "Overview";
+        private const string ColorPickerWindowPlacementKey = "ColorPicker";
         private const int ShowWindowRestore = 9;
 
         private enum AchievementWindowKind
@@ -153,6 +154,48 @@ namespace PlayniteAchievements.Services.UI
             window.ContentRendered += contentRenderedHandler;
         }
 
+        public string PickColor(Window owner, string currentValue)
+        {
+            _ensureAchievementResourcesLoaded?.Invoke();
+
+            var view = new AlphaColorPickerDialog();
+            view.SetInitialColor(currentValue);
+            var window = PlayniteUiProvider.CreateExtensionWindow(
+                "Pick color",
+                view,
+                new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = false,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 440,
+                    Height = 465
+                });
+
+            window.MinWidth = 420;
+            window.MinHeight = 440;
+
+            try
+            {
+                window.Owner = owner ?? _api?.Dialogs?.GetCurrentAppWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            }
+            catch
+            {
+            }
+
+            AttachWindowPlacement(window, ColorPickerWindowPlacementKey, isFullscreen: false);
+
+            view.RequestClose += (_, __) =>
+            {
+                window.DialogResult = view.DialogResult;
+            };
+
+            PrepareForegroundActivation(window);
+            return window.ShowDialog() == true ? view.SelectedColorText : null;
+        }
+
         private static void QueueBringWindowToForeground(Window window)
         {
             if (window == null)
@@ -191,6 +234,8 @@ namespace PlayniteAchievements.Services.UI
             IFullscreenControllerNavigable fullscreenController = null,
             bool enableSoftClose = true)
         {
+            _ensureAchievementResourcesLoaded?.Invoke();
+
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 title,
                 view,

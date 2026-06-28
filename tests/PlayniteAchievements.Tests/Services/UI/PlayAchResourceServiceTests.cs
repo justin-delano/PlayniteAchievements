@@ -63,6 +63,41 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
+        public void Apply_DerivesControlBackgroundAliasesFromCustomAppearanceBrushes()
+        {
+            var resources = new ResourceDictionary();
+            var overrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["PlayAch.Brush.ControlSurface"] = CreateBrushOverride("#FF102030"),
+                ["PlayAch.Brush.Selection"] = CreateBrushOverride("#FF405060")
+            };
+
+            PlayAchResourceService.Apply(resources, overrides);
+
+            AssertBrush(resources, "PlayAch.Brush.Control.Background", Color.FromRgb(0x10, 0x20, 0x30));
+            AssertBrush(resources, "PlayAch.Brush.Control.Background.Hover", Color.FromArgb(0x30, 0x40, 0x50, 0x60));
+        }
+
+        [TestMethod]
+        public void Apply_DerivesMutedChartAndProgressBrushesFromCustomAppearanceBrushes()
+        {
+            var resources = new ResourceDictionary();
+            var overrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["PlayAch.Brush.Surface"] = CreateBrushOverride("#FF101820"),
+                ["PlayAch.Brush.Border"] = CreateBrushOverride("#FF203040"),
+                ["PlayAch.Brush.Accent"] = CreateBrushOverride("#FF708090")
+            };
+
+            PlayAchResourceService.Apply(resources, overrides);
+
+            AssertBrush(resources, "PlayAch.Brush.Chart.Separator", Color.FromArgb(0x80, 0x20, 0x30, 0x40));
+            AssertBrush(resources, "PlayAch.Brush.Progress.Track", Color.FromRgb(0x10, 0x18, 0x20));
+            AssertBrush(resources, "PlayAch.Brush.Progress.Fill", Color.FromArgb(0xB8, 0x70, 0x80, 0x90));
+            AssertBrush(resources, "PlayAch.Brush.Progress.Border", Color.FromRgb(0x20, 0x30, 0x40));
+        }
+
+        [TestMethod]
         public void Apply_ResolvesTransparentOverrideToTransparentBrush()
         {
             var resources = new ResourceDictionary();
@@ -106,14 +141,13 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
-        public void CreateDefaultResourceOverrides_SeedsSurfacesAsTransparent()
+        public void CreateDefaultResourceOverrides_SeedsInlineSurfacesAsTransparent()
         {
             var defaults = PersistedSettings.CreateDefaultResourceOverrides();
 
             foreach (var key in new[]
             {
                 "PlayAch.Brush.GridSurface",
-                "PlayAch.Brush.WindowSurface",
                 "PlayAch.Brush.ControlSurface"
             })
             {
@@ -121,6 +155,8 @@ namespace PlayniteAchievements.Tests.Services.UI
                 Assert.AreEqual(ResourceOverrideMode.Transparent, defaults[key].Mode, key);
                 Assert.AreEqual(PlayAchResourceService.TransparentValue, defaults[key].CustomValue, key);
             }
+
+            Assert.IsFalse(defaults.ContainsKey("PlayAch.Brush.WindowSurface"));
         }
 
         [TestMethod]

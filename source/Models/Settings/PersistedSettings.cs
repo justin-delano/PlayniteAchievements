@@ -3108,7 +3108,7 @@ namespace PlayniteAchievements.Models.Settings
                 : string.Empty;
         }
 
-        // Tokens that ship transparent by default.
+        // Inline content surfaces that ship transparent by default.
         // Seeded only for fresh settings / display reset; deserializing existing settings replaces
         // this dictionary, so upgrading users keep their current appearance.
         internal static Dictionary<string, ResourceOverrideSetting> CreateDefaultResourceOverrides()
@@ -3117,7 +3117,6 @@ namespace PlayniteAchievements.Models.Settings
             foreach (var key in new[]
             {
                 "PlayAch.Brush.GridSurface",
-                "PlayAch.Brush.WindowSurface",
                 "PlayAch.Brush.ControlSurface"
             })
             {

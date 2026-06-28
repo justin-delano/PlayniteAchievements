@@ -30,9 +30,9 @@
         <Setter Property="Height" Value="18"/>
         <Setter Property="Minimum" Value="0"/>
         <Setter Property="Maximum" Value="100"/>
-        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Surface}"/>
-        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Progress.Track}"/>
+        <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Progress.Fill}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Progress.Border}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Template">
             <Setter.Value>
