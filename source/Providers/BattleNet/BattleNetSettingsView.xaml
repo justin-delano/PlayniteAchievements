@@ -453,6 +453,12 @@
                                              FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
                                 </Grid>
                             </Border>
+
+                            <Button Content="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Discover}"
+                                    Click="Sc2Discover_Click"
+                                    Style="{StaticResource AuthActionButtonStyle}"
+                                    HorizontalAlignment="Left"
+                                    Margin="0,12,0,0"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
