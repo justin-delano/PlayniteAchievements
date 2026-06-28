@@ -316,6 +316,25 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void NormalizeInternal_FfxivProviderOverride_PreservesKeyWithNullValue()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    ProviderOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = "ffxiv",
+                        Value = null
+                    }
+                },
+                gameId);
+
+            AssertProviderOverride(normalized, "FFXIV", null);
+        }
+
+        [TestMethod]
         public void NormalizeInternal_Rpcs3ProviderOverride_NormalizesCanonicalValue()
         {
             var gameId = Guid.NewGuid();

@@ -310,6 +310,13 @@ namespace PlayniteAchievements.Services
                         Value = value
                     };
 
+                case "FFXIV":
+                    return new ProviderOverrideData
+                    {
+                        ProviderKey = providerKey,
+                        Value = null
+                    };
+
                 default:
                     return null;
             }
@@ -488,6 +495,11 @@ namespace PlayniteAchievements.Services
             if (string.Equals(normalized, "Exophase", StringComparison.OrdinalIgnoreCase))
             {
                 return "Exophase";
+            }
+
+            if (string.Equals(normalized, "FFXIV", StringComparison.OrdinalIgnoreCase))
+            {
+                return "FFXIV";
             }
 
             return null;

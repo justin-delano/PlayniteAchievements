@@ -309,6 +309,10 @@ namespace PlayniteAchievements.ViewModels
         public bool IsProviderOverrideProviderSelected =>
             !string.Equals(SelectedProviderOverrideKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase);
 
+        public bool IsProviderOverrideValueVisible =>
+            IsProviderOverrideProviderSelected &&
+            !string.Equals(SelectedProviderOverrideKey, "FFXIV", StringComparison.OrdinalIgnoreCase);
+
         public string ProviderOverrideInputLabel => GetProviderOverrideInputLabel(SelectedProviderOverrideKey);
 
         public string ProviderOverrideStatusText
@@ -321,9 +325,16 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 var providerName = GetProviderOverrideDisplayName(_providerOverrideKey);
-                if (string.Equals(_providerOverrideKey, "Exophase", StringComparison.OrdinalIgnoreCase) &&
+                if (ProviderOverrideUsesOptionalValue(_providerOverrideKey) &&
                     string.IsNullOrWhiteSpace(ProviderOverrideValue))
                 {
+                    if (string.Equals(_providerOverrideKey, "FFXIV", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return string.Format(
+                            L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusNoValue", "Override set: {0}"),
+                            providerName);
+                    }
+
                     return string.Format(
                         L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusAuto", "Override set: {0} (auto-detect)"),
                         providerName);
@@ -1373,6 +1384,7 @@ namespace PlayniteAchievements.ViewModels
         private void OnProviderOverrideSelectionChanged()
         {
             OnPropertyChanged(nameof(IsProviderOverrideProviderSelected));
+            OnPropertyChanged(nameof(IsProviderOverrideValueVisible));
             OnPropertyChanged(nameof(ProviderOverrideInputLabel));
             OnPropertyChanged(nameof(ProviderOverrideStatusText));
             RaiseCommandStates();
@@ -1476,6 +1488,14 @@ namespace PlayniteAchievements.ViewModels
                     };
                     return true;
 
+                case "FFXIV":
+                    providerOverride = new ProviderOverrideData
+                    {
+                        ProviderKey = normalizedKey,
+                        Value = null
+                    };
+                    return true;
+
                 default:
                     validationMessageKey = "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
                     validationMessageFallback = "Please select a provider override.";
@@ -1519,6 +1539,11 @@ namespace PlayniteAchievements.ViewModels
                 },
                 new ProviderOverrideOption
                 {
+                    ProviderKey = "FFXIV",
+                    DisplayName = ProviderRegistry.GetLocalizedName("FFXIV")
+                },
+                new ProviderOverrideOption
+                {
                     ProviderKey = "Exophase",
                     DisplayName = ProviderRegistry.GetLocalizedName("Exophase")
                 }
@@ -1550,6 +1575,8 @@ namespace PlayniteAchievements.ViewModels
                     return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3", "RPCS3 NP Comm ID");
                 case "Xenia":
                     return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia", "Xenia TitleID");
+                case "FFXIV":
+                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_FFXIV", "No value required");
                 case "Exophase":
                     return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase", "Exophase game ID or slug");
                 default:
@@ -1591,12 +1618,23 @@ namespace PlayniteAchievements.ViewModels
                 return "Xenia";
             }
 
+            if (string.Equals(normalized, "FFXIV", StringComparison.OrdinalIgnoreCase))
+            {
+                return "FFXIV";
+            }
+
             if (string.Equals(normalized, "Exophase", StringComparison.OrdinalIgnoreCase))
             {
                 return "Exophase";
             }
 
             return ProviderOverrideNoneKey;
+        }
+
+        private static bool ProviderOverrideUsesOptionalValue(string providerKey)
+        {
+            return string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(providerKey, "FFXIV", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string L(string key, string fallback)

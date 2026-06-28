@@ -40,6 +40,9 @@
     <Compile Include="..\..\source\Providers\Epic\EpicApiClient.cs" Link="Source\Providers\Epic\EpicApiClient.cs" />
     <Compile Include="..\..\source\Providers\Epic\EpicAuthModels.cs" Link="Source\Providers\Epic\EpicAuthModels.cs" />
 
+    <Compile Include="..\..\source\Providers\Ffxiv\FfxivParsing.cs" Link="Source\Providers\Ffxiv\FfxivParsing.cs" />
+    <Compile Include="..\..\source\Providers\Ffxiv\FfxivModels.cs" Link="Source\Providers\Ffxiv\FfxivModels.cs" />
+
     <Compile Include="..\..\source\Providers\GOG\GogApiClient.cs" Link="Source\Providers\GOG\GogApiClient.cs" />
     <Compile Include="..\..\source\Providers\GOG\GogAuthModels.cs" Link="Source\Providers\GOG\GogAuthModels.cs" />
     <Compile Include="..\..\source\Providers\GOG\GogClientIdCacheStore.cs" Link="Source\Providers\GOG\GogClientIdCacheStore.cs" />

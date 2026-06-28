@@ -122,7 +122,7 @@
                     </Grid>
 
                     <StackPanel Margin="0,12,0,0"
-                                Visibility="{Binding IsProviderOverrideProviderSelected, Converter={StaticResource BoolToVis}}">
+                                Visibility="{Binding IsProviderOverrideValueVisible, Converter={StaticResource BoolToVis}}">
                         <TextBlock Text="{Binding ProviderOverrideInputLabel}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    FontWeight="SemiBold" />
