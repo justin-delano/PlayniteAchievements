@@ -127,10 +127,20 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    FontWeight="SemiBold" />
                         <TextBox Text="{Binding ProviderOverrideInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Visibility="{Binding IsProviderOverrideTextVisible, Converter={StaticResource BoolToVis}}"
                                  Padding="8,6"
                                  Width="300"
                                  HorizontalAlignment="Left"
                                  Margin="{StaticResource PlayAch.Thickness.Top.Compact}" />
+                        <ComboBox ItemsSource="{Binding ProviderOverrideChoices}"
+                                  DisplayMemberPath="DisplayName"
+                                  SelectedValuePath="Value"
+                                  SelectedValue="{Binding ProviderOverrideInput, Mode=TwoWay}"
+                                  Visibility="{Binding IsProviderOverrideChoiceVisible, Converter={StaticResource BoolToVis}}"
+                                  Padding="8,4"
+                                  Width="300"
+                                  HorizontalAlignment="Left"
+                                  Margin="{StaticResource PlayAch.Thickness.Top.Compact}" />
                     </StackPanel>
                 </StackPanel>
             </Border>

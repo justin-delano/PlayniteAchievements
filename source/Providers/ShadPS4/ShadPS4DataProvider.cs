@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -17,8 +18,17 @@ using System.Text;
 
 namespace PlayniteAchievements.Providers.ShadPS4
 {
-    internal sealed class ShadPS4DataProvider : IDataProvider
+    internal sealed class ShadPS4DataProvider : IDataProvider, IProviderOverride
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_ShadPS4",
+            "ShadPS4 Match ID",
+            raw => ShadPS4MatchIdHelper.TryNormalize(raw, out var matchId)
+                ? ProviderOverrideValidation.Valid(matchId)
+                : ProviderOverrideValidation.Invalid(
+                    "LOCPlayAch_Menu_ShadPS4MatchId_InvalidId",
+                    "Please enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00."));
+
         private readonly ShadPS4Scanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;

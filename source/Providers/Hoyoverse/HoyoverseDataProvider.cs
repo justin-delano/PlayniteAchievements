@@ -2,6 +2,7 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using System;
 using System.Collections.Generic;
@@ -11,9 +12,27 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Hoyoverse
 {
-    internal sealed class HoyoverseDataProvider : IDataProvider, IDisposable
+    internal sealed class HoyoverseDataProvider : IDataProvider, IProviderOverride, IDisposable
     {
         internal const string Key = "Hoyoverse";
+
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Choice(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Hoyoverse",
+            "HoYoverse Title",
+            new[]
+            {
+                new ProviderOverrideChoice(
+                    HoyoverseGameKind.GenshinImpact.ToString(),
+                    HoyoverseGameCatalog.GetCanonicalName(HoyoverseGameKind.GenshinImpact)),
+                new ProviderOverrideChoice(
+                    HoyoverseGameKind.HonkaiStarRail.ToString(),
+                    HoyoverseGameCatalog.GetCanonicalName(HoyoverseGameKind.HonkaiStarRail)),
+                new ProviderOverrideChoice(
+                    HoyoverseGameKind.ZenlessZoneZero.ToString(),
+                    HoyoverseGameCatalog.GetCanonicalName(HoyoverseGameKind.ZenlessZoneZero))
+            },
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice",
+            "Please select a valid title for this override.");
         internal const string IconKey = "ProviderIconHoyoverse";
         internal const string ColorHex = "#D4ACF8";
 

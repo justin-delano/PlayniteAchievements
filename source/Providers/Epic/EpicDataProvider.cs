@@ -1,7 +1,9 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -12,8 +14,13 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Epic
 {
-    public sealed class EpicDataProvider : IDataProvider, IAchievementPageLinkProvider, IDisposable
+    public sealed class EpicDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Epic",
+            "Epic Game ID",
+            ProviderOverrideValidators.RequiredText);
+
         private readonly EpicSessionManager _sessionManager;
         private readonly EpicScanner _scanner;
         private readonly HttpClient _httpClient;
@@ -94,7 +101,10 @@ namespace PlayniteAchievements.Providers.Epic
 
         private static bool IsEpicCapable(Game game)
         {
-            return game != null && (game.PluginId == EpicPluginId || game.PluginId == LegendaryPluginId);
+            return game != null &&
+                   (game.PluginId == EpicPluginId ||
+                    game.PluginId == LegendaryPluginId ||
+                    GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "Epic", out _));
         }
 
         internal static bool TryGetEpicSlug(string linkUrl, out string slug)

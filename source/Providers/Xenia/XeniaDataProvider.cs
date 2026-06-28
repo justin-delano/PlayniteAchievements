@@ -4,6 +4,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using System;
@@ -15,8 +16,17 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Xenia
 {
-    internal sealed class XeniaDataProvider : IDataProvider
+    internal sealed class XeniaDataProvider : IDataProvider, IProviderOverride
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia",
+            "Xenia TitleID",
+            raw => XeniaTitleIdHelper.TryNormalize(raw, out var titleId)
+                ? ProviderOverrideValidation.Valid(titleId)
+                : ProviderOverrideValidation.Invalid(
+                    "LOCPlayAch_Menu_XeniaTitleId_InvalidId",
+                    "Please enter a valid 8-character hexadecimal Xenia TitleID."));
+
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
         private readonly PlayniteAchievementsSettings _settings;

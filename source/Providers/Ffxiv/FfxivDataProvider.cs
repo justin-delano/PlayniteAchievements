@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using Playnite.SDK;
@@ -18,8 +19,11 @@ namespace PlayniteAchievements.Providers.Ffxiv
     /// FFXIV achievements are account/character-wide, so the resolved set is
     /// attached to the matched FFXIV entry in the Playnite library.
     /// </summary>
-    internal sealed class FfxivDataProvider : IDataProvider, IDisposable
+    internal sealed class FfxivDataProvider : IDataProvider, IProviderOverride, IDisposable
     {
+        // Presence-only binding: forces a game to be treated as FFXIV (account/character-wide data).
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.None();
+
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;

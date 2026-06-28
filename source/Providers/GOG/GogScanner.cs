@@ -116,7 +116,18 @@ namespace PlayniteAchievements.Providers.GOG
         private static bool TryGetProductId(Game game, out string productId)
         {
             productId = null;
-            if (game == null || string.IsNullOrWhiteSpace(game.GameId))
+            if (game == null)
+                return false;
+
+            // A per-game override takes precedence over the library-derived product ID.
+            if (GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "GOG", out var overrideId) &&
+                !string.IsNullOrWhiteSpace(overrideId))
+            {
+                productId = overrideId.Trim();
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(game.GameId))
                 return false;
 
             // GOG games use product ID as GameId

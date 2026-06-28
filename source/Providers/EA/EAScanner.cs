@@ -113,8 +113,22 @@ namespace PlayniteAchievements.Providers.EA
             }
 
             var ownedGames = await _apiClient.GetOwnedGamesAsync(cancel).ConfigureAwait(false);
-            var matched = EAProviderSupport.MatchGame(ownedGames, game, gameId);
-            var offerIdCandidates = EAProviderSupport.BuildOfferIdCandidates(matched?.OriginOfferId, gameId);
+
+            EaOwnedGame matched = null;
+            IReadOnlyList<string> offerIdCandidates;
+            if (game != null &&
+                GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "EA", out var overrideOfferId) &&
+                !string.IsNullOrWhiteSpace(overrideOfferId))
+            {
+                // A per-game override forces a single offer ID, bypassing owned-game matching.
+                offerIdCandidates = new List<string> { overrideOfferId.Trim() };
+                _logger?.Debug($"[EAAch] Using EA offer ID override for {game?.Name}: {overrideOfferId.Trim()}.");
+            }
+            else
+            {
+                matched = EAProviderSupport.MatchGame(ownedGames, game, gameId);
+                offerIdCandidates = EAProviderSupport.BuildOfferIdCandidates(matched?.OriginOfferId, gameId);
+            }
 
             if (offerIdCandidates.Count == 0)
             {

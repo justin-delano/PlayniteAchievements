@@ -69,6 +69,20 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private async Task<GameAchievementData> FetchForGameAsync(Game game, string locale, CancellationToken ct)
         {
+            // A per-game override forces routing to a specific title strategy, bypassing name matching.
+            if (BattleNetGameSupport.TryGetForcedTitle(game, out var forced))
+            {
+                switch (forced)
+                {
+                    case BattleNetGameTitle.Wow:
+                        return await _wow.FetchAchievementsAsync(game, locale, ct);
+                    case BattleNetGameTitle.Sc2:
+                        return await _sc2.FetchAchievementsAsync(game, locale, ct);
+                    default:
+                        return null;
+                }
+            }
+
             if (_wow.MatchesGame(game))
             {
                 return await _wow.FetchAchievementsAsync(game, locale, ct);

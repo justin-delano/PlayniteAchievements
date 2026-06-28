@@ -203,6 +203,24 @@ namespace PlayniteAchievements.Providers
             return string.IsNullOrWhiteSpace(value) ? providerKey : value;
         }
 
+        // ===================== PROVIDER ENUMERATION =====================
+
+        /// <summary>
+        /// Returns all registered providers ordered by the configured display order.
+        /// </summary>
+        public IReadOnlyList<IDataProvider> GetAllProviders()
+            => OrderProviderKeys(_providersByKey.Keys)
+                .Select(key => _providersByKey[key])
+                .ToList();
+
+        public bool TryGetProvider(string providerKey, out IDataProvider provider)
+        {
+            provider = null;
+            return !string.IsNullOrWhiteSpace(providerKey) &&
+                   _providersByKey.TryGetValue(providerKey, out provider) &&
+                   provider != null;
+        }
+
         public bool TryGetProviderVisuals(string providerKey, out string iconKey, out string colorHex)
         {
             iconKey = null;

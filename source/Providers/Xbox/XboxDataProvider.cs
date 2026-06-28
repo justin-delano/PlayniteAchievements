@@ -2,7 +2,9 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services;
 using System;
 using System.Collections.Generic;
 using System.Threading;
@@ -14,8 +16,17 @@ namespace PlayniteAchievements.Providers.Xbox
     /// Data provider for Xbox achievement data.
     /// Supports Xbox One/Series X|S, Xbox 360, and PC Game Pass games.
     /// </summary>
-    internal sealed class XboxDataProvider : IDataProvider, IDisposable
+    internal sealed class XboxDataProvider : IDataProvider, IProviderOverride, IDisposable
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xbox",
+            "Xbox Title ID",
+            raw => XboxTitleIdResolver.TryNormalizeTitleId(raw, out var titleId)
+                ? ProviderOverrideValidation.Valid(titleId)
+                : ProviderOverrideValidation.Invalid(
+                    "LOCPlayAch_Menu_XboxTitleId_InvalidId",
+                    "Please enter a valid Xbox Title ID (8-character hex or decimal)."));
+
         // Xbox library plugin ID from Playnite
         internal static readonly Guid XboxLibraryPluginId = Guid.Parse("7e4fbb5b-4594-4c5a-8a69-1e3f41b39c52");
 
@@ -60,6 +71,12 @@ namespace PlayniteAchievements.Providers.Xbox
         public bool IsCapable(Game game)
         {
             if (game == null) return false;
+
+            // A per-game override forces this game to be treated as Xbox.
+            if (GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "Xbox", out _))
+            {
+                return true;
+            }
 
             // Console games: GameId = "CONSOLE_{titleId}"
             if (game.GameId?.StartsWith("CONSOLE_") == true)

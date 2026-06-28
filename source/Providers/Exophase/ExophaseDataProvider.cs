@@ -3,6 +3,7 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using System;
@@ -17,8 +18,19 @@ namespace PlayniteAchievements.Providers.Exophase
     /// Full data provider for Exophase achievement tracking.
     /// Supports automatic game claiming by platform and per-game overrides.
     /// </summary>
-    internal sealed class ExophaseDataProvider : IDataProvider, IAchievementPageLinkProvider
+    internal sealed class ExophaseDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride
     {
+        // Optional value: an empty slug means auto-detect via game-name/platform search.
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase",
+            "Exophase game ID or slug",
+            raw =>
+            {
+                var trimmed = (raw ?? string.Empty).Trim();
+                return ProviderOverrideValidation.Valid(string.IsNullOrWhiteSpace(trimmed) ? null : trimmed);
+            },
+            valueOptional: true);
+
         #region Fields
 
         private readonly ILogger _logger;

@@ -283,6 +283,14 @@ namespace PlayniteAchievements.Providers.Xbox
 
         private async Task<string> ResolveTitleIdAsync(Game game, AuthorizationData authData, CancellationToken cancel)
         {
+            // A per-game override supplies the title ID directly, bypassing all detection strategies.
+            if (game != null &&
+                GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "Xbox", out var overrideTitleId) &&
+                XboxTitleIdResolver.TryNormalizeTitleId(overrideTitleId, out var normalizedOverride))
+            {
+                return normalizedOverride;
+            }
+
             // Console games: GameId = "CONSOLE_{titleId}"
             if (game.GameId?.StartsWith("CONSOLE_") == true)
             {

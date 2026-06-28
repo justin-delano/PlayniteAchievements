@@ -14,9 +14,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Manual;
-using PlayniteAchievements.Providers.RPCS3;
-using PlayniteAchievements.Providers.ShadPS4;
-using PlayniteAchievements.Providers.Xenia;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Services;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
@@ -32,6 +30,8 @@ namespace PlayniteAchievements.ViewModels
             public string ProviderKey { get; set; }
 
             public string DisplayName { get; set; }
+
+            public ProviderOverrideDescriptor Descriptor { get; set; }
         }
 
         private readonly Guid _gameId;
@@ -259,7 +259,10 @@ namespace PlayniteAchievements.ViewModels
                 {
                     if (!_isLoadingProviderOverride)
                     {
-                        ProviderOverrideInput = string.Empty;
+                        var descriptor = GetProviderOverrideDescriptor(normalized);
+                        ProviderOverrideInput = descriptor?.ValueKind == ProviderOverrideValueKind.Choice
+                            ? descriptor.Choices.FirstOrDefault()?.Value ?? string.Empty
+                            : string.Empty;
                     }
 
                     OnProviderOverrideSelectionChanged();
@@ -309,9 +312,23 @@ namespace PlayniteAchievements.ViewModels
         public bool IsProviderOverrideProviderSelected =>
             !string.Equals(SelectedProviderOverrideKey, ProviderOverrideNoneKey, StringComparison.OrdinalIgnoreCase);
 
+        private ProviderOverrideValueKind SelectedProviderOverrideValueKind =>
+            GetProviderOverrideDescriptor(SelectedProviderOverrideKey)?.ValueKind ?? ProviderOverrideValueKind.None;
+
         public bool IsProviderOverrideValueVisible =>
             IsProviderOverrideProviderSelected &&
-            !string.Equals(SelectedProviderOverrideKey, "FFXIV", StringComparison.OrdinalIgnoreCase);
+            SelectedProviderOverrideValueKind != ProviderOverrideValueKind.None;
+
+        public bool IsProviderOverrideTextVisible =>
+            IsProviderOverrideProviderSelected &&
+            SelectedProviderOverrideValueKind == ProviderOverrideValueKind.Text;
+
+        public bool IsProviderOverrideChoiceVisible =>
+            IsProviderOverrideProviderSelected &&
+            SelectedProviderOverrideValueKind == ProviderOverrideValueKind.Choice;
+
+        public IReadOnlyList<ProviderOverrideChoice> ProviderOverrideChoices =>
+            GetProviderOverrideDescriptor(SelectedProviderOverrideKey)?.Choices ?? Array.Empty<ProviderOverrideChoice>();
 
         public string ProviderOverrideInputLabel => GetProviderOverrideInputLabel(SelectedProviderOverrideKey);
 
@@ -325,25 +342,29 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 var providerName = GetProviderOverrideDisplayName(_providerOverrideKey);
-                if (ProviderOverrideUsesOptionalValue(_providerOverrideKey) &&
-                    string.IsNullOrWhiteSpace(ProviderOverrideValue))
-                {
-                    if (string.Equals(_providerOverrideKey, "FFXIV", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return string.Format(
-                            L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusNoValue", "Override set: {0}"),
-                            providerName);
-                    }
+                var descriptor = GetProviderOverrideDescriptor(_providerOverrideKey);
 
+                if (descriptor != null &&
+                    descriptor.ValueKind == ProviderOverrideValueKind.None)
+                {
+                    return string.Format(
+                        L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusNoValue", "Override set: {0}"),
+                        providerName);
+                }
+
+                if (string.IsNullOrWhiteSpace(ProviderOverrideValue) &&
+                    (descriptor?.ValueOptional ?? false))
+                {
                     return string.Format(
                         L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusAuto", "Override set: {0} (auto-detect)"),
                         providerName);
                 }
 
+                var valueDisplay = descriptor?.GetValueDisplay(ProviderOverrideValue) ?? ProviderOverrideValue;
                 return string.Format(
                     L("LOCPlayAch_ManageAchievements_Overrides_ProviderStatusValue", "Override set: {0} - {1}"),
                     providerName,
-                    ProviderOverrideValue);
+                    valueDisplay);
             }
         }
 
@@ -1385,6 +1406,9 @@ namespace PlayniteAchievements.ViewModels
         {
             OnPropertyChanged(nameof(IsProviderOverrideProviderSelected));
             OnPropertyChanged(nameof(IsProviderOverrideValueVisible));
+            OnPropertyChanged(nameof(IsProviderOverrideTextVisible));
+            OnPropertyChanged(nameof(IsProviderOverrideChoiceVisible));
+            OnPropertyChanged(nameof(ProviderOverrideChoices));
             OnPropertyChanged(nameof(ProviderOverrideInputLabel));
             OnPropertyChanged(nameof(ProviderOverrideStatusText));
             RaiseCommandStates();
@@ -1402,153 +1426,69 @@ namespace PlayniteAchievements.ViewModels
             validationMessageFallback = null;
 
             var normalizedKey = NormalizeProviderOverrideSelection(providerKey);
-            var trimmedValue = (value ?? string.Empty).Trim();
-            switch (normalizedKey)
+            var descriptor = GetProviderOverrideDescriptor(normalizedKey);
+            if (descriptor == null)
             {
-                case "Steam":
-                    if (!int.TryParse(trimmedValue, out var steamAppId) || steamAppId <= 0)
-                    {
-                        validationMessageKey = "LOCPlayAch_Menu_SteamAppId_InvalidId";
-                        validationMessageFallback = "Please enter a valid positive integer Steam AppID.";
-                        return false;
-                    }
-
-                    providerOverride = new ProviderOverrideData
-                    {
-                        ProviderKey = normalizedKey,
-                        Value = steamAppId.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                    };
-                    return true;
-
-                case "RetroAchievements":
-                    if (!int.TryParse(trimmedValue, out var raGameId) || raGameId <= 0)
-                    {
-                        validationMessageKey = "LOCPlayAch_Menu_RaGameId_InvalidId";
-                        validationMessageFallback = "Please enter a valid positive integer game ID.";
-                        return false;
-                    }
-
-                    providerOverride = new ProviderOverrideData
-                    {
-                        ProviderKey = normalizedKey,
-                        Value = raGameId.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                    };
-                    return true;
-
-                case "Xenia":
-                    if (!XeniaTitleIdHelper.TryNormalize(trimmedValue, out var xeniaTitleId))
-                    {
-                        validationMessageKey = "LOCPlayAch_Menu_XeniaTitleId_InvalidId";
-                        validationMessageFallback = "Please enter a valid 8-character hexadecimal Xenia TitleID.";
-                        return false;
-                    }
-
-                    providerOverride = new ProviderOverrideData
-                    {
-                        ProviderKey = normalizedKey,
-                        Value = xeniaTitleId
-                    };
-                    return true;
-
-                case "ShadPS4":
-                    if (!ShadPS4MatchIdHelper.TryNormalize(trimmedValue, out var shadMatchId))
-                    {
-                        validationMessageKey = "LOCPlayAch_Menu_ShadPS4MatchId_InvalidId";
-                        validationMessageFallback = "Please enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00.";
-                        return false;
-                    }
-
-                    providerOverride = new ProviderOverrideData
-                    {
-                        ProviderKey = normalizedKey,
-                        Value = shadMatchId
-                    };
-                    return true;
-
-                case "RPCS3":
-                    if (!Rpcs3MatchIdHelper.TryNormalize(trimmedValue, out var rpcs3MatchId))
-                    {
-                        validationMessageKey = "LOCPlayAch_Menu_Rpcs3MatchId_InvalidId";
-                        validationMessageFallback = "Please enter a valid RPCS3 trophy NP Comm ID such as NPWR12345_00.";
-                        return false;
-                    }
-
-                    providerOverride = new ProviderOverrideData
-                    {
-                        ProviderKey = normalizedKey,
-                        Value = rpcs3MatchId
-                    };
-                    return true;
-
-                case "Exophase":
-                    providerOverride = new ProviderOverrideData
-                    {
-                        ProviderKey = normalizedKey,
-                        Value = string.IsNullOrWhiteSpace(trimmedValue) ? null : trimmedValue
-                    };
-                    return true;
-
-                case "FFXIV":
-                    providerOverride = new ProviderOverrideData
-                    {
-                        ProviderKey = normalizedKey,
-                        Value = null
-                    };
-                    return true;
-
-                default:
-                    validationMessageKey = "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
-                    validationMessageFallback = "Please select a provider override.";
-                    return false;
+                validationMessageKey = "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
+                validationMessageFallback = "Please select a provider override.";
+                return false;
             }
+
+            var result = descriptor.Validate(value);
+            if (!result.IsValid)
+            {
+                validationMessageKey = result.ErrorMessageKey ?? "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalid";
+                validationMessageFallback = result.ErrorMessageFallback ?? "Please select a provider override.";
+                return false;
+            }
+
+            providerOverride = new ProviderOverrideData
+            {
+                ProviderKey = normalizedKey,
+                Value = result.NormalizedValue
+            };
+            return true;
         }
 
         private IReadOnlyList<ProviderOverrideOption> BuildProviderOverrideOptions()
         {
-            return new List<ProviderOverrideOption>
+            var options = new List<ProviderOverrideOption>
             {
                 new ProviderOverrideOption
                 {
                     ProviderKey = ProviderOverrideNoneKey,
-                    DisplayName = L("LOCPlayAch_Common_None", "None")
-                },
-                new ProviderOverrideOption
-                {
-                    ProviderKey = "Steam",
-                    DisplayName = ProviderRegistry.GetLocalizedName("Steam")
-                },
-                new ProviderOverrideOption
-                {
-                    ProviderKey = "RetroAchievements",
-                    DisplayName = ProviderRegistry.GetLocalizedName("RetroAchievements")
-                },
-                new ProviderOverrideOption
-                {
-                    ProviderKey = "ShadPS4",
-                    DisplayName = ProviderRegistry.GetLocalizedName("ShadPS4")
-                },
-                new ProviderOverrideOption
-                {
-                    ProviderKey = "RPCS3",
-                    DisplayName = ProviderRegistry.GetLocalizedName("RPCS3")
-                },
-                new ProviderOverrideOption
-                {
-                    ProviderKey = "Xenia",
-                    DisplayName = ProviderRegistry.GetLocalizedName("Xenia")
-                },
-                new ProviderOverrideOption
-                {
-                    ProviderKey = "FFXIV",
-                    DisplayName = ProviderRegistry.GetLocalizedName("FFXIV")
-                },
-                new ProviderOverrideOption
-                {
-                    ProviderKey = "Exophase",
-                    DisplayName = ProviderRegistry.GetLocalizedName("Exophase")
+                    DisplayName = L("LOCPlayAch_Common_None", "None"),
+                    Descriptor = null
                 }
             };
+
+            var providers = ProviderRegistry.Instance?.GetAllProviders() ?? Array.Empty<IDataProvider>();
+            foreach (var provider in providers)
+            {
+                if (provider is IProviderOverride overrideProvider &&
+                    overrideProvider.OverrideDescriptor != null)
+                {
+                    options.Add(new ProviderOverrideOption
+                    {
+                        ProviderKey = provider.ProviderKey,
+                        DisplayName = ProviderRegistry.GetLocalizedName(provider.ProviderKey),
+                        Descriptor = overrideProvider.OverrideDescriptor
+                    });
+                }
+            }
+
+            return options;
         }
+
+        private ProviderOverrideOption FindProviderOverrideOption(string providerKey)
+        {
+            var normalized = (providerKey ?? string.Empty).Trim();
+            return ProviderOverrideOptions?.FirstOrDefault(option =>
+                string.Equals(option.ProviderKey, normalized, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private ProviderOverrideDescriptor GetProviderOverrideDescriptor(string providerKey)
+            => FindProviderOverrideOption(providerKey)?.Descriptor;
 
         private string GetProviderOverrideDisplayName(string providerKey)
         {
@@ -1563,28 +1503,16 @@ namespace PlayniteAchievements.ViewModels
 
         private string GetProviderOverrideInputLabel(string providerKey)
         {
-            switch (NormalizeProviderOverrideSelection(providerKey))
+            var descriptor = GetProviderOverrideDescriptor(NormalizeProviderOverrideSelection(providerKey));
+            if (descriptor == null || string.IsNullOrWhiteSpace(descriptor.InputLabelKey))
             {
-                case "Steam":
-                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Steam", "Steam AppID");
-                case "RetroAchievements":
-                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RetroAchievements", "RetroAchievements Game ID");
-                case "ShadPS4":
-                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_ShadPS4", "ShadPS4 Match ID");
-                case "RPCS3":
-                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3", "RPCS3 NP Comm ID");
-                case "Xenia":
-                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia", "Xenia TitleID");
-                case "FFXIV":
-                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_FFXIV", "No value required");
-                case "Exophase":
-                    return L("LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Exophase", "Exophase game ID or slug");
-                default:
-                    return string.Empty;
+                return string.Empty;
             }
+
+            return L(descriptor.InputLabelKey, descriptor.InputLabelFallback ?? descriptor.InputLabelKey);
         }
 
-        private static string NormalizeProviderOverrideSelection(string providerKey)
+        private string NormalizeProviderOverrideSelection(string providerKey)
         {
             var normalized = (providerKey ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(normalized) ||
@@ -1593,48 +1521,14 @@ namespace PlayniteAchievements.ViewModels
                 return ProviderOverrideNoneKey;
             }
 
-            if (string.Equals(normalized, "Steam", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Steam";
-            }
-
-            if (string.Equals(normalized, "RetroAchievements", StringComparison.OrdinalIgnoreCase))
-            {
-                return "RetroAchievements";
-            }
-
-            if (string.Equals(normalized, "ShadPS4", StringComparison.OrdinalIgnoreCase))
-            {
-                return "ShadPS4";
-            }
-
-            if (string.Equals(normalized, "RPCS3", StringComparison.OrdinalIgnoreCase))
-            {
-                return "RPCS3";
-            }
-
-            if (string.Equals(normalized, "Xenia", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Xenia";
-            }
-
-            if (string.Equals(normalized, "FFXIV", StringComparison.OrdinalIgnoreCase))
-            {
-                return "FFXIV";
-            }
-
-            if (string.Equals(normalized, "Exophase", StringComparison.OrdinalIgnoreCase))
-            {
-                return "Exophase";
-            }
-
-            return ProviderOverrideNoneKey;
+            return FindProviderOverrideOption(normalized)?.ProviderKey ?? ProviderOverrideNoneKey;
         }
 
-        private static bool ProviderOverrideUsesOptionalValue(string providerKey)
+        private bool ProviderOverrideUsesOptionalValue(string providerKey)
         {
-            return string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(providerKey, "FFXIV", StringComparison.OrdinalIgnoreCase);
+            var descriptor = GetProviderOverrideDescriptor(NormalizeProviderOverrideSelection(providerKey));
+            return descriptor != null &&
+                   (descriptor.ValueKind == ProviderOverrideValueKind.None || descriptor.ValueOptional);
         }
 
         private static string L(string key, string fallback)
