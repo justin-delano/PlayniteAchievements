@@ -851,6 +851,9 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_TimeRange_3M">3M</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_7D">7D</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_All">All</sys:String>
+    <sys:String x:Key="LOCPlayAch_Playtime_HoursMinutes">{0}h{1}m</sys:String>
+    <sys:String x:Key="LOCPlayAch_Playtime_Hours">{0}h</sys:String>
+    <sys:String x:Key="LOCPlayAch_Playtime_Minutes">{0}m</sys:String>
 
     <!-- ================================================================= -->
     <!-- 17 Errors and Notifications -->

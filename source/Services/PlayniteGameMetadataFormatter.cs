@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using Playnite.SDK;
 using Playnite.SDK.Models;
 
 namespace PlayniteAchievements.Services
@@ -63,11 +65,35 @@ namespace PlayniteAchievements.Services
             if (hours > 0)
             {
                 return minutes > 0
-                    ? $"{hours}h{minutes}m"
-                    : $"{hours}h";
+                    ? string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_HoursMinutes", "{0}h{1}m"), hours, minutes)
+                    : string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours", "{0}h"), hours);
             }
 
-            return $"{totalMinutes}m";
+            return string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Minutes", "{0}m"), totalMinutes);
+        }
+
+        private static string L(string key, string fallback)
+        {
+            string value;
+            try
+            {
+                value = ResourceProvider.GetString(key);
+            }
+            catch (Exception)
+            {
+                return fallback;
+            }
+
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return fallback;
+            }
+
+            return value.Length > 4 &&
+                value.StartsWith("<!", StringComparison.Ordinal) &&
+                value.EndsWith("!>", StringComparison.Ordinal)
+                ? fallback
+                : value;
         }
 
         public static string BuildOverviewMetadataText(
