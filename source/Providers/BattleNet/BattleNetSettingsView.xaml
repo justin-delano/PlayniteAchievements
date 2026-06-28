@@ -333,7 +333,7 @@
                 </StackPanel>
             </Border>
 
-                <Border Style="{StaticResource SectionBorderStyle}"
+            <Border Style="{StaticResource SectionBorderStyle}"
                     IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Section}"
@@ -355,111 +355,34 @@
                             </Style>
                         </Border.Style>
 
-                        <StackPanel>
-                            <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                                <TextBlock Grid.Column="0">
-                                    <TextBlock.RenderTransform>
-                                        <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
-                                    </TextBlock.RenderTransform>
-                                    <TextBlock.Style>
-                                        <Style TargetType="TextBlock" BasedOn="{StaticResource BattleNetStatusIconStyle}">
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Sc2Configured, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                             Value="True">
-                                                    <Setter Property="Text" Value="&#xE73E;"/>
-                                                    <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </TextBlock.Style>
-                                </TextBlock>
+                            <TextBlock Grid.Column="0">
+                                <TextBlock.RenderTransform>
+                                    <ScaleTransform ScaleX="1.5" ScaleY="1.5"/>
+                                </TextBlock.RenderTransform>
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BattleNetStatusIconStyle}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Sc2Configured, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                         Value="True">
+                                                <Setter Property="Text" Value="&#xE73E;"/>
+                                                <Setter Property="Foreground" Value="{StaticResource PlayAch.Brush.AuthSuccess}"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
 
-                                <TextBlock Grid.Column="1"
-                                           Text="{Binding Sc2Status, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                           VerticalAlignment="Center"
-                                           TextWrapping="Wrap"/>
-                            </Grid>
-
-                            <Border BorderBrush="{DynamicResource PopupBorderBrush}"
-                                    BorderThickness="0,1,0,0"
-                                    Padding="0,12,0,0">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="140"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <TextBlock Grid.Row="0"
-                                               Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_BattleNet_ClientId}"
-                                               Style="{StaticResource BattleNetFieldLabelStyle}"/>
-                                    <TextBox Grid.Row="0"
-                                             Grid.Column="1"
-                                             Text="{Binding Settings.BattleNetClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                                             Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-
-                                    <TextBlock Grid.Row="1"
-                                               Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_BattleNet_ClientSecret}"
-                                               Style="{StaticResource BattleNetFieldLabelStyle}"/>
-                                    <PasswordBox Grid.Row="1"
-                                                 Grid.Column="1"
-                                                 x:Name="ClientSecretBox"
-                                                 PasswordChanged="ClientSecret_Changed"
-                                                 FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-
-                                    <TextBlock Grid.Row="2"
-                                               Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Region}"
-                                               Style="{StaticResource BattleNetFieldLabelStyle}"/>
-                                    <TextBox Grid.Row="2"
-                                             Grid.Column="1"
-                                             Text="{Binding Settings.Sc2RegionId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                                             Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-
-                                    <TextBlock Grid.Row="3"
-                                               Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Realm}"
-                                               Style="{StaticResource BattleNetFieldLabelStyle}"/>
-                                    <TextBox Grid.Row="3"
-                                             Grid.Column="1"
-                                             Text="{Binding Settings.Sc2RealmId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                                             Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-
-                                    <TextBlock Grid.Row="4"
-                                               Grid.Column="0"
-                                               Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Profile}"
-                                               Style="{StaticResource BattleNetFieldLabelStyle}"
-                                               Margin="{StaticResource PlayAch.Thickness.Right.Md}"/>
-                                    <TextBox Grid.Row="4"
-                                             Grid.Column="1"
-                                             Text="{Binding Settings.Sc2ProfileId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                             FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
-                                </Grid>
-                            </Border>
-
-                            <Button Content="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Discover}"
-                                    Click="Sc2Discover_Click"
-                                    Style="{StaticResource AuthActionButtonStyle}"
-                                    HorizontalAlignment="Left"
-                                    Margin="0,12,0,0"/>
-                        </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Sc2Status, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="Wrap"/>
+                        </Grid>
                     </Border>
                 </StackPanel>
             </Border>
