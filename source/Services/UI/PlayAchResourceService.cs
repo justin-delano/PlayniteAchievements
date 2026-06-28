@@ -110,7 +110,7 @@ namespace PlayniteAchievements.Services.UI
             Alias("PlayAch.Brush.Chart.Separator", "PlayAch.Brush.ControlBorder"),
             Alias("PlayAch.Brush.Progress.Track", "PlayAch.Brush.Surface"),
             Alias("PlayAch.Brush.Progress.Fill", "PlayAch.Brush.Accent", 0xB8),
-            Alias("PlayAch.Brush.Progress.Border", "PlayAch.Brush.Border"),
+            Alias("PlayAch.Brush.Progress.Border", "PlayAch.Brush.Accent", 0xB8),
             Alias("PlayAch.Brush.Chrome.Background", "PlayAch.Brush.ControlSurface", 0x1F),
             Alias("PlayAch.Brush.ScrollBar.Track", "PlayAch.Brush.GridSurface", 0x00),
             Alias("PlayAch.Brush.ScrollBar.Thumb", "PlayAch.Brush.ControlBorder"),
