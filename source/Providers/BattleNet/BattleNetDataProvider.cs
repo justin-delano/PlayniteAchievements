@@ -6,13 +6,25 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
-    public sealed class BattleNetDataProvider : IDataProvider, IDisposable
+    public sealed class BattleNetDataProvider : IDataProvider, IProviderOverride, IDisposable
     {
         internal static readonly Guid BattleNetPluginId = BattleNetGameSupport.BattleNetPluginId;
+
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Choice(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_BattleNet",
+            "Battle.net Title",
+            new[]
+            {
+                new ProviderOverrideChoice(BattleNetGameTitle.Wow.ToString(), "World of Warcraft"),
+                new ProviderOverrideChoice(BattleNetGameTitle.Sc2.ToString(), "StarCraft II")
+            },
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderInvalidChoice",
+            "Please select a valid title for this override.");
 
         private readonly BattleNetApiClient _apiClient;
         private readonly BattleNetSessionManager _sessionManager;
