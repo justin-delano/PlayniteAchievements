@@ -79,19 +79,20 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
-        public void Apply_DerivesMutedChartAndProgressBrushesFromCustomAppearanceBrushes()
+        public void Apply_DerivesChartAndProgressBrushesFromCustomAppearanceBrushes()
         {
             var resources = new ResourceDictionary();
             var overrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase)
             {
                 ["PlayAch.Brush.Surface"] = CreateBrushOverride("#FF101820"),
                 ["PlayAch.Brush.Border"] = CreateBrushOverride("#FF203040"),
+                ["PlayAch.Brush.ControlBorder"] = CreateBrushOverride("#FF304050"),
                 ["PlayAch.Brush.Accent"] = CreateBrushOverride("#FF708090")
             };
 
             PlayAchResourceService.Apply(resources, overrides);
 
-            AssertBrush(resources, "PlayAch.Brush.Chart.Separator", Color.FromArgb(0x80, 0x20, 0x30, 0x40));
+            AssertBrush(resources, "PlayAch.Brush.Chart.Separator", Color.FromRgb(0x30, 0x40, 0x50));
             AssertBrush(resources, "PlayAch.Brush.Progress.Track", Color.FromRgb(0x10, 0x18, 0x20));
             AssertBrush(resources, "PlayAch.Brush.Progress.Fill", Color.FromArgb(0xB8, 0x70, 0x80, 0x90));
             AssertBrush(resources, "PlayAch.Brush.Progress.Border", Color.FromRgb(0x20, 0x30, 0x40));
