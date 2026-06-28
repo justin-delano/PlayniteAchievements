@@ -92,6 +92,9 @@ namespace PlayniteAchievements.Providers.BattleNet
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _logger = logger ?? Logger;
             InitializeComponent();
+            ConnectionLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet"));
         }
 
         public override void Initialize(IProviderSettings settings)
