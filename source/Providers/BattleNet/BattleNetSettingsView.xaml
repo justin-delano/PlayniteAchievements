@@ -334,8 +334,7 @@
             </Border>
 
                 <Border Style="{StaticResource SectionBorderStyle}"
-                    IsEnabled="{Binding Settings.IsEnabled}"
-                    Visibility="Collapsed">
+                    IsEnabled="{Binding Settings.IsEnabled}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_Sc2Section}"
                                Style="{StaticResource SectionHeaderStyle}"/>
