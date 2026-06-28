@@ -30,15 +30,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             set => SetValue(WowConfiguredProperty, value);
         }
 
-        public static readonly DependencyProperty Sc2ConfiguredProperty =
-            DependencyProperty.Register(nameof(Sc2Configured), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
-
-        public bool Sc2Configured
-        {
-            get => (bool)GetValue(Sc2ConfiguredProperty);
-            set => SetValue(Sc2ConfiguredProperty, value);
-        }
-
         public static readonly DependencyProperty WowStatusProperty =
             DependencyProperty.Register(nameof(WowStatus), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
 
@@ -48,15 +39,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             set => SetValue(WowStatusProperty, value);
         }
 
-        public static readonly DependencyProperty Sc2StatusProperty =
-            DependencyProperty.Register(nameof(Sc2Status), typeof(string), typeof(BattleNetSettingsView), new PropertyMetadata(string.Empty));
-
-        public string Sc2Status
-        {
-            get => (string)GetValue(Sc2StatusProperty);
-            set => SetValue(Sc2StatusProperty, value);
-        }
-
         public static readonly DependencyProperty AuthBusyProperty =
             DependencyProperty.Register(nameof(AuthBusy), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
 
@@ -64,15 +46,6 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             get => (bool)GetValue(AuthBusyProperty);
             set => SetValue(AuthBusyProperty, value);
-        }
-
-        public static readonly DependencyProperty IsOAuthAuthenticatedProperty =
-            DependencyProperty.Register(nameof(IsOAuthAuthenticated), typeof(bool), typeof(BattleNetSettingsView), new PropertyMetadata(false));
-
-        public bool IsOAuthAuthenticated
-        {
-            get => (bool)GetValue(IsOAuthAuthenticatedProperty);
-            set => SetValue(IsOAuthAuthenticatedProperty, value);
         }
 
         public static readonly DependencyProperty AuthStatusProperty =
@@ -94,6 +67,9 @@ namespace PlayniteAchievements.Providers.BattleNet
             InitializeComponent();
             ConnectionLabel.Text = string.Format(
                 ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet"));
+            AuthLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderAuth"),
                 ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet"));
         }
 
@@ -124,7 +100,7 @@ namespace PlayniteAchievements.Providers.BattleNet
 
             LoadWowRegions();
             UpdateWowStatus();
-            UpdateSc2Status();
+            SetAuthStatusVisualState(pending: true, success: false);
             AuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
         }
 
@@ -132,11 +108,6 @@ namespace PlayniteAchievements.Providers.BattleNet
         {
             switch (e.PropertyName)
             {
-                case nameof(BattleNetSettings.BattleNetClientId):
-                case nameof(BattleNetSettings.BattleNetClientSecret):
-                case nameof(BattleNetSettings.BattleNetRedirectUri):
-                    UpdateSc2Status();
-                    break;
                 case nameof(BattleNetSettings.WowRegion):
                 case nameof(BattleNetSettings.WowRealmSlug):
                 case nameof(BattleNetSettings.WowCharacter):
@@ -158,19 +129,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             WowStatus = ResourceProvider.GetString(WowConfigured
                 ? "LOCPlayAch_Settings_BattleNet_Status_WowReady"
                 : "LOCPlayAch_Settings_BattleNet_Status_WowIncomplete");
-        }
-
-        private void UpdateSc2Status()
-        {
-            if (_battleNetSettings == null)
-            {
-                return;
-            }
-
-            Sc2Configured = BattleNetGameSupport.HasSc2Prerequisites(_battleNetSettings);
-            Sc2Status = ResourceProvider.GetString(Sc2Configured
-                ? "LOCPlayAch_Settings_BattleNet_Status_Sc2Detected"
-                : "LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete");
         }
 
         private void WowClientSecret_Changed(object sender, RoutedEventArgs e)
@@ -203,9 +161,10 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         private void UpdateAuthStatus(AuthProbeResult result)
         {
-            IsOAuthAuthenticated = result?.IsSuccess ?? false;
-            UpdateSc2Status();
-            if (IsOAuthAuthenticated)
+            var isAuthenticated = result?.IsSuccess ?? false;
+            SetAuthStatusVisualState(pending: false, success: isAuthenticated);
+
+            if (isAuthenticated)
             {
                 var settings = ProviderRegistry.Settings<BattleNetSettings>();
                 var authenticatedText = ResourceProvider.GetString("LOCPlayAch_Auth_Authenticated");
@@ -394,47 +353,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 _battleNetSettings.WowRealmSlug = realm.Slug;
                 UpdateWowStatus();
             }
-        }
-
-        private static string Bool(bool value) => value ? "true" : "false";
-
-        private static string MaskId(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return "<empty>";
-            }
-
-            var trimmed = value.Trim();
-            if (trimmed.Length <= 4)
-            {
-                return "****";
-            }
-
-            return $"{new string('*', Math.Min(8, trimmed.Length - 4))}{trimmed.Substring(trimmed.Length - 4)}";
-        }
-
-        private static string Presence(string value) => string.IsNullOrWhiteSpace(value) ? "missing" : "set";
-
-        private static string SettingsSummary(BattleNetSettings settings)
-        {
-            if (settings == null)
-            {
-                return "<null settings>";
-            }
-
-            return string.Format(
-                "enabled={0}, apiClientId={1}, apiClientSecret={2}, sc2Region={3}, sc2Realm={4}, sc2Profile={5}, wowRegion={6}, wowRealmSlug={7}, wowCharacter={8}, useDataForAzerothForWowRarity={9}",
-                Bool(settings.IsEnabled),
-                Presence(settings.BattleNetClientId),
-                Presence(settings.BattleNetClientSecret),
-                settings.Sc2RegionId,
-                settings.Sc2RealmId,
-                settings.Sc2ProfileId > 0 ? MaskId(settings.Sc2ProfileId.ToString()) : "<none>",
-                string.IsNullOrWhiteSpace(settings.WowRegion) ? "<none>" : settings.WowRegion,
-                string.IsNullOrWhiteSpace(settings.WowRealmSlug) ? "<none>" : settings.WowRealmSlug,
-                Presence(settings.WowCharacter),
-                Bool(settings.UseDataForAzerothForWowRarity));
         }
     }
 }
