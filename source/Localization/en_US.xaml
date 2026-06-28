@@ -478,7 +478,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowRegion">Region</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowRealm">Realm</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_WowCharacter">Character</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Sc2Section">StarCraft II</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientId">Client ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_ClientSecret">Client Secret</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_RedirectUri">Redirect URI</sys:String>
@@ -493,8 +492,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_WowReady">Character ready</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_WowIncomplete">Missing character setup</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_MissingOAuthSetup">Missing Battle.net client credentials or redirect URI</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_Sc2Detected">StarCraft II ready</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete">Missing StarCraft II setup</sys:String>
 
     <!-- Provider: Epic -->
     <sys:String x:Key="LOCPlayAch_Settings_Epic_AltAuthCodePrompt">Paste the authorizationCode value here:</sys:String>
