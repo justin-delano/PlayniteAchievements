@@ -528,6 +528,14 @@ namespace PlayniteAchievements.Providers.PSN
 
         private async Task<string> ResolveNpCommunicationIdAsync(HttpClient http, Game game, CancellationToken cancel)
         {
+            // A per-game override supplies the NP Communication ID directly, bypassing GameId lookup.
+            if (game != null &&
+                GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "PSN", out var overrideCommId) &&
+                PsnNpCommIdHelper.TryNormalize(overrideCommId, out var normalizedOverride))
+            {
+                return normalizedOverride;
+            }
+
             var raw = game?.GameId?.Trim();
             if (string.IsNullOrWhiteSpace(raw))
             {

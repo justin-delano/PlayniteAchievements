@@ -1,7 +1,9 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -11,8 +13,17 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.PSN
 {
-    internal sealed class PsnDataProvider : IDataProvider
+    internal sealed class PsnDataProvider : IDataProvider, IProviderOverride
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_PSN",
+            "PSN NP Communication ID",
+            raw => PsnNpCommIdHelper.TryNormalize(raw, out var commId)
+                ? ProviderOverrideValidation.Valid(commId)
+                : ProviderOverrideValidation.Invalid(
+                    "LOCPlayAch_Menu_PsnNpCommId_InvalidId",
+                    "Please enter a valid PSN NP Communication ID such as NPWR12345_00."));
+
         private readonly PsnSessionManager _sessionManager;
         private readonly PsnScanner _scanner;
         private PsnSettings _providerSettings;
@@ -74,7 +85,7 @@ namespace PlayniteAchievements.Providers.PSN
                 return true;
             }
 
-            return false;
+            return GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "PSN", out _);
         }
 
         public Task<RebuildPayload> RefreshAsync(

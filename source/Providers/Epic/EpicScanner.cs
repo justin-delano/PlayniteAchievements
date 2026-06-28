@@ -62,6 +62,13 @@ namespace PlayniteAchievements.Providers.Epic
                 async (game, token) =>
                 {
                     var gameId = game?.GameId?.Trim();
+                    if (game != null &&
+                        GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "Epic", out var overrideId) &&
+                        !string.IsNullOrWhiteSpace(overrideId))
+                    {
+                        gameId = overrideId.Trim();
+                    }
+
                     if (string.IsNullOrWhiteSpace(gameId))
                     {
                         return ProviderRefreshExecutor.ProviderGameResult.Skipped();

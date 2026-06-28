@@ -1,7 +1,9 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -16,8 +18,13 @@ namespace PlayniteAchievements.Providers.GOG
     /// IDataProvider implementation for GOG achievements.
     /// Uses WebView-based authentication and GOG gameplay API.
     /// </summary>
-    public sealed class GogDataProvider : IDataProvider, IAchievementPageLinkProvider, IDisposable
+    public sealed class GogDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_GOG",
+            "GOG Product ID",
+            ProviderOverrideValidators.RequiredText);
+
         internal static readonly Guid GogPluginId = Guid.Parse("AEBE8B7C-6DC3-4A66-AF31-E7375C6B5E9E");
         internal static readonly Guid GogOSSPluginId = Guid.Parse("03689811-3F33-4DFB-A121-2EE168FB9A5C");
 
@@ -102,7 +109,10 @@ namespace PlayniteAchievements.Providers.GOG
 
         private static bool IsGogCapable(Game game)
         {
-            return game != null && (game.PluginId == GogPluginId || game.PluginId == GogOSSPluginId);
+            return game != null &&
+                   (game.PluginId == GogPluginId ||
+                    game.PluginId == GogOSSPluginId ||
+                    GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "GOG", out _));
         }
 
         internal static bool TryGetGogSlug(string linkUrl, out string slug)
