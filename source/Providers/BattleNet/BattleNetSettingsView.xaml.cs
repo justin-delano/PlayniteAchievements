@@ -116,7 +116,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 }
 
                 _battleNetSettings.PropertyChanged += BattleNetSettings_PropertyChanged;
-                ClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
                 WowClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
             }
 
@@ -133,9 +132,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 case nameof(BattleNetSettings.BattleNetClientId):
                 case nameof(BattleNetSettings.BattleNetClientSecret):
                 case nameof(BattleNetSettings.BattleNetRedirectUri):
-                case nameof(BattleNetSettings.Sc2RegionId):
-                case nameof(BattleNetSettings.Sc2RealmId):
-                case nameof(BattleNetSettings.Sc2ProfileId):
                     UpdateSc2Status();
                     break;
                 case nameof(BattleNetSettings.WowRegion):
@@ -168,24 +164,10 @@ namespace PlayniteAchievements.Providers.BattleNet
                 return;
             }
 
-            Sc2Configured = BattleNetGameSupport.HasConfiguredSc2(_battleNetSettings);
+            Sc2Configured = BattleNetGameSupport.HasSc2Prerequisites(_battleNetSettings);
             Sc2Status = ResourceProvider.GetString(Sc2Configured
                 ? "LOCPlayAch_Settings_BattleNet_Status_Sc2Detected"
                 : "LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete");
-        }
-
-        private void ClientSecret_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_battleNetSettings == null)
-            {
-                return;
-            }
-
-            _battleNetSettings.BattleNetClientSecret = ClientSecretBox.Password;
-            if (!string.Equals(WowClientSecretBox.Password, ClientSecretBox.Password, StringComparison.Ordinal))
-            {
-                WowClientSecretBox.Password = ClientSecretBox.Password;
-            }
         }
 
         private void WowClientSecret_Changed(object sender, RoutedEventArgs e)
@@ -196,10 +178,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             _battleNetSettings.BattleNetClientSecret = WowClientSecretBox.Password;
-            if (!string.Equals(ClientSecretBox.Password, WowClientSecretBox.Password, StringComparison.Ordinal))
-            {
-                ClientSecretBox.Password = WowClientSecretBox.Password;
-            }
         }
 
         public async Task RefreshAuthStatusAsync()
@@ -223,6 +201,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private void UpdateAuthStatus(AuthProbeResult result)
         {
             IsOAuthAuthenticated = result?.IsSuccess ?? false;
+            UpdateSc2Status();
             if (IsOAuthAuthenticated)
             {
                 var settings = ProviderRegistry.Settings<BattleNetSettings>();
@@ -300,65 +279,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             catch (Exception ex)
             {
                 Logger.Error(ex, "Battle.net logout failed");
-            }
-            finally
-            {
-                SetAuthBusy(false);
-            }
-        }
-
-        private async void Sc2Discover_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                SetAuthBusy(true);
-                PersistCurrentSettingsForAuth();
-
-                var settings = ProviderRegistry.Settings<BattleNetSettings>();
-                if (string.IsNullOrWhiteSpace(settings.BattleNetAccountId) ||
-                    string.IsNullOrWhiteSpace(settings.BattleNetAccessToken))
-                {
-                    Sc2Status = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Sc2DiscoverNeedsAuth");
-                    return;
-                }
-
-                var apiRegion = string.IsNullOrWhiteSpace(settings.WowRegion) ? "us" : settings.WowRegion;
-                var profiles = await _apiClient.GetSc2PlayerProfilesAsync(
-                    apiRegion,
-                    settings.BattleNetAccountId,
-                    settings.BattleNetAccessToken,
-                    CancellationToken.None);
-
-                if (profiles == null || profiles.Count == 0)
-                {
-                    Sc2Status = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Status_NoSc2Profile");
-                    return;
-                }
-
-                var chosen = profiles[0];
-                if (profiles.Count > 1)
-                {
-                    _logger.Info($"[BattleNet/SC2] Discovered {profiles.Count} SC2 profiles; selecting first (region={chosen.RegionId}, realm={chosen.RealmId}). Remaining profiles ignored.");
-                }
-
-                if (_battleNetSettings != null)
-                {
-                    if (chosen.RegionId > 0)
-                    {
-                        _battleNetSettings.Sc2RegionId = chosen.RegionId;
-                    }
-                    if (chosen.RealmId > 0)
-                    {
-                        _battleNetSettings.Sc2RealmId = chosen.RealmId;
-                    }
-                    _battleNetSettings.Sc2ProfileId = chosen.ProfileId;
-                    UpdateSc2Status();
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Battle.net SC2 profile discovery failed");
-                Sc2Status = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Sc2DiscoverFailed");
             }
             finally
             {
