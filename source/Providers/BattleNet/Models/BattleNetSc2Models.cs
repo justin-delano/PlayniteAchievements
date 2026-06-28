@@ -33,6 +33,22 @@ namespace PlayniteAchievements.Providers.BattleNet.Models
     }
 
     [DataContract]
+    public sealed class Sc2PlayerProfile
+    {
+        [DataMember(Name = "regionId")]
+        public int RegionId { get; set; }
+
+        [DataMember(Name = "realmId")]
+        public int RealmId { get; set; }
+
+        [DataMember(Name = "profileId")]
+        public int ProfileId { get; set; }
+
+        [DataMember(Name = "displayName")]
+        public string DisplayName { get; set; }
+    }
+
+    [DataContract]
     public sealed class Sc2ProfileResponse
     {
         [DataMember(Name = "summary")]
