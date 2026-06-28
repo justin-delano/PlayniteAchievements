@@ -7,8 +7,8 @@ namespace PlayniteAchievements.Providers.BattleNet
     internal static class BattleNetGameSupport
     {
         public static readonly Guid BattleNetPluginId = Guid.Parse("E3C26A3D-D695-4CB7-A769-5FF7612C7EDD");
-        // Temporarily disabled until SC2 support is validated.
-        internal const bool IsSc2Enabled = false;
+        // Master switch for StarCraft II support; set to false to disable it everywhere.
+        internal const bool IsSc2Enabled = true;
 
         public static bool IsSupported(Game game, BattleNetSettings settings)
         {
@@ -17,7 +17,7 @@ namespace PlayniteAchievements.Providers.BattleNet
                 return false;
             }
 
-            return IsWowGame(game) || (IsSc2Enabled && IsSc2Game(game) && HasConfiguredSc2(settings));
+            return IsWowGame(game) || (IsSc2Enabled && IsSc2Game(game) && HasSc2Prerequisites(settings));
         }
 
         public static bool IsWowGame(Game game)
@@ -37,12 +37,27 @@ namespace PlayniteAchievements.Providers.BattleNet
                  name.IndexOf("starcraft 2", StringComparison.OrdinalIgnoreCase) >= 0);
         }
 
+        // SC2 can refresh once credentials plus either a discovered profile or an OAuth session (used to
+        // discover the profile during refresh) are present.
+        public static bool HasSc2Prerequisites(BattleNetSettings settings)
+        {
+            return HasApiCredentials(settings) &&
+                (HasConfiguredSc2(settings) || HasOAuthSession(settings));
+        }
+
         public static bool HasConfiguredSc2(BattleNetSettings settings)
         {
             return HasApiCredentials(settings) &&
                 settings.Sc2RegionId > 0 &&
                 settings.Sc2RealmId > 0 &&
                 settings.Sc2ProfileId > 0;
+        }
+
+        public static bool HasOAuthSession(BattleNetSettings settings)
+        {
+            return settings != null &&
+                !string.IsNullOrWhiteSpace(settings.BattleNetAccountId) &&
+                !string.IsNullOrWhiteSpace(settings.BattleNetAccessToken);
         }
 
         public static bool HasApiCredentials(BattleNetSettings settings)

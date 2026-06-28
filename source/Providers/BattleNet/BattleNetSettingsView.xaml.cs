@@ -92,6 +92,9 @@ namespace PlayniteAchievements.Providers.BattleNet
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _logger = logger ?? Logger;
             InitializeComponent();
+            ConnectionLabel.Text = string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Settings_ProviderConnection"),
+                ResourceProvider.GetString("LOCPlayAch_Provider_BattleNet"));
         }
 
         public override void Initialize(IProviderSettings settings)
@@ -116,7 +119,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 }
 
                 _battleNetSettings.PropertyChanged += BattleNetSettings_PropertyChanged;
-                ClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
                 WowClientSecretBox.Password = _battleNetSettings.BattleNetClientSecret ?? string.Empty;
             }
 
@@ -133,9 +135,6 @@ namespace PlayniteAchievements.Providers.BattleNet
                 case nameof(BattleNetSettings.BattleNetClientId):
                 case nameof(BattleNetSettings.BattleNetClientSecret):
                 case nameof(BattleNetSettings.BattleNetRedirectUri):
-                case nameof(BattleNetSettings.Sc2RegionId):
-                case nameof(BattleNetSettings.Sc2RealmId):
-                case nameof(BattleNetSettings.Sc2ProfileId):
                     UpdateSc2Status();
                     break;
                 case nameof(BattleNetSettings.WowRegion):
@@ -168,24 +167,10 @@ namespace PlayniteAchievements.Providers.BattleNet
                 return;
             }
 
-            Sc2Configured = BattleNetGameSupport.HasConfiguredSc2(_battleNetSettings);
+            Sc2Configured = BattleNetGameSupport.HasSc2Prerequisites(_battleNetSettings);
             Sc2Status = ResourceProvider.GetString(Sc2Configured
                 ? "LOCPlayAch_Settings_BattleNet_Status_Sc2Detected"
                 : "LOCPlayAch_Settings_BattleNet_Status_Sc2Incomplete");
-        }
-
-        private void ClientSecret_Changed(object sender, RoutedEventArgs e)
-        {
-            if (_battleNetSettings == null)
-            {
-                return;
-            }
-
-            _battleNetSettings.BattleNetClientSecret = ClientSecretBox.Password;
-            if (!string.Equals(WowClientSecretBox.Password, ClientSecretBox.Password, StringComparison.Ordinal))
-            {
-                WowClientSecretBox.Password = ClientSecretBox.Password;
-            }
         }
 
         private void WowClientSecret_Changed(object sender, RoutedEventArgs e)
@@ -196,10 +181,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
 
             _battleNetSettings.BattleNetClientSecret = WowClientSecretBox.Password;
-            if (!string.Equals(ClientSecretBox.Password, WowClientSecretBox.Password, StringComparison.Ordinal))
-            {
-                ClientSecretBox.Password = WowClientSecretBox.Password;
-            }
         }
 
         public async Task RefreshAuthStatusAsync()
@@ -223,6 +204,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private void UpdateAuthStatus(AuthProbeResult result)
         {
             IsOAuthAuthenticated = result?.IsSuccess ?? false;
+            UpdateSc2Status();
             if (IsOAuthAuthenticated)
             {
                 var settings = ProviderRegistry.Settings<BattleNetSettings>();
