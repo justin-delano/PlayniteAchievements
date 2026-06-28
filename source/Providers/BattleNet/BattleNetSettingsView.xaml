@@ -179,15 +179,6 @@
                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_WowSection}"
                                Style="{StaticResource SectionHeaderStyle}"/>
 
-                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity}"
-                              IsChecked="{Binding Settings.UseDataForAzerothForWowRarity, Mode=TwoWay}"
-                              FontWeight="SemiBold"
-                              FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity_Help}"
-                               Style="{StaticResource MutedTextStyle}"
-                               Margin="24,8,0,0"
-                               TextWrapping="Wrap"/>
-
                     <Border Background="{DynamicResource PlayAch.Brush.Panel}"
                             CornerRadius="8"
                             Padding="16"
@@ -289,6 +280,16 @@
                             </Grid>
                         </StackPanel>
                     </Border>
+
+                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity}"
+                              IsChecked="{Binding Settings.UseDataForAzerothForWowRarity, Mode=TwoWay}"
+                              FontWeight="SemiBold"
+                              FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                              Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity_Help}"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="24,8,0,0"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
         </StackPanel>
