@@ -161,7 +161,7 @@ namespace PlayniteAchievements.Services.UI
             var view = new AlphaColorPickerDialog();
             view.SetInitialColor(currentValue);
             var window = PlayniteUiProvider.CreateExtensionWindow(
-                "Pick color",
+                ResourceProvider.GetString("LOCPlayAch_ColorPicker_WindowTitle"),
                 view,
                 new WindowOptions
                 {

@@ -17,8 +17,8 @@ namespace PlayniteAchievements
 {
     public partial class PlayniteAchievementsPlugin
     {
-        private const string PluginGameMenuSection = "Playnite Achievements";
-        private const string PluginMainMenuSection = "@Playnite Achievements";
+        private static string PluginGameMenuSection => ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
+        private static string PluginMainMenuSection => "@" + ResourceProvider.GetString("LOCPlayAch_Title_PluginName");
         private int _fullscreenMenuGlobalProgressActive;
 
         private bool IsRefreshInProgress()

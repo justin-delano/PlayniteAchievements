@@ -143,7 +143,7 @@ namespace PlayniteAchievements.ViewModels
                             {
                                 TimelineSeries.Add(new ColumnSeries
                                 {
-                                    Title = "Achievements",
+                                    Title = ResourceProvider.GetString("LOCPlayAch_Achievements"),
                                     Values = new ChartValues<int>()
                                 });
                             }

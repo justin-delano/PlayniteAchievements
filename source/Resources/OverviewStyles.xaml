@@ -254,19 +254,19 @@
         <Grid VerticalAlignment="Center">
             <StackPanel Style="{StaticResource OverviewProgressMetaRowStyle}"
                         Visibility="{Binding HasTrophyTypes, Converter={StaticResource InverseBoolToVis}}">
-                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}" ToolTip="Ultra Rare">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UltraRareCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Rarity_UltraRare}">
                     <Image Source="{DynamicResource BadgeRarityUltraRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                     <TextBlock Text="{Binding UltraRareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
                 </StackPanel>
-                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}" ToolTip="Rare">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding RareCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Rarity_Rare}">
                     <Image Source="{DynamicResource BadgeRarityRare}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                     <TextBlock Text="{Binding RareCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
                 </StackPanel>
-                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}" ToolTip="Uncommon">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding UncommonCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Rarity_Uncommon}">
                     <Image Source="{DynamicResource BadgeRarityUncommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                     <TextBlock Text="{Binding UncommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
                 </StackPanel>
-                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}" ToolTip="Common">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding CommonCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Rarity_Common}">
                     <Image Source="{DynamicResource BadgeRarityCommon}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                     <TextBlock Text="{Binding CommonCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
                 </StackPanel>
@@ -274,19 +274,19 @@
 
             <StackPanel Style="{StaticResource OverviewProgressMetaRowStyle}"
                         Visibility="{Binding HasTrophyTypes, Converter={StaticResource BoolToVis}}">
-                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}" ToolTip="Platinum">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyPlatinumCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Trophy_Platinum}">
                     <Image Source="{DynamicResource TrophyPlatinum}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                     <TextBlock Text="{Binding TrophyPlatinumCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
                 </StackPanel>
-                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}" ToolTip="Gold">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyGoldCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Trophy_Gold}">
                     <Image Source="{DynamicResource TrophyGold}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                     <TextBlock Text="{Binding TrophyGoldCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
                 </StackPanel>
-                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}" ToolTip="Silver">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophySilverCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Trophy_Silver}">
                     <Image Source="{DynamicResource TrophySilver}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                     <TextBlock Text="{Binding TrophySilverCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
                 </StackPanel>
-                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}" ToolTip="Bronze">
+                <StackPanel Style="{StaticResource OverviewMiniBadgeItemStyle}" Visibility="{Binding TrophyBronzeCount, Converter={StaticResource IntToVis}}" ToolTip="{DynamicResource LOCPlayAch_Trophy_Bronze}">
                     <Image Source="{DynamicResource TrophyBronze}" Style="{StaticResource OverviewMiniBadgeImageStyle}"/>
                     <TextBlock Text="{Binding TrophyBronzeCount}" Style="{StaticResource OverviewMiniBadgeTextStyle}"/>
                 </StackPanel>
