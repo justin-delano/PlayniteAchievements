@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         private bool _disposed;
         private const string Sc2ProfileUrl = "https://{0}.api.blizzard.com/sc2/legacy/profile/{1}/{2}/{3}?locale={4}";
         private const string Sc2AchievementsUrl = "https://{0}.api.blizzard.com/sc2/legacy/data/achievements/{1}?locale={2}";
+        private const string Sc2PlayerUrl = "https://{0}.api.blizzard.com/sc2/player/{1}";
         private const string TokenUrl = "https://{0}.battle.net/oauth/token";
         private const string AuthorizeUrl = "https://{0}.battle.net/oauth/authorize";
         private const string UserInfoUrl = "https://{0}.battle.net/oauth/userinfo";
@@ -124,6 +125,24 @@ namespace PlayniteAchievements.Providers.BattleNet
             var url = BuildSc2AchievementsUrl(apiRegion, regionId, effectiveLocale);
             return await RateLimiter.ExecuteWithRetryAsync(
                 async () => await GetJsonAsync<Sc2AchievementDefinitionsResponse>(url, ct, token).ConfigureAwait(false),
+                IsTransientError, ct);
+        }
+
+        /// <summary>
+        /// Lists the StarCraft II profiles bound to the authenticated Battle.net account. The account
+        /// identifier is the OAuth <c>sub</c> claim; the call is account-bound and uses the user bearer
+        /// token rather than client credentials.
+        /// </summary>
+        public async Task<List<Sc2PlayerProfile>> GetSc2PlayerProfilesAsync(
+            string apiRegion,
+            string accountId,
+            string bearerToken,
+            CancellationToken ct)
+        {
+            var normalizedRegion = NormalizeApiRegion(apiRegion);
+            var url = string.Format(Sc2PlayerUrl, normalizedRegion, Uri.EscapeDataString(accountId ?? string.Empty));
+            return await RateLimiter.ExecuteWithRetryAsync(
+                async () => await GetJsonAsync<List<Sc2PlayerProfile>>(url, ct, bearerToken).ConfigureAwait(false),
                 IsTransientError, ct);
         }
 
