@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
@@ -17,8 +18,23 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.RetroAchievements
 {
-    internal sealed class RetroAchievementsDataProvider : IDataProvider, IAchievementPageLinkProvider, IDisposable
+    internal sealed class RetroAchievementsDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RetroAchievements",
+            "RetroAchievements Game ID",
+            raw =>
+            {
+                if (int.TryParse((raw ?? string.Empty).Trim(), out var gameId) && gameId > 0)
+                {
+                    return ProviderOverrideValidation.Valid(gameId.ToString(CultureInfo.InvariantCulture));
+                }
+
+                return ProviderOverrideValidation.Invalid(
+                    "LOCPlayAch_Menu_RaGameId_InvalidId",
+                    "Please enter a valid positive integer game ID.");
+            });
+
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;

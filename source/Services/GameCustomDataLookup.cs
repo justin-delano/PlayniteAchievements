@@ -408,6 +408,33 @@ namespace PlayniteAchievements.Services
             return false;
         }
 
+        /// <summary>
+        /// Returns true when a provider override targets <paramref name="providerKey"/>, yielding its
+        /// normalized value (which may be null for presence-only overrides). Used by providers that
+        /// store their override value as-is and validate at the UI layer (no legacy fallback fields).
+        /// </summary>
+        public static bool TryGetProviderOverrideValue(
+            Guid gameId,
+            string providerKey,
+            out string value,
+            GameCustomDataStore store = null)
+        {
+            value = null;
+            if (gameId == Guid.Empty || string.IsNullOrWhiteSpace(providerKey))
+            {
+                return false;
+            }
+
+            if (TryGetProviderOverride(gameId, out var providerOverride, store) &&
+                string.Equals(providerOverride.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase))
+            {
+                value = NormalizeValue(providerOverride.Value);
+                return true;
+            }
+
+            return false;
+        }
+
         public static bool TryGetSteamAppIdOverride(
             Guid gameId,
             out int appIdOverride,

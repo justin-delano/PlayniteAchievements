@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using System;
@@ -13,9 +14,24 @@ using Playnite.SDK.Models;
 
 namespace PlayniteAchievements.Providers.Steam
 {
-    internal sealed class SteamDataProvider : IDataProvider, IAchievementPageLinkProvider, IDisposable
+    internal sealed class SteamDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
     {
         internal static readonly Guid SteamPluginId = Guid.Parse("CB91DFC9-B977-43BF-8E70-55F46E410FAB");
+
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Steam",
+            "Steam AppID",
+            raw =>
+            {
+                if (int.TryParse((raw ?? string.Empty).Trim(), out var appId) && appId > 0)
+                {
+                    return ProviderOverrideValidation.Valid(appId.ToString(CultureInfo.InvariantCulture));
+                }
+
+                return ProviderOverrideValidation.Invalid(
+                    "LOCPlayAch_Menu_SteamAppId_InvalidId",
+                    "Please enter a valid positive integer Steam AppID.");
+            });
 
         private readonly SteamHttpClient _steamClient;
         private readonly SteamScanner _scanner;

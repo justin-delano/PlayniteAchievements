@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -31,8 +32,17 @@ namespace PlayniteAchievements.Providers.RPCS3
     /// Data provider for RPCS3 PlayStation 3 emulator trophy tracking.
     /// Parses local trophy files (TROPCONF.SFM + TROPUSR.DAT) from RPCS3 installation.
     /// </summary>
-    internal sealed class Rpcs3DataProvider : IDataProvider
+    internal sealed class Rpcs3DataProvider : IDataProvider, IProviderOverride
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3",
+            "RPCS3 NP Comm ID",
+            raw => Rpcs3MatchIdHelper.TryNormalize(raw, out var matchId)
+                ? ProviderOverrideValidation.Valid(matchId)
+                : ProviderOverrideValidation.Invalid(
+                    "LOCPlayAch_Menu_Rpcs3MatchId_InvalidId",
+                    "Please enter a valid RPCS3 trophy NP Comm ID such as NPWR12345_00."));
+
         private readonly Rpcs3Scanner _scanner;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
