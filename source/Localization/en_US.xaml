@@ -874,6 +874,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle">Hidden Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle_WithParens"> (Hidden Achievement)</sys:String>
     <sys:String x:Key="LOCPlayAch_ChartCut">Cut</sys:String>
+    <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">Pick Color</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Group by unlocked</sys:String>
     <sys:String x:Key="LOCPlayAch_NoLockedAchievements">No locked achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_NoUnlockedAchievements">No unlocked achievements</sys:String>
