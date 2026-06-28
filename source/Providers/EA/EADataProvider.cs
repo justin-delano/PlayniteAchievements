@@ -1,6 +1,8 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -11,8 +13,13 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.EA
 {
-    public sealed class EADataProvider : IDataProvider, IDisposable
+    public sealed class EADataProvider : IDataProvider, IProviderOverride, IDisposable
     {
+        public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
+            "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_EA",
+            "EA Offer ID",
+            ProviderOverrideValidators.RequiredText);
+
         private static readonly Guid EaPluginId = ResolveEaPluginId();
 
         private readonly EASessionManager _sessionManager;
@@ -54,7 +61,9 @@ namespace PlayniteAchievements.Providers.EA
 
         public ISessionManager AuthSession => _sessionManager;
 
-        public bool IsCapable(Game game) => EAProviderSupport.IsEaCapable(game, EaPluginId);
+        public bool IsCapable(Game game) =>
+            EAProviderSupport.IsEaCapable(game, EaPluginId) ||
+            (game != null && GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "EA", out _));
 
         public Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
