@@ -307,6 +307,65 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
         }
 
+        private async void Sc2Discover_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SetAuthBusy(true);
+                PersistCurrentSettingsForAuth();
+
+                var settings = ProviderRegistry.Settings<BattleNetSettings>();
+                if (string.IsNullOrWhiteSpace(settings.BattleNetAccountId) ||
+                    string.IsNullOrWhiteSpace(settings.BattleNetAccessToken))
+                {
+                    Sc2Status = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Sc2DiscoverNeedsAuth");
+                    return;
+                }
+
+                var apiRegion = string.IsNullOrWhiteSpace(settings.WowRegion) ? "us" : settings.WowRegion;
+                var profiles = await _apiClient.GetSc2PlayerProfilesAsync(
+                    apiRegion,
+                    settings.BattleNetAccountId,
+                    settings.BattleNetAccessToken,
+                    CancellationToken.None);
+
+                if (profiles == null || profiles.Count == 0)
+                {
+                    Sc2Status = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Status_NoSc2Profile");
+                    return;
+                }
+
+                var chosen = profiles[0];
+                if (profiles.Count > 1)
+                {
+                    _logger.Info($"[BattleNet/SC2] Discovered {profiles.Count} SC2 profiles; selecting first (region={chosen.RegionId}, realm={chosen.RealmId}). Remaining profiles ignored.");
+                }
+
+                if (_battleNetSettings != null)
+                {
+                    if (chosen.RegionId > 0)
+                    {
+                        _battleNetSettings.Sc2RegionId = chosen.RegionId;
+                    }
+                    if (chosen.RealmId > 0)
+                    {
+                        _battleNetSettings.Sc2RealmId = chosen.RealmId;
+                    }
+                    _battleNetSettings.Sc2ProfileId = chosen.ProfileId;
+                    UpdateSc2Status();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex, "Battle.net SC2 profile discovery failed");
+                Sc2Status = ResourceProvider.GetString("LOCPlayAch_Settings_BattleNet_Sc2DiscoverFailed");
+            }
+            finally
+            {
+                SetAuthBusy(false);
+            }
+        }
+
         private void PersistCurrentSettingsForAuth()
         {
             if (_battleNetSettings != null)
