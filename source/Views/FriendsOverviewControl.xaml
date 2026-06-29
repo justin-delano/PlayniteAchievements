@@ -485,7 +485,7 @@
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_FriendsOverview_SharedGames}"
+                    <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_FriendsOverview_Games}"
                                             SortMemberPath="SharedGamesCount"
                                             Width="72">
                         <DataGridTemplateColumn.CellTemplate>
