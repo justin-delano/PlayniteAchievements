@@ -39,6 +39,9 @@ namespace PlayniteAchievements.ViewModels
         private string _sortingName;
         private Guid? _playniteGameId;
         private string _providerKey;
+        private string _friendName;
+        private string _friendExternalUserId;
+        private string _friendAvatarUrl;
         private int? _pointsValue;
         private string _categoryType;
         private string _categoryLabel;
@@ -57,6 +60,24 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _providerKey;
             set => SetValue(ref _providerKey, value);
+        }
+
+        public string FriendName
+        {
+            get => _friendName;
+            set => SetValue(ref _friendName, value);
+        }
+
+        public string FriendExternalUserId
+        {
+            get => _friendExternalUserId;
+            set => SetValue(ref _friendExternalUserId, value);
+        }
+
+        public string FriendAvatarUrl
+        {
+            get => _friendAvatarUrl;
+            set => SetValue(ref _friendAvatarUrl, value);
         }
 
         public string DisplayName
@@ -913,6 +934,9 @@ namespace PlayniteAchievements.ViewModels
             var clone = new AchievementDisplayItem();
             clone.SetSource(_source, notifyChanges: false);
             clone.ProviderKey = _providerKey;
+            clone.FriendName = _friendName;
+            clone.FriendExternalUserId = _friendExternalUserId;
+            clone.FriendAvatarUrl = _friendAvatarUrl;
             clone.GameName = _gameName;
             clone.SortingName = _sortingName;
             clone.PlayniteGameId = _playniteGameId;

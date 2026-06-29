@@ -31,11 +31,14 @@ namespace PlayniteAchievements.Views.Controls
         private const double DefaultStatusColumnWidth = 40;
         private const double DefaultIconColumnWidth = 72;
         private const double DefaultGameImageColumnWidth = 96;
+        private const double DefaultFriendColumnWidth = 140;
         private const double DefaultTrophyIconColumnWidth = 72;
         private const double MinimumStatusColumnWidth = 28;
         private const double MinimumGameImageColumnWidth = 32;
+        private const double MinimumFriendColumnWidth = 64;
         private const double MaximumStatusColumnWidth = 96;
         private const double MaximumGameImageColumnWidth = 240;
+        private const double MaximumFriendColumnWidth = 280;
 
         private static readonly IReadOnlyDictionary<string, double> DefaultImageColumnWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
@@ -65,6 +68,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["OverviewSelectedGameAchievements"] = CreateAchievementVisibility(),
                 ["OverviewGame"] = CreateAchievementVisibility(),
                 ["OverviewRecentAchievements"] = CreateAchievementVisibility(status: false, game: true),
+                ["FriendsOverviewRecentAchievements"] = CreateAchievementVisibility(status: false, game: true, friend: true),
                 ["Overview"] = CreateAchievementVisibility(status: false, game: true),
                 ["StartPageAchievements"] = CreateAchievementVisibility(
                     status: false,
@@ -87,6 +91,7 @@ namespace PlayniteAchievements.Views.Controls
             bool title = false,
             bool note = false,
             bool game = false,
+            bool friend = false,
             bool unlockDate = true,
             bool categoryType = false,
             bool categoryLabel = false,
@@ -106,6 +111,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["Title"] = title,
                 ["Note"] = note,
                 ["Game"] = game,
+                ["Friend"] = friend,
                 ["UnlockDate"] = unlockDate,
                 ["CategoryType"] = categoryType,
                 ["CategoryLabel"] = categoryLabel,
@@ -228,6 +234,23 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(ShowGameColumnProperty);
             set => SetValue(ShowGameColumnProperty, value);
+        }
+
+        /// <summary>
+        /// Identifies the ShowFriendColumn dependency property.
+        /// When true, displays the friend identity column.
+        /// </summary>
+        public static readonly DependencyProperty ShowFriendColumnProperty =
+            DependencyProperty.Register(nameof(ShowFriendColumn), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnColumnVisibilityChanged));
+
+        /// <summary>
+        /// Gets or sets whether to show the Friend column.
+        /// </summary>
+        public bool ShowFriendColumn
+        {
+            get => (bool)GetValue(ShowFriendColumnProperty);
+            set => SetValue(ShowFriendColumnProperty, value);
         }
 
         /// <summary>
@@ -472,6 +495,17 @@ namespace PlayniteAchievements.Views.Controls
                     MinimumGameImageColumnWidth,
                     MaximumGameImageColumnWidth);
             }
+
+            var friendColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "FriendColumn") as DataGridTemplateColumn;
+            if (friendColumn != null)
+            {
+                SetResizableColumnVisibility(
+                    friendColumn,
+                    ShowFriendColumn,
+                    DefaultFriendColumnWidth,
+                    MinimumFriendColumnWidth,
+                    MaximumFriendColumnWidth);
+            }
         }
 
         private static void OnShowColumnHeadersChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -590,6 +624,7 @@ namespace PlayniteAchievements.Views.Controls
                     UnlockDateMode = persisted.DesktopThemeAchievementsUnlockDateMode;
                     break;
                 case "OverviewRecentAchievements":
+                case "FriendsOverviewRecentAchievements":
                 case "Overview":
                     UnlockDateMode = persisted.OverviewRecentAchievementsUnlockDateMode;
                     break;
@@ -761,6 +796,11 @@ namespace PlayniteAchievements.Views.Controls
                 _columnPersistence.ForcedCollapsedKeys.Add("Game");
                 _columnPersistence.ExcludedVisibilityKeys.Add("Game");
             }
+            if (!ShowFriendColumn)
+            {
+                _columnPersistence.ForcedCollapsedKeys.Add("Friend");
+                _columnPersistence.ExcludedVisibilityKeys.Add("Friend");
+            }
             // Force collapse Status column when hidden (prevents flicker by applying during persistence)
             // Also exclude from visibility toggle menu
             if (HideStatusColumn)
@@ -812,6 +852,7 @@ namespace PlayniteAchievements.Views.Controls
             switch (ColumnSettingsKey)
             {
                 case "OverviewRecentAchievements":
+                case "FriendsOverviewRecentAchievements":
                 case "Overview":
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
@@ -947,6 +988,8 @@ namespace PlayniteAchievements.Views.Controls
                 case "OverviewRecentAchievements":
                 case "Overview":
                     return settings.Persisted.OverviewRecentAchievementColumnVisibility;
+                case "FriendsOverviewRecentAchievements":
+                    return settings.Persisted.FriendsOverviewAchievementColumnVisibility;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
                     return settings.Persisted.OverviewSelectedGameAchievementColumnVisibility;
@@ -974,6 +1017,9 @@ namespace PlayniteAchievements.Views.Controls
                 case "Overview":
                     settings.Persisted.OverviewRecentAchievementColumnVisibility = map;
                     break;
+                case "FriendsOverviewRecentAchievements":
+                    settings.Persisted.FriendsOverviewAchievementColumnVisibility = map;
+                    break;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
                     settings.Persisted.OverviewSelectedGameAchievementColumnVisibility = map;
@@ -996,6 +1042,7 @@ namespace PlayniteAchievements.Views.Controls
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnWidths,
                 "SingleGame" => settings.Persisted.SingleGameColumnWidths,
                 "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnWidths,
+                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnWidths,
                 "Overview" => settings.Persisted.OverviewRecentAchievementColumnWidths,
                 "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnWidths,
                 "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnWidths,
@@ -1016,6 +1063,7 @@ namespace PlayniteAchievements.Views.Controls
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnOrder,
                 "SingleGame" => settings.Persisted.SingleGameColumnOrder,
                 "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnOrder,
+                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnOrder,
                 "Overview" => settings.Persisted.OverviewRecentAchievementColumnOrder,
                 "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnOrder,
                 "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnOrder,
@@ -1036,6 +1084,7 @@ namespace PlayniteAchievements.Views.Controls
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnAlignments,
                 "SingleGame" => settings.Persisted.SingleGameColumnAlignments,
                 "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnAlignments,
+                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnAlignments,
                 "Overview" => settings.Persisted.OverviewRecentAchievementColumnAlignments,
                 "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnAlignments,
                 "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnAlignments,
@@ -1056,6 +1105,7 @@ namespace PlayniteAchievements.Views.Controls
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnVerticalAlignments,
                 "SingleGame" => settings.Persisted.SingleGameColumnVerticalAlignments,
                 "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments,
+                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnVerticalAlignments,
                 "Overview" => settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments,
                 "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments,
                 "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments,
@@ -1076,6 +1126,7 @@ namespace PlayniteAchievements.Views.Controls
                 "DesktopTheme" => settings.Persisted.DesktopThemeColumnHeaderAlignments,
                 "SingleGame" => settings.Persisted.SingleGameColumnHeaderAlignments,
                 "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments,
+                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnHeaderAlignments,
                 "Overview" => settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments,
                 "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments,
                 "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments,
@@ -1102,6 +1153,9 @@ namespace PlayniteAchievements.Views.Controls
                 case "OverviewRecentAchievements":
                 case "Overview":
                     settings.Persisted.OverviewRecentAchievementColumnOrder = map;
+                    break;
+                case "FriendsOverviewRecentAchievements":
+                    settings.Persisted.FriendsOverviewAchievementColumnOrder = map;
                     break;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
@@ -1134,6 +1188,9 @@ namespace PlayniteAchievements.Views.Controls
                 case "OverviewRecentAchievements":
                 case "Overview":
                     settings.Persisted.OverviewRecentAchievementColumnAlignments = map;
+                    break;
+                case "FriendsOverviewRecentAchievements":
+                    settings.Persisted.FriendsOverviewAchievementColumnAlignments = map;
                     break;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
@@ -1169,6 +1226,9 @@ namespace PlayniteAchievements.Views.Controls
                 case "Overview":
                     settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments = map;
                     break;
+                case "FriendsOverviewRecentAchievements":
+                    settings.Persisted.FriendsOverviewAchievementColumnVerticalAlignments = map;
+                    break;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
                     settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments = map;
@@ -1201,6 +1261,9 @@ namespace PlayniteAchievements.Views.Controls
                 case "Overview":
                     settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments = map;
                     break;
+                case "FriendsOverviewRecentAchievements":
+                    settings.Persisted.FriendsOverviewAchievementColumnHeaderAlignments = map;
+                    break;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
                     settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments = map;
@@ -1232,6 +1295,9 @@ namespace PlayniteAchievements.Views.Controls
                 case "OverviewRecentAchievements":
                 case "Overview":
                     settings.Persisted.OverviewRecentAchievementColumnWidths = map;
+                    break;
+                case "FriendsOverviewRecentAchievements":
+                    settings.Persisted.FriendsOverviewAchievementColumnWidths = map;
                     break;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":

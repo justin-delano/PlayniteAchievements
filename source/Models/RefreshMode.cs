@@ -18,7 +18,11 @@ namespace PlayniteAchievements.Models
         Single,
         LibrarySelected,
         Missing,
-        Custom
+        Custom,
+        FriendsRecent,
+        FriendsFull,
+        FriendsShared,
+        FriendsInstalled
     }
 
     /// <summary>
@@ -58,6 +62,20 @@ namespace PlayniteAchievements.Models
         /// Gets the string key for this refresh mode.
         /// </summary>
         public static string GetKey(this RefreshModeType mode) => mode.ToString();
+
+        public static bool IsFriendRefreshMode(this RefreshModeType mode)
+        {
+            switch (mode)
+            {
+                case RefreshModeType.FriendsRecent:
+                case RefreshModeType.FriendsFull:
+                case RefreshModeType.FriendsShared:
+                case RefreshModeType.FriendsInstalled:
+                    return true;
+                default:
+                    return false;
+            }
+        }
     }
 
     /// <summary>

@@ -510,7 +510,7 @@ namespace PlayniteAchievements.Providers.Steam
         // Achievements scraping
         // ---------------------------------------------------------------------
 
-        private async Task<AchievementsScrapeResponse> ScrapeAchievementsAsync(
+        internal async Task<AchievementsScrapeResponse> ScrapeAchievementsAsync(
             string steamId64,
             int appId,
             string accessToken,

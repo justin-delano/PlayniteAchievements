@@ -1,4 +1,5 @@
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -15,6 +16,7 @@ namespace PlayniteAchievements.Services
             public RefreshModeType Mode { get; set; }
             public Guid? SingleGameId { get; set; }
             public CacheRefreshOptions Options { get; set; }
+            public FriendRefreshOptions FriendOptions { get; set; }
             public bool ForceIconRefresh { get; set; }
             public IReadOnlyList<IDataProvider> ProviderScope { get; set; }
             public bool? RunProvidersInParallelOverride { get; set; }
@@ -141,6 +143,36 @@ namespace PlayniteAchievements.Services
                 case RefreshModeType.Custom:
                     return ResolveCustom(request.CustomOptions, authenticatedProviders, request.ForceIconRefresh);
 
+                case RefreshModeType.FriendsRecent:
+                    return ResolveFriendRefresh(
+                        mode,
+                        FriendRefreshScope.Recent,
+                        authenticatedProviders,
+                        "Recent friends refresh failed.");
+
+                case RefreshModeType.FriendsFull:
+                    return ResolveFriendRefresh(
+                        mode,
+                        FriendRefreshScope.Full,
+                        authenticatedProviders,
+                        "Full friends refresh failed.");
+
+                case RefreshModeType.FriendsShared:
+                    return ResolveFriendRefresh(
+                        mode,
+                        FriendRefreshScope.Shared,
+                        authenticatedProviders,
+                        "Shared friends refresh failed.");
+
+                case RefreshModeType.FriendsInstalled:
+                    return ResolveFriendRefresh(
+                        mode,
+                        FriendRefreshScope.Installed,
+                        authenticatedProviders,
+                        "Installed friends refresh failed.",
+                        GetInstalledGameIds(),
+                        "No installed games found for friends refresh.");
+
                 default:
                     _logger?.Warn(string.Format(
                         "Unknown refresh mode: {0}. Falling back to Recent.",
@@ -154,6 +186,57 @@ namespace PlayniteAchievements.Services
                         Options = BuildRecentOptions()
                     };
             }
+        }
+
+        private ResolvedRequest ResolveFriendRefresh(
+            RefreshModeType mode,
+            FriendRefreshScope scope,
+            IReadOnlyList<IDataProvider> authenticatedProviders,
+            string errorLogMessage,
+            IReadOnlyCollection<Guid> playniteGameIds = null,
+            string emptySelectionLogMessage = null)
+        {
+            var providers = authenticatedProviders?
+                .Where(provider => provider?.Friends != null)
+                .ToList() ?? new List<IDataProvider>();
+
+            if (providers.Count == 0)
+            {
+                return new ResolvedRequest
+                {
+                    Mode = mode,
+                    ShouldExecute = false,
+                    UserMessage = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders") ??
+                                  "No authenticated friend-capable providers are available."
+                };
+            }
+
+            var ids = playniteGameIds?
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList();
+            if (playniteGameIds != null && ids.Count == 0)
+            {
+                return new ResolvedRequest
+                {
+                    Mode = mode,
+                    ShouldExecute = false,
+                    EmptySelectionLogMessage = emptySelectionLogMessage
+                };
+            }
+
+            return new ResolvedRequest
+            {
+                Mode = mode,
+                ShouldExecute = true,
+                ErrorLogMessage = errorLogMessage,
+                ProviderScope = providers,
+                FriendOptions = new FriendRefreshOptions
+                {
+                    Scope = scope,
+                    PlayniteGameIds = ids
+                }
+            };
         }
 
         private RefreshModeType ResolveMode(RefreshRequest request)

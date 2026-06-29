@@ -250,6 +250,12 @@ namespace PlayniteAchievements.ViewModels
 
         public string ProviderKey { get; set; }
 
+        public string FriendName { get; set; }
+
+        public string FriendExternalUserId { get; set; }
+
+        public string FriendAvatarUrl { get; set; }
+
         public Guid? PlayniteGameId { get; set; }
 
         public string ApiName { get; set; }

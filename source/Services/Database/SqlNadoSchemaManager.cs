@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 10;
+        public const int SchemaVersion = 11;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -47,6 +47,9 @@ namespace PlayniteAchievements.Services.Database
                 DisplayName TEXT NULL,
                 IsCurrentUser INTEGER NOT NULL DEFAULT 0,
                 FriendSource TEXT NULL,
+                AvatarUrl TEXT NULL,
+                LastRefreshedUtc TEXT NULL,
+                IsActiveFriend INTEGER NOT NULL DEFAULT 1,
                 CreatedUtc TEXT NOT NULL,
                 UpdatedUtc TEXT NOT NULL,
                 UNIQUE (ProviderKey, ExternalUserId)
@@ -117,6 +120,9 @@ namespace PlayniteAchievements.Services.Database
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserGameProgress_User_LastUpdated
                 ON UserGameProgress (UserId, LastUpdatedUtc);");
 
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserGameProgress_GameId
+                ON UserGameProgress (GameId);");
+
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS UserAchievements (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 UserGameProgressId INTEGER NOT NULL,
@@ -137,6 +143,8 @@ namespace PlayniteAchievements.Services.Database
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserAchievements_Definition
                 ON UserAchievements (AchievementDefinitionId);");
+
+            EnsureFriendOwnershipTable(db);
 
             var storedVersion = GetStoredSchemaVersion(db);
             var verification = VerifyRequiredColumns(db);
@@ -225,6 +233,9 @@ namespace PlayniteAchievements.Services.Database
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Users_CurrentUser_Id
                 ON Users (IsCurrentUser, Id);");
 
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserGameProgress_GameId
+                ON UserGameProgress (GameId);");
+
             ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_Games_Provider_Playnite
                 ON Games (ProviderKey, PlayniteGameId)
                 WHERE PlayniteGameId IS NOT NULL;");
@@ -238,6 +249,42 @@ namespace PlayniteAchievements.Services.Database
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_LastUpdatedUtc
                 ON Games (LastUpdatedUtc);");
+
+            EnsureFriendOwnershipTable(db);
+            EnsureFriendOwnershipIndexes(db);
+        }
+
+        private void EnsureFriendOwnershipTable(SQLiteDatabase db)
+        {
+            ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS FriendOwnership (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId INTEGER NOT NULL,
+                GameId INTEGER NOT NULL,
+                PlaytimeForeverMinutes INTEGER NOT NULL DEFAULT 0,
+                Playtime2WeeksMinutes INTEGER NULL,
+                LastPlayedUtc TEXT NULL,
+                LastOwnershipRefreshUtc TEXT NULL,
+                LastScrapedUtc TEXT NULL,
+                LastScrapeStatus TEXT NULL,
+                LastScrapeDetail TEXT NULL,
+                CreatedUtc TEXT NOT NULL,
+                UpdatedUtc TEXT NOT NULL,
+                FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+                FOREIGN KEY (GameId) REFERENCES Games(Id) ON DELETE CASCADE,
+                UNIQUE (UserId, GameId)
+            );");
+        }
+
+        private void EnsureFriendOwnershipIndexes(SQLiteDatabase db)
+        {
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_FriendOwnership_Game_User
+                ON FriendOwnership (GameId, UserId);");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_FriendOwnership_User
+                ON FriendOwnership (UserId);");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_FriendOwnership_LastScraped
+                ON FriendOwnership (LastScrapedUtc, LastScrapeStatus);");
         }
 
         private void BackfillRequiredAchievementCategoryValues(SQLiteDatabase db)
@@ -436,6 +483,9 @@ namespace PlayniteAchievements.Services.Database
                                 DisplayName TEXT NULL,
                                 IsCurrentUser INTEGER NOT NULL DEFAULT 0,
                                 FriendSource TEXT NULL,
+                                AvatarUrl TEXT NULL,
+                                LastRefreshedUtc TEXT NULL,
+                                IsActiveFriend INTEGER NOT NULL DEFAULT 1,
                                 CreatedUtc TEXT NOT NULL,
                                 UpdatedUtc TEXT NOT NULL,
                                 UNIQUE (ProviderKey, ExternalUserId)
@@ -444,7 +494,7 @@ namespace PlayniteAchievements.Services.Database
 
                         // Migrate data with value transformation (INSERT OR IGNORE to handle duplicates)
                         ExecuteSafe(db,
-                            @"INSERT OR IGNORE INTO Users_New (Id, ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc)
+                            @"INSERT OR IGNORE INTO Users_New (Id, ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, AvatarUrl, LastRefreshedUtc, IsActiveFriend, CreatedUtc, UpdatedUtc)
                               SELECT
                                 Id,
                                 CASE
@@ -466,7 +516,7 @@ namespace PlayniteAchievements.Services.Database
                                     WHEN LOWER(ProviderName) = 'unmapped' THEN 'Unmapped'
                                     ELSE 'Unmapped'
                                 END,
-                                ExternalUserId, DisplayName, IsCurrentUser, FriendSource, CreatedUtc, UpdatedUtc
+                                ExternalUserId, DisplayName, IsCurrentUser, FriendSource, NULL, NULL, 1, CreatedUtc, UpdatedUtc
                               FROM Users;");
                         _logger?.Info("[Schema] Migrated Users data to ProviderKey");
 
@@ -500,7 +550,28 @@ namespace PlayniteAchievements.Services.Database
             gamesColumns = GetColumnNames(db, "Games");
             EnsureColumn(db, "Games", "ProviderPlatformKey", "TEXT NULL", gamesColumns, ref backupPath);
 
+            usersColumns = GetColumnNames(db, "Users");
+            EnsureColumn(db, "Users", "AvatarUrl", "TEXT NULL", usersColumns, ref backupPath);
+            EnsureColumn(db, "Users", "LastRefreshedUtc", "TEXT NULL", usersColumns, ref backupPath);
+            EnsureColumn(db, "Users", "IsActiveFriend", "INTEGER NOT NULL DEFAULT 1", usersColumns, ref backupPath);
+
+            EnsureFriendOwnershipTable(db);
+            ReconcileFriendOwnershipColumns(db, ref backupPath);
+
             return backupPath;
+        }
+
+        private void ReconcileFriendOwnershipColumns(SQLiteDatabase db, ref string backupPath)
+        {
+            var columns = GetColumnNames(db, "FriendOwnership");
+            EnsureColumn(db, "FriendOwnership", "Playtime2WeeksMinutes", "INTEGER NULL", columns, ref backupPath);
+            EnsureColumn(db, "FriendOwnership", "LastPlayedUtc", "TEXT NULL", columns, ref backupPath);
+            EnsureColumn(db, "FriendOwnership", "LastOwnershipRefreshUtc", "TEXT NULL", columns, ref backupPath);
+            EnsureColumn(db, "FriendOwnership", "LastScrapedUtc", "TEXT NULL", columns, ref backupPath);
+            EnsureColumn(db, "FriendOwnership", "LastScrapeStatus", "TEXT NULL", columns, ref backupPath);
+            EnsureColumn(db, "FriendOwnership", "LastScrapeDetail", "TEXT NULL", columns, ref backupPath);
+            EnsureColumn(db, "FriendOwnership", "CreatedUtc", "TEXT NOT NULL DEFAULT ''", columns, ref backupPath);
+            EnsureColumn(db, "FriendOwnership", "UpdatedUtc", "TEXT NOT NULL DEFAULT ''", columns, ref backupPath);
         }
 
         private void ReconcileGamesProviderGameIdIndexes(SQLiteDatabase db, ref string backupPath)
@@ -692,6 +763,22 @@ namespace PlayniteAchievements.Services.Database
 
             var usersColumns = GetColumnNames(db, "Users");
             EnsureRequiredColumn(usersColumns, "ProviderKey", "Users", missing);
+            EnsureRequiredColumn(usersColumns, "AvatarUrl", "Users", missing);
+            EnsureRequiredColumn(usersColumns, "LastRefreshedUtc", "Users", missing);
+            EnsureRequiredColumn(usersColumns, "IsActiveFriend", "Users", missing);
+
+            var friendOwnershipColumns = GetColumnNames(db, "FriendOwnership");
+            EnsureRequiredColumn(friendOwnershipColumns, "UserId", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "GameId", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "PlaytimeForeverMinutes", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "Playtime2WeeksMinutes", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "LastPlayedUtc", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "LastOwnershipRefreshUtc", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "LastScrapedUtc", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "LastScrapeStatus", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "LastScrapeDetail", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "CreatedUtc", "FriendOwnership", missing);
+            EnsureRequiredColumn(friendOwnershipColumns, "UpdatedUtc", "FriendOwnership", missing);
 
             // Note: Index verification is intentionally NOT done here because indexes are
             // created in CreateProviderKeyIndexes which runs AFTER this verification passes.

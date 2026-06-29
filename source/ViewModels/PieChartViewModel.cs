@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 using System.Windows.Media;
 using LiveCharts;
 using LiveCharts.Wpf;
@@ -101,9 +102,19 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _minimumSeriesCount, Math.Max(0, value));
         }
 
-        // Consistent transparent locked color for all pie charts
-        private static readonly Color LockedTransparent = Color.FromArgb(0, 102, 102, 102);
-        private const string LockedLegendColor = "#666666";
+        // Locked/empty slices share the surface brush so they read as the same neutral
+        // "unfilled" surface as the progress bar track. Resolved from application resources
+        // at build time; falls back to a neutral gray if the resource is unavailable
+        // (e.g. resources not yet applied).
+        private const string LockedSurfaceResourceKey = "PlayAch.Brush.Surface";
+        private static readonly Color LockedFallbackColor = Color.FromRgb(102, 102, 102);
+
+        private static Color GetLockedColor()
+        {
+            return Application.Current?.TryFindResource(LockedSurfaceResourceKey) is SolidColorBrush brush
+                ? brush.Color
+                : LockedFallbackColor;
+        }
 
         public PieChartViewModel()
         {
@@ -177,7 +188,7 @@ namespace PlayniteAchievements.ViewModels
                     Label = incompleteLabel,
                     Count = incomplete,
                     IconKey = "BadgeLocked",
-                    Color = LockedTransparent,
+                    Color = GetLockedColor(),
                     OriginalColorHex = string.Empty,
                     UnlockedCount = incomplete,
                     TotalCount = incomplete,
@@ -264,7 +275,7 @@ namespace PlayniteAchievements.ViewModels
                 Label = lockedLabel,
                 Count = locked,
                 IconKey = "BadgeLocked",
-                Color = LockedTransparent,
+                Color = GetLockedColor(),
                 OriginalColorHex = string.Empty,
                 UnlockedCount = locked,
                 TotalCount = locked,
@@ -357,7 +368,7 @@ namespace PlayniteAchievements.ViewModels
                 Label = lockedLabel,
                 Count = totalLocked,
                 IconKey = "BadgeLocked",
-                Color = LockedTransparent,
+                Color = GetLockedColor(),
                 OriginalColorHex = string.Empty,
                 UnlockedCount = totalLocked,
                 TotalCount = totalLocked,
@@ -461,7 +472,7 @@ namespace PlayniteAchievements.ViewModels
                 Label = lockedLabel,
                 Count = locked,
                 IconKey = "BadgeLocked",
-                Color = LockedTransparent,
+                Color = GetLockedColor(),
                 OriginalColorHex = string.Empty,
                 UnlockedCount = locked,
                 TotalCount = locked,
@@ -713,7 +724,7 @@ namespace PlayniteAchievements.ViewModels
 
             if (dataPoint.IconKey == "BadgeLocked")
             {
-                return LockedLegendColor;
+                return ToColorHex(GetLockedColor());
             }
 
             return $"#{dataPoint.Color.R:X2}{dataPoint.Color.G:X2}{dataPoint.Color.B:X2}";

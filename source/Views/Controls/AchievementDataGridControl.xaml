@@ -212,6 +212,27 @@
                 </DataGridTemplateColumn.CellStyle>
             </DataGridTemplateColumn>
 
+            <DataGridTemplateColumn x:Name="FriendColumn"
+                                    Width="140"
+                                    MinWidth="64"
+                                    MaxWidth="280"
+                                    CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_Friend}"
+                                    SortMemberPath="FriendName"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="Friend"
+                                    Visibility="Collapsed">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding FriendName}"
+                                   TextWrapping="Wrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   Style="{StaticResource WrappedCenteredDataGridTextStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   FontWeight="SemiBold"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
             <!-- Unlock Date / Progress -->
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Common_Unlocked}" SortMemberPath="UnlockTime" helpers:ColumnVisibilityHelper.ColumnKey="UnlockDate"
                                     CellTemplate="{StaticResource AchievementUnlockDateTemplate}"/>

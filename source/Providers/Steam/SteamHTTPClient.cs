@@ -181,6 +181,36 @@ namespace PlayniteAchievements.Providers.Steam
         public Task<SteamPageResult> GetAchievementsPageAsync(string steamId64, int appId, string language, CancellationToken ct)
             => GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64}/stats/{appId}/?tab=achievements&l={language ?? "english"}", true, ct);
 
+        public Task<SteamPageResult> GetFriendsPageAsync(string steamId64, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(steamId64))
+            {
+                return Task.FromResult(new SteamPageResult());
+            }
+
+            return GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64.Trim()}/friends?ajax=1", true, ct);
+        }
+
+        public Task<SteamPageResult> GetOwnedGamesPageAsync(string steamId64, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(steamId64))
+            {
+                return Task.FromResult(new SteamPageResult());
+            }
+
+            return GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64.Trim()}/games?tab=all&xml=1", true, ct);
+        }
+
+        public Task<SteamPageResult> GetProfileXmlPageAsync(string steamId64, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(steamId64))
+            {
+                return Task.FromResult(new SteamPageResult());
+            }
+
+            return GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64.Trim()}/?xml=1", true, ct);
+        }
+
         public Task<SteamPageResult> GetAchievementsPageByKeyAsync(string steamId64, string statsKey, string language, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(statsKey))
@@ -547,43 +577,14 @@ namespace PlayniteAchievements.Providers.Steam
 
                             if (requiresCookies && isSteamAuth && attempt == 1)
                             {
-                                bool softRedirect = result.FinalUrl.Contains("/login") || result.FinalUrl.Contains("openid");
+                                bool softRedirect = IsSteamLoginUrl(result.FinalUrl);
                                 if (resp.StatusCode == HttpStatusCode.Unauthorized || resp.StatusCode == HttpStatusCode.Forbidden || softRedirect)
                                 {
                                     // Try CEF fallback before refreshing session
                                     _logger.Info($"[SteamAch] HTTP auth failed, attempting CEF fallback for {url}");
-                                    try
+                                    if (await TryGetSteamPageFromCefAsync(url, result, RequiresAchievementRows(url), ct).ConfigureAwait(false))
                                     {
-                                        var (cefFinalUrl, cefHtml) = await _sessionManager.GetSteamPageAsyncCef(url, ct).ConfigureAwait(false);
-                                        if (!string.IsNullOrEmpty(cefHtml))
-                                        {
-                                            if (!LooksUnauthenticatedStatsPayload(cefHtml, cefFinalUrl))
-                                            {
-                                                // Additional check: verify the HTML actually contains achievement content
-                                                if (HasAnyAchievementRows(cefHtml))
-                                                {
-                                                    _logger.Info($"[SteamAch] CEF fallback succeeded for {url}");
-                                                    result.Html = cefHtml;
-                                                    result.FinalUrl = cefFinalUrl;
-                                                    result.StatusCode = HttpStatusCode.OK;
-                                                    result.WasRedirected = !string.Equals(result.FinalUrl, url, StringComparison.OrdinalIgnoreCase);
-                                                    return result;
-                                                }
-                                                _logger.Warn($"[SteamAch] CEF fallback for {url} returned HTML with no achievement rows (length={cefHtml.Length}, finalUrl={cefFinalUrl})");
-                                            }
-                                            else
-                                            {
-                                                _logger.Warn($"[SteamAch] CEF fallback returned unauthenticated content for {url}");
-                                            }
-                                        }
-                                        else
-                                        {
-                                            _logger.Warn($"[SteamAch] CEF fallback returned empty HTML for {url}");
-                                        }
-                                    }
-                                    catch (Exception cefEx)
-                                    {
-                                        _logger.Warn(cefEx, $"[SteamAch] CEF fallback failed for {url}");
+                                        return result;
                                     }
 
                                     await EnsureSessionAsync(ct, forceRefresh: true).ConfigureAwait(false);
@@ -594,9 +595,14 @@ namespace PlayniteAchievements.Providers.Steam
                             var responseHtml = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                             if (requiresCookies && isSteamAuth && attempt == 1 &&
-                                LooksUnauthenticatedStatsPayload(responseHtml, result.FinalUrl))
+                                LooksUnauthenticatedSteamPage(responseHtml, result.FinalUrl))
                             {
-                                _logger?.Warn($"[SteamAch] Auth-like stats payload detected for {url} (Status={resp.StatusCode}, Url={result.FinalUrl}). Forcing session refresh and retrying once.");
+                                _logger?.Warn($"[SteamAch] Auth-like Steam payload detected for {url} (Status={resp.StatusCode}, Url={result.FinalUrl}). Attempting CEF fallback.");
+                                if (await TryGetSteamPageFromCefAsync(url, result, RequiresAchievementRows(url), ct).ConfigureAwait(false))
+                                {
+                                    return result;
+                                }
+
                                 await EnsureSessionAsync(ct, forceRefresh: true).ConfigureAwait(false);
                                 continue;
                             }
@@ -614,6 +620,47 @@ namespace PlayniteAchievements.Providers.Steam
                 }
             }
             return result;
+        }
+
+        private async Task<bool> TryGetSteamPageFromCefAsync(
+            string url,
+            SteamPageResult result,
+            bool requireAchievementRows,
+            CancellationToken ct)
+        {
+            try
+            {
+                var (cefFinalUrl, cefHtml) = await _sessionManager.GetSteamPageAsyncCef(url, ct).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(cefHtml))
+                {
+                    _logger.Warn($"[SteamAch] CEF fallback returned empty HTML for {url}");
+                    return false;
+                }
+
+                if (LooksUnauthenticatedSteamPage(cefHtml, cefFinalUrl))
+                {
+                    _logger.Warn($"[SteamAch] CEF fallback returned unauthenticated content for {url}");
+                    return false;
+                }
+
+                if (requireAchievementRows && !HasAnyAchievementRows(cefHtml))
+                {
+                    _logger.Warn($"[SteamAch] CEF fallback for {url} returned HTML with no achievement rows (length={cefHtml.Length}, finalUrl={cefFinalUrl})");
+                    return false;
+                }
+
+                _logger.Info($"[SteamAch] CEF fallback succeeded for {url}");
+                result.Html = cefHtml;
+                result.FinalUrl = cefFinalUrl;
+                result.StatusCode = HttpStatusCode.OK;
+                result.WasRedirected = !string.Equals(result.FinalUrl, url, StringComparison.OrdinalIgnoreCase);
+                return true;
+            }
+            catch (Exception cefEx)
+            {
+                _logger.Warn(cefEx, $"[SteamAch] CEF fallback failed for {url}");
+                return false;
+            }
         }
 
         private void BuildHttpClientsOnce()
@@ -668,6 +715,40 @@ namespace PlayniteAchievements.Providers.Steam
         public static bool LooksLoggedOutHeader(string html)
         {
             return SteamStatsPageClassifier.LooksLoggedOutHeader(html);
+        }
+
+        public static bool LooksUnauthenticatedSteamPage(string html, string finalUrl = null)
+        {
+            return IsSteamLoginUrl(finalUrl) ||
+                   LooksLoggedOutHeader(html) ||
+                   LooksUnauthenticatedStatsPayload(html, finalUrl) ||
+                   (!string.IsNullOrWhiteSpace(html) &&
+                    html.IndexOf("<title>Sign In</title>", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static bool IsSteamLoginUrl(string url)
+        {
+            return !string.IsNullOrWhiteSpace(url) &&
+                   (url.IndexOf("/login", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    url.IndexOf("openid", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    url.IndexOf("login.steampowered.com", StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static bool RequiresAchievementRows(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                return new Uri(url).AbsolutePath.IndexOf("/stats/", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
+            catch
+            {
+                return url.IndexOf("/stats/", StringComparison.OrdinalIgnoreCase) >= 0;
+            }
         }
 
         public static bool HasAnyAchievementRows(string html)

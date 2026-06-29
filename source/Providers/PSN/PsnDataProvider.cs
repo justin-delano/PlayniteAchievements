@@ -65,6 +65,8 @@ namespace PlayniteAchievements.Providers.PSN
 
         public ISessionManager AuthSession => _sessionManager;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool IsCapable(Game game)
         {
             if (game == null)

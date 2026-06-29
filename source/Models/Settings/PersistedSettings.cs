@@ -91,6 +91,10 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewRarityPieChart = true;
         private bool _showOverviewTrophyPieChart = true;
         private bool _showOverviewPiePercentages = true;
+        private bool _enableFriendsOverview = false;
+        private bool _friendsOverviewHideSpoilers = true;
+        private int _friendsOverviewRefreshTtlHours = 24;
+        private int _friendsOverviewRecentUnlockLimit = 200;
         private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
         private bool _overviewPieChartVisibilityInitializedFromIndividualSettings;
         private bool _showOverviewBarCharts = true;
@@ -163,6 +167,12 @@ namespace PlayniteAchievements.Models.Settings
         private Dictionary<string, GridAlignment> _overviewAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridVerticalAlignment> _overviewAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GridAlignment> _overviewAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, bool> _friendsOverviewAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, double> _friendsOverviewAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, int> _friendsOverviewAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _friendsOverviewAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridVerticalAlignment> _friendsOverviewAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+        private Dictionary<string, GridAlignment> _friendsOverviewAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, bool> _overviewGameColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _overviewGameColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, int> _overviewGameColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -794,6 +804,42 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showTopMenuBarButton;
             set => SetValue(ref _showTopMenuBarButton, value);
+        }
+
+        /// <summary>
+        /// When true, enables the Steam-only Friends Overview surface and background friend refresh.
+        /// </summary>
+        public bool EnableFriendsOverview
+        {
+            get => _enableFriendsOverview;
+            set => SetValue(ref _enableFriendsOverview, value);
+        }
+
+        /// <summary>
+        /// When true, friend achievement rows for achievements the current user has not unlocked are hidden.
+        /// </summary>
+        public bool FriendsOverviewHideSpoilers
+        {
+            get => _friendsOverviewHideSpoilers;
+            set => SetValue(ref _friendsOverviewHideSpoilers, value);
+        }
+
+        /// <summary>
+        /// Minimum age in hours before an automatic friend achievement scrape is retried.
+        /// </summary>
+        public int FriendsOverviewRefreshTtlHours
+        {
+            get => _friendsOverviewRefreshTtlHours;
+            set => SetValue(ref _friendsOverviewRefreshTtlHours, Math.Max(1, value));
+        }
+
+        /// <summary>
+        /// Maximum number of recent friend unlocks shown in Friends Overview.
+        /// </summary>
+        public int FriendsOverviewRecentUnlockLimit
+        {
+            get => _friendsOverviewRecentUnlockLimit;
+            set => SetValue(ref _friendsOverviewRecentUnlockLimit, Math.Max(1, value));
         }
 
         /// <summary>
@@ -1564,6 +1610,90 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _overviewAchievementColumnHeaderAlignments;
             set => SetValue(ref _overviewAchievementColumnHeaderAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted visibility state for friends overview achievement columns.
+        /// Key is a stable column identifier, value indicates whether the column is visible.
+        /// </summary>
+        public Dictionary<string, bool> FriendsOverviewAchievementColumnVisibility
+        {
+            get => _friendsOverviewAchievementColumnVisibility;
+            set
+            {
+                var normalized = value != null
+                    ? new Dictionary<string, bool>(value, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                SetValue(ref _friendsOverviewAchievementColumnVisibility, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted widths for friends overview achievement columns.
+        /// Key is a stable column identifier, value is pixel width.
+        /// </summary>
+        public Dictionary<string, double> FriendsOverviewAchievementColumnWidths
+        {
+            get => _friendsOverviewAchievementColumnWidths;
+            set
+            {
+                var normalized = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+                if (value != null)
+                {
+                    foreach (var pair in value)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pair.Key) &&
+                            !double.IsNaN(pair.Value) &&
+                            !double.IsInfinity(pair.Value) &&
+                            pair.Value > 0)
+                        {
+                            normalized[pair.Key] = pair.Value;
+                        }
+                    }
+                }
+
+                SetValue(ref _friendsOverviewAchievementColumnWidths, normalized);
+            }
+        }
+
+        /// <summary>
+        /// Persisted order for friends overview achievement columns.
+        /// Key is a stable column identifier, value is DisplayIndex.
+        /// </summary>
+        public Dictionary<string, int> FriendsOverviewAchievementColumnOrder
+        {
+            get => _friendsOverviewAchievementColumnOrder;
+            set => SetValue(ref _friendsOverviewAchievementColumnOrder, NormalizeColumnOrder(value));
+        }
+
+        /// <summary>
+        /// Persisted cell text alignment overrides for friends overview achievement columns.
+        /// Missing keys inherit the global GridCellAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> FriendsOverviewAchievementColumnAlignments
+        {
+            get => _friendsOverviewAchievementColumnAlignments;
+            set => SetValue(ref _friendsOverviewAchievementColumnAlignments, NormalizeColumnAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted cell vertical alignment overrides for friends overview achievement columns.
+        /// Missing keys inherit the global GridCellVerticalAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridVerticalAlignment> FriendsOverviewAchievementColumnVerticalAlignments
+        {
+            get => _friendsOverviewAchievementColumnVerticalAlignments;
+            set => SetValue(ref _friendsOverviewAchievementColumnVerticalAlignments, NormalizeColumnVerticalAlignments(value));
+        }
+
+        /// <summary>
+        /// Persisted header horizontal alignment overrides for friends overview achievement columns.
+        /// Missing keys inherit the global GridColumnHeaderAlignment setting.
+        /// </summary>
+        public Dictionary<string, GridAlignment> FriendsOverviewAchievementColumnHeaderAlignments
+        {
+            get => _friendsOverviewAchievementColumnHeaderAlignments;
+            set => SetValue(ref _friendsOverviewAchievementColumnHeaderAlignments, NormalizeColumnAlignments(value));
         }
 
         /// <summary>
@@ -2590,6 +2720,10 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewGameMetadataPlaytime = this.ShowOverviewGameMetadataPlaytime,
                 ShowOverviewGameMetadataRegion = this.ShowOverviewGameMetadataRegion,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
+                EnableFriendsOverview = this.EnableFriendsOverview,
+                FriendsOverviewHideSpoilers = this.FriendsOverviewHideSpoilers,
+                FriendsOverviewRefreshTtlHours = this.FriendsOverviewRefreshTtlHours,
+                FriendsOverviewRecentUnlockLimit = this.FriendsOverviewRecentUnlockLimit,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ShowCompletionBorder = this.ShowCompletionBorder,
                 ShowOverviewGameSummariesGridColumnHeaders = this.ShowOverviewGameSummariesGridColumnHeaders,
@@ -2699,6 +2833,24 @@ namespace PlayniteAchievements.Models.Settings
                     : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
                 OverviewRecentAchievementColumnHeaderAlignments = this.OverviewRecentAchievementColumnHeaderAlignments != null
                     ? new Dictionary<string, GridAlignment>(this.OverviewRecentAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                FriendsOverviewAchievementColumnVisibility = this.FriendsOverviewAchievementColumnVisibility != null
+                    ? new Dictionary<string, bool>(this.FriendsOverviewAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase),
+                FriendsOverviewAchievementColumnWidths = this.FriendsOverviewAchievementColumnWidths != null
+                    ? new Dictionary<string, double>(this.FriendsOverviewAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                FriendsOverviewAchievementColumnOrder = this.FriendsOverviewAchievementColumnOrder != null
+                    ? new Dictionary<string, int>(this.FriendsOverviewAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase),
+                FriendsOverviewAchievementColumnAlignments = this.FriendsOverviewAchievementColumnAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.FriendsOverviewAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
+                FriendsOverviewAchievementColumnVerticalAlignments = this.FriendsOverviewAchievementColumnVerticalAlignments != null
+                    ? new Dictionary<string, GridVerticalAlignment>(this.FriendsOverviewAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase),
+                FriendsOverviewAchievementColumnHeaderAlignments = this.FriendsOverviewAchievementColumnHeaderAlignments != null
+                    ? new Dictionary<string, GridAlignment>(this.FriendsOverviewAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                     : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase),
                 OverviewSelectedGameAchievementColumnVisibility = this.OverviewSelectedGameAchievementColumnVisibility != null
                     ? new Dictionary<string, bool>(this.OverviewSelectedGameAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
@@ -3007,6 +3159,12 @@ namespace PlayniteAchievements.Models.Settings
             OverviewRecentAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             OverviewRecentAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
             OverviewRecentAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            FriendsOverviewAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            FriendsOverviewAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            FriendsOverviewAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            FriendsOverviewAchievementColumnAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            FriendsOverviewAchievementColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            FriendsOverviewAchievementColumnHeaderAlignments = new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             OverviewSelectedGameAchievementColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             OverviewSelectedGameAchievementColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
             OverviewSelectedGameAchievementColumnOrder = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);

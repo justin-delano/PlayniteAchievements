@@ -100,6 +100,10 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowOverviewGameMetadataPlaytime = source.ShowOverviewGameMetadataPlaytime;
             target.ShowOverviewGameMetadataRegion = source.ShowOverviewGameMetadataRegion;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
+            target.EnableFriendsOverview = source.EnableFriendsOverview;
+            target.FriendsOverviewHideSpoilers = source.FriendsOverviewHideSpoilers;
+            target.FriendsOverviewRefreshTtlHours = source.FriendsOverviewRefreshTtlHours;
+            target.FriendsOverviewRecentUnlockLimit = source.FriendsOverviewRecentUnlockLimit;
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
             target.ShowCompletionBorder = source.ShowCompletionBorder;
             target.ShowOverviewGameSummariesGridColumnHeaders = source.ShowOverviewGameSummariesGridColumnHeaders;
@@ -209,6 +213,24 @@ namespace PlayniteAchievements.Models.Settings
                 : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
             target.OverviewRecentAchievementColumnHeaderAlignments = source.OverviewRecentAchievementColumnHeaderAlignments != null
                 ? new Dictionary<string, GridAlignment>(source.OverviewRecentAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnVisibility = source.FriendsOverviewAchievementColumnVisibility != null
+                ? new Dictionary<string, bool>(source.FriendsOverviewAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnWidths = source.FriendsOverviewAchievementColumnWidths != null
+                ? new Dictionary<string, double>(source.FriendsOverviewAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnOrder = source.FriendsOverviewAchievementColumnOrder != null
+                ? new Dictionary<string, int>(source.FriendsOverviewAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnAlignments = source.FriendsOverviewAchievementColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnVerticalAlignments = source.FriendsOverviewAchievementColumnVerticalAlignments != null
+                ? new Dictionary<string, GridVerticalAlignment>(source.FriendsOverviewAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnHeaderAlignments = source.FriendsOverviewAchievementColumnHeaderAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.OverviewSelectedGameAchievementColumnVisibility = source.OverviewSelectedGameAchievementColumnVisibility != null
                 ? new Dictionary<string, bool>(source.OverviewSelectedGameAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)

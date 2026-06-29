@@ -66,6 +66,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         public string ProviderColorHex => "#FFD700";
         public ISessionManager AuthSession => null;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         /// <summary>
         /// Checks if RetroAchievements authentication is properly configured.
         /// Requires RaUsername and RaWebApiKey to be present.

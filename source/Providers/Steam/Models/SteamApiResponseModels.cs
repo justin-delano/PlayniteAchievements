@@ -72,4 +72,20 @@ namespace PlayniteAchievements.Providers.Steam.Models
         public List<SchemaAchievement> Achievements { get; set; }
         public Dictionary<string, double> GlobalPercentages { get; set; }
     }
+
+    [DataContract]
+    internal sealed class SteamOwnedGame
+    {
+        [DataMember(Name = "appid")]
+        public int AppId { get; set; }
+
+        [DataMember(Name = "playtime_forever")]
+        public int PlaytimeForever { get; set; }
+
+        [DataMember(Name = "playtime_2weeks")]
+        public int? Playtime2Weeks { get; set; }
+
+        [DataMember(Name = "rtime_last_played")]
+        public long? LastPlayedUnixSeconds { get; set; }
+    }
 }

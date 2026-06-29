@@ -24,6 +24,7 @@ using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.ThemeIntegration;
 using PlayniteAchievements.Services.ThemeMigration;
@@ -426,6 +427,26 @@ namespace PlayniteAchievements
                         this);
                 }
             };
+
+            if (_settingsViewModel?.Settings?.Persisted?.EnableFriendsOverview == true)
+            {
+                yield return new SidebarItem
+                {
+                    Title = ResourceProvider.GetString("LOCPlayAch_Menu_OpenFriendsOverview"),
+                    Type = SiderbarItemType.View,
+                    Icon = GetOverviewIcon(),
+                    Opened = () =>
+                    {
+                        EnsureAchievementResourcesLoaded();
+                        return new FriendsOverviewControl(
+                            _logger,
+                            _cacheManager as IFriendCacheManager,
+                            _refreshCoordinator,
+                            _refreshService,
+                            _settingsViewModel.Settings);
+                    }
+                };
+            }
         }
 
         private TextBlock GetOverviewIcon()

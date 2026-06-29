@@ -4,7 +4,9 @@ using System.IO;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Services.Database;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Images;
 using Playnite.SDK;
 using System.Windows;
@@ -18,7 +20,7 @@ namespace PlayniteAchievements.Services
         CachedSummaryData LoadCachedSummaryDataFast(int recentAchievementDetailLimit = 0);
     }
 
-    public sealed class CacheManager : ICacheManager, ICacheReadOptimizations, IDisposable
+    public sealed class CacheManager : ICacheManager, ICacheReadOptimizations, IFriendCacheManager, IDisposable
     {
         private const int MaxInMemoryGames = 256;
 
@@ -742,6 +744,82 @@ namespace PlayniteAchievements.Services
             {
                 EnsureReady_Locked("ExportDatabaseToCsv");
                 return _store.ExportToCsv(exportDirectory);
+            }
+        }
+
+        FriendCacheWriteResult IFriendCacheManager.SaveFriendList(
+            string providerKey,
+            IReadOnlyList<FriendIdentity> friends)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("SaveFriendList");
+                var result = _store.SaveFriendList(providerKey, friends);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
+        FriendCacheWriteResult IFriendCacheManager.SaveFriendOwnership(
+            string providerKey,
+            string externalUserId,
+            IReadOnlyList<FriendGameOwnership> ownership)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("SaveFriendOwnership");
+                var result = _store.SaveFriendOwnership(providerKey, externalUserId, ownership);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
+        FriendCacheWriteResult IFriendCacheManager.SaveFriendGameAchievements(
+            string providerKey,
+            string externalUserId,
+            int appId,
+            FriendGameAchievements achievements)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("SaveFriendGameAchievements");
+                var result = _store.SaveFriendGameAchievements(providerKey, externalUserId, appId, achievements);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
+        List<FriendRefreshCandidate> IFriendCacheManager.LoadFriendRefreshCandidates(
+            string providerKey,
+            FriendRefreshOptions options)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadFriendRefreshCandidates");
+                return _store.LoadFriendRefreshCandidates(providerKey, options) ??
+                       new List<FriendRefreshCandidate>();
+            }
+        }
+
+        FriendsOverviewData IFriendCacheManager.LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadFriendsOverviewData");
+                return _store.LoadFriendsOverviewData(hideSpoilers, recentLimit) ??
+                       new FriendsOverviewData();
             }
         }
 

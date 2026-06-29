@@ -656,6 +656,7 @@ namespace PlayniteAchievements.Services.Tests
             public string ProviderColorHex => "#000000";
             public bool IsAuthenticated => _isAuthenticated;
             public ISessionManager AuthSession => null;
+            public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
 
             public bool IsCapable(Game game) => _isCapable(game);
 

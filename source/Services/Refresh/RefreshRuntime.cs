@@ -11,8 +11,10 @@ using System.Windows.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.ProgressReporting;
+using PlayniteAchievements.Services.Friends;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 
 namespace PlayniteAchievements.Services
 {
@@ -58,6 +60,7 @@ namespace PlayniteAchievements.Services
         private readonly TargetSelectionResolver _targetSelectionResolver;
         private readonly RefreshRequestPlanner _refreshRequestPlanner;
         private readonly RefreshProgressReporter _refreshProgressReporter;
+        private readonly FriendsRefreshRuntime _friendsRefreshRuntime;
         private readonly ProviderRegistry _providerRegistry;
         private readonly Action<RebuildPayload> _onRefreshCompleted;
         private int _savedGamesInCurrentRun;
@@ -101,6 +104,7 @@ namespace PlayniteAchievements.Services
         public IReadOnlyList<RefreshMode> GetRefreshModes()
         {
             return ((RefreshModeType[])Enum.GetValues(typeof(RefreshModeType)))
+                .Where(modeType => !modeType.IsFriendRefreshMode())
                 .Select(modeType =>
             {
                 var mode = new RefreshMode(modeType, modeType.GetResourceKey(), modeType.GetShortResourceKey())
@@ -164,11 +168,17 @@ namespace PlayniteAchievements.Services
                 _settings,
                 _logger,
                 _targetSelectionResolver);
-            _refreshProgressReporter = new RefreshProgressReporter((report, prioritizePending) => Report(report, prioritizePending));
             _providerRegistry = providerRegistry ?? throw new ArgumentNullException(nameof(providerRegistry));
+            _refreshProgressReporter = new RefreshProgressReporter((report, prioritizePending) => Report(report, prioritizePending));
             _onRefreshCompleted = onRefreshCompleted;
 
             _providers = providers.ToList();
+            _friendsRefreshRuntime = new FriendsRefreshRuntime(
+                _providers,
+                _cacheService as IFriendCacheManager,
+                _providerRegistry,
+                _settings,
+                _logger);
         }
 
         public void Dispose()
@@ -622,6 +632,42 @@ namespace PlayniteAchievements.Services
             };
         }
 
+        private async Task<RebuildPayload> RefreshFriendsAsync(
+            FriendRefreshOptions options,
+            CancellationToken cancel,
+            Guid operationId,
+            RefreshModeType mode,
+            IReadOnlyList<IDataProvider> providerScope = null)
+        {
+            var providers = providerScope == null
+                ? MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
+                : MaterializeProviderScope(providerScope);
+
+            providers = providers
+                .Where(provider => provider?.Friends != null)
+                .ToList();
+
+            if (providers.Count == 0 || _friendsRefreshRuntime == null)
+            {
+                _logger?.Warn("No authenticated friend-capable platforms available for friends refresh.");
+                return new RebuildPayload { Summary = new RebuildSummary() };
+            }
+
+            void ReportFriendProgress(string message, int current, int total)
+            {
+                Report(
+                    message,
+                    Math.Max(0, Math.Min(current, Math.Max(1, total) - 1)),
+                    Math.Max(1, total),
+                    operationId: operationId,
+                    mode: mode);
+            }
+
+            return await _friendsRefreshRuntime
+                .RefreshAsync(providers, options, ReportFriendProgress, cancel)
+                .ConfigureAwait(false);
+        }
+
         private async Task OnGameRefreshed(
             IDataProvider provider,
             Game game,
@@ -781,6 +827,23 @@ namespace PlayniteAchievements.Services
             RefreshRequestPlanner.ResolvedRequest resolved,
             CancellationToken externalToken = default)
         {
+            if (resolved?.FriendOptions != null)
+            {
+                return RunManagedAsync(
+                    resolved.Mode,
+                    resolved.SingleGameId,
+                    externalToken,
+                    (operationId, cancel) => RefreshFriendsAsync(
+                        resolved.FriendOptions,
+                        cancel,
+                        operationId,
+                        resolved.Mode,
+                        resolved.ProviderScope),
+                    payload => FormatFriendRefreshCompletionForResolvedRequest(resolved, payload),
+                    resolved.ErrorLogMessage ?? "Friends refresh failed.",
+                    resolved.ProviderScope);
+            }
+
             return StartManagedRefreshCoreAsync(
                 resolved.Mode,
                 resolved.Options,
@@ -791,6 +854,22 @@ namespace PlayniteAchievements.Services
                 providerScope: resolved.ProviderScope,
                 runProvidersInParallelOverride: resolved.RunProvidersInParallelOverride,
                 externalToken: externalToken);
+        }
+
+        private static string FormatFriendRefreshCompletionForResolvedRequest(
+            RefreshRequestPlanner.ResolvedRequest resolved,
+            RebuildPayload payload)
+        {
+            var format = ResourceProvider.GetString("LOCPlayAch_Status_FriendsRefreshCompleteWithModeAndCount");
+            if (string.IsNullOrWhiteSpace(format))
+            {
+                format = "{0} complete. {1} friend game checks refreshed.";
+            }
+
+            return string.Format(
+                format,
+                GetRefreshModeShortName(resolved.Mode),
+                Math.Max(0, payload?.FriendSummary?.CandidatesRefreshed ?? 0));
         }
 
         private static string GetRefreshModeShortName(RefreshModeType mode)

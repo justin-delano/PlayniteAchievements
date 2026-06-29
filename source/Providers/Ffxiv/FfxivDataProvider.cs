@@ -47,6 +47,8 @@ namespace PlayniteAchievements.Providers.Ffxiv
         public string ProviderColorHex => "#C0392B";
         public ISessionManager AuthSession => null;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         /// <summary>
         /// FFXIV is authenticated once a character name and world are configured.
         /// </summary>

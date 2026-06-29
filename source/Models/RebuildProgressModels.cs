@@ -18,12 +18,25 @@ namespace PlayniteAchievements.Models
         public List<Guid> RefreshedGameIds { get; set; } = new List<Guid>();
     }
 
+    public sealed class FriendRefreshSummary
+    {
+        public int ProvidersProcessed { get; set; }
+        public int FriendsFetched { get; set; }
+        public int FriendsSaved { get; set; }
+        public int OwnershipPagesRefreshed { get; set; }
+        public int OwnershipRowsWritten { get; set; }
+        public int CandidatesLoaded { get; set; }
+        public int CandidatesRefreshed { get; set; }
+        public int AchievementsSaved { get; set; }
+    }
+
     /// <summary>
     /// Payload information for cache rebuild events.
     /// </summary>
     public sealed class RebuildPayload
     {
         public RebuildSummary Summary { get; set; } = new RebuildSummary();
+        public FriendRefreshSummary FriendSummary { get; set; } = new FriendRefreshSummary();
         public bool AuthRequired { get; set; }
 
         /// <summary>

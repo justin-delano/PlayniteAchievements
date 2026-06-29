@@ -2,12 +2,15 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Database.Rows;
+using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
 using SqlNado;
 using System;
@@ -175,6 +178,86 @@ namespace PlayniteAchievements.Services.Database
             public string ExternalUserId { get; set; }
             public string DisplayName { get; set; }
             public string FriendSource { get; set; }
+        }
+
+        private sealed class FriendRefreshCandidateRow
+        {
+            public string ProviderKey { get; set; }
+            public string ExternalUserId { get; set; }
+            public string DisplayName { get; set; }
+            public string AvatarUrl { get; set; }
+            public string LastRefreshedUtc { get; set; }
+            public long? ProviderGameId { get; set; }
+            public string PlayniteGameId { get; set; }
+            public string GameName { get; set; }
+            public int PlaytimeForeverMinutes { get; set; }
+            public string LastPlayedUtc { get; set; }
+            public string LastScrapedUtc { get; set; }
+            public string LastScrapeStatus { get; set; }
+        }
+
+        private sealed class FriendSummaryRow
+        {
+            public string ProviderKey { get; set; }
+            public string ExternalUserId { get; set; }
+            public string DisplayName { get; set; }
+            public string AvatarUrl { get; set; }
+            public long SharedGamesCount { get; set; }
+            public long UnlockedAchievementsCount { get; set; }
+            public string LastUnlockUtc { get; set; }
+        }
+
+        private sealed class FriendGameSummaryRow
+        {
+            public string ProviderKey { get; set; }
+            public long? ProviderGameId { get; set; }
+            public string PlayniteGameId { get; set; }
+            public string GameName { get; set; }
+            public long FriendCount { get; set; }
+            public long UnlockedAchievementsCount { get; set; }
+            public string LastUnlockUtc { get; set; }
+        }
+
+        private sealed class FriendGameLinkRow
+        {
+            public string ProviderKey { get; set; }
+            public string ExternalUserId { get; set; }
+            public long? ProviderGameId { get; set; }
+            public string PlayniteGameId { get; set; }
+        }
+
+        private sealed class FriendRecentUnlockRow
+        {
+            public string ProviderKey { get; set; }
+            public long? ProviderGameId { get; set; }
+            public string PlayniteGameId { get; set; }
+            public string GameName { get; set; }
+            public string FriendExternalUserId { get; set; }
+            public string FriendName { get; set; }
+            public string FriendAvatarUrl { get; set; }
+            public string ApiName { get; set; }
+            public string DisplayName { get; set; }
+            public string Description { get; set; }
+            public string UnlockedIconPath { get; set; }
+            public string LockedIconPath { get; set; }
+            public int? Points { get; set; }
+            public int? ScaledPoints { get; set; }
+            public string Category { get; set; }
+            public string CategoryType { get; set; }
+            public string TrophyType { get; set; }
+            public long Hidden { get; set; }
+            public long IsCapstone { get; set; }
+            public double? GlobalPercentUnlocked { get; set; }
+            public string Rarity { get; set; }
+            public string UnlockTimeUtc { get; set; }
+            public int? ProgressNum { get; set; }
+            public int? ProgressDenom { get; set; }
+        }
+
+        private sealed class FriendDefinitionMatch
+        {
+            public long DefinitionId { get; set; }
+            public FriendAchievementRow Row { get; set; }
         }
 
         private sealed class CachedCurrentUserState
@@ -1046,6 +1129,1130 @@ namespace PlayniteAchievements.Services.Database
             return current + value;
         }
 
+        public FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            var friendSource = GetFriendSource(providerKey);
+            var now = DateTime.UtcNow;
+            var nowIso = ToIso(now);
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var incomingCount = friends?.Count(friend => !string.IsNullOrWhiteSpace(friend?.ExternalUserId)) ?? 0;
+
+            try
+            {
+                WithDb(db =>
+                {
+                    db.RunTransaction(() =>
+                    {
+                        foreach (var friend in friends ?? Array.Empty<FriendIdentity>())
+                        {
+                            if (string.IsNullOrWhiteSpace(friend?.ExternalUserId))
+                            {
+                                continue;
+                            }
+
+                            friend.ProviderKey = providerKey;
+                            UpsertFriendUser(db, providerKey, friendSource, friend, nowIso);
+                            seen.Add(friend.ExternalUserId.Trim());
+                        }
+
+                        MarkMissingFriendsInactive(db, providerKey, friendSource, seen, nowIso);
+                    });
+                });
+
+                return FriendCacheWriteResult.Ok(incomingCount, seen.Count, Math.Max(0, incomingCount - seen.Count));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to save friend list for provider={providerKey}.");
+                return FriendCacheWriteResult.Failed(ex.Message);
+            }
+        }
+
+        public FriendCacheWriteResult SaveFriendOwnership(
+            string providerKey,
+            string externalUserId,
+            IReadOnlyList<FriendGameOwnership> ownership)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            if (string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return FriendCacheWriteResult.Failed("Friend id is missing.");
+            }
+
+            var nowIso = ToIso(DateTime.UtcNow);
+            var validOwnership = (ownership ?? Array.Empty<FriendGameOwnership>())
+                .Where(item => item?.AppId > 0)
+                .ToList();
+            var incomingCount = validOwnership.Count;
+            var writtenCount = 0;
+            var skippedCount = 0;
+
+            try
+            {
+                WithDb(db =>
+                {
+                    db.RunTransaction(() =>
+                    {
+                        var user = LoadFriendUser(db, providerKey, externalUserId);
+                        if (user == null)
+                        {
+                            skippedCount = incomingCount;
+                            return;
+                        }
+
+                        foreach (var item in validOwnership)
+                        {
+                            var game = LoadSharedGameByAppId(db, providerKey, item.AppId);
+                            if (game == null)
+                            {
+                                skippedCount++;
+                                continue;
+                            }
+
+                            if (!UpsertFriendOwnership(db, user.Id, game.Id, item, nowIso))
+                            {
+                                throw new InvalidOperationException(
+                                    $"Failed to upsert FriendOwnership for userId={user.Id}, gameId={game.Id}.");
+                            }
+
+                            writtenCount++;
+                        }
+                    });
+                });
+
+                return FriendCacheWriteResult.Ok(incomingCount, writtenCount, skippedCount);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to save friend ownership for provider={providerKey}, friend={externalUserId}.");
+                return FriendCacheWriteResult.Failed(ex.Message);
+            }
+        }
+
+        public FriendCacheWriteResult SaveFriendGameAchievements(
+            string providerKey,
+            string externalUserId,
+            int appId,
+            FriendGameAchievements achievements)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            if (string.IsNullOrWhiteSpace(externalUserId) || appId <= 0)
+            {
+                return FriendCacheWriteResult.Failed("Friend id or app id is missing.");
+            }
+
+            var nowIso = ToIso(DateTime.UtcNow);
+            var updatedIso = ToIso(achievements?.LastUpdatedUtc == default(DateTime)
+                ? DateTime.UtcNow
+                : achievements.LastUpdatedUtc);
+
+            try
+            {
+                WithDb(db =>
+                {
+                    db.RunTransaction(() =>
+                    {
+                        var user = LoadFriendUser(db, providerKey, externalUserId);
+                        var game = LoadSharedGameByAppId(db, providerKey, appId);
+                        if (user == null || game == null)
+                        {
+                            return;
+                        }
+
+                        var status = ResolveFriendScrapeStatus(achievements);
+                        var detail = achievements?.DetailCode.ToString();
+
+                        UpdateFriendOwnershipScrapeState(db, user.Id, game.Id, status, detail, updatedIso, nowIso);
+
+                        if (!string.Equals(status, "ok", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return;
+                        }
+
+                        var definitions = LoadAchievementDefinitionsForGame(db, game.Id);
+                        var totalAchievements = definitions.Count;
+                        var incomingRows = achievements?.Rows ?? new List<FriendAchievementRow>();
+                        var matchedRows = MapFriendRowsToDefinitions(definitions, incomingRows);
+
+                        var cacheKey = BuildFriendCacheKey(providerKey, externalUserId, game);
+                        var existingProgress = LoadUserGameProgress(db, user.Id, game.Id, cacheKey);
+                        var userProgressId = UpsertUserGameProgress(
+                            db,
+                            existingProgress,
+                            user.Id,
+                            game.Id,
+                            cacheKey,
+                            totalAchievements > 0,
+                            Math.Max((int)(existingProgress?.AchievementsUnlocked ?? 0), matchedRows.Count),
+                            totalAchievements,
+                            updatedIso,
+                            nowIso);
+
+                        UpsertFriendAchievementRows(db, userProgressId, matchedRows, updatedIso, nowIso);
+
+                        var unlockedCount = db.ExecuteScalar<long>(
+                            @"SELECT COUNT(*)
+                              FROM UserAchievements
+                              WHERE UserGameProgressId = ?
+                                AND Unlocked = 1;",
+                            new object[] { userProgressId });
+
+                        db.ExecuteNonQuery(
+                            @"UPDATE UserGameProgress
+                              SET AchievementsUnlocked = ?,
+                                  TotalAchievements = ?,
+                                  HasAchievements = ?,
+                                  LastUpdatedUtc = ?,
+                                  UpdatedUtc = ?
+                              WHERE Id = ?;",
+                            Math.Max(0, unlockedCount),
+                            totalAchievements,
+                            totalAchievements > 0 ? 1 : 0,
+                            updatedIso,
+                            nowIso,
+                            userProgressId);
+                    });
+                });
+
+                return FriendCacheWriteResult.Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to save friend achievements for provider={providerKey}, friend={externalUserId}, appId={appId}.");
+                return FriendCacheWriteResult.Failed(ex.Message);
+            }
+        }
+
+        public List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
+            string providerKey,
+            FriendRefreshOptions options)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            options = options?.Clone() ?? new FriendRefreshOptions();
+            var ttl = options.RefreshTtl.GetValueOrDefault(TimeSpan.FromHours(24));
+            var cutoffIso = ToIso(DateTime.UtcNow - (ttl <= TimeSpan.Zero ? TimeSpan.FromHours(24) : ttl));
+
+            return WithDb(db =>
+            {
+                if (options.Scope == FriendRefreshScope.Full ||
+                    options.Scope == FriendRefreshScope.Installed ||
+                    (options.Scope == FriendRefreshScope.Custom && options.PlayniteGameIds?.Count > 0))
+                {
+                    return LoadCurrentUserFriendRefreshCandidates(db, providerKey, options);
+                }
+
+                return LoadSharedFriendRefreshCandidates(
+                    db,
+                    providerKey,
+                    cutoffIso,
+                    options.Scope == FriendRefreshScope.Recent);
+            });
+        }
+
+        private static List<FriendRefreshCandidate> LoadSharedFriendRefreshCandidates(
+            SQLiteDatabase db,
+            string providerKey,
+            string cutoffIso,
+            bool recentOnly)
+        {
+                var sql =
+                    @"SELECT
+                        u.ProviderKey AS ProviderKey,
+                        u.ExternalUserId AS ExternalUserId,
+                        u.DisplayName AS DisplayName,
+                        u.AvatarUrl AS AvatarUrl,
+                        u.LastRefreshedUtc AS LastRefreshedUtc,
+                        g.ProviderGameId AS ProviderGameId,
+                        g.PlayniteGameId AS PlayniteGameId,
+                        g.GameName AS GameName,
+                        fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
+                        fo.LastPlayedUtc AS LastPlayedUtc,
+                        fo.LastScrapedUtc AS LastScrapedUtc,
+                        fo.LastScrapeStatus AS LastScrapeStatus
+                      FROM FriendOwnership fo
+                      INNER JOIN Users u ON u.Id = fo.UserId
+                      INNER JOIN Games g ON g.Id = fo.GameId
+                      WHERE u.ProviderKey = ?
+                        AND u.IsCurrentUser = 0
+                        AND u.IsActiveFriend = 1
+                        AND g.ProviderKey = ?
+                        AND g.ProviderGameId IS NOT NULL
+                        AND g.ProviderGameId > 0";
+
+            List<FriendRefreshCandidateRow> rows;
+            if (recentOnly)
+            {
+                rows = db.Load<FriendRefreshCandidateRow>(
+                    sql + @" AND (
+                            fo.LastScrapedUtc IS NULL
+                            OR fo.LastScrapedUtc = ''
+                            OR fo.LastScrapedUtc < ?
+                            OR fo.LastScrapeStatus = 'transient'
+                            OR COALESCE(fo.Playtime2WeeksMinutes, 0) > 0
+                          )
+                          ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;",
+                    providerKey,
+                    providerKey,
+                    cutoffIso).ToList();
+            }
+            else
+            {
+                rows = db.Load<FriendRefreshCandidateRow>(
+                    sql + " ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;",
+                    providerKey,
+                    providerKey).ToList();
+            }
+
+            return MapFriendRefreshCandidates(rows);
+        }
+
+        private static List<FriendRefreshCandidate> LoadCurrentUserFriendRefreshCandidates(
+            SQLiteDatabase db,
+            string providerKey,
+            FriendRefreshOptions options)
+        {
+            var ids = options.PlayniteGameIds?
+                .Where(id => id != Guid.Empty)
+                .Select(id => id.ToString())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
+
+            var sql = new StringBuilder(
+                @"WITH CurrentGames AS (
+                    SELECT DISTINCT
+                        g.Id AS Id,
+                        g.ProviderKey AS ProviderKey,
+                        g.ProviderPlatformKey AS ProviderPlatformKey,
+                        g.ProviderGameId AS ProviderGameId,
+                        g.PlayniteGameId AS PlayniteGameId,
+                        g.GameName AS GameName,
+                        g.LibrarySourceName AS LibrarySourceName,
+                        g.FirstSeenUtc AS FirstSeenUtc,
+                        g.LastUpdatedUtc AS LastUpdatedUtc
+                    FROM Games g
+                    INNER JOIN UserGameProgress ugp ON ugp.GameId = g.Id
+                    INNER JOIN Users cu ON cu.Id = ugp.UserId
+                    WHERE cu.ProviderKey = ?
+                      AND cu.IsCurrentUser = 1
+                      AND g.ProviderKey = ?
+                      AND g.ProviderGameId IS NOT NULL
+                      AND g.ProviderGameId > 0
+                      AND g.PlayniteGameId IS NOT NULL
+                      AND TRIM(g.PlayniteGameId) <> ''");
+
+            var args = new List<object> { providerKey, providerKey };
+            if (ids.Count > 0)
+            {
+                sql.Append(" AND g.PlayniteGameId IN (");
+                sql.Append(string.Join(",", ids.Select(_ => "?")));
+                sql.Append(')');
+                args.AddRange(ids.Cast<object>());
+            }
+
+            sql.Append(
+                @")
+                  SELECT
+                    u.ProviderKey AS ProviderKey,
+                    u.ExternalUserId AS ExternalUserId,
+                    u.DisplayName AS DisplayName,
+                    u.AvatarUrl AS AvatarUrl,
+                    u.LastRefreshedUtc AS LastRefreshedUtc,
+                    g.ProviderGameId AS ProviderGameId,
+                    g.PlayniteGameId AS PlayniteGameId,
+                    g.GameName AS GameName,
+                    COALESCE(fo.PlaytimeForeverMinutes, 0) AS PlaytimeForeverMinutes,
+                    fo.LastPlayedUtc AS LastPlayedUtc,
+                    fo.LastScrapedUtc AS LastScrapedUtc,
+                    fo.LastScrapeStatus AS LastScrapeStatus
+                  FROM Users u
+                  CROSS JOIN CurrentGames g
+                  LEFT JOIN FriendOwnership fo ON fo.UserId = u.Id AND fo.GameId = g.Id
+                  WHERE u.ProviderKey = ?
+                    AND u.IsCurrentUser = 0
+                    AND u.IsActiveFriend = 1
+                  ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, COALESCE(fo.PlaytimeForeverMinutes, 0) DESC, u.DisplayName, g.GameName;");
+
+            args.Add(providerKey);
+            return MapFriendRefreshCandidates(db.Load<FriendRefreshCandidateRow>(sql.ToString(), args.ToArray()).ToList());
+        }
+
+        private static List<FriendRefreshCandidate> MapFriendRefreshCandidates(IEnumerable<FriendRefreshCandidateRow> rows)
+        {
+            return (rows ?? Enumerable.Empty<FriendRefreshCandidateRow>())
+                .Where(row => row?.ProviderGameId > 0)
+                .Select(row => new FriendRefreshCandidate
+                {
+                    Friend = new FriendIdentity
+                    {
+                        ProviderKey = row.ProviderKey,
+                        ExternalUserId = row.ExternalUserId,
+                        DisplayName = row.DisplayName,
+                        AvatarUrl = row.AvatarUrl,
+                        LastRefreshedUtc = ParseUtc(row.LastRefreshedUtc)
+                    },
+                    AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                    PlayniteGameId = ParseGuid(row.PlayniteGameId),
+                    GameName = row.GameName,
+                    PlaytimeForeverMinutes = Math.Max(0, row.PlaytimeForeverMinutes),
+                    LastPlayedUtc = ParseUtc(row.LastPlayedUtc),
+                    LastScrapedUtc = ParseUtc(row.LastScrapedUtc),
+                    LastScrapeStatus = row.LastScrapeStatus
+                })
+                .ToList();
+        }
+
+        public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
+        {
+            return WithDb(db =>
+            {
+                var data = new FriendsOverviewData();
+
+                data.Friends = LoadFriendSummaryRows(db)
+                    .Select(row => new FriendSummaryItem
+                    {
+                        ProviderKey = row.ProviderKey,
+                        ExternalUserId = row.ExternalUserId,
+                        DisplayName = row.DisplayName,
+                        AvatarUrl = row.AvatarUrl,
+                        SharedGamesCount = (int)Math.Max(0, row.SharedGamesCount),
+                        UnlockedAchievementsCount = (int)Math.Max(0, row.UnlockedAchievementsCount),
+                        LastUnlockUtc = ParseUtc(row.LastUnlockUtc)
+                    })
+                    .ToList();
+
+                data.Games = LoadFriendGameSummaryRows(db)
+                    .Select(row => new FriendGameSummaryItem
+                    {
+                        ProviderKey = row.ProviderKey,
+                        AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                        PlayniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId),
+                        GameName = row.GameName,
+                        FriendCount = (int)Math.Max(0, row.FriendCount),
+                        UnlockedAchievementsCount = (int)Math.Max(0, row.UnlockedAchievementsCount),
+                        LastUnlockUtc = ParseUtc(row.LastUnlockUtc)
+                    })
+                    .ToList();
+
+                data.FriendGameLinks = LoadFriendGameLinkRows(db)
+                    .Select(row => new FriendGameLinkItem
+                    {
+                        ProviderKey = row.ProviderKey,
+                        ExternalUserId = row.ExternalUserId,
+                        AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                        PlayniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId)
+                    })
+                    .ToList();
+
+                data.RecentUnlocks = MapFriendRecentUnlocks(LoadFriendRecentUnlockRows(db, hideSpoilers, recentLimit));
+                data.AllUnlockedAchievements = MapFriendRecentUnlocks(LoadFriendUnlockedAchievementRows(db, hideSpoilers));
+                return data;
+            });
+        }
+
+        private static string GetFriendSource(string providerKey) =>
+            string.IsNullOrWhiteSpace(providerKey) ? "Friends" : providerKey.Trim() + "Friends";
+
+        private static string BuildFriendCacheKey(string providerKey, string externalUserId, GameRow game)
+        {
+            var gamePart = !string.IsNullOrWhiteSpace(game?.PlayniteGameId)
+                ? game.PlayniteGameId.Trim()
+                : (game?.ProviderGameId?.ToString(CultureInfo.InvariantCulture) ?? "unknown");
+            return $"friend:{providerKey}:{externalUserId}:{gamePart}";
+        }
+
+        private long UpsertFriendUser(
+            SQLiteDatabase db,
+            string providerKey,
+            string friendSource,
+            FriendIdentity friend,
+            string nowIso)
+        {
+            var externalUserId = friend.ExternalUserId.Trim();
+            var displayName = string.IsNullOrWhiteSpace(friend.DisplayName)
+                ? externalUserId
+                : friend.DisplayName.Trim();
+            var lastRefreshedIso = ToIso(friend.LastRefreshedUtc ?? DateTime.UtcNow);
+
+            db.ExecuteNonQuery(
+                @"INSERT OR IGNORE INTO Users
+                    (ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, AvatarUrl, LastRefreshedUtc, IsActiveFriend, CreatedUtc, UpdatedUtc)
+                  VALUES
+                    (?, ?, ?, 0, ?, ?, ?, 1, ?, ?);",
+                providerKey,
+                externalUserId,
+                DbValue(displayName),
+                DbValue(friendSource),
+                DbValue(friend.AvatarUrl),
+                lastRefreshedIso,
+                nowIso,
+                nowIso);
+
+            var userId = db.ExecuteScalar<long>(
+                @"SELECT Id
+                  FROM Users
+                  WHERE ProviderKey = ?
+                    AND ExternalUserId = ?
+                  LIMIT 1;",
+                providerKey,
+                externalUserId);
+
+            if (userId <= 0)
+            {
+                return 0;
+            }
+
+            db.ExecuteNonQuery(
+                @"UPDATE Users
+                  SET DisplayName = ?,
+                      FriendSource = ?,
+                      AvatarUrl = ?,
+                      LastRefreshedUtc = ?,
+                      IsActiveFriend = CASE WHEN IsCurrentUser = 1 THEN IsActiveFriend ELSE 1 END,
+                      UpdatedUtc = ?
+                  WHERE Id = ?;",
+                DbValue(displayName),
+                DbValue(friendSource),
+                DbValue(friend.AvatarUrl),
+                lastRefreshedIso,
+                nowIso,
+                userId);
+
+            return userId;
+        }
+
+        private static void MarkMissingFriendsInactive(
+            SQLiteDatabase db,
+            string providerKey,
+            string friendSource,
+            HashSet<string> seenExternalUserIds,
+            string nowIso)
+        {
+            if (seenExternalUserIds == null || seenExternalUserIds.Count == 0)
+            {
+                db.ExecuteNonQuery(
+                    @"UPDATE Users
+                      SET IsActiveFriend = 0,
+                          UpdatedUtc = ?
+                      WHERE ProviderKey = ?
+                        AND IsCurrentUser = 0
+                        AND FriendSource = ?;",
+                    nowIso,
+                    providerKey,
+                    friendSource);
+                return;
+            }
+
+            var placeholders = string.Join(",", seenExternalUserIds.Select(_ => "?"));
+            var args = new List<object> { nowIso, providerKey, friendSource };
+            args.AddRange(seenExternalUserIds.Cast<object>());
+            db.ExecuteNonQuery(
+                @"UPDATE Users
+                  SET IsActiveFriend = 0,
+                      UpdatedUtc = ?
+                  WHERE ProviderKey = ?
+                    AND IsCurrentUser = 0
+                    AND FriendSource = ?
+                    AND ExternalUserId NOT IN (" + placeholders + ");",
+                args.ToArray());
+        }
+
+        private static UserRow LoadFriendUser(SQLiteDatabase db, string providerKey, string externalUserId)
+        {
+            return db.Load<UserRow>(
+                @"SELECT Id, ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, AvatarUrl, LastRefreshedUtc, IsActiveFriend, CreatedUtc, UpdatedUtc
+                  FROM Users
+                  WHERE ProviderKey = ?
+                    AND ExternalUserId = ?
+                    AND IsCurrentUser = 0
+                    AND IsActiveFriend = 1
+                  LIMIT 1;",
+                providerKey,
+                externalUserId.Trim()).FirstOrDefault();
+        }
+
+        private static GameRow LoadSharedGameByAppId(SQLiteDatabase db, string providerKey, int appId)
+        {
+            return db.Load<GameRow>(
+                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                  FROM Games
+                  WHERE ProviderKey = ?
+                    AND ProviderGameId = ?
+                    AND PlayniteGameId IS NOT NULL
+                    AND TRIM(PlayniteGameId) <> ''
+                  ORDER BY LastUpdatedUtc DESC, Id DESC
+                  LIMIT 1;",
+                providerKey,
+                appId).FirstOrDefault();
+        }
+
+        private static bool UpsertFriendOwnership(
+            SQLiteDatabase db,
+            long userId,
+            long gameId,
+            FriendGameOwnership item,
+            string nowIso)
+        {
+            var lastPlayedIso = item.LastPlayedUtc.HasValue ? ToIso(item.LastPlayedUtc.Value) : null;
+            var existingId = db.ExecuteScalar<long>(
+                @"SELECT Id
+                  FROM FriendOwnership
+                  WHERE UserId = ?
+                    AND GameId = ?
+                  LIMIT 1;",
+                new object[] { userId, gameId });
+
+            if (existingId <= 0)
+            {
+                db.ExecuteNonQuery(
+                    @"INSERT INTO FriendOwnership
+                        (UserId, GameId, PlaytimeForeverMinutes, Playtime2WeeksMinutes, LastPlayedUtc, LastOwnershipRefreshUtc, CreatedUtc, UpdatedUtc)
+                      VALUES
+                        (?, ?, ?, ?, ?, ?, ?, ?);",
+                    userId,
+                    gameId,
+                    Math.Max(0, item.PlaytimeForeverMinutes),
+                    item.Playtime2WeeksMinutes.HasValue ? (object)Math.Max(0, item.Playtime2WeeksMinutes.Value) : DBNull.Value,
+                    DbValue(lastPlayedIso),
+                    nowIso,
+                    nowIso,
+                    nowIso);
+                return FriendOwnershipExists(db, userId, gameId);
+            }
+
+            db.ExecuteNonQuery(
+                @"UPDATE FriendOwnership
+                  SET PlaytimeForeverMinutes = ?,
+                      Playtime2WeeksMinutes = ?,
+                      LastPlayedUtc = ?,
+                      LastOwnershipRefreshUtc = ?,
+                      UpdatedUtc = ?
+                  WHERE Id = ?;",
+                Math.Max(0, item.PlaytimeForeverMinutes),
+                item.Playtime2WeeksMinutes.HasValue ? (object)Math.Max(0, item.Playtime2WeeksMinutes.Value) : DBNull.Value,
+                DbValue(lastPlayedIso),
+                nowIso,
+                nowIso,
+                existingId);
+
+            return FriendOwnershipExists(db, userId, gameId);
+        }
+
+        private static void DeleteStaleFriendOwnership(SQLiteDatabase db, long userId, HashSet<long> seenGameIds)
+        {
+            if (seenGameIds == null || seenGameIds.Count == 0)
+            {
+                db.ExecuteNonQuery("DELETE FROM FriendOwnership WHERE UserId = ?;", userId);
+                return;
+            }
+
+            var placeholders = string.Join(",", seenGameIds.Select(_ => "?"));
+            var args = new List<object> { userId };
+            args.AddRange(seenGameIds.Cast<object>());
+            db.ExecuteNonQuery(
+                "DELETE FROM FriendOwnership WHERE UserId = ? AND GameId NOT IN (" + placeholders + ");",
+                args.ToArray());
+        }
+
+        private static int CountFriendOwnershipRows(SQLiteDatabase db, long userId)
+        {
+            if (db == null || userId <= 0)
+            {
+                return 0;
+            }
+
+            return (int)Math.Max(0, db.ExecuteScalar<long>(
+                "SELECT COUNT(*) FROM FriendOwnership WHERE UserId = ?;",
+                new object[] { userId }));
+        }
+
+        private static bool FriendOwnershipExists(SQLiteDatabase db, long userId, long gameId)
+        {
+            if (db == null || userId <= 0 || gameId <= 0)
+            {
+                return false;
+            }
+
+            return db.ExecuteScalar<long>(
+                @"SELECT EXISTS(
+                    SELECT 1
+                    FROM FriendOwnership
+                    WHERE UserId = ?
+                      AND GameId = ?
+                    LIMIT 1
+                  );",
+                new object[] { userId, gameId }) != 0;
+        }
+
+        private static string ResolveFriendScrapeStatus(FriendGameAchievements achievements)
+        {
+            if (achievements == null || achievements.TransientFailure)
+            {
+                return "transient";
+            }
+
+            return achievements.StatsUnavailable ? "unavailable" : "ok";
+        }
+
+        private static void UpdateFriendOwnershipScrapeState(
+            SQLiteDatabase db,
+            long userId,
+            long gameId,
+            string status,
+            string detail,
+            string updatedIso,
+            string nowIso)
+        {
+            var existingId = db.ExecuteScalar<long>(
+                @"SELECT Id
+                  FROM FriendOwnership
+                  WHERE UserId = ?
+                    AND GameId = ?
+                  LIMIT 1;",
+                new object[] { userId, gameId });
+
+            if (existingId <= 0)
+            {
+                db.ExecuteNonQuery(
+                    @"INSERT INTO FriendOwnership
+                        (UserId, GameId, PlaytimeForeverMinutes, LastScrapedUtc, LastScrapeStatus, LastScrapeDetail, CreatedUtc, UpdatedUtc)
+                      VALUES
+                        (?, ?, 0, ?, ?, ?, ?, ?);",
+                    userId,
+                    gameId,
+                    updatedIso,
+                    DbValue(status),
+                    DbValue(detail),
+                    nowIso,
+                    nowIso);
+                return;
+            }
+
+            db.ExecuteNonQuery(
+                @"UPDATE FriendOwnership
+                  SET LastScrapedUtc = ?,
+                      LastScrapeStatus = ?,
+                      LastScrapeDetail = ?,
+                      UpdatedUtc = ?
+                  WHERE Id = ?;",
+                updatedIso,
+                DbValue(status),
+                DbValue(detail),
+                nowIso,
+                existingId);
+        }
+
+        private static List<AchievementDefinitionRow> LoadAchievementDefinitionsForGame(SQLiteDatabase db, long gameId)
+        {
+            return db.Load<AchievementDefinitionRow>(
+                @"SELECT Id, GameId, ApiName, DisplayName, Description, UnlockedIconPath, LockedIconPath,
+                         Points, ScaledPoints, Category, CategoryType, TrophyType, Hidden, IsCapstone,
+                         GlobalPercentUnlocked, Rarity, ProgressMax, CreatedUtc, UpdatedUtc
+                  FROM AchievementDefinitions
+                  WHERE GameId = ?
+                  ORDER BY Id;",
+                gameId).ToList();
+        }
+
+        private static List<FriendDefinitionMatch> MapFriendRowsToDefinitions(
+            List<AchievementDefinitionRow> definitions,
+            IEnumerable<FriendAchievementRow> rows)
+        {
+            var result = new List<FriendDefinitionMatch>();
+            if (definitions == null || definitions.Count == 0 || rows == null)
+            {
+                return result;
+            }
+
+            var usedDefinitionIds = new HashSet<long>();
+            foreach (var row in rows.Where(row => row?.Unlocked == true))
+            {
+                var definition = ResolveFriendDefinition(definitions, row, usedDefinitionIds);
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                usedDefinitionIds.Add(definition.Id);
+                result.Add(new FriendDefinitionMatch
+                {
+                    DefinitionId = definition.Id,
+                    Row = row
+                });
+            }
+
+            return result;
+        }
+
+        private static AchievementDefinitionRow ResolveFriendDefinition(
+            List<AchievementDefinitionRow> definitions,
+            FriendAchievementRow row,
+            HashSet<long> usedDefinitionIds)
+        {
+            var rowDisplay = NormalizeMatchText(row.DisplayName);
+            var rowDescription = NormalizeMatchText(row.Description);
+
+            var exact = definitions
+                .Where(def => !usedDefinitionIds.Contains(def.Id) &&
+                              string.Equals(NormalizeMatchText(def.DisplayName), rowDisplay, StringComparison.OrdinalIgnoreCase) &&
+                              string.Equals(NormalizeMatchText(def.Description), rowDescription, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (exact.Count == 1)
+            {
+                return exact[0];
+            }
+
+            var byName = definitions
+                .Where(def => !usedDefinitionIds.Contains(def.Id) &&
+                              string.Equals(NormalizeMatchText(def.DisplayName), rowDisplay, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            if (byName.Count == 1)
+            {
+                return byName[0];
+            }
+
+            var iconFile = ExtractIconFilename(row.IconUrl);
+            if (!string.IsNullOrWhiteSpace(iconFile))
+            {
+                var byIcon = definitions
+                    .Where(def => !usedDefinitionIds.Contains(def.Id) &&
+                                  (string.Equals(ExtractIconFilename(def.UnlockedIconPath), iconFile, StringComparison.OrdinalIgnoreCase) ||
+                                   string.Equals(ExtractIconFilename(def.LockedIconPath), iconFile, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+                if (byIcon.Count == 1)
+                {
+                    return byIcon[0];
+                }
+            }
+
+            return null;
+        }
+
+        private static void UpsertFriendAchievementRows(
+            SQLiteDatabase db,
+            long userProgressId,
+            List<FriendDefinitionMatch> matchedRows,
+            string updatedIso,
+            string nowIso)
+        {
+            if (matchedRows == null || matchedRows.Count == 0)
+            {
+                return;
+            }
+
+            var existingRows = db.Load<UserAchievementRow>(
+                @"SELECT Id, UserGameProgressId, AchievementDefinitionId, Unlocked, UnlockTimeUtc, ProgressNum, ProgressDenom, LastUpdatedUtc, CreatedUtc
+                  FROM UserAchievements
+                  WHERE UserGameProgressId = ?;",
+                userProgressId)
+                .ToDictionary(row => row.AchievementDefinitionId);
+
+            foreach (var match in matchedRows)
+            {
+                var incoming = match.Row;
+                var incomingTime = NormalizeUnlockTime(incoming.UnlockTimeUtc);
+                var incomingIso = incomingTime.HasValue ? ToIso(incomingTime.Value) : null;
+                var progressNum = incoming.ProgressNum;
+                var progressDenom = incoming.ProgressDenom;
+
+                if (!existingRows.TryGetValue(match.DefinitionId, out var existing))
+                {
+                    db.ExecuteNonQuery(
+                        @"INSERT INTO UserAchievements
+                            (UserGameProgressId, AchievementDefinitionId, Unlocked, UnlockTimeUtc, ProgressNum, ProgressDenom, LastUpdatedUtc, CreatedUtc)
+                          VALUES
+                            (?, ?, 1, ?, ?, ?, ?, ?);",
+                        userProgressId,
+                        match.DefinitionId,
+                        DbValue(incomingIso),
+                        progressNum.HasValue ? (object)progressNum.Value : DBNull.Value,
+                        progressDenom.HasValue ? (object)progressDenom.Value : DBNull.Value,
+                        updatedIso,
+                        nowIso);
+                    continue;
+                }
+
+                var existingIso = NormalizeStoredIso(existing.UnlockTimeUtc);
+                var resolvedIso = existingIso ?? incomingIso;
+                var resolvedProgressNum = progressNum ?? existing.ProgressNum;
+                var resolvedProgressDenom = progressDenom ?? existing.ProgressDenom;
+
+                var changed = existing.Unlocked != 1 ||
+                              !NullableEquals(existingIso, resolvedIso) ||
+                              existing.ProgressNum != resolvedProgressNum ||
+                              existing.ProgressDenom != resolvedProgressDenom;
+                if (!changed)
+                {
+                    continue;
+                }
+
+                db.ExecuteNonQuery(
+                    @"UPDATE UserAchievements
+                      SET Unlocked = 1,
+                          UnlockTimeUtc = ?,
+                          ProgressNum = ?,
+                          ProgressDenom = ?,
+                          LastUpdatedUtc = ?
+                      WHERE Id = ?;",
+                    DbValue(resolvedIso),
+                    resolvedProgressNum.HasValue ? (object)resolvedProgressNum.Value : DBNull.Value,
+                    resolvedProgressDenom.HasValue ? (object)resolvedProgressDenom.Value : DBNull.Value,
+                    updatedIso,
+                    existing.Id);
+            }
+        }
+
+        private static List<FriendSummaryRow> LoadFriendSummaryRows(SQLiteDatabase db)
+        {
+            return db.Load<FriendSummaryRow>(
+                @"SELECT
+                    u.ProviderKey AS ProviderKey,
+                    u.ExternalUserId AS ExternalUserId,
+                    u.DisplayName AS DisplayName,
+                    u.AvatarUrl AS AvatarUrl,
+                    COUNT(DISTINCT fo.GameId) AS SharedGamesCount,
+                    COUNT(DISTINCT CASE WHEN ua.Unlocked = 1 THEN ua.Id ELSE NULL END) AS UnlockedAchievementsCount,
+                    MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
+                  FROM Users u
+                  LEFT JOIN FriendOwnership fo ON fo.UserId = u.Id
+                  LEFT JOIN UserGameProgress ugp ON ugp.UserId = u.Id AND ugp.GameId = fo.GameId
+                  LEFT JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                  WHERE u.IsCurrentUser = 0
+                    AND u.IsActiveFriend = 1
+                    AND u.FriendSource IS NOT NULL
+                  GROUP BY u.ProviderKey, u.ExternalUserId, u.DisplayName, u.AvatarUrl
+                  ORDER BY LastUnlockUtc DESC, u.DisplayName;").ToList();
+        }
+
+        private static List<FriendGameSummaryRow> LoadFriendGameSummaryRows(SQLiteDatabase db)
+        {
+            return db.Load<FriendGameSummaryRow>(
+                @"SELECT
+                    g.ProviderKey AS ProviderKey,
+                    g.ProviderGameId AS ProviderGameId,
+                    g.PlayniteGameId AS PlayniteGameId,
+                    g.GameName AS GameName,
+                    COUNT(DISTINCT fo.UserId) AS FriendCount,
+                    COUNT(DISTINCT CASE WHEN ua.Unlocked = 1 THEN ua.Id ELSE NULL END) AS UnlockedAchievementsCount,
+                    MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
+                  FROM FriendOwnership fo
+                  INNER JOIN Users u ON u.Id = fo.UserId
+                  INNER JOIN Games g ON g.Id = fo.GameId
+                  LEFT JOIN UserGameProgress ugp ON ugp.UserId = u.Id AND ugp.GameId = g.Id
+                  LEFT JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                  WHERE u.IsCurrentUser = 0
+                    AND u.IsActiveFriend = 1
+                    AND u.FriendSource IS NOT NULL
+                    AND g.PlayniteGameId IS NOT NULL
+                    AND TRIM(g.PlayniteGameId) <> ''
+                  GROUP BY g.ProviderKey, g.ProviderGameId, g.PlayniteGameId, g.GameName
+                  ORDER BY LastUnlockUtc DESC, g.GameName;").ToList();
+        }
+
+        private static List<FriendGameLinkRow> LoadFriendGameLinkRows(SQLiteDatabase db)
+        {
+            return db.Load<FriendGameLinkRow>(
+                @"SELECT DISTINCT
+                    g.ProviderKey AS ProviderKey,
+                    u.ExternalUserId AS ExternalUserId,
+                    g.ProviderGameId AS ProviderGameId,
+                    g.PlayniteGameId AS PlayniteGameId
+                  FROM FriendOwnership fo
+                  INNER JOIN Users u ON u.Id = fo.UserId
+                  INNER JOIN Games g ON g.Id = fo.GameId
+                  WHERE u.IsCurrentUser = 0
+                    AND u.IsActiveFriend = 1
+                    AND u.FriendSource IS NOT NULL
+                    AND g.PlayniteGameId IS NOT NULL
+                    AND TRIM(g.PlayniteGameId) <> ''
+                  ORDER BY u.ExternalUserId, g.GameName;").ToList();
+        }
+
+        private static List<FriendRecentUnlockRow> LoadFriendRecentUnlockRows(
+            SQLiteDatabase db,
+            bool hideSpoilers,
+            int recentLimit)
+        {
+            return LoadFriendAchievementRows(db, hideSpoilers, recentLimit, requireUnlockTime: true);
+        }
+
+        private static List<FriendRecentUnlockRow> LoadFriendUnlockedAchievementRows(
+            SQLiteDatabase db,
+            bool hideSpoilers)
+        {
+            return LoadFriendAchievementRows(db, hideSpoilers, 0, requireUnlockTime: false);
+        }
+
+        private static List<FriendRecentUnlockRow> LoadFriendAchievementRows(
+            SQLiteDatabase db,
+            bool hideSpoilers,
+            int recentLimit,
+            bool requireUnlockTime)
+        {
+            var sql = new StringBuilder(
+                @"SELECT
+                    g.ProviderKey AS ProviderKey,
+                    g.ProviderGameId AS ProviderGameId,
+                    g.PlayniteGameId AS PlayniteGameId,
+                    g.GameName AS GameName,
+                    u.ExternalUserId AS FriendExternalUserId,
+                    u.DisplayName AS FriendName,
+                    u.AvatarUrl AS FriendAvatarUrl,
+                    ad.ApiName AS ApiName,
+                    ad.DisplayName AS DisplayName,
+                    ad.Description AS Description,
+                    ad.UnlockedIconPath AS UnlockedIconPath,
+                    ad.LockedIconPath AS LockedIconPath,
+                    ad.Points AS Points,
+                    ad.ScaledPoints AS ScaledPoints,
+                    ad.Category AS Category,
+                    ad.CategoryType AS CategoryType,
+                    ad.TrophyType AS TrophyType,
+                    ad.Hidden AS Hidden,
+                    ad.IsCapstone AS IsCapstone,
+                    ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
+                    ad.Rarity AS Rarity,
+                    ua.UnlockTimeUtc AS UnlockTimeUtc,
+                    ua.ProgressNum AS ProgressNum,
+                    ua.ProgressDenom AS ProgressDenom
+                  FROM Users u
+                  INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
+                  INNER JOIN Games g ON g.Id = ugp.GameId
+                  INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                  INNER JOIN AchievementDefinitions ad ON ad.Id = ua.AchievementDefinitionId
+                  WHERE u.IsCurrentUser = 0
+                    AND u.IsActiveFriend = 1
+                    AND u.FriendSource IS NOT NULL");
+
+            if (requireUnlockTime)
+            {
+                sql.Append(" AND ua.UnlockTimeUtc IS NOT NULL");
+            }
+
+            if (hideSpoilers)
+            {
+                sql.Append(
+                    @" AND EXISTS (
+                        SELECT 1
+                        FROM Users su
+                        INNER JOIN UserGameProgress sugp ON sugp.UserId = su.Id AND sugp.GameId = g.Id
+                        INNER JOIN UserAchievements sua ON sua.UserGameProgressId = sugp.Id
+                        WHERE su.ProviderKey = g.ProviderKey
+                          AND su.IsCurrentUser = 1
+                          AND sua.AchievementDefinitionId = ad.Id
+                          AND sua.Unlocked = 1
+                    )");
+            }
+
+            sql.Append(" ORDER BY ua.UnlockTimeUtc DESC, u.DisplayName, g.GameName, ad.Id");
+            if (recentLimit > 0)
+            {
+                sql.Append(" LIMIT ?");
+                return db.Load<FriendRecentUnlockRow>(sql.ToString(), recentLimit).ToList();
+            }
+
+            return db.Load<FriendRecentUnlockRow>(sql.ToString()).ToList();
+        }
+
+        private List<FriendAchievementDisplayItem> MapFriendRecentUnlocks(IEnumerable<FriendRecentUnlockRow> rows)
+        {
+            var result = new List<FriendAchievementDisplayItem>();
+            foreach (var row in rows ?? Enumerable.Empty<FriendRecentUnlockRow>())
+            {
+                if (row == null || string.IsNullOrWhiteSpace(row.ApiName))
+                {
+                    continue;
+                }
+
+                var detail = new AchievementDetail
+                {
+                    ApiName = row.ApiName,
+                    DisplayName = row.DisplayName,
+                    Description = row.Description,
+                    UnlockedIconPath = MakeAbsolutePath(row.UnlockedIconPath),
+                    LockedIconPath = MakeAbsolutePath(row.LockedIconPath),
+                    Points = row.Points,
+                    ScaledPoints = row.ScaledPoints,
+                    Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(row.Category),
+                    CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(row.CategoryType),
+                    TrophyType = row.TrophyType,
+                    Hidden = row.Hidden != 0,
+                    IsCapstone = row.IsCapstone != 0,
+                    GlobalPercentUnlocked = row.GlobalPercentUnlocked,
+                    Rarity = ParseStoredRarity(row.Rarity),
+                    UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
+                    Unlocked = true,
+                    ProgressNum = row.ProgressNum,
+                    ProgressDenom = row.ProgressDenom
+                };
+
+                var item = new FriendAchievementDisplayItem
+                {
+                    ApiName = detail.ApiName,
+                    DisplayName = detail.DisplayName,
+                    Description = detail.Description,
+                    UnlockedIconPath = detail.UnlockedIconPath,
+                    LockedIconPath = detail.LockedIconPath,
+                    PointsValue = detail.ScaledPoints ?? detail.Points,
+                    CategoryLabel = detail.Category,
+                    CategoryType = detail.CategoryType,
+                    TrophyType = detail.TrophyType,
+                    Hidden = detail.Hidden,
+                    IsCapstone = detail.IsCapstone,
+                    GlobalPercentUnlocked = detail.GlobalPercentUnlocked,
+                    Rarity = detail.Rarity,
+                    UnlockTimeUtc = detail.UnlockTimeUtc,
+                    Unlocked = true,
+                    ProgressNum = detail.ProgressNum,
+                    ProgressDenom = detail.ProgressDenom,
+                    ProviderKey = row.ProviderKey,
+                    AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                    GameName = row.GameName,
+                    SortingName = row.GameName,
+                    PlayniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId),
+                    FriendName = row.FriendName,
+                    FriendExternalUserId = row.FriendExternalUserId,
+                    FriendAvatarUrl = row.FriendAvatarUrl
+                };
+
+                result.Add(item);
+            }
+
+            return result;
+        }
+
+        private static string NormalizeMatchText(string value)
+        {
+            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+        }
+
+        private static string ExtractIconFilename(string iconUrl)
+        {
+            if (string.IsNullOrWhiteSpace(iconUrl))
+            {
+                return null;
+            }
+
+            var queryIndex = iconUrl.IndexOf('?');
+            if (queryIndex > 0)
+            {
+                iconUrl = iconUrl.Substring(0, queryIndex);
+            }
+
+            var lastSlash = iconUrl.LastIndexOf('/');
+            if (lastSlash < 0 || lastSlash >= iconUrl.Length - 1)
+            {
+                lastSlash = iconUrl.LastIndexOf('\\');
+            }
+
+            if (lastSlash < 0 || lastSlash >= iconUrl.Length - 1)
+            {
+                return null;
+            }
+
+            return iconUrl.Substring(lastSlash + 1);
+        }
+
         public void SaveCurrentUserGameData(string key, GameAchievementData data)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -1529,7 +2736,7 @@ namespace PlayniteAchievements.Services.Database
                       FROM Users
                       WHERE Id = ?
                       LIMIT 1;",
-                    cachedUser.UserId);
+                    new object[] { cachedUser.UserId });
                 if (cachedIdExists <= 0)
                 {
                     _cachedCurrentUsersByProvider.Remove(user.ProviderKey);

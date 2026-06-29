@@ -65,6 +65,11 @@ namespace PlayniteAchievements
             _windowService.OpenOverviewWindow();
         }
 
+        private void OpenFriendsOverviewWindow()
+        {
+            _windowService.OpenFriendsOverviewWindow();
+        }
+
         private void ToggleOverviewWindowFromHotkey()
         {
             _windowService.ToggleOverviewWindowFromHotkey();

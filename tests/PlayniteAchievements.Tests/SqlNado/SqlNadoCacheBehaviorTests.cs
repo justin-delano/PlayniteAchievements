@@ -1,13 +1,58 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services.Database;
+using SqlNado;
 
 namespace PlayniteAchievements.SqlNado.Tests
 {
     [TestClass]
     public class SqlNadoCacheBehaviorTests
     {
+        [TestMethod]
+        public void ExecuteScalar_WithNumericSqlParameters_UsesObjectArray()
+        {
+            var path = Path.Combine(Path.GetTempPath(), "playach-sqlnado-" + Guid.NewGuid().ToString("N") + ".db");
+            try
+            {
+                using (var db = new SQLiteDatabase(
+                    path,
+                    SQLiteOpenOptions.SQLITE_OPEN_READWRITE |
+                    SQLiteOpenOptions.SQLITE_OPEN_CREATE |
+                    SQLiteOpenOptions.SQLITE_OPEN_FULLMUTEX))
+                {
+                    db.ExecuteNonQuery(
+                        @"CREATE TABLE Probe (
+                            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            UserId INTEGER NOT NULL,
+                            GameId INTEGER NOT NULL
+                          );");
+                    db.ExecuteNonQuery(
+                        "INSERT INTO Probe (UserId, GameId) VALUES (?, ?);",
+                        10L,
+                        20L);
+
+                    var count = db.ExecuteScalar<long>(
+                        "SELECT COUNT(*) FROM Probe WHERE UserId = ? AND GameId = ?;",
+                        new object[] { 10L, 20L });
+                    var id = db.ExecuteScalar<long>(
+                        "SELECT Id FROM Probe WHERE UserId = ? AND GameId = ? LIMIT 1;",
+                        new object[] { 10L, 20L });
+
+                    Assert.AreEqual(1L, count);
+                    Assert.AreEqual(1L, id);
+                }
+            }
+            finally
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+        }
+
         [TestMethod]
         public void ComputeStaleDefinitionIds_ReturnsMissingOnly_CaseInsensitive()
         {

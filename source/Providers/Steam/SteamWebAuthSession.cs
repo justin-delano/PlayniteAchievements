@@ -54,6 +54,15 @@ namespace PlayniteAchievements.Providers.Steam
         private static readonly Regex JsonTokenPattern =
             new Regex(@"""webapi_token""\s*:\s*""(?<token>[^""]+)""", RegexOptions.IgnoreCase);
 
+        private static readonly Regex EncodedLoyaltyTokenPattern =
+            new Regex(@"loyalty_webapi_token&quot;\s*:\s*&quot;(?<token>[^&]+)&quot;", RegexOptions.IgnoreCase);
+
+        private static readonly Regex JsonLoyaltyTokenPattern =
+            new Regex(@"""loyalty_webapi_token""\s*:\s*""(?<token>[^""]+)""", RegexOptions.IgnoreCase);
+
+        private static readonly Regex AttributeLoyaltyTokenPattern =
+            new Regex(@"data-loyalty_webapi_token\s*=\s*""(?<token>[^""]+)""", RegexOptions.IgnoreCase);
+
         public static SteamWebAuthSession Parse(
             string source,
             string cookieSteamId64 = null,
@@ -75,7 +84,13 @@ namespace PlayniteAchievements.Providers.Steam
 
         public static string ExtractWebApiToken(string source)
         {
-            var match = MatchFirst(source, EncodedTokenPattern, JsonTokenPattern);
+            var match = MatchFirst(
+                source,
+                AttributeLoyaltyTokenPattern,
+                EncodedLoyaltyTokenPattern,
+                JsonLoyaltyTokenPattern,
+                EncodedTokenPattern,
+                JsonTokenPattern);
             var token = match?.Groups["token"].Value?.Trim();
             return string.IsNullOrWhiteSpace(token) ? null : token;
         }

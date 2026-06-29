@@ -1050,7 +1050,14 @@
                                                     </ComboBox>
                                                 </StackPanel>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
-                                                          IsChecked="{Binding Persisted.ShowTopMenuBarButton}"/>
+                                                          IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableFriendsOverview}"
+                                                          IsChecked="{Binding Persisted.EnableFriendsOverview}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewHideSpoilers}"
+                                                          IsChecked="{Binding Persisted.FriendsOverviewHideSpoilers}"
+                                                          Margin="24,0,0,0"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>

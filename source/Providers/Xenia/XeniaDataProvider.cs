@@ -48,6 +48,8 @@ namespace PlayniteAchievements.Providers.Xenia
         public string ProviderColorHex => "#92C83E";
         public ISessionManager AuthSession => null;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool IsAuthenticated
         {
             get
