@@ -2010,13 +2010,12 @@ namespace PlayniteAchievements.Services.Database
                     u.ExternalUserId AS ExternalUserId,
                     u.DisplayName AS DisplayName,
                     u.AvatarUrl AS AvatarUrl,
-                    COUNT(DISTINCT fo.GameId) AS SharedGamesCount,
-                    COUNT(DISTINCT CASE WHEN ua.Unlocked = 1 THEN ua.Id ELSE NULL END) AS UnlockedAchievementsCount,
+                    COUNT(DISTINCT ugp.GameId) AS SharedGamesCount,
+                    COUNT(DISTINCT ua.Id) AS UnlockedAchievementsCount,
                     MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
                   FROM Users u
-                  LEFT JOIN FriendOwnership fo ON fo.UserId = u.Id
-                  LEFT JOIN UserGameProgress ugp ON ugp.UserId = u.Id AND ugp.GameId = fo.GameId
-                  LEFT JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                  INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
+                  INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
                   WHERE u.IsCurrentUser = 0
                     AND u.IsActiveFriend = 1
                     AND u.FriendSource IS NOT NULL
@@ -2032,14 +2031,13 @@ namespace PlayniteAchievements.Services.Database
                     g.ProviderGameId AS ProviderGameId,
                     g.PlayniteGameId AS PlayniteGameId,
                     g.GameName AS GameName,
-                    COUNT(DISTINCT fo.UserId) AS FriendCount,
-                    COUNT(DISTINCT CASE WHEN ua.Unlocked = 1 THEN ua.Id ELSE NULL END) AS UnlockedAchievementsCount,
+                    COUNT(DISTINCT u.Id) AS FriendCount,
+                    COUNT(DISTINCT ua.Id) AS UnlockedAchievementsCount,
                     MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
-                  FROM FriendOwnership fo
-                  INNER JOIN Users u ON u.Id = fo.UserId
-                  INNER JOIN Games g ON g.Id = fo.GameId
-                  LEFT JOIN UserGameProgress ugp ON ugp.UserId = u.Id AND ugp.GameId = g.Id
-                  LEFT JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                  FROM Users u
+                  INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
+                  INNER JOIN Games g ON g.Id = ugp.GameId
+                  INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
                   WHERE u.IsCurrentUser = 0
                     AND u.IsActiveFriend = 1
                     AND u.FriendSource IS NOT NULL
@@ -2057,9 +2055,10 @@ namespace PlayniteAchievements.Services.Database
                     u.ExternalUserId AS ExternalUserId,
                     g.ProviderGameId AS ProviderGameId,
                     g.PlayniteGameId AS PlayniteGameId
-                  FROM FriendOwnership fo
-                  INNER JOIN Users u ON u.Id = fo.UserId
-                  INNER JOIN Games g ON g.Id = fo.GameId
+                  FROM Users u
+                  INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
+                  INNER JOIN Games g ON g.Id = ugp.GameId
+                  INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
                   WHERE u.IsCurrentUser = 0
                     AND u.IsActiveFriend = 1
                     AND u.FriendSource IS NOT NULL
