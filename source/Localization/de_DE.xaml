@@ -207,7 +207,7 @@ This will remove the manual achievement link, delete all manually set unlock tim
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_RenameDialog_Title">Kategoriebezeichnung umbenennen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Base">Basis</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Collectable">Sammelbar</sys:String>
-    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Default">Standard</sys:String>
+    <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Default">-</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Difficulty">Schwierigkeit</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_DLC">DLC</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Category_Type_Missable">Verfehlbar</sys:String>
@@ -656,8 +656,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewRarityPieChart">Kreisdiagramm für Seltenheit anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewTrophyPieChart">Kreisdiagramm für Trophäen anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowTopMenuBarButton">Schaltfläche in oberer Menüleiste anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Spaltenüberschriften in Spieleübersichten anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Spaltenüberschriften in Erfolgsübersichten anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Spaltenüberschriften in Spieleübersicht anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Spaltenüberschriften in Erfolgsübersicht anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Spaltenüberschriften anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Vereinheitlichte Seltenheitsmarkierungen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsGridSort">Erfolgsdatentabelle ansehen</sys:String>
@@ -680,7 +680,7 @@ Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werd
     <sys:String x:Key="LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help">Downloads and stores provider-supplied locked icons only when they differ from the unlocked icon. Otherwise the unlocked icon is grayscaled.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Description">Debugging-Werkzeuge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Utilities_Title">Werkzeuge</sys:String>
-    <sys:String x:Key="LOCPlayAch_UseCoverImages">Cover statt Symbole in der Spielliste verwenden</sys:String>
+    <sys:String x:Key="LOCPlayAch_UseCoverImages">Cover statt Symbole anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewItemPreview">Element anzeigen</sys:String>
 
     <!-- ================================================================= -->
