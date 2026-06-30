@@ -167,6 +167,7 @@ namespace PlayniteAchievements.Services.Database
             public string CacheKey { get; set; }
             public double? GlobalPercentUnlocked { get; set; }
             public string Rarity { get; set; }
+            public int? Points { get; set; }
         }
 
         private sealed class ResolvedUser
@@ -650,6 +651,7 @@ namespace PlayniteAchievements.Services.Database
                         PrestigeScore = scoreTotals.PrestigeScore,
                         CollectionScoreTotal = possibleScoreTotals.CollectionScore,
                         PrestigeScoreTotal = possibleScoreTotals.PrestigeScore,
+                        Points = scoreTotals.Points,
                         CommonCount = (int)Math.Max(0, row.CommonCount),
                         UncommonCount = (int)Math.Max(0, row.UncommonCount),
                         RareCount = (int)Math.Max(0, row.RareCount),
@@ -790,7 +792,7 @@ namespace PlayniteAchievements.Services.Database
                 ORDER BY lp.LastUpdatedUtc DESC, lp.CacheKey;").ToList();
         }
 
-        private static Dictionary<string, (int CollectionScore, int PrestigeScore)> LoadCachedScoreTotals(
+        private static Dictionary<string, (int CollectionScore, int PrestigeScore, int Points)> LoadCachedScoreTotals(
             SQLiteDatabase db,
             bool unlockedOnly)
         {
@@ -820,14 +822,15 @@ namespace PlayniteAchievements.Services.Database
                 SELECT
                     lp.CacheKey AS CacheKey,
                     ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
-                    ad.Rarity AS Rarity
+                    ad.Rarity AS Rarity,
+                    ad.Points AS Points
                 FROM LatestProgress lp
                 INNER JOIN AchievementDefinitions ad ON ad.GameId = lp.GameId
                 " + userAchievementJoin + @"
                 WHERE lp.RowNum = 1
                 ORDER BY lp.CacheKey;").ToList();
 
-            var totals = new Dictionary<string, (int CollectionScore, int PrestigeScore)>(StringComparer.OrdinalIgnoreCase);
+            var totals = new Dictionary<string, (int CollectionScore, int PrestigeScore, int Points)>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < rows.Count; i++)
             {
                 var row = rows[i];
@@ -841,7 +844,8 @@ namespace PlayniteAchievements.Services.Database
                 var rarity = ParseStoredRarity(row.Rarity);
                 totals[cacheKey] = (
                     AddClamped(current.CollectionScore, AchievementScoreCalculator.GetCollectionValue(rarity)),
-                    AddClamped(current.PrestigeScore, AchievementScoreCalculator.GetPrestigeValue(row.GlobalPercentUnlocked, rarity)));
+                    AddClamped(current.PrestigeScore, AchievementScoreCalculator.GetPrestigeValue(row.GlobalPercentUnlocked, rarity)),
+                    AddClamped(current.Points, row.Points ?? 0));
             }
 
             return totals;
