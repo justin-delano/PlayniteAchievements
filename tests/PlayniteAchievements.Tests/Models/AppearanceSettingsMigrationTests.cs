@@ -9,6 +9,7 @@ namespace PlayniteAchievements.Models.Tests
     {
         private const string GridSurfaceKey = "PlayAch.Brush.GridSurface";
         private const string ControlSurfaceKey = "PlayAch.Brush.ControlSurface";
+        private const string WindowSurfaceKey = "PlayAch.Brush.WindowSurface";
 
         [TestMethod]
         public void MigrateFromJson_SeedsTransparentInlineSurfaces_WhenFlagAbsent()
@@ -21,6 +22,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(true, persisted["InlineSurfaceTransparencySeeded"].Value<bool>());
             AssertTransparent(persisted, GridSurfaceKey);
             AssertTransparent(persisted, ControlSurfaceKey);
+            AssertTransparent(persisted, WindowSurfaceKey);
         }
 
         [TestMethod]

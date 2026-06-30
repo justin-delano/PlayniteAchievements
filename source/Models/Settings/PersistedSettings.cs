@@ -3694,16 +3694,19 @@ namespace PlayniteAchievements.Models.Settings
                 : string.Empty;
         }
 
-        // Inline content surfaces that ship transparent by default.
-        // Seeded only for fresh settings / display reset; deserializing existing settings replaces
-        // this dictionary, so upgrading users keep their current appearance.
+        // Content surfaces that ship transparent by default so embedded views blend into the host
+        // theme. Popout windows back themselves with the opaque PopupSurface instead (see
+        // PlayniteUiProvider.ApplyWindowThemeBrushes), so seeding WindowSurface transparent here does
+        // not make standalone windows see-through. Seeded for fresh installs / display reset and,
+        // once, for existing configs via AppearanceSettingsMigration.
         internal static Dictionary<string, ResourceOverrideSetting> CreateDefaultResourceOverrides()
         {
             var defaults = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
             foreach (var key in new[]
             {
                 "PlayAch.Brush.GridSurface",
-                "PlayAch.Brush.ControlSurface"
+                "PlayAch.Brush.ControlSurface",
+                "PlayAch.Brush.WindowSurface"
             })
             {
                 defaults[key] = new ResourceOverrideSetting

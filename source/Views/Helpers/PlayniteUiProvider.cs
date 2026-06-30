@@ -94,15 +94,21 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            var windowSurface =
+            // Back standalone popout windows with the opaque popout (popup/dialog) surface rather
+            // than WindowSurface. WindowSurface ships transparent so embedded theme views blend into
+            // the host; a floating window with a transparent backdrop would be see-through, so use
+            // PopupSurface (guaranteed opaque via EnsureOpaqueIfRequired) instead.
+            var popoutSurface =
+                app.TryFindResource("PlayAch.Brush.Dialog.Background") as Brush ??
+                app.TryFindResource("PlayAch.Brush.PopupSurface") as Brush ??
                 app.TryFindResource("PlayAch.Brush.Window.Background") as Brush ??
                 app.TryFindResource("PlayAch.Brush.WindowSurface") as Brush;
-            if (windowSurface != null)
+            if (popoutSurface != null)
             {
-                window.Resources["WindowBackgourndBrush"] = windowSurface;
-                window.Resources["StandardWindowBackgroundBrush"] = windowSurface;
-                window.Resources["WindowBaseBackgroundBrush"] = windowSurface;
-                window.Background = windowSurface;
+                window.Resources["WindowBackgourndBrush"] = popoutSurface;
+                window.Resources["StandardWindowBackgroundBrush"] = popoutSurface;
+                window.Resources["WindowBaseBackgroundBrush"] = popoutSurface;
+                window.Background = popoutSurface;
             }
 
             var borderBrush =

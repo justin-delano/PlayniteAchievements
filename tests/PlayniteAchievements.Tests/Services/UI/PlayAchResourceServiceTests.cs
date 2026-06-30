@@ -151,7 +151,8 @@ namespace PlayniteAchievements.Tests.Services.UI
             foreach (var key in new[]
             {
                 "PlayAch.Brush.GridSurface",
-                "PlayAch.Brush.ControlSurface"
+                "PlayAch.Brush.ControlSurface",
+                "PlayAch.Brush.WindowSurface"
             })
             {
                 Assert.IsTrue(defaults.ContainsKey(key), key);
@@ -159,7 +160,8 @@ namespace PlayniteAchievements.Tests.Services.UI
                 Assert.AreEqual(PlayAchResourceService.TransparentValue, defaults[key].CustomValue, key);
             }
 
-            Assert.IsFalse(defaults.ContainsKey("PlayAch.Brush.WindowSurface"));
+            // PopupSurface backs popout windows and must stay opaque, so it is never seeded.
+            Assert.IsFalse(defaults.ContainsKey("PlayAch.Brush.PopupSurface"));
         }
 
         [TestMethod]
