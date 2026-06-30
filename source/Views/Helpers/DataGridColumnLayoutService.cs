@@ -989,10 +989,6 @@ namespace PlayniteAchievements.Views.Helpers
         {
             var effectiveProtectedKey = protectedKey;
             var effectiveAbsorberKey = _lastResizeAbsorberColumnKey;
-            if (!rescaleAll && string.IsNullOrWhiteSpace(effectiveProtectedKey))
-            {
-                effectiveProtectedKey = ResolveDefaultProtectedColumnKey(out effectiveAbsorberKey);
-            }
 
             return ColumnWidthNormalization.TryBuildNormalizedWidths(
                 _grid,
@@ -1279,12 +1275,12 @@ namespace PlayniteAchievements.Views.Helpers
                 return;
             }
 
-            QueueNormalization(rescaleAll: false, DispatcherPriority.Background);
+            QueueNormalization(rescaleAll: true, DispatcherPriority.Background);
         }
 
         private bool ShouldRescaleAll(bool requestedRescaleAll)
         {
-            return requestedRescaleAll && !_hasSuccessfulNormalization;
+            return requestedRescaleAll;
         }
 
         private void QueueNormalization(bool rescaleAll, DispatcherPriority priority = DispatcherPriority.Render)

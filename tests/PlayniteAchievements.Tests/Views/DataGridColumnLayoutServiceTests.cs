@@ -268,6 +268,34 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void Normalization_CrampedViewportLowersResizableColumnMinimums()
+        {
+            RunOnStaThread(() =>
+            {
+                var grid = CreateGrid();
+                foreach (var column in grid.Columns)
+                {
+                    column.MinWidth = 100d;
+                }
+
+                var result = ColumnWidthNormalization.TryBuildNormalizedWidths(
+                    grid,
+                    protectedKey: null,
+                    rescaleAll: true,
+                    preferredWidthsByKey: new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase),
+                    fallbackAvailableWidth: 150d,
+                    useEqualWidthForMissing: true,
+                    out var normalized);
+
+                Assert.IsTrue(result);
+                Assert.AreEqual(150d, normalized["A"] + normalized["B"] + normalized["C"]);
+                Assert.IsTrue(grid.Columns[0].MinWidth < 100d);
+                Assert.IsTrue(grid.Columns[1].MinWidth < 100d);
+                Assert.IsTrue(grid.Columns[2].MinWidth < 100d);
+            });
+        }
+
+        [TestMethod]
         public void PersistPendingResizeWidths_ClearsInteractiveResizeContext()
         {
             RunOnStaThread(() =>

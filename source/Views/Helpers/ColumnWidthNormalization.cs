@@ -14,6 +14,7 @@ namespace PlayniteAchievements.Views.Helpers
     public static class ColumnWidthNormalization
     {
         private const double MinimumColumnWidthRatio = 0.1;
+        private const double EmergencyColumnMinimumWidth = 1d;
 
         private static readonly ConditionalWeakTable<DataGridColumn, ConfiguredColumnMinWidth> ConfiguredMinWidths =
             new ConditionalWeakTable<DataGridColumn, ConfiguredColumnMinWidth>();
@@ -282,39 +283,7 @@ namespace PlayniteAchievements.Views.Helpers
             IReadOnlyList<double> floorWidths,
             double targetWidth)
         {
-            if (widths == null ||
-                floorWidths == null ||
-                widths.Count == 0 ||
-                widths.Count != floorWidths.Count ||
-                !IsValidWidth(targetWidth))
-            {
-                return;
-            }
-
-            var weights = widths.Select(w => Math.Max(1, w)).ToList();
-            var remainingTarget = targetWidth;
-            var remainingWeight = weights.Sum();
-            var remainingMinimum = floorWidths.Sum();
-
-            for (var i = 0; i < widths.Count; i++)
-            {
-                var floorWidth = floorWidths[i];
-                remainingMinimum -= floorWidth;
-                var next = i == widths.Count - 1
-                    ? remainingTarget
-                    : remainingTarget * (weights[i] / remainingWeight);
-
-                next = Math.Max(floorWidth, next);
-                var maxForCurrent = remainingTarget - remainingMinimum;
-                if (next > maxForCurrent)
-                {
-                    next = maxForCurrent;
-                }
-
-                widths[i] = next;
-                remainingTarget -= next;
-                remainingWeight -= weights[i];
-            }
+            ColumnSizingPlanner.RescaleProportionally(widths, floorWidths, targetWidth);
         }
 
         public static List<int> BuildAbsorberOrder(
@@ -322,74 +291,12 @@ namespace PlayniteAchievements.Views.Helpers
             string protectedColumnKey,
             string preferredAbsorberKey = null)
         {
-            var order = new List<int>();
-            if (keys == null || keys.Count == 0)
-            {
-                return order;
-            }
-
-            var protectedIndex = -1;
-            for (var i = 0; i < keys.Count; i++)
-            {
-                if (KeysEqual(keys[i], protectedColumnKey))
-                {
-                    protectedIndex = i;
-                    break;
-                }
-            }
-
-            void AddIfAvailable(int index)
-            {
-                if (index < 0 ||
-                    index >= keys.Count ||
-                    index == protectedIndex ||
-                    order.Contains(index))
-                {
-                    return;
-                }
-
-                order.Add(index);
-            }
-
-            if (!string.IsNullOrWhiteSpace(preferredAbsorberKey))
-            {
-                for (var i = 0; i < keys.Count; i++)
-                {
-                    if (KeysEqual(keys[i], preferredAbsorberKey))
-                    {
-                        AddIfAvailable(i);
-                        break;
-                    }
-                }
-            }
-
-            if (protectedIndex >= 0)
-            {
-                for (var offset = 1; offset < keys.Count; offset++)
-                {
-                    AddIfAvailable(protectedIndex + offset);
-                    AddIfAvailable(protectedIndex - offset);
-                }
-            }
-            else
-            {
-                for (var i = 0; i < keys.Count; i++)
-                {
-                    AddIfAvailable(i);
-                }
-            }
-
-            if (order.Count == 0)
-            {
-                order.Add(keys.Count - 1);
-            }
-
-            return order;
+            return ColumnSizingPlanner.BuildAbsorberOrder(keys, protectedColumnKey, preferredAbsorberKey);
         }
 
         public static bool KeysEqual(string a, string b)
         {
-            return string.Equals(a, b, StringComparison.OrdinalIgnoreCase);
+            return ColumnSizingPlanner.KeysEqual(a, b);
         }
 
         public static void DistributeDelta(
@@ -499,61 +406,15 @@ namespace PlayniteAchievements.Views.Helpers
             double targetWidth,
             out Dictionary<string, double> normalized)
         {
-            normalized = null;
-            if (keys == null ||
-                seedWidths == null ||
-                floorWidths == null ||
-                keys.Count == 0 ||
-                keys.Count != seedWidths.Count ||
-                keys.Count != floorWidths.Count ||
-                !IsValidWidth(targetWidth))
-            {
-                return false;
-            }
-
-            var widths = new List<double>(keys.Count);
-            var floors = new List<double>(keys.Count);
-            var normalizedKeys = new List<string>(keys.Count);
-
-            for (var i = 0; i < keys.Count; i++)
-            {
-                var key = (keys[i] ?? string.Empty).Trim();
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    return false;
-                }
-
-                var floor = IsValidWidth(floorWidths[i]) ? floorWidths[i] : 1;
-                var seed = IsValidWidth(seedWidths[i]) ? seedWidths[i] : floor;
-                normalizedKeys.Add(key);
-                floors.Add(floor);
-                widths.Add(Math.Max(floor, seed));
-            }
-
-            var totalWidth = widths.Sum();
-            var delta = targetWidth - totalWidth;
-
-            if (Math.Abs(delta) > 0.2)
-            {
-                if (rescaleAll || string.IsNullOrWhiteSpace(protectedKey))
-                {
-                    RescaleWidthsProportionally(widths, floors, targetWidth);
-                }
-                else
-                {
-                    DistributeDelta(widths, floors, normalizedKeys, protectedKey, preferredAbsorberKey, delta, targetWidth);
-                }
-            }
-
-            normalized = RoundWidthsToTarget(
-                normalizedKeys,
-                widths,
-                floors,
+            return ColumnSizingPlanner.TryPlan(
+                keys,
+                seedWidths,
+                floorWidths,
                 protectedKey,
                 preferredAbsorberKey,
-                targetWidth);
-
-            return true;
+                rescaleAll,
+                targetWidth,
+                out normalized);
         }
 
         private static Dictionary<string, double> RoundWidthsToTarget(
@@ -732,6 +593,11 @@ namespace PlayniteAchievements.Views.Helpers
 
             var keys = keyColumns.Select(e => e.Key).ToList();
             var floorWidths = keyColumns.Select(e => e.MinWidth).ToList();
+            ApplyEmergencyMinimumWidths(
+                keyColumns.Select(e => e.Column).ToList(),
+                floorWidths,
+                targetWidth);
+
             var equalWidth = targetWidth / keyColumns.Count;
             var seedWidths = keyColumns
                 .Select(e => ResolveNormalizationSeedWidth(
@@ -751,6 +617,62 @@ namespace PlayniteAchievements.Views.Helpers
                 rescaleAll,
                 targetWidth,
                 out normalized);
+        }
+
+        private static void ApplyEmergencyMinimumWidths(
+            IReadOnlyList<DataGridColumn> columns,
+            IList<double> floorWidths,
+            double targetWidth)
+        {
+            if (columns == null ||
+                floorWidths == null ||
+                columns.Count == 0 ||
+                columns.Count != floorWidths.Count ||
+                !IsValidWidth(targetWidth))
+            {
+                return;
+            }
+
+            var currentTotal = floorWidths.Sum();
+            if (currentTotal <= targetWidth)
+            {
+                return;
+            }
+
+            var scale = targetWidth / currentTotal;
+            for (var i = 0; i < floorWidths.Count; i++)
+            {
+                floorWidths[i] = Math.Max(EmergencyColumnMinimumWidth, floorWidths[i] * scale);
+            }
+
+            var excess = floorWidths.Sum() - targetWidth;
+            for (var i = floorWidths.Count - 1; i >= 0 && excess > 0.2d; i--)
+            {
+                var capacity = floorWidths[i] - EmergencyColumnMinimumWidth;
+                if (capacity <= 0)
+                {
+                    continue;
+                }
+
+                var take = Math.Min(capacity, excess);
+                floorWidths[i] -= take;
+                excess -= take;
+            }
+
+            for (var i = 0; i < columns.Count; i++)
+            {
+                var column = columns[i];
+                if (column == null)
+                {
+                    continue;
+                }
+
+                var width = Math.Max(EmergencyColumnMinimumWidth, floorWidths[i]);
+                if (Math.Abs(column.MinWidth - width) > 0.2d)
+                {
+                    column.MinWidth = width;
+                }
+            }
         }
 
         public static bool TryBuildNormalizedWidths(
