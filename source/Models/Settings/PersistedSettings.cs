@@ -151,8 +151,12 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableParallelProviderRefresh = true;
         private int _scanDelayMs = 200;
         private int _maxRetryAttempts = 3;
+        // Deserialization target: left empty so a loaded config is taken verbatim. Newtonsoft
+        // populates an existing non-null dictionary in place rather than replacing it, so a
+        // pre-seeded field would re-introduce removed ("Follow Playnite") overrides on every load.
+        // Fresh installs seed transparent inline surfaces via the plugin-reference constructor.
         private Dictionary<string, ResourceOverrideSetting> _resourceOverrides =
-            CreateDefaultResourceOverrides();
+            new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
         private List<CustomRefreshPreset> _customRefreshPresets = new List<CustomRefreshPreset>();
         private Dictionary<string, bool> _dataGridColumnVisibility = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, double> _dataGridColumnWidths = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
