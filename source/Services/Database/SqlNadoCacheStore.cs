@@ -1419,7 +1419,8 @@ namespace PlayniteAchievements.Services.Database
                     db,
                     providerKey,
                     cutoffIso,
-                    options.Scope == FriendRefreshScope.Recent);
+                    options.Scope == FriendRefreshScope.Recent,
+                    options);
             });
         }
 
@@ -1481,9 +1482,10 @@ namespace PlayniteAchievements.Services.Database
             SQLiteDatabase db,
             string providerKey,
             string cutoffIso,
-            bool recentOnly)
+            bool recentOnly,
+            FriendRefreshOptions options)
         {
-                var sql =
+            var sql = new StringBuilder(
                     @"SELECT
                         u.ProviderKey AS ProviderKey,
                         u.ExternalUserId AS ExternalUserId,
@@ -1505,33 +1507,63 @@ namespace PlayniteAchievements.Services.Database
                         AND u.IsActiveFriend = 1
                         AND g.ProviderKey = ?
                         AND g.ProviderGameId IS NOT NULL
-                        AND g.ProviderGameId > 0";
+                        AND g.ProviderGameId > 0");
 
-            List<FriendRefreshCandidateRow> rows;
+            var args = new List<object> { providerKey, providerKey };
+
+            var friendIds = NormalizeFriendFilterIds(options?.FriendExternalUserIds);
+            if (friendIds.Count > 0)
+            {
+                sql.Append(" AND u.ExternalUserId IN (");
+                sql.Append(string.Join(",", friendIds.Select(_ => "?")));
+                sql.Append(')');
+                args.AddRange(friendIds.Cast<object>());
+            }
+
+            var gameIds = NormalizeGameFilterIds(options?.PlayniteGameIds);
+            if (gameIds.Count > 0)
+            {
+                sql.Append(" AND g.PlayniteGameId IN (");
+                sql.Append(string.Join(",", gameIds.Select(_ => "?")));
+                sql.Append(')');
+                args.AddRange(gameIds.Cast<object>());
+            }
+
             if (recentOnly)
             {
-                rows = db.Load<FriendRefreshCandidateRow>(
-                    sql + @" AND (
+                sql.Append(
+                    @" AND (
                             fo.LastScrapedUtc IS NULL
                             OR fo.LastScrapedUtc = ''
                             OR fo.LastScrapedUtc < ?
                             OR fo.LastScrapeStatus = 'transient'
                             OR COALESCE(fo.Playtime2WeeksMinutes, 0) > 0
-                          )
-                          ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;",
-                    providerKey,
-                    providerKey,
-                    cutoffIso).ToList();
-            }
-            else
-            {
-                rows = db.Load<FriendRefreshCandidateRow>(
-                    sql + " ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;",
-                    providerKey,
-                    providerKey).ToList();
+                          )");
+                args.Add(cutoffIso);
             }
 
-            return MapFriendRefreshCandidates(rows);
+            sql.Append(" ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;");
+
+            return MapFriendRefreshCandidates(
+                db.Load<FriendRefreshCandidateRow>(sql.ToString(), args.ToArray()).ToList());
+        }
+
+        private static List<string> NormalizeFriendFilterIds(IReadOnlyCollection<string> friendExternalUserIds)
+        {
+            return friendExternalUserIds?
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Select(id => id.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
+        }
+
+        private static List<string> NormalizeGameFilterIds(IReadOnlyCollection<Guid> playniteGameIds)
+        {
+            return playniteGameIds?
+                .Where(id => id != Guid.Empty)
+                .Select(id => id.ToString())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
         }
 
         private static List<FriendRefreshCandidate> LoadCurrentUserFriendRefreshCandidates(
@@ -1597,10 +1629,21 @@ namespace PlayniteAchievements.Services.Database
                   LEFT JOIN FriendOwnership fo ON fo.UserId = u.Id AND fo.GameId = g.Id
                   WHERE u.ProviderKey = ?
                     AND u.IsCurrentUser = 0
-                    AND u.IsActiveFriend = 1
-                  ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, COALESCE(fo.PlaytimeForeverMinutes, 0) DESC, u.DisplayName, g.GameName;");
+                    AND u.IsActiveFriend = 1");
 
             args.Add(providerKey);
+
+            var friendIds = NormalizeFriendFilterIds(options.FriendExternalUserIds);
+            if (friendIds.Count > 0)
+            {
+                sql.Append(" AND u.ExternalUserId IN (");
+                sql.Append(string.Join(",", friendIds.Select(_ => "?")));
+                sql.Append(')');
+                args.AddRange(friendIds.Cast<object>());
+            }
+
+            sql.Append(" ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, COALESCE(fo.PlaytimeForeverMinutes, 0) DESC, u.DisplayName, g.GameName;");
+
             return MapFriendRefreshCandidates(db.Load<FriendRefreshCandidateRow>(sql.ToString(), args.ToArray()).ToList());
         }
 

@@ -21,6 +21,7 @@ namespace PlayniteAchievements.Models.Friends
     {
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
+        public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public TimeSpan? RefreshTtl { get; set; }
 
         public FriendRefreshOptions Clone()
@@ -32,6 +33,11 @@ namespace PlayniteAchievements.Models.Friends
                     .Where(id => id != Guid.Empty)
                     .Distinct()
                     .ToList(),
+                FriendExternalUserIds = FriendExternalUserIds?
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Select(id => id.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
                 RefreshTtl = RefreshTtl
             };
         }
@@ -42,6 +48,7 @@ namespace PlayniteAchievements.Models.Friends
         public IReadOnlyCollection<string> ProviderKeys { get; set; }
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
+        public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public TimeSpan? RefreshTtl { get; set; }
 
         public FriendCustomRefreshOptions Clone()
@@ -57,6 +64,11 @@ namespace PlayniteAchievements.Models.Friends
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
                     .Distinct()
+                    .ToList(),
+                FriendExternalUserIds = FriendExternalUserIds?
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Select(id => id.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 RefreshTtl = RefreshTtl
             };

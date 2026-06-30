@@ -80,6 +80,65 @@
                                   BorderBrush="{DynamicResource PlayAch.Brush.Border}"/>
                     </GroupBox>
 
+                    <GroupBox Header="{DynamicResource LOCPlayAch_FriendsOverview_Friends}"
+                              Foreground="{DynamicResource PlayAch.Brush.Text}"
+                              BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                              Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_FriendCustomRefresh_SelectionHint}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       TextWrapping="Wrap"
+                                       Opacity="{StaticResource PlayAch.Opacity.Secondary}"
+                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                            <TextBox Text="{Binding FriendListSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=100}"
+                                     Style="{DynamicResource SearchTextBoxStyle}"
+                                     Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                     Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                            <ListBox ItemsSource="{Binding FriendItems}"
+                                     Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                     Background="{DynamicResource PlayAch.Brush.Surface}"
+                                     BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                     Height="170">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  Content="{Binding DisplayName}"
+                                                  Foreground="{DynamicResource PlayAch.Brush.Text}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="{DynamicResource LOCPlayAch_FriendsOverview_Games}"
+                              Foreground="{DynamicResource PlayAch.Brush.Text}"
+                              BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                              Margin="0,0,0,10">
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding ShowLibraryGames, Mode=TwoWay}"
+                                      Content="{DynamicResource LOCPlayAch_FriendCustomRefresh_ShowLibraryGames}"
+                                      Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                            <TextBox Text="{Binding GameListSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=100}"
+                                     Style="{DynamicResource SearchTextBoxStyle}"
+                                     Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                     Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                            <ListBox ItemsSource="{Binding GameItems}"
+                                     Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                     Background="{DynamicResource PlayAch.Brush.Surface}"
+                                     BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                     Height="170">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                  Content="{Binding DisplayName}"
+                                                  Foreground="{DynamicResource PlayAch.Brush.Text}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </GroupBox>
+
                     <TextBlock Text="{Binding SummaryText}"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                TextWrapping="Wrap"

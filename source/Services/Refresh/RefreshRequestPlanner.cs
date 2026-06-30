@@ -299,13 +299,20 @@ namespace PlayniteAchievements.Services
                 .Where(id => id != Guid.Empty)
                 .Distinct()
                 .ToList();
+            IReadOnlyCollection<string> friendExternalUserIds = resolvedOptions.FriendExternalUserIds?
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Select(id => id.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
-            if (scope == FriendRefreshScope.Installed)
+            // Installed scope falls back to the installed library when no specific games were selected.
+            if (scope == FriendRefreshScope.Installed &&
+                (playniteGameIds == null || playniteGameIds.Count == 0))
             {
                 playniteGameIds = GetInstalledGameIds();
             }
 
-            if ((scope == FriendRefreshScope.SelectedGame || scope == FriendRefreshScope.Custom) &&
+            if (scope == FriendRefreshScope.SelectedGame &&
                 (playniteGameIds == null || playniteGameIds.Count == 0))
             {
                 return new ResolvedRequest
@@ -337,6 +344,7 @@ namespace PlayniteAchievements.Services
                 {
                     Scope = scope,
                     PlayniteGameIds = playniteGameIds,
+                    FriendExternalUserIds = friendExternalUserIds,
                     RefreshTtl = resolvedOptions.RefreshTtl
                 }
             };

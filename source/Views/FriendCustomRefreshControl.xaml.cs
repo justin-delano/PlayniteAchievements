@@ -1,19 +1,22 @@
 using Playnite.SDK;
-using Playnite.SDK.Models;
 using Playnite.SDK.Plugins;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace PlayniteAchievements.Views
 {
@@ -25,7 +28,7 @@ namespace PlayniteAchievements.Views
             public string DisplayName { get; set; }
         }
 
-        public sealed class ProviderOptionItem : ObservableObject
+        public sealed class ProviderOptionItem : PlayniteAchievements.Common.ObservableObject
         {
             private bool _isSelected;
 
@@ -41,15 +44,43 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        public sealed class SelectionItem : PlayniteAchievements.Common.ObservableObject
+        {
+            private bool _isSelected;
+
+            public string Id { get; set; }
+            public string DisplayName { get; set; }
+            public string ProviderKey { get; set; }
+
+            public bool IsSelected
+            {
+                get => _isSelected;
+                set => SetValue(ref _isSelected, value);
+            }
+        }
+
         private const string WindowPlacementKey = "FriendCustomRefresh";
+
+        private static readonly ILogger Logger = LogManager.GetLogger();
 
         private readonly IPlayniteAPI _api;
         private readonly RefreshRuntime _refreshRuntime;
+        private readonly IFriendCacheManager _friendCache;
         private readonly Guid? _selectedGameId;
         private readonly string _selectedGameName;
         private FriendRefreshScope _selectedScope = FriendRefreshScope.Recent;
         private string _summaryText;
         private bool _canRun;
+        private string _friendListSearchText;
+        private string _gameListSearchText;
+        private bool _showLibraryGames;
+
+        private readonly List<SelectionItem> _allFriendItems = new List<SelectionItem>();
+        private readonly List<SelectionItem> _allSharedGameItems = new List<SelectionItem>();
+        private readonly List<SelectionItem> _allLibraryGameItems = new List<SelectionItem>();
+        private readonly ICollectionView _friendView;
+        private readonly ICollectionView _sharedGameView;
+        private readonly ICollectionView _libraryGameView;
 
         public event EventHandler RequestClose;
         public event PropertyChangedEventHandler PropertyChanged;
@@ -62,6 +93,10 @@ namespace PlayniteAchievements.Views
 
         public ObservableCollection<ScopeOptionItem> ScopeOptions { get; } =
             new ObservableCollection<ScopeOptionItem>();
+
+        public ICollectionView FriendItems => _friendView;
+
+        public ICollectionView GameItems => _showLibraryGames ? _libraryGameView : _sharedGameView;
 
         public FriendRefreshScope SelectedScope
         {
@@ -76,6 +111,55 @@ namespace PlayniteAchievements.Views
                 _selectedScope = value;
                 OnPropertyChanged(nameof(SelectedScope));
                 RecalculateSummary();
+            }
+        }
+
+        public string FriendListSearchText
+        {
+            get => _friendListSearchText;
+            set
+            {
+                if (string.Equals(_friendListSearchText, value, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _friendListSearchText = value;
+                OnPropertyChanged(nameof(FriendListSearchText));
+                _friendView?.Refresh();
+            }
+        }
+
+        public string GameListSearchText
+        {
+            get => _gameListSearchText;
+            set
+            {
+                if (string.Equals(_gameListSearchText, value, StringComparison.Ordinal))
+                {
+                    return;
+                }
+
+                _gameListSearchText = value;
+                OnPropertyChanged(nameof(GameListSearchText));
+                _sharedGameView?.Refresh();
+                _libraryGameView?.Refresh();
+            }
+        }
+
+        public bool ShowLibraryGames
+        {
+            get => _showLibraryGames;
+            set
+            {
+                if (_showLibraryGames == value)
+                {
+                    return;
+                }
+
+                _showLibraryGames = value;
+                OnPropertyChanged(nameof(ShowLibraryGames));
+                OnPropertyChanged(nameof(GameItems));
             }
         }
 
@@ -109,14 +193,16 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        public FriendCustomRefreshControl(
+        internal FriendCustomRefreshControl(
             IPlayniteAPI api,
             RefreshRuntime refreshRuntime,
+            IFriendCacheManager friendCache,
             Guid? selectedGameId,
             string selectedGameName)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshRuntime = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
+            _friendCache = friendCache;
             _selectedGameId = selectedGameId.HasValue && selectedGameId.Value != Guid.Empty ? selectedGameId : null;
             _selectedGameName = selectedGameName;
 
@@ -124,12 +210,22 @@ namespace PlayniteAchievements.Views
             DataContext = this;
             InitializeProviders();
             InitializeScopes();
+            LoadSelectionData();
+
+            _friendView = CollectionViewSource.GetDefaultView(_allFriendItems);
+            _friendView.Filter = FriendFilter;
+            _sharedGameView = CollectionViewSource.GetDefaultView(_allSharedGameItems);
+            _sharedGameView.Filter = SharedGameFilter;
+            _libraryGameView = CollectionViewSource.GetDefaultView(_allLibraryGameItems);
+            _libraryGameView.Filter = LibraryGameFilter;
+
             RecalculateSummary();
         }
 
-        public static bool TryShowDialog(
+        internal static bool TryShowDialog(
             IPlayniteAPI api,
             RefreshRuntime refreshRuntime,
+            IFriendCacheManager friendCache,
             Action persistSettingsForUi,
             PlayniteAchievementsSettings settings,
             ILogger logger,
@@ -138,22 +234,22 @@ namespace PlayniteAchievements.Views
             out FriendCustomRefreshOptions options)
         {
             options = null;
-            var control = new FriendCustomRefreshControl(api, refreshRuntime, selectedGameId, selectedGameName);
+            var control = new FriendCustomRefreshControl(api, refreshRuntime, friendCache, selectedGameId, selectedGameName);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 ResourceProvider.GetString("LOCPlayAch_RefreshMode_FriendsCustom") ?? "Friends Custom Refresh",
                 control,
                 new WindowOptions
                 {
-                    Width = 560,
-                    Height = 440,
+                    Width = 760,
+                    Height = 640,
                     CanBeResizable = true,
                     ShowCloseButton = true,
                     ShowMinimizeButton = false,
                     ShowMaximizeButton = false
                 });
 
-            window.MinWidth = 480;
-            window.MinHeight = 360;
+            window.MinWidth = 620;
+            window.MinHeight = 480;
             WindowPlacementPersistenceService.Attach(
                 window,
                 settings?.Persisted,
@@ -199,6 +295,8 @@ namespace PlayniteAchievements.Views
                 {
                     if (e.PropertyName == nameof(ProviderOptionItem.IsSelected))
                     {
+                        _friendView?.Refresh();
+                        _sharedGameView?.Refresh();
                         RecalculateSummary();
                     }
                 };
@@ -224,6 +322,132 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private void LoadSelectionData()
+        {
+            try
+            {
+                var data = _friendCache?.LoadFriendsOverviewData(false, 0);
+                if (data != null)
+                {
+                    foreach (var friend in data.Friends ?? Enumerable.Empty<FriendSummaryItem>())
+                    {
+                        if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
+                        {
+                            continue;
+                        }
+
+                        _allFriendItems.Add(new SelectionItem
+                        {
+                            Id = friend.ExternalUserId,
+                            DisplayName = string.IsNullOrWhiteSpace(friend.DisplayName) ? friend.ExternalUserId : friend.DisplayName,
+                            ProviderKey = friend.ProviderKey
+                        });
+                    }
+
+                    var seenGames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var game in data.Games ?? Enumerable.Empty<FriendGameSummaryItem>())
+                    {
+                        if (game?.PlayniteGameId == null || game.PlayniteGameId == Guid.Empty)
+                        {
+                            continue;
+                        }
+
+                        var id = game.PlayniteGameId.Value.ToString();
+                        if (!seenGames.Add(id))
+                        {
+                            continue;
+                        }
+
+                        _allSharedGameItems.Add(new SelectionItem
+                        {
+                            Id = id,
+                            DisplayName = string.IsNullOrWhiteSpace(game.GameName) ? id : game.GameName,
+                            ProviderKey = game.ProviderKey
+                        });
+                    }
+                }
+
+                foreach (var game in _api.Database?.Games ?? Enumerable.Empty<Playnite.SDK.Models.Game>())
+                {
+                    if (game == null || game.Id == Guid.Empty)
+                    {
+                        continue;
+                    }
+
+                    _allLibraryGameItems.Add(new SelectionItem
+                    {
+                        Id = game.Id.ToString(),
+                        DisplayName = string.IsNullOrWhiteSpace(game.Name) ? game.Id.ToString() : game.Name
+                    });
+                }
+
+                _allFriendItems.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCultureIgnoreCase));
+                _allSharedGameItems.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCultureIgnoreCase));
+                _allLibraryGameItems.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCultureIgnoreCase));
+            }
+            catch (Exception ex)
+            {
+                Logger?.Warn(ex, "Failed to load friend custom refresh selection data.");
+            }
+        }
+
+        private HashSet<string> GetSelectedProviderKeys()
+        {
+            return new HashSet<string>(
+                ProviderOptions
+                    .Where(option => option.IsSelectable && option.IsSelected)
+                    .Select(option => option.ProviderKey)
+                    .Where(key => !string.IsNullOrWhiteSpace(key)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        private bool FriendFilter(object item)
+        {
+            if (!(item is SelectionItem selection))
+            {
+                return false;
+            }
+
+            var providers = GetSelectedProviderKeys();
+            if (providers.Count > 0 && !providers.Contains(selection.ProviderKey ?? string.Empty))
+            {
+                return false;
+            }
+
+            return MatchesSearch(selection.DisplayName, _friendListSearchText);
+        }
+
+        private bool SharedGameFilter(object item)
+        {
+            if (!(item is SelectionItem selection))
+            {
+                return false;
+            }
+
+            var providers = GetSelectedProviderKeys();
+            if (providers.Count > 0 && !providers.Contains(selection.ProviderKey ?? string.Empty))
+            {
+                return false;
+            }
+
+            return MatchesSearch(selection.DisplayName, _gameListSearchText);
+        }
+
+        private bool LibraryGameFilter(object item)
+        {
+            return item is SelectionItem selection && MatchesSearch(selection.DisplayName, _gameListSearchText);
+        }
+
+        private static bool MatchesSearch(string text, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return true;
+            }
+
+            return (text ?? string.Empty).IndexOf(query.Trim(), StringComparison.CurrentCultureIgnoreCase) >= 0;
+        }
+
         private void RunButton_Click(object sender, RoutedEventArgs e)
         {
             var providerKeys = ProviderOptions
@@ -231,13 +455,31 @@ namespace PlayniteAchievements.Views
                 .Select(option => option.ProviderKey)
                 .ToList();
 
+            var friendIds = _allFriendItems
+                .Where(item => item.IsSelected)
+                .Select(item => item.Id)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var gameIds = _allSharedGameItems.Concat(_allLibraryGameItems)
+                .Where(item => item.IsSelected)
+                .Select(item => item.Id)
+                .Where(id => Guid.TryParse(id, out _))
+                .Select(Guid.Parse)
+                .Distinct()
+                .ToList();
+
+            if (gameIds.Count == 0 && SelectedScope == FriendRefreshScope.SelectedGame && _selectedGameId.HasValue)
+            {
+                gameIds.Add(_selectedGameId.Value);
+            }
+
             ResultOptions = new FriendCustomRefreshOptions
             {
                 ProviderKeys = providerKeys,
                 Scope = SelectedScope,
-                PlayniteGameIds = SelectedScope == FriendRefreshScope.SelectedGame && _selectedGameId.HasValue
-                    ? new[] { _selectedGameId.Value }
-                    : null
+                PlayniteGameIds = gameIds.Count > 0 ? gameIds : null,
+                FriendExternalUserIds = friendIds.Count > 0 ? friendIds : null
             };
             DialogResult = true;
             RequestClose?.Invoke(this, EventArgs.Empty);

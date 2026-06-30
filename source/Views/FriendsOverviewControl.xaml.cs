@@ -72,6 +72,7 @@ namespace PlayniteAchievements.Views
                     return FriendCustomRefreshControl.TryShowDialog(
                         playniteApi,
                         refreshRuntime,
+                        friendCache,
                         persistSettingsForUi,
                         settings,
                         logger,
