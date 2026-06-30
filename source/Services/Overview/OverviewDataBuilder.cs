@@ -291,6 +291,7 @@ namespace PlayniteAchievements.Services.Overview
                     PrestigeScore = game.PrestigeScore,
                     CollectionScoreTotal = game.CollectionScoreTotal,
                     PrestigeScoreTotal = game.PrestigeScoreTotal,
+                    Points = game.Points,
                     TotalCommonPossible = game.TotalCommonPossible,
                     TotalUncommonPossible = game.TotalUncommonPossible,
                     TotalRarePossible = game.TotalRarePossible,

@@ -87,7 +87,8 @@ namespace PlayniteAchievements.Views.Controls
             bool progress = true,
             bool total = true,
             bool collectionScore = false,
-            bool prestigeScore = false)
+            bool prestigeScore = false,
+            bool points = false)
         {
             return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
             {
@@ -99,7 +100,8 @@ namespace PlayniteAchievements.Views.Controls
                 ["GameSummaryProgression"] = progress,
                 ["TotalAchievements"] = total,
                 ["GameSummaryCollectionScore"] = collectionScore,
-                ["GameSummaryPrestigeScore"] = prestigeScore
+                ["GameSummaryPrestigeScore"] = prestigeScore,
+                ["GameSummaryPoints"] = points
             };
         }
 
