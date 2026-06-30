@@ -207,8 +207,7 @@
 
                 <Button Grid.Row="1"
                         Grid.Column="1"
-                        Content="&#xE711;"
-                        FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                        Content="&#x2715;"
                         ToolTip="{DynamicResource LOCPlayAch_FriendsOverview_ClearSelection}"
                         Click="ClearSelection_Click"
                         Style="{StaticResource FriendsOverviewClearSelectionButtonStyle}"
@@ -271,8 +270,7 @@
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis"/>
                     <Button Grid.Column="1"
-                            Content="&#xE711;"
-                            FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                            Content="&#x2715;"
                             ToolTip="{DynamicResource LOCPlayAch_FriendsOverview_ClearSelection}"
                             Click="ClearFriendSelection_Click"
                             Style="{StaticResource FriendsOverviewClearSelectionButtonStyle}"
@@ -338,8 +336,7 @@
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis"/>
                     <Button Grid.Column="1"
-                            Content="&#xE711;"
-                            FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
+                            Content="&#x2715;"
                             ToolTip="{DynamicResource LOCPlayAch_FriendsOverview_ClearSelection}"
                             Click="ClearGameSelection_Click"
                             Style="{StaticResource FriendsOverviewClearSelectionButtonStyle}"
@@ -391,36 +388,28 @@
                     Padding="16,0"
                     BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                     BorderThickness="0,0,0,1">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
                     <TextBlock Text="{Binding AchievementSectionTitle}"
-                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                FontWeight="Bold"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis"/>
-                    <StackPanel Grid.Column="1"
-                                Orientation="Horizontal"
-                                VerticalAlignment="Center"
-                                Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
-                        <TextBlock Text="{Binding AchievementCountText}"
-                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                   VerticalAlignment="Center"
-                                   Visibility="{Binding HasFriendGameSelection, Converter={StaticResource BoolToVis}}"/>
-                        <Button Content="&#xE711;"
-                                FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
-                                ToolTip="{DynamicResource LOCPlayAch_FriendsOverview_ClearSelection}"
-                                Click="ClearSelection_Click"
-                                Style="{StaticResource FriendsOverviewClearSelectionButtonStyle}"
-                                Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                                Visibility="{Binding HasAnySelection, Converter={StaticResource BoolToVis}}"/>
-                    </StackPanel>
-                </Grid>
+                    <TextBlock Text="{Binding AchievementCountText}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
+                               VerticalAlignment="Center"
+                               Visibility="{Binding HasFriendGameSelection, Converter={StaticResource BoolToVis}}"/>
+                    <Button Content="&#x2715;"
+                            ToolTip="{DynamicResource LOCPlayAch_FriendsOverview_ClearSelection}"
+                            Click="ClearSelection_Click"
+                            Style="{StaticResource FriendsOverviewClearSelectionButtonStyle}"
+                            Margin="10,0,0,0"
+                            Visibility="{Binding HasAnySelection, Converter={StaticResource BoolToVis}}"/>
+                </StackPanel>
             </Border>
 
             <Border Grid.Row="1" Grid.Column="4"
