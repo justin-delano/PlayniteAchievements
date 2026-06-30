@@ -428,25 +428,22 @@ namespace PlayniteAchievements
                 }
             };
 
-            if (_settingsViewModel?.Settings?.Persisted?.EnableFriendsOverview == true)
+            yield return new SidebarItem
             {
-                yield return new SidebarItem
+                Title = ResourceProvider.GetString("LOCPlayAch_Menu_OpenFriendsOverview"),
+                Type = SiderbarItemType.View,
+                Icon = GetOverviewIcon(),
+                Opened = () =>
                 {
-                    Title = ResourceProvider.GetString("LOCPlayAch_Menu_OpenFriendsOverview"),
-                    Type = SiderbarItemType.View,
-                    Icon = GetOverviewIcon(),
-                    Opened = () =>
-                    {
-                        EnsureAchievementResourcesLoaded();
-                        return new FriendsOverviewControl(
-                            _logger,
-                            _cacheManager as IFriendCacheManager,
-                            _refreshCoordinator,
-                            _refreshService,
-                            _settingsViewModel.Settings);
-                    }
-                };
-            }
+                    EnsureAchievementResourcesLoaded();
+                    return new FriendsOverviewControl(
+                        _logger,
+                        _cacheManager as IFriendCacheManager,
+                        _refreshCoordinator,
+                        _refreshService,
+                        _settingsViewModel.Settings);
+                }
+            };
         }
 
         private TextBlock GetOverviewIcon()

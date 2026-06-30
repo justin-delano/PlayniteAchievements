@@ -166,6 +166,8 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(UnlockTimeLocal));
                     OnPropertyChanged(nameof(DateUnlocked));
                     OnPropertyChanged(nameof(UnlockTime));
+                    OnPropertyChanged(nameof(ShowUnlockDate));
+                    OnPropertyChanged(nameof(ShowLockedProgress));
                 }
             }
         }
@@ -243,10 +245,16 @@ namespace PlayniteAchievements.ViewModels
                     NotifyIconDisplayChanged();
                     NotifyTitleDisplayChanged();
                     NotifyDescriptionDisplayChanged();
+                    OnPropertyChanged(nameof(ShowUnlockDate));
+                    OnPropertyChanged(nameof(ShowLockedProgress));
                     OnPropertyChanged(nameof(IsUnlock));
                 }
             }
         }
+
+        public virtual bool ShowUnlockDate => Unlocked;
+
+        public virtual bool ShowLockedProgress => !ShowUnlockDate;
 
         public bool IsCapstone
         {
@@ -1133,6 +1141,8 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(UnlockTimeText));
             OnPropertyChanged(nameof(DateUnlocked));
             OnPropertyChanged(nameof(UnlockTime));
+            OnPropertyChanged(nameof(ShowUnlockDate));
+            OnPropertyChanged(nameof(ShowLockedProgress));
             OnPropertyChanged(nameof(GlobalPercentUnlocked));
             OnPropertyChanged(nameof(HasRarityPercent));
             OnPropertyChanged(nameof(GlobalPercentText));
@@ -1146,6 +1156,8 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(Rarity));
             OnPropertyChanged(nameof(GamerScore));
             OnPropertyChanged(nameof(Unlocked));
+            OnPropertyChanged(nameof(ShowUnlockDate));
+            OnPropertyChanged(nameof(ShowLockedProgress));
             OnPropertyChanged(nameof(IsCapstone));
             OnPropertyChanged(nameof(RarityNameBrush));
             OnPropertyChanged(nameof(Hidden));

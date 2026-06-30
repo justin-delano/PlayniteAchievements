@@ -88,4 +88,21 @@ namespace PlayniteAchievements.Providers.Steam.Models
         [DataMember(Name = "rtime_last_played")]
         public long? LastPlayedUnixSeconds { get; set; }
     }
+
+    [DataContract]
+    internal sealed class GetOwnedGamesRoot
+    {
+        [DataMember(Name = "response")]
+        public GetOwnedGamesResponse Response { get; set; }
+    }
+
+    [DataContract]
+    internal sealed class GetOwnedGamesResponse
+    {
+        [DataMember(Name = "game_count")]
+        public int? GameCount { get; set; }
+
+        [DataMember(Name = "games")]
+        public List<SteamOwnedGame> Games { get; set; }
+    }
 }

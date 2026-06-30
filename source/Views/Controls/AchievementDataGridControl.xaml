@@ -212,6 +212,38 @@
                 </DataGridTemplateColumn.CellStyle>
             </DataGridTemplateColumn>
 
+            <DataGridTemplateColumn x:Name="FriendAvatarColumn"
+                                    Width="44"
+                                    MinWidth="32"
+                                    MaxWidth="96"
+                                    CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_Icon}"
+                                    CanUserSort="False"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendAvatar"
+                                    Visibility="Collapsed">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <Border Width="28"
+                                Height="28"
+                                CornerRadius="14"
+                                ClipToBounds="True"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="{DynamicResource PlayAch.Brush.Control.Background}">
+                            <Image Stretch="UniformToFill"
+                                   ToolTip="{Binding FriendName}"
+                                   helpers:AsyncImage.Uri="{Binding FriendAvatarUrl}"
+                                   helpers:AsyncImage.DecodePixel="56"/>
+                        </Border>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
             <DataGridTemplateColumn x:Name="FriendColumn"
                                     Width="140"
                                     MinWidth="64"
@@ -228,7 +260,9 @@
                                    TextTrimming="CharacterEllipsis"
                                    Style="{StaticResource WrappedCenteredDataGridTextStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   FontWeight="SemiBold"/>
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                   HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"/>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

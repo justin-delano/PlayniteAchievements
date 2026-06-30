@@ -28,16 +28,20 @@ namespace PlayniteAchievements.Views.Controls
         private DataGridColumnLayoutService _columnPersistence;
         private bool _isAttached;
         private PersistedSettings _subscribedPersisted;
+        private List<AchievementDisplayItem> _preSortItems;
         private const double DefaultStatusColumnWidth = 40;
         private const double DefaultIconColumnWidth = 72;
         private const double DefaultGameImageColumnWidth = 96;
+        private const double DefaultFriendAvatarColumnWidth = 44;
         private const double DefaultFriendColumnWidth = 140;
         private const double DefaultTrophyIconColumnWidth = 72;
         private const double MinimumStatusColumnWidth = 28;
         private const double MinimumGameImageColumnWidth = 32;
+        private const double MinimumFriendAvatarColumnWidth = 32;
         private const double MinimumFriendColumnWidth = 64;
         private const double MaximumStatusColumnWidth = 96;
         private const double MaximumGameImageColumnWidth = 240;
+        private const double MaximumFriendAvatarColumnWidth = 96;
         private const double MaximumFriendColumnWidth = 280;
 
         private static readonly IReadOnlyDictionary<string, double> DefaultImageColumnWidthSeeds =
@@ -46,6 +50,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["Status"] = DefaultStatusColumnWidth,
                 ["Icon"] = DefaultIconColumnWidth,
                 ["Game"] = DefaultGameImageColumnWidth,
+                ["FriendAvatar"] = DefaultFriendAvatarColumnWidth,
                 ["Trophy"] = DefaultTrophyIconColumnWidth,
                 ["RarityTier"] = DefaultTrophyIconColumnWidth
             };
@@ -68,7 +73,12 @@ namespace PlayniteAchievements.Views.Controls
                 ["OverviewSelectedGameAchievements"] = CreateAchievementVisibility(),
                 ["OverviewGame"] = CreateAchievementVisibility(),
                 ["OverviewRecentAchievements"] = CreateAchievementVisibility(status: false, game: true),
-                ["FriendsOverviewRecentAchievements"] = CreateAchievementVisibility(status: false, game: true, friend: true),
+                ["FriendsOverviewRecentAchievements"] = CreateAchievementVisibility(
+                    status: false,
+                    game: true,
+                    friendAvatar: true,
+                    friend: true,
+                    unlockDate: true),
                 ["Overview"] = CreateAchievementVisibility(status: false, game: true),
                 ["StartPageAchievements"] = CreateAchievementVisibility(
                     status: false,
@@ -91,6 +101,7 @@ namespace PlayniteAchievements.Views.Controls
             bool title = false,
             bool note = false,
             bool game = false,
+            bool friendAvatar = false,
             bool friend = false,
             bool unlockDate = true,
             bool categoryType = false,
@@ -111,6 +122,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["Title"] = title,
                 ["Note"] = note,
                 ["Game"] = game,
+                ["FriendAvatar"] = friendAvatar,
                 ["Friend"] = friend,
                 ["UnlockDate"] = unlockDate,
                 ["CategoryType"] = categoryType,
@@ -130,7 +142,7 @@ namespace PlayniteAchievements.Views.Controls
         /// </summary>
         public static readonly DependencyProperty ItemsSourceProperty =
             DependencyProperty.Register(nameof(ItemsSource), typeof(IEnumerable<AchievementDisplayItem>),
-                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, OnItemsSourceChanged));
 
         /// <summary>
         /// Gets or sets the achievement items to display.
@@ -139,6 +151,15 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (IEnumerable<AchievementDisplayItem>)GetValue(ItemsSourceProperty);
             set => SetValue(ItemsSourceProperty, value);
+        }
+
+        private static void OnItemsSourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control._preSortItems = null;
+                DataGridSortingHelper.ClearSortIndicators(control.AchievementsDataGrid);
+            }
         }
 
         /// <summary>
@@ -449,6 +470,16 @@ namespace PlayniteAchievements.Views.Controls
             remove => RemoveHandler(RowPreviewMouseRightButtonUpEvent, value);
         }
 
+        public static readonly RoutedEvent RowPreviewMouseLeftButtonDownEvent =
+            EventManager.RegisterRoutedEvent("RowPreviewMouseLeftButtonDown", RoutingStrategy.Bubble,
+                typeof(MouseButtonEventHandler), typeof(AchievementDataGridControl));
+
+        public event MouseButtonEventHandler RowPreviewMouseLeftButtonDown
+        {
+            add => AddHandler(RowPreviewMouseLeftButtonDownEvent, value);
+            remove => RemoveHandler(RowPreviewMouseLeftButtonDownEvent, value);
+        }
+
         public AchievementDataGridControl()
         {
             InitializeComponent();
@@ -494,6 +525,17 @@ namespace PlayniteAchievements.Views.Controls
                     DefaultGameImageColumnWidth,
                     MinimumGameImageColumnWidth,
                     MaximumGameImageColumnWidth);
+            }
+
+            var friendAvatarColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "FriendAvatarColumn") as DataGridTemplateColumn;
+            if (friendAvatarColumn != null)
+            {
+                SetResizableColumnVisibility(
+                    friendAvatarColumn,
+                    ShowFriendColumn,
+                    DefaultFriendAvatarColumnWidth,
+                    MinimumFriendAvatarColumnWidth,
+                    MaximumFriendAvatarColumnWidth);
             }
 
             var friendColumn = AchievementsDataGrid.Columns.FirstOrDefault(c => c.GetValue(FrameworkElement.NameProperty) as string == "FriendColumn") as DataGridTemplateColumn;
@@ -601,6 +643,7 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (string.IsNullOrEmpty(e.PropertyName) ||
                 e.PropertyName == nameof(PersistedSettings.OverviewRecentAchievementsUnlockDateMode) ||
+                e.PropertyName == nameof(PersistedSettings.FriendsOverviewAchievementsUnlockDateMode) ||
                 e.PropertyName == nameof(PersistedSettings.OverviewSelectedGameAchievementsUnlockDateMode) ||
                 e.PropertyName == nameof(PersistedSettings.ViewAchievementsAchievementsUnlockDateMode) ||
                 e.PropertyName == nameof(PersistedSettings.StartPageAchievementsUnlockDateMode) ||
@@ -624,9 +667,11 @@ namespace PlayniteAchievements.Views.Controls
                     UnlockDateMode = persisted.DesktopThemeAchievementsUnlockDateMode;
                     break;
                 case "OverviewRecentAchievements":
-                case "FriendsOverviewRecentAchievements":
                 case "Overview":
                     UnlockDateMode = persisted.OverviewRecentAchievementsUnlockDateMode;
+                    break;
+                case "FriendsOverviewRecentAchievements":
+                    UnlockDateMode = persisted.FriendsOverviewAchievementsUnlockDateMode;
                     break;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
@@ -798,6 +843,8 @@ namespace PlayniteAchievements.Views.Controls
             }
             if (!ShowFriendColumn)
             {
+                _columnPersistence.ForcedCollapsedKeys.Add("FriendAvatar");
+                _columnPersistence.ExcludedVisibilityKeys.Add("FriendAvatar");
                 _columnPersistence.ForcedCollapsedKeys.Add("Friend");
                 _columnPersistence.ExcludedVisibilityKeys.Add("Friend");
             }
@@ -1353,10 +1400,22 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            // Default: in-memory sorting
-            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e);
-            if (sortDirection == null)
+            if (e.Column == null || string.IsNullOrWhiteSpace(e.Column.SortMemberPath))
             {
+                DataGridSortingHelper.HandleSorting(sender, e, AchievementsDataGrid);
+                return;
+            }
+
+            if (e.Column.SortDirection == null && _preSortItems == null)
+            {
+                _preSortItems = ItemsSource?.ToList();
+            }
+
+            // Default: in-memory sorting
+            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e, AchievementsDataGrid);
+            if (!sortDirection.HasValue)
+            {
+                RestorePreSortOrder();
                 return;
             }
 
@@ -1376,6 +1435,54 @@ namespace PlayniteAchievements.Views.Controls
                     SortScope,
                     ref currentSortPath,
                     ref currentSortDirection))
+            {
+                return;
+            }
+
+            ReplaceItemsInSource(items);
+        }
+
+        private void RestorePreSortOrder()
+        {
+            if (_preSortItems == null || _preSortItems.Count == 0)
+            {
+                _preSortItems = null;
+                return;
+            }
+
+            var current = ItemsSource?.ToList();
+            if (current == null || current.Count == 0)
+            {
+                _preSortItems = null;
+                return;
+            }
+
+            var originalOrder = _preSortItems
+                .Select((item, index) => new { item, index })
+                .Where(entry => entry.item != null)
+                .GroupBy(entry => entry.item)
+                .ToDictionary(group => group.Key, group => group.First().index);
+            var restored = current
+                .Select((item, index) => new
+                {
+                    item,
+                    currentIndex = index,
+                    originalIndex = item != null && originalOrder.TryGetValue(item, out var originalIndex)
+                        ? originalIndex
+                        : int.MaxValue
+                })
+                .OrderBy(entry => entry.originalIndex)
+                .ThenBy(entry => entry.currentIndex)
+                .Select(entry => entry.item)
+                .ToList();
+
+            ReplaceItemsInSource(restored);
+            _preSortItems = null;
+        }
+
+        private void ReplaceItemsInSource(List<AchievementDisplayItem> items)
+        {
+            if (items == null)
             {
                 return;
             }
@@ -1400,6 +1507,11 @@ namespace PlayniteAchievements.Views.Controls
         private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (IsHyperlinkClick(e?.OriginalSource))
+            {
+                return;
+            }
+
+            if (ForwardRowMouseEvent(e, RowPreviewMouseLeftButtonDownEvent, sender))
             {
                 return;
             }
@@ -1441,20 +1553,37 @@ namespace PlayniteAchievements.Views.Controls
 
         private void AchievementRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
-            RaiseEvent(new MouseButtonEventArgs(e.MouseDevice, e.Timestamp, e.ChangedButton)
-            {
-                RoutedEvent = RowPreviewMouseRightButtonDownEvent,
-                Source = sender
-            });
+            ForwardRowMouseEvent(e, RowPreviewMouseRightButtonDownEvent, sender);
         }
 
         private void AchievementRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
         {
-            RaiseEvent(new MouseButtonEventArgs(e.MouseDevice, e.Timestamp, e.ChangedButton)
+            ForwardRowMouseEvent(e, RowPreviewMouseRightButtonUpEvent, sender);
+        }
+
+        private bool ForwardRowMouseEvent(MouseButtonEventArgs sourceEvent, RoutedEvent routedEvent, object source)
+        {
+            if (sourceEvent == null || routedEvent == null)
             {
-                RoutedEvent = RowPreviewMouseRightButtonUpEvent,
-                Source = sender
-            });
+                return false;
+            }
+
+            var forwardedEvent = new MouseButtonEventArgs(
+                sourceEvent.MouseDevice,
+                sourceEvent.Timestamp,
+                sourceEvent.ChangedButton)
+            {
+                RoutedEvent = routedEvent,
+                Source = source
+            };
+            RaiseEvent(forwardedEvent);
+            if (!forwardedEvent.Handled)
+            {
+                return false;
+            }
+
+            sourceEvent.Handled = true;
+            return true;
         }
 
         private void DataGridColumnMenu_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
@@ -1554,27 +1683,7 @@ namespace PlayniteAchievements.Views.Controls
         /// <param name="direction">The sort direction, or null to clear all indicators.</param>
         public void SetSortIndicator(string sortMemberPath, ListSortDirection? direction)
         {
-            if (AchievementsDataGrid == null || AchievementsDataGrid.Columns == null)
-            {
-                return;
-            }
-
-            foreach (var column in AchievementsDataGrid.Columns)
-            {
-                column.SortDirection = null;
-            }
-
-            if (direction == null || string.IsNullOrEmpty(sortMemberPath))
-            {
-                return;
-            }
-
-            var targetColumn = AchievementsDataGrid.Columns
-                .FirstOrDefault(c => string.Equals(c.SortMemberPath, sortMemberPath, StringComparison.Ordinal));
-            if (targetColumn != null)
-            {
-                targetColumn.SortDirection = direction;
-            }
+            DataGridSortingHelper.SetSortIndicator(AchievementsDataGrid, sortMemberPath, direction);
         }
 
         /// <summary>

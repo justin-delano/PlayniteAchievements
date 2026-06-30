@@ -1221,7 +1221,8 @@ namespace PlayniteAchievements.Services.UI
                     friendCache,
                     _refreshCoordinator,
                     _refreshService,
-                    _settings);
+                    _settings,
+                    OverviewLaunchContext.Popout);
 
                 var windowOptions = new WindowOptions
                 {

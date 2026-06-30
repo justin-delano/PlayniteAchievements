@@ -669,6 +669,9 @@ namespace PlayniteAchievements.Providers.Steam
             _apiHandler?.Dispose(); _apiHttp?.Dispose();
 
             _cookieJar.PerDomainCapacity = 300;
+            ServicePointManager.DefaultConnectionLimit = Math.Max(
+                ServicePointManager.DefaultConnectionLimit,
+                16);
 
             _handler = new HttpClientHandler
             {

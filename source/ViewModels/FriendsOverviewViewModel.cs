@@ -1,10 +1,12 @@
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -42,6 +44,8 @@ namespace PlayniteAchievements.ViewModels
         private List<FriendAchievementDisplayItem> _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
         private List<FriendAchievementDisplayItem> _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
         private List<FriendGameLinkItem> _friendGameLinks = new List<FriendGameLinkItem>();
+        private HashSet<string> _gameUnlockKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private HashSet<string> _friendGameUnlockKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedCategoryFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private FriendSummaryItem _selectedFriend;
@@ -92,6 +96,11 @@ namespace PlayniteAchievements.ViewModels
             {
                 _refreshRuntime.RebuildProgress += OnRebuildProgress;
             }
+
+            if (_settings?.Persisted != null)
+            {
+                _settings.Persisted.PropertyChanged += OnPersistedSettingsChanged;
+            }
         }
 
         public BulkObservableCollection<FriendSummaryItem> FilteredFriends { get; }
@@ -101,6 +110,8 @@ namespace PlayniteAchievements.ViewModels
         public BulkObservableCollection<FriendSummaryItem> Friends => FilteredFriends;
         public BulkObservableCollection<FriendGameSummaryItem> Games => FilteredGames;
         public BulkObservableCollection<FriendAchievementDisplayItem> RecentUnlocks => DisplayedAchievements;
+
+        public PlayniteAchievementsSettings Settings => _settings;
 
         public ObservableCollection<string> ProviderFilterOptions { get; }
         public ObservableCollection<string> TypeFilterOptions { get; }
@@ -275,7 +286,7 @@ namespace PlayniteAchievements.ViewModels
 
         public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
         public bool HasData => _allFriends.Count > 0 || _allGames.Count > 0 || _allRecentUnlocks.Count > 0 || _allUnlockedAchievements.Count > 0;
-        public bool IsProviderDisabled => _settings?.Persisted?.EnableFriendsOverview != true;
+        public bool IsProviderDisabled => false;
 
         public string SelectedProviderFilterText => string.IsNullOrWhiteSpace(SelectedProviderKey)
             ? ResourceProvider.GetString("LOCPlayAch_FriendsOverview_AllProviders") ?? "All Providers"
@@ -453,8 +464,7 @@ namespace PlayniteAchievements.ViewModels
 
         private bool CanRefresh()
         {
-            return !IsRefreshing &&
-                   _settings?.Persisted?.EnableFriendsOverview == true;
+            return !IsRefreshing;
         }
 
         private async Task RefreshSelectedModeAsync()
@@ -538,6 +548,7 @@ namespace PlayniteAchievements.ViewModels
                 _allRecentUnlocks = data?.RecentUnlocks ?? new List<FriendAchievementDisplayItem>();
                 _allUnlockedAchievements = data?.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
                 _friendGameLinks = data?.FriendGameLinks ?? new List<FriendGameLinkItem>();
+                RebuildUnlockRelationshipIndexes();
 
                 _friendSearchIndex.Rebuild(_allFriends);
                 _gameSearchIndex.Rebuild(_allGames);
@@ -560,6 +571,7 @@ namespace PlayniteAchievements.ViewModels
                 _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
                 _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
                 _friendGameLinks = new List<FriendGameLinkItem>();
+                RebuildUnlockRelationshipIndexes();
                 FilteredFriends.ReplaceAll(Array.Empty<FriendSummaryItem>());
                 FilteredGames.ReplaceAll(Array.Empty<FriendGameSummaryItem>());
                 DisplayedAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
@@ -582,7 +594,7 @@ namespace PlayniteAchievements.ViewModels
             {
                 _isApplyingFilters = true;
 
-                if (SelectedFriend != null && SelectedGame != null && !IsFriendLinkedToGame(SelectedFriend, SelectedGame))
+                if (SelectedFriend != null && SelectedGame != null && !HasUnlocksForFriendGame(SelectedFriend, SelectedGame))
                 {
                     _selectedGame = null;
                     OnPropertyChanged(nameof(SelectedGame));
@@ -599,7 +611,7 @@ namespace PlayniteAchievements.ViewModels
 
                 if (SelectedGame != null)
                 {
-                    friends = friends.Where(friend => IsFriendLinkedToGame(friend, SelectedGame));
+                    friends = friends.Where(friend => HasUnlocksForFriendGame(friend, SelectedGame));
                 }
 
                 var friendList = friends
@@ -609,11 +621,12 @@ namespace PlayniteAchievements.ViewModels
 
                 var games = _allGames
                     .Where(game => MatchesProvider(game?.ProviderKey))
+                    .Where(HasAnyFriendUnlocks)
                     .Where(game => _gameSearchIndex.Matches(game, gameQuery));
 
                 if (SelectedFriend != null)
                 {
-                    games = games.Where(game => IsFriendLinkedToGame(SelectedFriend, game));
+                    games = games.Where(game => HasUnlocksForFriendGame(SelectedFriend, game));
                 }
 
                 var gameList = games
@@ -671,9 +684,16 @@ namespace PlayniteAchievements.ViewModels
                     .ThenBy(achievement => achievement?.DisplayName, StringComparer.CurrentCultureIgnoreCase)
                     .ToList();
 
-                FilteredFriends.ReplaceAll(friendList);
-                FilteredGames.ReplaceAll(gameList);
-                DisplayedAchievements.ReplaceAll(achievementList);
+                var persisted = _settings?.Persisted;
+                FilteredFriends.ReplaceAll(DisplayGridRowLimitHelper.Limit(
+                    friendList,
+                    persisted?.FriendsOverviewFriendSummariesGridMaxRows));
+                FilteredGames.ReplaceAll(DisplayGridRowLimitHelper.Limit(
+                    gameList,
+                    persisted?.FriendsOverviewGameSummariesGridMaxRows));
+                DisplayedAchievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(
+                    achievementList,
+                    persisted?.FriendsOverviewAchievementsGridMaxRows));
                 OnPropertyChanged(nameof(AchievementCountText));
                 OnPropertyChanged(nameof(HasData));
             }
@@ -711,14 +731,98 @@ namespace PlayniteAchievements.ViewModels
             return true;
         }
 
-        private bool IsFriendLinkedToGame(FriendSummaryItem friend, FriendGameSummaryItem game)
+        private void RebuildUnlockRelationshipIndexes()
+        {
+            _gameUnlockKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _friendGameUnlockKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var achievement in _allUnlockedAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>())
+            {
+                var gameKey = BuildGameUnlockKey(achievement?.ProviderKey, achievement?.AppId ?? 0, achievement?.PlayniteGameId);
+                if (!string.IsNullOrWhiteSpace(gameKey))
+                {
+                    _gameUnlockKeys.Add(gameKey);
+                }
+
+                var friendGameKey = BuildFriendGameUnlockKey(
+                    achievement?.ProviderKey,
+                    achievement?.FriendExternalUserId,
+                    achievement?.AppId ?? 0,
+                    achievement?.PlayniteGameId);
+                if (!string.IsNullOrWhiteSpace(friendGameKey))
+                {
+                    _friendGameUnlockKeys.Add(friendGameKey);
+                }
+            }
+        }
+
+        private bool HasAnyFriendUnlocks(FriendGameSummaryItem game)
+        {
+            if (game == null)
+            {
+                return false;
+            }
+
+            var gameKey = BuildGameUnlockKey(game.ProviderKey, game.AppId, game.PlayniteGameId);
+            if (!string.IsNullOrWhiteSpace(gameKey) && _gameUnlockKeys.Contains(gameKey))
+            {
+                return true;
+            }
+
+            return _allUnlockedAchievements.Count == 0 &&
+                   (game.FriendsWithUnlocksCount > 0 ||
+                    game.FriendUnlockedAchievementsCount > 0 ||
+                    game.LastFriendUnlockUtc.HasValue);
+        }
+
+        private bool HasUnlocksForFriendGame(FriendSummaryItem friend, FriendGameSummaryItem game)
         {
             if (friend == null || game == null)
             {
                 return false;
             }
 
-            return _friendGameLinks.Any(link => IsSameFriend(link, friend) && IsSameGame(link, game));
+            var key = BuildFriendGameUnlockKey(friend.ProviderKey, friend.ExternalUserId, game.AppId, game.PlayniteGameId);
+            if (!string.IsNullOrWhiteSpace(key) && _friendGameUnlockKeys.Contains(key))
+            {
+                return true;
+            }
+
+            return _allUnlockedAchievements.Count == 0 &&
+                   game.FriendsWithUnlocksCount > 0 &&
+                   _friendGameLinks.Any(link => IsSameFriend(link, friend) && IsSameGame(link, game));
+        }
+
+        private static string BuildFriendGameUnlockKey(
+            string providerKey,
+            string externalUserId,
+            int appId,
+            Guid? playniteGameId)
+        {
+            if (string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return null;
+            }
+
+            var gameKey = BuildGameUnlockKey(providerKey, appId, playniteGameId);
+            return string.IsNullOrWhiteSpace(gameKey)
+                ? null
+                : externalUserId.Trim().ToLowerInvariant() + "|" + gameKey;
+        }
+
+        private static string BuildGameUnlockKey(string providerKey, int appId, Guid? playniteGameId)
+        {
+            var provider = string.IsNullOrWhiteSpace(providerKey)
+                ? string.Empty
+                : providerKey.Trim().ToLowerInvariant();
+            if (appId > 0)
+            {
+                return provider + "|app:" + appId.ToString("D", System.Globalization.CultureInfo.InvariantCulture);
+            }
+
+            return playniteGameId.HasValue && playniteGameId.Value != Guid.Empty
+                ? provider + "|playnite:" + playniteGameId.Value.ToString("D")
+                : null;
         }
 
         private static bool IsSameFriend(FriendSummaryItem left, FriendSummaryItem right)
@@ -887,6 +991,18 @@ namespace PlayniteAchievements.ViewModels
             (RefreshInstalledCommand as AsyncCommand)?.RaiseCanExecuteChanged();
         }
 
+        private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
+        {
+            var propertyName = e?.PropertyName;
+            if (string.IsNullOrWhiteSpace(propertyName) ||
+                propertyName == nameof(PersistedSettings.FriendsOverviewFriendSummariesGridMaxRows) ||
+                propertyName == nameof(PersistedSettings.FriendsOverviewGameSummariesGridMaxRows) ||
+                propertyName == nameof(PersistedSettings.FriendsOverviewAchievementsGridMaxRows))
+            {
+                ApplyFilters();
+            }
+        }
+
         private static IEnumerable<RefreshMode> CreateFriendRefreshModes()
         {
             yield return CreateRefreshMode(RefreshModeType.FriendsRecent);
@@ -909,6 +1025,11 @@ namespace PlayniteAchievements.ViewModels
             if (_refreshRuntime != null)
             {
                 _refreshRuntime.RebuildProgress -= OnRebuildProgress;
+            }
+
+            if (_settings?.Persisted != null)
+            {
+                _settings.Persisted.PropertyChanged -= OnPersistedSettingsChanged;
             }
         }
     }

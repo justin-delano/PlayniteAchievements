@@ -112,6 +112,85 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_Recent_BoundsParallelAchievementRefresh()
+        {
+            var cache = new FakeFriendCache
+            {
+                Candidates = Enumerable.Range(1, 12)
+                    .Select(index => MakeCandidate(index.ToString(), 1000 + index))
+                    .ToList()
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") },
+                AchievementDelayMs = 25
+            };
+
+            var payload = await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions { Scope = FriendRefreshScope.Recent },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(12, friends.GetFriendGameAchievementsCalls);
+            Assert.AreEqual(12, payload.FriendSummary.CandidatesRefreshed);
+            Assert.IsTrue(friends.MaxConcurrentAchievementCalls > 1);
+            Assert.IsTrue(friends.MaxConcurrentAchievementCalls <= 4);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_Recent_ParallelDisabled_RunsAchievementRefreshSequentially()
+        {
+            var cache = new FakeFriendCache
+            {
+                Candidates = Enumerable.Range(1, 8)
+                    .Select(index => MakeCandidate(index.ToString(), 1000 + index))
+                    .ToList()
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") },
+                AchievementDelayMs = 10
+            };
+
+            var payload = await CreateRuntime(cache, enableParallelProviderRefresh: false)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions { Scope = FriendRefreshScope.Recent },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(8, payload.FriendSummary.CandidatesRefreshed);
+            Assert.AreEqual(1, friends.MaxConcurrentAchievementCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_Shared_BoundsParallelOwnershipRefresh()
+        {
+            var cache = new FakeFriendCache();
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = Enumerable.Range(1, 12)
+                    .Select(index => MakeFriend(index.ToString()))
+                    .ToList(),
+                OwnershipDelayMs = 25
+            };
+
+            var payload = await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions { Scope = FriendRefreshScope.Shared },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(12, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(12, payload.FriendSummary.OwnershipPagesRefreshed);
+            Assert.IsTrue(friends.MaxConcurrentOwnershipCalls > 1);
+            Assert.IsTrue(friends.MaxConcurrentOwnershipCalls <= 4);
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_BeginAuthFailure_MarksAuthRequiredAndEndsRefresh()
         {
             var cache = new FakeFriendCache();
@@ -134,10 +213,13 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(0, cache.SaveFriendListCalls);
         }
 
-        private static FriendsRefreshRuntime CreateRuntime(FakeFriendCache cache)
+        private static FriendsRefreshRuntime CreateRuntime(
+            FakeFriendCache cache,
+            bool enableParallelProviderRefresh = true)
         {
             var settings = new PlayniteAchievementsSettings();
             settings.Persisted.EnableFriendsOverview = true;
+            settings.Persisted.EnableParallelProviderRefresh = enableParallelProviderRefresh;
             settings.Persisted.FriendsOverviewRefreshTtlHours = 24;
             settings.Persisted.ScanDelayMs = 0;
             settings.Persisted.MaxRetryAttempts = 0;
@@ -168,15 +250,19 @@ namespace PlayniteAchievements.Services.Tests
 
         private sealed class FakeFriendCache : IFriendCacheManager
         {
+            private int _saveFriendListCalls;
+            private int _saveFriendOwnershipCalls;
+            private int _saveFriendGameAchievementsCalls;
+
             public List<FriendRefreshCandidate> Candidates { get; set; } = new List<FriendRefreshCandidate>();
-            public int SaveFriendListCalls { get; private set; }
-            public int SaveFriendOwnershipCalls { get; private set; }
-            public int SaveFriendGameAchievementsCalls { get; private set; }
+            public int SaveFriendListCalls => _saveFriendListCalls;
+            public int SaveFriendOwnershipCalls => _saveFriendOwnershipCalls;
+            public int SaveFriendGameAchievementsCalls => _saveFriendGameAchievementsCalls;
             public FriendRefreshOptions LastLoadOptions { get; private set; }
 
             public FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends)
             {
-                SaveFriendListCalls++;
+                Interlocked.Increment(ref _saveFriendListCalls);
                 var count = friends?.Count ?? 0;
                 return FriendCacheWriteResult.Ok(count, count, 0);
             }
@@ -186,7 +272,7 @@ namespace PlayniteAchievements.Services.Tests
                 string externalUserId,
                 IReadOnlyList<FriendGameOwnership> ownership)
             {
-                SaveFriendOwnershipCalls++;
+                Interlocked.Increment(ref _saveFriendOwnershipCalls);
                 var count = ownership?.Count ?? 0;
                 return FriendCacheWriteResult.Ok(count, count, 0);
             }
@@ -197,7 +283,7 @@ namespace PlayniteAchievements.Services.Tests
                 int appId,
                 FriendGameAchievements achievements)
             {
-                SaveFriendGameAchievementsCalls++;
+                Interlocked.Increment(ref _saveFriendGameAchievementsCalls);
                 return FriendCacheWriteResult.Ok();
             }
 
@@ -244,6 +330,15 @@ namespace PlayniteAchievements.Services.Tests
 
         private sealed class FakeFriendsProvider : IFriendsProvider
         {
+            private int _beginCalls;
+            private int _endCalls;
+            private int _getOwnedGamesCalls;
+            private int _getFriendGameAchievementsCalls;
+            private int _currentOwnershipCalls;
+            private int _maxConcurrentOwnershipCalls;
+            private int _currentAchievementCalls;
+            private int _maxConcurrentAchievementCalls;
+
             public FakeFriendsProvider(string providerKey)
             {
                 ProviderKey = providerKey;
@@ -254,58 +349,124 @@ namespace PlayniteAchievements.Services.Tests
             public string ProviderKey { get; }
             public FriendsProviderResult<FriendsRefreshPreparation> BeginResult { get; set; }
             public IReadOnlyList<FriendIdentity> FriendsToReturn { get; set; } = Array.Empty<FriendIdentity>();
-            public int BeginCalls { get; private set; }
-            public int EndCalls { get; private set; }
-            public int GetOwnedGamesCalls { get; private set; }
-            public int GetFriendGameAchievementsCalls { get; private set; }
+            public int OwnershipDelayMs { get; set; }
+            public int AchievementDelayMs { get; set; }
+            public int BeginCalls => _beginCalls;
+            public int EndCalls => _endCalls;
+            public int GetOwnedGamesCalls => _getOwnedGamesCalls;
+            public int GetFriendGameAchievementsCalls => _getFriendGameAchievementsCalls;
+            public int MaxConcurrentOwnershipCalls => _maxConcurrentOwnershipCalls;
+            public int MaxConcurrentAchievementCalls => _maxConcurrentAchievementCalls;
 
             public Task<FriendsProviderResult<FriendsRefreshPreparation>> BeginRefreshAsync(CancellationToken cancel)
             {
-                BeginCalls++;
+                Interlocked.Increment(ref _beginCalls);
                 return Task.FromResult(BeginResult);
             }
 
             public void EndRefresh()
             {
-                EndCalls++;
+                Interlocked.Increment(ref _endCalls);
             }
 
             public Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsAsync(CancellationToken cancel) =>
                 Task.FromResult(FriendsProviderResult<IReadOnlyList<FriendIdentity>>.FromData(FriendsToReturn));
 
-            public Task<FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>> GetOwnedGamesAsync(
+            public async Task<FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>> GetOwnedGamesAsync(
                 FriendIdentity friend,
                 CancellationToken cancel)
             {
-                GetOwnedGamesCalls++;
-                IReadOnlyList<FriendGameOwnership> ownedGames = new[]
+                Interlocked.Increment(ref _getOwnedGamesCalls);
+                var current = Interlocked.Increment(ref _currentOwnershipCalls);
+                UpdateMaxConcurrentOwnershipCalls(current);
+                try
                 {
-                    new FriendGameOwnership
+                    if (OwnershipDelayMs > 0)
                     {
-                        ExternalUserId = friend?.ExternalUserId,
-                        ProviderKey = ProviderKey,
-                        AppId = 100,
-                        PlaytimeForeverMinutes = 1
+                        await Task.Delay(OwnershipDelayMs, cancel).ConfigureAwait(false);
                     }
-                };
 
-                return Task.FromResult(FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(ownedGames));
+                    IReadOnlyList<FriendGameOwnership> ownedGames = new[]
+                    {
+                        new FriendGameOwnership
+                        {
+                            ExternalUserId = friend?.ExternalUserId,
+                            ProviderKey = ProviderKey,
+                            AppId = 100,
+                            PlaytimeForeverMinutes = 1
+                        }
+                    };
+
+                    return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(ownedGames);
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref _currentOwnershipCalls);
+                }
             }
 
-            public Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
+            public async Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
                 FriendIdentity friend,
                 int appId,
                 string gameName,
                 CancellationToken cancel)
             {
-                GetFriendGameAchievementsCalls++;
-                return Task.FromResult(FriendsProviderResult<FriendGameAchievements>.FromData(
-                    new FriendGameAchievements
+                Interlocked.Increment(ref _getFriendGameAchievementsCalls);
+                var current = Interlocked.Increment(ref _currentAchievementCalls);
+                UpdateMaxConcurrentAchievementCalls(current);
+                try
+                {
+                    if (AchievementDelayMs > 0)
                     {
-                        Friend = friend,
-                        AppId = appId,
-                        LastUpdatedUtc = DateTime.UtcNow
-                    }));
+                        await Task.Delay(AchievementDelayMs, cancel).ConfigureAwait(false);
+                    }
+
+                    return FriendsProviderResult<FriendGameAchievements>.FromData(
+                        new FriendGameAchievements
+                        {
+                            Friend = friend,
+                            AppId = appId,
+                            LastUpdatedUtc = DateTime.UtcNow
+                        });
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref _currentAchievementCalls);
+                }
+            }
+
+            private void UpdateMaxConcurrentAchievementCalls(int current)
+            {
+                while (true)
+                {
+                    var existing = Volatile.Read(ref _maxConcurrentAchievementCalls);
+                    if (current <= existing)
+                    {
+                        return;
+                    }
+
+                    if (Interlocked.CompareExchange(ref _maxConcurrentAchievementCalls, current, existing) == existing)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            private void UpdateMaxConcurrentOwnershipCalls(int current)
+            {
+                while (true)
+                {
+                    var existing = Volatile.Read(ref _maxConcurrentOwnershipCalls);
+                    if (current <= existing)
+                    {
+                        return;
+                    }
+
+                    if (Interlocked.CompareExchange(ref _maxConcurrentOwnershipCalls, current, existing) == existing)
+                    {
+                        return;
+                    }
+                }
             }
         }
     }

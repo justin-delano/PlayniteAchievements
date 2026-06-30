@@ -717,18 +717,15 @@ namespace PlayniteAchievements
                         }
                     };
 
-                    if (_settingsViewModel?.Settings?.Persisted?.EnableFriendsOverview == true)
+                    yield return new MainMenuItem
                     {
-                        yield return new MainMenuItem
+                        Description = ResourceProvider.GetString("LOCPlayAch_Menu_OpenFriendsOverview"),
+                        MenuSection = PluginMainMenuSection,
+                        Action = (a) =>
                         {
-                            Description = ResourceProvider.GetString("LOCPlayAch_Menu_OpenFriendsOverview"),
-                            MenuSection = PluginMainMenuSection,
-                            Action = (a) =>
-                            {
-                                OpenFriendsOverviewWindow();
-                            }
-                        };
-                    }
+                            OpenFriendsOverviewWindow();
+                        }
+                    };
 
                     yield return new MainMenuItem
                     {

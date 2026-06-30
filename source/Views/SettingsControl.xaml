@@ -931,6 +931,30 @@
                                     </Grid>
                                 </ListBoxItem>
 
+                                <ListBoxItem Tag="FriendsOverview"
+                                             Style="{StaticResource ProviderNavigationItemContainerStyle}">
+                                    <Grid Margin="8,3" MinHeight="44">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="&#xE716;"
+                                                   FontFamily="Segoe MDL2 Assets"
+                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                   Opacity="0.68"
+                                                   FontSize="16"
+                                                   Margin="0,0,9,0"
+                                                   VerticalAlignment="Center"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_FriendsOverviewSection}"
+                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                                       FontWeight="SemiBold"
+                                                       TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </ListBoxItem>
+
                                 <ListBoxItem Tag="Library"
                                              Style="{StaticResource ProviderNavigationItemContainerStyle}">
                                     <Grid Margin="8,3" MinHeight="44">
@@ -1052,12 +1076,9 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
                                                           IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableFriendsOverview}"
-                                                          IsChecked="{Binding Persisted.EnableFriendsOverview}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewHideSpoilers}"
                                                           IsChecked="{Binding Persisted.FriendsOverviewHideSpoilers}"
-                                                          Margin="24,0,0,0"/>
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -1148,6 +1169,205 @@
                                                        TextWrapping="Wrap"/>
                                         </StackPanel>
                                     </DockPanel>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+
+                        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                      HorizontalScrollBarVisibility="Disabled">
+                            <ScrollViewer.Style>
+                                <Style TargetType="ScrollViewer">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedValue, ElementName=DisplaySectionListBox}" Value="FriendsOverview">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ScrollViewer.Style>
+                            <StackPanel Margin="20">
+                                <Border Style="{StaticResource SectionBorderStyle}"
+                                        Background="{DynamicResource PlayAch.Brush.Panel}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}">
+                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_FriendsOverviewSection}"
+                                               Style="{StaticResource SectionHeaderStyle}"
+                                               Margin="0"/>
+                                </Border>
+
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_FriendSummaries}"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowFriendsOverviewFriendSummariesGridColumnHeaders}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_DateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.FriendsOverviewFriendSummariesLastUnlockDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.FriendsOverviewFriendSummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                             Width="80"
+                                                             Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                                               Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.FriendsOverviewFriendSummariesGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
+                                                             Width="80"
+                                                             Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                                               Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_GameSummaries}"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
+                                                          IsChecked="{Binding Persisted.FriendsOverviewGameSummariesUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GameMetadataHeader}"
+                                                           Style="{StaticResource SubSectionHeaderStyle}"
+                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Margin="16,0,0,0">
+                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Platform}"
+                                                              IsChecked="{Binding Persisted.FriendsOverviewGameSummariesShowMetadataPlatform}"
+                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Playtime}"
+                                                              IsChecked="{Binding Persisted.FriendsOverviewGameSummariesShowMetadataPlaytime}"
+                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Region}"
+                                                              IsChecked="{Binding Persisted.FriendsOverviewGameSummariesShowMetadataRegion}"
+                                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                </StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowFriendsOverviewGameSummariesGridColumnHeaders}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_DateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.FriendsOverviewGameSummariesLastPlayedDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.FriendsOverviewGameSummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                             Width="80"
+                                                             Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                                               Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.FriendsOverviewGameSummariesGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
+                                                             Width="80"
+                                                             Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                                               Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_Title}"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_UseCoverImages}"
+                                                          IsChecked="{Binding Persisted.FriendsOverviewAchievementsUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowRarityGlow}"
+                                                          IsChecked="{Binding Persisted.FriendsOverviewAchievementsShowRarityGlow}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ColorNamesByRarity}"
+                                                          IsChecked="{Binding Persisted.FriendsOverviewAchievementsColorNamesByRarity}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowFriendsOverviewAchievementsGridColumnHeaders}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
+                                                               VerticalAlignment="Center"/>
+                                                    <ComboBox SelectedValue="{Binding Persisted.FriendsOverviewAchievementsUnlockDateMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag"
+                                                              MinWidth="140"
+                                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
+                                                    </ComboBox>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.FriendsOverviewAchievementsGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                             Width="80"
+                                                             Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                                               Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.FriendsOverviewAchievementsGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
+                                                             Width="80"
+                                                             Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
+                                                               VerticalAlignment="Center"
+                                                               Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                                                               Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
                                 </Border>
                             </StackPanel>
                         </ScrollViewer>

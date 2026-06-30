@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Views
     public partial class FriendsOverviewControl : UserControl, IDisposable
     {
         private readonly FriendsOverviewViewModel _viewModel;
+        private readonly OverviewLaunchContext _launchContext;
         private bool _loaded;
 
         public FriendsOverviewControl()
@@ -30,9 +31,11 @@ namespace PlayniteAchievements.Views
             IFriendCacheManager friendCache,
             RefreshEntryPoint refreshCoordinator,
             RefreshRuntime refreshRuntime,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsSettings settings,
+            OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar)
         {
             InitializeComponent();
+            _launchContext = launchContext;
             _viewModel = new FriendsOverviewViewModel(friendCache, refreshCoordinator, refreshRuntime, settings, logger);
             DataContext = _viewModel;
         }
@@ -54,6 +57,9 @@ namespace PlayniteAchievements.Views
 
         public void Dispose()
         {
+            FriendSummariesGridControl?.Dispose();
+            FriendGameSummariesGridControl?.Dispose();
+            FriendsAchievementsGrid?.Dispose();
             _viewModel?.Dispose();
         }
 
@@ -72,6 +78,44 @@ namespace PlayniteAchievements.Views
             _viewModel?.ClearAchievementSearch();
         }
 
+        private void CloseViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (_launchContext == OverviewLaunchContext.Popout)
+                {
+                    Window.GetWindow(this)?.Close();
+                    return;
+                }
+
+                PlayniteUiProvider.RestoreMainView();
+            }
+            catch (Exception ex)
+            {
+                LogManager.GetLogger()?.Debug(ex, "Failed to close friends overview view.");
+            }
+        }
+
+        private void ClearSelection_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel?.ClearSelection();
+            ClearGridSelection(FriendSummariesGridControl?.InternalDataGrid);
+            ClearGridSelection(FriendGameSummariesGridControl?.InternalDataGrid);
+            ClearGridSelection(FriendsAchievementsGrid?.InternalDataGrid);
+        }
+
+        private void ClearFriendSelection_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel?.ClearFriendSelection();
+            ClearGridSelection(FriendSummariesGridControl?.InternalDataGrid);
+        }
+
+        private void ClearGameSelection_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel?.ClearGameSelection();
+            ClearGridSelection(FriendGameSummariesGridControl?.InternalDataGrid);
+        }
+
         private void RefreshModeSelectionButton_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel == null)
@@ -84,57 +128,6 @@ namespace PlayniteAchievements.Views
                 _viewModel.FriendRefreshModes,
                 _viewModel.SelectedRefreshMode,
                 selectedKey => _viewModel.SelectedRefreshMode = selectedKey);
-        }
-
-        private void ProviderFilterSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            var button = ProviderFilterSelectionButton;
-            var menu = button?.ContextMenu;
-            if (button == null || menu == null)
-            {
-                return;
-            }
-
-            menu.Items.Clear();
-            var itemStyle = button.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
-            var allItem = new MenuItem
-            {
-                Header = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_AllProviders") ?? "All Providers",
-                IsCheckable = true,
-                IsChecked = string.IsNullOrWhiteSpace(_viewModel.SelectedProviderKey)
-            };
-            if (itemStyle != null)
-            {
-                allItem.Style = itemStyle;
-            }
-
-            allItem.Click += (_, __) => _viewModel.SetProviderFilter(null);
-            menu.Items.Add(allItem);
-
-            foreach (var provider in _viewModel.ProviderFilterOptions.Where(value => !string.IsNullOrWhiteSpace(value)))
-            {
-                var providerKey = provider;
-                var item = new MenuItem
-                {
-                    Header = providerKey,
-                    IsCheckable = true,
-                    IsChecked = _viewModel.IsProviderFilterSelected(providerKey)
-                };
-                if (itemStyle != null)
-                {
-                    item.Style = itemStyle;
-                }
-
-                item.Click += (_, __) => _viewModel.SetProviderFilter(providerKey);
-                menu.Items.Add(item);
-            }
-
-            OpenSelectorContextMenu(button, menu);
         }
 
         private void TypeFilterSelectionButton_Click(object sender, RoutedEventArgs e)
@@ -277,14 +270,7 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            var row = sender as DataGridRow;
-            if (row == null || !row.IsSelected)
-            {
-                return;
-            }
-
-            var grid = FindParentDataGrid(row);
-            if (grid == null)
+            if (!TryResolveSelectedRow(sender, e, out var row, out var grid))
             {
                 return;
             }
@@ -302,18 +288,75 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            grid.SelectedItem = null;
+            ClearGridSelection(grid);
+
+            e.Handled = true;
+        }
+
+        private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!TryResolveSelectedRow(sender, e, out var row, out var grid) ||
+                !(row.DataContext is AchievementDisplayItem))
+            {
+                return;
+            }
+
+            ClearGridSelection(grid);
+            e.Handled = true;
+        }
+
+        private static bool TryResolveSelectedRow(
+            object sender,
+            MouseButtonEventArgs e,
+            out DataGridRow row,
+            out DataGrid grid)
+        {
+            row = ResolveDataGridRow(sender, e);
+            grid = FindParentDataGrid(row);
+            if (row == null || grid == null)
+            {
+                return false;
+            }
+
+            return row.IsSelected ||
+                   ReferenceEquals(grid.SelectedItem, row.DataContext) ||
+                   ReferenceEquals(grid.CurrentItem, row.DataContext);
+        }
+
+        private static DataGridRow ResolveDataGridRow(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is DataGridRow senderRow)
+            {
+                return senderRow;
+            }
+
+            if (e?.Source is DataGridRow sourceRow)
+            {
+                return sourceRow;
+            }
+
+            return VisualTreeHelpers.FindVisualParent<DataGridRow>(
+                e?.OriginalSource as DependencyObject ?? e?.Source as DependencyObject);
+        }
+
+        private static void ClearGridSelection(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return;
+            }
+
             try
             {
+                grid.SelectedItem = null;
                 grid.UnselectAll();
+                grid.CurrentItem = null;
                 Keyboard.ClearFocus();
             }
             catch
             {
                 // Best effort; focus clearing should not break row toggling.
             }
-
-            e.Handled = true;
         }
 
         private static DataGrid FindParentDataGrid(DependencyObject source)

@@ -14,6 +14,8 @@ namespace PlayniteAchievements.Services.Friends
 {
     internal sealed class FriendsRefreshRuntime
     {
+        private const int FriendRefreshParallelism = 4;
+
         private readonly IFriendCacheManager _friendCache;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
@@ -38,11 +40,6 @@ namespace PlayniteAchievements.Services.Friends
         {
             var payload = new RebuildPayload();
             if (_friendCache == null)
-            {
-                return payload;
-            }
-
-            if (_settings?.Persisted?.EnableFriendsOverview != true)
             {
                 return payload;
             }
@@ -79,6 +76,8 @@ namespace PlayniteAchievements.Services.Friends
             }
 
             var providerKey = friendsProvider.ProviderKey;
+            var maxDegreeOfParallelism = ResolveFriendRefreshParallelism();
+            var payloadLock = new object();
             try
             {
                 var preparationResult = await friendsProvider.BeginRefreshAsync(cancel).ConfigureAwait(false);
@@ -122,13 +121,14 @@ namespace PlayniteAchievements.Services.Friends
                         providerKey,
                         friends,
                         payload,
+                        payloadLock,
                         reportProgress,
+                        maxDegreeOfParallelism,
                         cancel).ConfigureAwait(false);
                 }
 
                 var candidates = _friendCache.LoadFriendRefreshCandidates(providerKey, options) ??
                                  new List<FriendRefreshCandidate>();
-                var limiter = new RateLimiter(Math.Max(0, _settings?.Persisted?.ScanDelayMs ?? 200), Math.Max(0, _settings?.Persisted?.MaxRetryAttempts ?? 3));
 
                 payload.FriendSummary.CandidatesLoaded += candidates.Count;
                 _logger?.Debug(
@@ -141,54 +141,15 @@ namespace PlayniteAchievements.Services.Friends
                     return payload;
                 }
 
-                for (var i = 0; i < candidates.Count; i++)
-                {
-                    cancel.ThrowIfCancellationRequested();
-                    var candidate = candidates[i];
-                    if (candidate?.Friend == null || candidate.AppId <= 0)
-                    {
-                        continue;
-                    }
-
-                    Report(
-                        reportProgress,
-                        Format(
-                            "LOCPlayAch_FriendsRefresh_Progress_Achievements",
-                            "Refreshing friend achievements {0}/{1}...",
-                            i + 1,
-                            candidates.Count),
-                        i,
-                        candidates.Count + 1);
-
-                    await limiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
-
-                    var scrapeResult = await friendsProvider.GetFriendGameAchievementsAsync(
-                        candidate.Friend,
-                        candidate.AppId,
-                        candidate.GameName,
-                        cancel).ConfigureAwait(false);
-
-                    if (scrapeResult?.AuthRequired == true)
-                    {
-                        MarkAuthFailure(payload, providerKey, true);
-                        break;
-                    }
-
-                    var achievements = scrapeResult?.Data ?? CreateFailureResult(candidate, scrapeResult);
-                    var writeAchievements = _friendCache.SaveFriendGameAchievements(
-                        providerKey,
-                        candidate.Friend.ExternalUserId,
-                        candidate.AppId,
-                        achievements);
-                    if (writeAchievements?.Success != true)
-                    {
-                        _logger?.Warn($"Failed to save friend achievements for {providerKey}/{candidate.Friend.ExternalUserId}/{candidate.AppId}: {writeAchievements?.ErrorMessage}");
-                        continue;
-                    }
-
-                    payload.FriendSummary.CandidatesRefreshed++;
-                    payload.FriendSummary.AchievementsSaved++;
-                }
+                await RefreshAchievementsAsync(
+                    friendsProvider,
+                    providerKey,
+                    candidates,
+                    payload,
+                    payloadLock,
+                    reportProgress,
+                    maxDegreeOfParallelism,
+                    cancel).ConfigureAwait(false);
             }
             finally
             {
@@ -203,59 +164,390 @@ namespace PlayniteAchievements.Services.Friends
             string providerKey,
             IReadOnlyList<FriendIdentity> friends,
             RebuildPayload payload,
+            object payloadLock,
+            Action<string, int, int> reportProgress,
+            int maxDegreeOfParallelism,
+            CancellationToken cancel)
+        {
+            if (friends == null || friends.Count == 0)
+            {
+                return;
+            }
+
+            if (maxDegreeOfParallelism <= 1 || friends.Count == 1)
+            {
+                for (var i = 0; i < friends.Count; i++)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    var shouldContinue = await RefreshOwnershipItemAsync(
+                        friendsProvider,
+                        providerKey,
+                        friends[i],
+                        i + 1,
+                        friends.Count,
+                        payload,
+                        payloadLock,
+                        reportProgress,
+                        cancel).ConfigureAwait(false);
+                    if (!shouldContinue)
+                    {
+                        return;
+                    }
+                }
+
+                return;
+            }
+
+            using (var authCts = CancellationTokenSource.CreateLinkedTokenSource(cancel))
+            {
+                var started = 0;
+                try
+                {
+                    await RunBoundedAsync(
+                        friends,
+                        maxDegreeOfParallelism,
+                        async (friend, _, token) =>
+                        {
+                            var progressCurrent = Interlocked.Increment(ref started);
+                            var shouldContinue = await RefreshOwnershipItemAsync(
+                                friendsProvider,
+                                providerKey,
+                                friend,
+                                progressCurrent,
+                                friends.Count,
+                                payload,
+                                payloadLock,
+                                reportProgress,
+                                token).ConfigureAwait(false);
+                            if (!shouldContinue)
+                            {
+                                authCts.Cancel();
+                            }
+                        },
+                        authCts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                }
+            }
+        }
+
+        private async Task<bool> RefreshOwnershipItemAsync(
+            IFriendsProvider friendsProvider,
+            string providerKey,
+            FriendIdentity friend,
+            int progressCurrent,
+            int total,
+            RebuildPayload payload,
+            object payloadLock,
             Action<string, int, int> reportProgress,
             CancellationToken cancel)
         {
-            for (var i = 0; i < friends.Count; i++)
+            if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
             {
-                cancel.ThrowIfCancellationRequested();
-                var friend = friends[i];
-                if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
+                return true;
+            }
+
+            Report(
+                reportProgress,
+                Format(
+                    "LOCPlayAch_FriendsRefresh_Progress_Ownership",
+                    "Refreshing friend libraries {0}/{1}...",
+                    progressCurrent,
+                    total),
+                Math.Max(0, progressCurrent - 1),
+                total + 1);
+
+            var limiter = CreateScanRateLimiter();
+            var ownershipResult = await limiter.ExecuteWithRetryAsync(
+                () => friendsProvider.GetOwnedGamesAsync(friend, cancel),
+                IsTransientError,
+                cancel).ConfigureAwait(false);
+            if (ownershipResult?.Success != true)
+            {
+                _logger?.Debug($"Friend ownership unavailable for {providerKey}/{friend.ExternalUserId}: {ownershipResult?.ErrorMessage}");
+                if (ownershipResult?.AuthRequired == true)
                 {
-                    continue;
+                    lock (payloadLock)
+                    {
+                        MarkAuthFailure(payload, providerKey, true);
+                    }
+
+                    return false;
                 }
 
-                Report(
-                    reportProgress,
-                    Format(
-                        "LOCPlayAch_FriendsRefresh_Progress_Ownership",
-                        "Refreshing friend libraries {0}/{1}...",
-                        i + 1,
-                        friends.Count),
-                    i,
-                    friends.Count + 1);
+                return true;
+            }
 
-                var ownershipResult = await friendsProvider.GetOwnedGamesAsync(friend, cancel).ConfigureAwait(false);
-                if (ownershipResult?.Success != true)
+            lock (payloadLock)
+            {
+                payload.FriendSummary.OwnershipPagesRefreshed++;
+            }
+
+            var ownedGames = ownershipResult.Data ?? Array.Empty<FriendGameOwnership>();
+            var writeOwnership = _friendCache.SaveFriendOwnership(
+                providerKey,
+                friend.ExternalUserId,
+                ownedGames);
+            if (writeOwnership?.Success != true)
+            {
+                _logger?.Warn($"Failed to save friend ownership for {providerKey}/{friend.ExternalUserId}: {writeOwnership?.ErrorMessage}");
+                return true;
+            }
+
+            lock (payloadLock)
+            {
+                payload.FriendSummary.OwnershipRowsWritten += writeOwnership.WrittenCount;
+            }
+
+            _logger?.Debug(
+                $"Saved friend ownership for {providerKey}/{friend.ExternalUserId}: " +
+                $"fetched={ownedGames.Count}, shared={writeOwnership.WrittenCount}, skippedUnshared={writeOwnership.SkippedCount}.");
+            return true;
+        }
+
+        private async Task RefreshAchievementsAsync(
+            IFriendsProvider friendsProvider,
+            string providerKey,
+            IReadOnlyList<FriendRefreshCandidate> candidates,
+            RebuildPayload payload,
+            object payloadLock,
+            Action<string, int, int> reportProgress,
+            int maxDegreeOfParallelism,
+            CancellationToken cancel)
+        {
+            if (candidates == null || candidates.Count == 0)
+            {
+                return;
+            }
+
+            if (maxDegreeOfParallelism <= 1 || candidates.Count == 1)
+            {
+                var limiter = CreateScanRateLimiter();
+                for (var i = 0; i < candidates.Count; i++)
                 {
-                    _logger?.Debug($"Friend ownership unavailable for {providerKey}/{friend.ExternalUserId}: {ownershipResult?.ErrorMessage}");
-                    MarkAuthFailure(payload, providerKey, ownershipResult?.AuthRequired == true);
-                    if (ownershipResult?.AuthRequired == true)
+                    cancel.ThrowIfCancellationRequested();
+                    var shouldContinue = await RefreshAchievementCandidateAsync(
+                        friendsProvider,
+                        providerKey,
+                        candidates[i],
+                        i + 1,
+                        candidates.Count,
+                        payload,
+                        payloadLock,
+                        reportProgress,
+                        delayBeforeRequest: true,
+                        limiter,
+                        cancel).ConfigureAwait(false);
+                    if (!shouldContinue)
+                    {
+                        break;
+                    }
+                }
+
+                return;
+            }
+
+            using (var authCts = CancellationTokenSource.CreateLinkedTokenSource(cancel))
+            {
+                var started = 0;
+                try
+                {
+                    await RunBoundedAsync(
+                        candidates,
+                        maxDegreeOfParallelism,
+                        async (candidate, _, token) =>
+                        {
+                            var progressCurrent = Interlocked.Increment(ref started);
+                            var limiter = CreateScanRateLimiter();
+                            var shouldContinue = await RefreshAchievementCandidateAsync(
+                                friendsProvider,
+                                providerKey,
+                                candidate,
+                                progressCurrent,
+                                candidates.Count,
+                                payload,
+                                payloadLock,
+                                reportProgress,
+                                delayBeforeRequest: false,
+                                limiter,
+                                token).ConfigureAwait(false);
+                            if (!shouldContinue)
+                            {
+                                authCts.Cancel();
+                            }
+                        },
+                        authCts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                }
+            }
+        }
+
+        private async Task<bool> RefreshAchievementCandidateAsync(
+            IFriendsProvider friendsProvider,
+            string providerKey,
+            FriendRefreshCandidate candidate,
+            int progressCurrent,
+            int total,
+            RebuildPayload payload,
+            object payloadLock,
+            Action<string, int, int> reportProgress,
+            bool delayBeforeRequest,
+            RateLimiter limiter,
+            CancellationToken cancel)
+        {
+            if (candidate?.Friend == null || candidate.AppId <= 0)
+            {
+                return true;
+            }
+
+            Report(
+                reportProgress,
+                Format(
+                    "LOCPlayAch_FriendsRefresh_Progress_Achievements",
+                    "Refreshing friend achievements {0}/{1}...",
+                    progressCurrent,
+                    total),
+                Math.Max(0, progressCurrent - 1),
+                total + 1);
+
+            if (delayBeforeRequest)
+            {
+                await limiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
+            }
+
+            var scrapeResult = await limiter.ExecuteWithRetryAsync(
+                () => friendsProvider.GetFriendGameAchievementsAsync(
+                    candidate.Friend,
+                    candidate.AppId,
+                    candidate.GameName,
+                    cancel),
+                IsTransientError,
+                cancel).ConfigureAwait(false);
+
+            if (scrapeResult?.AuthRequired == true)
+            {
+                lock (payloadLock)
+                {
+                    MarkAuthFailure(payload, providerKey, true);
+                }
+
+                return false;
+            }
+
+            var achievements = scrapeResult?.Data ?? CreateFailureResult(candidate, scrapeResult);
+            var writeAchievements = _friendCache.SaveFriendGameAchievements(
+                providerKey,
+                candidate.Friend.ExternalUserId,
+                candidate.AppId,
+                achievements);
+            if (writeAchievements?.Success != true)
+            {
+                _logger?.Warn($"Failed to save friend achievements for {providerKey}/{candidate.Friend.ExternalUserId}/{candidate.AppId}: {writeAchievements?.ErrorMessage}");
+                return true;
+            }
+
+            lock (payloadLock)
+            {
+                payload.FriendSummary.CandidatesRefreshed++;
+                payload.FriendSummary.AchievementsSaved++;
+            }
+
+            return true;
+        }
+
+        private int ResolveFriendRefreshParallelism()
+        {
+            return (_settings?.Persisted?.EnableParallelProviderRefresh ?? true)
+                ? FriendRefreshParallelism
+                : 1;
+        }
+
+        private RateLimiter CreateScanRateLimiter()
+        {
+            return new RateLimiter(
+                Math.Max(0, _settings?.Persisted?.ScanDelayMs ?? 200),
+                Math.Max(0, _settings?.Persisted?.MaxRetryAttempts ?? 3));
+        }
+
+        private static async Task RunBoundedAsync<T>(
+            IReadOnlyList<T> items,
+            int maxDegreeOfParallelism,
+            Func<T, int, CancellationToken, Task> body,
+            CancellationToken cancel)
+        {
+            if (body == null)
+            {
+                throw new ArgumentNullException(nameof(body));
+            }
+
+            if (items == null || items.Count == 0)
+            {
+                return;
+            }
+
+            var degree = Math.Max(1, Math.Min(maxDegreeOfParallelism, items.Count));
+            if (degree == 1)
+            {
+                for (var i = 0; i < items.Count; i++)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    await body(items[i], i, cancel).ConfigureAwait(false);
+                }
+
+                return;
+            }
+
+            var nextIndex = -1;
+            var workers = Enumerable.Range(0, degree)
+                .Select(_ => WorkerAsync())
+                .ToArray();
+
+            await Task.WhenAll(workers).ConfigureAwait(false);
+
+            async Task WorkerAsync()
+            {
+                while (true)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    var index = Interlocked.Increment(ref nextIndex);
+                    if (index >= items.Count)
                     {
                         return;
                     }
 
-                    continue;
+                    await body(items[index], index, cancel).ConfigureAwait(false);
                 }
-
-                payload.FriendSummary.OwnershipPagesRefreshed++;
-
-                var ownedGames = ownershipResult.Data ?? Array.Empty<FriendGameOwnership>();
-                var writeOwnership = _friendCache.SaveFriendOwnership(
-                    providerKey,
-                    friend.ExternalUserId,
-                    ownedGames);
-                if (writeOwnership?.Success != true)
-                {
-                    _logger?.Warn($"Failed to save friend ownership for {providerKey}/{friend.ExternalUserId}: {writeOwnership?.ErrorMessage}");
-                    continue;
-                }
-
-                payload.FriendSummary.OwnershipRowsWritten += writeOwnership.WrittenCount;
-                _logger?.Debug(
-                    $"Saved friend ownership for {providerKey}/{friend.ExternalUserId}: " +
-                    $"fetched={ownedGames.Count}, shared={writeOwnership.WrittenCount}, skippedUnshared={writeOwnership.SkippedCount}.");
             }
+        }
+
+        private static bool IsTransientError(Exception ex)
+        {
+            if (ex == null || ex is OperationCanceledException)
+            {
+                return false;
+            }
+
+            var message = ex.Message ?? string.Empty;
+            if (message.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("temporarily", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("502", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("503", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                message.IndexOf("504", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                (message.IndexOf("connection", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                 message.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0))
+            {
+                return true;
+            }
+
+            return ex.InnerException != null &&
+                   !ReferenceEquals(ex.InnerException, ex) &&
+                   IsTransientError(ex.InnerException);
         }
 
         private FriendRefreshOptions NormalizeOptions(FriendRefreshOptions options)

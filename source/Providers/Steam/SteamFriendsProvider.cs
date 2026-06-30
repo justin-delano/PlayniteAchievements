@@ -12,6 +12,7 @@ namespace PlayniteAchievements.Providers.Steam
     internal sealed class SteamFriendsProvider : IFriendsProvider
     {
         private readonly SteamHttpClient _steamClient;
+        private readonly SteamApiClient _steamApiClient;
         private readonly SteamScanner _scanner;
         private readonly SteamWebApiTokenResolver _tokenResolver;
         private readonly ILogger _logger;
@@ -20,11 +21,13 @@ namespace PlayniteAchievements.Providers.Steam
 
         public SteamFriendsProvider(
             SteamHttpClient steamClient,
+            SteamApiClient steamApiClient,
             SteamScanner scanner,
             SteamWebApiTokenResolver tokenResolver,
             ILogger logger)
         {
             _steamClient = steamClient ?? throw new ArgumentNullException(nameof(steamClient));
+            _steamApiClient = steamApiClient ?? throw new ArgumentNullException(nameof(steamApiClient));
             _scanner = scanner ?? throw new ArgumentNullException(nameof(scanner));
             _tokenResolver = tokenResolver ?? throw new ArgumentNullException(nameof(tokenResolver));
             _logger = logger;
@@ -85,7 +88,15 @@ namespace PlayniteAchievements.Providers.Steam
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.Failed("Steam friend id is missing.");
             }
 
-            var gamesResult = await GetOwnedGamesFromCommunityPageAsync(friend.ExternalUserId, cancel).ConfigureAwait(false);
+            var gamesResult = await GetOwnedGamesFromWebApiAsync(friend.ExternalUserId, cancel).ConfigureAwait(false);
+            if (gamesResult?.Success != true)
+            {
+                _logger?.Debug(
+                    $"Steam owned games API unavailable for friend {friend.ExternalUserId}; falling back to community page. " +
+                    $"{gamesResult?.ErrorMessage}");
+                gamesResult = await GetOwnedGamesFromCommunityPageAsync(friend.ExternalUserId, cancel).ConfigureAwait(false);
+            }
+
             if (gamesResult?.Success != true)
             {
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.Failed(
@@ -109,6 +120,48 @@ namespace PlayniteAchievements.Providers.Steam
                 .ToList();
 
             return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(result);
+        }
+
+        private async Task<OwnedGamesPageResult> GetOwnedGamesFromWebApiAsync(
+            string steamId64,
+            CancellationToken cancel)
+        {
+            var session = await ResolveSteamSessionAsync(cancel).ConfigureAwait(false);
+            if (!session.IsSuccess)
+            {
+                return OwnedGamesPageResult.Failed(
+                    session.ErrorMessage ?? "Steam web session could not be resolved.",
+                    authRequired: session.AuthRequired);
+            }
+
+            if (string.IsNullOrWhiteSpace(session.WebApiToken))
+            {
+                return OwnedGamesPageResult.Failed("Steam web API token could not be resolved.");
+            }
+
+            IReadOnlyList<SteamOwnedGame> games;
+            try
+            {
+                games = await _steamApiClient
+                    .GetOwnedGamesAsync(session.WebApiToken, steamId64, cancel)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Steam owned games API request failed for friend {steamId64}.");
+                return OwnedGamesPageResult.Failed(
+                    $"Steam owned games API request failed for friend {steamId64}.",
+                    transientFailure: true);
+            }
+
+            if (games == null)
+            {
+                return OwnedGamesPageResult.Failed(
+                    $"Steam owned games API returned no usable response for friend {steamId64}.");
+            }
+
+            return OwnedGamesPageResult.FromGames(games);
         }
 
         private async Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsFromCommunityPageAsync(

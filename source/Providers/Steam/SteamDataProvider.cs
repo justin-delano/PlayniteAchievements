@@ -61,7 +61,7 @@ namespace PlayniteAchievements.Providers.Steam
             var tokenResolver = new SteamWebApiTokenResolver(_sessionManager, logger);
             _sessionManager.SetClearInMemoryAuthState(_steamClient.ClearInMemoryAuthState);
             _scanner = new SteamScanner(settings, _steamClient, steamApiClient, tokenResolver, api, logger);
-            _friendsProvider = new SteamFriendsProvider(_steamClient, _scanner, tokenResolver, logger);
+            _friendsProvider = new SteamFriendsProvider(_steamClient, steamApiClient, _scanner, tokenResolver, logger);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");

@@ -274,6 +274,10 @@ namespace PlayniteAchievements.ViewModels
 
         public bool Unlocked { get; set; }
 
+        public virtual bool ShowUnlockDate => Unlocked;
+
+        public virtual bool ShowLockedProgress => !ShowUnlockDate;
+
         public DateTime? UnlockTimeUtc { get; set; }
 
         public DateTime UnlockTime => UnlockTimeUtc ?? DateTime.MinValue;
