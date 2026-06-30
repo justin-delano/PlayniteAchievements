@@ -14,6 +14,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -31,16 +33,92 @@ namespace PlayniteAchievements.Views
         public sealed class ProviderOptionItem : PlayniteAchievements.Common.ObservableObject
         {
             private bool _isSelected;
+            private bool _isEnabled;
+            private bool _isAuthenticated;
+            private readonly string _enabledAndAuthText;
+            private readonly string _disabledText;
+            private readonly string _noAuthText;
 
-            public string ProviderKey { get; set; }
-            public string ProviderName { get; set; }
-            public bool IsSelectable { get; set; }
-            public string StatusText { get; set; }
+            public string ProviderKey { get; }
+            public string ProviderName { get; }
+
+            public bool IsEnabled
+            {
+                get => _isEnabled;
+                set
+                {
+                    if (SetValueAndReturn(ref _isEnabled, value))
+                    {
+                        OnStateChanged();
+                    }
+                }
+            }
+
+            public bool IsAuthenticated
+            {
+                get => _isAuthenticated;
+                set
+                {
+                    if (SetValueAndReturn(ref _isAuthenticated, value))
+                    {
+                        OnStateChanged();
+                    }
+                }
+            }
+
+            public bool IsSelectable => IsEnabled && IsAuthenticated;
+
+            public string StatusText
+            {
+                get
+                {
+                    if (!IsEnabled)
+                    {
+                        return _disabledText;
+                    }
+
+                    if (!IsAuthenticated)
+                    {
+                        return _noAuthText;
+                    }
+
+                    return _enabledAndAuthText;
+                }
+            }
 
             public bool IsSelected
             {
                 get => _isSelected;
                 set => SetValue(ref _isSelected, value);
+            }
+
+            public ProviderOptionItem(
+                string providerKey,
+                string providerName,
+                bool isEnabled,
+                bool isAuthenticated,
+                string enabledAndAuthText,
+                string disabledText,
+                string noAuthText)
+            {
+                ProviderKey = providerKey;
+                ProviderName = providerName;
+                _enabledAndAuthText = enabledAndAuthText;
+                _disabledText = disabledText;
+                _noAuthText = noAuthText;
+                _isEnabled = isEnabled;
+                _isAuthenticated = isAuthenticated;
+            }
+
+            private void OnStateChanged()
+            {
+                OnPropertyChanged(nameof(IsSelectable));
+                OnPropertyChanged(nameof(StatusText));
+
+                if (!IsSelectable && IsSelected)
+                {
+                    IsSelected = false;
+                }
             }
         }
 
@@ -75,6 +153,8 @@ namespace PlayniteAchievements.Views
         private string _gameListSearchText;
         private bool _showLibraryGames;
 
+        private readonly Dictionary<string, IDataProvider> _providersByKey =
+            new Dictionary<string, IDataProvider>(StringComparer.OrdinalIgnoreCase);
         private readonly List<SelectionItem> _allFriendItems = new List<SelectionItem>();
         private readonly List<SelectionItem> _allSharedGameItems = new List<SelectionItem>();
         private readonly List<SelectionItem> _allLibraryGameItems = new List<SelectionItem>();
@@ -220,6 +300,7 @@ namespace PlayniteAchievements.Views
             _libraryGameView.Filter = LibraryGameFilter;
 
             RecalculateSummary();
+            _ = RefreshProviderAuthAsync();
         }
 
         internal static bool TryShowDialog(
@@ -282,14 +363,17 @@ namespace PlayniteAchievements.Views
                 }
 
                 var isEnabled = _refreshRuntime.ProviderRegistry?.IsProviderEnabled(provider.ProviderKey) ?? true;
-                var isAuthenticated = provider.AuthSession == null && provider.IsAuthenticated;
-                var option = new ProviderOptionItem
+                var isAuthenticated = isEnabled && provider.AuthSession == null && provider.IsAuthenticated;
+                var option = new ProviderOptionItem(
+                    provider.ProviderKey,
+                    provider.ProviderName,
+                    isEnabled,
+                    isAuthenticated,
+                    readyText,
+                    disabledText,
+                    noAuthText)
                 {
-                    ProviderKey = provider.ProviderKey,
-                    ProviderName = provider.ProviderName,
-                    IsSelectable = isEnabled && isAuthenticated,
-                    IsSelected = isEnabled && isAuthenticated,
-                    StatusText = !isEnabled ? disabledText : (isAuthenticated ? readyText : noAuthText)
+                    IsSelected = isEnabled && isAuthenticated
                 };
                 option.PropertyChanged += (_, e) =>
                 {
@@ -301,7 +385,33 @@ namespace PlayniteAchievements.Views
                     }
                 };
                 ProviderOptions.Add(option);
+                _providersByKey[provider.ProviderKey] = provider;
             }
+        }
+
+        private async Task RefreshProviderAuthAsync()
+        {
+            foreach (var option in ProviderOptions)
+            {
+                if (!_providersByKey.TryGetValue(option.ProviderKey, out var provider) || provider == null)
+                {
+                    continue;
+                }
+
+                var isEnabled = _refreshRuntime.ProviderRegistry?.IsProviderEnabled(provider.ProviderKey) ?? true;
+                option.IsEnabled = isEnabled;
+                var wasSelectable = option.IsSelectable;
+                option.IsAuthenticated = isEnabled &&
+                    await _refreshRuntime.IsProviderAuthenticatedAsync(provider, CancellationToken.None).ConfigureAwait(true);
+
+                // Default newly-confirmed providers to selected so the run is ready without re-checking.
+                if (!wasSelectable && option.IsSelectable)
+                {
+                    option.IsSelected = true;
+                }
+            }
+
+            RecalculateSummary();
         }
 
         private void InitializeScopes()
