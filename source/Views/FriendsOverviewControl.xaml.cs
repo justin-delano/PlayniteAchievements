@@ -510,7 +510,7 @@ namespace PlayniteAchievements.Views
             try
             {
                 var settings = ProviderRegistry.Settings<SteamSettings>();
-                settings.AddIgnoredFriend(friend.ExternalUserId, friend.DisplayName, friend.AvatarUrl);
+                settings.AddIgnoredFriend(friend.ExternalUserId, friend.DisplayName, friend.AvatarPath);
                 ProviderRegistry.Write(settings, persistToDisk: true);
 
                 var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);

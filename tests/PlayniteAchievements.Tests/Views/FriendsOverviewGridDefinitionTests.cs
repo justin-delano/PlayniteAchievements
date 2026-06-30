@@ -113,7 +113,7 @@ namespace PlayniteAchievements.Tests.Views
                 "x:Name=\"FriendAvatarColumn\"",
                 "ColumnKey=\"Avatar\"",
                 "ColumnKey=\"Friend\"",
-                "FriendAvatarUrl");
+                "FriendAvatarPath");
             AssertContainsNone(
                 xaml,
                 "ColumnKey=\"FriendUnlockDate\"",

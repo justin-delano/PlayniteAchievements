@@ -248,7 +248,7 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             var alice = viewModel.FilteredFriends.Single(item => item.ExternalUserId == "alice");
             StringAssert.Contains(alice.ProviderDisplayName, "Steam");
-            Assert.AreEqual("https://cdn.example/alice.png", alice.AvatarUrl);
+            Assert.AreEqual("https://cdn.example/alice.png", alice.AvatarPath);
             Assert.AreEqual(2, alice.GamesWithUnlocksCount);
             Assert.AreEqual(1, alice.RecentUnlockCount);
             Assert.AreEqual(375, alice.CollectionScore);
@@ -277,7 +277,7 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             var recent = viewModel.DisplayedAchievements.Single();
             Assert.AreEqual("Alice", recent.FriendName);
-            Assert.AreEqual("https://cdn.example/alice.png", recent.FriendAvatarUrl);
+            Assert.AreEqual("https://cdn.example/alice.png", recent.FriendAvatarPath);
             Assert.AreEqual(new DateTime(2026, 1, 4, 0, 0, 0, DateTimeKind.Utc), recent.FriendUnlockTimeUtc);
             Assert.IsTrue(recent.ShowUnlockDate);
         }
@@ -329,7 +329,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                     ProviderKey = "Steam",
                     ExternalUserId = "alice",
                     DisplayName = "Alice",
-                    AvatarUrl = "https://cdn.example/alice.png",
+                    AvatarPath = "https://cdn.example/alice.png",
                     SharedGamesCount = 2,
                     GamesWithUnlocksCount = 2,
                     UnlockedAchievementsCount = 2,
@@ -345,7 +345,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                     ProviderKey = "Steam",
                     ExternalUserId = "bob",
                     DisplayName = "Bob",
-                    AvatarUrl = "https://cdn.example/bob.png",
+                    AvatarPath = "https://cdn.example/bob.png",
                     SharedGamesCount = 1,
                     GamesWithUnlocksCount = 1,
                     UnlockedAchievementsCount = 1,
@@ -478,7 +478,7 @@ namespace PlayniteAchievements.Tests.ViewModels
             string provider,
             string externalUserId,
             string friendName,
-            string friendAvatarUrl,
+            string friendAvatarPath,
             int appId,
             Guid playniteGameId,
             string gameName,
@@ -492,7 +492,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                 ProviderKey = provider,
                 FriendExternalUserId = externalUserId,
                 FriendName = friendName,
-                FriendAvatarUrl = friendAvatarUrl,
+                FriendAvatarPath = friendAvatarPath,
                 AppId = appId,
                 PlayniteGameId = playniteGameId,
                 GameName = gameName,

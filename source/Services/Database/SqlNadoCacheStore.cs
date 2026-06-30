@@ -2119,7 +2119,7 @@ namespace PlayniteAchievements.Services.Database
                         ProviderKey = row.ProviderKey,
                         ExternalUserId = row.ExternalUserId,
                         DisplayName = row.DisplayName,
-                        AvatarUrl = !string.IsNullOrWhiteSpace(row.AvatarPath)
+                        AvatarPath = !string.IsNullOrWhiteSpace(row.AvatarPath)
                             ? MakeAbsolutePath(row.AvatarPath)
                             : row.AvatarUrl,
                         SharedGamesCount = (int)Math.Max(0, row.SharedGamesCount),
@@ -3264,7 +3264,7 @@ namespace PlayniteAchievements.Services.Database
                     GameCoverPath = presentation.CoverPath ?? MakeAbsolutePath(row.CoverPath),
                     FriendName = row.FriendName,
                     FriendExternalUserId = row.FriendExternalUserId,
-                    FriendAvatarUrl = !string.IsNullOrWhiteSpace(row.FriendAvatarPath)
+                    FriendAvatarPath = !string.IsNullOrWhiteSpace(row.FriendAvatarPath)
                         ? MakeAbsolutePath(row.FriendAvatarPath)
                         : row.FriendAvatarUrl
                 };

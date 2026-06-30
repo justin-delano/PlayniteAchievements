@@ -113,7 +113,7 @@
                                 </Border.Height>
                                 <Image Stretch="UniformToFill"
                                        ToolTip="{Binding DisplayName}"
-                                       helpers:AsyncImage.Uri="{Binding AvatarUrl}"
+                                       helpers:AsyncImage.Uri="{Binding AvatarPath}"
                                        helpers:AsyncImage.DecodePixel="64"/>
                             </Border>
                         </ContentControl>

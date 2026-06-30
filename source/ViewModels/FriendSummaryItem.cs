@@ -8,7 +8,7 @@ namespace PlayniteAchievements.ViewModels
     public sealed class FriendSummaryItem : ObservableObject
     {
         private string _displayName;
-        private string _avatarUrl;
+        private string _avatarPath;
         private int _sharedGamesCount;
         private int _gamesWithUnlocksCount;
         private int _unlockedAchievementsCount;
@@ -40,10 +40,10 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _displayName, value);
         }
 
-        public string AvatarUrl
+        public string AvatarPath
         {
-            get => _avatarUrl;
-            set => SetValue(ref _avatarUrl, value);
+            get => _avatarPath;
+            set => SetValue(ref _avatarPath, value);
         }
 
         public int SharedGamesCount
