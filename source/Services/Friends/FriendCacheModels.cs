@@ -53,6 +53,8 @@ namespace PlayniteAchievements.Services.Friends
         public string ExternalUserId { get; set; }
         public int AppId { get; set; }
         public Guid? PlayniteGameId { get; set; }
+        public long PlaytimeForeverMinutes { get; set; }
+        public DateTime? LastPlayedUtc { get; set; }
     }
 
     internal interface IFriendCacheManager

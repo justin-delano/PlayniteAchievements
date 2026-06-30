@@ -50,10 +50,12 @@ namespace PlayniteAchievements.Tests.Views
 
             AssertContainsAll(
                 xaml,
+                "ColumnKey=\"GameSummaryLastUnlock\"",
                 "ColumnKey=\"FriendGameFriendsWithUnlocks\"",
                 "ColumnKey=\"FriendGameLastUnlock\"");
             AssertContainsNone(
                 xaml,
+                "ColumnKey=\"FriendGamePlaytime\"",
                 "ColumnKey=\"FriendGameFriends\"",
                 "ColumnKey=\"FriendGameUnlocks\"",
                 "ColumnKey=\"FriendGameUniqueUnlocks\"",
@@ -65,12 +67,39 @@ namespace PlayniteAchievements.Tests.Views
             AssertContainsAll(
                 code,
                 "FriendsOverviewGameSummaries",
+                "FriendsOverviewSelectedFriendGameSummaries",
                 "FriendsOverviewGameSummariesColumnVisibility",
                 "FriendsOverviewGameSummariesColumnWidths",
                 "FriendsOverviewGameSummariesColumnOrder",
                 "FriendsOverviewGameSummariesColumnAlignments",
                 "FriendsOverviewGameSummariesColumnVerticalAlignments",
-                "FriendsOverviewGameSummariesColumnHeaderAlignments");
+                "FriendsOverviewGameSummariesColumnHeaderAlignments",
+                "FriendsOverviewSelectedFriendGameSummariesColumnVisibility",
+                "FriendsOverviewSelectedFriendGameSummariesColumnWidths",
+                "FriendsOverviewSelectedFriendGameSummariesColumnOrder",
+                "FriendsOverviewSelectedFriendGameSummariesColumnAlignments",
+                "FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments",
+                "FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments");
+        }
+
+        [TestMethod]
+        public void FriendsOverview_WiresSeparateAggregateAndSelectedFriendGameSummaryGrids()
+        {
+            var xaml = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml"));
+            var code = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml.cs"));
+
+            AssertContainsAll(
+                xaml,
+                "x:Name=\"FriendGameSummariesGridControl\"",
+                "x:Name=\"SelectedFriendGameSummariesGridControl\"",
+                "ColumnSettingsKey=\"FriendsOverviewGameSummaries\"",
+                "ColumnSettingsKey=\"FriendsOverviewSelectedFriendGameSummaries\"",
+                "Visibility=\"{Binding HasFriendSelection, Converter={StaticResource InverseBoolToVis}}\"",
+                "Visibility=\"{Binding HasFriendSelection, Converter={StaticResource BoolToVis}}\"");
+            AssertContainsAll(
+                code,
+                "SelectedFriendGameSummariesGridControl?.Dispose()",
+                "ClearGridSelection(SelectedFriendGameSummariesGridControl?.InternalDataGrid)");
         }
 
         [TestMethod]

@@ -47,6 +47,11 @@ namespace PlayniteAchievements.Views.Controls
             "FriendGameLastUnlock"
         };
 
+        private static readonly string[] SelectedFriendOnlyColumnKeys =
+        {
+            "GameSummaryLastUnlock"
+        };
+
         private static readonly string[] MirroredBadgeResourceKeys =
         {
             "PlayAch.Brush.CompletedGame",
@@ -91,7 +96,16 @@ namespace PlayniteAchievements.Views.Controls
                     collectionScore: false,
                     prestigeScore: false,
                     friendsWithUnlocks: true,
-                    lastFriendUnlock: true)
+                    lastFriendUnlock: true),
+                ["FriendsOverviewSelectedFriendGameSummaries"] = CreateGameSummaryVisibility(
+                    platform: true,
+                    lastPlayed: true,
+                    lastUnlock: true,
+                    playtime: true,
+                    progress: true,
+                    total: true,
+                    collectionScore: false,
+                    prestigeScore: false)
             };
 
         private static IReadOnlyDictionary<string, bool> CreateGameSummaryVisibility(
@@ -99,6 +113,7 @@ namespace PlayniteAchievements.Views.Controls
             bool game = true,
             bool platform = false,
             bool lastPlayed = false,
+            bool lastUnlock = false,
             bool playtime = false,
             bool progress = true,
             bool total = true,
@@ -114,6 +129,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["GameSummaryName"] = game,
                 ["GameSummaryPlatform"] = platform,
                 ["GameSummaryLastPlayed"] = lastPlayed,
+                ["GameSummaryLastUnlock"] = lastUnlock,
                 ["GameSummaryPlaytime"] = playtime,
                 ["GameSummaryProgression"] = progress,
                 ["TotalAchievements"] = total,
@@ -703,6 +719,23 @@ namespace PlayniteAchievements.Views.Controls
                         SetHeaderAlignments = map => persisted.FriendsOverviewGameSummariesColumnHeaderAlignments = map,
                         GetLastPlayedDateMode = () => persisted.FriendsOverviewGameSummariesLastPlayedDateMode
                     };
+                case GridSurface.FriendsOverviewSelectedFriend:
+                    return new GameSummarySurfaceSettings
+                    {
+                        GetWidths = () => persisted.FriendsOverviewSelectedFriendGameSummariesColumnWidths,
+                        SetWidths = map => persisted.FriendsOverviewSelectedFriendGameSummariesColumnWidths = map,
+                        GetOrder = () => persisted.FriendsOverviewSelectedFriendGameSummariesColumnOrder,
+                        SetOrder = map => persisted.FriendsOverviewSelectedFriendGameSummariesColumnOrder = map,
+                        GetVisibility = () => persisted.FriendsOverviewSelectedFriendGameSummariesColumnVisibility,
+                        SetVisibility = map => persisted.FriendsOverviewSelectedFriendGameSummariesColumnVisibility = map,
+                        GetAlignments = () => persisted.FriendsOverviewSelectedFriendGameSummariesColumnAlignments,
+                        SetAlignments = map => persisted.FriendsOverviewSelectedFriendGameSummariesColumnAlignments = map,
+                        GetVerticalAlignments = () => persisted.FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments,
+                        SetVerticalAlignments = map => persisted.FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments = map,
+                        GetHeaderAlignments = () => persisted.FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments,
+                        SetHeaderAlignments = map => persisted.FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments = map,
+                        GetLastPlayedDateMode = () => persisted.FriendsOverviewGameSummariesLastPlayedDateMode
+                    };
                 default:
                     return new GameSummarySurfaceSettings
                     {
@@ -745,7 +778,8 @@ namespace PlayniteAchievements.Views.Controls
             Overview,
             StartPage,
             ViewAchievements,
-            FriendsOverview
+            FriendsOverview,
+            FriendsOverviewSelectedFriend
         }
 
         private GridSurface ResolveSurface()
@@ -766,6 +800,11 @@ namespace PlayniteAchievements.Views.Controls
                 return GridSurface.FriendsOverview;
             }
 
+            if (string.Equals(ColumnSettingsKey, "FriendsOverviewSelectedFriendGameSummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.FriendsOverviewSelectedFriend;
+            }
+
             return GridSurface.Overview;
         }
 
@@ -773,15 +812,28 @@ namespace PlayniteAchievements.Views.Controls
         // they never render and exclude them from the column visibility menu so they cannot be toggled on.
         private void ApplyFriendColumnRestrictions()
         {
-            if (_columnPersistence == null || ResolveSurface() == GridSurface.FriendsOverview)
+            if (_columnPersistence == null)
             {
                 return;
             }
 
-            foreach (var key in FriendOnlyColumnKeys)
+            var surface = ResolveSurface();
+            if (surface != GridSurface.FriendsOverview)
             {
-                _columnPersistence.ForcedCollapsedKeys.Add(key);
-                _columnPersistence.ExcludedVisibilityKeys.Add(key);
+                foreach (var key in FriendOnlyColumnKeys)
+                {
+                    _columnPersistence.ForcedCollapsedKeys.Add(key);
+                    _columnPersistence.ExcludedVisibilityKeys.Add(key);
+                }
+            }
+
+            if (surface != GridSurface.FriendsOverviewSelectedFriend)
+            {
+                foreach (var key in SelectedFriendOnlyColumnKeys)
+                {
+                    _columnPersistence.ForcedCollapsedKeys.Add(key);
+                    _columnPersistence.ExcludedVisibilityKeys.Add(key);
+                }
             }
         }
 

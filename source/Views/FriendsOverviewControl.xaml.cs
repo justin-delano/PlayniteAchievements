@@ -104,6 +104,7 @@ namespace PlayniteAchievements.Views
         {
             FriendSummariesGridControl?.Dispose();
             FriendGameSummariesGridControl?.Dispose();
+            SelectedFriendGameSummariesGridControl?.Dispose();
             FriendsAchievementsGrid?.Dispose();
             _viewModel?.Dispose();
         }
@@ -146,6 +147,7 @@ namespace PlayniteAchievements.Views
             _viewModel?.ClearSelection();
             ClearGridSelection(FriendSummariesGridControl?.InternalDataGrid);
             ClearGridSelection(FriendGameSummariesGridControl?.InternalDataGrid);
+            ClearGridSelection(SelectedFriendGameSummariesGridControl?.InternalDataGrid);
             ClearGridSelection(FriendsAchievementsGrid?.InternalDataGrid);
         }
 
@@ -159,6 +161,7 @@ namespace PlayniteAchievements.Views
         {
             _viewModel?.ClearGameSelection();
             ClearGridSelection(FriendGameSummariesGridControl?.InternalDataGrid);
+            ClearGridSelection(SelectedFriendGameSummariesGridControl?.InternalDataGrid);
         }
 
         private void RefreshModeSelectionButton_Click(object sender, RoutedEventArgs e)

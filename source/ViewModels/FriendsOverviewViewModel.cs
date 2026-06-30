@@ -1,6 +1,7 @@
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
@@ -47,6 +48,8 @@ namespace PlayniteAchievements.ViewModels
         private List<FriendAchievementDisplayItem> _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
         private List<FriendAchievementDisplayItem> _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
         private List<FriendGameLinkItem> _friendGameLinks = new List<FriendGameLinkItem>();
+        private Dictionary<string, List<FriendGameSummaryItem>> _selectedFriendGamesByFriendKey =
+            new Dictionary<string, List<FriendGameSummaryItem>>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> _gameUnlockKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> _friendGameUnlockKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -628,6 +631,7 @@ namespace PlayniteAchievements.ViewModels
                 _allUnlockedAchievements = data?.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
                 _friendGameLinks = data?.FriendGameLinks ?? new List<FriendGameLinkItem>();
                 RebuildUnlockRelationshipIndexes();
+                RebuildSelectedFriendGameSummaries();
 
                 _friendSearchIndex.Rebuild(_allFriends);
                 _gameSearchIndex.Rebuild(_allGames);
@@ -651,6 +655,7 @@ namespace PlayniteAchievements.ViewModels
                 _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
                 _friendGameLinks = new List<FriendGameLinkItem>();
                 RebuildUnlockRelationshipIndexes();
+                _selectedFriendGamesByFriendKey = new Dictionary<string, List<FriendGameSummaryItem>>(StringComparer.OrdinalIgnoreCase);
                 FilteredFriends.ReplaceAll(Array.Empty<FriendSummaryItem>());
                 FilteredGames.ReplaceAll(Array.Empty<FriendGameSummaryItem>());
                 DisplayedAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
@@ -698,14 +703,17 @@ namespace PlayniteAchievements.ViewModels
                     .ThenBy(friend => friend?.DisplayName, StringComparer.CurrentCultureIgnoreCase)
                     .ToList();
 
-                var games = _allGames
+                var gameSource = SelectedFriend != null
+                    ? GetSelectedFriendGames(SelectedFriend)
+                    : _allGames;
+
+                var games = gameSource
                     .Where(game => MatchesProvider(game?.ProviderKey))
-                    .Where(HasAnyFriendUnlocks)
                     .Where(game => _gameSearchIndex.Matches(game, gameQuery));
 
-                if (SelectedFriend != null)
+                if (SelectedFriend == null)
                 {
-                    games = games.Where(game => HasUnlocksForFriendGame(SelectedFriend, game));
+                    games = games.Where(HasAnyFriendUnlocks);
                 }
 
                 var gameList = games
@@ -722,12 +730,22 @@ namespace PlayniteAchievements.ViewModels
                     selectionChanged = true;
                 }
 
-                if (SelectedGame != null && !gameList.Any(game => IsSameGame(game, SelectedGame)))
+                if (SelectedGame != null)
                 {
-                    _selectedGame = null;
-                    OnPropertyChanged(nameof(SelectedGame));
-                    NotifySelectionStateChanged();
-                    selectionChanged = true;
+                    var matchingGame = gameList.FirstOrDefault(game => IsSameGame(game, SelectedGame));
+                    if (matchingGame == null)
+                    {
+                        _selectedGame = null;
+                        OnPropertyChanged(nameof(SelectedGame));
+                        NotifySelectionStateChanged();
+                        selectionChanged = true;
+                    }
+                    else if (!ReferenceEquals(_selectedGame, matchingGame))
+                    {
+                        _selectedGame = matchingGame;
+                        OnPropertyChanged(nameof(SelectedGame));
+                        NotifySelectionStateChanged();
+                    }
                 }
 
                 if (selectionChanged)
@@ -810,6 +828,210 @@ namespace PlayniteAchievements.ViewModels
             return true;
         }
 
+        private IReadOnlyList<FriendGameSummaryItem> GetSelectedFriendGames(FriendSummaryItem friend)
+        {
+            var friendKey = BuildFriendKey(friend?.ProviderKey, friend?.ExternalUserId);
+            if (!string.IsNullOrWhiteSpace(friendKey) &&
+                _selectedFriendGamesByFriendKey.TryGetValue(friendKey, out var games))
+            {
+                return games;
+            }
+
+            return Array.Empty<FriendGameSummaryItem>();
+        }
+
+        private void RebuildSelectedFriendGameSummaries()
+        {
+            var next = new Dictionary<string, List<FriendGameSummaryItem>>(StringComparer.OrdinalIgnoreCase);
+            var gamesByKey = new Dictionary<string, FriendGameSummaryItem>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var game in _allGames ?? Enumerable.Empty<FriendGameSummaryItem>())
+            {
+                var gameKey = BuildGameUnlockKey(game?.ProviderKey, game?.AppId ?? 0, game?.PlayniteGameId);
+                if (!string.IsNullOrWhiteSpace(gameKey) && !gamesByKey.ContainsKey(gameKey))
+                {
+                    gamesByKey[gameKey] = game;
+                }
+            }
+
+            var linksByFriendGameKey = new Dictionary<string, FriendGameLinkItem>(StringComparer.OrdinalIgnoreCase);
+            foreach (var link in _friendGameLinks ?? Enumerable.Empty<FriendGameLinkItem>())
+            {
+                var key = BuildFriendGameUnlockKey(link?.ProviderKey, link?.ExternalUserId, link?.AppId ?? 0, link?.PlayniteGameId);
+                if (!string.IsNullOrWhiteSpace(key) && !linksByFriendGameKey.ContainsKey(key))
+                {
+                    linksByFriendGameKey[key] = link;
+                }
+            }
+
+            var groups = (_allUnlockedAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>())
+                .Where(achievement => achievement != null)
+                .GroupBy(
+                    achievement => BuildFriendGameUnlockKey(
+                        achievement.ProviderKey,
+                        achievement.FriendExternalUserId,
+                        achievement.AppId,
+                        achievement.PlayniteGameId),
+                    StringComparer.OrdinalIgnoreCase);
+
+            foreach (var group in groups)
+            {
+                if (string.IsNullOrWhiteSpace(group.Key))
+                {
+                    continue;
+                }
+
+                var sample = group.FirstOrDefault();
+                var friendKey = BuildFriendKey(sample?.ProviderKey, sample?.FriendExternalUserId);
+                var gameKey = BuildGameUnlockKey(sample?.ProviderKey, sample?.AppId ?? 0, sample?.PlayniteGameId);
+                if (string.IsNullOrWhiteSpace(friendKey) ||
+                    string.IsNullOrWhiteSpace(gameKey) ||
+                    !gamesByKey.TryGetValue(gameKey, out var baseGame))
+                {
+                    continue;
+                }
+
+                linksByFriendGameKey.TryGetValue(group.Key, out var link);
+                var row = BuildSelectedFriendGameSummary(baseGame, group, link);
+                if (!next.TryGetValue(friendKey, out var rows))
+                {
+                    rows = new List<FriendGameSummaryItem>();
+                    next[friendKey] = rows;
+                }
+
+                rows.Add(row);
+            }
+
+            _selectedFriendGamesByFriendKey = next;
+        }
+
+        private static FriendGameSummaryItem BuildSelectedFriendGameSummary(
+            FriendGameSummaryItem source,
+            IEnumerable<FriendAchievementDisplayItem> achievements,
+            FriendGameLinkItem link)
+        {
+            var unlocked = (achievements ?? Enumerable.Empty<FriendAchievementDisplayItem>())
+                .Where(achievement => achievement != null)
+                .GroupBy(achievement => achievement.ApiName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group
+                    .OrderByDescending(achievement => achievement.UnlockTimeUtc ?? DateTime.MinValue)
+                    .First())
+                .ToList();
+
+            var playtimeMinutes = Math.Max(0L, link?.PlaytimeForeverMinutes ?? 0L);
+            var item = new FriendGameSummaryItem
+            {
+                ProviderKey = source.ProviderKey,
+                Provider = source.Provider,
+                ProviderIconKey = source.ProviderIconKey,
+                ProviderColorHex = source.ProviderColorHex,
+                AppId = source.AppId,
+                PlayniteGameId = source.PlayniteGameId,
+                GameName = source.GameName,
+                SortingName = source.SortingName,
+                GameLogo = source.GameLogo,
+                GameCoverPath = source.GameCoverPath,
+                PlatformText = source.PlatformText,
+                Platforms = source.Platforms,
+                RegionText = source.RegionText,
+                PlaytimeSeconds = ToPlaytimeSeconds(playtimeMinutes),
+                LastPlayed = link?.LastPlayedUtc,
+                TotalAchievements = source.TotalAchievements,
+                CollectionScoreTotal = source.CollectionScoreTotal,
+                PrestigeScoreTotal = source.PrestigeScoreTotal,
+                TotalCommonPossible = source.TotalCommonPossible,
+                TotalUncommonPossible = source.TotalUncommonPossible,
+                TotalRarePossible = source.TotalRarePossible,
+                TotalUltraRarePossible = source.TotalUltraRarePossible,
+                TrophyPlatinumTotal = source.TrophyPlatinumTotal,
+                TrophyGoldTotal = source.TrophyGoldTotal,
+                TrophySilverTotal = source.TrophySilverTotal,
+                TrophyBronzeTotal = source.TrophyBronzeTotal,
+                FriendCount = 1,
+                FriendsWithUnlocksCount = unlocked.Count > 0 ? 1 : 0,
+                FriendUnlockedAchievementsCount = unlocked.Count,
+                UniqueFriendUnlockedAchievementsCount = unlocked.Count,
+                LastFriendUnlockUtc = unlocked
+                    .Select(achievement => achievement.UnlockTimeUtc)
+                    .Where(unlockTime => unlockTime.HasValue)
+                    .DefaultIfEmpty()
+                    .Max(),
+                TotalFriendPlaytimeMinutes = playtimeMinutes,
+                AverageFriendPlaytimeMinutes = playtimeMinutes,
+                LastFriendPlayedUtc = link?.LastPlayedUtc
+            };
+
+            foreach (var achievement in unlocked)
+            {
+                item.CollectionScore += achievement.CollectionScore;
+                item.PrestigeScore += achievement.PrestigeScore;
+                item.Points += achievement.Points;
+                AccumulateRarity(achievement.Rarity, item);
+                AccumulateTrophy(achievement.TrophyType, item);
+            }
+
+            item.IsCompleted = item.TotalAchievements > 0 &&
+                               item.UnlockedAchievements >= item.TotalAchievements;
+            return item;
+        }
+
+        private static ulong ToPlaytimeSeconds(long minutes)
+        {
+            var normalized = Math.Max(0L, minutes);
+            return normalized > (long)(ulong.MaxValue / 60UL)
+                ? ulong.MaxValue
+                : (ulong)normalized * 60UL;
+        }
+
+        private static void AccumulateRarity(RarityTier rarity, GameSummaryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            switch (rarity)
+            {
+                case RarityTier.UltraRare:
+                    item.UltraRareCount++;
+                    break;
+                case RarityTier.Rare:
+                    item.RareCount++;
+                    break;
+                case RarityTier.Uncommon:
+                    item.UncommonCount++;
+                    break;
+                default:
+                    item.CommonCount++;
+                    break;
+            }
+        }
+
+        private static void AccumulateTrophy(string trophyType, GameSummaryItem item)
+        {
+            if (item == null || string.IsNullOrWhiteSpace(trophyType))
+            {
+                return;
+            }
+
+            if (string.Equals(trophyType, "platinum", StringComparison.OrdinalIgnoreCase))
+            {
+                item.TrophyPlatinumCount++;
+            }
+            else if (string.Equals(trophyType, "gold", StringComparison.OrdinalIgnoreCase))
+            {
+                item.TrophyGoldCount++;
+            }
+            else if (string.Equals(trophyType, "silver", StringComparison.OrdinalIgnoreCase))
+            {
+                item.TrophySilverCount++;
+            }
+            else if (string.Equals(trophyType, "bronze", StringComparison.OrdinalIgnoreCase))
+            {
+                item.TrophyBronzeCount++;
+            }
+        }
+
         private void RebuildUnlockRelationshipIndexes()
         {
             _gameUnlockKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -887,6 +1109,19 @@ namespace PlayniteAchievements.ViewModels
             return string.IsNullOrWhiteSpace(gameKey)
                 ? null
                 : externalUserId.Trim().ToLowerInvariant() + "|" + gameKey;
+        }
+
+        private static string BuildFriendKey(string providerKey, string externalUserId)
+        {
+            if (string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return null;
+            }
+
+            var provider = string.IsNullOrWhiteSpace(providerKey)
+                ? string.Empty
+                : providerKey.Trim().ToLowerInvariant();
+            return provider + "|" + externalUserId.Trim().ToLowerInvariant();
         }
 
         private static string BuildGameUnlockKey(string providerKey, int appId, Guid? playniteGameId)

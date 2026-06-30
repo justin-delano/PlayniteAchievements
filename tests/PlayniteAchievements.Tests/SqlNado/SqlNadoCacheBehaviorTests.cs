@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services.Database;
 using SqlNado;
@@ -281,6 +282,40 @@ namespace PlayniteAchievements.SqlNado.Tests
                 markerUnlocked);
 
             Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendGameLinksLoadOwnershipPlaytimeAndLastPlayed()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+            var models = File.ReadAllText(FindRepoFile("source", "Services", "Friends", "FriendCacheModels.cs"));
+
+            StringAssert.Contains(models, "public long PlaytimeForeverMinutes { get; set; }");
+            StringAssert.Contains(models, "public DateTime? LastPlayedUtc { get; set; }");
+            StringAssert.Contains(store, "public long PlaytimeForeverMinutes { get; set; }");
+            StringAssert.Contains(store, "public string LastPlayedUtc { get; set; }");
+            StringAssert.Contains(store, "fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes");
+            StringAssert.Contains(store, "fo.LastPlayedUtc AS LastPlayedUtc");
+            StringAssert.Contains(store, "PlaytimeForeverMinutes = Math.Max(0, row.PlaytimeForeverMinutes)");
+            StringAssert.Contains(store, "LastPlayedUtc = ParseUtc(row.LastPlayedUtc)");
+        }
+
+        private static string FindRepoFile(params string[] parts)
+        {
+            var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+            while (directory != null)
+            {
+                var path = Path.Combine(new[] { directory.FullName }.Concat(parts).ToArray());
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+
+                directory = directory.Parent;
+            }
+
+            Assert.Fail("Could not find " + Path.Combine(parts));
+            return null;
         }
     }
 }

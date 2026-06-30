@@ -71,12 +71,14 @@ namespace PlayniteAchievements.ViewModels
         public DateTime? LastFriendUnlockUtc
         {
             get => LastUnlockUtc;
-            set => LastUnlockUtc = value;
+            set
+            {
+                LastUnlockUtc = value;
+                OnPropertyChanged(nameof(LastFriendUnlockLocal));
+            }
         }
 
         public DateTime? LastFriendUnlockLocal => LastUnlockUtc?.ToLocalTime();
-
-        public DateTime? LastUnlockLocal => LastUnlockUtc?.ToLocalTime();
 
         public long TotalFriendPlaytimeMinutes
         {

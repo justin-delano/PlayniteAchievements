@@ -244,6 +244,25 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_LastUnlock}" SortMemberPath="LastUnlockUtc" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryLastUnlock">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
+                            <Grid>
+                                <TextBlock Style="{StaticResource GameSummaryGridTextStyle}">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource DateDisplayMode}">
+                                            <Binding Path="LastUnlockLocal"/>
+                                            <Binding Path="LastPlayedDateMode" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Grid>
+                        </ContentControl>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Playtime}" SortMemberPath="PlaytimeSeconds" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryPlaytime">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>

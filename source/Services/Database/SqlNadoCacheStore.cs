@@ -237,6 +237,8 @@ namespace PlayniteAchievements.Services.Database
             public string ExternalUserId { get; set; }
             public long? ProviderGameId { get; set; }
             public string PlayniteGameId { get; set; }
+            public long PlaytimeForeverMinutes { get; set; }
+            public string LastPlayedUtc { get; set; }
         }
 
         private sealed class FriendRecentUnlockRow
@@ -1745,7 +1747,9 @@ namespace PlayniteAchievements.Services.Database
                         ProviderKey = row.ProviderKey,
                         ExternalUserId = row.ExternalUserId,
                         AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
-                        PlayniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId)
+                        PlayniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId),
+                        PlaytimeForeverMinutes = Math.Max(0, row.PlaytimeForeverMinutes),
+                        LastPlayedUtc = ParseUtc(row.LastPlayedUtc)
                     })
                     .ToList();
 
@@ -2436,7 +2440,9 @@ namespace PlayniteAchievements.Services.Database
                     g.ProviderKey AS ProviderKey,
                     u.ExternalUserId AS ExternalUserId,
                     g.ProviderGameId AS ProviderGameId,
-                    g.PlayniteGameId AS PlayniteGameId
+                    g.PlayniteGameId AS PlayniteGameId,
+                    fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
+                    fo.LastPlayedUtc AS LastPlayedUtc
                   FROM Users u
                   INNER JOIN FriendOwnership fo ON fo.UserId = u.Id
                   INNER JOIN Games g ON g.Id = fo.GameId

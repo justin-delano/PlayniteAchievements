@@ -88,6 +88,63 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void SelectedFriendGamesUseFriendScopedSummaryRows()
+        {
+            var data = CreateData();
+            var viewModel = CreateViewModel(data);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            viewModel.SelectedFriend = data.Friends[0];
+
+            var gameOne = viewModel.FilteredGames.Single(item => item.AppId == 10);
+            Assert.AreNotSame(data.Games[0], gameOne);
+            Assert.AreEqual(600UL * 60UL, gameOne.PlaytimeSeconds);
+            Assert.AreEqual(new DateTime(2026, 1, 7, 0, 0, 0, DateTimeKind.Utc), gameOne.LastPlayed);
+            Assert.AreEqual(1, gameOne.UnlockedAchievements);
+            Assert.AreEqual(1, gameOne.UniqueFriendUnlockedAchievementsCount);
+            Assert.AreEqual(4, gameOne.TotalAchievements);
+            Assert.AreEqual(25, gameOne.Progression);
+            Assert.AreEqual(new DateTime(2026, 1, 4, 0, 0, 0, DateTimeKind.Utc), gameOne.LastUnlockUtc);
+            Assert.AreEqual(1, gameOne.FriendsWithUnlocksCount);
+            Assert.AreEqual(600, gameOne.TotalFriendPlaytimeMinutes);
+        }
+
+        [TestMethod]
+        public void SelectedFriendGamesChangeWhenSwitchingFriends()
+        {
+            var data = CreateData();
+            var viewModel = CreateViewModel(data);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            viewModel.SelectedFriend = data.Friends[0];
+            var aliceGameOne = viewModel.FilteredGames.Single(item => item.AppId == 10);
+
+            viewModel.SelectedFriend = data.Friends[1];
+            var bobGameOne = viewModel.FilteredGames.Single(item => item.AppId == 10);
+
+            Assert.AreNotSame(aliceGameOne, bobGameOne);
+            Assert.AreEqual(600UL * 60UL, aliceGameOne.PlaytimeSeconds);
+            Assert.AreEqual(300UL * 60UL, bobGameOne.PlaytimeSeconds);
+            Assert.AreEqual(new DateTime(2026, 1, 4, 0, 0, 0, DateTimeKind.Utc), aliceGameOne.LastUnlockUtc);
+            Assert.AreEqual(new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc), bobGameOne.LastUnlockUtc);
+        }
+
+        [TestMethod]
+        public void SelectedFriendGameSearchMatchesProjectedRows()
+        {
+            var data = CreateData();
+            var viewModel = CreateViewModel(data);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            viewModel.SelectedFriend = data.Friends[0];
+            viewModel.GameSearchText = "two";
+
+            CollectionAssert.AreEqual(
+                new[] { "Game Two" },
+                viewModel.FilteredGames.Select(item => item.GameName).ToArray());
+        }
+
+        [TestMethod]
         public void SelectedGameFiltersFriendsAndShowsAllUnlockedAchievementsForGame()
         {
             var data = CreateData();
@@ -239,6 +296,7 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.AreEqual(3, viewModel.FilteredFriends.Count);
             Assert.AreEqual(3, viewModel.FilteredGames.Count);
+            Assert.AreSame(data.Games[0], viewModel.FilteredGames.Single(item => item.AppId == 10));
             CollectionAssert.AreEqual(
                 new[] { "Recent Only" },
                 viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
@@ -376,10 +434,42 @@ namespace PlayniteAchievements.Tests.ViewModels
                 AllUnlockedAchievements = allUnlocked,
                 FriendGameLinks = new List<FriendGameLinkItem>
                 {
-                    new FriendGameLinkItem { ProviderKey = "Steam", ExternalUserId = "alice", AppId = 10, PlayniteGameId = gameOneId },
-                    new FriendGameLinkItem { ProviderKey = "Steam", ExternalUserId = "alice", AppId = 20, PlayniteGameId = gameTwoId },
-                    new FriendGameLinkItem { ProviderKey = "Steam", ExternalUserId = "bob", AppId = 10, PlayniteGameId = gameOneId },
-                    new FriendGameLinkItem { ProviderKey = "GOG", ExternalUserId = "cora", AppId = 30, PlayniteGameId = gogGameId }
+                    new FriendGameLinkItem
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "alice",
+                        AppId = 10,
+                        PlayniteGameId = gameOneId,
+                        PlaytimeForeverMinutes = 600,
+                        LastPlayedUtc = new DateTime(2026, 1, 7, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new FriendGameLinkItem
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "alice",
+                        AppId = 20,
+                        PlayniteGameId = gameTwoId,
+                        PlaytimeForeverMinutes = 300,
+                        LastPlayedUtc = new DateTime(2026, 1, 6, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new FriendGameLinkItem
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "bob",
+                        AppId = 10,
+                        PlayniteGameId = gameOneId,
+                        PlaytimeForeverMinutes = 300,
+                        LastPlayedUtc = new DateTime(2026, 1, 5, 0, 0, 0, DateTimeKind.Utc)
+                    },
+                    new FriendGameLinkItem
+                    {
+                        ProviderKey = "GOG",
+                        ExternalUserId = "cora",
+                        AppId = 30,
+                        PlayniteGameId = gogGameId,
+                        PlaytimeForeverMinutes = 120,
+                        LastPlayedUtc = new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc)
+                    }
                 }
             };
         }
