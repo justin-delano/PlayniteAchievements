@@ -356,7 +356,8 @@ namespace PlayniteAchievements
                         _fullscreenWindowService,
                         _logger,
                         _windowService.RunRefreshWithGlobalProgressAsync,
-                        gameId => _windowService.OpenManageAchievementsView(gameId, ManageAchievementsTab.Overview));
+                        gameId => _windowService.OpenManageAchievementsView(gameId, ManageAchievementsTab.Overview),
+                        _cacheManager as Services.Friends.IFriendCacheManager);
 
                     SubscribeDatabaseEventHandlers();
 

@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public const string GameStartedGroup = "Started";
         public const string GameActivityGroup = "Activity";
         public const string GameLastUnlockGroup = "LastUnlock";
+        public const string FriendLastUnlockGroup = "FriendLastUnlock";
 
         public static readonly string[] AchievementCustomizationGroups =
         {
@@ -109,6 +110,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             GameProgressFilterKeys,
             GameActivityFilterKeys);
 
+        public static readonly string[] FriendSummaryFilterKeys =
+        {
+            DynamicThemeViewKeys.All,
+            DynamicThemeViewKeys.HasLastUnlock,
+            DynamicThemeViewKeys.NoLastUnlock
+        };
+
         public static readonly string[] SelectedGameAchievementSortKeys =
         {
             DynamicThemeViewKeys.Default,
@@ -155,6 +163,15 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             DynamicThemeViewKeys.AchievementCount
         };
 
+        public static readonly string[] FriendSummarySortKeys =
+        {
+            DynamicThemeViewKeys.Name,
+            DynamicThemeViewKeys.Provider,
+            DynamicThemeViewKeys.LastUnlock,
+            DynamicThemeViewKeys.UnlockedCount,
+            DynamicThemeViewKeys.AchievementCount
+        };
+
         public static readonly string[] SortDirectionKeys =
         {
             DynamicThemeViewKeys.Descending,
@@ -188,6 +205,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public static readonly IReadOnlyDictionary<string, string> GameSummaryFilterKeyMap =
             CreateCanonicalKeyMap(GameSummaryFilterKeys);
 
+        public static readonly IReadOnlyDictionary<string, string> FriendSummaryFilterKeyMap =
+            CreateCanonicalKeyMap(FriendSummaryFilterKeys);
+
         public static readonly IReadOnlyDictionary<string, string> SelectedGameAchievementSortKeyMap =
             CreateCanonicalKeyMap(SelectedGameAchievementSortKeys);
 
@@ -196,6 +216,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
         public static readonly IReadOnlyDictionary<string, string> GameSummarySortKeyMap =
             CreateCanonicalKeyMap(GameSummarySortKeys);
+
+        public static readonly IReadOnlyDictionary<string, string> FriendSummarySortKeyMap =
+            CreateCanonicalKeyMap(FriendSummarySortKeys);
 
         public static readonly IReadOnlyDictionary<string, string> SortDirectionKeyMap =
             CreateCanonicalKeyMap(SortDirectionKeys);
@@ -216,6 +239,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 Group(GameStartedGroup, DynamicThemeViewKeys.Started, DynamicThemeViewKeys.NotStarted),
                 Group(GameActivityGroup, DynamicThemeViewKeys.Played, DynamicThemeViewKeys.Unplayed),
                 Group(GameLastUnlockGroup, DynamicThemeViewKeys.HasLastUnlock, DynamicThemeViewKeys.NoLastUnlock));
+
+        public static readonly IReadOnlyDictionary<string, string> FriendSummaryFilterGroupMap =
+            CreateGroupMap(
+                Group(FriendLastUnlockGroup, DynamicThemeViewKeys.HasLastUnlock, DynamicThemeViewKeys.NoLastUnlock));
 
         public static string GetGroupSelection(
             string filterExpression,

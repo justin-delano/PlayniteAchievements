@@ -266,7 +266,9 @@ namespace PlayniteAchievements.ViewModels
 
         public string CategoryLabel { get; set; }
 
-        public bool HasAchievementNote { get; set; }
+        public string AchievementNote { get; set; }
+
+        public bool HasAchievementNote => !string.IsNullOrWhiteSpace(AchievementNote);
 
         public bool IsCapstone { get; set; }
 
@@ -303,8 +305,10 @@ namespace PlayniteAchievements.ViewModels
 
         public int? ProgressDenom { get; set; }
 
+        public bool HasProgress => ProgressNum.HasValue && ProgressDenom.HasValue && ProgressDenom.Value > 0;
+
         public double ProgressPercent =>
-            ProgressNum.HasValue && ProgressDenom.HasValue && ProgressDenom.Value > 0
+            HasProgress
                 ? ProgressNum.Value * 100.0 / ProgressDenom.Value
                 : 0;
 
@@ -412,6 +416,7 @@ namespace PlayniteAchievements.ViewModels
                 PointsValue = PointsValue,
                 ProgressNum = ProgressNum,
                 ProgressDenom = ProgressDenom,
+                AchievementNote = AchievementNote,
                 ShowHiddenSuffix = ShowHiddenSuffix
             };
         }
@@ -453,7 +458,7 @@ namespace PlayniteAchievements.ViewModels
             PointsValue = source?.Points;
             ProgressNum = source?.ProgressNum;
             ProgressDenom = source?.ProgressDenom;
-            HasAchievementNote = !string.IsNullOrWhiteSpace(source?.AchievementNote);
+            AchievementNote = source?.AchievementNote;
             ShowHiddenSuffix = showHiddenSuffix;
         }
     }

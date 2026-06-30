@@ -260,6 +260,7 @@
     <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeViewState.cs" Link="Source\Models\ThemeIntegration\DynamicThemeViewState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\LegacyThemeBindings.cs" Link="Source\Models\ThemeIntegration\LegacyThemeBindings.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\LibraryRuntimeState.cs" Link="Source\Models\ThemeIntegration\LibraryRuntimeState.cs" />
+    <Compile Include="..\..\source\Models\ThemeIntegration\FriendRuntimeState.cs" Link="Source\Models\ThemeIntegration\FriendRuntimeState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\ModernThemeBindings.cs" Link="Source\Models\ThemeIntegration\ModernThemeBindings.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\SelectedGameRuntimeState.cs" Link="Source\Models\ThemeIntegration\SelectedGameRuntimeState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\ThemeRuntimeState.cs" Link="Source\Models\ThemeIntegration\ThemeRuntimeState.cs" />
@@ -286,6 +287,7 @@
     <Compile Include="..\..\source\Services\Refresh\RefreshRequestPlanner.cs" Link="Source\Services\Refresh\RefreshRequestPlanner.cs" />
     <Compile Include="..\..\source\Services\Refresh\TargetSelectionResolver.cs" Link="Source\Services\Refresh\TargetSelectionResolver.cs" />
     <Compile Include="..\..\source\Services\Friends\FriendCacheModels.cs" Link="Source\Services\Friends\FriendCacheModels.cs" />
+    <Compile Include="..\..\source\Services\Friends\FriendOverviewProjection.cs" Link="Source\Services\Friends\FriendOverviewProjection.cs" />
     <Compile Include="..\..\source\Services\Friends\FriendsRefreshRuntime.cs" Link="Source\Services\Friends\FriendsRefreshRuntime.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\ControlMappings.cs" Link="Source\Services\ThemeMigration\ControlMappings.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\CustomMigrationSelection.cs" Link="Source\Services\ThemeMigration\CustomMigrationSelection.cs" />

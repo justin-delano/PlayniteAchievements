@@ -1,0 +1,32 @@
+using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.ViewModels;
+using System.Collections.Generic;
+
+namespace PlayniteAchievements.Models.ThemeIntegration
+{
+    internal sealed class FriendRuntimeState
+    {
+        public static FriendRuntimeState Empty { get; } = new FriendRuntimeState(null);
+
+        public FriendRuntimeState(FriendsOverviewData data)
+        {
+            Projection = new FriendOverviewProjection(data);
+        }
+
+        public FriendOverviewProjection Projection { get; }
+
+        public bool HasData => Projection?.HasData == true;
+
+        public IReadOnlyList<FriendSummaryItem> Friends =>
+            Projection?.Friends ?? new List<FriendSummaryItem>();
+
+        public IReadOnlyList<FriendGameSummaryItem> AggregateGames =>
+            Projection?.AggregateGames ?? new List<FriendGameSummaryItem>();
+
+        public IReadOnlyList<FriendAchievementDisplayItem> RecentUnlocks =>
+            Projection?.RecentUnlocks ?? new List<FriendAchievementDisplayItem>();
+
+        public IReadOnlyList<FriendAchievementDisplayItem> AllUnlockedAchievements =>
+            Projection?.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
+    }
+}

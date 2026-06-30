@@ -138,6 +138,49 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.DynamicGameActivityFilterOptions)
         };
 
+        public static readonly string[] DynamicFriends =
+        {
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummaries),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummaries),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievements),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeProviderKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeProviderLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeUserKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeUserLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortDirectionKey),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortDirectionLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeProviderOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeUserOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortOptions),
+            nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortDirectionOptions)
+        };
+
         public static readonly string[] SingleGameTheme =
         {
             nameof(PlayniteAchievementsSettings.HasData),

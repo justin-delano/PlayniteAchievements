@@ -5,6 +5,7 @@ using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -38,6 +39,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly RefreshRuntime _refreshService;
         private readonly AchievementDataService _achievementDataService;
         private readonly RefreshEntryPoint _refreshCoordinator;
+        private readonly IFriendCacheManager _friendCache;
         private readonly Func<RefreshRequest, string, bool, Action<bool>, Task> _runRefreshWithGlobalProgressAsync;
         private readonly Action<Guid> _openManageAchievementsView;
         private readonly PlayniteAchievementsSettings _settings;
@@ -67,7 +69,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly Dictionary<Guid, RelayCommand> _openManageAchievementsCommands =
             new Dictionary<Guid, RelayCommand>();
 
-        public ThemeIntegrationService(
+        internal ThemeIntegrationService(
             IPlayniteAPI api,
             RefreshRuntime refreshRuntime,
             AchievementDataService achievementDataService,
@@ -76,12 +78,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             FullscreenWindowService windowService,
             ILogger logger,
             Func<RefreshRequest, string, bool, Action<bool>, Task> runRefreshWithGlobalProgressAsync = null,
-            Action<Guid> openManageAchievementsView = null)
+            Action<Guid> openManageAchievementsView = null,
+            IFriendCacheManager friendCache = null)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
+            _friendCache = friendCache;
             _runRefreshWithGlobalProgressAsync = runRefreshWithGlobalProgressAsync ?? RunRefreshWithoutGlobalProgressAsync;
             _openManageAchievementsView = openManageAchievementsView;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -236,14 +240,128 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 },
                 ApplyDynamicGameSummaryBindings,
                 ThemeDelegatedPropertyCatalog.DynamicAllGames);
+            _settings.SetDynamicFriendScopeProviderCommand = new RelayCommand(SetDynamicFriendScopeProvider);
+            _settings.SetDynamicFriendScopeUserCommand = new RelayCommand(SetDynamicFriendScopeUser);
+            _settings.SetDynamicFriendScopeGameCommand = new RelayCommand(SetDynamicFriendScopeGame);
+            _settings.ResetDynamicFriendScopeCommand = new RelayCommand(_ => ResetDynamicFriendScope());
+            _settings.SetDynamicFriendSummariesFilterCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SetDynamicFriendSummariesFilterCommand),
+                (object parameter, out string key) => DynamicThemeFilterExpression.TryNormalize(
+                    parameter,
+                    DynamicThemeOptionGroups.FriendSummaryFilterKeyMap,
+                    out key),
+                () => _runtimeState.FriendSummaries.FilterKey,
+                key =>
+                {
+                    _runtimeState.FriendSummaries.HasUserSelection = true;
+                    _runtimeState.FriendSummaries.FilterKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.SortDynamicFriendSummariesCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SortDynamicFriendSummariesCommand),
+                DynamicThemeOptionGroups.FriendSummarySortKeyMap,
+                () => _runtimeState.FriendSummaries.SortKey,
+                key =>
+                {
+                    _runtimeState.FriendSummaries.HasUserSelection = true;
+                    _runtimeState.FriendSummaries.SortKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.SetDynamicFriendSummariesSortDirectionCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SetDynamicFriendSummariesSortDirectionCommand),
+                DynamicThemeOptionGroups.SortDirectionKeyMap,
+                () => _runtimeState.FriendSummaries.SortDirectionKey,
+                key =>
+                {
+                    _runtimeState.FriendSummaries.HasUserSelection = true;
+                    _runtimeState.FriendSummaries.SortDirectionKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.SetDynamicFriendGameSummariesFilterCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesFilterCommand),
+                (object parameter, out string key) => DynamicThemeFilterExpression.TryNormalize(
+                    parameter,
+                    DynamicThemeOptionGroups.GameSummaryFilterKeyMap,
+                    out key),
+                () => _runtimeState.FriendGameSummaries.FilterKey,
+                key =>
+                {
+                    _runtimeState.FriendGameSummaries.HasUserSelection = true;
+                    _runtimeState.FriendGameSummaries.FilterKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.SortDynamicFriendGameSummariesCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SortDynamicFriendGameSummariesCommand),
+                DynamicThemeOptionGroups.GameSummarySortKeyMap,
+                () => _runtimeState.FriendGameSummaries.SortKey,
+                key =>
+                {
+                    _runtimeState.FriendGameSummaries.HasUserSelection = true;
+                    _runtimeState.FriendGameSummaries.SortKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.SetDynamicFriendGameSummariesSortDirectionCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesSortDirectionCommand),
+                DynamicThemeOptionGroups.SortDirectionKeyMap,
+                () => _runtimeState.FriendGameSummaries.SortDirectionKey,
+                key =>
+                {
+                    _runtimeState.FriendGameSummaries.HasUserSelection = true;
+                    _runtimeState.FriendGameSummaries.SortDirectionKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.SetDynamicFriendAchievementsFilterCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsFilterCommand),
+                (object parameter, out string key) => DynamicThemeFilterExpression.TryNormalize(
+                    parameter,
+                    DynamicThemeOptionGroups.AchievementFilterKeyMap,
+                    out key),
+                () => _runtimeState.FriendAchievements.FilterKey,
+                key =>
+                {
+                    _runtimeState.FriendAchievements.HasUserSelection = true;
+                    _runtimeState.FriendAchievements.FilterKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.SortDynamicFriendAchievementsCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SortDynamicFriendAchievementsCommand),
+                DynamicThemeOptionGroups.LibraryAchievementSortKeyMap,
+                () => _runtimeState.FriendAchievements.SortKey,
+                key =>
+                {
+                    _runtimeState.FriendAchievements.HasUserSelection = true;
+                    _runtimeState.FriendAchievements.SortKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.SetDynamicFriendAchievementsSortDirectionCommand = CreateDynamicCommand(
+                nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsSortDirectionCommand),
+                DynamicThemeOptionGroups.SortDirectionKeyMap,
+                () => _runtimeState.FriendAchievements.SortDirectionKey,
+                key =>
+                {
+                    _runtimeState.FriendAchievements.HasUserSelection = true;
+                    _runtimeState.FriendAchievements.SortDirectionKey = key;
+                },
+                ApplyDynamicFriendBindings,
+                ThemeDelegatedPropertyCatalog.DynamicFriends);
             _settings.ResetDynamicAchievementsCommand = new RelayCommand(_ => ResetDynamicAchievementsToDefaults());
             _settings.ResetDynamicLibraryAchievementsCommand = new RelayCommand(_ => ResetDynamicLibraryAchievementsToDefaults());
             _settings.ResetDynamicGameSummariesCommand = new RelayCommand(_ => ResetDynamicGameSummariesToDefaults());
 
+            _runtimeState.Friends = BuildFriendState();
             ApplyDynamicThemeDefaultsFromSettings(notify: false);
             ApplyDynamicSelectedGameBindings(updateOptions: false);
             ApplyDynamicLibraryAchievementBindings(updateOptions: false);
             ApplyDynamicGameSummaryBindings(updateOptions: false);
+            ApplyDynamicFriendBindings(updateOptions: false);
             ApplyDynamicOptionBindings();
 
             _refreshService.CacheInvalidated += RefreshService_CacheInvalidated;
@@ -1210,6 +1328,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             ApplyDynamicLibraryAchievementBindings(updateOptions: false);
             ApplyDynamicGameSummaryBindings(updateOptions: false);
+            ApplyFriendState(BuildFriendState(), notify: false);
             ApplyDynamicOptionBindings();
 
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.CompatibilityAllGames);
@@ -1219,6 +1338,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 NotifySettingProperties(ThemeDelegatedPropertyCatalog.ModernAllGamesHeavy);
             }
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicAllGames);
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
         }
 
         #endregion
@@ -1573,6 +1693,191 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicAllGames);
         }
 
+        private void SetDynamicFriendScopeProvider(object parameter)
+        {
+            var key = NormalizeFriendProviderScopeKey(parameter);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                LogInvalidCommandParameter(nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeProviderCommand), parameter);
+                return;
+            }
+
+            var scope = _runtimeState.FriendScope;
+            if (string.Equals(scope.ProviderKey, key, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            scope.ProviderKey = key;
+            scope.UserKey = DynamicThemeViewKeys.All;
+            scope.GameKey = DynamicThemeViewKeys.All;
+            ApplyDynamicFriendBindings();
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
+        }
+
+        private void SetDynamicFriendScopeUser(object parameter)
+        {
+            var key = NormalizeFriendUserScopeKey(parameter);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                LogInvalidCommandParameter(nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeUserCommand), parameter);
+                return;
+            }
+
+            var scope = _runtimeState.FriendScope;
+            if (string.Equals(scope.UserKey, key, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            scope.UserKey = key;
+            scope.GameKey = DynamicThemeViewKeys.All;
+            ApplyDynamicFriendBindings();
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
+        }
+
+        private void SetDynamicFriendScopeGame(object parameter)
+        {
+            var key = NormalizeFriendGameScopeKey(parameter);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                LogInvalidCommandParameter(nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeGameCommand), parameter);
+                return;
+            }
+
+            var scope = _runtimeState.FriendScope;
+            if (string.Equals(scope.GameKey, key, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            scope.GameKey = key;
+            ApplyDynamicFriendBindings();
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
+        }
+
+        private void ResetDynamicFriendScope()
+        {
+            _runtimeState.FriendScope.Reset();
+            ApplyDynamicFriendBindings();
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
+        }
+
+        private FriendRuntimeState BuildFriendState()
+        {
+            if (_friendCache == null)
+            {
+                return FriendRuntimeState.Empty;
+            }
+
+            try
+            {
+                var persisted = _settings?.Persisted;
+                var data = _friendCache.LoadFriendsOverviewData(
+                    persisted?.FriendsOverviewHideSpoilers ?? true,
+                    0);
+                return new FriendRuntimeState(data);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to build friend theme runtime state.");
+                return FriendRuntimeState.Empty;
+            }
+        }
+
+        private void ApplyFriendState(FriendRuntimeState state, bool notify)
+        {
+            _runtimeState.Friends = state ?? FriendRuntimeState.Empty;
+            ValidateDynamicFriendScope(_runtimeState.Friends);
+            ApplyDynamicFriendBindings(updateOptions: false);
+            if (notify)
+            {
+                NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
+            }
+        }
+
+        private void ValidateDynamicFriendScope(FriendRuntimeState state)
+        {
+            state = state ?? FriendRuntimeState.Empty;
+            var scope = _runtimeState.FriendScope;
+
+            if (!FriendOverviewProjection.IsAllScope(scope.ProviderKey) &&
+                !state.Friends.Any(friend => string.Equals(friend?.ProviderKey, scope.ProviderKey, StringComparison.OrdinalIgnoreCase)) &&
+                !state.AggregateGames.Any(game => string.Equals(game?.ProviderKey, scope.ProviderKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                scope.ProviderKey = DynamicThemeViewKeys.All;
+                scope.UserKey = DynamicThemeViewKeys.All;
+                scope.GameKey = DynamicThemeViewKeys.All;
+            }
+
+            if (!FriendOverviewProjection.IsAllScope(scope.UserKey))
+            {
+                var friend = state.Projection?.FindFriend(scope.UserKey);
+                if (friend == null ||
+                    !ProviderMatches(friend.ProviderKey, scope.ProviderKey))
+                {
+                    scope.UserKey = DynamicThemeViewKeys.All;
+                    scope.GameKey = DynamicThemeViewKeys.All;
+                }
+            }
+
+            if (!FriendOverviewProjection.IsAllScope(scope.GameKey))
+            {
+                var game = state.Projection?.FindGame(scope.GameKey);
+                if (game == null ||
+                    !ProviderMatches(game.ProviderKey, scope.ProviderKey))
+                {
+                    scope.GameKey = DynamicThemeViewKeys.All;
+                }
+            }
+        }
+
+        private string NormalizeFriendProviderScopeKey(object parameter)
+        {
+            var raw = DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            if (string.IsNullOrWhiteSpace(raw) ||
+                string.Equals(raw, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
+            {
+                return DynamicThemeViewKeys.All;
+            }
+
+            return FindCanonicalProviderKey(raw) ?? raw;
+        }
+
+        private string NormalizeFriendUserScopeKey(object parameter)
+        {
+            var raw = DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            if (string.IsNullOrWhiteSpace(raw) ||
+                string.Equals(raw, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
+            {
+                return DynamicThemeViewKeys.All;
+            }
+
+            return _runtimeState.Friends?.Friends
+                .Select(FriendOverviewProjection.GetFriendScopeKey)
+                .FirstOrDefault(key => string.Equals(key, raw, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private string NormalizeFriendGameScopeKey(object parameter)
+        {
+            var raw = DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            if (string.IsNullOrWhiteSpace(raw) ||
+                string.Equals(raw, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
+            {
+                return DynamicThemeViewKeys.All;
+            }
+
+            return _runtimeState.Friends?.AggregateGames
+                .Select(FriendOverviewProjection.GetGameScopeKey)
+                .FirstOrDefault(key => string.Equals(key, raw, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool ProviderMatches(string itemProviderKey, string scopeProviderKey)
+        {
+            return FriendOverviewProjection.IsAllScope(scopeProviderKey) ||
+                   string.Equals(itemProviderKey, scopeProviderKey, StringComparison.OrdinalIgnoreCase);
+        }
+
         private string NormalizeDefaultKey(
             string rawKey,
             IReadOnlyDictionary<string, string> keyMap,
@@ -1841,6 +2146,228 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
         }
 
+        private void ApplyDynamicFriendBindings()
+        {
+            ApplyDynamicFriendBindings(updateOptions: true);
+        }
+
+        private void ApplyDynamicFriendBindings(bool updateOptions)
+        {
+            var state = _runtimeState.Friends ?? FriendRuntimeState.Empty;
+            ValidateDynamicFriendScope(state);
+
+            var scope = _runtimeState.FriendScope;
+            var friendItems = BuildDynamicFriendSummaries(state, _runtimeState.FriendSummaries);
+            var gameItems = BuildDynamicFriendGameSummaries(state, _runtimeState.FriendGameSummaries);
+            var achievementItems = BuildDynamicFriendAchievements(state, _runtimeState.FriendAchievements);
+
+            _settings.ModernTheme.DynamicFriendSummaries = new ObservableCollection<FriendSummaryItem>(friendItems);
+            _settings.ModernTheme.DynamicFriendGameSummaries = new ObservableCollection<FriendGameSummaryItem>(gameItems);
+            _settings.ModernTheme.DynamicFriendAchievements = new ObservableCollection<FriendAchievementDisplayItem>(achievementItems);
+
+            _settings.ModernTheme.DynamicFriendScopeProviderKey = scope.ProviderKey;
+            _settings.ModernTheme.DynamicFriendScopeProviderLabel = DynamicThemeLabels.GetProviderLabel(scope.ProviderKey);
+            _settings.ModernTheme.DynamicFriendScopeUserKey = scope.UserKey;
+            _settings.ModernTheme.DynamicFriendScopeUserLabel = GetFriendScopeUserLabel(state, scope.UserKey);
+            _settings.ModernTheme.DynamicFriendScopeGameKey = scope.GameKey;
+            _settings.ModernTheme.DynamicFriendScopeGameLabel = GetFriendScopeGameLabel(state, scope.GameKey);
+
+            ApplyFriendListStateBindings(
+                _runtimeState.FriendSummaries,
+                DynamicThemeViewKeys.LastUnlock,
+                value => _settings.ModernTheme.DynamicFriendSummariesFilterKey = value,
+                value => _settings.ModernTheme.DynamicFriendSummariesFilterLabel = value,
+                value => _settings.ModernTheme.DynamicFriendSummariesSortKey = value,
+                value => _settings.ModernTheme.DynamicFriendSummariesSortLabel = value,
+                value => _settings.ModernTheme.DynamicFriendSummariesSortDirectionKey = value,
+                value => _settings.ModernTheme.DynamicFriendSummariesSortDirectionLabel = value);
+
+            ApplyFriendListStateBindings(
+                _runtimeState.FriendGameSummaries,
+                DynamicThemeViewKeys.LastUnlock,
+                value => _settings.ModernTheme.DynamicFriendGameSummariesFilterKey = value,
+                value => _settings.ModernTheme.DynamicFriendGameSummariesFilterLabel = value,
+                value => _settings.ModernTheme.DynamicFriendGameSummariesSortKey = value,
+                value => _settings.ModernTheme.DynamicFriendGameSummariesSortLabel = value,
+                value => _settings.ModernTheme.DynamicFriendGameSummariesSortDirectionKey = value,
+                value => _settings.ModernTheme.DynamicFriendGameSummariesSortDirectionLabel = value);
+
+            ApplyFriendListStateBindings(
+                _runtimeState.FriendAchievements,
+                DynamicThemeViewKeys.UnlockTime,
+                value => _settings.ModernTheme.DynamicFriendAchievementsFilterKey = value,
+                value => _settings.ModernTheme.DynamicFriendAchievementsFilterLabel = value,
+                value => _settings.ModernTheme.DynamicFriendAchievementsSortKey = value,
+                value => _settings.ModernTheme.DynamicFriendAchievementsSortLabel = value,
+                value => _settings.ModernTheme.DynamicFriendAchievementsSortDirectionKey = value,
+                value => _settings.ModernTheme.DynamicFriendAchievementsSortDirectionLabel = value);
+
+            _settings.ModernTheme.DynamicFriendScopeProviderOptions = CreateFriendProviderOptions(state, scope.ProviderKey);
+            _settings.ModernTheme.DynamicFriendScopeUserOptions = CreateFriendUserOptions(state, scope.ProviderKey, scope.UserKey);
+            _settings.ModernTheme.DynamicFriendScopeGameOptions = CreateFriendGameOptions(state, scope.ProviderKey, scope.UserKey, scope.GameKey);
+            _settings.ModernTheme.DynamicFriendSummariesFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.FriendSummaryFilterKeys,
+                _runtimeState.FriendSummaries.FilterKey);
+            _settings.ModernTheme.DynamicFriendSummariesSortOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.FriendSummarySortKeys,
+                _runtimeState.FriendSummaries.SortKey);
+            _settings.ModernTheme.DynamicFriendSummariesSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.SortDirectionKeys,
+                _runtimeState.FriendSummaries.SortDirectionKey);
+            _settings.ModernTheme.DynamicFriendGameSummariesFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.GameSummaryFilterKeys,
+                _runtimeState.FriendGameSummaries.FilterKey);
+            _settings.ModernTheme.DynamicFriendGameSummariesSortOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.GameSummarySortKeys,
+                _runtimeState.FriendGameSummaries.SortKey);
+            _settings.ModernTheme.DynamicFriendGameSummariesSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.SortDirectionKeys,
+                _runtimeState.FriendGameSummaries.SortDirectionKey);
+            _settings.ModernTheme.DynamicFriendAchievementsFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementFilterKeys,
+                _runtimeState.FriendAchievements.FilterKey);
+            _settings.ModernTheme.DynamicFriendAchievementsSortOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.LibraryAchievementSortKeys,
+                _runtimeState.FriendAchievements.SortKey);
+            _settings.ModernTheme.DynamicFriendAchievementsSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.SortDirectionKeys,
+                _runtimeState.FriendAchievements.SortDirectionKey);
+
+            if (updateOptions)
+            {
+                ApplyDynamicOptionBindings();
+            }
+        }
+
+        private static void ApplyFriendListStateBindings(
+            DynamicThemeListViewState state,
+            string defaultSortKey,
+            Action<string> setFilterKey,
+            Action<string> setFilterLabel,
+            Action<string> setSortKey,
+            Action<string> setSortLabel,
+            Action<string> setDirectionKey,
+            Action<string> setDirectionLabel)
+        {
+            setFilterKey(state.FilterKey);
+            setFilterLabel(DynamicThemeLabels.GetLabel(state.FilterKey, DynamicThemeViewKeys.All));
+            setSortKey(state.SortKey);
+            setSortLabel(DynamicThemeLabels.GetLabel(state.SortKey, defaultSortKey));
+            setDirectionKey(state.SortDirectionKey);
+            setDirectionLabel(DynamicThemeLabels.GetLabel(state.SortDirectionKey, DynamicThemeViewKeys.Descending));
+        }
+
+        private static ObservableCollection<DynamicThemeOption> CreateFriendProviderOptions(
+            FriendRuntimeState state,
+            string selectedKey)
+        {
+            var providerKeys = (state?.Friends ?? Enumerable.Empty<FriendSummaryItem>())
+                .Select(friend => friend?.ProviderKey)
+                .Concat((state?.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>()).Select(game => game?.ProviderKey));
+            return DynamicThemeOptionFactory.CreateProviderOptions(providerKeys, selectedKey);
+        }
+
+        private static ObservableCollection<DynamicThemeOption> CreateFriendUserOptions(
+            FriendRuntimeState state,
+            string providerKey,
+            string selectedKey)
+        {
+            var friends = (state?.Friends ?? Enumerable.Empty<FriendSummaryItem>())
+                .Where(friend => friend != null && ProviderMatches(friend.ProviderKey, providerKey))
+                .GroupBy(FriendOverviewProjection.GetFriendScopeKey, StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    var friend = group.First();
+                    return new DynamicThemeOption(
+                        group.Key,
+                        !string.IsNullOrWhiteSpace(friend.DisplayName) ? friend.DisplayName : group.Key,
+                        group.Sum(item => Math.Max(0, item?.UnlockedAchievementsCount ?? 0)));
+                })
+                .OrderBy(option => option.Label, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            return CreateScopedOptions(friends, selectedKey);
+        }
+
+        private static ObservableCollection<DynamicThemeOption> CreateFriendGameOptions(
+            FriendRuntimeState state,
+            string providerKey,
+            string userKey,
+            string selectedKey)
+        {
+            var projection = state?.Projection;
+            var selectedFriend = projection?.FindFriend(userKey);
+            IEnumerable<FriendGameSummaryItem> games = selectedFriend != null
+                ? projection.GetSelectedFriendGames(selectedFriend)
+                : state?.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>();
+
+            var options = games
+                .Where(game => game != null && ProviderMatches(game.ProviderKey, providerKey))
+                .GroupBy(FriendOverviewProjection.GetGameScopeKey, StringComparer.OrdinalIgnoreCase)
+                .Select(group =>
+                {
+                    var game = group.First();
+                    return new DynamicThemeOption(
+                        group.Key,
+                        !string.IsNullOrWhiteSpace(game.GameName) ? game.GameName : group.Key,
+                        group.Sum(item => Math.Max(0, item?.UnlockedAchievements ?? 0)));
+                })
+                .OrderBy(option => option.Label, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            return CreateScopedOptions(options, selectedKey);
+        }
+
+        private static ObservableCollection<DynamicThemeOption> CreateScopedOptions(
+            IList<DynamicThemeOption> scopedOptions,
+            string selectedKey)
+        {
+            var options = new List<DynamicThemeOption>
+            {
+                new DynamicThemeOption(DynamicThemeViewKeys.All, DynamicThemeLabels.GetLabel(DynamicThemeViewKeys.All, DynamicThemeViewKeys.All),
+                    (scopedOptions ?? Array.Empty<DynamicThemeOption>()).Sum(option => option?.Count ?? 0))
+            };
+
+            if (scopedOptions != null)
+            {
+                options.AddRange(scopedOptions);
+            }
+
+            if (!FriendOverviewProjection.IsAllScope(selectedKey) &&
+                options.All(option => !string.Equals(option.Key, selectedKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                options.Add(new DynamicThemeOption(selectedKey, selectedKey));
+            }
+
+            return new ObservableCollection<DynamicThemeOption>(options);
+        }
+
+        private static string GetFriendScopeUserLabel(FriendRuntimeState state, string userKey)
+        {
+            if (FriendOverviewProjection.IsAllScope(userKey))
+            {
+                return DynamicThemeLabels.GetLabel(DynamicThemeViewKeys.All, DynamicThemeViewKeys.All);
+            }
+
+            var friend = state?.Projection?.FindFriend(userKey);
+            return !string.IsNullOrWhiteSpace(friend?.DisplayName)
+                ? friend.DisplayName
+                : userKey ?? string.Empty;
+        }
+
+        private static string GetFriendScopeGameLabel(FriendRuntimeState state, string gameKey)
+        {
+            if (FriendOverviewProjection.IsAllScope(gameKey))
+            {
+                return DynamicThemeLabels.GetLabel(DynamicThemeViewKeys.All, DynamicThemeViewKeys.All);
+            }
+
+            var game = state?.Projection?.FindGame(gameKey);
+            return !string.IsNullOrWhiteSpace(game?.GameName)
+                ? game.GameName
+                : gameKey ?? string.Empty;
+        }
+
         private void ApplyDynamicOptionBindings()
         {
             var library = _runtimeState.Library ?? new LibraryRuntimeState();
@@ -1928,6 +2455,366 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             source = ApplyProviderFilter(source, viewState.ProviderKey);
             source = DynamicThemeFilterEvaluator.ApplyGameSummaryFilters(source, viewState.FilterKey);
             return SortGameSummaries(source, viewState).ToList();
+        }
+
+        private List<FriendSummaryItem> BuildDynamicFriendSummaries(
+            FriendRuntimeState state,
+            FriendSummaryViewState viewState)
+        {
+            var projection = state?.Projection;
+            if (projection == null || !state.HasData)
+            {
+                return new List<FriendSummaryItem>();
+            }
+
+            var scope = _runtimeState.FriendScope;
+            var selectedGame = projection.FindGame(scope.GameKey);
+            IEnumerable<FriendSummaryItem> source = state.Friends ?? Enumerable.Empty<FriendSummaryItem>();
+            source = ApplyProviderFilter(source, scope.ProviderKey, item => item.ProviderKey);
+            if (selectedGame != null)
+            {
+                source = source.Where(friend => projection.HasUnlocksForFriendGame(friend, selectedGame));
+            }
+
+            source = ApplyFriendSummaryFilter(source, viewState.FilterKey);
+            return SortFriendSummaries(source, viewState).ToList();
+        }
+
+        private List<FriendGameSummaryItem> BuildDynamicFriendGameSummaries(
+            FriendRuntimeState state,
+            FriendGameSummaryViewState viewState)
+        {
+            var projection = state?.Projection;
+            if (projection == null || !state.HasData)
+            {
+                return new List<FriendGameSummaryItem>();
+            }
+
+            var scope = _runtimeState.FriendScope;
+            var selectedFriend = projection.FindFriend(scope.UserKey);
+            var selectedGame = projection.FindGame(scope.GameKey);
+            IEnumerable<FriendGameSummaryItem> source = selectedFriend != null
+                ? projection.GetSelectedFriendGames(selectedFriend)
+                : state.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>();
+
+            source = ApplyProviderFilter(source, scope.ProviderKey, item => item.ProviderKey);
+            if (selectedFriend == null)
+            {
+                source = source.Where(projection.HasAnyFriendUnlocks);
+            }
+
+            if (selectedGame != null)
+            {
+                source = source.Where(game => FriendOverviewProjection.IsSameGame(game, selectedGame));
+            }
+
+            source = ApplyFriendGameSummaryFilter(source, viewState.FilterKey);
+            return SortFriendGameSummaries(source, viewState).ToList();
+        }
+
+        private List<FriendAchievementDisplayItem> BuildDynamicFriendAchievements(
+            FriendRuntimeState state,
+            FriendAchievementViewState viewState)
+        {
+            var projection = state?.Projection;
+            if (projection == null || !state.HasData)
+            {
+                return new List<FriendAchievementDisplayItem>();
+            }
+
+            var scope = _runtimeState.FriendScope;
+            var selectedFriend = projection.FindFriend(scope.UserKey);
+            var selectedGame = projection.FindGame(scope.GameKey);
+            var hasScopedSelection =
+                !FriendOverviewProjection.IsAllScope(scope.ProviderKey) ||
+                selectedFriend != null ||
+                selectedGame != null;
+
+            IEnumerable<FriendAchievementDisplayItem> source = hasScopedSelection
+                ? state.AllUnlockedAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>()
+                : state.RecentUnlocks ?? Enumerable.Empty<FriendAchievementDisplayItem>();
+
+            source = ApplyProviderFilter(source, scope.ProviderKey, item => item.ProviderKey);
+            if (selectedFriend != null)
+            {
+                source = source.Where(achievement => FriendOverviewProjection.IsSameFriend(achievement, selectedFriend));
+            }
+
+            if (selectedGame != null)
+            {
+                source = source.Where(achievement => FriendOverviewProjection.IsSameGame(achievement, selectedGame));
+            }
+
+            source = ApplyFriendAchievementFilter(source, viewState.FilterKey);
+            return SortFriendAchievements(source, viewState).ToList();
+        }
+
+        private static IEnumerable<FriendSummaryItem> ApplyFriendSummaryFilter(
+            IEnumerable<FriendSummaryItem> source,
+            string filterKey)
+        {
+            var items = source ?? Enumerable.Empty<FriendSummaryItem>();
+            foreach (var key in DynamicThemeFilterExpression.Enumerate(filterKey))
+            {
+                switch (key)
+                {
+                    case DynamicThemeViewKeys.HasLastUnlock:
+                        items = items.Where(item => item?.LastUnlockUtc.HasValue == true);
+                        break;
+                    case DynamicThemeViewKeys.NoLastUnlock:
+                        items = items.Where(item => item != null && !item.LastUnlockUtc.HasValue);
+                        break;
+                }
+            }
+
+            return items;
+        }
+
+        private static IEnumerable<FriendGameSummaryItem> ApplyFriendGameSummaryFilter(
+            IEnumerable<FriendGameSummaryItem> source,
+            string filterKey)
+        {
+            var items = source ?? Enumerable.Empty<FriendGameSummaryItem>();
+            foreach (var key in DynamicThemeFilterExpression.Enumerate(filterKey))
+            {
+                switch (key)
+                {
+                    case DynamicThemeViewKeys.Completed:
+                        items = items.Where(item => item?.IsCompleted == true);
+                        break;
+                    case DynamicThemeViewKeys.Incomplete:
+                        items = items.Where(item => item != null && !item.IsCompleted);
+                        break;
+                    case DynamicThemeViewKeys.Started:
+                        items = items.Where(item => item != null && item.UnlockedAchievements > 0);
+                        break;
+                    case DynamicThemeViewKeys.NotStarted:
+                        items = items.Where(item => item != null && item.UnlockedAchievements <= 0);
+                        break;
+                    case DynamicThemeViewKeys.Played:
+                        items = items.Where(item => item?.LastPlayed.HasValue == true || item?.PlaytimeSeconds > 0);
+                        break;
+                    case DynamicThemeViewKeys.Unplayed:
+                        items = items.Where(item => item != null && !item.LastPlayed.HasValue && item.PlaytimeSeconds == 0);
+                        break;
+                    case DynamicThemeViewKeys.HasLastUnlock:
+                        items = items.Where(item => item?.LastUnlockUtc.HasValue == true);
+                        break;
+                    case DynamicThemeViewKeys.NoLastUnlock:
+                        items = items.Where(item => item != null && !item.LastUnlockUtc.HasValue);
+                        break;
+                }
+            }
+
+            return items;
+        }
+
+        private static IEnumerable<FriendAchievementDisplayItem> ApplyFriendAchievementFilter(
+            IEnumerable<FriendAchievementDisplayItem> source,
+            string filterKey)
+        {
+            var items = source ?? Enumerable.Empty<FriendAchievementDisplayItem>();
+            foreach (var key in DynamicThemeFilterExpression.Enumerate(filterKey))
+            {
+                switch (key)
+                {
+                    case DynamicThemeViewKeys.Unlocked:
+                        items = items.Where(item => item?.Unlocked == true);
+                        break;
+                    case DynamicThemeViewKeys.Locked:
+                        items = items.Where(item => item != null && !item.Unlocked);
+                        break;
+                    case DynamicThemeViewKeys.InProgress:
+                        items = items.Where(item => item != null && !item.Unlocked && item.HasProgress);
+                        break;
+                    case DynamicThemeViewKeys.NoProgress:
+                        items = items.Where(item => item != null && !item.HasProgress);
+                        break;
+                    case DynamicThemeViewKeys.HasNotes:
+                        items = items.Where(item => !string.IsNullOrWhiteSpace(item?.AchievementNote));
+                        break;
+                    case DynamicThemeViewKeys.NoNotes:
+                        items = items.Where(item => string.IsNullOrWhiteSpace(item?.AchievementNote));
+                        break;
+                    case DynamicThemeViewKeys.Capstone:
+                        items = items.Where(item => item?.IsCapstone == true);
+                        break;
+                    case DynamicThemeViewKeys.Common:
+                    case DynamicThemeViewKeys.Uncommon:
+                    case DynamicThemeViewKeys.Rare:
+                    case DynamicThemeViewKeys.UltraRare:
+                        items = items.Where(item => item != null && string.Equals(item.Rarity.ToString(), key, StringComparison.OrdinalIgnoreCase));
+                        break;
+                    case DynamicThemeViewKeys.Platinum:
+                    case DynamicThemeViewKeys.Gold:
+                    case DynamicThemeViewKeys.Silver:
+                    case DynamicThemeViewKeys.Bronze:
+                        items = items.Where(item => string.Equals(item?.TrophyType, key, StringComparison.OrdinalIgnoreCase));
+                        break;
+                }
+            }
+
+            return items;
+        }
+
+        private static IEnumerable<FriendSummaryItem> SortFriendSummaries(
+            IEnumerable<FriendSummaryItem> source,
+            FriendSummaryViewState viewState)
+        {
+            source ??= Enumerable.Empty<FriendSummaryItem>();
+            var descending = !string.Equals(viewState?.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal);
+            var comparer = StringComparer.CurrentCultureIgnoreCase;
+
+            switch (viewState?.SortKey)
+            {
+                case DynamicThemeViewKeys.Name:
+                    return descending
+                        ? source.OrderByDescending(item => item?.DisplayName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.DisplayName ?? string.Empty, comparer);
+                case DynamicThemeViewKeys.Provider:
+                    return descending
+                        ? source.OrderByDescending(item => item?.ProviderDisplayName ?? item?.ProviderKey ?? string.Empty, comparer)
+                            .ThenBy(item => item?.DisplayName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.ProviderDisplayName ?? item?.ProviderKey ?? string.Empty, comparer)
+                            .ThenBy(item => item?.DisplayName ?? string.Empty, comparer);
+                case DynamicThemeViewKeys.UnlockedCount:
+                    return descending
+                        ? source.OrderByDescending(item => item?.UnlockedAchievementsCount ?? 0)
+                            .ThenBy(item => item?.DisplayName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.UnlockedAchievementsCount ?? 0)
+                            .ThenBy(item => item?.DisplayName ?? string.Empty, comparer);
+                case DynamicThemeViewKeys.AchievementCount:
+                    return descending
+                        ? source.OrderByDescending(item => item?.SharedGamesCount ?? 0)
+                            .ThenBy(item => item?.DisplayName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.SharedGamesCount ?? 0)
+                            .ThenBy(item => item?.DisplayName ?? string.Empty, comparer);
+                default:
+                    return descending
+                        ? source.OrderByDescending(item => item?.LastUnlockUtc ?? DateTime.MinValue)
+                            .ThenBy(item => item?.DisplayName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.LastUnlockUtc ?? DateTime.MinValue)
+                            .ThenBy(item => item?.DisplayName ?? string.Empty, comparer);
+            }
+        }
+
+        private static IEnumerable<FriendGameSummaryItem> SortFriendGameSummaries(
+            IEnumerable<FriendGameSummaryItem> source,
+            FriendGameSummaryViewState viewState)
+        {
+            source ??= Enumerable.Empty<FriendGameSummaryItem>();
+            var descending = !string.Equals(viewState?.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal);
+            var comparer = StringComparer.CurrentCultureIgnoreCase;
+
+            switch (viewState?.SortKey)
+            {
+                case DynamicThemeViewKeys.Name:
+                    return descending
+                        ? source.OrderByDescending(item => item?.GameName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.GameName ?? string.Empty, comparer);
+                case DynamicThemeViewKeys.Provider:
+                    return descending
+                        ? source.OrderByDescending(item => item?.Provider ?? item?.ProviderKey ?? string.Empty, comparer)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.Provider ?? item?.ProviderKey ?? string.Empty, comparer)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer);
+                case DynamicThemeViewKeys.Progress:
+                    return descending
+                        ? source.OrderByDescending(item => item?.Progression ?? 0)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.Progression ?? 0)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer);
+                case DynamicThemeViewKeys.LastPlayed:
+                    return descending
+                        ? source.OrderByDescending(item => item?.LastPlayed ?? DateTime.MinValue)
+                            .ThenByDescending(item => item?.LastUnlockUtc ?? DateTime.MinValue)
+                        : source.OrderBy(item => item?.LastPlayed ?? DateTime.MinValue)
+                            .ThenByDescending(item => item?.LastUnlockUtc ?? DateTime.MinValue);
+                case DynamicThemeViewKeys.UnlockedCount:
+                    return descending
+                        ? source.OrderByDescending(item => item?.UnlockedAchievements ?? 0)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.UnlockedAchievements ?? 0)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer);
+                case DynamicThemeViewKeys.AchievementCount:
+                    return descending
+                        ? source.OrderByDescending(item => item?.TotalAchievements ?? 0)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.TotalAchievements ?? 0)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer);
+                default:
+                    return descending
+                        ? source.OrderByDescending(item => item?.LastUnlockUtc ?? DateTime.MinValue)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer)
+                        : source.OrderBy(item => item?.LastUnlockUtc ?? DateTime.MinValue)
+                            .ThenBy(item => item?.GameName ?? string.Empty, comparer);
+            }
+        }
+
+        private static IEnumerable<FriendAchievementDisplayItem> SortFriendAchievements(
+            IEnumerable<FriendAchievementDisplayItem> source,
+            FriendAchievementViewState viewState)
+        {
+            source ??= Enumerable.Empty<FriendAchievementDisplayItem>();
+            var descending = !string.Equals(viewState?.SortDirectionKey, DynamicThemeViewKeys.Ascending, StringComparison.Ordinal);
+            var comparer = StringComparer.CurrentCultureIgnoreCase;
+
+            Func<FriendAchievementDisplayItem, object> primary;
+            switch (viewState?.SortKey)
+            {
+                case DynamicThemeViewKeys.Name:
+                    primary = item => item?.DisplayName ?? string.Empty;
+                    break;
+                case DynamicThemeViewKeys.Game:
+                    primary = item => item?.GameName ?? string.Empty;
+                    break;
+                case DynamicThemeViewKeys.Provider:
+                    primary = item => item?.ProviderKey ?? string.Empty;
+                    break;
+                case DynamicThemeViewKeys.Rarity:
+                    primary = item => item?.RaritySortValue ?? double.MaxValue;
+                    break;
+                case DynamicThemeViewKeys.Status:
+                    primary = item => item?.Unlocked == true ? 1 : 0;
+                    break;
+                case DynamicThemeViewKeys.Progress:
+                    primary = item => item?.ProgressPercent ?? 0d;
+                    break;
+                case DynamicThemeViewKeys.Points:
+                    primary = item => item?.Points ?? 0;
+                    break;
+                case DynamicThemeViewKeys.CollectionScore:
+                    primary = item => item?.CollectionScore ?? 0;
+                    break;
+                case DynamicThemeViewKeys.PrestigeScore:
+                    primary = item => item?.PrestigeScore ?? 0;
+                    break;
+                case DynamicThemeViewKeys.TrophyType:
+                    primary = item => item?.TrophyType ?? string.Empty;
+                    break;
+                case DynamicThemeViewKeys.CategoryType:
+                    primary = item => item?.CategoryType ?? string.Empty;
+                    break;
+                case DynamicThemeViewKeys.CategoryLabel:
+                    primary = item => item?.CategoryLabel ?? string.Empty;
+                    break;
+                case DynamicThemeViewKeys.Notes:
+                    primary = item => item?.AchievementNote ?? string.Empty;
+                    break;
+                default:
+                    primary = item => item?.UnlockTimeUtc ?? DateTime.MinValue;
+                    break;
+            }
+
+            return descending
+                ? source.OrderByDescending(primary)
+                    .ThenBy(item => item?.FriendName ?? string.Empty, comparer)
+                    .ThenBy(item => item?.GameName ?? string.Empty, comparer)
+                    .ThenBy(item => item?.DisplayName ?? string.Empty, comparer)
+                : source.OrderBy(primary)
+                    .ThenBy(item => item?.FriendName ?? string.Empty, comparer)
+                    .ThenBy(item => item?.GameName ?? string.Empty, comparer)
+                    .ThenBy(item => item?.DisplayName ?? string.Empty, comparer);
         }
 
         private static IEnumerable<AchievementDetail> SelectSelectedGameAchievementSource(

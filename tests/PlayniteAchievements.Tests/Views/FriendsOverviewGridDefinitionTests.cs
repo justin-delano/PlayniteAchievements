@@ -151,6 +151,43 @@ namespace PlayniteAchievements.Tests.Views
                 "ResolveDataGridRow");
         }
 
+        [TestMethod]
+        public void ThemeControlRegistry_RegistersFriendThemeControls()
+        {
+            var registry = File.ReadAllText(FindRepoFile("source", "Services", "ThemeIntegration", "ThemeControlRegistry.cs"));
+            var summariesXaml = File.ReadAllText(FindRepoFile("source", "Views", "ThemeIntegration", "Modern", "AchievementFriendSummariesGridControl.xaml"));
+            var gamesXaml = File.ReadAllText(FindRepoFile("source", "Views", "ThemeIntegration", "Modern", "AchievementFriendGameSummariesGridControl.xaml"));
+            var gamesCode = File.ReadAllText(FindRepoFile("source", "Views", "ThemeIntegration", "Modern", "AchievementFriendGameSummariesGridControl.xaml.cs"));
+            var achievementsXaml = File.ReadAllText(FindRepoFile("source", "Views", "ThemeIntegration", "Modern", "AchievementFriendAchievementsGridControl.xaml"));
+
+            AssertContainsAll(
+                registry,
+                "AchievementFriendSummariesGrid",
+                "AchievementFriendGameSummariesGrid",
+                "AchievementFriendAchievementsGrid",
+                "AchievementFriendSummariesGridControl",
+                "AchievementFriendGameSummariesGridControl",
+                "AchievementFriendAchievementsGridControl");
+            AssertContainsAll(
+                summariesXaml,
+                "FriendSummariesGridControl",
+                "ItemsSource=\"{Binding DisplayItems");
+            AssertContainsAll(
+                gamesXaml,
+                "GameSummariesGridControl",
+                "ItemsSource=\"{Binding DisplayItems");
+            AssertContainsAll(
+                gamesCode,
+                "FriendsOverviewGameSummaries",
+                "FriendsOverviewSelectedFriendGameSummaries",
+                "DynamicFriendScopeUserKey");
+            AssertContainsAll(
+                achievementsXaml,
+                "AchievementDataGridControl",
+                "ColumnSettingsKey=\"FriendsOverviewRecentAchievements\"",
+                "ShowFriendColumn=\"True\"");
+        }
+
         private static void AssertContainsAll(string content, params string[] expected)
         {
             var missing = expected

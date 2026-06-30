@@ -147,6 +147,85 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicGameActivityFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
 
         [DontSerialize]
+        private readonly BulkObservableCollection<FriendSummaryItem> _dynamicFriendSummaries = new BulkObservableCollection<FriendSummaryItem>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<FriendGameSummaryItem> _dynamicFriendGameSummaries = new BulkObservableCollection<FriendGameSummaryItem>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<FriendAchievementDisplayItem> _dynamicFriendAchievements = new BulkObservableCollection<FriendAchievementDisplayItem>();
+        [DontSerialize]
+        private string _dynamicFriendScopeProviderKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendScopeProviderLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendScopeUserKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendScopeUserLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendScopeGameKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendScopeGameLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendSummariesFilterKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendSummariesFilterLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendSummariesSortKey = DynamicThemeViewKeys.LastUnlock;
+        [DontSerialize]
+        private string _dynamicFriendSummariesSortLabel = DynamicThemeViewKeys.LastUnlock;
+        [DontSerialize]
+        private string _dynamicFriendSummariesSortDirectionKey = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private string _dynamicFriendSummariesSortDirectionLabel = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private string _dynamicFriendGameSummariesFilterKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendGameSummariesFilterLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendGameSummariesSortKey = DynamicThemeViewKeys.LastUnlock;
+        [DontSerialize]
+        private string _dynamicFriendGameSummariesSortLabel = DynamicThemeViewKeys.LastUnlock;
+        [DontSerialize]
+        private string _dynamicFriendGameSummariesSortDirectionKey = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private string _dynamicFriendGameSummariesSortDirectionLabel = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private string _dynamicFriendAchievementsFilterKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendAchievementsFilterLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicFriendAchievementsSortKey = DynamicThemeViewKeys.UnlockTime;
+        [DontSerialize]
+        private string _dynamicFriendAchievementsSortLabel = DynamicThemeViewKeys.UnlockTime;
+        [DontSerialize]
+        private string _dynamicFriendAchievementsSortDirectionKey = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private string _dynamicFriendAchievementsSortDirectionLabel = DynamicThemeViewKeys.Descending;
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendScopeProviderOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendScopeUserOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendScopeGameOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendSummariesFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendSummariesSortOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendSummariesSortDirectionOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendGameSummariesFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendGameSummariesSortOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendGameSummariesSortDirectionOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementsFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementsSortOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementsSortDirectionOptions = new BulkObservableCollection<DynamicThemeOption>();
+
+        [DontSerialize]
         private List<AchievementDetail> _allAchievementsUnlockAsc = new List<AchievementDetail>();
         [DontSerialize]
         private List<AchievementDetail> _allAchievementsUnlockDesc = new List<AchievementDetail>();
@@ -808,6 +887,279 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicGameActivityFilterOptions;
             set => ReplaceCollection(_dynamicGameActivityFilterOptions, value, nameof(DynamicGameActivityFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<FriendSummaryItem> DynamicFriendSummaries
+        {
+            get => _dynamicFriendSummaries;
+            set => ReplaceCollection(_dynamicFriendSummaries, value, nameof(DynamicFriendSummaries));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<FriendGameSummaryItem> DynamicFriendGameSummaries
+        {
+            get => _dynamicFriendGameSummaries;
+            set => ReplaceCollection(_dynamicFriendGameSummaries, value, nameof(DynamicFriendGameSummaries));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<FriendAchievementDisplayItem> DynamicFriendAchievements
+        {
+            get => _dynamicFriendAchievements;
+            set => ReplaceCollection(_dynamicFriendAchievements, value, nameof(DynamicFriendAchievements));
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeProviderKey
+        {
+            get => _dynamicFriendScopeProviderKey;
+            set => SetValue(ref _dynamicFriendScopeProviderKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeProviderLabel
+        {
+            get => _dynamicFriendScopeProviderLabel;
+            set => SetValue(ref _dynamicFriendScopeProviderLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeUserKey
+        {
+            get => _dynamicFriendScopeUserKey;
+            set => SetValue(ref _dynamicFriendScopeUserKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeUserLabel
+        {
+            get => _dynamicFriendScopeUserLabel;
+            set => SetValue(ref _dynamicFriendScopeUserLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeGameKey
+        {
+            get => _dynamicFriendScopeGameKey;
+            set => SetValue(ref _dynamicFriendScopeGameKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeGameLabel
+        {
+            get => _dynamicFriendScopeGameLabel;
+            set => SetValue(ref _dynamicFriendScopeGameLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesFilterKey
+        {
+            get => _dynamicFriendSummariesFilterKey;
+            set => SetValue(ref _dynamicFriendSummariesFilterKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesFilterLabel
+        {
+            get => _dynamicFriendSummariesFilterLabel;
+            set => SetValue(ref _dynamicFriendSummariesFilterLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesSortKey
+        {
+            get => _dynamicFriendSummariesSortKey;
+            set => SetValue(ref _dynamicFriendSummariesSortKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesSortLabel
+        {
+            get => _dynamicFriendSummariesSortLabel;
+            set => SetValue(ref _dynamicFriendSummariesSortLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesSortDirectionKey
+        {
+            get => _dynamicFriendSummariesSortDirectionKey;
+            set => SetValue(ref _dynamicFriendSummariesSortDirectionKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesSortDirectionLabel
+        {
+            get => _dynamicFriendSummariesSortDirectionLabel;
+            set => SetValue(ref _dynamicFriendSummariesSortDirectionLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesFilterKey
+        {
+            get => _dynamicFriendGameSummariesFilterKey;
+            set => SetValue(ref _dynamicFriendGameSummariesFilterKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesFilterLabel
+        {
+            get => _dynamicFriendGameSummariesFilterLabel;
+            set => SetValue(ref _dynamicFriendGameSummariesFilterLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesSortKey
+        {
+            get => _dynamicFriendGameSummariesSortKey;
+            set => SetValue(ref _dynamicFriendGameSummariesSortKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesSortLabel
+        {
+            get => _dynamicFriendGameSummariesSortLabel;
+            set => SetValue(ref _dynamicFriendGameSummariesSortLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesSortDirectionKey
+        {
+            get => _dynamicFriendGameSummariesSortDirectionKey;
+            set => SetValue(ref _dynamicFriendGameSummariesSortDirectionKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesSortDirectionLabel
+        {
+            get => _dynamicFriendGameSummariesSortDirectionLabel;
+            set => SetValue(ref _dynamicFriendGameSummariesSortDirectionLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsFilterKey
+        {
+            get => _dynamicFriendAchievementsFilterKey;
+            set => SetValue(ref _dynamicFriendAchievementsFilterKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsFilterLabel
+        {
+            get => _dynamicFriendAchievementsFilterLabel;
+            set => SetValue(ref _dynamicFriendAchievementsFilterLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsSortKey
+        {
+            get => _dynamicFriendAchievementsSortKey;
+            set => SetValue(ref _dynamicFriendAchievementsSortKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsSortLabel
+        {
+            get => _dynamicFriendAchievementsSortLabel;
+            set => SetValue(ref _dynamicFriendAchievementsSortLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsSortDirectionKey
+        {
+            get => _dynamicFriendAchievementsSortDirectionKey;
+            set => SetValue(ref _dynamicFriendAchievementsSortDirectionKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsSortDirectionLabel
+        {
+            get => _dynamicFriendAchievementsSortDirectionLabel;
+            set => SetValue(ref _dynamicFriendAchievementsSortDirectionLabel, value);
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeProviderOptions
+        {
+            get => _dynamicFriendScopeProviderOptions;
+            set => ReplaceCollection(_dynamicFriendScopeProviderOptions, value, nameof(DynamicFriendScopeProviderOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeUserOptions
+        {
+            get => _dynamicFriendScopeUserOptions;
+            set => ReplaceCollection(_dynamicFriendScopeUserOptions, value, nameof(DynamicFriendScopeUserOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeGameOptions
+        {
+            get => _dynamicFriendScopeGameOptions;
+            set => ReplaceCollection(_dynamicFriendScopeGameOptions, value, nameof(DynamicFriendScopeGameOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesFilterOptions
+        {
+            get => _dynamicFriendSummariesFilterOptions;
+            set => ReplaceCollection(_dynamicFriendSummariesFilterOptions, value, nameof(DynamicFriendSummariesFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesSortOptions
+        {
+            get => _dynamicFriendSummariesSortOptions;
+            set => ReplaceCollection(_dynamicFriendSummariesSortOptions, value, nameof(DynamicFriendSummariesSortOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesSortDirectionOptions
+        {
+            get => _dynamicFriendSummariesSortDirectionOptions;
+            set => ReplaceCollection(_dynamicFriendSummariesSortDirectionOptions, value, nameof(DynamicFriendSummariesSortDirectionOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesFilterOptions
+        {
+            get => _dynamicFriendGameSummariesFilterOptions;
+            set => ReplaceCollection(_dynamicFriendGameSummariesFilterOptions, value, nameof(DynamicFriendGameSummariesFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesSortOptions
+        {
+            get => _dynamicFriendGameSummariesSortOptions;
+            set => ReplaceCollection(_dynamicFriendGameSummariesSortOptions, value, nameof(DynamicFriendGameSummariesSortOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesSortDirectionOptions
+        {
+            get => _dynamicFriendGameSummariesSortDirectionOptions;
+            set => ReplaceCollection(_dynamicFriendGameSummariesSortDirectionOptions, value, nameof(DynamicFriendGameSummariesSortDirectionOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsFilterOptions
+        {
+            get => _dynamicFriendAchievementsFilterOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementsFilterOptions, value, nameof(DynamicFriendAchievementsFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsSortOptions
+        {
+            get => _dynamicFriendAchievementsSortOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementsSortOptions, value, nameof(DynamicFriendAchievementsSortOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsSortDirectionOptions
+        {
+            get => _dynamicFriendAchievementsSortDirectionOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementsSortDirectionOptions, value, nameof(DynamicFriendAchievementsSortDirectionOptions));
         }
 
         [DontSerialize]

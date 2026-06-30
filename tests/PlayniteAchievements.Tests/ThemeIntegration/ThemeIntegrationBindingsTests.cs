@@ -5,9 +5,12 @@ using Playnite.SDK.Plugins;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.ThemeIntegration;
+using PlayniteAchievements.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -1647,6 +1650,103 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
         }
 
         [TestMethod]
+        public void FriendDynamicLists_LoadFromFriendCacheAndSwitchToSelectedFriendGames()
+        {
+            var data = CreateFriendOverviewData();
+            using var context = CreateServiceContext(friendCache: new FakeFriendCache(data));
+            var settings = context.Settings;
+
+            AssertFriendNames(settings.DynamicFriendSummaries, "Alice", "Bob", "Cora");
+            AssertFriendGameNames(settings.DynamicFriendGameSummaries, "Game One", "Game Two", "GOG Game");
+            AssertFriendAchievementNames(settings.DynamicFriendAchievements, "Recent Only");
+
+            settings.SetDynamicFriendScopeUserCommand.Execute(FriendOverviewProjection.GetFriendScopeKey(data.Friends[0]));
+
+            Assert.AreEqual(FriendOverviewProjection.GetFriendScopeKey(data.Friends[0]), settings.DynamicFriendScopeUserKey);
+            AssertFriendGameNames(settings.DynamicFriendGameSummaries, "Game One", "Game Two");
+            AssertFriendAchievementNames(settings.DynamicFriendAchievements, "Recent Only", "Alice Game Two");
+            Assert.AreEqual(600UL * 60UL, settings.DynamicFriendGameSummaries.Single(item => item.AppId == 10).PlaytimeSeconds);
+            Assert.AreEqual(Utc(2026, 1, 7, 0, 0, 0), settings.DynamicFriendGameSummaries.Single(item => item.AppId == 10).LastPlayed);
+        }
+
+        [TestMethod]
+        public void FriendDynamicLists_ProviderAndGameScopesConstrainListsAndOptions()
+        {
+            var data = CreateFriendOverviewData();
+            using var context = CreateServiceContext(friendCache: new FakeFriendCache(data));
+            var settings = context.Settings;
+
+            settings.SetDynamicFriendScopeProviderCommand.Execute("GOG");
+
+            Assert.AreEqual("GOG", settings.DynamicFriendScopeProviderKey);
+            AssertFriendNames(settings.DynamicFriendSummaries, "Cora");
+            AssertFriendGameNames(settings.DynamicFriendGameSummaries, "GOG Game");
+            AssertFriendAchievementNames(settings.DynamicFriendAchievements, "Cora GOG");
+            CollectionAssert.AreEqual(
+                new[] { DynamicThemeViewKeys.All, FriendOverviewProjection.GetFriendScopeKey(data.Friends[2]) },
+                settings.DynamicFriendScopeUserOptions.Select(option => option.Key).ToArray());
+            CollectionAssert.AreEqual(
+                new[] { DynamicThemeViewKeys.All, FriendOverviewProjection.GetGameScopeKey(data.Games[2]) },
+                settings.DynamicFriendScopeGameOptions.Select(option => option.Key).ToArray());
+
+            settings.SetDynamicFriendScopeGameCommand.Execute(FriendOverviewProjection.GetGameScopeKey(data.Games[0]));
+
+            Assert.AreEqual(DynamicThemeViewKeys.All, settings.DynamicFriendScopeGameKey);
+
+            settings.ResetDynamicFriendScopeCommand.Execute(null);
+            settings.SetDynamicFriendScopeGameCommand.Execute(FriendOverviewProjection.GetGameScopeKey(data.Games[0]));
+
+            AssertFriendNames(settings.DynamicFriendSummaries, "Alice", "Bob");
+            AssertFriendGameNames(settings.DynamicFriendGameSummaries, "Game One");
+            AssertFriendAchievementNames(settings.DynamicFriendAchievements, "Recent Only", "Bob Game One");
+        }
+
+        [TestMethod]
+        public void FriendDynamicLists_ResetStaleScopesOnRefresh()
+        {
+            var data = CreateFriendOverviewData();
+            var friendCache = new FakeFriendCache(data);
+            using var context = CreateServiceContext(friendCache: friendCache);
+            var settings = context.Settings;
+
+            settings.SetDynamicFriendScopeUserCommand.Execute(FriendOverviewProjection.GetFriendScopeKey(data.Friends[0]));
+            Assert.AreNotEqual(DynamicThemeViewKeys.All, settings.DynamicFriendScopeUserKey);
+
+            friendCache.Data = new FriendsOverviewData();
+            settings.OpenAchievementWindow.Execute(null);
+
+            Assert.AreEqual(DynamicThemeViewKeys.All, settings.DynamicFriendScopeProviderKey);
+            Assert.AreEqual(DynamicThemeViewKeys.All, settings.DynamicFriendScopeUserKey);
+            Assert.AreEqual(DynamicThemeViewKeys.All, settings.DynamicFriendScopeGameKey);
+            Assert.AreEqual(0, settings.DynamicFriendSummaries.Count);
+            Assert.AreEqual(0, settings.DynamicFriendGameSummaries.Count);
+            Assert.AreEqual(0, settings.DynamicFriendAchievements.Count);
+            CollectionAssert.AreEqual(
+                new[] { DynamicThemeViewKeys.All },
+                settings.DynamicFriendScopeProviderOptions.Select(option => option.Key).ToArray());
+        }
+
+        [TestMethod]
+        public void FriendDynamicLists_WhenFriendCacheUnavailableExposeOnlyAllScopeOptions()
+        {
+            using var context = CreateServiceContext();
+            var settings = context.Settings;
+
+            Assert.AreEqual(0, settings.DynamicFriendSummaries.Count);
+            Assert.AreEqual(0, settings.DynamicFriendGameSummaries.Count);
+            Assert.AreEqual(0, settings.DynamicFriendAchievements.Count);
+            CollectionAssert.AreEqual(
+                new[] { DynamicThemeViewKeys.All },
+                settings.DynamicFriendScopeProviderOptions.Select(option => option.Key).ToArray());
+            CollectionAssert.AreEqual(
+                new[] { DynamicThemeViewKeys.All },
+                settings.DynamicFriendScopeUserOptions.Select(option => option.Key).ToArray());
+            CollectionAssert.AreEqual(
+                new[] { DynamicThemeViewKeys.All },
+                settings.DynamicFriendScopeGameOptions.Select(option => option.Key).ToArray());
+        }
+
+        [TestMethod]
         public void ClearSingleGameThemeProperties_ResetsAndPublishesRareAndUltraRare()
         {
             var settings = new PlayniteAchievementsSettings();
@@ -1700,7 +1800,9 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.IsTrue(changedProperties.Contains(nameof(PlayniteAchievementsSettings.AchievementsRarityDesc)));
         }
 
-        private static ServiceTestContext CreateServiceContext(Dispatcher dispatcher = null)
+        private static ServiceTestContext CreateServiceContext(
+            Dispatcher dispatcher = null,
+            IFriendCacheManager friendCache = null)
         {
             var settings = new PlayniteAchievementsSettings();
             var plugin = new PlayniteAchievementsPlugin
@@ -1715,7 +1817,15 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             var refreshCoordinator = new RefreshEntryPoint(refreshRuntime, logger: null);
             var windowService = new FullscreenWindowService(api, settings, _ => { });
             var logger = new FakeLogger();
-            var service = new ThemeIntegrationService(api, refreshRuntime, achievementDataService, refreshCoordinator, settings, windowService, logger);
+            var service = new ThemeIntegrationService(
+                api,
+                refreshRuntime,
+                achievementDataService,
+                refreshCoordinator,
+                settings,
+                windowService,
+                logger,
+                friendCache: friendCache);
 
             return new ServiceTestContext(settings, achievementDataService, logger, service);
         }
@@ -1766,6 +1876,173 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             return changedProperties;
         }
 
+        private static FriendsOverviewData CreateFriendOverviewData()
+        {
+            var gameOneId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+            var gameTwoId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+            var gogGameId = Guid.Parse("33333333-3333-3333-3333-333333333333");
+
+            var friends = new List<FriendSummaryItem>
+            {
+                new FriendSummaryItem
+                {
+                    ProviderKey = "Steam",
+                    ExternalUserId = "alice",
+                    DisplayName = "Alice",
+                    GamesWithUnlocksCount = 2,
+                    UnlockedAchievementsCount = 2,
+                    LastUnlockUtc = Utc(2026, 1, 4, 0, 0, 0),
+                    TotalPlaytimeMinutes = 900
+                },
+                new FriendSummaryItem
+                {
+                    ProviderKey = "Steam",
+                    ExternalUserId = "bob",
+                    DisplayName = "Bob",
+                    GamesWithUnlocksCount = 1,
+                    UnlockedAchievementsCount = 1,
+                    LastUnlockUtc = Utc(2026, 1, 2, 0, 0, 0),
+                    TotalPlaytimeMinutes = 300
+                },
+                new FriendSummaryItem
+                {
+                    ProviderKey = "GOG",
+                    ExternalUserId = "cora",
+                    DisplayName = "Cora",
+                    GamesWithUnlocksCount = 1,
+                    UnlockedAchievementsCount = 1,
+                    LastUnlockUtc = Utc(2026, 1, 1, 0, 0, 0),
+                    TotalPlaytimeMinutes = 120
+                }
+            };
+
+            var games = new List<FriendGameSummaryItem>
+            {
+                new FriendGameSummaryItem
+                {
+                    ProviderKey = "Steam",
+                    AppId = 10,
+                    PlayniteGameId = gameOneId,
+                    GameName = "Game One",
+                    FriendCount = 2,
+                    FriendsWithUnlocksCount = 2,
+                    FriendUnlockedAchievementsCount = 2,
+                    UniqueFriendUnlockedAchievementsCount = 2,
+                    TotalAchievements = 4,
+                    LastFriendUnlockUtc = Utc(2026, 1, 4, 0, 0, 0),
+                    TotalFriendPlaytimeMinutes = 1200,
+                    LastFriendPlayedUtc = Utc(2026, 1, 6, 0, 0, 0)
+                },
+                new FriendGameSummaryItem
+                {
+                    ProviderKey = "Steam",
+                    AppId = 20,
+                    PlayniteGameId = gameTwoId,
+                    GameName = "Game Two",
+                    FriendCount = 1,
+                    FriendsWithUnlocksCount = 1,
+                    FriendUnlockedAchievementsCount = 1,
+                    UniqueFriendUnlockedAchievementsCount = 1,
+                    TotalAchievements = 2,
+                    LastFriendUnlockUtc = Utc(2026, 1, 3, 0, 0, 0)
+                },
+                new FriendGameSummaryItem
+                {
+                    ProviderKey = "GOG",
+                    AppId = 30,
+                    PlayniteGameId = gogGameId,
+                    GameName = "GOG Game",
+                    FriendCount = 1,
+                    FriendsWithUnlocksCount = 1,
+                    FriendUnlockedAchievementsCount = 1,
+                    UniqueFriendUnlockedAchievementsCount = 1,
+                    TotalAchievements = 1,
+                    LastFriendUnlockUtc = Utc(2026, 1, 1, 0, 0, 0)
+                }
+            };
+
+            var allUnlocked = new List<FriendAchievementDisplayItem>
+            {
+                FriendAchievement("Steam", "alice", "Alice", 10, gameOneId, "Game One", "Recent Only", Utc(2026, 1, 4, 0, 0, 0)),
+                FriendAchievement("Steam", "alice", "Alice", 20, gameTwoId, "Game Two", "Alice Game Two", Utc(2026, 1, 3, 0, 0, 0)),
+                FriendAchievement("Steam", "bob", "Bob", 10, gameOneId, "Game One", "Bob Game One", Utc(2026, 1, 2, 0, 0, 0)),
+                FriendAchievement("GOG", "cora", "Cora", 30, gogGameId, "GOG Game", "Cora GOG", Utc(2026, 1, 1, 0, 0, 0))
+            };
+
+            return new FriendsOverviewData
+            {
+                Friends = friends,
+                Games = games,
+                RecentUnlocks = new List<FriendAchievementDisplayItem> { allUnlocked[0] },
+                AllUnlockedAchievements = allUnlocked,
+                FriendGameLinks = new List<FriendGameLinkItem>
+                {
+                    new FriendGameLinkItem
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "alice",
+                        AppId = 10,
+                        PlayniteGameId = gameOneId,
+                        PlaytimeForeverMinutes = 600,
+                        LastPlayedUtc = Utc(2026, 1, 7, 0, 0, 0)
+                    },
+                    new FriendGameLinkItem
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "alice",
+                        AppId = 20,
+                        PlayniteGameId = gameTwoId,
+                        PlaytimeForeverMinutes = 300,
+                        LastPlayedUtc = Utc(2026, 1, 6, 0, 0, 0)
+                    },
+                    new FriendGameLinkItem
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "bob",
+                        AppId = 10,
+                        PlayniteGameId = gameOneId,
+                        PlaytimeForeverMinutes = 300,
+                        LastPlayedUtc = Utc(2026, 1, 5, 0, 0, 0)
+                    },
+                    new FriendGameLinkItem
+                    {
+                        ProviderKey = "GOG",
+                        ExternalUserId = "cora",
+                        AppId = 30,
+                        PlayniteGameId = gogGameId,
+                        PlaytimeForeverMinutes = 120,
+                        LastPlayedUtc = Utc(2026, 1, 2, 0, 0, 0)
+                    }
+                }
+            };
+        }
+
+        private static FriendAchievementDisplayItem FriendAchievement(
+            string providerKey,
+            string externalUserId,
+            string friendName,
+            int appId,
+            Guid playniteGameId,
+            string gameName,
+            string achievementName,
+            DateTime unlockTimeUtc)
+        {
+            return new FriendAchievementDisplayItem
+            {
+                ProviderKey = providerKey,
+                FriendExternalUserId = externalUserId,
+                FriendName = friendName,
+                AppId = appId,
+                PlayniteGameId = playniteGameId,
+                GameName = gameName,
+                SortingName = gameName,
+                ApiName = achievementName,
+                DisplayName = achievementName,
+                Unlocked = true,
+                UnlockTimeUtc = unlockTimeUtc
+            };
+        }
+
         private static void AssertAchievementNames(IEnumerable<AchievementDetail> achievements, params string[] expectedDisplayNames)
         {
             CollectionAssert.AreEqual(
@@ -1781,6 +2058,35 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 expectedNames,
                 (summaries ?? Enumerable.Empty<GameAchievementSummary>())
                     .Select(item => item?.Name)
+                    .ToArray());
+        }
+
+        private static void AssertFriendNames(IEnumerable<FriendSummaryItem> friends, params string[] expectedNames)
+        {
+            CollectionAssert.AreEqual(
+                expectedNames,
+                (friends ?? Enumerable.Empty<FriendSummaryItem>())
+                    .Select(item => item?.DisplayName)
+                    .ToArray());
+        }
+
+        private static void AssertFriendGameNames(IEnumerable<FriendGameSummaryItem> games, params string[] expectedNames)
+        {
+            CollectionAssert.AreEqual(
+                expectedNames,
+                (games ?? Enumerable.Empty<FriendGameSummaryItem>())
+                    .Select(item => item?.GameName)
+                    .ToArray());
+        }
+
+        private static void AssertFriendAchievementNames(
+            IEnumerable<FriendAchievementDisplayItem> achievements,
+            params string[] expectedNames)
+        {
+            CollectionAssert.AreEqual(
+                expectedNames,
+                (achievements ?? Enumerable.Empty<FriendAchievementDisplayItem>())
+                    .Select(item => item?.DisplayName)
                     .ToArray());
         }
 
@@ -1889,6 +2195,42 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             {
                 Service?.Dispose();
             }
+        }
+
+        private sealed class FakeFriendCache : IFriendCacheManager
+        {
+            public FakeFriendCache(FriendsOverviewData data)
+            {
+                Data = data;
+            }
+
+            public FriendsOverviewData Data { get; set; }
+
+            public FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends) =>
+                FriendCacheWriteResult.Ok();
+
+            public FriendCacheWriteResult SaveFriendOwnership(
+                string providerKey,
+                string externalUserId,
+                IReadOnlyList<FriendGameOwnership> ownership) =>
+                FriendCacheWriteResult.Ok();
+
+            public FriendCacheWriteResult SaveFriendGameAchievements(
+                string providerKey,
+                string externalUserId,
+                int appId,
+                FriendGameAchievements achievements) =>
+                FriendCacheWriteResult.Ok();
+
+            public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId) =>
+                FriendCacheWriteResult.Ok();
+
+            public List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
+                string providerKey,
+                FriendRefreshOptions options) =>
+                new List<FriendRefreshCandidate>();
+
+            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => Data;
         }
 
         private sealed class FakeLogger : ILogger

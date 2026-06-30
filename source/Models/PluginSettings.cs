@@ -127,6 +127,32 @@ namespace PlayniteAchievements.Models
         private ICommand _resetDynamicLibraryAchievementsCommand;
         [DontSerialize]
         private ICommand _resetDynamicGameSummariesCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendScopeProviderCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendScopeUserCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendScopeGameCommand;
+        [DontSerialize]
+        private ICommand _resetDynamicFriendScopeCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendSummariesFilterCommand;
+        [DontSerialize]
+        private ICommand _sortDynamicFriendSummariesCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendSummariesSortDirectionCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendGameSummariesFilterCommand;
+        [DontSerialize]
+        private ICommand _sortDynamicFriendGameSummariesCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendGameSummariesSortDirectionCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendAchievementsFilterCommand;
+        [DontSerialize]
+        private ICommand _sortDynamicFriendAchievementsCommand;
+        [DontSerialize]
+        private ICommand _setDynamicFriendAchievementsSortDirectionCommand;
 
         [DontSerialize]
         public ICommand OpenFullscreenAchievementWindow
@@ -301,6 +327,97 @@ namespace PlayniteAchievements.Models
         {
             get => _resetDynamicGameSummariesCommand;
             set => SetValue(ref _resetDynamicGameSummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendScopeProviderCommand
+        {
+            get => _setDynamicFriendScopeProviderCommand;
+            set => SetValue(ref _setDynamicFriendScopeProviderCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendScopeUserCommand
+        {
+            get => _setDynamicFriendScopeUserCommand;
+            set => SetValue(ref _setDynamicFriendScopeUserCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendScopeGameCommand
+        {
+            get => _setDynamicFriendScopeGameCommand;
+            set => SetValue(ref _setDynamicFriendScopeGameCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand ResetDynamicFriendScopeCommand
+        {
+            get => _resetDynamicFriendScopeCommand;
+            set => SetValue(ref _resetDynamicFriendScopeCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendSummariesFilterCommand
+        {
+            get => _setDynamicFriendSummariesFilterCommand;
+            set => SetValue(ref _setDynamicFriendSummariesFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SortDynamicFriendSummariesCommand
+        {
+            get => _sortDynamicFriendSummariesCommand;
+            set => SetValue(ref _sortDynamicFriendSummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendSummariesSortDirectionCommand
+        {
+            get => _setDynamicFriendSummariesSortDirectionCommand;
+            set => SetValue(ref _setDynamicFriendSummariesSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendGameSummariesFilterCommand
+        {
+            get => _setDynamicFriendGameSummariesFilterCommand;
+            set => SetValue(ref _setDynamicFriendGameSummariesFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SortDynamicFriendGameSummariesCommand
+        {
+            get => _sortDynamicFriendGameSummariesCommand;
+            set => SetValue(ref _sortDynamicFriendGameSummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendGameSummariesSortDirectionCommand
+        {
+            get => _setDynamicFriendGameSummariesSortDirectionCommand;
+            set => SetValue(ref _setDynamicFriendGameSummariesSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendAchievementsFilterCommand
+        {
+            get => _setDynamicFriendAchievementsFilterCommand;
+            set => SetValue(ref _setDynamicFriendAchievementsFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SortDynamicFriendAchievementsCommand
+        {
+            get => _sortDynamicFriendAchievementsCommand;
+            set => SetValue(ref _sortDynamicFriendAchievementsCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand SetDynamicFriendAchievementsSortDirectionCommand
+        {
+            get => _setDynamicFriendAchievementsSortDirectionCommand;
+            set => SetValue(ref _setDynamicFriendAchievementsSortDirectionCommand, value);
         }
 
 
@@ -754,6 +871,183 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public ObservableCollection<DynamicThemeOption> DynamicGameActivityFilterOptions => ModernTheme.DynamicGameActivityFilterOptions;
+
+        [DontSerialize]
+        public ObservableCollection<FriendSummaryItem> DynamicFriendSummaries
+        {
+            get => ModernTheme.DynamicFriendSummaries;
+            set => ModernTheme.DynamicFriendSummaries = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<FriendGameSummaryItem> DynamicFriendGameSummaries
+        {
+            get => ModernTheme.DynamicFriendGameSummaries;
+            set => ModernTheme.DynamicFriendGameSummaries = value;
+        }
+
+        [DontSerialize]
+        public ObservableCollection<FriendAchievementDisplayItem> DynamicFriendAchievements
+        {
+            get => ModernTheme.DynamicFriendAchievements;
+            set => ModernTheme.DynamicFriendAchievements = value;
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeProviderKey
+        {
+            get => ModernTheme.DynamicFriendScopeProviderKey ?? DynamicThemeViewKeys.All;
+            set => ExecuteThemeCommand(SetDynamicFriendScopeProviderCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeProviderLabel => ModernTheme.DynamicFriendScopeProviderLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicFriendScopeUserKey
+        {
+            get => ModernTheme.DynamicFriendScopeUserKey ?? DynamicThemeViewKeys.All;
+            set => ExecuteThemeCommand(SetDynamicFriendScopeUserCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeUserLabel => ModernTheme.DynamicFriendScopeUserLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicFriendScopeGameKey
+        {
+            get => ModernTheme.DynamicFriendScopeGameKey ?? DynamicThemeViewKeys.All;
+            set => ExecuteThemeCommand(SetDynamicFriendScopeGameCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendScopeGameLabel => ModernTheme.DynamicFriendScopeGameLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicFriendSummariesFilterKey
+        {
+            get => ModernTheme.DynamicFriendSummariesFilterKey ?? DynamicThemeViewKeys.All;
+            set => ExecuteThemeCommand(SetDynamicFriendSummariesFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesFilterLabel => ModernTheme.DynamicFriendSummariesFilterLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicFriendSummariesSortKey
+        {
+            get => ModernTheme.DynamicFriendSummariesSortKey ?? DynamicThemeViewKeys.LastUnlock;
+            set => ExecuteThemeCommand(SortDynamicFriendSummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesSortLabel => ModernTheme.DynamicFriendSummariesSortLabel ?? DynamicThemeViewKeys.LastUnlock;
+
+        [DontSerialize]
+        public string DynamicFriendSummariesSortDirectionKey
+        {
+            get => ModernTheme.DynamicFriendSummariesSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set => ExecuteThemeCommand(SetDynamicFriendSummariesSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendSummariesSortDirectionLabel => ModernTheme.DynamicFriendSummariesSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesFilterKey
+        {
+            get => ModernTheme.DynamicFriendGameSummariesFilterKey ?? DynamicThemeViewKeys.All;
+            set => ExecuteThemeCommand(SetDynamicFriendGameSummariesFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesFilterLabel => ModernTheme.DynamicFriendGameSummariesFilterLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesSortKey
+        {
+            get => ModernTheme.DynamicFriendGameSummariesSortKey ?? DynamicThemeViewKeys.LastUnlock;
+            set => ExecuteThemeCommand(SortDynamicFriendGameSummariesCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesSortLabel => ModernTheme.DynamicFriendGameSummariesSortLabel ?? DynamicThemeViewKeys.LastUnlock;
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesSortDirectionKey
+        {
+            get => ModernTheme.DynamicFriendGameSummariesSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set => ExecuteThemeCommand(SetDynamicFriendGameSummariesSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendGameSummariesSortDirectionLabel => ModernTheme.DynamicFriendGameSummariesSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsFilterKey
+        {
+            get => ModernTheme.DynamicFriendAchievementsFilterKey ?? DynamicThemeViewKeys.All;
+            set => ExecuteThemeCommand(SetDynamicFriendAchievementsFilterCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsFilterLabel => ModernTheme.DynamicFriendAchievementsFilterLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsSortKey
+        {
+            get => ModernTheme.DynamicFriendAchievementsSortKey ?? DynamicThemeViewKeys.UnlockTime;
+            set => ExecuteThemeCommand(SortDynamicFriendAchievementsCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsSortLabel => ModernTheme.DynamicFriendAchievementsSortLabel ?? DynamicThemeViewKeys.UnlockTime;
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsSortDirectionKey
+        {
+            get => ModernTheme.DynamicFriendAchievementsSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set => ExecuteThemeCommand(SetDynamicFriendAchievementsSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public string DynamicFriendAchievementsSortDirectionLabel => ModernTheme.DynamicFriendAchievementsSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeProviderOptions => ModernTheme.DynamicFriendScopeProviderOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeUserOptions => ModernTheme.DynamicFriendScopeUserOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeGameOptions => ModernTheme.DynamicFriendScopeGameOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesFilterOptions => ModernTheme.DynamicFriendSummariesFilterOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesSortOptions => ModernTheme.DynamicFriendSummariesSortOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesSortDirectionOptions => ModernTheme.DynamicFriendSummariesSortDirectionOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesFilterOptions => ModernTheme.DynamicFriendGameSummariesFilterOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesSortOptions => ModernTheme.DynamicFriendGameSummariesSortOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesSortDirectionOptions => ModernTheme.DynamicFriendGameSummariesSortDirectionOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsFilterOptions => ModernTheme.DynamicFriendAchievementsFilterOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsSortOptions => ModernTheme.DynamicFriendAchievementsSortOptions;
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsSortDirectionOptions => ModernTheme.DynamicFriendAchievementsSortDirectionOptions;
 
         [DontSerialize]
         public List<AchievementDetail> AllAchievementsUnlockAsc
