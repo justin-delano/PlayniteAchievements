@@ -94,13 +94,23 @@
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
                                         Padding="0,6">
-                            <Border Width="32"
-                                    Height="32"
-                                    CornerRadius="16"
+                            <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
                                     ClipToBounds="True"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center"
                                     Background="{DynamicResource PlayAch.Brush.Control.Background}">
+                                <Border.Width>
+                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,width,8,16,14">
+                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                    </MultiBinding>
+                                </Border.Width>
+                                <Border.Height>
+                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,height,8,16,14">
+                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                    </MultiBinding>
+                                </Border.Height>
                                 <Image Stretch="UniformToFill"
                                        ToolTip="{Binding DisplayName}"
                                        helpers:AsyncImage.Uri="{Binding AvatarUrl}"
