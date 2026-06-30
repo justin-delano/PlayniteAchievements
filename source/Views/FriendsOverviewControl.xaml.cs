@@ -26,6 +26,7 @@ namespace PlayniteAchievements.Views
         private readonly ICacheManager _cacheManager;
         private readonly IFriendCacheManager _friendCache;
         private readonly AchievementOverridesService _achievementOverridesService;
+        private readonly Action _persistSettingsForUi;
         private bool _loaded;
         private DataGridRow _pendingRightClickRow;
 
@@ -40,6 +41,7 @@ namespace PlayniteAchievements.Views
             RefreshEntryPoint refreshCoordinator,
             RefreshRuntime refreshRuntime,
             PlayniteAchievementsSettings settings,
+            Action persistSettingsForUi,
             OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar,
             IPlayniteAPI playniteApi = null,
             ICacheManager cacheManager = null,
@@ -52,6 +54,7 @@ namespace PlayniteAchievements.Views
             _cacheManager = cacheManager;
             _friendCache = friendCache;
             _achievementOverridesService = achievementOverridesService;
+            _persistSettingsForUi = persistSettingsForUi;
             _viewModel = new FriendsOverviewViewModel(
                 friendCache,
                 refreshCoordinator,
@@ -69,7 +72,9 @@ namespace PlayniteAchievements.Views
                     return FriendCustomRefreshControl.TryShowDialog(
                         playniteApi,
                         refreshRuntime,
+                        persistSettingsForUi,
                         settings,
+                        logger,
                         gameId,
                         gameName,
                         out var options)

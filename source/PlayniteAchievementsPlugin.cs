@@ -442,6 +442,7 @@ namespace PlayniteAchievements
                         _refreshCoordinator,
                         _refreshService,
                         _settingsViewModel.Settings,
+                        PersistSettingsForUi,
                         OverviewLaunchContext.Sidebar,
                         PlayniteApi,
                         _cacheManager,

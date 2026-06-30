@@ -41,6 +41,8 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        private const string WindowPlacementKey = "FriendCustomRefresh";
+
         private readonly IPlayniteAPI _api;
         private readonly RefreshRuntime _refreshRuntime;
         private readonly Guid? _selectedGameId;
@@ -128,7 +130,9 @@ namespace PlayniteAchievements.Views
         public static bool TryShowDialog(
             IPlayniteAPI api,
             RefreshRuntime refreshRuntime,
+            Action persistSettingsForUi,
             PlayniteAchievementsSettings settings,
+            ILogger logger,
             Guid? selectedGameId,
             string selectedGameName,
             out FriendCustomRefreshOptions options)
@@ -150,6 +154,12 @@ namespace PlayniteAchievements.Views
 
             window.MinWidth = 480;
             window.MinHeight = 360;
+            WindowPlacementPersistenceService.Attach(
+                window,
+                settings?.Persisted,
+                persistSettingsForUi,
+                WindowPlacementKey,
+                logger);
             control.RequestClose += (_, __) => window.Close();
             window.ShowDialog();
 
@@ -176,7 +186,7 @@ namespace PlayniteAchievements.Views
                 }
 
                 var isEnabled = _refreshRuntime.ProviderRegistry?.IsProviderEnabled(provider.ProviderKey) ?? true;
-                var isAuthenticated = provider.IsAuthenticated;
+                var isAuthenticated = provider.AuthSession == null && provider.IsAuthenticated;
                 var option = new ProviderOptionItem
                 {
                     ProviderKey = provider.ProviderKey,

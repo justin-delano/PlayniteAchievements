@@ -1222,6 +1222,7 @@ namespace PlayniteAchievements.Services.UI
                     _refreshCoordinator,
                     _refreshService,
                     _settings,
+                    _persistSettingsForUi,
                     OverviewLaunchContext.Popout,
                     _api,
                     _cacheManager,
