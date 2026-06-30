@@ -151,6 +151,10 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        // Sum of raw provider points (gamerscore, RetroAchievements points, etc.) for unlocked achievements.
+        private int _points;
+        public int Points { get => _points; set => SetValue(ref _points, value); }
+
         // Total rarity counts (including locked achievements)
         public int TotalCommonPossible { get; set; }
         public int TotalUncommonPossible { get; set; }
