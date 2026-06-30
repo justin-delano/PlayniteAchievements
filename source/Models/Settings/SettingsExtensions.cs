@@ -104,6 +104,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowCompletionBorder = source.ShowCompletionBorder;
             target.ShowOverviewGameSummariesGridColumnHeaders = source.ShowOverviewGameSummariesGridColumnHeaders;
             target.ProgressColumnAlignmentDefaulted = source.ProgressColumnAlignmentDefaulted;
+            target.InlineSurfaceTransparencySeeded = source.InlineSurfaceTransparencySeeded;
             target.ViewAchievementsGameSummariesUseCoverImages = source.ViewAchievementsGameSummariesUseCoverImages;
             target.ViewAchievementsGameSummariesShowMetadataPlatform = source.ViewAchievementsGameSummariesShowMetadataPlatform;
             target.ViewAchievementsGameSummariesShowMetadataPlaytime = source.ViewAchievementsGameSummariesShowMetadataPlaytime;
