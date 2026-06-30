@@ -407,7 +407,7 @@
                                 VerticalAlignment="Center"
                                 Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                         <TextBlock Text="{Binding AchievementCountText}"
-                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                    VerticalAlignment="Center"

@@ -346,9 +346,10 @@ namespace PlayniteAchievements.ViewModels
 
         public string AchievementCountText => HasFriendGameSelection
             ? string.Format(
-                ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedGameAchievementCount") ?? "({0:N0} / {1:N0})",
+                ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedGameAchievementCount") ?? "({0}/{1} {2})",
                 DisplayedAchievements.Count,
-                Math.Max(0, SelectedGame?.TotalAchievements ?? 0))
+                Math.Max(0, SelectedGame?.TotalAchievements ?? 0),
+                ResourceProvider.GetString("LOCPlayAch_Achievements") ?? "Achievements")
             : string.Empty;
 
         public Task LoadAsync()
