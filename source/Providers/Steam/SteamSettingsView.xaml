@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:settings="clr-namespace:PlayniteAchievements.Providers.Settings"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="700">
@@ -12,7 +13,23 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Providers/ProviderSettingsScopedControlStyles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/OverviewStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="IgnoredFriendsGridRowStyle"
+                   TargetType="DataGridRow"
+                   BasedOn="{StaticResource GameSummariesGridRowBaseStyle}">
+                <Setter Property="MinHeight" Value="44"/>
+                <Setter Property="Cursor" Value="Arrow"/>
+            </Style>
+
+            <Style x:Key="IgnoredFriendTextStyle"
+                   TargetType="TextBlock"
+                   BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -110,17 +127,70 @@
                               CanUserDeleteRows="False"
                               HeadersVisibility="Column"
                               GridLinesVisibility="None"
+                              BorderThickness="0"
+                              Background="{DynamicResource PlayAch.Brush.Grid.Background}"
+                              RowBackground="{DynamicResource PlayAch.Brush.Grid.RowBackground}"
                               Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
                               MaxHeight="220">
+                        <DataGrid.CellStyle>
+                            <Style TargetType="DataGridCell"
+                                   BasedOn="{StaticResource GameSummariesGridCellStyle}"/>
+                        </DataGrid.CellStyle>
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow"
+                                   BasedOn="{StaticResource IgnoredFriendsGridRowStyle}"/>
+                        </DataGrid.RowStyle>
                         <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="44" MinWidth="32" MaxWidth="96" CanUserResize="True"
+                                                    Header="{DynamicResource LOCPlayAch_Column_Avatar}"
+                                                    CanUserSort="False"
+                                                    CellStyle="{StaticResource GameSummariesImageCellStyle}">
+                                <DataGridTemplateColumn.HeaderTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding}" Opacity="0"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.HeaderTemplate>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
+                                                        Padding="0,6">
+                                            <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
+                                                    ClipToBounds="True"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Background="{DynamicResource PlayAch.Brush.Control.Background}">
+                                                <Border.Width>
+                                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,width,8,16,14">
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                                    </MultiBinding>
+                                                </Border.Width>
+                                                <Border.Height>
+                                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,height,8,16,14">
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                                    </MultiBinding>
+                                                </Border.Height>
+                                                <Image Stretch="UniformToFill"
+                                                       ToolTip="{Binding DisplayName}"
+                                                       helpers:AsyncImage.Uri="{Binding AvatarUrl}"
+                                                       helpers:AsyncImage.DecodePixel="64"/>
+                                            </Border>
+                                        </ContentControl>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Column_Friend}"
                                                 Binding="{Binding DisplayName}"
+                                                ElementStyle="{StaticResource IgnoredFriendTextStyle}"
                                                 Width="*"/>
                             <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Settings_SteamId}"
                                                 Binding="{Binding SteamId}"
+                                                ElementStyle="{StaticResource IgnoredFriendTextStyle}"
                                                 Width="180"/>
                             <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Settings_IgnoredUtc}"
                                                 Binding="{Binding IgnoredLocal, StringFormat=g}"
+                                                ElementStyle="{StaticResource IgnoredFriendTextStyle}"
                                                 Width="150"/>
                             <DataGridTemplateColumn Header=""
                                                     Width="Auto">
