@@ -2212,8 +2212,25 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             public FriendCacheWriteResult SaveFriendOwnership(
                 string providerKey,
                 string externalUserId,
-                IReadOnlyList<FriendGameOwnership> ownership) =>
+                IReadOnlyList<FriendGameOwnership> ownership,
+                FriendOwnershipSaveOptions options = null) =>
                 FriendCacheWriteResult.Ok();
+
+            public FriendCacheWriteResult SaveFriendGameDefinition(
+                string providerKey,
+                FriendGameDefinition definition) =>
+                FriendCacheWriteResult.Ok();
+
+            public Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
+                string providerKey,
+                IReadOnlyCollection<int> appIds) =>
+                new Dictionary<int, FriendGameDefinitionState>();
+
+            public FriendUnownedCacheStats GetUnownedFriendGameCacheStats() =>
+                new FriendUnownedCacheStats();
+
+            public FriendUnownedCacheClearResult ClearUnownedFriendGameData() =>
+                new FriendUnownedCacheClearResult { Success = true };
 
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,

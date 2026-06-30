@@ -256,6 +256,7 @@ namespace PlayniteAchievements.Services
                 FriendOptions = new FriendRefreshOptions
                 {
                     Scope = scope,
+                    GameSource = ResolveFriendGameSource(scope),
                     PlayniteGameIds = ids
                 }
             };
@@ -299,21 +300,25 @@ namespace PlayniteAchievements.Services
                 .Where(id => id != Guid.Empty)
                 .Distinct()
                 .ToList();
+            IReadOnlyCollection<int> providerAppIds = resolvedOptions.ProviderAppIds?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
             IReadOnlyCollection<string> friendExternalUserIds = resolvedOptions.FriendExternalUserIds?
                 .Where(id => !string.IsNullOrWhiteSpace(id))
                 .Select(id => id.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            // Installed scope falls back to the installed library when no specific games were selected.
-            if (scope == FriendRefreshScope.Installed &&
-                (playniteGameIds == null || playniteGameIds.Count == 0))
+            // Installed scope has fixed semantics: only installed Playnite library games.
+            if (scope == FriendRefreshScope.Installed)
             {
                 playniteGameIds = GetInstalledGameIds();
             }
 
             if (scope == FriendRefreshScope.SelectedGame &&
-                (playniteGameIds == null || playniteGameIds.Count == 0))
+                (playniteGameIds == null || playniteGameIds.Count == 0) &&
+                (providerAppIds == null || providerAppIds.Count == 0))
             {
                 return new ResolvedRequest
                 {
@@ -343,11 +348,26 @@ namespace PlayniteAchievements.Services
                 FriendOptions = new FriendRefreshOptions
                 {
                     Scope = scope,
+                    GameSource = providerAppIds?.Count > 0
+                        ? FriendRefreshGameSource.OwnedAndUnowned
+                        : ResolveFriendGameSource(scope),
                     PlayniteGameIds = playniteGameIds,
+                    ProviderAppIds = providerAppIds,
                     FriendExternalUserIds = friendExternalUserIds,
-                    RefreshTtl = resolvedOptions.RefreshTtl
+                    RefreshTtl = resolvedOptions.RefreshTtl,
+                    DefinitionTtl = resolvedOptions.DefinitionTtl
                 }
             };
+        }
+
+        private FriendRefreshGameSource ResolveFriendGameSource(FriendRefreshScope scope)
+        {
+            if (scope == FriendRefreshScope.Recent || scope == FriendRefreshScope.Full)
+            {
+                return _settings?.Persisted?.FriendsOverviewGameSource ?? FriendRefreshGameSource.OwnedOnly;
+            }
+
+            return FriendRefreshGameSource.OwnedOnly;
         }
 
         private RefreshModeType ResolveMode(RefreshRequest request)

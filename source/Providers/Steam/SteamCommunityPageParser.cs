@@ -312,6 +312,7 @@ namespace PlayniteAchievements.Providers.Steam
             return new SteamOwnedGame
             {
                 AppId = appId,
+                Name = NormalizeText(game.Element("gameName")?.Value),
                 PlaytimeForever = HoursToMinutes(game.Element("hoursOnRecord")?.Value),
                 Playtime2Weeks = NullableHoursToMinutes(game.Element("hoursPlayed")?.Value)
             };
@@ -341,6 +342,7 @@ namespace PlayniteAchievements.Providers.Steam
             return new SteamOwnedGame
             {
                 AppId = appId,
+                Name = NormalizeText(game.Element("name")?.Value),
                 PlaytimeForever = HoursToMinutes(game.Element("hoursOnRecord")?.Value),
                 Playtime2Weeks = NullableHoursToMinutes(game.Element("hoursLast2Weeks")?.Value)
             };
@@ -484,6 +486,10 @@ namespace PlayniteAchievements.Providers.Steam
             return new SteamOwnedGame
             {
                 AppId = appId,
+                Name = NormalizeText(FirstNonEmpty(
+                    game["name"]?.Value<string>(),
+                    game["display_name"]?.Value<string>(),
+                    game["title"]?.Value<string>())),
                 PlaytimeForever = Math.Max(0, playtimeForever),
                 Playtime2Weeks = playtime2Weeks.HasValue ? Math.Max(0, playtime2Weeks.Value) : (int?)null,
                 LastPlayedUnixSeconds = ReadLong(game["rtime_last_played"]) ?? ReadLong(game["last_played"])
@@ -694,6 +700,7 @@ namespace PlayniteAchievements.Providers.Steam
                     .Select(game => new SteamOwnedGame
                     {
                         AppId = game.AppId,
+                        Name = NormalizeText(game.Name),
                         PlaytimeForever = Math.Max(0, game.PlaytimeForever ?? 0),
                         Playtime2Weeks = game.Playtime2Weeks.HasValue ? Math.Max(0, game.Playtime2Weeks.Value) : (int?)null,
                         LastPlayedUnixSeconds = game.LastPlayedUnixSeconds ?? game.LastPlayed
@@ -741,6 +748,7 @@ namespace PlayniteAchievements.Providers.Steam
                     UpsertLargestPlaytime(result, new SteamOwnedGame
                     {
                         AppId = appId,
+                        Name = ExtractGameNameFromNode(node, row),
                         PlaytimeForever = playtime ?? 0
                     });
                 }
@@ -865,10 +873,48 @@ namespace PlayniteAchievements.Providers.Steam
             target[game.AppId] = new SteamOwnedGame
             {
                 AppId = primary.AppId,
+                Name = FirstNonEmpty(primary.Name, secondary.Name),
                 PlaytimeForever = Math.Max(0, primary.PlaytimeForever),
                 Playtime2Weeks = primary.Playtime2Weeks ?? secondary.Playtime2Weeks,
                 LastPlayedUnixSeconds = primary.LastPlayedUnixSeconds ?? secondary.LastPlayedUnixSeconds
             };
+        }
+
+        private static string ExtractGameNameFromNode(HtmlNode node, HtmlNode row)
+        {
+            var direct = FirstNonEmpty(
+                node?.GetAttributeValue("title", null),
+                node?.GetAttributeValue("alt", null),
+                node?.SelectSingleNode(".//img")?.GetAttributeValue("alt", null));
+            if (!string.IsNullOrWhiteSpace(direct))
+            {
+                return NormalizeWhitespace(WebUtility.HtmlDecode(direct));
+            }
+
+            var linkText = FirstTextLine(node?.InnerText);
+            if (!string.IsNullOrWhiteSpace(linkText) &&
+                linkText.IndexOf("TOTAL PLAYED", StringComparison.OrdinalIgnoreCase) < 0 &&
+                linkText.IndexOf("ACHIEVEMENTS", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return linkText;
+            }
+
+            var text = NormalizeWhitespace(WebUtility.HtmlDecode(row?.InnerText ?? string.Empty));
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            var totalIndex = text.IndexOf("TOTAL PLAYED", StringComparison.OrdinalIgnoreCase);
+            if (totalIndex > 0)
+            {
+                return text.Substring(0, totalIndex).Trim();
+            }
+
+            var achievementsIndex = text.IndexOf("ACHIEVEMENTS", StringComparison.OrdinalIgnoreCase);
+            return achievementsIndex > 0
+                ? text.Substring(0, achievementsIndex).Trim()
+                : null;
         }
 
         private static string FirstTextLine(string value)
@@ -923,6 +969,9 @@ namespace PlayniteAchievements.Providers.Steam
         {
             [JsonProperty("appid")]
             public int AppId { get; set; }
+
+            [JsonProperty("name")]
+            public string Name { get; set; }
 
             [JsonProperty("playtime_forever")]
             public int? PlaytimeForever { get; set; }

@@ -15,6 +15,7 @@ namespace PlayniteAchievements.Services.Friends
     internal sealed class FriendsRefreshRuntime
     {
         private const int FriendRefreshParallelism = 4;
+        private static readonly TimeSpan DefaultDefinitionTtl = TimeSpan.FromDays(30);
 
         private readonly IFriendCacheManager _friendCache;
         private readonly ProviderRegistry _providerRegistry;
@@ -80,6 +81,10 @@ namespace PlayniteAchievements.Services.Friends
             var providerKey = friendsProvider.ProviderKey;
             var maxDegreeOfParallelism = ResolveFriendRefreshParallelism();
             var payloadLock = new object();
+            var discoverUnowned = ShouldDiscoverUnowned(providerKey, options);
+            var ownershipSnapshots = discoverUnowned
+                ? new List<FriendOwnershipSnapshot>()
+                : null;
             try
             {
                 var preparationResult = await friendsProvider.BeginRefreshAsync(cancel).ConfigureAwait(false);
@@ -116,7 +121,7 @@ namespace PlayniteAchievements.Services.Friends
                 _logger?.Debug(
                     $"Saved {providerKey} friend list: fetched={friends.Count}, active={writeFriends.WrittenCount}, skipped={writeFriends.SkippedCount}.");
 
-                if (ShouldRefreshOwnership(options.Scope))
+                if (ShouldRefreshOwnership(options))
                 {
                     await RefreshOwnershipAsync(
                         friendsProvider,
@@ -126,6 +131,20 @@ namespace PlayniteAchievements.Services.Friends
                         payloadLock,
                         reportProgress,
                         maxDegreeOfParallelism,
+                        ownershipSnapshots,
+                        cancel).ConfigureAwait(false);
+                }
+
+                if (discoverUnowned && preparation.CanRefreshAchievements)
+                {
+                    await RefreshUnownedDefinitionsAndOwnershipAsync(
+                        friendsProvider,
+                        providerKey,
+                        ownershipSnapshots,
+                        options,
+                        payload,
+                        payloadLock,
+                        reportProgress,
                         cancel).ConfigureAwait(false);
                 }
 
@@ -171,6 +190,7 @@ namespace PlayniteAchievements.Services.Friends
             object payloadLock,
             Action<string, int, int> reportProgress,
             int maxDegreeOfParallelism,
+            List<FriendOwnershipSnapshot> ownershipSnapshots,
             CancellationToken cancel)
         {
             if (friends == null || friends.Count == 0)
@@ -192,6 +212,7 @@ namespace PlayniteAchievements.Services.Friends
                         payload,
                         payloadLock,
                         reportProgress,
+                        ownershipSnapshots,
                         cancel).ConfigureAwait(false);
                     if (!shouldContinue)
                     {
@@ -222,6 +243,7 @@ namespace PlayniteAchievements.Services.Friends
                                 payload,
                                 payloadLock,
                                 reportProgress,
+                                ownershipSnapshots,
                                 token).ConfigureAwait(false);
                             if (!shouldContinue)
                             {
@@ -246,6 +268,7 @@ namespace PlayniteAchievements.Services.Friends
             RebuildPayload payload,
             object payloadLock,
             Action<string, int, int> reportProgress,
+            List<FriendOwnershipSnapshot> ownershipSnapshots,
             CancellationToken cancel)
         {
             if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
@@ -290,6 +313,20 @@ namespace PlayniteAchievements.Services.Friends
             }
 
             var ownedGames = ownershipResult.Data ?? Array.Empty<FriendGameOwnership>();
+            if (ownershipSnapshots != null)
+            {
+                lock (ownershipSnapshots)
+                {
+                    ownershipSnapshots.Add(new FriendOwnershipSnapshot
+                    {
+                        Friend = friend,
+                        Ownership = ownedGames
+                            .Where(item => item?.AppId > 0)
+                            .ToList()
+                    });
+                }
+            }
+
             var writeOwnership = _friendCache.SaveFriendOwnership(
                 providerKey,
                 friend.ExternalUserId,
@@ -309,6 +346,158 @@ namespace PlayniteAchievements.Services.Friends
                 $"Saved friend ownership for {providerKey}/{friend.ExternalUserId}: " +
                 $"fetched={ownedGames.Count}, shared={writeOwnership.WrittenCount}, skippedUnshared={writeOwnership.SkippedCount}.");
             return true;
+        }
+
+        private async Task RefreshUnownedDefinitionsAndOwnershipAsync(
+            IFriendsProvider friendsProvider,
+            string providerKey,
+            IReadOnlyList<FriendOwnershipSnapshot> ownershipSnapshots,
+            FriendRefreshOptions options,
+            RebuildPayload payload,
+            object payloadLock,
+            Action<string, int, int> reportProgress,
+            CancellationToken cancel)
+        {
+            var snapshots = ownershipSnapshots?
+                .Where(snapshot => snapshot?.Friend != null && snapshot.Ownership?.Count > 0)
+                .ToList();
+            if (snapshots == null || snapshots.Count == 0)
+            {
+                return;
+            }
+
+            var ownershipByAppId = snapshots
+                .SelectMany(snapshot => snapshot.Ownership)
+                .Where(item => item?.AppId > 0)
+                .GroupBy(item => item.AppId)
+                .ToDictionary(group => group.Key, group => group.ToList());
+            if (ownershipByAppId.Count == 0)
+            {
+                return;
+            }
+
+            var appIds = ownershipByAppId.Keys.OrderBy(id => id).ToList();
+            var states = _friendCache.LoadFriendGameDefinitionStates(providerKey, appIds) ??
+                         new Dictionary<int, FriendGameDefinitionState>();
+            var definitionTtl = options.DefinitionTtl.GetValueOrDefault(DefaultDefinitionTtl);
+            if (definitionTtl <= TimeSpan.Zero)
+            {
+                definitionTtl = DefaultDefinitionTtl;
+            }
+
+            var cutoffUtc = DateTime.UtcNow - definitionTtl;
+            var okAppIds = new HashSet<int>(
+                states.Values
+                    .Where(state => state?.Status == FriendGameDefinitionStatus.Ok &&
+                                    state.LastCheckedUtc.HasValue &&
+                                    state.LastCheckedUtc.Value >= cutoffUtc)
+                    .Select(state => state.AppId));
+
+            var dueAppIds = appIds
+                .Where(appId => IsDefinitionCheckDue(states.TryGetValue(appId, out var state) ? state : null, cutoffUtc))
+                .ToList();
+
+            if (dueAppIds.Count > 0)
+            {
+                var limiter = CreateScanRateLimiter();
+                for (var i = 0; i < dueAppIds.Count; i++)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    var appId = dueAppIds[i];
+                    var gameName = ResolveOwnershipGameName(ownershipByAppId[appId], providerKey, appId);
+                    Report(
+                        reportProgress,
+                        Format(
+                            "LOCPlayAch_FriendsRefresh_Progress_Definitions",
+                            "Checking friend game definitions {0}/{1}...",
+                            i + 1,
+                            dueAppIds.Count),
+                        i,
+                        dueAppIds.Count + 1);
+
+                    await limiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
+                    var definitionResult = await limiter.ExecuteWithRetryAsync(
+                        () => friendsProvider.GetFriendGameDefinitionAsync(appId, gameName, cancel),
+                        IsTransientError,
+                        cancel).ConfigureAwait(false);
+
+                    if (definitionResult?.AuthRequired == true)
+                    {
+                        lock (payloadLock)
+                        {
+                            MarkAuthFailure(payload, providerKey, true);
+                        }
+
+                        return;
+                    }
+
+                    var definition = definitionResult?.Data ?? new FriendGameDefinition
+                    {
+                        ProviderKey = providerKey,
+                        AppId = appId,
+                        GameName = gameName,
+                        Status = definitionResult?.TransientFailure == true
+                            ? FriendGameDefinitionStatus.Transient
+                            : FriendGameDefinitionStatus.Unavailable,
+                        LastCheckedUtc = DateTime.UtcNow
+                    };
+
+                    definition.ProviderKey = providerKey;
+                    definition.AppId = appId;
+                    if (string.IsNullOrWhiteSpace(definition.GameName))
+                    {
+                        definition.GameName = gameName;
+                    }
+
+                    var writeDefinition = _friendCache.SaveFriendGameDefinition(providerKey, definition);
+                    if (writeDefinition?.Success != true)
+                    {
+                        _logger?.Warn($"Failed to save friend game definition for {providerKey}/{appId}: {writeDefinition?.ErrorMessage}");
+                        continue;
+                    }
+
+                    if (definition.Status == FriendGameDefinitionStatus.Ok)
+                    {
+                        okAppIds.Add(appId);
+                    }
+                    else if (definition.Status != FriendGameDefinitionStatus.Transient)
+                    {
+                        okAppIds.Remove(appId);
+                    }
+                }
+            }
+
+            if (okAppIds.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var snapshot in snapshots)
+            {
+                var achievementBearingOwnership = snapshot.Ownership
+                    .Where(item => item?.AppId > 0 && okAppIds.Contains(item.AppId))
+                    .ToList();
+                if (achievementBearingOwnership.Count == 0)
+                {
+                    continue;
+                }
+
+                var writeOwnership = _friendCache.SaveFriendOwnership(
+                    providerKey,
+                    snapshot.Friend.ExternalUserId,
+                    achievementBearingOwnership,
+                    new FriendOwnershipSaveOptions { IncludeProviderOnlyGames = true });
+                if (writeOwnership?.Success != true)
+                {
+                    _logger?.Warn($"Failed to save provider-only friend ownership for {providerKey}/{snapshot.Friend.ExternalUserId}: {writeOwnership?.ErrorMessage}");
+                    continue;
+                }
+
+                lock (payloadLock)
+                {
+                    payload.FriendSummary.OwnershipRowsWritten += writeOwnership.WrittenCount;
+                }
+            }
         }
 
         private async Task RefreshAchievementsAsync(
@@ -623,6 +812,34 @@ namespace PlayniteAchievements.Services.Friends
                    IsTransientError(ex.InnerException);
         }
 
+        private static bool IsDefinitionCheckDue(FriendGameDefinitionState state, DateTime cutoffUtc)
+        {
+            if (state == null || !state.LastCheckedUtc.HasValue)
+            {
+                return true;
+            }
+
+            if (state.Status == FriendGameDefinitionStatus.Transient)
+            {
+                return true;
+            }
+
+            return state.LastCheckedUtc.Value < cutoffUtc;
+        }
+
+        private static string ResolveOwnershipGameName(
+            IReadOnlyList<FriendGameOwnership> ownership,
+            string providerKey,
+            int appId)
+        {
+            var name = ownership?
+                .Select(item => item?.GameName)
+                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+            return !string.IsNullOrWhiteSpace(name)
+                ? name.Trim()
+                : $"{providerKey} App {appId}";
+        }
+
         private FriendRefreshOptions NormalizeOptions(FriendRefreshOptions options)
         {
             var normalized = options?.Clone() ?? new FriendRefreshOptions();
@@ -631,14 +848,42 @@ namespace PlayniteAchievements.Services.Friends
                 normalized.RefreshTtl = TimeSpan.FromHours(Math.Max(1, _settings?.Persisted?.FriendsOverviewRefreshTtlHours ?? 24));
             }
 
+            if (!normalized.DefinitionTtl.HasValue || normalized.DefinitionTtl.Value <= TimeSpan.Zero)
+            {
+                normalized.DefinitionTtl = DefaultDefinitionTtl;
+            }
+
             return normalized;
         }
 
-        private static bool ShouldRefreshOwnership(FriendRefreshScope scope)
+        private static bool ShouldRefreshOwnership(FriendRefreshOptions options)
         {
-            return scope == FriendRefreshScope.Shared ||
-                   scope == FriendRefreshScope.Recent ||
-                   scope == FriendRefreshScope.Custom;
+            if (options == null)
+            {
+                return false;
+            }
+
+            return options.Scope == FriendRefreshScope.Shared ||
+                   options.Scope == FriendRefreshScope.Recent ||
+                   options.Scope == FriendRefreshScope.Custom ||
+                   (options.Scope == FriendRefreshScope.Full &&
+                    options.GameSource == FriendRefreshGameSource.OwnedAndUnowned);
+        }
+
+        private static bool ShouldDiscoverUnowned(string providerKey, FriendRefreshOptions options)
+        {
+            if (options?.GameSource != FriendRefreshGameSource.OwnedAndUnowned)
+            {
+                return false;
+            }
+
+            if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            return options.Scope == FriendRefreshScope.Recent ||
+                   options.Scope == FriendRefreshScope.Full;
         }
 
         private static void MarkAuthFailure(RebuildPayload payload, string providerKey, bool authRequired)
@@ -712,6 +957,12 @@ namespace PlayniteAchievements.Services.Friends
                 TransientFailure = scrapeResult?.TransientFailure == true,
                 DetailCode = SteamScrapeDetail.None
             };
+        }
+
+        private sealed class FriendOwnershipSnapshot
+        {
+            public FriendIdentity Friend { get; set; }
+            public List<FriendGameOwnership> Ownership { get; set; } = new List<FriendGameOwnership>();
         }
     }
 }

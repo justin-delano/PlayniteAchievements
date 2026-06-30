@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using PlayniteAchievements.Models.Achievements;
 
 namespace PlayniteAchievements.Models.Friends
 {
@@ -17,20 +18,34 @@ namespace PlayniteAchievements.Models.Friends
         Custom
     }
 
+    public enum FriendRefreshGameSource
+    {
+        OwnedOnly,
+        OwnedAndUnowned
+    }
+
     public sealed class FriendRefreshOptions
     {
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
+        public FriendRefreshGameSource GameSource { get; set; } = FriendRefreshGameSource.OwnedOnly;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
+        public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public TimeSpan? RefreshTtl { get; set; }
+        public TimeSpan? DefinitionTtl { get; set; }
 
         public FriendRefreshOptions Clone()
         {
             return new FriendRefreshOptions
             {
                 Scope = Scope,
+                GameSource = GameSource,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
+                    .Distinct()
+                    .ToList(),
+                ProviderAppIds = ProviderAppIds?
+                    .Where(id => id > 0)
                     .Distinct()
                     .ToList(),
                 FriendExternalUserIds = FriendExternalUserIds?
@@ -38,7 +53,8 @@ namespace PlayniteAchievements.Models.Friends
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                RefreshTtl = RefreshTtl
+                RefreshTtl = RefreshTtl,
+                DefinitionTtl = DefinitionTtl
             };
         }
     }
@@ -47,9 +63,12 @@ namespace PlayniteAchievements.Models.Friends
     {
         public IReadOnlyCollection<string> ProviderKeys { get; set; }
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
+        public FriendRefreshGameSource GameSource { get; set; } = FriendRefreshGameSource.OwnedOnly;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
+        public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public TimeSpan? RefreshTtl { get; set; }
+        public TimeSpan? DefinitionTtl { get; set; }
 
         public FriendCustomRefreshOptions Clone()
         {
@@ -61,8 +80,13 @@ namespace PlayniteAchievements.Models.Friends
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 Scope = Scope,
+                GameSource = GameSource,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
+                    .Distinct()
+                    .ToList(),
+                ProviderAppIds = ProviderAppIds?
+                    .Where(id => id > 0)
                     .Distinct()
                     .ToList(),
                 FriendExternalUserIds = FriendExternalUserIds?
@@ -70,7 +94,8 @@ namespace PlayniteAchievements.Models.Friends
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                RefreshTtl = RefreshTtl
+                RefreshTtl = RefreshTtl,
+                DefinitionTtl = DefinitionTtl
             };
         }
     }
@@ -110,6 +135,8 @@ namespace PlayniteAchievements.Models.Friends
         public string ProviderKey { get; set; }
         public string ExternalUserId { get; set; }
         public int AppId { get; set; }
+        public string GameName { get; set; }
+        public string IconUrl { get; set; }
         public int PlaytimeForeverMinutes { get; set; }
         public int? Playtime2WeeksMinutes { get; set; }
         public DateTime? LastPlayedUtc { get; set; }
@@ -137,6 +164,25 @@ namespace PlayniteAchievements.Models.Friends
         public List<FriendAchievementRow> Rows { get; set; } = new List<FriendAchievementRow>();
     }
 
+    public enum FriendGameDefinitionStatus
+    {
+        Ok,
+        NoAchievements,
+        Unavailable,
+        Transient
+    }
+
+    public sealed class FriendGameDefinition
+    {
+        public string ProviderKey { get; set; }
+        public int AppId { get; set; }
+        public string GameName { get; set; }
+        public string IconUrl { get; set; }
+        public FriendGameDefinitionStatus Status { get; set; } = FriendGameDefinitionStatus.Unavailable;
+        public DateTime LastCheckedUtc { get; set; } = DateTime.UtcNow;
+        public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
+    }
+
     public sealed class FriendsRefreshPreparation
     {
         public bool CanRefreshAchievements { get; set; } = true;
@@ -158,6 +204,11 @@ namespace PlayniteAchievements.Models.Friends
 
         Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
             FriendIdentity friend,
+            int appId,
+            string gameName,
+            CancellationToken cancel);
+
+        Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
             int appId,
             string gameName,
             CancellationToken cancel);

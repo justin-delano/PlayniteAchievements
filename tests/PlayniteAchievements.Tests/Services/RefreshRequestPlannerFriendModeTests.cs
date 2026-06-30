@@ -125,6 +125,44 @@ namespace PlayniteAchievements.Services.Tests
                 resolved.EmptySelectionLogMessage);
         }
 
+        [DataTestMethod]
+        [DataRow(RefreshModeType.FriendsRecent, FriendRefreshScope.Recent)]
+        [DataRow(RefreshModeType.FriendsFull, FriendRefreshScope.Full)]
+        public void Resolve_BroadFriendModes_HonorOwnedAndUnownedGlobalSource(
+            RefreshModeType mode,
+            FriendRefreshScope expectedScope)
+        {
+            var planner = CreatePlanner(
+                Array.Empty<Game>(),
+                FriendRefreshGameSource.OwnedAndUnowned);
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest { Mode = mode },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(expectedScope, resolved.FriendOptions.Scope);
+            Assert.AreEqual(FriendRefreshGameSource.OwnedAndUnowned, resolved.FriendOptions.GameSource);
+        }
+
+        [TestMethod]
+        public void Resolve_SharedFriendMode_IgnoresOwnedAndUnownedGlobalSource()
+        {
+            var planner = CreatePlanner(
+                Array.Empty<Game>(),
+                FriendRefreshGameSource.OwnedAndUnowned);
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest { Mode = RefreshModeType.FriendsShared },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(FriendRefreshScope.Shared, resolved.FriendOptions.Scope);
+            Assert.AreEqual(FriendRefreshGameSource.OwnedOnly, resolved.FriendOptions.GameSource);
+        }
+
         [TestMethod]
         public void Resolve_FriendsCustom_FiltersProvidersAndUsesSelectedGameScope()
         {
@@ -204,10 +242,13 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsFalse(string.IsNullOrWhiteSpace(resolved.UserMessage));
         }
 
-        private static RefreshRequestPlanner CreatePlanner(IEnumerable<Game> games)
+        private static RefreshRequestPlanner CreatePlanner(
+            IEnumerable<Game> games,
+            FriendRefreshGameSource friendGameSource = FriendRefreshGameSource.OwnedOnly)
         {
             var settings = new PlayniteAchievementsSettings();
             settings.Persisted.IncludeUnplayedGames = true;
+            settings.Persisted.FriendsOverviewGameSource = friendGameSource;
             var api = new FakePlayniteApi(games ?? Enumerable.Empty<Game>());
             var resolver = new TargetSelectionResolver(
                 api,
@@ -279,6 +320,18 @@ namespace PlayniteAchievements.Services.Tests
                 string gameName,
                 CancellationToken cancel) =>
                 Task.FromResult(FriendsProviderResult<FriendGameAchievements>.FromData(new FriendGameAchievements()));
+
+            public Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
+                int appId,
+                string gameName,
+                CancellationToken cancel) =>
+                Task.FromResult(FriendsProviderResult<FriendGameDefinition>.FromData(new FriendGameDefinition
+                {
+                    ProviderKey = ProviderKey,
+                    AppId = appId,
+                    GameName = gameName,
+                    Status = FriendGameDefinitionStatus.NoAchievements
+                }));
         }
 
         private sealed class FakeCacheManager : ICacheManager

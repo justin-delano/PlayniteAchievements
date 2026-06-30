@@ -1,4 +1,6 @@
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Providers.Steam.Models;
 using Playnite.SDK;
 using System;
@@ -113,6 +115,7 @@ namespace PlayniteAchievements.Providers.Steam
                     ProviderKey = ProviderKey,
                     ExternalUserId = friend.ExternalUserId,
                     AppId = game.AppId,
+                    GameName = FirstNonEmpty(game.Name, $"Steam App {game.AppId}"),
                     PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeForever),
                     Playtime2WeeksMinutes = game.Playtime2Weeks.HasValue ? Math.Max(0, game.Playtime2Weeks.Value) : (int?)null,
                     LastPlayedUtc = ToUtc(game.LastPlayedUnixSeconds)
@@ -378,6 +381,54 @@ namespace PlayniteAchievements.Providers.Steam
             return FriendsProviderResult<FriendGameAchievements>.FromData(data);
         }
 
+        public async Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
+            int appId,
+            string gameName,
+            CancellationToken cancel)
+        {
+            if (appId <= 0)
+            {
+                return FriendsProviderResult<FriendGameDefinition>.Failed("Steam app id is missing.");
+            }
+
+            var token = await ResolveTokenAsync(cancel).ConfigureAwait(false);
+            if (!token.IsSuccess)
+            {
+                return FriendsProviderResult<FriendGameDefinition>.Failed(
+                    token.ErrorMessage,
+                    authRequired: token.AuthRequired);
+            }
+
+            try
+            {
+                var schema = await _steamApiClient
+                    .GetSchemaForGameDetailedAsync(token.WebApiToken, appId, "english", cancel)
+                    .ConfigureAwait(false);
+                var achievements = MapSchemaAchievements(schema);
+                var status = achievements.Count > 0
+                    ? FriendGameDefinitionStatus.Ok
+                    : await ResolveEmptySchemaStatusAsync(token.WebApiToken, appId, cancel).ConfigureAwait(false);
+
+                return FriendsProviderResult<FriendGameDefinition>.FromData(new FriendGameDefinition
+                {
+                    ProviderKey = ProviderKey,
+                    AppId = appId,
+                    GameName = FirstNonEmpty(gameName, $"Steam App {appId}"),
+                    Status = status,
+                    LastCheckedUtc = DateTime.UtcNow,
+                    Achievements = achievements
+                });
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Steam game definition fetch failed for appId={appId}.");
+                return FriendsProviderResult<FriendGameDefinition>.Failed(
+                    "Steam game definition fetch failed.",
+                    transientFailure: true);
+            }
+        }
+
         private static bool IsUsableCommunityPage(SteamPageResult page)
         {
             if (page == null || string.IsNullOrWhiteSpace(page.Html))
@@ -528,6 +579,72 @@ namespace PlayniteAchievements.Providers.Steam
                     ProgressDenom = row.ProgressDenom
                 })
                 .ToList() ?? new List<FriendAchievementRow>();
+        }
+
+        private static List<AchievementDetail> MapSchemaAchievements(SchemaAndPercentages schema)
+        {
+            return schema?.Achievements?
+                .Where(achievement => !string.IsNullOrWhiteSpace(achievement?.Name))
+                .Select(achievement =>
+                {
+                    var normalizedPercent = schema.GlobalPercentages?.TryGetValue(achievement.Name, out var percent) == true
+                        ? NormalizePercent(percent)
+                        : null;
+                    return new AchievementDetail
+                    {
+                        ApiName = achievement.Name,
+                        DisplayName = !string.IsNullOrWhiteSpace(achievement.DisplayName)
+                            ? achievement.DisplayName
+                            : achievement.Name,
+                        Description = achievement.Description ?? string.Empty,
+                        UnlockedIconPath = achievement.Icon,
+                        LockedIconPath = achievement.IconGray,
+                        Hidden = achievement.Hidden == 1,
+                        GlobalPercentUnlocked = normalizedPercent,
+                        Rarity = normalizedPercent.HasValue
+                            ? PercentRarityHelper.GetRarityTier(normalizedPercent.Value)
+                            : (achievement.Hidden == 1 ? RarityTier.Rare : RarityTier.Common),
+                        Unlocked = false
+                    };
+                })
+                .ToList() ?? new List<AchievementDetail>();
+        }
+
+        private async Task<FriendGameDefinitionStatus> ResolveEmptySchemaStatusAsync(
+            string token,
+            int appId,
+            CancellationToken cancel)
+        {
+            var hasAchievements = await _steamApiClient
+                .GetGameHasAchievementsAsync(token, appId, "english", cancel)
+                .ConfigureAwait(false);
+            if (hasAchievements == false)
+            {
+                return FriendGameDefinitionStatus.NoAchievements;
+            }
+
+            return FriendGameDefinitionStatus.Unavailable;
+        }
+
+        private static double? NormalizePercent(double? rawPercent)
+        {
+            if (!rawPercent.HasValue)
+            {
+                return null;
+            }
+
+            var value = rawPercent.Value;
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return null;
+            }
+
+            if (value < 0)
+            {
+                return 0;
+            }
+
+            return value > 100 ? 100 : value;
         }
 
         private static DateTime? ToUtc(long? unixSeconds)

@@ -32,13 +32,14 @@ namespace PlayniteAchievements.Steam.Tests
         {
             const string xml =
                 "<gamesList><games>" +
-                "<game><appID>440</appID><hoursOnRecord>1.5</hoursOnRecord><hoursLast2Weeks>0.5</hoursLast2Weeks></game>" +
+                "<game><appID>440</appID><name>Team Fortress 2</name><hoursOnRecord>1.5</hoursOnRecord><hoursLast2Weeks>0.5</hoursLast2Weeks></game>" +
                 "</games></gamesList>";
 
             var games = SteamCommunityPageParser.ParseOwnedGames(xml);
 
             Assert.AreEqual(1, games.Count);
             Assert.AreEqual(440, games[0].AppId);
+            Assert.AreEqual("Team Fortress 2", games[0].Name);
             Assert.AreEqual(90, games[0].PlaytimeForever);
             Assert.AreEqual(30, games[0].Playtime2Weeks);
             Assert.IsTrue(SteamCommunityPageParser.LooksLikeOwnedGamesPayload(xml));
@@ -111,10 +112,12 @@ namespace PlayniteAchievements.Steam.Tests
 
             Assert.AreEqual(2, games.Count);
             Assert.AreEqual(550, games[0].AppId);
+            Assert.AreEqual("Left 4 Dead 2", games[0].Name);
             Assert.AreEqual(281, games[0].PlaytimeForever);
             Assert.AreEqual(12, games[0].Playtime2Weeks);
             Assert.AreEqual(1710000000L, games[0].LastPlayedUnixSeconds);
             Assert.AreEqual(730, games[1].AppId);
+            Assert.AreEqual("Counter-Strike 2", games[1].Name);
             Assert.AreEqual(156469, games[1].PlaytimeForever);
             Assert.IsTrue(SteamCommunityPageParser.LooksLikeOwnedGamesPayload(html));
         }
@@ -132,6 +135,7 @@ namespace PlayniteAchievements.Steam.Tests
             var game = SteamCommunityPageParser.ParseOwnedGames(html).Single();
 
             Assert.AreEqual(2862420, game.AppId);
+            Assert.AreEqual("Tyr Playtest", game.Name);
             Assert.AreEqual(111, game.PlaytimeForever);
             Assert.AreEqual(111, game.Playtime2Weeks);
             Assert.IsTrue(SteamCommunityPageParser.LooksLikeOwnedGamesPayload(html));
@@ -190,8 +194,10 @@ namespace PlayniteAchievements.Steam.Tests
 
             Assert.AreEqual(2, games.Count);
             Assert.AreEqual(72850, games[0].AppId);
+            Assert.AreEqual("The Elder Scrolls V: Skyrim", games[0].Name);
             Assert.AreEqual(92940, games[0].PlaytimeForever);
             Assert.AreEqual(292030, games[1].AppId);
+            Assert.AreEqual("The Witcher 3: Wild Hunt", games[1].Name);
             Assert.AreEqual(28560, games[1].PlaytimeForever);
             Assert.IsTrue(SteamCommunityPageParser.LooksLikeOwnedGamesPayload(html));
         }
@@ -209,6 +215,7 @@ namespace PlayniteAchievements.Steam.Tests
             var game = SteamCommunityPageParser.ParseOwnedGames(html).Single();
 
             Assert.AreEqual(72850, game.AppId);
+            Assert.AreEqual("Skyrim", game.Name);
             Assert.AreEqual(92940, game.PlaytimeForever);
             Assert.IsTrue(SteamCommunityPageParser.LooksLikeOwnedGamesPayload(html));
         }

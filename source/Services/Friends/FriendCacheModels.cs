@@ -38,6 +38,40 @@ namespace PlayniteAchievements.Services.Friends
         public string LastScrapeStatus { get; set; }
     }
 
+    internal sealed class FriendOwnershipSaveOptions
+    {
+        public bool IncludeProviderOnlyGames { get; set; }
+    }
+
+    internal sealed class FriendGameDefinitionState
+    {
+        public string ProviderKey { get; set; }
+        public int AppId { get; set; }
+        public string GameName { get; set; }
+        public string IconUrl { get; set; }
+        public FriendGameDefinitionStatus Status { get; set; } = FriendGameDefinitionStatus.Unavailable;
+        public DateTime? LastCheckedUtc { get; set; }
+    }
+
+    internal class FriendUnownedCacheStats
+    {
+        public int Games { get; set; }
+        public int Definitions { get; set; }
+        public int OwnershipRows { get; set; }
+        public int ProgressRows { get; set; }
+        public int AchievementRows { get; set; }
+        public int DefinitionStates { get; set; }
+    }
+
+    internal sealed class FriendUnownedCacheClearResult : FriendUnownedCacheStats
+    {
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
+
+        public static FriendUnownedCacheClearResult Failed(string message) =>
+            new FriendUnownedCacheClearResult { Success = false, ErrorMessage = message };
+    }
+
     internal sealed class FriendsOverviewData
     {
         public List<FriendSummaryItem> Friends { get; set; } = new List<FriendSummaryItem>();
@@ -64,7 +98,20 @@ namespace PlayniteAchievements.Services.Friends
         FriendCacheWriteResult SaveFriendOwnership(
             string providerKey,
             string externalUserId,
-            IReadOnlyList<FriendGameOwnership> ownership);
+            IReadOnlyList<FriendGameOwnership> ownership,
+            FriendOwnershipSaveOptions options = null);
+
+        FriendCacheWriteResult SaveFriendGameDefinition(
+            string providerKey,
+            FriendGameDefinition definition);
+
+        Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
+            string providerKey,
+            IReadOnlyCollection<int> appIds);
+
+        FriendUnownedCacheStats GetUnownedFriendGameCacheStats();
+
+        FriendUnownedCacheClearResult ClearUnownedFriendGameData();
 
         FriendCacheWriteResult SaveFriendGameAchievements(
             string providerKey,

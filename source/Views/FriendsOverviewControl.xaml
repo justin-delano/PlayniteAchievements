@@ -199,6 +199,28 @@
                             </Button.ContextMenu>
                         </Button>
 
+                        <Button x:Name="GameSourceSelectionButton"
+                                Style="{StaticResource AchievementSelectorButtonStyle}"
+                                Content="{Binding GameSourceSelectionText}"
+                                Click="GameSourceSelectionButton_Click"
+                                HorizontalContentAlignment="Center"
+                                MinWidth="120"
+                                MinHeight="24"
+                                Margin="{StaticResource PlayAch.Thickness.Right.Compact}"
+                                VerticalAlignment="Center">
+                            <Button.ContextMenu>
+                                <ContextMenu x:Name="GameSourceSelectionContextMenu"
+                                             Style="{StaticResource AchievementSelectorContextMenuStyle}"
+                                             ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
+                            </Button.ContextMenu>
+                        </Button>
+
+                        <Button Content="Clear unowned"
+                                Click="ClearUnownedFriendGameData_Click"
+                                Style="{StaticResource FriendsOverviewRefreshButtonStyle}"
+                                MinWidth="108"
+                                Margin="{StaticResource PlayAch.Thickness.Right.Compact}"/>
+
                         <Button Content="{Binding RefreshOrCancelButtonText}"
                                 Command="{Binding RefreshOrCancelCommand}"
                                 Style="{StaticResource FriendsOverviewRefreshButtonStyle}"/>

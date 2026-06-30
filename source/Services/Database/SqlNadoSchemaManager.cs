@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 11;
+        public const int SchemaVersion = 12;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -145,6 +145,7 @@ namespace PlayniteAchievements.Services.Database
                 ON UserAchievements (AchievementDefinitionId);");
 
             EnsureFriendOwnershipTable(db);
+            EnsureProviderGameDefinitionStateTable(db);
 
             var storedVersion = GetStoredSchemaVersion(db);
             var verification = VerifyRequiredColumns(db);
@@ -252,6 +253,8 @@ namespace PlayniteAchievements.Services.Database
 
             EnsureFriendOwnershipTable(db);
             EnsureFriendOwnershipIndexes(db);
+            EnsureProviderGameDefinitionStateTable(db);
+            EnsureProviderGameDefinitionStateIndexes(db);
         }
 
         private void EnsureFriendOwnershipTable(SQLiteDatabase db)
@@ -285,6 +288,28 @@ namespace PlayniteAchievements.Services.Database
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_FriendOwnership_LastScraped
                 ON FriendOwnership (LastScrapedUtc, LastScrapeStatus);");
+        }
+
+        private void EnsureProviderGameDefinitionStateTable(SQLiteDatabase db)
+        {
+            ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS ProviderGameDefinitionState (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ProviderKey TEXT NOT NULL COLLATE NOCASE,
+                ProviderGameId INTEGER NOT NULL,
+                GameName TEXT NULL,
+                IconUrl TEXT NULL,
+                Status TEXT NOT NULL,
+                LastCheckedUtc TEXT NOT NULL,
+                CreatedUtc TEXT NOT NULL,
+                UpdatedUtc TEXT NOT NULL,
+                UNIQUE (ProviderKey, ProviderGameId)
+            );");
+        }
+
+        private void EnsureProviderGameDefinitionStateIndexes(SQLiteDatabase db)
+        {
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_ProviderGameDefinitionState_Status_Checked
+                ON ProviderGameDefinitionState (Status, LastCheckedUtc);");
         }
 
         private void BackfillRequiredAchievementCategoryValues(SQLiteDatabase db)
@@ -557,6 +582,8 @@ namespace PlayniteAchievements.Services.Database
 
             EnsureFriendOwnershipTable(db);
             ReconcileFriendOwnershipColumns(db, ref backupPath);
+            EnsureProviderGameDefinitionStateTable(db);
+            EnsureProviderGameDefinitionStateIndexes(db);
 
             return backupPath;
         }

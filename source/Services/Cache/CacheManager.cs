@@ -767,12 +767,66 @@ namespace PlayniteAchievements.Services
         FriendCacheWriteResult IFriendCacheManager.SaveFriendOwnership(
             string providerKey,
             string externalUserId,
-            IReadOnlyList<FriendGameOwnership> ownership)
+            IReadOnlyList<FriendGameOwnership> ownership,
+            FriendOwnershipSaveOptions options)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("SaveFriendOwnership");
-                var result = _store.SaveFriendOwnership(providerKey, externalUserId, ownership);
+                var result = _store.SaveFriendOwnership(providerKey, externalUserId, ownership, options);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
+        FriendCacheWriteResult IFriendCacheManager.SaveFriendGameDefinition(
+            string providerKey,
+            FriendGameDefinition definition)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("SaveFriendGameDefinition");
+                var result = _store.SaveFriendGameDefinition(providerKey, definition);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
+        Dictionary<int, FriendGameDefinitionState> IFriendCacheManager.LoadFriendGameDefinitionStates(
+            string providerKey,
+            IReadOnlyCollection<int> appIds)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadFriendGameDefinitionStates");
+                return _store.LoadFriendGameDefinitionStates(providerKey, appIds) ??
+                       new Dictionary<int, FriendGameDefinitionState>();
+            }
+        }
+
+        FriendUnownedCacheStats IFriendCacheManager.GetUnownedFriendGameCacheStats()
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("GetUnownedFriendGameCacheStats");
+                return _store.GetUnownedFriendGameCacheStats() ?? new FriendUnownedCacheStats();
+            }
+        }
+
+        FriendUnownedCacheClearResult IFriendCacheManager.ClearUnownedFriendGameData()
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("ClearUnownedFriendGameData");
+                var result = _store.ClearUnownedFriendGameData();
                 if (result?.Success == true)
                 {
                     RaiseCacheInvalidatedEvent();

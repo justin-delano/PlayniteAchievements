@@ -89,7 +89,7 @@ namespace PlayniteAchievements.Providers.Steam
                 var url = $"https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/" +
                           $"?access_token={Uri.EscapeDataString(accessToken)}" +
                           $"&steamid={Uri.EscapeDataString(steamId64.Trim())}" +
-                          $"&include_appinfo=false" +
+                          $"&include_appinfo=true" +
                           $"&include_played_free_games=true" +
                           $"&format=json";
 

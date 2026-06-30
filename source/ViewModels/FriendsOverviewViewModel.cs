@@ -86,6 +86,7 @@ namespace PlayniteAchievements.ViewModels
             TypeFilterOptions = new ObservableCollection<string>();
             CategoryFilterOptions = new ObservableCollection<string>();
             FriendRefreshModes = new ObservableCollection<RefreshMode>(CreateFriendRefreshModes());
+            FriendGameSourceOptions = new ObservableCollection<FriendGameSourceOption>(CreateFriendGameSourceOptions());
 
             RefreshCommand = new AsyncCommand(async _ => await RefreshSelectedModeAsync().ConfigureAwait(true), _ => CanRefresh());
             RefreshRecentCommand = new AsyncCommand(async _ => await RefreshFriendsAsync(RefreshModeType.FriendsRecent).ConfigureAwait(true), _ => CanRefresh());
@@ -124,6 +125,7 @@ namespace PlayniteAchievements.ViewModels
         public ObservableCollection<string> TypeFilterOptions { get; }
         public ObservableCollection<string> CategoryFilterOptions { get; }
         public ObservableCollection<RefreshMode> FriendRefreshModes { get; }
+        public ObservableCollection<FriendGameSourceOption> FriendGameSourceOptions { get; }
 
         public ICommand RefreshCommand { get; }
         public ICommand RefreshRecentCommand { get; }
@@ -243,6 +245,18 @@ namespace PlayniteAchievements.ViewModels
             ?? "Refresh";
 
         public string RefreshActionButtonText => ResourceProvider.GetString("LOCPlayAch_Button_Refresh") ?? "Refresh";
+
+        public string GameSourceSelectionText
+        {
+            get
+            {
+                var source = _settings?.Persisted?.FriendsOverviewGameSource ?? FriendRefreshGameSource.OwnedOnly;
+                return FriendGameSourceOptions?
+                    .FirstOrDefault(option => option != null && option.Source == source)?
+                    .ShortDisplayName
+                    ?? GetGameSourceDisplayName(source, shortName: true);
+            }
+        }
 
         public string RefreshOrCancelButtonText => IsRefreshing
             ? ResourceProvider.GetString("LOCPlayAch_FriendsOverview_RefreshingShort") ?? "Refreshing..."
@@ -399,6 +413,22 @@ namespace PlayniteAchievements.ViewModels
         public bool IsCategoryFilterSelected(string value)
         {
             return IsFilterSelected(_selectedCategoryFilters, value);
+        }
+
+        public bool IsGameSourceSelected(FriendRefreshGameSource source)
+        {
+            return (_settings?.Persisted?.FriendsOverviewGameSource ?? FriendRefreshGameSource.OwnedOnly) == source;
+        }
+
+        public void SetGameSource(FriendRefreshGameSource source)
+        {
+            if (_settings?.Persisted == null)
+            {
+                return;
+            }
+
+            _settings.Persisted.FriendsOverviewGameSource = source;
+            OnPropertyChanged(nameof(GameSourceSelectionText));
         }
 
         public void SetCategoryFilterSelected(string value, bool isSelected)
@@ -570,25 +600,54 @@ namespace PlayniteAchievements.ViewModels
 
         private async Task ExecuteFriendSelectedGameRefreshAsync(object parameter)
         {
-            if (!TryGetPlayniteGameId(parameter, out var gameId) || !CanRefresh())
+            if (!CanRefresh())
+            {
+                return;
+            }
+
+            if (TryGetPlayniteGameId(parameter, out var gameId))
+            {
+                await ExecuteFriendRefreshRequestAsync(
+                    new RefreshRequest
+                    {
+                        Mode = RefreshModeType.FriendsSelectedGame,
+                        SingleGameId = gameId
+                    },
+                    "Friend selected-game refresh failed.").ConfigureAwait(true);
+                return;
+            }
+
+            if (TryGetProviderAppTarget(parameter, out var providerKey, out var appId))
+            {
+                await ExecuteFriendRefreshRequestAsync(
+                    new RefreshRequest
+                    {
+                        Mode = RefreshModeType.FriendsCustom,
+                        CustomFriendOptions = new FriendCustomRefreshOptions
+                        {
+                            ProviderKeys = new[] { providerKey },
+                            Scope = FriendRefreshScope.SelectedGame,
+                            GameSource = FriendRefreshGameSource.OwnedAndUnowned,
+                            ProviderAppIds = new[] { appId }
+                        }
+                    },
+                    "Friend selected-game refresh failed.").ConfigureAwait(true);
+                return;
+            }
+
+            if (!TryGetPlayniteGameId(parameter, out _))
             {
                 StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectGameForRefresh") ??
                              "Select a game before refreshing this friend game.";
                 return;
             }
-
-            await ExecuteFriendRefreshRequestAsync(
-                new RefreshRequest
-                {
-                    Mode = RefreshModeType.FriendsSelectedGame,
-                    SingleGameId = gameId
-                },
-                "Friend selected-game refresh failed.").ConfigureAwait(true);
         }
 
         private bool CanRefreshSelectedFriendGame(object parameter)
         {
-            return CanRefresh() && TryGetPlayniteGameId(parameter, out _);
+            return CanRefresh() &&
+                   (TryGetPlayniteGameId(parameter, out _) ||
+                    TryGetProviderAppTarget(parameter, out _, out _));
         }
 
         private void OnRebuildProgress(object sender, ProgressReport report)
@@ -885,6 +944,31 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private static bool TryGetProviderAppTarget(object parameter, out string providerKey, out int appId)
+        {
+            switch (parameter)
+            {
+                case FriendGameSummaryItem game
+                    when !game.PlayniteGameId.HasValue &&
+                         !string.IsNullOrWhiteSpace(game.ProviderKey) &&
+                         game.AppId > 0:
+                    providerKey = game.ProviderKey.Trim();
+                    appId = game.AppId;
+                    return true;
+                case FriendAchievementDisplayItem achievement
+                    when !achievement.PlayniteGameId.HasValue &&
+                         !string.IsNullOrWhiteSpace(achievement.ProviderKey) &&
+                         achievement.AppId > 0:
+                    providerKey = achievement.ProviderKey.Trim();
+                    appId = achievement.AppId;
+                    return true;
+                default:
+                    providerKey = null;
+                    appId = 0;
+                    return false;
+            }
+        }
+
         private static bool IsSameGame(FriendAchievementDisplayItem achievement, FriendGameSummaryItem game)
         {
             return FriendOverviewProjection.IsSameGame(achievement, game);
@@ -1018,6 +1102,12 @@ namespace PlayniteAchievements.ViewModels
             {
                 ApplyFilters();
             }
+
+            if (string.IsNullOrWhiteSpace(propertyName) ||
+                propertyName == nameof(PersistedSettings.FriendsOverviewGameSource))
+            {
+                OnPropertyChanged(nameof(GameSourceSelectionText));
+            }
         }
 
         private static IEnumerable<RefreshMode> CreateFriendRefreshModes()
@@ -1039,6 +1129,37 @@ namespace PlayniteAchievements.ViewModels
             };
         }
 
+        private static IEnumerable<FriendGameSourceOption> CreateFriendGameSourceOptions()
+        {
+            yield return new FriendGameSourceOption
+            {
+                Source = FriendRefreshGameSource.OwnedOnly,
+                DisplayName = GetGameSourceDisplayName(FriendRefreshGameSource.OwnedOnly, shortName: false),
+                ShortDisplayName = GetGameSourceDisplayName(FriendRefreshGameSource.OwnedOnly, shortName: true)
+            };
+            yield return new FriendGameSourceOption
+            {
+                Source = FriendRefreshGameSource.OwnedAndUnowned,
+                DisplayName = GetGameSourceDisplayName(FriendRefreshGameSource.OwnedAndUnowned, shortName: false),
+                ShortDisplayName = GetGameSourceDisplayName(FriendRefreshGameSource.OwnedAndUnowned, shortName: true)
+            };
+        }
+
+        private static string GetGameSourceDisplayName(FriendRefreshGameSource source, bool shortName)
+        {
+            switch (source)
+            {
+                case FriendRefreshGameSource.OwnedAndUnowned:
+                    return shortName
+                        ? "Owned + unowned"
+                        : "Owned + unowned Steam friend games";
+                default:
+                    return shortName
+                        ? "Owned only"
+                        : "Owned only";
+            }
+        }
+
         public void Dispose()
         {
             if (_refreshRuntime != null)
@@ -1051,5 +1172,12 @@ namespace PlayniteAchievements.ViewModels
                 _settings.Persisted.PropertyChanged -= OnPersistedSettingsChanged;
             }
         }
+    }
+
+    internal sealed class FriendGameSourceOption
+    {
+        public FriendRefreshGameSource Source { get; set; }
+        public string DisplayName { get; set; }
+        public string ShortDisplayName { get; set; }
     }
 }

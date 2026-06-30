@@ -83,6 +83,7 @@ namespace PlayniteAchievements.Steam.Tests
                     Content = new StringContent(
                         "{ \"response\": { \"game_count\": 1, \"games\": [ { " +
                         "\"appid\": 570, " +
+                        "\"name\": \"Dota 2\", " +
                         "\"playtime_forever\": 120, " +
                         "\"playtime_2weeks\": 15, " +
                         "\"rtime_last_played\": 1710000000 } ] } }",
@@ -100,11 +101,12 @@ namespace PlayniteAchievements.Steam.Tests
             Assert.AreEqual("/IPlayerService/GetOwnedGames/v1/", capturedUri.AbsolutePath);
             StringAssert.Contains(capturedUri.Query, "access_token=store-token");
             StringAssert.Contains(capturedUri.Query, "steamid=76561198000000001");
-            StringAssert.Contains(capturedUri.Query, "include_appinfo=false");
+            StringAssert.Contains(capturedUri.Query, "include_appinfo=true");
             StringAssert.Contains(capturedUri.Query, "include_played_free_games=true");
 
             var game = result.Single();
             Assert.AreEqual(570, game.AppId);
+            Assert.AreEqual("Dota 2", game.Name);
             Assert.AreEqual(120, game.PlaytimeForever);
             Assert.AreEqual(15, game.Playtime2Weeks);
             Assert.AreEqual(1710000000L, game.LastPlayedUnixSeconds);
