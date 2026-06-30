@@ -230,6 +230,9 @@ namespace PlayniteAchievements.Tests.Services.UI
                     settings.Persisted.ResourceOverrides[key].Mode,
                     key);
             }
+
+            // Fresh installs are already seeded, so the one-time migration never re-seeds them.
+            Assert.IsTrue(settings.Persisted.InlineSurfaceTransparencySeeded);
         }
 
         [TestMethod]
