@@ -4,6 +4,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
+using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.UI;
 
@@ -196,6 +198,63 @@ namespace PlayniteAchievements.Tests.Services.UI
             Assert.AreEqual("#FF010203", settings.ResourceOverrides["Custom"].CustomValue);
             Assert.AreEqual(ResourceOverrideMode.Transparent, settings.ResourceOverrides["Transparent"].Mode);
             Assert.AreEqual(PlayAchResourceService.TransparentValue, settings.ResourceOverrides["Transparent"].CustomValue);
+        }
+
+        [TestMethod]
+        public void PersistedSettings_ParameterlessCtor_HasNoSeededResourceOverrides()
+        {
+            // The parameterless ctor is the deserialization target. It must start empty so a
+            // loaded config is taken verbatim and a removed ("Follow Playnite") override is not
+            // re-introduced by a seeded default during the in-place dictionary merge.
+            var settings = new PersistedSettings();
+
+            Assert.AreEqual(0, settings.ResourceOverrides.Count);
+        }
+
+        [TestMethod]
+        public void PlayniteAchievementsSettings_FreshWithPlugin_SeedsTransparentInlineSurfaces()
+        {
+            // The plugin-reference ctor is the genuine fresh-install path and seeds the
+            // transparent inline-surface defaults.
+            var settings = new PlayniteAchievementsSettings((PlayniteAchievements.PlayniteAchievementsPlugin)null);
+
+            foreach (var key in new[]
+            {
+                "PlayAch.Brush.GridSurface",
+                "PlayAch.Brush.ControlSurface"
+            })
+            {
+                Assert.IsTrue(settings.Persisted.ResourceOverrides.ContainsKey(key), key);
+                Assert.AreEqual(
+                    ResourceOverrideMode.Transparent,
+                    settings.Persisted.ResourceOverrides[key].Mode,
+                    key);
+            }
+        }
+
+        [TestMethod]
+        public void ResourceOverrides_RemovedKeyStaysRemovedThroughJsonRoundTrip()
+        {
+            // Reproduces the runtime load path: Newtonsoft (default ObjectCreationHandling.Auto)
+            // populates the existing dictionary in place. A user who switched GridSurface to
+            // "Follow Playnite" has it removed from the saved config; it must not reappear.
+            var saved = new PersistedSettings
+            {
+                ResourceOverrides = new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["PlayAch.Brush.ControlSurface"] = new ResourceOverrideSetting
+                    {
+                        Mode = ResourceOverrideMode.Transparent,
+                        CustomValue = PlayAchResourceService.TransparentValue
+                    }
+                }
+            };
+
+            var json = JsonConvert.SerializeObject(saved);
+            var loaded = JsonConvert.DeserializeObject<PersistedSettings>(json);
+
+            Assert.IsFalse(loaded.ResourceOverrides.ContainsKey("PlayAch.Brush.GridSurface"));
+            Assert.IsTrue(loaded.ResourceOverrides.ContainsKey("PlayAch.Brush.ControlSurface"));
         }
 
         private static void AssertNoDescriptor(string resourceKey)
