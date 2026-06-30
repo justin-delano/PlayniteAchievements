@@ -40,6 +40,13 @@ namespace PlayniteAchievements.Views.Controls
                 ["GameSummaryPlatform"] = 36
             };
 
+        // Bind to FriendGameSummaryItem-only properties; valid only on the Friends Overview surface.
+        private static readonly string[] FriendOnlyColumnKeys =
+        {
+            "FriendGameFriendsWithUnlocks",
+            "FriendGameLastUnlock"
+        };
+
         private static readonly string[] MirroredBadgeResourceKeys =
         {
             "PlayAch.Brush.CompletedGame",
@@ -399,6 +406,7 @@ namespace PlayniteAchievements.Views.Controls
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GameSummariesGrid),
                 isRuntimeDefaultWidth: IsLegacyImageColumnRuntimeDefaultWidth);
             _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
+            ApplyFriendColumnRestrictions();
             _columnPersistence.Attach();
             _isAttached = true;
         }
@@ -759,6 +767,22 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return GridSurface.Overview;
+        }
+
+        // Keep the friend columns out of every grid except Friends Overview: collapse them so
+        // they never render and exclude them from the column visibility menu so they cannot be toggled on.
+        private void ApplyFriendColumnRestrictions()
+        {
+            if (_columnPersistence == null || ResolveSurface() == GridSurface.FriendsOverview)
+            {
+                return;
+            }
+
+            foreach (var key in FriendOnlyColumnKeys)
+            {
+                _columnPersistence.ForcedCollapsedKeys.Add(key);
+                _columnPersistence.ExcludedVisibilityKeys.Add(key);
+            }
         }
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
