@@ -2249,6 +2249,9 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId) =>
                 FriendCacheWriteResult.Ok();
 
+            public List<FriendIdentity> LoadFriendIdentities(string providerKey) =>
+                new List<FriendIdentity>();
+
             public List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
                 string providerKey,
                 FriendRefreshOptions options) =>

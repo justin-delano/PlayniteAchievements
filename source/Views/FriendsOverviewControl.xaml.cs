@@ -466,6 +466,22 @@ namespace PlayniteAchievements.Views
         private ContextMenu BuildFriendMenu(FriendSummaryItem friend)
         {
             var menu = new ContextMenu();
+
+            if (FriendLibraryScopeHelper.IsSteamFriend(friend?.ProviderKey) &&
+                !string.IsNullOrWhiteSpace(friend?.ExternalUserId))
+            {
+                var usesFull = FriendLibraryScopeHelper.IsFullLibrary(friend.ProviderKey, friend.ExternalUserId);
+                var libraryItem = new MenuItem
+                {
+                    // Label shows the action that toggling will perform, given the current scope.
+                    Header = usesFull
+                        ? GetText("LOCPlayAch_Menu_UseSharedLibrary", "Use Shared Library")
+                        : GetText("LOCPlayAch_Menu_UseFullLibrary", "Use Full Library")
+                };
+                libraryItem.Click += (_, __) => ToggleFriendLibraryScope(friend, !usesFull);
+                menu.Items.Add(libraryItem);
+            }
+
             var ignoreItem = new MenuItem
             {
                 Header = GetText("LOCPlayAch_Menu_IgnoreFriend", "Ignore Friend"),
@@ -474,6 +490,28 @@ namespace PlayniteAchievements.Views
             ignoreItem.Click += (_, __) => IgnoreFriend(friend);
             menu.Items.Add(ignoreItem);
             return menu;
+        }
+
+        private void ToggleFriendLibraryScope(FriendSummaryItem friend, bool enableFull)
+        {
+            if (friend == null)
+            {
+                return;
+            }
+
+            try
+            {
+                FriendLibraryScopeHelper.SetFullLibrary(
+                    friend.ProviderKey,
+                    friend.ExternalUserId,
+                    friend.DisplayName,
+                    friend.AvatarPath,
+                    enableFull);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to toggle library scope for friend {friend.ProviderKey}/{friend.ExternalUserId}.");
+            }
         }
 
         private void IgnoreFriend(FriendSummaryItem friend)

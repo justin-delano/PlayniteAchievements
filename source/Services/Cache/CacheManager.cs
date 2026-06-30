@@ -891,6 +891,15 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        List<FriendIdentity> IFriendCacheManager.LoadFriendIdentities(string providerKey)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadFriendIdentities");
+                return _store.LoadFriendIdentities(providerKey) ?? new List<FriendIdentity>();
+            }
+        }
+
         List<FriendRefreshCandidate> IFriendCacheManager.LoadFriendRefreshCandidates(
             string providerKey,
             FriendRefreshOptions options)

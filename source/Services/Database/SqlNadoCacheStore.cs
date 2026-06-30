@@ -1974,7 +1974,9 @@ namespace PlayniteAchievements.Services.Database
 
         private static bool ShouldIncludeProviderOnlyFriendRows(FriendRefreshOptions options)
         {
-            if (options?.GameSource != FriendRefreshGameSource.OwnedAndUnowned)
+            // Provider-only (unowned) rows are written only for friends who opted into the full
+            // library, so it is safe to include them whenever the scope permits full-library work.
+            if (options == null)
             {
                 return false;
             }
@@ -2928,6 +2930,56 @@ namespace PlayniteAchievements.Services.Database
                     updatedIso,
                     existing.Id);
             }
+        }
+
+        /// <summary>
+        /// Loads the active (non-ignored) friend roster for a provider as lightweight identities, for
+        /// display in provider settings. Ignored friends are tracked separately in provider settings.
+        /// </summary>
+        public List<FriendIdentity> LoadFriendIdentities(string providerKey)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            try
+            {
+                return WithDb(db =>
+                    db.Load<FriendIdentityRow>(
+                        @"SELECT
+                            u.ProviderKey AS ProviderKey,
+                            u.ExternalUserId AS ExternalUserId,
+                            u.DisplayName AS DisplayName,
+                            u.AvatarUrl AS AvatarUrl,
+                            u.AvatarPath AS AvatarPath
+                          FROM Users u
+                          WHERE u.ProviderKey = ?
+                            AND u.IsCurrentUser = 0
+                            AND u.IsActiveFriend = 1
+                            AND u.FriendSource IS NOT NULL
+                          ORDER BY u.DisplayName;",
+                        providerKey)
+                    .Select(row => new FriendIdentity
+                    {
+                        ProviderKey = row.ProviderKey,
+                        ExternalUserId = row.ExternalUserId,
+                        DisplayName = row.DisplayName,
+                        AvatarUrl = row.AvatarUrl,
+                        AvatarPath = row.AvatarPath
+                    })
+                    .ToList());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to load friend identities for provider={providerKey}.");
+                return new List<FriendIdentity>();
+            }
+        }
+
+        private sealed class FriendIdentityRow
+        {
+            public string ProviderKey { get; set; }
+            public string ExternalUserId { get; set; }
+            public string DisplayName { get; set; }
+            public string AvatarUrl { get; set; }
+            public string AvatarPath { get; set; }
         }
 
         private static List<FriendSummaryRow> LoadFriendSummaryRows(SQLiteDatabase db)

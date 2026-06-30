@@ -31,19 +31,25 @@ namespace PlayniteAchievements.Services.Friends
         private readonly DiskImageService _imageService;
         private readonly ILogger _logger;
 
+        // Resolves the per-friend full-library opt-in id set for a provider. Defaults to the
+        // reflection-based lookup of Steam provider settings; overridable for testing.
+        private readonly Func<string, HashSet<string>> _fullLibraryIdsResolver;
+
         public FriendsRefreshRuntime(
             IReadOnlyList<IDataProvider> providers,
             IFriendCacheManager friendCache,
             ProviderRegistry providerRegistry,
             PlayniteAchievementsSettings settings,
             DiskImageService imageService,
-            ILogger logger)
+            ILogger logger,
+            Func<string, HashSet<string>> fullLibraryIdsResolver = null)
         {
             _friendCache = friendCache;
             _providerRegistry = providerRegistry;
             _settings = settings;
             _imageService = imageService;
             _logger = logger;
+            _fullLibraryIdsResolver = fullLibraryIdsResolver;
         }
 
         public async Task<RebuildPayload> RefreshAsync(
@@ -77,6 +83,80 @@ namespace PlayniteAchievements.Services.Friends
             return payload;
         }
 
+        /// <summary>
+        /// Refreshes only the friend roster (the list of friends and their avatars) for each
+        /// friend-capable provider, without fetching ownership, game definitions, or achievements.
+        /// Used by the in-settings "refresh friends list" action. Returns the number of active friends
+        /// saved across providers.
+        /// </summary>
+        public async Task<int> RefreshFriendRosterAsync(
+            IReadOnlyList<IDataProvider> providerScope,
+            CancellationToken cancel = default)
+        {
+            if (_friendCache == null)
+            {
+                return 0;
+            }
+
+            var providers = (providerScope ?? Array.Empty<IDataProvider>())
+                .Where(provider => provider?.Friends != null)
+                .ToList();
+
+            var saved = 0;
+            foreach (var provider in providers)
+            {
+                cancel.ThrowIfCancellationRequested();
+                saved += await RefreshProviderRosterAsync(provider.Friends, cancel).ConfigureAwait(false);
+            }
+
+            return saved;
+        }
+
+        private async Task<int> RefreshProviderRosterAsync(
+            IFriendsProvider friendsProvider,
+            CancellationToken cancel)
+        {
+            if (friendsProvider == null)
+            {
+                return 0;
+            }
+
+            var providerKey = friendsProvider.ProviderKey;
+            try
+            {
+                var preparationResult = await friendsProvider.BeginRefreshAsync(cancel).ConfigureAwait(false);
+                if (preparationResult?.Success != true)
+                {
+                    _logger?.Debug($"Friend roster refresh skipped for {providerKey}: {preparationResult?.ErrorMessage ?? "provider unavailable"}");
+                    return 0;
+                }
+
+                var friendsResult = await friendsProvider.GetFriendsAsync(cancel).ConfigureAwait(false);
+                if (friendsResult?.Success != true)
+                {
+                    _logger?.Debug($"Friend roster refresh skipped for {providerKey}: {friendsResult?.ErrorMessage ?? "friend list unavailable"}");
+                    return 0;
+                }
+
+                var friends = FilterIgnoredFriends(providerKey, friendsResult.Data ?? Array.Empty<FriendIdentity>());
+                await DownloadFriendAvatarsAsync(providerKey, friends, cancel).ConfigureAwait(false);
+
+                var writeFriends = _friendCache.SaveFriendList(providerKey, friends);
+                if (writeFriends?.Success != true)
+                {
+                    _logger?.Warn($"Failed to save {providerKey} friend list: {writeFriends?.ErrorMessage}");
+                    return 0;
+                }
+
+                _logger?.Debug($"Refreshed {providerKey} friend roster: active={writeFriends.WrittenCount}.");
+                return writeFriends.WrittenCount;
+            }
+            finally
+            {
+                friendsProvider.EndRefresh();
+            }
+        }
+
         private async Task<RebuildPayload> RefreshProviderAsync(
             IFriendsProvider friendsProvider,
             FriendRefreshOptions options,
@@ -92,6 +172,7 @@ namespace PlayniteAchievements.Services.Friends
             var providerKey = friendsProvider.ProviderKey;
             var maxDegreeOfParallelism = ResolveFriendRefreshParallelism();
             var payloadLock = new object();
+            var fullLibraryIds = GetFullLibraryFriendIds(providerKey);
             var discoverUnowned = ShouldDiscoverUnowned(providerKey, options);
             var ownershipSnapshots = discoverUnowned
                 ? new List<FriendOwnershipSnapshot>()
@@ -145,6 +226,8 @@ namespace PlayniteAchievements.Services.Friends
                         friendsProvider,
                         providerKey,
                         scopedFriends,
+                        options.Scope,
+                        fullLibraryIds,
                         payload,
                         payloadLock,
                         reportProgress,
@@ -204,6 +287,8 @@ namespace PlayniteAchievements.Services.Friends
             IFriendsProvider friendsProvider,
             string providerKey,
             IReadOnlyList<FriendIdentity> friends,
+            FriendRefreshScope scope,
+            HashSet<string> fullLibraryIds,
             RebuildPayload payload,
             object payloadLock,
             Action<string, int, int> reportProgress,
@@ -225,6 +310,8 @@ namespace PlayniteAchievements.Services.Friends
                         friendsProvider,
                         providerKey,
                         friends[i],
+                        scope,
+                        FriendUsesFullLibrary(fullLibraryIds, friends[i]),
                         i + 1,
                         friends.Count,
                         payload,
@@ -256,6 +343,8 @@ namespace PlayniteAchievements.Services.Friends
                                 friendsProvider,
                                 providerKey,
                                 friend,
+                                scope,
+                                FriendUsesFullLibrary(fullLibraryIds, friend),
                                 progressCurrent,
                                 friends.Count,
                                 payload,
@@ -281,6 +370,8 @@ namespace PlayniteAchievements.Services.Friends
             IFriendsProvider friendsProvider,
             string providerKey,
             FriendIdentity friend,
+            FriendRefreshScope scope,
+            bool friendUsesFullLibrary,
             int progressCurrent,
             int total,
             RebuildPayload payload,
@@ -290,6 +381,14 @@ namespace PlayniteAchievements.Services.Friends
             CancellationToken cancel)
         {
             if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
+            {
+                return true;
+            }
+
+            // In the Full scope, shared-library friends need no ownership fetch: Full already covers the
+            // entire owned library. Only full-library friends require ownership here (to discover the
+            // games they own that the current user does not).
+            if (scope == FriendRefreshScope.Full && !friendUsesFullLibrary)
             {
                 return true;
             }
@@ -331,7 +430,10 @@ namespace PlayniteAchievements.Services.Friends
             }
 
             var ownedGames = ownershipResult.Data ?? Array.Empty<FriendGameOwnership>();
-            if (ownershipSnapshots != null)
+            // Only full-library friends feed unowned discovery: their ownership snapshot is what
+            // RefreshUnownedDefinitionsAndOwnershipAsync expands into provider-only rows. Shared-library
+            // friends still have their (shared) ownership saved below, but never contribute unowned data.
+            if (ownershipSnapshots != null && friendUsesFullLibrary)
             {
                 lock (ownershipSnapshots)
                 {
@@ -940,6 +1042,59 @@ namespace PlayniteAchievements.Services.Friends
             }
         }
 
+        // Steam friends who opted into the full library scope. Resolved via reflection for the same
+        // layering reason as GetIgnoredFriendIds (this service does not reference the Steam provider).
+        private HashSet<string> GetFullLibraryFriendIds(string providerKey)
+        {
+            if (_fullLibraryIdsResolver != null)
+            {
+                return _fullLibraryIdsResolver(providerKey) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase))
+            {
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            try
+            {
+                var steamSettingsType = typeof(ProviderRegistry).Assembly.GetType(
+                    "PlayniteAchievements.Providers.Steam.SteamSettings");
+                if (steamSettingsType == null)
+                {
+                    return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                object settings = null;
+                if (_providerRegistry != null)
+                {
+                    var getSettings = typeof(ProviderRegistry).GetMethod("GetSettings");
+                    settings = getSettings?.MakeGenericMethod(steamSettingsType).Invoke(_providerRegistry, null);
+                }
+                else
+                {
+                    var settingsMethod = typeof(ProviderRegistry).GetMethod(nameof(ProviderRegistry.Settings));
+                    settings = settingsMethod?.MakeGenericMethod(steamSettingsType).Invoke(null, null);
+                }
+
+                var getFullLibrarySteamIds = steamSettingsType.GetMethod("GetFullLibrarySteamIds");
+                var ids = getFullLibrarySteamIds?.Invoke(settings, null) as IEnumerable<string>;
+                return new HashSet<string>(ids ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to load Steam full-library friend ids.");
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        private static bool FriendUsesFullLibrary(HashSet<string> fullLibraryIds, FriendIdentity friend)
+        {
+            return friend != null &&
+                   fullLibraryIds != null &&
+                   fullLibraryIds.Contains(friend.ExternalUserId?.Trim() ?? string.Empty);
+        }
+
         private RateLimiter CreateScanRateLimiter()
         {
             return new RateLimiter(
@@ -1078,12 +1233,12 @@ namespace PlayniteAchievements.Services.Friends
                    options.Scope == FriendRefreshScope.Recent ||
                    options.Scope == FriendRefreshScope.Custom ||
                    (options.Scope == FriendRefreshScope.Full &&
-                    options.GameSource == FriendRefreshGameSource.OwnedAndUnowned);
+                    options.LibraryScope == FriendLibraryScope.Full);
         }
 
         private static bool ShouldDiscoverUnowned(string providerKey, FriendRefreshOptions options)
         {
-            if (options?.GameSource != FriendRefreshGameSource.OwnedAndUnowned)
+            if (options?.LibraryScope != FriendLibraryScope.Full)
             {
                 return false;
             }

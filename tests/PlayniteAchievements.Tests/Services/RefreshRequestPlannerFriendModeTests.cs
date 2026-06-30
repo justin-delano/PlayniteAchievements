@@ -128,13 +128,13 @@ namespace PlayniteAchievements.Services.Tests
         [DataTestMethod]
         [DataRow(RefreshModeType.FriendsRecent, FriendRefreshScope.Recent)]
         [DataRow(RefreshModeType.FriendsFull, FriendRefreshScope.Full)]
-        public void Resolve_BroadFriendModes_HonorOwnedAndUnownedGlobalSource(
+        public void Resolve_BroadFriendModes_PermitFullLibraryScope(
             RefreshModeType mode,
             FriendRefreshScope expectedScope)
         {
-            var planner = CreatePlanner(
-                Array.Empty<Game>(),
-                FriendRefreshGameSource.OwnedAndUnowned);
+            // Recent/Full requests permit full-library work; the per-friend opt-in is applied later in
+            // FriendsRefreshRuntime, so the request-level scope is Full.
+            var planner = CreatePlanner(Array.Empty<Game>());
             var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
 
             var resolved = planner.Resolve(
@@ -143,15 +143,13 @@ namespace PlayniteAchievements.Services.Tests
 
             Assert.IsTrue(resolved.ShouldExecute);
             Assert.AreEqual(expectedScope, resolved.FriendOptions.Scope);
-            Assert.AreEqual(FriendRefreshGameSource.OwnedAndUnowned, resolved.FriendOptions.GameSource);
+            Assert.AreEqual(FriendLibraryScope.Full, resolved.FriendOptions.LibraryScope);
         }
 
         [TestMethod]
-        public void Resolve_SharedFriendMode_IgnoresOwnedAndUnownedGlobalSource()
+        public void Resolve_SharedFriendMode_UsesSharedLibraryScope()
         {
-            var planner = CreatePlanner(
-                Array.Empty<Game>(),
-                FriendRefreshGameSource.OwnedAndUnowned);
+            var planner = CreatePlanner(Array.Empty<Game>());
             var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
 
             var resolved = planner.Resolve(
@@ -160,7 +158,7 @@ namespace PlayniteAchievements.Services.Tests
 
             Assert.IsTrue(resolved.ShouldExecute);
             Assert.AreEqual(FriendRefreshScope.Shared, resolved.FriendOptions.Scope);
-            Assert.AreEqual(FriendRefreshGameSource.OwnedOnly, resolved.FriendOptions.GameSource);
+            Assert.AreEqual(FriendLibraryScope.Shared, resolved.FriendOptions.LibraryScope);
         }
 
         [TestMethod]
@@ -243,12 +241,10 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         private static RefreshRequestPlanner CreatePlanner(
-            IEnumerable<Game> games,
-            FriendRefreshGameSource friendGameSource = FriendRefreshGameSource.OwnedOnly)
+            IEnumerable<Game> games)
         {
             var settings = new PlayniteAchievementsSettings();
             settings.Persisted.IncludeUnplayedGames = true;
-            settings.Persisted.FriendsOverviewGameSource = friendGameSource;
             var api = new FakePlayniteApi(games ?? Enumerable.Empty<Game>());
             var resolver = new TargetSelectionResolver(
                 api,

@@ -18,16 +18,16 @@ namespace PlayniteAchievements.Models.Friends
         Custom
     }
 
-    public enum FriendRefreshGameSource
+    public enum FriendLibraryScope
     {
-        OwnedOnly,
-        OwnedAndUnowned
+        Shared,
+        Full
     }
 
     public sealed class FriendRefreshOptions
     {
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
-        public FriendRefreshGameSource GameSource { get; set; } = FriendRefreshGameSource.OwnedOnly;
+        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Shared;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
@@ -39,7 +39,7 @@ namespace PlayniteAchievements.Models.Friends
             return new FriendRefreshOptions
             {
                 Scope = Scope,
-                GameSource = GameSource,
+                LibraryScope = LibraryScope,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
                     .Distinct()
@@ -63,7 +63,7 @@ namespace PlayniteAchievements.Models.Friends
     {
         public IReadOnlyCollection<string> ProviderKeys { get; set; }
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
-        public FriendRefreshGameSource GameSource { get; set; } = FriendRefreshGameSource.OwnedOnly;
+        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Shared;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
@@ -80,7 +80,7 @@ namespace PlayniteAchievements.Models.Friends
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 Scope = Scope,
-                GameSource = GameSource,
+                LibraryScope = LibraryScope,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
                     .Distinct()

@@ -142,8 +142,36 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task RefreshAsync_RecentOwnedAndUnowned_DiscoversDefinitionsAndPersistsProviderOnlyOwnership()
+        public async Task RefreshAsync_RecentFullLibraryFriend_DiscoversDefinitionsAndPersistsProviderOnlyOwnership()
         {
+            var cache = new FakeFriendCache();
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") }
+            };
+
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Recent,
+                        LibraryScope = FriendLibraryScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(1, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(1, cache.SaveFriendGameDefinitionCalls);
+            Assert.AreEqual(1, cache.SaveProviderOnlyOwnershipCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_RecentSharedLibraryFriend_DoesNotDiscoverProviderOnlyOwnership()
+        {
+            // A friend not opted into the full library is refreshed for shared games only, even when
+            // the request scope (Recent) permits full-library discovery.
             var cache = new FakeFriendCache();
             var friends = new FakeFriendsProvider("Steam")
             {
@@ -156,33 +184,7 @@ namespace PlayniteAchievements.Services.Tests
                     new FriendRefreshOptions
                     {
                         Scope = FriendRefreshScope.Recent,
-                        GameSource = FriendRefreshGameSource.OwnedAndUnowned
-                    },
-                    reportProgress: null)
-                .ConfigureAwait(false);
-
-            Assert.AreEqual(1, friends.GetOwnedGamesCalls);
-            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
-            Assert.AreEqual(1, cache.SaveFriendGameDefinitionCalls);
-            Assert.AreEqual(1, cache.SaveProviderOnlyOwnershipCalls);
-        }
-
-        [TestMethod]
-        public async Task RefreshAsync_SharedOwnedAndUnowned_DoesNotDiscoverProviderOnlyDefinitions()
-        {
-            var cache = new FakeFriendCache();
-            var friends = new FakeFriendsProvider("Steam")
-            {
-                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") }
-            };
-
-            await CreateRuntime(cache)
-                .RefreshAsync(
-                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
-                    new FriendRefreshOptions
-                    {
-                        Scope = FriendRefreshScope.Shared,
-                        GameSource = FriendRefreshGameSource.OwnedAndUnowned
+                        LibraryScope = FriendLibraryScope.Full
                     },
                     reportProgress: null)
                 .ConfigureAwait(false);
@@ -193,28 +195,56 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task RefreshAsync_FullOwnedAndUnowned_DiscoversUnownedOwnership()
+        public async Task RefreshAsync_SharedScope_DoesNotDiscoverProviderOnlyDefinitions()
         {
+            // The Shared scope never discovers unowned games, even for a full-library friend.
             var cache = new FakeFriendCache();
             var friends = new FakeFriendsProvider("Steam")
             {
                 FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") }
             };
 
-            await CreateRuntime(cache)
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
                 .RefreshAsync(
                     new IDataProvider[] { new FakeDataProvider("Steam", friends) },
                     new FriendRefreshOptions
                     {
-                        Scope = FriendRefreshScope.Full,
-                        GameSource = FriendRefreshGameSource.OwnedAndUnowned
+                        Scope = FriendRefreshScope.Shared,
+                        LibraryScope = FriendLibraryScope.Shared
                     },
                     reportProgress: null)
                 .ConfigureAwait(false);
 
             Assert.AreEqual(1, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(0, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(0, cache.SaveProviderOnlyOwnershipCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_FullScope_OnlyFullLibraryFriendDiscoversUnownedOwnership()
+        {
+            var cache = new FakeFriendCache();
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1"), MakeFriend("2") }
+            };
+
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = FriendLibraryScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            // In the Full scope, only the full-library friend ("1") has ownership fetched; the
+            // shared-library friend ("2") is skipped because Full already covers the owned library.
+            Assert.AreEqual(1, friends.GetOwnedGamesCalls);
             Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
-            Assert.AreEqual(FriendRefreshGameSource.OwnedAndUnowned, cache.LastLoadOptions.GameSource);
+            Assert.AreEqual(FriendLibraryScope.Full, cache.LastLoadOptions.LibraryScope);
         }
 
         [TestMethod]
@@ -321,7 +351,8 @@ namespace PlayniteAchievements.Services.Tests
 
         private static FriendsRefreshRuntime CreateRuntime(
             FakeFriendCache cache,
-            bool enableParallelProviderRefresh = true)
+            bool enableParallelProviderRefresh = true,
+            IEnumerable<string> fullLibraryFriendIds = null)
         {
             var settings = new PlayniteAchievementsSettings();
             settings.Persisted.EnableFriendsOverview = true;
@@ -330,13 +361,18 @@ namespace PlayniteAchievements.Services.Tests
             settings.Persisted.ScanDelayMs = 0;
             settings.Persisted.MaxRetryAttempts = 0;
 
+            var fullLibraryIds = new HashSet<string>(
+                fullLibraryFriendIds ?? Enumerable.Empty<string>(),
+                StringComparer.OrdinalIgnoreCase);
+
             return new FriendsRefreshRuntime(
                 Array.Empty<IDataProvider>(),
                 cache,
                 providerRegistry: null,
                 settings,
                 imageService: null,
-                logger: null);
+                logger: null,
+                fullLibraryIdsResolver: _ => fullLibraryIds);
         }
 
         private static FriendIdentity MakeFriend(string externalUserId) =>
@@ -432,6 +468,9 @@ namespace PlayniteAchievements.Services.Tests
 
             public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId) =>
                 FriendCacheWriteResult.Ok();
+
+            public List<FriendIdentity> LoadFriendIdentities(string providerKey) =>
+                new List<FriendIdentity>();
 
             public List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
                 string providerKey,

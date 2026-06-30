@@ -94,8 +94,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewPiePercentages = true;
         private bool _enableFriendsOverview = true;
         private bool _friendsOverviewHideSpoilers = true;
-        private FriendRefreshGameSource _friendsOverviewGameSource = FriendRefreshGameSource.OwnedOnly;
-        private bool _friendsOverviewOwnedAndUnownedWarningAccepted = false;
+        private bool _fullLibraryWarningAccepted = false;
         private int _friendsOverviewRefreshTtlHours = 24;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private bool _friendsOverviewGameSummariesUseCoverImages = true;
@@ -870,20 +869,14 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Controls whether broad Friends Overview refreshes stay on Playnite-owned games or also discover Steam friend games outside the library.
+        /// Tracks whether the user has acknowledged the one-time warning shown the first time they
+        /// enable the full library scope for a friend (which discovers games outside the Playnite
+        /// library and may cache a large amount of provider-only achievement data).
         /// </summary>
-        public FriendRefreshGameSource FriendsOverviewGameSource
+        public bool FullLibraryWarningAccepted
         {
-            get => _friendsOverviewGameSource;
-            set => SetValue(ref _friendsOverviewGameSource, Enum.IsDefined(typeof(FriendRefreshGameSource), value)
-                ? value
-                : FriendRefreshGameSource.OwnedOnly);
-        }
-
-        public bool FriendsOverviewOwnedAndUnownedWarningAccepted
-        {
-            get => _friendsOverviewOwnedAndUnownedWarningAccepted;
-            set => SetValue(ref _friendsOverviewOwnedAndUnownedWarningAccepted, value);
+            get => _fullLibraryWarningAccepted;
+            set => SetValue(ref _fullLibraryWarningAccepted, value);
         }
 
         /// <summary>
@@ -3144,8 +3137,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 EnableFriendsOverview = this.EnableFriendsOverview,
                 FriendsOverviewHideSpoilers = this.FriendsOverviewHideSpoilers,
-                FriendsOverviewGameSource = this.FriendsOverviewGameSource,
-                FriendsOverviewOwnedAndUnownedWarningAccepted = this.FriendsOverviewOwnedAndUnownedWarningAccepted,
+                FullLibraryWarningAccepted = this.FullLibraryWarningAccepted,
                 FriendsOverviewRefreshTtlHours = this.FriendsOverviewRefreshTtlHours,
                 FriendsOverviewRecentUnlockLimit = this.FriendsOverviewRecentUnlockLimit,
                 FriendsOverviewGameSummariesUseCoverImages = this.FriendsOverviewGameSummariesUseCoverImages,

@@ -633,6 +633,33 @@ namespace PlayniteAchievements.Services
             };
         }
 
+        /// <summary>
+        /// Refreshes only the friend roster (friend list + avatars) for authenticated friend-capable
+        /// providers, without ownership/definition/achievement work. Backs the in-settings
+        /// "refresh friends list" action. Returns the number of active friends saved.
+        /// </summary>
+        public async Task<int> RefreshFriendRosterAsync(CancellationToken cancel = default)
+        {
+            if (_friendsRefreshRuntime == null)
+            {
+                return 0;
+            }
+
+            var providers = MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
+                .Where(provider => provider?.Friends != null)
+                .ToList();
+
+            if (providers.Count == 0)
+            {
+                _logger?.Warn("No authenticated friend-capable platforms available for friend roster refresh.");
+                return 0;
+            }
+
+            return await _friendsRefreshRuntime
+                .RefreshFriendRosterAsync(providers, cancel)
+                .ConfigureAwait(false);
+        }
+
         private async Task<RebuildPayload> RefreshFriendsAsync(
             FriendRefreshOptions options,
             CancellationToken cancel,

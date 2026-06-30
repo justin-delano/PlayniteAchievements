@@ -1050,52 +1050,6 @@ namespace PlayniteAchievements.Views
                 image);
         }
 
-        private void FriendsOverviewIncludeUnowned_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (sender is CheckBox checkBox && _settingsViewModel?.Settings?.Persisted != null)
-            {
-                checkBox.IsChecked =
-                    _settingsViewModel.Settings.Persisted.FriendsOverviewGameSource == FriendRefreshGameSource.OwnedAndUnowned;
-            }
-        }
-
-        private void FriendsOverviewIncludeUnowned_Click(object sender, RoutedEventArgs e)
-        {
-            var persisted = _settingsViewModel?.Settings?.Persisted;
-            if (!(sender is CheckBox checkBox) || persisted == null)
-            {
-                return;
-            }
-
-            if (checkBox.IsChecked == true)
-            {
-                if (!persisted.FriendsOverviewOwnedAndUnownedWarningAccepted && !ConfirmEnableOwnedAndUnowned())
-                {
-                    checkBox.IsChecked = false;
-                    return;
-                }
-
-                persisted.FriendsOverviewOwnedAndUnownedWarningAccepted = true;
-                persisted.FriendsOverviewGameSource = FriendRefreshGameSource.OwnedAndUnowned;
-            }
-            else
-            {
-                persisted.FriendsOverviewGameSource = FriendRefreshGameSource.OwnedOnly;
-            }
-        }
-
-        private bool ConfirmEnableOwnedAndUnowned()
-        {
-            var message = L(
-                "LOCPlayAch_FriendsOverview_GameSource_UnownedWarning",
-                "Including unowned games discovers Steam friend games outside your Playnite library and may cache a large amount of provider-only achievement data.\n\nEnable this?");
-            return _plugin.PlayniteApi.Dialogs.ShowMessage(
-                message,
-                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
-                MessageBoxButton.YesNo,
-                MessageBoxImage.Warning) == MessageBoxResult.Yes;
-        }
-
         private void ClearUnownedFriendGameData_Click(object sender, RoutedEventArgs e)
         {
             var friendCache = _plugin?.RefreshRuntime?.Cache as IFriendCacheManager;

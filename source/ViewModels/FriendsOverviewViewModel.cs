@@ -597,7 +597,7 @@ namespace PlayniteAchievements.ViewModels
                         {
                             ProviderKeys = new[] { providerKey },
                             Scope = FriendRefreshScope.SelectedGame,
-                            GameSource = FriendRefreshGameSource.OwnedAndUnowned,
+                            LibraryScope = FriendLibraryScope.Full,
                             ProviderAppIds = new[] { appId }
                         }
                     },

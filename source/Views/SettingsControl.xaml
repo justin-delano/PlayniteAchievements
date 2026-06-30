@@ -1098,11 +1098,6 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewHideSpoilers}"
                                                           IsChecked="{Binding Persisted.FriendsOverviewHideSpoilers}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                                <CheckBox x:Name="FriendsOverviewIncludeUnownedCheckBox"
-                                                          Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewIncludeUnowned}"
-                                                          Loaded="FriendsOverviewIncludeUnowned_Loaded"
-                                                          Click="FriendsOverviewIncludeUnowned_Click"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>

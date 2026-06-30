@@ -127,6 +127,8 @@ namespace PlayniteAchievements.Services.Friends
 
         FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId);
 
+        List<FriendIdentity> LoadFriendIdentities(string providerKey);
+
         List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
             string providerKey,
             FriendRefreshOptions options);

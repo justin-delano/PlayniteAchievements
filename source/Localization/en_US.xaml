@@ -108,6 +108,7 @@
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Friend">Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_FullLibrary">Full Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Provider">Provider</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Scores">Scores</sys:String>
@@ -200,7 +201,10 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_OpenFriendsOverview">Friends Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">Open Game in Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">Ignore Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnignoreFriend">Unignore Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend_Confirm">Ignore {0}? Their cached friend achievement data will be deleted and they will be skipped during friend refreshes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UseFullLibrary">Use Full Library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UseSharedLibrary">Use Shared Library</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Please enter a valid positive integer game ID.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Please enter a valid 8-character hexadecimal Xenia TitleID.</sys:String>
@@ -621,7 +625,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsOverview">Enable Friends Overview (Steam)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendsOverviewHideSpoilers">Hide friend spoilers until I unlock the achievement</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FriendsOverviewIncludeUnowned">Include unowned Steam friend games</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Preserve full-resolution achievement icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Saves cached icons at their original resolution instead of the optimized 128px cache mode. This uses more disk space.</sys:String>
@@ -642,8 +645,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Other</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Uses {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Friends">Friends</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IgnoredFriends">Ignored Friends</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_IgnoredUtc">Ignored</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Toggle Full Library to include a friend's games outside your library, or ignore friends to skip them.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">Refresh Friends List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamId">Steam ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill missing metadata. Requires Exophase authentication.</sys:String>
@@ -841,7 +844,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refresh">Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">Refreshing friends...</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshingShort">Refreshing...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsOverview_GameSource_UnownedWarning">Including unowned games discovers Steam friend games outside your Playnite library and may cache a large amount of provider-only achievement data.&#10;&#10;Enable this?</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendLibrary_FullWarning">Using the full library discovers this friend's Steam games outside your Playnite library and may cache a large amount of provider-only achievement data.&#10;&#10;Enable this?</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_None">No unowned friend game data is cached.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Confirm">Clear unowned friend game data?&#10;&#10;This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:N0} friend ownership rows, {3:N0} friend progress rows, {4:N0} achievement rows, and {5:N0} definition-state rows. Owned/shared friend data and your current-user cache will be kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared {0:N0} provider-only games and {1:N0} friend progress rows.</sys:String>

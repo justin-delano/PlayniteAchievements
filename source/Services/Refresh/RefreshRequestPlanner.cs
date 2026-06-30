@@ -256,7 +256,7 @@ namespace PlayniteAchievements.Services
                 FriendOptions = new FriendRefreshOptions
                 {
                     Scope = scope,
-                    GameSource = ResolveFriendGameSource(scope),
+                    LibraryScope = ResolveFriendLibraryScope(scope),
                     PlayniteGameIds = ids
                 }
             };
@@ -348,9 +348,9 @@ namespace PlayniteAchievements.Services
                 FriendOptions = new FriendRefreshOptions
                 {
                     Scope = scope,
-                    GameSource = providerAppIds?.Count > 0
-                        ? FriendRefreshGameSource.OwnedAndUnowned
-                        : ResolveFriendGameSource(scope),
+                    LibraryScope = providerAppIds?.Count > 0
+                        ? FriendLibraryScope.Full
+                        : ResolveFriendLibraryScope(scope),
                     PlayniteGameIds = playniteGameIds,
                     ProviderAppIds = providerAppIds,
                     FriendExternalUserIds = friendExternalUserIds,
@@ -360,14 +360,17 @@ namespace PlayniteAchievements.Services
             };
         }
 
-        private FriendRefreshGameSource ResolveFriendGameSource(FriendRefreshScope scope)
+        // Request-level capability flag. Per-friend full-library opt-in is resolved later in
+        // FriendsRefreshRuntime; here we only signal whether the scope permits full-library work at
+        // all. Recent/Full scopes may include full-library friends; other scopes never do.
+        private FriendLibraryScope ResolveFriendLibraryScope(FriendRefreshScope scope)
         {
             if (scope == FriendRefreshScope.Recent || scope == FriendRefreshScope.Full)
             {
-                return _settings?.Persisted?.FriendsOverviewGameSource ?? FriendRefreshGameSource.OwnedOnly;
+                return FriendLibraryScope.Full;
             }
 
-            return FriendRefreshGameSource.OwnedOnly;
+            return FriendLibraryScope.Shared;
         }
 
         private RefreshModeType ResolveMode(RefreshRequest request)
