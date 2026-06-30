@@ -102,6 +102,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showCompletionBorder = true;
         private bool _showGameSummariesGridColumnHeaders = true;
         private bool _progressColumnAlignmentDefaulted = true;
+        private bool _inlineSurfaceTransparencySeeded = true;
         private bool _showOverviewRecentAchievementsGridColumnHeaders = true;
         private bool _showOverviewSelectedGameGridColumnHeaders = true;
         private bool _showDesktopThemeAchievementGridColumnHeaders = true;
@@ -837,6 +838,21 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _progressColumnAlignmentDefaulted;
             set => SetValue(ref _progressColumnAlignmentDefaulted, value);
+        }
+
+        /// <summary>
+        /// One-time bookkeeping flag: true once the transparent inline-surface overrides
+        /// (GridSurface, ControlSurface) have been seeded into the config. Migration seeds them for
+        /// existing configs where this is absent/false (so updating users gain the transparent
+        /// default) and then sets it true, after which a user's own later choice -- including
+        /// switching a surface back to Follow Playnite (which removes the entry) -- is respected and
+        /// never re-seeded. Defaults to true for fresh installs (which seed the overrides in the
+        /// plugin-reference constructor).
+        /// </summary>
+        public bool InlineSurfaceTransparencySeeded
+        {
+            get => _inlineSurfaceTransparencySeeded;
+            set => SetValue(ref _inlineSurfaceTransparencySeeded, value);
         }
 
         /// <summary>
@@ -2598,6 +2614,7 @@ namespace PlayniteAchievements.Models.Settings
                 ShowCompletionBorder = this.ShowCompletionBorder,
                 ShowOverviewGameSummariesGridColumnHeaders = this.ShowOverviewGameSummariesGridColumnHeaders,
                 ProgressColumnAlignmentDefaulted = this.ProgressColumnAlignmentDefaulted,
+                InlineSurfaceTransparencySeeded = this.InlineSurfaceTransparencySeeded,
                 ViewAchievementsGameSummariesUseCoverImages = this.ViewAchievementsGameSummariesUseCoverImages,
                 ViewAchievementsGameSummariesShowMetadataPlatform = this.ViewAchievementsGameSummariesShowMetadataPlatform,
                 ViewAchievementsGameSummariesShowMetadataPlaytime = this.ViewAchievementsGameSummariesShowMetadataPlaytime,
