@@ -178,6 +178,7 @@ namespace PlayniteAchievements.Services
                 _cacheService as IFriendCacheManager,
                 _providerRegistry,
                 _settings,
+                _diskImageService,
                 _logger);
         }
 

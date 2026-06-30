@@ -1,9 +1,11 @@
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Steam.Models;
+using PlayniteAchievements.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,9 +19,16 @@ namespace PlayniteAchievements.Services.Friends
         private const int FriendRefreshParallelism = 4;
         private static readonly TimeSpan DefaultDefinitionTtl = TimeSpan.FromDays(30);
 
+        // Steam library cover art (~600x900) is small enough to cache at full resolution.
+        private const int ImageDecodeSize = 0;
+
+        // Matches AchievementIconService.OptimizedDecodeSize so unowned achievement icons decode identically.
+        private const int OptimizedAchievementIconDecodeSize = 128;
+
         private readonly IFriendCacheManager _friendCache;
         private readonly ProviderRegistry _providerRegistry;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly DiskImageService _imageService;
         private readonly ILogger _logger;
 
         public FriendsRefreshRuntime(
@@ -27,11 +36,13 @@ namespace PlayniteAchievements.Services.Friends
             IFriendCacheManager friendCache,
             ProviderRegistry providerRegistry,
             PlayniteAchievementsSettings settings,
+            DiskImageService imageService,
             ILogger logger)
         {
             _friendCache = friendCache;
             _providerRegistry = providerRegistry;
             _settings = settings;
+            _imageService = imageService;
             _logger = logger;
         }
 
@@ -110,6 +121,13 @@ namespace PlayniteAchievements.Services.Friends
                 var friends = FilterIgnoredFriends(providerKey, friendsResult.Data ?? Array.Empty<FriendIdentity>());
                 payload.FriendSummary.FriendsFetched += friends.Count;
 
+                // The friend list itself is always saved in full, but per-friend work (avatars,
+                // library ownership, unowned schema discovery) is limited to the selected friends
+                // when the request targets a specific subset (e.g. a custom refresh).
+                var scopedFriends = ScopeFriendsToSelection(friends, options);
+
+                await DownloadFriendAvatarsAsync(providerKey, scopedFriends, cancel).ConfigureAwait(false);
+
                 var writeFriends = _friendCache.SaveFriendList(providerKey, friends);
                 if (writeFriends?.Success != true)
                 {
@@ -126,7 +144,7 @@ namespace PlayniteAchievements.Services.Friends
                     await RefreshOwnershipAsync(
                         friendsProvider,
                         providerKey,
-                        friends,
+                        scopedFriends,
                         payload,
                         payloadLock,
                         reportProgress,
@@ -449,6 +467,8 @@ namespace PlayniteAchievements.Services.Friends
                         definition.GameName = gameName;
                     }
 
+                    await DownloadDefinitionAchievementIconsAsync(definition, cancel).ConfigureAwait(false);
+
                     var writeDefinition = _friendCache.SaveFriendGameDefinition(providerKey, definition);
                     if (writeDefinition?.Success != true)
                     {
@@ -497,6 +517,171 @@ namespace PlayniteAchievements.Services.Friends
                 {
                     payload.FriendSummary.OwnershipRowsWritten += writeOwnership.WrittenCount;
                 }
+            }
+
+            await DownloadUnownedGameImagesAsync(providerKey, okAppIds, ownershipByAppId, cancel).ConfigureAwait(false);
+        }
+
+        // Downloads friend avatars into the per-user icon cache and records the local path on each
+        // identity so it is persisted (and displayed) instead of a remote URL.
+        private async Task DownloadFriendAvatarsAsync(
+            string providerKey,
+            IReadOnlyList<FriendIdentity> friends,
+            CancellationToken cancel)
+        {
+            if (_imageService == null || friends == null || friends.Count == 0)
+            {
+                return;
+            }
+
+            await Task.WhenAll(friends.Select(friend => DownloadFriendAvatarAsync(providerKey, friend, cancel)))
+                .ConfigureAwait(false);
+        }
+
+        private async Task DownloadFriendAvatarAsync(
+            string providerKey,
+            FriendIdentity friend,
+            CancellationToken cancel)
+        {
+            if (friend == null || string.IsNullOrWhiteSpace(friend.AvatarUrl))
+            {
+                return;
+            }
+
+            try
+            {
+                var path = await _imageService
+                    .GetOrDownloadIconAsync(friend.AvatarUrl, ImageDecodeSize, cancel, FriendImageCacheFolders.Avatars)
+                    .ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(path))
+                {
+                    friend.AvatarPath = path;
+                }
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to cache friend avatar for {providerKey}/{friend.ExternalUserId}.");
+            }
+        }
+
+        // Downloads the unlocked/locked achievement icons for an unowned game definition into the
+        // shared friend-games cache and rewrites the paths to local files, so they are stored and
+        // displayed from disk like owned-game achievement icons (instead of remote URLs).
+        private async Task DownloadDefinitionAchievementIconsAsync(
+            FriendGameDefinition definition,
+            CancellationToken cancel)
+        {
+            if (_imageService == null || definition?.Achievements == null || definition.Achievements.Count == 0)
+            {
+                return;
+            }
+
+            var decodeSize = ResolveAchievementIconDecodeSize();
+            await Task.WhenAll(definition.Achievements
+                    .Where(achievement => achievement != null)
+                    .Select(achievement => DownloadAchievementIconsAsync(achievement, decodeSize, cancel)))
+                .ConfigureAwait(false);
+        }
+
+        private async Task DownloadAchievementIconsAsync(
+            AchievementDetail achievement,
+            int decodeSize,
+            CancellationToken cancel)
+        {
+            achievement.UnlockedIconPath = await DownloadAchievementIconAsync(achievement.UnlockedIconPath, decodeSize, cancel).ConfigureAwait(false);
+            achievement.LockedIconPath = await DownloadAchievementIconAsync(achievement.LockedIconPath, decodeSize, cancel).ConfigureAwait(false);
+        }
+
+        private async Task<string> DownloadAchievementIconAsync(string url, int decodeSize, CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(url) || !url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                return url;
+            }
+
+            try
+            {
+                var path = await _imageService
+                    .GetOrDownloadIconAsync(url, decodeSize, cancel, FriendImageCacheFolders.Games)
+                    .ConfigureAwait(false);
+                return string.IsNullOrWhiteSpace(path) ? url : path;
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to cache unowned achievement icon.");
+                return url;
+            }
+        }
+
+        // Mirrors AchievementIconService: optimized 128px icons unless the user preserves full resolution.
+        private int ResolveAchievementIconDecodeSize()
+        {
+            return _settings?.Persisted?.PreserveAchievementIconResolution == true
+                ? 0
+                : OptimizedAchievementIconDecodeSize;
+        }
+
+        // Downloads cover/icon art for provider-only (unowned) games into the shared friend-games cache
+        // and persists the local paths so the summaries grid can render them like owned games.
+        private async Task DownloadUnownedGameImagesAsync(
+            string providerKey,
+            HashSet<int> okAppIds,
+            Dictionary<int, List<FriendGameOwnership>> ownershipByAppId,
+            CancellationToken cancel)
+        {
+            if (_imageService == null || okAppIds == null || okAppIds.Count == 0)
+            {
+                return;
+            }
+
+            await Task.WhenAll(okAppIds.Select(appId =>
+                    DownloadUnownedGameImageAsync(providerKey, appId, ownershipByAppId, cancel)))
+                .ConfigureAwait(false);
+        }
+
+        private async Task DownloadUnownedGameImageAsync(
+            string providerKey,
+            int appId,
+            Dictionary<int, List<FriendGameOwnership>> ownershipByAppId,
+            CancellationToken cancel)
+        {
+            if (!ownershipByAppId.TryGetValue(appId, out var owners))
+            {
+                return;
+            }
+
+            var source = owners?.FirstOrDefault(item => item != null);
+            if (source == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var iconPath = string.IsNullOrWhiteSpace(source.IconUrl)
+                    ? null
+                    : await _imageService
+                        .GetOrDownloadIconAsync(source.IconUrl, ImageDecodeSize, cancel, FriendImageCacheFolders.Games)
+                        .ConfigureAwait(false);
+                var coverPath = string.IsNullOrWhiteSpace(source.CoverUrl)
+                    ? null
+                    : await _imageService
+                        .GetOrDownloadIconAsync(source.CoverUrl, ImageDecodeSize, cancel, FriendImageCacheFolders.Games)
+                        .ConfigureAwait(false);
+
+                if (string.IsNullOrWhiteSpace(iconPath) && string.IsNullOrWhiteSpace(coverPath))
+                {
+                    return;
+                }
+
+                _friendCache.SaveProviderGameImagePaths(providerKey, appId, iconPath, coverPath);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to cache unowned game images for {providerKey}/{appId}.");
             }
         }
 
@@ -672,6 +857,32 @@ namespace PlayniteAchievements.Services.Friends
 
             return (friends ?? Array.Empty<FriendIdentity>())
                 .Where(friend => !ignoredIds.Contains(friend?.ExternalUserId ?? string.Empty))
+                .ToList();
+        }
+
+        // Restricts per-friend work to the requested subset when the options carry a friend
+        // selection (e.g. a custom refresh of specific friends); otherwise returns all friends.
+        private static IReadOnlyList<FriendIdentity> ScopeFriendsToSelection(
+            IReadOnlyList<FriendIdentity> friends,
+            FriendRefreshOptions options)
+        {
+            var all = friends ?? Array.Empty<FriendIdentity>();
+            var selection = options?.FriendExternalUserIds;
+            if (selection == null || selection.Count == 0)
+            {
+                return all;
+            }
+
+            var selected = new HashSet<string>(
+                selection.Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+            if (selected.Count == 0)
+            {
+                return all;
+            }
+
+            return all
+                .Where(friend => friend != null && selected.Contains(friend.ExternalUserId?.Trim() ?? string.Empty))
                 .ToList();
         }
 

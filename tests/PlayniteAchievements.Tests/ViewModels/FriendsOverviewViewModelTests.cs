@@ -554,6 +554,13 @@ namespace PlayniteAchievements.Tests.ViewModels
                 FriendGameDefinition definition) =>
                 FriendCacheWriteResult.Ok();
 
+            public FriendCacheWriteResult SaveProviderGameImagePaths(
+                string providerKey,
+                int appId,
+                string iconAbsolutePath,
+                string coverAbsolutePath) =>
+                FriendCacheWriteResult.Ok();
+
             public Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
                 string providerKey,
                 IReadOnlyCollection<int> appIds) =>

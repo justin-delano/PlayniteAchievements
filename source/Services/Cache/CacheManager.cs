@@ -800,6 +800,25 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        FriendCacheWriteResult IFriendCacheManager.SaveProviderGameImagePaths(
+            string providerKey,
+            int appId,
+            string iconAbsolutePath,
+            string coverAbsolutePath)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("SaveProviderGameImagePaths");
+                var result = _store.SaveProviderGameImagePaths(providerKey, appId, iconAbsolutePath, coverAbsolutePath);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
         Dictionary<int, FriendGameDefinitionState> IFriendCacheManager.LoadFriendGameDefinitionStates(
             string providerKey,
             IReadOnlyCollection<int> appIds)

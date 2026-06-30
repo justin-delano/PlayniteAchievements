@@ -127,6 +127,7 @@ namespace PlayniteAchievements.Models.Friends
         public string ExternalUserId { get; set; }
         public string DisplayName { get; set; }
         public string AvatarUrl { get; set; }
+        public string AvatarPath { get; set; }
         public DateTime? LastRefreshedUtc { get; set; }
     }
 
@@ -137,6 +138,7 @@ namespace PlayniteAchievements.Models.Friends
         public int AppId { get; set; }
         public string GameName { get; set; }
         public string IconUrl { get; set; }
+        public string CoverUrl { get; set; }
         public int PlaytimeForeverMinutes { get; set; }
         public int? Playtime2WeeksMinutes { get; set; }
         public DateTime? LastPlayedUtc { get; set; }

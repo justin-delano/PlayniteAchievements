@@ -179,78 +179,6 @@ namespace PlayniteAchievements.Views
                 selectedKey => _viewModel.SelectedRefreshMode = selectedKey);
         }
 
-        private void GameSourceSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            OpenSingleSelectGameSourceContextMenu(GameSourceSelectionButton);
-        }
-
-        private void ClearUnownedFriendGameData_Click(object sender, RoutedEventArgs e)
-        {
-            if (_friendCache == null)
-            {
-                return;
-            }
-
-            try
-            {
-                var stats = _friendCache.GetUnownedFriendGameCacheStats() ?? new FriendUnownedCacheStats();
-                if (stats.Games <= 0 &&
-                    stats.DefinitionStates <= 0 &&
-                    stats.OwnershipRows <= 0 &&
-                    stats.ProgressRows <= 0 &&
-                    stats.AchievementRows <= 0 &&
-                    stats.Definitions <= 0)
-                {
-                    ShowInfo(
-                        GetText("LOCPlayAch_FriendsOverview_ClearUnowned_None", "No unowned friend game data is cached."));
-                    return;
-                }
-
-                var message = string.Format(
-                    GetText(
-                        "LOCPlayAch_FriendsOverview_ClearUnowned_Confirm",
-                        "Clear unowned friend game data?\n\nThis will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:N0} friend ownership rows, {3:N0} friend progress rows, {4:N0} achievement rows, and {5:N0} definition-state rows. Owned/shared friend data and your current-user cache will be kept."),
-                    stats.Games,
-                    stats.Definitions,
-                    stats.OwnershipRows,
-                    stats.ProgressRows,
-                    stats.AchievementRows,
-                    stats.DefinitionStates);
-
-                if (ShowConfirmation(message, MessageBoxImage.Warning) != MessageBoxResult.Yes)
-                {
-                    return;
-                }
-
-                var result = _friendCache.ClearUnownedFriendGameData();
-                if (result?.Success != true)
-                {
-                    ShowError(result?.ErrorMessage ?? "Failed to clear unowned friend game data.");
-                    return;
-                }
-
-                _viewModel?.ClearGameSelection();
-                _ = _viewModel?.LoadAsync();
-                ShowInfo(
-                    string.Format(
-                        GetText(
-                            "LOCPlayAch_FriendsOverview_ClearUnowned_Done",
-                            "Cleared {0:N0} provider-only games and {1:N0} friend progress rows."),
-                        result.Games,
-                        result.ProgressRows));
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, "Failed to clear unowned friend game data.");
-                ShowError(ex.Message);
-            }
-        }
-
         private void TypeFilterSelectionButton_Click(object sender, RoutedEventArgs e)
         {
             if (_viewModel == null)
@@ -319,80 +247,6 @@ namespace PlayniteAchievements.Views
             }
 
             OpenSelectorContextMenu(button, menu);
-        }
-
-        private void OpenSingleSelectGameSourceContextMenu(Button button)
-        {
-            if (button == null || _viewModel == null)
-            {
-                return;
-            }
-
-            var menu = button.ContextMenu;
-            if (menu == null)
-            {
-                return;
-            }
-
-            menu.Items.Clear();
-            var itemStyle = button.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
-            foreach (var option in _viewModel.FriendGameSourceOptions?.Where(option => option != null) ?? Enumerable.Empty<FriendGameSourceOption>())
-            {
-                var source = option.Source;
-                var item = new MenuItem
-                {
-                    Header = !string.IsNullOrWhiteSpace(option.DisplayName) ? option.DisplayName : source.ToString(),
-                    IsCheckable = true,
-                    IsChecked = _viewModel.IsGameSourceSelected(source)
-                };
-                if (itemStyle != null)
-                {
-                    item.Style = itemStyle;
-                }
-
-                item.Click += (_, __) =>
-                {
-                    if (source == FriendRefreshGameSource.OwnedAndUnowned &&
-                        !_viewModel.IsGameSourceSelected(source) &&
-                        !HasAcceptedOwnedAndUnownedWarning() &&
-                        !ConfirmEnableOwnedAndUnowned())
-                    {
-                        return;
-                    }
-
-                    if (source == FriendRefreshGameSource.OwnedAndUnowned)
-                    {
-                        MarkOwnedAndUnownedWarningAccepted();
-                    }
-
-                    _viewModel.SetGameSource(source);
-                    _persistSettingsForUi?.Invoke();
-                };
-                menu.Items.Add(item);
-            }
-
-            OpenSelectorContextMenu(button, menu);
-        }
-
-        private bool ConfirmEnableOwnedAndUnowned()
-        {
-            var message = GetText(
-                "LOCPlayAch_FriendsOverview_GameSource_UnownedWarning",
-                "Owned + unowned will discover Steam friend games outside your Playnite library and may cache a large amount of provider-only achievement data. Shared, installed, and Playnite selected-game refreshes keep their existing behavior.\n\nEnable this source?");
-            return ShowConfirmation(message, MessageBoxImage.Warning) == MessageBoxResult.Yes;
-        }
-
-        private bool HasAcceptedOwnedAndUnownedWarning()
-        {
-            return _viewModel?.Settings?.Persisted?.FriendsOverviewOwnedAndUnownedWarningAccepted == true;
-        }
-
-        private void MarkOwnedAndUnownedWarningAccepted()
-        {
-            if (_viewModel?.Settings?.Persisted != null)
-            {
-                _viewModel.Settings.Persisted.FriendsOverviewOwnedAndUnownedWarningAccepted = true;
-            }
         }
 
         private void OpenMultiSelectFilterContextMenu(
@@ -690,35 +544,6 @@ namespace PlayniteAchievements.Views
                    ?? ResourceProvider.GetString(resourceKey)
                    ?? fallback
                    ?? resourceKey;
-        }
-
-        private MessageBoxResult ShowConfirmation(string message, MessageBoxImage image)
-        {
-            return _playniteApi?.Dialogs?.ShowMessage(
-                message,
-                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
-                MessageBoxButton.YesNo,
-                image) ?? MessageBox.Show(
-                message,
-                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
-                MessageBoxButton.YesNo,
-                image);
-        }
-
-        private void ShowInfo(string message)
-        {
-            _playniteApi?.Dialogs?.ShowMessage(
-                message,
-                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-
-        private void ShowError(string message)
-        {
-            _playniteApi?.Dialogs?.ShowErrorMessage(
-                message,
-                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"));
         }
 
         private static void ClearGridSelection(DataGrid grid)

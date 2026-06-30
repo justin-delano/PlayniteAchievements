@@ -86,6 +86,36 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_FriendSelection_OnlyRefreshesSelectedFriendOwnership()
+        {
+            var cache = new FakeFriendCache();
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity>
+                {
+                    MakeFriend("1"),
+                    MakeFriend("2"),
+                    MakeFriend("3")
+                }
+            };
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Shared,
+                        FriendExternalUserIds = new[] { "2" }
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            // Only the selected friend's library is fetched, even though three friends exist.
+            Assert.AreEqual(1, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(1, cache.SaveFriendOwnershipCalls);
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_Recent_RefreshesAllLoadedCandidates()
         {
             var cache = new FakeFriendCache
@@ -305,6 +335,7 @@ namespace PlayniteAchievements.Services.Tests
                 cache,
                 providerRegistry: null,
                 settings,
+                imageService: null,
                 logger: null);
         }
 
@@ -370,6 +401,13 @@ namespace PlayniteAchievements.Services.Tests
                 Interlocked.Increment(ref _saveFriendGameDefinitionCalls);
                 return FriendCacheWriteResult.Ok(definition?.Achievements?.Count ?? 0, definition?.Achievements?.Count ?? 0, 0);
             }
+
+            public FriendCacheWriteResult SaveProviderGameImagePaths(
+                string providerKey,
+                int appId,
+                string iconAbsolutePath,
+                string coverAbsolutePath) =>
+                FriendCacheWriteResult.Ok(1, 1, 0);
 
             public Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
                 string providerKey,

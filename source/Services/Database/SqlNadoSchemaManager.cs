@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 12;
+        public const int SchemaVersion = 13;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -48,6 +48,7 @@ namespace PlayniteAchievements.Services.Database
                 IsCurrentUser INTEGER NOT NULL DEFAULT 0,
                 FriendSource TEXT NULL,
                 AvatarUrl TEXT NULL,
+                AvatarPath TEXT NULL,
                 LastRefreshedUtc TEXT NULL,
                 IsActiveFriend INTEGER NOT NULL DEFAULT 1,
                 CreatedUtc TEXT NOT NULL,
@@ -63,6 +64,8 @@ namespace PlayniteAchievements.Services.Database
                 PlayniteGameId TEXT NULL,
                 GameName TEXT NULL,
                 LibrarySourceName TEXT NULL,
+                IconPath TEXT NULL,
+                CoverPath TEXT NULL,
                 FirstSeenUtc TEXT NOT NULL,
                 LastUpdatedUtc TEXT NOT NULL
             );");
@@ -574,9 +577,12 @@ namespace PlayniteAchievements.Services.Database
 
             gamesColumns = GetColumnNames(db, "Games");
             EnsureColumn(db, "Games", "ProviderPlatformKey", "TEXT NULL", gamesColumns, ref backupPath);
+            EnsureColumn(db, "Games", "IconPath", "TEXT NULL", gamesColumns, ref backupPath);
+            EnsureColumn(db, "Games", "CoverPath", "TEXT NULL", gamesColumns, ref backupPath);
 
             usersColumns = GetColumnNames(db, "Users");
             EnsureColumn(db, "Users", "AvatarUrl", "TEXT NULL", usersColumns, ref backupPath);
+            EnsureColumn(db, "Users", "AvatarPath", "TEXT NULL", usersColumns, ref backupPath);
             EnsureColumn(db, "Users", "LastRefreshedUtc", "TEXT NULL", usersColumns, ref backupPath);
             EnsureColumn(db, "Users", "IsActiveFriend", "INTEGER NOT NULL DEFAULT 1", usersColumns, ref backupPath);
 
@@ -787,10 +793,13 @@ namespace PlayniteAchievements.Services.Database
             var gamesColumns = GetColumnNames(db, "Games");
             EnsureRequiredColumn(gamesColumns, "ProviderKey", "Games", missing);
             EnsureRequiredColumn(gamesColumns, "ProviderPlatformKey", "Games", missing);
+            EnsureRequiredColumn(gamesColumns, "IconPath", "Games", missing);
+            EnsureRequiredColumn(gamesColumns, "CoverPath", "Games", missing);
 
             var usersColumns = GetColumnNames(db, "Users");
             EnsureRequiredColumn(usersColumns, "ProviderKey", "Users", missing);
             EnsureRequiredColumn(usersColumns, "AvatarUrl", "Users", missing);
+            EnsureRequiredColumn(usersColumns, "AvatarPath", "Users", missing);
             EnsureRequiredColumn(usersColumns, "LastRefreshedUtc", "Users", missing);
             EnsureRequiredColumn(usersColumns, "IsActiveFriend", "Users", missing);
 

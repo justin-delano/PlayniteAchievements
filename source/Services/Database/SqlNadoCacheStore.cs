@@ -203,6 +203,7 @@ namespace PlayniteAchievements.Services.Database
             public string ExternalUserId { get; set; }
             public string DisplayName { get; set; }
             public string AvatarUrl { get; set; }
+            public string AvatarPath { get; set; }
             public long SharedGamesCount { get; set; }
             public long GamesWithUnlocksCount { get; set; }
             public long UnlockedAchievementsCount { get; set; }
@@ -229,6 +230,8 @@ namespace PlayniteAchievements.Services.Database
             public string LastPlayedUtc { get; set; }
             public string LastScrapedUtc { get; set; }
             public string LastScrapeStatus { get; set; }
+            public string IconPath { get; set; }
+            public string CoverPath { get; set; }
         }
 
         private sealed class FriendGameLinkRow
@@ -261,6 +264,7 @@ namespace PlayniteAchievements.Services.Database
             public string FriendExternalUserId { get; set; }
             public string FriendName { get; set; }
             public string FriendAvatarUrl { get; set; }
+            public string FriendAvatarPath { get; set; }
             public string ApiName { get; set; }
             public string DisplayName { get; set; }
             public string Description { get; set; }
@@ -279,6 +283,8 @@ namespace PlayniteAchievements.Services.Database
             public long? MyUnlocked { get; set; }
             public int? ProgressNum { get; set; }
             public int? ProgressDenom { get; set; }
+            public string IconPath { get; set; }
+            public string CoverPath { get; set; }
         }
 
         private sealed class GamePresentation
@@ -1491,6 +1497,54 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
+        public FriendCacheWriteResult SaveProviderGameImagePaths(
+            string providerKey,
+            int appId,
+            string iconAbsolutePath,
+            string coverAbsolutePath)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            if (appId <= 0)
+            {
+                return FriendCacheWriteResult.Failed("Provider game id is missing.");
+            }
+
+            var iconPath = MakeRelativePath(iconAbsolutePath);
+            var coverPath = MakeRelativePath(coverAbsolutePath);
+            if (string.IsNullOrWhiteSpace(iconPath) && string.IsNullOrWhiteSpace(coverPath))
+            {
+                return FriendCacheWriteResult.Ok(incomingCount: 0, writtenCount: 0, skippedCount: 0);
+            }
+
+            try
+            {
+                var nowIso = ToIso(DateTime.UtcNow);
+                WithDb(db =>
+                {
+                    db.ExecuteNonQuery(
+                        @"UPDATE Games
+                          SET IconPath = COALESCE(?, IconPath),
+                              CoverPath = COALESCE(?, CoverPath),
+                              LastUpdatedUtc = ?
+                          WHERE ProviderKey = ?
+                            AND ProviderGameId = ?
+                            AND (PlayniteGameId IS NULL OR TRIM(PlayniteGameId) = '');",
+                        DbValue(iconPath),
+                        DbValue(coverPath),
+                        nowIso,
+                        providerKey,
+                        appId);
+                });
+
+                return FriendCacheWriteResult.Ok(incomingCount: 1, writtenCount: 1, skippedCount: 0);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to save provider game image paths for {providerKey}/{appId}.");
+                return FriendCacheWriteResult.Failed(ex.Message);
+            }
+        }
+
         public FriendUnownedCacheStats GetUnownedFriendGameCacheStats()
         {
             return WithDb(db => LoadUnownedFriendGameCacheStats(db));
@@ -2065,7 +2119,9 @@ namespace PlayniteAchievements.Services.Database
                         ProviderKey = row.ProviderKey,
                         ExternalUserId = row.ExternalUserId,
                         DisplayName = row.DisplayName,
-                        AvatarUrl = row.AvatarUrl,
+                        AvatarUrl = !string.IsNullOrWhiteSpace(row.AvatarPath)
+                            ? MakeAbsolutePath(row.AvatarPath)
+                            : row.AvatarUrl,
                         SharedGamesCount = (int)Math.Max(0, row.SharedGamesCount),
                         GamesWithUnlocksCount = (int)Math.Max(0, row.GamesWithUnlocksCount),
                         UnlockedAchievementsCount = (int)Math.Max(0, row.UnlockedAchievementsCount),
@@ -2092,8 +2148,8 @@ namespace PlayniteAchievements.Services.Database
                             PlayniteGameId = playniteGameId,
                             GameName = row.GameName,
                             SortingName = presentation.SortingName ?? row.GameName,
-                            GameLogo = presentation.IconPath,
-                            GameCoverPath = presentation.CoverPath,
+                            GameLogo = presentation.IconPath ?? MakeAbsolutePath(row.IconPath),
+                            GameCoverPath = presentation.CoverPath ?? MakeAbsolutePath(row.CoverPath),
                             PlatformText = presentation.PlatformText,
                             Platforms = presentation.Platforms,
                             RegionText = presentation.RegionText,
@@ -2205,16 +2261,19 @@ namespace PlayniteAchievements.Services.Database
                 : friend.DisplayName.Trim();
             var lastRefreshedIso = ToIso(friend.LastRefreshedUtc ?? DateTime.UtcNow);
 
+            var avatarPath = MakeRelativePath(friend.AvatarPath);
+
             db.ExecuteNonQuery(
                 @"INSERT OR IGNORE INTO Users
-                    (ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, AvatarUrl, LastRefreshedUtc, IsActiveFriend, CreatedUtc, UpdatedUtc)
+                    (ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, AvatarUrl, AvatarPath, LastRefreshedUtc, IsActiveFriend, CreatedUtc, UpdatedUtc)
                   VALUES
-                    (?, ?, ?, 0, ?, ?, ?, 1, ?, ?);",
+                    (?, ?, ?, 0, ?, ?, ?, ?, 1, ?, ?);",
                 providerKey,
                 externalUserId,
                 DbValue(displayName),
                 DbValue(friendSource),
                 DbValue(friend.AvatarUrl),
+                DbValue(avatarPath),
                 lastRefreshedIso,
                 nowIso,
                 nowIso);
@@ -2238,6 +2297,7 @@ namespace PlayniteAchievements.Services.Database
                   SET DisplayName = ?,
                       FriendSource = ?,
                       AvatarUrl = ?,
+                      AvatarPath = COALESCE(?, AvatarPath),
                       LastRefreshedUtc = ?,
                       IsActiveFriend = CASE WHEN IsCurrentUser = 1 THEN IsActiveFriend ELSE 1 END,
                       UpdatedUtc = ?
@@ -2245,6 +2305,7 @@ namespace PlayniteAchievements.Services.Database
                 DbValue(displayName),
                 DbValue(friendSource),
                 DbValue(friend.AvatarUrl),
+                DbValue(avatarPath),
                 lastRefreshedIso,
                 nowIso,
                 userId);
@@ -2878,6 +2939,7 @@ namespace PlayniteAchievements.Services.Database
                     u.ExternalUserId AS ExternalUserId,
                     u.DisplayName AS DisplayName,
                     u.AvatarUrl AS AvatarUrl,
+                    u.AvatarPath AS AvatarPath,
                     (
                         SELECT COUNT(DISTINCT fo.GameId)
                         FROM FriendOwnership fo
@@ -3028,7 +3090,9 @@ namespace PlayniteAchievements.Services.Database
                           AND fo.LastScrapeStatus IS NOT NULL
                         ORDER BY fo.LastScrapedUtc DESC
                         LIMIT 1
-                    ) AS LastScrapeStatus
+                    ) AS LastScrapeStatus,
+                    g.IconPath AS IconPath,
+                    g.CoverPath AS CoverPath
                   FROM Games g
                   WHERE EXISTS (
                         SELECT 1
@@ -3087,6 +3151,7 @@ namespace PlayniteAchievements.Services.Database
                     u.ExternalUserId AS FriendExternalUserId,
                     u.DisplayName AS FriendName,
                     u.AvatarUrl AS FriendAvatarUrl,
+                    u.AvatarPath AS FriendAvatarPath,
                     ad.ApiName AS ApiName,
                     ad.DisplayName AS DisplayName,
                     ad.Description AS Description,
@@ -3104,7 +3169,9 @@ namespace PlayniteAchievements.Services.Database
                     ua.UnlockTimeUtc AS UnlockTimeUtc,
                     COALESCE(sua.Unlocked, 0) AS MyUnlocked,
                     ua.ProgressNum AS ProgressNum,
-                    ua.ProgressDenom AS ProgressDenom
+                    ua.ProgressDenom AS ProgressDenom,
+                    g.IconPath AS IconPath,
+                    g.CoverPath AS CoverPath
                   FROM Users u
                   INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
                   INNER JOIN Games g ON g.Id = ugp.GameId
@@ -3193,11 +3260,13 @@ namespace PlayniteAchievements.Services.Database
                     GameName = row.GameName,
                     SortingName = presentation.SortingName ?? row.GameName,
                     PlayniteGameId = playniteGameId,
-                    GameIconPath = presentation.IconPath,
-                    GameCoverPath = presentation.CoverPath,
+                    GameIconPath = presentation.IconPath ?? MakeAbsolutePath(row.IconPath),
+                    GameCoverPath = presentation.CoverPath ?? MakeAbsolutePath(row.CoverPath),
                     FriendName = row.FriendName,
                     FriendExternalUserId = row.FriendExternalUserId,
-                    FriendAvatarUrl = row.FriendAvatarUrl
+                    FriendAvatarUrl = !string.IsNullOrWhiteSpace(row.FriendAvatarPath)
+                        ? MakeAbsolutePath(row.FriendAvatarPath)
+                        : row.FriendAvatarUrl
                 };
                 item.ApplyAppearanceSettings(_plugin?.Settings, playniteGameId);
 

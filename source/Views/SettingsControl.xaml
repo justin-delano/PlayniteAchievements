@@ -657,6 +657,25 @@
                                                     Margin="16,0,0,0"
                                                     MinWidth="130"/>
                                         </Grid>
+
+                                        <Grid Style="{StaticResource SettingRowStyle}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{DynamicResource LOCPlayAch_Settings_ClearUnownedFriendData_Description}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       VerticalAlignment="Center"/>
+
+                                            <Button Grid.Column="1"
+                                                    Content="{DynamicResource LOCPlayAch_Button_Clear}"
+                                                    Click="ClearUnownedFriendGameData_Click"
+                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
+                                                    Margin="16,0,0,0"
+                                                    MinWidth="130"/>
+                                        </Grid>
                                     </StackPanel>
                                 </Border>
 
@@ -1078,6 +1097,11 @@
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewHideSpoilers}"
                                                           IsChecked="{Binding Persisted.FriendsOverviewHideSpoilers}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                                                <CheckBox x:Name="FriendsOverviewIncludeUnownedCheckBox"
+                                                          Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewIncludeUnowned}"
+                                                          Loaded="FriendsOverviewIncludeUnowned_Loaded"
+                                                          Click="FriendsOverviewIncludeUnowned_Click"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                                             </StackPanel>
                                         </Border>

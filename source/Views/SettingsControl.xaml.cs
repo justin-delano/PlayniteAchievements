@@ -16,6 +16,8 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
@@ -1046,6 +1048,132 @@ namespace PlayniteAchievements.Views
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.OK,
                 image);
+        }
+
+        private void FriendsOverviewIncludeUnowned_Loaded(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && _settingsViewModel?.Settings?.Persisted != null)
+            {
+                checkBox.IsChecked =
+                    _settingsViewModel.Settings.Persisted.FriendsOverviewGameSource == FriendRefreshGameSource.OwnedAndUnowned;
+            }
+        }
+
+        private void FriendsOverviewIncludeUnowned_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (!(sender is CheckBox checkBox) || persisted == null)
+            {
+                return;
+            }
+
+            if (checkBox.IsChecked == true)
+            {
+                if (!persisted.FriendsOverviewOwnedAndUnownedWarningAccepted && !ConfirmEnableOwnedAndUnowned())
+                {
+                    checkBox.IsChecked = false;
+                    return;
+                }
+
+                persisted.FriendsOverviewOwnedAndUnownedWarningAccepted = true;
+                persisted.FriendsOverviewGameSource = FriendRefreshGameSource.OwnedAndUnowned;
+            }
+            else
+            {
+                persisted.FriendsOverviewGameSource = FriendRefreshGameSource.OwnedOnly;
+            }
+        }
+
+        private bool ConfirmEnableOwnedAndUnowned()
+        {
+            var message = L(
+                "LOCPlayAch_FriendsOverview_GameSource_UnownedWarning",
+                "Including unowned games discovers Steam friend games outside your Playnite library and may cache a large amount of provider-only achievement data.\n\nEnable this?");
+            return _plugin.PlayniteApi.Dialogs.ShowMessage(
+                message,
+                L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) == MessageBoxResult.Yes;
+        }
+
+        private void ClearUnownedFriendGameData_Click(object sender, RoutedEventArgs e)
+        {
+            var friendCache = _plugin?.RefreshRuntime?.Cache as IFriendCacheManager;
+            if (friendCache == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var stats = friendCache.GetUnownedFriendGameCacheStats() ?? new FriendUnownedCacheStats();
+                if (stats.Games <= 0 &&
+                    stats.DefinitionStates <= 0 &&
+                    stats.OwnershipRows <= 0 &&
+                    stats.ProgressRows <= 0 &&
+                    stats.AchievementRows <= 0 &&
+                    stats.Definitions <= 0)
+                {
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        L("LOCPlayAch_FriendsOverview_ClearUnowned_None", "No unowned friend game data is cached."),
+                        L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                    return;
+                }
+
+                var message = LF(
+                    "LOCPlayAch_FriendsOverview_ClearUnowned_Confirm",
+                    "Clear unowned friend game data?\n\nThis will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:N0} friend ownership rows, {3:N0} friend progress rows, {4:N0} achievement rows, and {5:N0} definition-state rows. Owned/shared friend data and your current-user cache will be kept.",
+                    stats.Games,
+                    stats.Definitions,
+                    stats.OwnershipRows,
+                    stats.ProgressRows,
+                    stats.AchievementRows,
+                    stats.DefinitionStates);
+
+                if (_plugin.PlayniteApi.Dialogs.ShowMessage(
+                        message,
+                        L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning) != MessageBoxResult.Yes)
+                {
+                    return;
+                }
+
+                var result = friendCache.ClearUnownedFriendGameData();
+                if (result?.Success != true)
+                {
+                    _plugin.PlayniteApi.Dialogs.ShowMessage(
+                        LF("LOCPlayAch_Status_Failed", "Error: {0}", result?.ErrorMessage ?? "unknown"),
+                        L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
+                }
+
+                // Remove every cached unowned cover/icon file in one pass.
+                _plugin.ImageService?.ClearGameCache(FriendImageCacheFolders.Games);
+
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    LF(
+                        "LOCPlayAch_FriendsOverview_ClearUnowned_Done",
+                        "Cleared {0:N0} provider-only games and {1:N0} friend progress rows.",
+                        result.Games,
+                        result.ProgressRows),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to clear unowned friend game data.");
+                _plugin.PlayniteApi.Dialogs.ShowMessage(
+                    LF("LOCPlayAch_Status_Failed", "Error: {0}", ex.Message),
+                    L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
 
         private void ClearAllIconCache_Click(object sender, RoutedEventArgs e) =>

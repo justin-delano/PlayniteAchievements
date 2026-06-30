@@ -116,6 +116,8 @@ namespace PlayniteAchievements.Providers.Steam
                     ExternalUserId = friend.ExternalUserId,
                     AppId = game.AppId,
                     GameName = FirstNonEmpty(game.Name, $"Steam App {game.AppId}"),
+                    IconUrl = SteamImageUrls.Icon(game.AppId),
+                    CoverUrl = SteamImageUrls.Cover(game.AppId),
                     PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeForever),
                     Playtime2WeeksMinutes = game.Playtime2Weeks.HasValue ? Math.Max(0, game.Playtime2Weeks.Value) : (int?)null,
                     LastPlayedUtc = ToUtc(game.LastPlayedUnixSeconds)

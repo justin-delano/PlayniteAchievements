@@ -105,6 +105,12 @@ namespace PlayniteAchievements.Services.Friends
             string providerKey,
             FriendGameDefinition definition);
 
+        FriendCacheWriteResult SaveProviderGameImagePaths(
+            string providerKey,
+            int appId,
+            string iconAbsolutePath,
+            string coverAbsolutePath);
+
         Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
             string providerKey,
             IReadOnlyCollection<int> appIds);

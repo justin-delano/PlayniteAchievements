@@ -475,6 +475,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Button</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_ProgressClearing">Clearing cached achievement data...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_ClearDescription">Remove cached achievement data. Refresh again to rebuild it from providers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Description">Remove discovered unowned friend games and their cached images. Owned and shared friend data is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Description">Clear cached achievement records without touching icon files.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Title">Cached Achievement Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Compact List</sys:String>
@@ -620,6 +621,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsOverview">Enable Friends Overview (Steam)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendsOverviewHideSpoilers">Hide friend spoilers until I unlock the achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendsOverviewIncludeUnowned">Include unowned Steam friend games</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Preserve full-resolution achievement icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Saves cached icons at their original resolution instead of the optimized 128px cache mode. This uses more disk space.</sys:String>
@@ -839,6 +841,10 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refresh">Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">Refreshing friends...</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshingShort">Refreshing...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_GameSource_UnownedWarning">Including unowned games discovers Steam friend games outside your Playnite library and may cache a large amount of provider-only achievement data.&#10;&#10;Enable this?</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_None">No unowned friend game data is cached.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Confirm">Clear unowned friend game data?&#10;&#10;This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:N0} friend ownership rows, {3:N0} friend progress rows, {4:N0} achievement rows, and {5:N0} definition-state rows. Owned/shared friend data and your current-user cache will be kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared {0:N0} provider-only games and {1:N0} friend progress rows.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">No friend achievement data yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Failed to load friend achievement data.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">Friend refresh failed.</sys:String>
@@ -853,6 +859,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Achievements">Refreshing friend achievements {0}/{1}...</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Friends">Refreshing {0} friends...</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Ownership">Refreshing friend libraries {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Definitions">Checking friend game definitions {0}/{1}...</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->
