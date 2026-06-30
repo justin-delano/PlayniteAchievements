@@ -118,6 +118,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowFriendsOverviewGameSummariesGridColumnHeaders = source.ShowFriendsOverviewGameSummariesGridColumnHeaders;
             target.ShowFriendsOverviewAchievementsGridColumnHeaders = source.ShowFriendsOverviewAchievementsGridColumnHeaders;
             target.ProgressColumnAlignmentDefaulted = source.ProgressColumnAlignmentDefaulted;
+            target.InlineSurfaceTransparencySeeded = source.InlineSurfaceTransparencySeeded;
             target.ViewAchievementsGameSummariesUseCoverImages = source.ViewAchievementsGameSummariesUseCoverImages;
             target.ViewAchievementsGameSummariesShowMetadataPlatform = source.ViewAchievementsGameSummariesShowMetadataPlatform;
             target.ViewAchievementsGameSummariesShowMetadataPlaytime = source.ViewAchievementsGameSummariesShowMetadataPlaytime;

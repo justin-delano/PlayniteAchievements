@@ -297,6 +297,11 @@ namespace PlayniteAchievements.Services
                     b,
                     sortMemberPath,
                     CompareInt(a?.PrestigeScore ?? 0, b?.PrestigeScore ?? 0, direction)),
+                nameof(GameSummaryItem.Points) => (a, b) => CompareWithTieBreakers(
+                    a,
+                    b,
+                    sortMemberPath,
+                    CompareInt(a?.Points ?? 0, b?.Points ?? 0, direction)),
                 "SortingName" => (a, b) => CompareWithTieBreakers(
                     a,
                     b,

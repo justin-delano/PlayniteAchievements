@@ -1558,6 +1558,11 @@ namespace PlayniteAchievements.Models
         public PlayniteAchievementsSettings(PlayniteAchievementsPlugin plugin) : this()
         {
             _plugin = plugin;
+
+            // Genuine fresh-install path (never a deserialization target): seed the transparent
+            // inline-surface overrides. The parameterless ctor used for deserialization leaves
+            // them empty so a loaded config is taken verbatim.
+            Persisted.ResourceOverrides = PersistedSettings.CreateDefaultResourceOverrides();
         }
 
         #endregion

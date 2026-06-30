@@ -98,7 +98,8 @@ namespace PlayniteAchievements.Views.Controls
             bool collectionScore = false,
             bool prestigeScore = false,
             bool friendsWithUnlocks = false,
-            bool lastFriendUnlock = false)
+            bool lastFriendUnlock = false,
+            bool points = false)
         {
             return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
             {
@@ -112,7 +113,8 @@ namespace PlayniteAchievements.Views.Controls
                 ["GameSummaryCollectionScore"] = collectionScore,
                 ["GameSummaryPrestigeScore"] = prestigeScore,
                 ["FriendGameFriendsWithUnlocks"] = friendsWithUnlocks,
-                ["FriendGameLastUnlock"] = lastFriendUnlock
+                ["FriendGameLastUnlock"] = lastFriendUnlock,
+                ["GameSummaryPoints"] = points
             };
         }
 

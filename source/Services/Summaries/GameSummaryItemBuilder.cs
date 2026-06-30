@@ -113,6 +113,7 @@ namespace PlayniteAchievements.Services.Summaries
             int trophyPlatinumTotal = 0, trophyGoldTotal = 0, trophySilverTotal = 0, trophyBronzeTotal = 0;
             int collectionScore = 0, prestigeScore = 0;
             int collectionScoreTotal = 0, prestigeScoreTotal = 0;
+            int points = 0;
             DateTime? lastUnlockUtc = null;
 
             for (var i = 0; i < achievements.Count; i++)
@@ -143,6 +144,7 @@ namespace PlayniteAchievements.Services.Summaries
                 AchievementDisplayItem.AccumulateTrophy(ach, ref trophyPlatinum, ref trophyGold, ref trophySilver, ref trophyBronze);
                 collectionScore = AddClamped(collectionScore, ach.CollectionScore);
                 prestigeScore = AddClamped(prestigeScore, ach.PrestigeScore);
+                points = AddClamped(points, ach.Points ?? 0);
 
                 if (ach.UnlockTimeUtc.HasValue)
                 {
@@ -164,6 +166,7 @@ namespace PlayniteAchievements.Services.Summaries
             item.PrestigeScore = prestigeScore;
             item.CollectionScoreTotal = collectionScoreTotal;
             item.PrestigeScoreTotal = prestigeScoreTotal;
+            item.Points = points;
             item.TotalCommonPossible = totalCommon;
             item.TotalUncommonPossible = totalUncommon;
             item.TotalRarePossible = totalRare;
