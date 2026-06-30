@@ -160,13 +160,13 @@
                                                     VerticalAlignment="Center"
                                                     Background="{DynamicResource PlayAch.Brush.Control.Background}">
                                                 <Border.Width>
-                                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,width,8,16,14">
+                                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,width,12,8,12">
                                                         <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
                                                         <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
                                                     </MultiBinding>
                                                 </Border.Width>
                                                 <Border.Height>
-                                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,height,8,16,14">
+                                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,height,12,8,12">
                                                         <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
                                                         <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
                                                     </MultiBinding>
