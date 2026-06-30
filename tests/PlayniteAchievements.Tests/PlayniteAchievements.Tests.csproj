@@ -64,6 +64,7 @@
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideValidation.cs" Link="Source\Providers\Overrides\ProviderOverrideValidation.cs" />
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideDescriptor.cs" Link="Source\Providers\Overrides\ProviderOverrideDescriptor.cs" />
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideValidators.cs" Link="Source\Providers\Overrides\ProviderOverrideValidators.cs" />
+    <Compile Include="..\..\source\Providers\Overrides\IProviderOverride.cs" Link="Source\Providers\Overrides\IProviderOverride.cs" />
     <Compile Include="..\..\source\Providers\PSN\PsnNpCommIdHelper.cs" Link="Source\Providers\PSN\PsnNpCommIdHelper.cs" />
     <Compile Include="..\..\source\Services\AchievementIconOverrideHelper.cs" Link="Source\Services\AchievementIconOverrideHelper.cs" />
     <Compile Include="..\..\source\Services\AchievementNoteHelper.cs" Link="Source\Services\AchievementNoteHelper.cs" />
@@ -257,6 +258,7 @@
     <Compile Include="..\..\source\Views\Helpers\DataGridHoverScrollBarBehavior.cs" Link="Source\Views\Helpers\DataGridHoverScrollBarBehavior.cs" />
     <Compile Include="..\..\source\Views\Helpers\DataGridColumnLayoutService.cs" Link="Source\Views\Helpers\DataGridColumnLayoutService.cs" />
     <Compile Include="..\..\source\Views\Helpers\ColumnWidthNormalization.cs" Link="Source\Views\Helpers\ColumnWidthNormalization.cs" />
+    <Compile Include="..\..\source\Views\Helpers\ColumnSizingPlanner.cs" Link="Source\Views\Helpers\ColumnSizingPlanner.cs" />
     <Compile Include="..\..\source\Views\Helpers\GridAlignmentMapping.cs" Link="Source\Views\Helpers\GridAlignmentMapping.cs" />
     <Compile Include="..\..\source\Views\Helpers\VisualTreeHelpers.cs" Link="Source\Views\Helpers\VisualTreeHelpers.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\LibraryRuntimeStateBuilder.cs" Link="Source\Services\ThemeIntegration\LibraryRuntimeStateBuilder.cs" />
