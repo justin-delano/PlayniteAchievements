@@ -1409,6 +1409,7 @@ namespace PlayniteAchievements.Services.Database
             {
                 if (options.Scope == FriendRefreshScope.Full ||
                     options.Scope == FriendRefreshScope.Installed ||
+                    options.Scope == FriendRefreshScope.SelectedGame ||
                     (options.Scope == FriendRefreshScope.Custom && options.PlayniteGameIds?.Count > 0))
                 {
                     return LoadCurrentUserFriendRefreshCandidates(db, providerKey, options);
@@ -1420,6 +1421,60 @@ namespace PlayniteAchievements.Services.Database
                     cutoffIso,
                     options.Scope == FriendRefreshScope.Recent);
             });
+        }
+
+        public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            if (string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return FriendCacheWriteResult.Failed("Friend id is missing.");
+            }
+
+            var normalizedExternalUserId = externalUserId.Trim();
+
+            try
+            {
+                var deletedUsers = 0;
+                WithDb(db =>
+                {
+                    db.RunTransaction(() =>
+                    {
+                        var users = db.Load<UserRow>(
+                            @"SELECT Id, ProviderKey, ExternalUserId, DisplayName, IsCurrentUser, FriendSource, AvatarUrl, LastRefreshedUtc, IsActiveFriend, CreatedUtc, UpdatedUtc
+                              FROM Users
+                              WHERE ProviderKey = ?
+                                AND ExternalUserId = ?
+                                AND IsCurrentUser = 0;",
+                            providerKey,
+                            normalizedExternalUserId).ToList();
+
+                        foreach (var user in users)
+                        {
+                            db.ExecuteNonQuery(
+                                @"DELETE FROM UserAchievements
+                                  WHERE UserGameProgressId IN (
+                                      SELECT Id FROM UserGameProgress WHERE UserId = ?
+                                  );",
+                                user.Id);
+                            db.ExecuteNonQuery("DELETE FROM UserGameProgress WHERE UserId = ?;", user.Id);
+                            db.ExecuteNonQuery("DELETE FROM FriendOwnership WHERE UserId = ?;", user.Id);
+                            db.ExecuteNonQuery("DELETE FROM Users WHERE Id = ? AND IsCurrentUser = 0;", user.Id);
+                            deletedUsers++;
+                        }
+                    });
+                });
+
+                return FriendCacheWriteResult.Ok(
+                    incomingCount: 1,
+                    writtenCount: deletedUsers,
+                    skippedCount: deletedUsers > 0 ? 0 : 1);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to delete friend data for provider={providerKey}, friend={normalizedExternalUserId}.");
+                return FriendCacheWriteResult.Failed(ex.Message);
+            }
         }
 
         private static List<FriendRefreshCandidate> LoadSharedFriendRefreshCandidates(

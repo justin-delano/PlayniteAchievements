@@ -17,13 +17,14 @@ namespace PlayniteAchievements.Tests.Views
 
             AssertContainsAll(
                 xaml,
-                "FriendSummaryAvatar",
+                "ColumnKey=\"Avatar\"",
                 "FriendSummaryFriend",
                 "FriendSummaryProvider",
                 "FriendSummarySharedGames",
                 "FriendSummaryGamesWithUnlocks",
                 "FriendSummaryUnlocks",
-                "FriendSummaryScores",
+                "FriendSummaryPrestigeScore",
+                "FriendSummaryCollectionScore",
                 "FriendSummaryLastUnlock",
                 "GameSummaryProviderIconStyle");
             AssertContainsNone(
@@ -80,7 +81,8 @@ namespace PlayniteAchievements.Tests.Views
 
             AssertContainsAll(
                 xaml,
-                "ColumnKey=\"FriendAvatar\"",
+                "x:Name=\"FriendAvatarColumn\"",
+                "ColumnKey=\"Avatar\"",
                 "ColumnKey=\"Friend\"",
                 "FriendAvatarUrl");
             AssertContainsNone(

@@ -1,5 +1,7 @@
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
@@ -18,8 +20,14 @@ namespace PlayniteAchievements.Views
     public partial class FriendsOverviewControl : UserControl, IDisposable
     {
         private readonly FriendsOverviewViewModel _viewModel;
+        private readonly ILogger _logger;
         private readonly OverviewLaunchContext _launchContext;
+        private readonly IPlayniteAPI _playniteApi;
+        private readonly ICacheManager _cacheManager;
+        private readonly IFriendCacheManager _friendCache;
+        private readonly AchievementOverridesService _achievementOverridesService;
         private bool _loaded;
+        private DataGridRow _pendingRightClickRow;
 
         public FriendsOverviewControl()
         {
@@ -32,11 +40,42 @@ namespace PlayniteAchievements.Views
             RefreshEntryPoint refreshCoordinator,
             RefreshRuntime refreshRuntime,
             PlayniteAchievementsSettings settings,
-            OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar)
+            OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar,
+            IPlayniteAPI playniteApi = null,
+            ICacheManager cacheManager = null,
+            AchievementOverridesService achievementOverridesService = null)
         {
             InitializeComponent();
+            _logger = logger;
             _launchContext = launchContext;
-            _viewModel = new FriendsOverviewViewModel(friendCache, refreshCoordinator, refreshRuntime, settings, logger);
+            _playniteApi = playniteApi;
+            _cacheManager = cacheManager;
+            _friendCache = friendCache;
+            _achievementOverridesService = achievementOverridesService;
+            _viewModel = new FriendsOverviewViewModel(
+                friendCache,
+                refreshCoordinator,
+                refreshRuntime,
+                settings,
+                logger,
+                playniteApi,
+                (gameId, gameName) =>
+                {
+                    if (playniteApi == null || refreshRuntime == null)
+                    {
+                        return null;
+                    }
+
+                    return FriendCustomRefreshControl.TryShowDialog(
+                        playniteApi,
+                        refreshRuntime,
+                        settings,
+                        gameId,
+                        gameName,
+                        out var options)
+                        ? options
+                        : null;
+                });
             DataContext = _viewModel;
         }
 
@@ -305,6 +344,26 @@ namespace PlayniteAchievements.Views
             e.Handled = true;
         }
 
+        private void DataGridRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                _pendingRightClickRow = row;
+            }
+        }
+
+        private void DataGridRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                var targetRow = _pendingRightClickRow ?? row;
+                _pendingRightClickRow = null;
+                OpenContextMenuForRow(targetRow);
+            }
+        }
+
         private static bool TryResolveSelectedRow(
             object sender,
             MouseButtonEventArgs e,
@@ -337,6 +396,144 @@ namespace PlayniteAchievements.Views
 
             return VisualTreeHelpers.FindVisualParent<DataGridRow>(
                 e?.OriginalSource as DependencyObject ?? e?.Source as DependencyObject);
+        }
+
+        private static bool TryResolveContextMenuRow(object sender, MouseButtonEventArgs e, out DataGridRow row)
+        {
+            row = ResolveDataGridRow(sender, e);
+            return row != null;
+        }
+
+        private bool OpenContextMenuForRow(DataGridRow row)
+        {
+            if (row == null || !row.IsLoaded || row.DataContext == null)
+            {
+                return false;
+            }
+
+            var menu = BuildRowContextMenu(row.DataContext);
+            if (menu == null || menu.Items.Count == 0)
+            {
+                return false;
+            }
+
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
+            row.ContextMenu = menu;
+            menu.PlacementTarget = row;
+            menu.IsOpen = true;
+            return true;
+        }
+
+        private ContextMenu BuildRowContextMenu(object data)
+        {
+            if (data is FriendGameSummaryItem || data is GameSummaryItem)
+            {
+                return BuildGameMenu(data);
+            }
+
+            if (data is FriendSummaryItem friend)
+            {
+                return BuildFriendMenu(friend);
+            }
+
+            return null;
+        }
+
+        private ContextMenu BuildGameMenu(object data)
+        {
+            return GameRowContextMenuBuilder.BuildGameMenu(
+                data,
+                this,
+                _viewModel?.RefreshFriendSelectedGameCommand,
+                _viewModel?.OpenGameInLibraryCommand,
+                gameId => PlayniteAchievementsPlugin.Instance?.OpenManageAchievementsView(gameId),
+                _playniteApi,
+                _achievementOverridesService,
+                _cacheManager,
+                _logger);
+        }
+
+        private ContextMenu BuildFriendMenu(FriendSummaryItem friend)
+        {
+            var menu = new ContextMenu();
+            var ignoreItem = new MenuItem
+            {
+                Header = GetText("LOCPlayAch_Menu_IgnoreFriend", "Ignore Friend"),
+                IsEnabled = IsIgnorableSteamFriend(friend)
+            };
+            ignoreItem.Click += (_, __) => IgnoreFriend(friend);
+            menu.Items.Add(ignoreItem);
+            return menu;
+        }
+
+        private void IgnoreFriend(FriendSummaryItem friend)
+        {
+            if (!IsIgnorableSteamFriend(friend))
+            {
+                return;
+            }
+
+            var name = string.IsNullOrWhiteSpace(friend.DisplayName)
+                ? friend.ExternalUserId
+                : friend.DisplayName;
+            var message = string.Format(
+                GetText(
+                    "LOCPlayAch_Menu_IgnoreFriend_Confirm",
+                    "Ignore {0}? Their cached friend achievement data will be deleted and they will be skipped during friend refreshes."),
+                name);
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                message,
+                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) ?? MessageBox.Show(
+                message,
+                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var settings = ProviderRegistry.Settings<SteamSettings>();
+                settings.AddIgnoredFriend(friend.ExternalUserId, friend.DisplayName, friend.AvatarUrl);
+                ProviderRegistry.Write(settings, persistToDisk: true);
+
+                var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);
+                if (deleteResult != null && !deleteResult.Success)
+                {
+                    _logger?.Warn($"Failed to delete ignored friend data for {friend.ProviderKey}/{friend.ExternalUserId}: {deleteResult.ErrorMessage}");
+                }
+
+                _viewModel?.ClearFriendSelection();
+                _ = _viewModel?.LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to ignore friend {friend.ProviderKey}/{friend.ExternalUserId}.");
+                _playniteApi?.Dialogs?.ShowErrorMessage(
+                    string.Format(GetText("LOCPlayAch_Status_Failed", "Failed: {0}"), ex.Message),
+                    GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"));
+            }
+        }
+
+        private static bool IsIgnorableSteamFriend(FriendSummaryItem friend)
+        {
+            return friend != null &&
+                   string.Equals(friend.ProviderKey, "Steam", StringComparison.OrdinalIgnoreCase) &&
+                   !string.IsNullOrWhiteSpace(friend.ExternalUserId);
+        }
+
+        private string GetText(string resourceKey, string fallback)
+        {
+            return TryFindResource(resourceKey) as string
+                   ?? ResourceProvider.GetString(resourceKey)
+                   ?? fallback
+                   ?? resourceKey;
         }
 
         private static void ClearGridSelection(DataGrid grid)

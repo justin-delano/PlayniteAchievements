@@ -173,6 +173,28 @@ namespace PlayniteAchievements.Services
                         GetInstalledGameIds(),
                         "No installed games found for friends refresh.");
 
+                case RefreshModeType.FriendsSelectedGame:
+                    if (!request.SingleGameId.HasValue || request.SingleGameId.Value == Guid.Empty)
+                    {
+                        return new ResolvedRequest
+                        {
+                            Mode = mode,
+                            ShouldExecute = false,
+                            EmptySelectionLogMessage = "No selected game provided for friends selected-game refresh."
+                        };
+                    }
+
+                    return ResolveFriendRefresh(
+                        mode,
+                        FriendRefreshScope.SelectedGame,
+                        authenticatedProviders,
+                        "Selected-game friends refresh failed.",
+                        new[] { request.SingleGameId.Value },
+                        "No selected game provided for friends selected-game refresh.");
+
+                case RefreshModeType.FriendsCustom:
+                    return ResolveFriendCustom(request.CustomFriendOptions, authenticatedProviders);
+
                 default:
                     _logger?.Warn(string.Format(
                         "Unknown refresh mode: {0}. Falling back to Recent.",
@@ -235,6 +257,87 @@ namespace PlayniteAchievements.Services
                 {
                     Scope = scope,
                     PlayniteGameIds = ids
+                }
+            };
+        }
+
+        private ResolvedRequest ResolveFriendCustom(
+            FriendCustomRefreshOptions options,
+            IReadOnlyList<IDataProvider> authenticatedProviders)
+        {
+            var resolvedOptions = options?.Clone() ?? new FriendCustomRefreshOptions();
+            var providers = authenticatedProviders?
+                .Where(provider => provider?.Friends != null)
+                .ToList() ?? new List<IDataProvider>();
+
+            var requestedKeys = resolvedOptions.ProviderKeys?
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (requestedKeys?.Count > 0)
+            {
+                var requestedSet = new HashSet<string>(requestedKeys, StringComparer.OrdinalIgnoreCase);
+                providers = providers
+                    .Where(provider => requestedSet.Contains(provider.ProviderKey))
+                    .ToList();
+            }
+
+            if (providers.Count == 0)
+            {
+                return new ResolvedRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    ShouldExecute = false,
+                    UserMessage = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders") ??
+                                  "No authenticated friend-capable providers are available."
+                };
+            }
+
+            var scope = resolvedOptions.Scope;
+            IReadOnlyCollection<Guid> playniteGameIds = resolvedOptions.PlayniteGameIds?
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList();
+
+            if (scope == FriendRefreshScope.Installed)
+            {
+                playniteGameIds = GetInstalledGameIds();
+            }
+
+            if ((scope == FriendRefreshScope.SelectedGame || scope == FriendRefreshScope.Custom) &&
+                (playniteGameIds == null || playniteGameIds.Count == 0))
+            {
+                return new ResolvedRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    ShouldExecute = false,
+                    EmptySelectionLogMessage = "No games selected for custom friends refresh."
+                };
+            }
+
+            if (scope == FriendRefreshScope.Installed &&
+                (playniteGameIds == null || playniteGameIds.Count == 0))
+            {
+                return new ResolvedRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    ShouldExecute = false,
+                    EmptySelectionLogMessage = "No installed games found for custom friends refresh."
+                };
+            }
+
+            return new ResolvedRequest
+            {
+                Mode = RefreshModeType.FriendsCustom,
+                ShouldExecute = true,
+                ErrorLogMessage = "Custom friends refresh failed.",
+                ProviderScope = providers,
+                FriendOptions = new FriendRefreshOptions
+                {
+                    Scope = scope,
+                    PlayniteGameIds = playniteGameIds,
+                    RefreshTtl = resolvedOptions.RefreshTtl
                 }
             };
         }

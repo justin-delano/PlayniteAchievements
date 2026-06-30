@@ -801,6 +801,23 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        FriendCacheWriteResult IFriendCacheManager.DeleteFriendData(
+            string providerKey,
+            string externalUserId)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("DeleteFriendData");
+                var result = _store.DeleteFriendData(providerKey, externalUserId);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
         List<FriendRefreshCandidate> IFriendCacheManager.LoadFriendRefreshCandidates(
             string providerKey,
             FriendRefreshOptions options)

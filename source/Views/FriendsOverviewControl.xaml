@@ -132,6 +132,8 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <Border Background="{DynamicResource PlayAch.Brush.Window.Background}"
+            Padding="20">
     <Grid Background="{DynamicResource PlayAch.Brush.Panel}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -408,7 +410,8 @@
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Opacity="{StaticResource PlayAch.Opacity.Subtle}"
-                                   VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"
+                                   Visibility="{Binding HasFriendGameSelection, Converter={StaticResource BoolToVis}}"/>
                         <Button Content="&#xE711;"
                                 FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                                 ToolTip="{DynamicResource LOCPlayAch_FriendsOverview_ClearSelection}"
@@ -529,7 +532,9 @@
                                                  ShowColumnHeaders="{Binding Settings.Persisted.ShowFriendsOverviewFriendSummariesGridColumnHeaders}"
                                                  FixedRowHeight="{Binding Settings.Persisted.FriendsOverviewFriendSummariesGridRowHeight}"
                                                  DelayInitialRenderUntilNormalized="True"
-                                                 RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"/>
+                                                 RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"
+                                                 RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
+                                                 RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
 
             <!-- Game summaries -->
             <controls:GameSummariesGridControl x:Name="FriendGameSummariesGridControl"
@@ -547,7 +552,9 @@
                                                ShowColumnHeaders="{Binding Settings.Persisted.ShowFriendsOverviewGameSummariesGridColumnHeaders}"
                                                FixedRowHeight="{Binding Settings.Persisted.FriendsOverviewGameSummariesGridRowHeight}"
                                                DelayInitialRenderUntilNormalized="True"
-                                               RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"/>
+                                               RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"
+                                               RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
+                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
 
             <!-- Achievements -->
             <Grid Grid.Row="2" Grid.Column="4">
@@ -580,4 +587,5 @@
             </Grid>
         </Grid>
     </Grid>
+    </Border>
 </UserControl>

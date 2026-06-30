@@ -1,6 +1,7 @@
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
@@ -25,6 +26,8 @@ namespace PlayniteAchievements.ViewModels
         private readonly RefreshRuntime _refreshRuntime;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
+        private readonly IPlayniteAPI _playniteApi;
+        private readonly Func<Guid?, string, FriendCustomRefreshOptions> _showCustomRefreshDialog;
         private readonly SearchTextIndex<FriendSummaryItem> _friendSearchIndex =
             new SearchTextIndex<FriendSummaryItem>(item => SearchTextBuilder.FromValues(item?.DisplayName, item?.ProviderKey));
         private readonly SearchTextIndex<FriendGameSummaryItem> _gameSearchIndex =
@@ -66,13 +69,17 @@ namespace PlayniteAchievements.ViewModels
             RefreshEntryPoint refreshCoordinator,
             RefreshRuntime refreshRuntime,
             PlayniteAchievementsSettings settings,
-            ILogger logger)
+            ILogger logger,
+            IPlayniteAPI playniteApi = null,
+            Func<Guid?, string, FriendCustomRefreshOptions> showCustomRefreshDialog = null)
         {
             _friendCache = friendCache;
             _refreshCoordinator = refreshCoordinator;
             _refreshRuntime = refreshRuntime;
             _settings = settings;
             _logger = logger;
+            _playniteApi = playniteApi;
+            _showCustomRefreshDialog = showCustomRefreshDialog;
 
             FilteredFriends = new BulkObservableCollection<FriendSummaryItem>();
             FilteredGames = new BulkObservableCollection<FriendGameSummaryItem>();
@@ -87,6 +94,8 @@ namespace PlayniteAchievements.ViewModels
             RefreshFullCommand = new AsyncCommand(async _ => await RefreshFriendsAsync(RefreshModeType.FriendsFull).ConfigureAwait(true), _ => CanRefresh());
             RefreshSharedCommand = new AsyncCommand(async _ => await RefreshFriendsAsync(RefreshModeType.FriendsShared).ConfigureAwait(true), _ => CanRefresh());
             RefreshInstalledCommand = new AsyncCommand(async _ => await RefreshFriendsAsync(RefreshModeType.FriendsInstalled).ConfigureAwait(true), _ => CanRefresh());
+            RefreshFriendSelectedGameCommand = new AsyncCommand(ExecuteFriendSelectedGameRefreshAsync, parameter => CanRefreshSelectedFriendGame(parameter));
+            OpenGameInLibraryCommand = new RelayCommand(OpenGameInLibrary);
             RefreshOrCancelCommand = RefreshCommand;
             ClearSelectionCommand = new RelayCommand(_ => ClearSelection());
             ClearFriendSelectionCommand = new RelayCommand(_ => ClearFriendSelection());
@@ -123,6 +132,8 @@ namespace PlayniteAchievements.ViewModels
         public ICommand RefreshFullCommand { get; }
         public ICommand RefreshSharedCommand { get; }
         public ICommand RefreshInstalledCommand { get; }
+        public ICommand RefreshFriendSelectedGameCommand { get; }
+        public ICommand OpenGameInLibraryCommand { get; }
         public ICommand RefreshOrCancelCommand { get; }
         public ICommand ClearSelectionCommand { get; }
         public ICommand ClearFriendSelectionCommand { get; }
@@ -163,6 +174,7 @@ namespace PlayniteAchievements.ViewModels
         public bool HasFriendSelection => SelectedFriend != null;
         public bool HasGameSelection => SelectedGame != null;
         public bool HasAnySelection => SelectedFriend != null || SelectedGame != null;
+        public bool HasFriendGameSelection => SelectedFriend != null && SelectedGame != null;
 
         public string FriendSearchText
         {
@@ -332,9 +344,12 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public string AchievementCountText => string.Format(
-            ResourceProvider.GetString("LOCPlayAch_FriendsOverview_AchievementCount") ?? "{0:N0} shown",
-            DisplayedAchievements.Count);
+        public string AchievementCountText => HasFriendGameSelection
+            ? string.Format(
+                ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedGameAchievementCount") ?? "({0:N0} / {1:N0})",
+                DisplayedAchievements.Count,
+                Math.Max(0, SelectedGame?.TotalAchievements ?? 0))
+            : string.Empty;
 
         public Task LoadAsync()
         {
@@ -471,10 +486,50 @@ namespace PlayniteAchievements.ViewModels
         {
             var selected = FriendRefreshModes.FirstOrDefault(mode =>
                 string.Equals(mode?.Key, SelectedRefreshMode, StringComparison.Ordinal));
+            if (selected?.Type == RefreshModeType.FriendsSelectedGame)
+            {
+                await ExecuteFriendSelectedGameRefreshAsync(SelectedGame).ConfigureAwait(true);
+                return;
+            }
+
+            if (selected?.Type == RefreshModeType.FriendsCustom)
+            {
+                if (_showCustomRefreshDialog == null)
+                {
+                    StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NotAvailable") ??
+                                 "Friends Overview is not available.";
+                    return;
+                }
+
+                var customOptions = _showCustomRefreshDialog(
+                    SelectedGame?.PlayniteGameId,
+                    SelectedGame?.GameName);
+                if (customOptions == null)
+                {
+                    return;
+                }
+
+                await ExecuteFriendRefreshRequestAsync(
+                    new RefreshRequest
+                    {
+                        Mode = RefreshModeType.FriendsCustom,
+                        CustomFriendOptions = customOptions
+                    },
+                    "Custom friends refresh failed.").ConfigureAwait(true);
+                return;
+            }
+
             await RefreshFriendsAsync(selected?.Type ?? RefreshModeType.FriendsRecent).ConfigureAwait(true);
         }
 
         private async Task RefreshFriendsAsync(RefreshModeType mode)
+        {
+            await ExecuteFriendRefreshRequestAsync(
+                new RefreshRequest { Mode = mode },
+                "Friend refresh failed.").ConfigureAwait(true);
+        }
+
+        private async Task ExecuteFriendRefreshRequestAsync(RefreshRequest request, string errorLogMessage)
         {
             if (_refreshCoordinator == null)
             {
@@ -491,13 +546,13 @@ namespace PlayniteAchievements.ViewModels
                 ProgressMessage = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_Refreshing") ??
                                   "Refreshing friends...";
                 await _refreshCoordinator.ExecuteAsync(
-                    new RefreshRequest { Mode = mode },
+                    request,
                     new RefreshExecutionPolicy
                     {
                         ValidateAuthentication = true,
                         UseProgressWindow = false,
                         SwallowExceptions = false,
-                        ErrorLogMessage = "Friend refresh failed."
+                        ErrorLogMessage = errorLogMessage ?? "Friend refresh failed."
                     }).ConfigureAwait(true);
                 await LoadFromCacheAsync().ConfigureAwait(true);
             }
@@ -512,6 +567,29 @@ namespace PlayniteAchievements.ViewModels
                 IsRefreshing = false;
                 ProgressMessage = null;
             }
+        }
+
+        private async Task ExecuteFriendSelectedGameRefreshAsync(object parameter)
+        {
+            if (!TryGetPlayniteGameId(parameter, out var gameId) || !CanRefresh())
+            {
+                StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectGameForRefresh") ??
+                             "Select a game before refreshing this friend game.";
+                return;
+            }
+
+            await ExecuteFriendRefreshRequestAsync(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsSelectedGame,
+                    SingleGameId = gameId
+                },
+                "Friend selected-game refresh failed.").ConfigureAwait(true);
+        }
+
+        private bool CanRefreshSelectedFriendGame(object parameter)
+        {
+            return CanRefresh() && TryGetPlayniteGameId(parameter, out _);
         }
 
         private void OnRebuildProgress(object sender, ProgressReport report)
@@ -541,7 +619,7 @@ namespace PlayniteAchievements.ViewModels
                 var persisted = _settings?.Persisted;
                 var data = _friendCache?.LoadFriendsOverviewData(
                     persisted?.FriendsOverviewHideSpoilers ?? true,
-                    persisted?.FriendsOverviewRecentUnlockLimit ?? 200);
+                    0);
 
                 _allFriends = data?.Friends ?? new List<FriendSummaryItem>();
                 _allGames = data?.Games ?? new List<FriendGameSummaryItem>();
@@ -858,6 +936,42 @@ namespace PlayniteAchievements.ViewModels
                     left.PlayniteGameId.HasValue && right.PlayniteGameId.HasValue && left.PlayniteGameId.Value == right.PlayniteGameId.Value);
         }
 
+        private void OpenGameInLibrary(object parameter)
+        {
+            if (!TryGetPlayniteGameId(parameter, out var gameId))
+            {
+                return;
+            }
+
+            try
+            {
+                _playniteApi?.MainView?.SelectGame(gameId);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to open game in Playnite library: {gameId}");
+            }
+        }
+
+        private static bool TryGetPlayniteGameId(object parameter, out Guid gameId)
+        {
+            switch (parameter)
+            {
+                case GameSummaryItem game when game.PlayniteGameId.HasValue && game.PlayniteGameId.Value != Guid.Empty:
+                    gameId = game.PlayniteGameId.Value;
+                    return true;
+                case AchievementDisplayItem achievement when achievement.PlayniteGameId.HasValue && achievement.PlayniteGameId.Value != Guid.Empty:
+                    gameId = achievement.PlayniteGameId.Value;
+                    return true;
+                case Guid id when id != Guid.Empty:
+                    gameId = id;
+                    return true;
+                default:
+                    gameId = Guid.Empty;
+                    return false;
+            }
+        }
+
         private static bool IsSameGame(FriendAchievementDisplayItem achievement, FriendGameSummaryItem game)
         {
             return achievement != null &&
@@ -979,7 +1093,9 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(HasFriendSelection));
             OnPropertyChanged(nameof(HasGameSelection));
             OnPropertyChanged(nameof(HasAnySelection));
+            OnPropertyChanged(nameof(HasFriendGameSelection));
             OnPropertyChanged(nameof(AchievementSectionTitle));
+            OnPropertyChanged(nameof(AchievementCountText));
         }
 
         private void RaiseRefreshCanExecuteChanged()
@@ -989,6 +1105,7 @@ namespace PlayniteAchievements.ViewModels
             (RefreshFullCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (RefreshSharedCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (RefreshInstalledCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            (RefreshFriendSelectedGameCommand as AsyncCommand)?.RaiseCanExecuteChanged();
         }
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
@@ -1009,6 +1126,8 @@ namespace PlayniteAchievements.ViewModels
             yield return CreateRefreshMode(RefreshModeType.FriendsFull);
             yield return CreateRefreshMode(RefreshModeType.FriendsShared);
             yield return CreateRefreshMode(RefreshModeType.FriendsInstalled);
+            yield return CreateRefreshMode(RefreshModeType.FriendsSelectedGame);
+            yield return CreateRefreshMode(RefreshModeType.FriendsCustom);
         }
 
         private static RefreshMode CreateRefreshMode(RefreshModeType type)

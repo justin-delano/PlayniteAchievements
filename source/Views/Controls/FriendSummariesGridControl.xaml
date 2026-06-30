@@ -81,10 +81,10 @@
         </DataGrid.RowStyle>
         <DataGrid.Columns>
             <DataGridTemplateColumn Width="44" MinWidth="32" MaxWidth="96" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_Icon}"
+                                    Header="{DynamicResource LOCPlayAch_Column_Avatar}"
                                     CanUserSort="False"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
-                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryAvatar">
+                                    helpers:ColumnVisibilityHelper.ColumnKey="Avatar">
                 <DataGridTemplateColumn.HeaderTemplate>
                     <DataTemplate>
                         <TextBlock Text="{Binding}" Opacity="0"/>
@@ -178,39 +178,18 @@
                                 SortMemberPath="UnlockedAchievementsCount"
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"
                                 helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryUnlocks"/>
-            <DataGridTemplateColumn Width="*" MinWidth="82" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_Scores}"
-                                    SortMemberPath="PrestigeScore"
-                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryScores">
-                <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                        <StackPanel Margin="10,5"
-                                    VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                    HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}">
-                            <DockPanel LastChildFill="False"
-                                       ToolTip="{DynamicResource LOCPlayAch_Column_CollectionScore}">
-                                <TextBlock Text="C"
-                                           Width="14"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                           Style="{StaticResource FriendSummaryTextStyle}"/>
-                                <TextBlock Text="{Binding CollectionScore, StringFormat={}{0:N0}}"
-                                           FontWeight="SemiBold"
-                                           Style="{StaticResource FriendSummaryTextStyle}"/>
-                            </DockPanel>
-                            <DockPanel LastChildFill="False"
-                                       ToolTip="{DynamicResource LOCPlayAch_Column_PrestigeScore}">
-                                <TextBlock Text="P"
-                                           Width="14"
-                                           Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                           Style="{StaticResource FriendSummaryTextStyle}"/>
-                                <TextBlock Text="{Binding PrestigeScore, StringFormat={}{0:N0}}"
-                                           FontWeight="SemiBold"
-                                           Style="{StaticResource FriendSummaryTextStyle}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
+            <DataGridTextColumn Width="*" MinWidth="72" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_PrestigeScore}"
+                                Binding="{Binding PrestigeScore, StringFormat={}{0:N0}}"
+                                SortMemberPath="PrestigeScore"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryPrestigeScore"/>
+            <DataGridTextColumn Width="*" MinWidth="72" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_CollectionScore}"
+                                Binding="{Binding CollectionScore, StringFormat={}{0:N0}}"
+                                SortMemberPath="CollectionScore"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryCollectionScore"/>
 
             <DataGridTemplateColumn Width="*" MinWidth="72" CanUserResize="True"
                                     Header="{DynamicResource LOCPlayAch_Column_LastUnlock}"

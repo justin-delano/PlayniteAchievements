@@ -465,6 +465,9 @@ namespace PlayniteAchievements.Tests.ViewModels
                 FriendGameAchievements achievements) =>
                 FriendCacheWriteResult.Ok();
 
+            public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId) =>
+                FriendCacheWriteResult.Ok();
+
             public List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
                 string providerKey,
                 FriendRefreshOptions options) =>

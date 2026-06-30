@@ -22,7 +22,9 @@ namespace PlayniteAchievements.Models
         FriendsRecent,
         FriendsFull,
         FriendsShared,
-        FriendsInstalled
+        FriendsInstalled,
+        FriendsSelectedGame,
+        FriendsCustom
     }
 
     /// <summary>
@@ -71,6 +73,8 @@ namespace PlayniteAchievements.Models
                 case RefreshModeType.FriendsFull:
                 case RefreshModeType.FriendsShared:
                 case RefreshModeType.FriendsInstalled:
+                case RefreshModeType.FriendsSelectedGame:
+                case RefreshModeType.FriendsCustom:
                     return true;
                 default:
                     return false;

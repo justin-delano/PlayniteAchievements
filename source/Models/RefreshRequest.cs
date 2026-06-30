@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using PlayniteAchievements.Models.Friends;
 
 namespace PlayniteAchievements.Models
 {
@@ -37,5 +38,10 @@ namespace PlayniteAchievements.Models
         /// Optional custom refresh options for ad-hoc custom mode runs.
         /// </summary>
         public CustomRefreshOptions CustomOptions { get; set; }
+
+        /// <summary>
+        /// Optional custom friend refresh options for ad-hoc friend refresh runs.
+        /// </summary>
+        public FriendCustomRefreshOptions CustomFriendOptions { get; set; }
     }
 }

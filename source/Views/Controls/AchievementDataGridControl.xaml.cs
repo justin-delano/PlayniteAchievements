@@ -50,7 +50,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["Status"] = DefaultStatusColumnWidth,
                 ["Icon"] = DefaultIconColumnWidth,
                 ["Game"] = DefaultGameImageColumnWidth,
-                ["FriendAvatar"] = DefaultFriendAvatarColumnWidth,
+                ["Avatar"] = DefaultFriendAvatarColumnWidth,
                 ["Trophy"] = DefaultTrophyIconColumnWidth,
                 ["RarityTier"] = DefaultTrophyIconColumnWidth
             };
@@ -122,7 +122,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["Title"] = title,
                 ["Note"] = note,
                 ["Game"] = game,
-                ["FriendAvatar"] = friendAvatar,
+                ["Avatar"] = friendAvatar,
                 ["Friend"] = friend,
                 ["UnlockDate"] = unlockDate,
                 ["CategoryType"] = categoryType,
@@ -136,6 +136,16 @@ namespace PlayniteAchievements.Views.Controls
                 ["Points"] = points
             };
         }
+
+        private static readonly IReadOnlyDictionary<string, IReadOnlyDictionary<string, int>> DefaultOrderByColumnSettingsKey =
+            new Dictionary<string, IReadOnlyDictionary<string, int>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["FriendsOverviewRecentAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Avatar"] = 0,
+                    ["Friend"] = 1
+                }
+            };
 
         /// <summary>
         /// Identifies the ItemsSource dependency property.
@@ -843,8 +853,8 @@ namespace PlayniteAchievements.Views.Controls
             }
             if (!ShowFriendColumn)
             {
-                _columnPersistence.ForcedCollapsedKeys.Add("FriendAvatar");
-                _columnPersistence.ExcludedVisibilityKeys.Add("FriendAvatar");
+                _columnPersistence.ForcedCollapsedKeys.Add("Avatar");
+                _columnPersistence.ExcludedVisibilityKeys.Add("Avatar");
                 _columnPersistence.ForcedCollapsedKeys.Add("Friend");
                 _columnPersistence.ExcludedVisibilityKeys.Add("Friend");
             }
@@ -978,12 +988,41 @@ namespace PlayniteAchievements.Views.Controls
         private Dictionary<string, int> GetOrderMap(PlayniteAchievementsSettings settings)
         {
             var map = GetOrderByKey(settings);
+            map = ApplyContextDefaultOrder(settings, map);
             if (AllowLayoutPersistence || map == null)
             {
                 return map;
             }
 
             return new Dictionary<string, int>(map, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private Dictionary<string, int> ApplyContextDefaultOrder(
+            PlayniteAchievementsSettings settings,
+            Dictionary<string, int> map)
+        {
+            if (!DefaultOrderByColumnSettingsKey.TryGetValue(ColumnSettingsKey ?? string.Empty, out var defaults) ||
+                defaults == null ||
+                defaults.Count == 0)
+            {
+                return map;
+            }
+
+            if (map != null && defaults.Keys.All(map.ContainsKey))
+            {
+                return map;
+            }
+
+            var defaultMap = defaults.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value,
+                StringComparer.OrdinalIgnoreCase);
+            if (AllowLayoutPersistence)
+            {
+                SetOrderByKey(settings, defaultMap);
+            }
+
+            return defaultMap;
         }
 
         private Dictionary<string, GridAlignment> GetAlignmentMap(PlayniteAchievementsSettings settings)

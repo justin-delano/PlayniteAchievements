@@ -47,6 +47,7 @@
               VirtualizingStackPanel.ScrollUnit="Pixel"
               ScrollViewer.CanContentScroll="True"
               ScrollViewer.IsDeferredScrollingEnabled="False"
+              ScrollViewer.VerticalScrollBarVisibility="Visible"
               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
               Padding="{StaticResource PlayAch.Thickness.None}"
               UseLayoutRounding="True"
@@ -217,9 +218,9 @@
                                     MinWidth="32"
                                     MaxWidth="96"
                                     CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_Icon}"
+                                    Header="{DynamicResource LOCPlayAch_Column_Avatar}"
                                     CanUserSort="False"
-                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendAvatar"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="Avatar"
                                     Visibility="Collapsed">
                 <DataGridTemplateColumn.HeaderTemplate>
                     <DataTemplate>

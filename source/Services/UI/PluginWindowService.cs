@@ -1222,7 +1222,10 @@ namespace PlayniteAchievements.Services.UI
                     _refreshCoordinator,
                     _refreshService,
                     _settings,
-                    OverviewLaunchContext.Popout);
+                    OverviewLaunchContext.Popout,
+                    _api,
+                    _cacheManager,
+                    _achievementOverridesService);
 
                 var windowOptions = new WindowOptions
                 {

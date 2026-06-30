@@ -13,6 +13,7 @@ namespace PlayniteAchievements.Models.Friends
         Full,
         Shared,
         Installed,
+        SelectedGame,
         Custom
     }
 
@@ -26,6 +27,32 @@ namespace PlayniteAchievements.Models.Friends
         {
             return new FriendRefreshOptions
             {
+                Scope = Scope,
+                PlayniteGameIds = PlayniteGameIds?
+                    .Where(id => id != Guid.Empty)
+                    .Distinct()
+                    .ToList(),
+                RefreshTtl = RefreshTtl
+            };
+        }
+    }
+
+    public sealed class FriendCustomRefreshOptions
+    {
+        public IReadOnlyCollection<string> ProviderKeys { get; set; }
+        public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
+        public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
+        public TimeSpan? RefreshTtl { get; set; }
+
+        public FriendCustomRefreshOptions Clone()
+        {
+            return new FriendCustomRefreshOptions
+            {
+                ProviderKeys = ProviderKeys?
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
                 Scope = Scope,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)

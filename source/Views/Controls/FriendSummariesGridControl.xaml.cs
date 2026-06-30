@@ -25,13 +25,14 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly IReadOnlyDictionary<string, bool> DefaultVisibility =
             new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
             {
-                ["FriendSummaryAvatar"] = true,
+                ["Avatar"] = true,
                 ["FriendSummaryFriend"] = true,
                 ["FriendSummaryProvider"] = true,
                 ["FriendSummarySharedGames"] = true,
                 ["FriendSummaryGamesWithUnlocks"] = true,
                 ["FriendSummaryUnlocks"] = true,
-                ["FriendSummaryScores"] = true,
+                ["FriendSummaryPrestigeScore"] = true,
+                ["FriendSummaryCollectionScore"] = true,
                 ["FriendSummaryLastUnlock"] = true
             };
 
@@ -247,6 +248,19 @@ namespace PlayniteAchievements.Views.Controls
             {
                 map = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
                 settings.Persisted.FriendsOverviewFriendSummariesColumnVisibility = map;
+            }
+
+            if (map.TryGetValue("FriendSummaryScores", out var legacyScoresVisible))
+            {
+                if (!map.ContainsKey("FriendSummaryPrestigeScore"))
+                {
+                    map["FriendSummaryPrestigeScore"] = legacyScoresVisible;
+                }
+
+                if (!map.ContainsKey("FriendSummaryCollectionScore"))
+                {
+                    map["FriendSummaryCollectionScore"] = legacyScoresVisible;
+                }
             }
 
             foreach (var pair in DefaultVisibility)

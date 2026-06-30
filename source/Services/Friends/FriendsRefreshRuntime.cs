@@ -17,6 +17,7 @@ namespace PlayniteAchievements.Services.Friends
         private const int FriendRefreshParallelism = 4;
 
         private readonly IFriendCacheManager _friendCache;
+        private readonly ProviderRegistry _providerRegistry;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
 
@@ -28,6 +29,7 @@ namespace PlayniteAchievements.Services.Friends
             ILogger logger)
         {
             _friendCache = friendCache;
+            _providerRegistry = providerRegistry;
             _settings = settings;
             _logger = logger;
         }
@@ -100,7 +102,7 @@ namespace PlayniteAchievements.Services.Friends
                     return payload;
                 }
 
-                var friends = friendsResult.Data ?? Array.Empty<FriendIdentity>();
+                var friends = FilterIgnoredFriends(providerKey, friendsResult.Data ?? Array.Empty<FriendIdentity>());
                 payload.FriendSummary.FriendsFetched += friends.Count;
 
                 var writeFriends = _friendCache.SaveFriendList(providerKey, friends);
@@ -127,8 +129,10 @@ namespace PlayniteAchievements.Services.Friends
                         cancel).ConfigureAwait(false);
                 }
 
-                var candidates = _friendCache.LoadFriendRefreshCandidates(providerKey, options) ??
-                                 new List<FriendRefreshCandidate>();
+                var candidates = FilterIgnoredCandidates(
+                    providerKey,
+                    _friendCache.LoadFriendRefreshCandidates(providerKey, options) ??
+                    new List<FriendRefreshCandidate>());
 
                 payload.FriendSummary.CandidatesLoaded += candidates.Count;
                 _logger?.Debug(
@@ -465,6 +469,75 @@ namespace PlayniteAchievements.Services.Friends
             return (_settings?.Persisted?.EnableParallelProviderRefresh ?? true)
                 ? FriendRefreshParallelism
                 : 1;
+        }
+
+        private IReadOnlyList<FriendIdentity> FilterIgnoredFriends(
+            string providerKey,
+            IReadOnlyList<FriendIdentity> friends)
+        {
+            var ignoredIds = GetIgnoredFriendIds(providerKey);
+            if (ignoredIds.Count == 0)
+            {
+                return friends ?? Array.Empty<FriendIdentity>();
+            }
+
+            return (friends ?? Array.Empty<FriendIdentity>())
+                .Where(friend => !ignoredIds.Contains(friend?.ExternalUserId ?? string.Empty))
+                .ToList();
+        }
+
+        private List<FriendRefreshCandidate> FilterIgnoredCandidates(
+            string providerKey,
+            List<FriendRefreshCandidate> candidates)
+        {
+            var ignoredIds = GetIgnoredFriendIds(providerKey);
+            if (ignoredIds.Count == 0)
+            {
+                return candidates ?? new List<FriendRefreshCandidate>();
+            }
+
+            return (candidates ?? new List<FriendRefreshCandidate>())
+                .Where(candidate => !ignoredIds.Contains(candidate?.Friend?.ExternalUserId ?? string.Empty))
+                .ToList();
+        }
+
+        private HashSet<string> GetIgnoredFriendIds(string providerKey)
+        {
+            if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase))
+            {
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            try
+            {
+                var steamSettingsType = typeof(ProviderRegistry).Assembly.GetType(
+                    "PlayniteAchievements.Providers.Steam.SteamSettings");
+                if (steamSettingsType == null)
+                {
+                    return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                object settings = null;
+                if (_providerRegistry != null)
+                {
+                    var getSettings = typeof(ProviderRegistry).GetMethod("GetSettings");
+                    settings = getSettings?.MakeGenericMethod(steamSettingsType).Invoke(_providerRegistry, null);
+                }
+                else
+                {
+                    var settingsMethod = typeof(ProviderRegistry).GetMethod(nameof(ProviderRegistry.Settings));
+                    settings = settingsMethod?.MakeGenericMethod(steamSettingsType).Invoke(null, null);
+                }
+
+                var getIgnoredSteamIds = steamSettingsType.GetMethod("GetIgnoredSteamIds");
+                var ids = getIgnoredSteamIds?.Invoke(settings, null) as IEnumerable<string>;
+                return new HashSet<string>(ids ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to load Steam ignored friend ids.");
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
         }
 
         private RateLimiter CreateScanRateLimiter()

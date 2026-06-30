@@ -87,6 +87,111 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Resolve_FriendsSelectedGame_UsesSelectedGameId()
+        {
+            var gameId = Guid.NewGuid();
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsSelectedGame,
+                    SingleGameId = gameId
+                },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.IsNotNull(resolved.FriendOptions);
+            Assert.AreEqual(FriendRefreshScope.SelectedGame, resolved.FriendOptions.Scope);
+            CollectionAssert.AreEqual(
+                new[] { gameId },
+                resolved.FriendOptions.PlayniteGameIds.ToList());
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsSelectedGame_WithNoGame_DoesNotExecute()
+        {
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest { Mode = RefreshModeType.FriendsSelectedGame },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsFalse(resolved.ShouldExecute);
+            Assert.AreEqual(
+                "No selected game provided for friends selected-game refresh.",
+                resolved.EmptySelectionLogMessage);
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsCustom_FiltersProvidersAndUsesSelectedGameScope()
+        {
+            var gameId = Guid.NewGuid();
+            var refreshTtl = TimeSpan.FromHours(2);
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var steamProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+            var epicProvider = new FakeProvider("Epic", new FakeFriendsProvider("Epic"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        ProviderKeys = new[] { " steam " },
+                        Scope = FriendRefreshScope.SelectedGame,
+                        PlayniteGameIds = new[] { Guid.Empty, gameId, gameId },
+                        RefreshTtl = refreshTtl
+                    }
+                },
+                new IDataProvider[] { steamProvider, epicProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(1, resolved.ProviderScope.Count);
+            Assert.AreSame(steamProvider, resolved.ProviderScope[0]);
+            Assert.IsNotNull(resolved.FriendOptions);
+            Assert.AreEqual(FriendRefreshScope.SelectedGame, resolved.FriendOptions.Scope);
+            Assert.AreEqual(refreshTtl, resolved.FriendOptions.RefreshTtl);
+            CollectionAssert.AreEqual(
+                new[] { gameId },
+                resolved.FriendOptions.PlayniteGameIds.ToList());
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsCustom_Installed_UsesInstalledGameIds()
+        {
+            var installedId = Guid.NewGuid();
+            var staleId = Guid.NewGuid();
+            var planner = CreatePlanner(new[]
+            {
+                new Game { Id = installedId, Name = "Installed", IsInstalled = true },
+                new Game { Id = Guid.NewGuid(), Name = "Not Installed", IsInstalled = false }
+            });
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Installed,
+                        PlayniteGameIds = new[] { staleId }
+                    }
+                },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.IsNotNull(resolved.FriendOptions);
+            Assert.AreEqual(FriendRefreshScope.Installed, resolved.FriendOptions.Scope);
+            CollectionAssert.AreEquivalent(
+                new[] { installedId },
+                resolved.FriendOptions.PlayniteGameIds.ToList());
+        }
+
+        [TestMethod]
         public void Resolve_FriendMode_WithNoFriendProviders_DoesNotExecute()
         {
             var planner = CreatePlanner(Array.Empty<Game>());

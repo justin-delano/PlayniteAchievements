@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using Playnite.SDK;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.Logging;
@@ -201,6 +202,16 @@ namespace PlayniteAchievements.Providers.Steam
             finally
             {
                 SetAuthBusy(false);
+            }
+        }
+
+        private void RemoveIgnoredFriend_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button &&
+                button.CommandParameter is string steamId &&
+                _steamSettings?.RemoveIgnoredFriend(steamId) == true)
+            {
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
             }
         }
 

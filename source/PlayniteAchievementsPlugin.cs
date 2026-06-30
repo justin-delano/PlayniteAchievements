@@ -441,7 +441,11 @@ namespace PlayniteAchievements
                         _cacheManager as IFriendCacheManager,
                         _refreshCoordinator,
                         _refreshService,
-                        _settingsViewModel.Settings);
+                        _settingsViewModel.Settings,
+                        OverviewLaunchContext.Sidebar,
+                        PlayniteApi,
+                        _cacheManager,
+                        _achievementOverridesService);
                 }
             };
         }

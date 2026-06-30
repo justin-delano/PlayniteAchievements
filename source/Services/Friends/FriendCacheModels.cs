@@ -70,6 +70,8 @@ namespace PlayniteAchievements.Services.Friends
             int appId,
             FriendGameAchievements achievements);
 
+        FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId);
+
         List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
             string providerKey,
             FriendRefreshOptions options);

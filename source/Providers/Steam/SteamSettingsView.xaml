@@ -94,6 +94,49 @@
                     </Grid>
                 </StackPanel>
             </Border>
+
+            <!-- Friends Section -->
+            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Friends}"
+                       Style="{StaticResource SectionHeaderStyle}"
+                       Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
+            <Border Style="{StaticResource SectionBorderStyle}"
+                    IsEnabled="{Binding Settings.IsEnabled}">
+                <Expander Header="{DynamicResource LOCPlayAch_Settings_IgnoredFriends}"
+                          IsExpanded="False">
+                    <DataGrid ItemsSource="{Binding Settings.IgnoredFriends}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              GridLinesVisibility="None"
+                              Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
+                              MaxHeight="220">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Column_Friend}"
+                                                Binding="{Binding DisplayName}"
+                                                Width="*"/>
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Settings_SteamId}"
+                                                Binding="{Binding SteamId}"
+                                                Width="180"/>
+                            <DataGridTextColumn Header="{DynamicResource LOCPlayAch_Settings_IgnoredUtc}"
+                                                Binding="{Binding IgnoredLocal, StringFormat=g}"
+                                                Width="150"/>
+                            <DataGridTemplateColumn Header=""
+                                                    Width="Auto">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{DynamicResource LOCPlayAch_Common_Remove}"
+                                                CommandParameter="{Binding SteamId}"
+                                                Click="RemoveIgnoredFriend_Click"
+                                                Style="{StaticResource AuthActionButtonStyle}"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Expander>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </settings:ProviderSettingsViewBase>
