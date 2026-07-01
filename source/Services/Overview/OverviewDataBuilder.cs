@@ -65,13 +65,25 @@ namespace PlayniteAchievements.Services.Overview
             revealedKeys ??= new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var providerLookup = BuildProviderLookup();
-            var queryData = _achievementDataService.GetCachedSummaryDataForOverview(0);
-            if (queryData != null)
+
+            CachedSummaryData queryData;
+            using (PerfScope.Start(_logger, "Overview.GetCachedSummaryData", thresholdMs: 25))
             {
-                return BuildFromCachedSummaryData(settings, queryData, providerLookup, cancel);
+                queryData = _achievementDataService.GetCachedSummaryDataForOverview(0);
             }
 
-            return BuildFromHydratedData(settings, revealedKeys, providerLookup, cancel);
+            if (queryData != null)
+            {
+                using (PerfScope.Start(_logger, "Overview.BuildFromCachedSummaryData", thresholdMs: 25))
+                {
+                    return BuildFromCachedSummaryData(settings, queryData, providerLookup, cancel);
+                }
+            }
+
+            using (PerfScope.Start(_logger, "Overview.BuildFromHydratedData", thresholdMs: 25))
+            {
+                return BuildFromHydratedData(settings, revealedKeys, providerLookup, cancel);
+            }
         }
 
         private OverviewDataSnapshot BuildFromHydratedData(
