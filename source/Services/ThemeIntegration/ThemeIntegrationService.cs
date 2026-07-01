@@ -356,10 +356,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ResetDynamicLibraryAchievementsCommand = new RelayCommand(_ => ResetDynamicLibraryAchievementsToDefaults());
             _settings.ResetDynamicGameSummariesCommand = new RelayCommand(_ => ResetDynamicGameSummariesToDefaults());
 
-            // Start with empty friend state and build it off the UI thread after wiring: the
-            // friends summary load is expensive and would otherwise block the plugin constructor
-            // (and Playnite startup). The background build applies and notifies when ready.
-            _runtimeState.Friends = FriendRuntimeState.Empty;
+            _runtimeState.Friends = BuildFriendState();
             ApplyDynamicThemeDefaultsFromSettings(notify: false);
             ApplyDynamicSelectedGameBindings(updateOptions: false);
             ApplyDynamicLibraryAchievementBindings(updateOptions: false);
@@ -368,8 +365,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ApplyDynamicOptionBindings();
 
             _refreshService.CacheInvalidated += RefreshService_CacheInvalidated;
-
-            ScheduleInitialFriendStateBuild();
         }
 
         public void Dispose()
@@ -1766,33 +1761,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _runtimeState.FriendScope.Reset();
             ApplyDynamicFriendBindings();
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
-        }
-
-        private void ScheduleInitialFriendStateBuild()
-        {
-            _ = Task.Run(() =>
-            {
-                FriendRuntimeState state;
-                try
-                {
-                    state = BuildFriendState();
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Error(ex, "Failed to build initial friend theme runtime state.");
-                    return;
-                }
-
-                var dispatcher = System.Windows.Application.Current?.Dispatcher;
-                if (dispatcher != null)
-                {
-                    dispatcher.InvokeIfNeeded(() => ApplyFriendState(state, notify: true));
-                }
-                else
-                {
-                    ApplyFriendState(state, notify: true);
-                }
-            });
         }
 
         private FriendRuntimeState BuildFriendState()
