@@ -44,6 +44,11 @@ namespace PlayniteAchievements.Services
             new Dictionary<int, CachedSummaryData>();
         private bool? _overviewHasAchievementFilters;
 
+        // Hydrated visible game data for the overview. Used only when achievement filters are
+        // configured (which disables the summary fast path), where each open would otherwise
+        // repeat the full load + hydrate. Cached here and warmed like the summary projection.
+        private List<GameAchievementData> _overviewVisibleGameData;
+
         // Debounced background warm: coalesces invalidation bursts (e.g. delta storms during a
         // refresh) into a single repopulation so the next overview/theme open is a cache hit.
         private const int OverviewProjectionWarmDebounceMs = 1500;
@@ -219,11 +224,27 @@ namespace PlayniteAchievements.Services
 
         public List<GameAchievementData> GetAllVisibleGameAchievementDataForOverview()
         {
+            lock (_overviewProjectionCacheSync)
+            {
+                if (_overviewVisibleGameData != null)
+                {
+                    return _overviewVisibleGameData;
+                }
+            }
+
             try
             {
                 var result = LoadAllCachedGameData();
                 HydrateAll(result, includeAchievementOverlays: false);
-                return ProjectVisibleGameAchievementData(result, excludeSummaryFiltered: true);
+                var visible = ProjectVisibleGameAchievementData(result, excludeSummaryFiltered: true);
+
+                lock (_overviewProjectionCacheSync)
+                {
+                    // Shared read-only snapshot; consumers (the overview builder) only enumerate it.
+                    _overviewVisibleGameData = visible;
+                }
+
+                return visible;
             }
             catch (Exception ex)
             {
@@ -935,18 +956,12 @@ namespace PlayniteAchievements.Services
             {
                 _overviewSummaryCacheByLimit.Clear();
                 _overviewHasAchievementFilters = null;
+                _overviewVisibleGameData = null;
             }
         }
 
         private void ScheduleOverviewProjectionWarm()
         {
-            // Nothing to warm when filters make the projection cache inapplicable (the getter
-            // returns null and never caches in that case).
-            if (HasAchievementFiltersConfigured())
-            {
-                return;
-            }
-
             var generation = Interlocked.Increment(ref _overviewProjectionWarmGeneration);
             _ = WarmOverviewProjectionAfterDelayAsync(generation);
         }
@@ -964,8 +979,15 @@ namespace PlayniteAchievements.Services
                     return;
                 }
 
-                // Repopulates _overviewSummaryCacheByLimit on a background thread.
-                GetCachedSummaryDataForOverview(0);
+                // Warm whichever path the overview build will actually use, on a background thread.
+                if (HasAchievementFiltersConfigured())
+                {
+                    GetAllVisibleGameAchievementDataForOverview();
+                }
+                else
+                {
+                    GetCachedSummaryDataForOverview(0);
+                }
             }
             catch (Exception ex)
             {
