@@ -7,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Services
 {
@@ -42,6 +44,11 @@ namespace PlayniteAchievements.Services
             new Dictionary<int, CachedSummaryData>();
         private bool? _overviewHasAchievementFilters;
 
+        // Debounced background warm: coalesces invalidation bursts (e.g. delta storms during a
+        // refresh) into a single repopulation so the next overview/theme open is a cache hit.
+        private const int OverviewProjectionWarmDebounceMs = 1500;
+        private int _overviewProjectionWarmGeneration;
+
         public AchievementDataService(
             ICacheManager cacheService,
             IPlayniteAPI api,
@@ -59,6 +66,9 @@ namespace PlayniteAchievements.Services
             _cacheReadOptimizations = cacheService as ICacheReadOptimizations;
             _hydrator = new GameDataHydrator(api, settings.Persisted, _gameCustomDataStore);
             SubscribeOverviewProjectionInvalidation();
+
+            // Warm the projection shortly after startup so the first overview open is a cache hit.
+            ScheduleOverviewProjectionWarm();
         }
 
         public GameAchievementData GetGameAchievementData(string playniteGameId)
@@ -910,11 +920,13 @@ namespace PlayniteAchievements.Services
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
             InvalidateOverviewProjectionCaches();
+            ScheduleOverviewProjectionWarm();
         }
 
         private void OnOverviewProjectionSourceChanged(object sender, EventArgs e)
         {
             InvalidateOverviewProjectionCaches();
+            ScheduleOverviewProjectionWarm();
         }
 
         private void InvalidateOverviewProjectionCaches()
@@ -923,6 +935,41 @@ namespace PlayniteAchievements.Services
             {
                 _overviewSummaryCacheByLimit.Clear();
                 _overviewHasAchievementFilters = null;
+            }
+        }
+
+        private void ScheduleOverviewProjectionWarm()
+        {
+            // Nothing to warm when filters make the projection cache inapplicable (the getter
+            // returns null and never caches in that case).
+            if (HasAchievementFiltersConfigured())
+            {
+                return;
+            }
+
+            var generation = Interlocked.Increment(ref _overviewProjectionWarmGeneration);
+            _ = WarmOverviewProjectionAfterDelayAsync(generation);
+        }
+
+        private async Task WarmOverviewProjectionAfterDelayAsync(int generation)
+        {
+            try
+            {
+                await Task.Delay(OverviewProjectionWarmDebounceMs).ConfigureAwait(false);
+
+                // Superseded by a newer invalidation; let the latest scheduled warm win so we
+                // repopulate only once after a burst settles.
+                if (generation != Volatile.Read(ref _overviewProjectionWarmGeneration))
+                {
+                    return;
+                }
+
+                // Repopulates _overviewSummaryCacheByLimit on a background thread.
+                GetCachedSummaryDataForOverview(0);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to warm overview projection cache");
             }
         }
 
