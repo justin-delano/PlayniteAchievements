@@ -2144,6 +2144,7 @@ namespace PlayniteAchievements.Services.Database
                 // presentation is resolved at most once per load.
                 var presentationCache = new Dictionary<Guid, GamePresentation>();
 
+                using (PerfScope.Start(_logger, "Friends.LoadSummaryRows", thresholdMs: 15))
                 data.Friends = LoadFriendSummaryRows(db)
                     .Select(row => new FriendSummaryItem
                     {
@@ -2163,6 +2164,7 @@ namespace PlayniteAchievements.Services.Database
                     })
                     .ToList();
 
+                using (PerfScope.Start(_logger, "Friends.LoadGameSummaryRows", thresholdMs: 15))
                 data.Games = LoadFriendGameSummaryRows(db)
                     .Select(row =>
                     {
@@ -2203,6 +2205,7 @@ namespace PlayniteAchievements.Services.Database
                     })
                     .ToList();
 
+                using (PerfScope.Start(_logger, "Friends.LoadGameLinkRows", thresholdMs: 15))
                 data.FriendGameLinks = LoadFriendGameLinkRows(db)
                     .Select(row => new FriendGameLinkItem
                     {
@@ -2215,8 +2218,11 @@ namespace PlayniteAchievements.Services.Database
                     })
                     .ToList();
 
+                using (PerfScope.Start(_logger, "Friends.LoadRecentUnlockRows", thresholdMs: 15))
                 data.RecentUnlocks = MapFriendRecentUnlocks(LoadFriendRecentUnlockRows(db, recentLimit), presentationCache);
+                using (PerfScope.Start(_logger, "Friends.LoadUnlockedAchievementRows", thresholdMs: 15))
                 data.AllUnlockedAchievements = MapFriendRecentUnlocks(LoadFriendUnlockedAchievementRows(db), presentationCache);
+                using (PerfScope.Start(_logger, "Friends.ApplySummaryScores", thresholdMs: 15))
                 ApplyFriendSummaryScores(data.Friends, data.AllUnlockedAchievements);
                 return data;
             });
