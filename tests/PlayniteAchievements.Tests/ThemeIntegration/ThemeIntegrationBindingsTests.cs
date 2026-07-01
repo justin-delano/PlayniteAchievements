@@ -1668,15 +1668,18 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             var gameOne = settings.DynamicFriendGameSummaries.Single(item => item.AppId == 10);
             Assert.AreEqual(1, gameOne.FriendUnlockedAchievementsCount);
             Assert.AreEqual(1, gameOne.UniqueFriendUnlockedAchievementsCount);
-            Assert.AreEqual(1, gameOne.UnlockedAchievements);
-            Assert.AreEqual(4, gameOne.TotalAchievements);
+            Assert.AreEqual(1, gameOne.UnlockedCount);
+            Assert.AreEqual(4, gameOne.AchievementCount);
             Assert.AreEqual(25, gameOne.FriendCompletionPercent);
-            Assert.AreEqual(25, gameOne.Progression);
-            Assert.AreEqual("25%", gameOne.ProgressionText);
+            Assert.AreEqual(25, gameOne.Progress);
+            Assert.AreEqual("25%", gameOne.FriendCompletionText);
             Assert.AreEqual(600, gameOne.TotalFriendPlaytimeMinutes);
-            Assert.AreEqual(600UL * 60UL, gameOne.PlaytimeSeconds);
+            Assert.AreEqual(600UL * 60UL, gameOne.TotalFriendPlaytimeSeconds);
             Assert.AreEqual(Utc(2026, 1, 7, 0, 0, 0), gameOne.LastPlayed);
             Assert.AreEqual(Utc(2026, 1, 4, 0, 0, 0), gameOne.LastFriendUnlockUtc);
+            Assert.IsNotNull(gameOne.OpenViewAchievementsWindow);
+            Assert.IsNotNull(gameOne.Rare);
+            Assert.IsNotNull(gameOne.Overall);
         }
 
         [TestMethod]
