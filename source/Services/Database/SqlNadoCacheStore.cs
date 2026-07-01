@@ -2218,10 +2218,15 @@ namespace PlayniteAchievements.Services.Database
                     })
                     .ToList();
 
-                using (PerfScope.Start(_logger, "Friends.LoadRecentUnlockRows", thresholdMs: 15))
-                data.RecentUnlocks = MapFriendRecentUnlocks(LoadFriendRecentUnlockRows(db, recentLimit), presentationCache);
                 using (PerfScope.Start(_logger, "Friends.LoadUnlockedAchievementRows", thresholdMs: 15))
                 data.AllUnlockedAchievements = MapFriendRecentUnlocks(LoadFriendUnlockedAchievementRows(db), presentationCache);
+
+                // Recent unlocks are the time-stamped subset of all unlocked achievements, already
+                // ordered by unlock time DESC from the query - derive them in memory rather than
+                // re-running the identical (and expensive) friend/achievement join a second time.
+                var recentUnlocked = data.AllUnlockedAchievements.Where(item => item.UnlockTimeUtc.HasValue);
+                data.RecentUnlocks = (recentLimit > 0 ? recentUnlocked.Take(recentLimit) : recentUnlocked).ToList();
+
                 using (PerfScope.Start(_logger, "Friends.ApplySummaryScores", thresholdMs: 15))
                 ApplyFriendSummaryScores(data.Friends, data.AllUnlockedAchievements);
                 return data;
@@ -3169,13 +3174,6 @@ namespace PlayniteAchievements.Services.Database
                     AND u.IsActiveFriend = 1
                     AND u.FriendSource IS NOT NULL
                   ORDER BY u.ExternalUserId, g.GameName;").ToList();
-        }
-
-        private static List<FriendRecentUnlockRow> LoadFriendRecentUnlockRows(
-            SQLiteDatabase db,
-            int recentLimit)
-        {
-            return LoadFriendAchievementRows(db, recentLimit, requireUnlockTime: true);
         }
 
         private static List<FriendRecentUnlockRow> LoadFriendUnlockedAchievementRows(SQLiteDatabase db)
