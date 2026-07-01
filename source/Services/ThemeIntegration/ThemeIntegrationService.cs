@@ -842,6 +842,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 case AchievementDisplayItem item when item.PlayniteGameId.HasValue && item.PlayniteGameId.Value != Guid.Empty:
                     gameId = item.PlayniteGameId.Value;
                     return true;
+                case GameSummaryItem gameItem when gameItem.PlayniteGameId.HasValue && gameItem.PlayniteGameId.Value != Guid.Empty:
+                    gameId = gameItem.PlayniteGameId.Value;
+                    return true;
                 case Game game when game.Id != Guid.Empty:
                     gameId = game.Id;
                     return true;
@@ -1513,6 +1516,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     openManageAchievementsWindow: GetOpenManageAchievementsCommand(item.GameId)))
                 .ToList();
 
+            AttachGameSummaryCommands(projected);
             return new ObservableCollection<GameAchievementSummary>(projected);
         }
 
@@ -1560,6 +1564,19 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         FriendsWithUnlocksCount = item.FriendsWithUnlocksCount,
                         FriendUnlockedAchievementsCount = item.FriendUnlockedAchievementsCount,
                         UniqueFriendUnlockedAchievementsCount = item.UniqueFriendUnlockedAchievementsCount,
+                        CollectionScore = item.CollectionScore,
+                        CollectionScoreTotal = item.CollectionScoreTotal,
+                        PrestigeScore = item.PrestigeScore,
+                        PrestigeScoreTotal = item.PrestigeScoreTotal,
+                        Points = item.Points,
+                        TrophyPlatinumCount = item.TrophyPlatinumCount,
+                        TrophyGoldCount = item.TrophyGoldCount,
+                        TrophySilverCount = item.TrophySilverCount,
+                        TrophyBronzeCount = item.TrophyBronzeCount,
+                        TrophyPlatinumTotal = item.TrophyPlatinumTotal,
+                        TrophyGoldTotal = item.TrophyGoldTotal,
+                        TrophySilverTotal = item.TrophySilverTotal,
+                        TrophyBronzeTotal = item.TrophyBronzeTotal,
                         LastFriendUnlockUtc = item.LastFriendUnlockUtc,
                         TotalFriendPlaytimeMinutes = item.TotalFriendPlaytimeMinutes,
                         AverageFriendPlaytimeMinutes = item.AverageFriendPlaytimeMinutes,
@@ -1570,6 +1587,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 })
                 .ToList();
 
+            AttachFriendGameSummaryCommands(projected);
             return new ObservableCollection<FriendGameAchievementSummary>(projected);
         }
 
@@ -1921,7 +1939,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private string NormalizeFriendProviderScopeKey(object parameter)
         {
-            var raw = DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            var raw = ExtractProviderKeyParameter(parameter);
             if (string.IsNullOrWhiteSpace(raw) ||
                 string.Equals(raw, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
             {
@@ -1933,21 +1951,21 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private string NormalizeFriendUserScopeKey(object parameter)
         {
-            var raw = DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            var raw = ExtractFriendUserScopeKey(parameter);
             if (string.IsNullOrWhiteSpace(raw) ||
                 string.Equals(raw, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
             {
                 return DynamicThemeViewKeys.All;
             }
 
-            return _runtimeState.Friends?.Friends
+            return (_runtimeState.Friends?.Friends ?? Enumerable.Empty<FriendSummaryItem>())
                 .Select(FriendOverviewProjection.GetFriendScopeKey)
-                .FirstOrDefault(key => string.Equals(key, raw, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(key => string.Equals(key, raw, StringComparison.OrdinalIgnoreCase)) ?? raw;
         }
 
         private string NormalizeFriendGameScopeKey(object parameter)
         {
-            var raw = DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            var raw = ExtractFriendGameScopeKey(parameter);
             if (string.IsNullOrWhiteSpace(raw) ||
                 string.Equals(raw, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase))
             {
@@ -1958,7 +1976,55 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var scope = _runtimeState.FriendScope;
             return GetFriendGameScopeCandidates(state, scope.ProviderKey, scope.UserKey)
                 .Select(FriendOverviewProjection.GetGameScopeKey)
-                .FirstOrDefault(key => string.Equals(key, raw, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(key => string.Equals(key, raw, StringComparison.OrdinalIgnoreCase)) ?? raw;
+        }
+
+        private static string ExtractFriendUserScopeKey(object parameter)
+        {
+            if (parameter == DependencyProperty.UnsetValue)
+            {
+                return null;
+            }
+
+            switch (parameter)
+            {
+                case DynamicThemeOption option:
+                    return option.Key;
+                case FriendSummaryItem friend:
+                    return FriendOverviewProjection.BuildFriendKey(friend.ProviderKey, friend.ExternalUserId);
+                case FriendAchievementDisplayItem achievement:
+                    return FriendOverviewProjection.BuildFriendKey(achievement.ProviderKey, achievement.FriendExternalUserId);
+                default:
+                    return DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            }
+        }
+
+        private static string ExtractFriendGameScopeKey(object parameter)
+        {
+            if (parameter == DependencyProperty.UnsetValue)
+            {
+                return null;
+            }
+
+            switch (parameter)
+            {
+                case DynamicThemeOption option:
+                    return option.Key;
+                case FriendGameSummaryItem game:
+                    return FriendOverviewProjection.BuildGameUnlockKey(game.ProviderKey, game.AppId, game.PlayniteGameId);
+                case FriendGameAchievementSummary summary:
+                    return FriendOverviewProjection.BuildGameUnlockKey(
+                        summary.ProviderKey,
+                        summary.AppId,
+                        summary.GameId != Guid.Empty ? summary.GameId : (Guid?)null);
+                case FriendAchievementDisplayItem achievement:
+                    return FriendOverviewProjection.BuildGameUnlockKey(
+                        achievement.ProviderKey,
+                        achievement.AppId,
+                        achievement.PlayniteGameId);
+                default:
+                    return DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            }
         }
 
         private static bool ProviderMatches(string itemProviderKey, string scopeProviderKey)
@@ -2010,7 +2076,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             object parameter,
             string currentKey)
         {
-            var raw = DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            var raw = ExtractProviderKeyParameter(parameter);
             if (string.IsNullOrWhiteSpace(raw))
             {
                 return !string.IsNullOrWhiteSpace(currentKey) ? currentKey : DynamicThemeViewKeys.All;
@@ -2022,6 +2088,32 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             return FindCanonicalProviderKey(raw) ?? raw;
+        }
+
+        private static string ExtractProviderKeyParameter(object parameter)
+        {
+            if (parameter == DependencyProperty.UnsetValue)
+            {
+                return null;
+            }
+
+            switch (parameter)
+            {
+                case DynamicThemeOption option:
+                    return option.Key;
+                case AchievementDetail achievement:
+                    return achievement.ProviderKey;
+                case AchievementDisplayItem displayItem:
+                    return displayItem.ProviderKey;
+                case GameAchievementSummary summary:
+                    return summary.ProviderKey;
+                case GameSummaryItem game:
+                    return game.ProviderKey;
+                case FriendSummaryItem friend:
+                    return friend.ProviderKey;
+                default:
+                    return DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            }
         }
 
         private string FindCanonicalProviderKey(string providerKey)
@@ -2115,6 +2207,100 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             NotifySettingProperties(propertyNamesToNotify);
         }
 
+        private static ICommand CreateItemCommand(ICommand rootCommand, object owner)
+        {
+            return rootCommand == null
+                ? null
+                : new RelayCommand(parameter => ExecuteRootCommand(rootCommand, parameter ?? owner));
+        }
+
+        private static void ExecuteRootCommand(ICommand command, object parameter)
+        {
+            if (command?.CanExecute(parameter) == true)
+            {
+                command.Execute(parameter);
+            }
+        }
+
+        private void AttachAchievementCommands(IEnumerable<AchievementDetail> items)
+        {
+            foreach (var item in items ?? Enumerable.Empty<AchievementDetail>())
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.SetDynamicAchievementsGameCommand = CreateItemCommand(_settings.SetDynamicAchievementsGameCommand, item);
+                item.FilterDynamicLibraryAchievementsByProviderCommand = CreateItemCommand(_settings.FilterDynamicLibraryAchievementsByProviderCommand, item);
+                item.OpenViewAchievementsWindow = CreateItemCommand(_settings.OpenViewAchievementsWindow, item);
+                item.OpenManageAchievementsWindow = CreateItemCommand(_settings.OpenManageAchievementsWindow, item);
+            }
+        }
+
+        private void AttachGameSummaryCommands(IEnumerable<GameAchievementSummary> items)
+        {
+            foreach (var item in items ?? Enumerable.Empty<GameAchievementSummary>())
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.SetDynamicAchievementsGameCommand = CreateItemCommand(_settings.SetDynamicAchievementsGameCommand, item);
+                item.FilterDynamicGameSummariesByProviderCommand = CreateItemCommand(_settings.FilterDynamicGameSummariesByProviderCommand, item);
+            }
+        }
+
+        private void AttachFriendSummaryCommands(IEnumerable<FriendSummaryItem> items)
+        {
+            foreach (var item in items ?? Enumerable.Empty<FriendSummaryItem>())
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.SetDynamicFriendScopeProviderCommand = CreateItemCommand(_settings.SetDynamicFriendScopeProviderCommand, item);
+                item.SetDynamicFriendScopeUserCommand = CreateItemCommand(_settings.SetDynamicFriendScopeUserCommand, item);
+            }
+        }
+
+        private void AttachFriendGameSummaryCommands(IEnumerable<FriendGameAchievementSummary> items)
+        {
+            foreach (var item in items ?? Enumerable.Empty<FriendGameAchievementSummary>())
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.SetDynamicAchievementsGameCommand = CreateItemCommand(_settings.SetDynamicAchievementsGameCommand, item);
+                item.FilterDynamicGameSummariesByProviderCommand = CreateItemCommand(_settings.FilterDynamicGameSummariesByProviderCommand, item);
+                item.SetDynamicFriendScopeProviderCommand = CreateItemCommand(_settings.SetDynamicFriendScopeProviderCommand, item);
+                item.SetDynamicFriendScopeGameCommand = CreateItemCommand(_settings.SetDynamicFriendScopeGameCommand, item);
+            }
+        }
+
+        private void AttachFriendAchievementCommands(IEnumerable<FriendAchievementDisplayItem> items)
+        {
+            foreach (var item in items ?? Enumerable.Empty<FriendAchievementDisplayItem>())
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                item.SetDynamicAchievementsGameCommand = CreateItemCommand(_settings.SetDynamicAchievementsGameCommand, item);
+                item.FilterDynamicLibraryAchievementsByProviderCommand = CreateItemCommand(_settings.FilterDynamicLibraryAchievementsByProviderCommand, item);
+                item.OpenViewAchievementsWindow = CreateItemCommand(_settings.OpenViewAchievementsWindow, item);
+                item.OpenManageAchievementsWindow = CreateItemCommand(_settings.OpenManageAchievementsWindow, item);
+                item.SetDynamicFriendScopeProviderCommand = CreateItemCommand(_settings.SetDynamicFriendScopeProviderCommand, item);
+                item.SetDynamicFriendScopeUserCommand = CreateItemCommand(_settings.SetDynamicFriendScopeUserCommand, item);
+                item.SetDynamicFriendScopeGameCommand = CreateItemCommand(_settings.SetDynamicFriendScopeGameCommand, item);
+            }
+        }
+
         private void ApplyDynamicSelectedGameBindings()
         {
             ApplyDynamicSelectedGameBindings(updateOptions: true);
@@ -2125,6 +2311,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var state = _runtimeState.SelectedGame ?? SelectedGameRuntimeState.Empty;
             var viewState = _runtimeState.SelectedGameAchievements;
             var items = BuildDynamicSelectedGameAchievements(state, viewState);
+            AttachAchievementCommands(items);
 
             _settings.ModernTheme.DynamicAchievements = items;
             _settings.ModernTheme.DynamicAchievementsFilterKey = viewState.FilterKey;
@@ -2138,13 +2325,16 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.DynamicAchievementsDefaultSortDirectionKey = viewState.DefaultSortDirectionKey;
             _settings.ModernTheme.DynamicAchievementsFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementFilterKeys,
-                viewState.FilterKey);
+                viewState.FilterKey,
+                _settings.SetDynamicAchievementsFilterCommand);
             _settings.ModernTheme.DynamicAchievementsSortOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.SelectedGameAchievementSortKeys,
-                viewState.SortKey);
+                viewState.SortKey,
+                _settings.SortDynamicAchievementsCommand);
             _settings.ModernTheme.DynamicAchievementsSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.SortDirectionKeys,
-                viewState.SortDirectionKey);
+                viewState.SortDirectionKey,
+                _settings.SetDynamicAchievementsSortDirectionCommand);
             if (updateOptions)
             {
                 ApplyDynamicOptionBindings();
@@ -2161,6 +2351,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var state = _runtimeState.Library ?? new LibraryRuntimeState();
             var viewState = _runtimeState.LibraryAchievements;
             var items = BuildDynamicLibraryAchievements(state, viewState);
+            AttachAchievementCommands(items);
 
             _settings.ModernTheme.DynamicLibraryAchievements = items;
             _settings.ModernTheme.DynamicLibraryAchievementsProviderKey = viewState.ProviderKey;
@@ -2177,16 +2368,40 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.DynamicLibraryAchievementsDefaultSortDirectionKey = viewState.DefaultSortDirectionKey;
             _settings.ModernTheme.DynamicLibraryAchievementsProviderOptions = DynamicThemeOptionFactory.CreateProviderOptions(
                 EnumerateLibraryAchievementProviderKeys(state),
-                viewState.ProviderKey);
+                viewState.ProviderKey,
+                _settings.FilterDynamicLibraryAchievementsByProviderCommand);
             _settings.ModernTheme.DynamicLibraryAchievementsFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementFilterKeys,
-                viewState.FilterKey);
+                viewState.FilterKey,
+                _settings.SetDynamicLibraryAchievementsFilterCommand);
             _settings.ModernTheme.DynamicLibraryAchievementsSortOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.LibraryAchievementSortKeys,
-                viewState.SortKey);
+                viewState.SortKey,
+                _settings.SortDynamicLibraryAchievementsCommand);
             _settings.ModernTheme.DynamicLibraryAchievementsSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.SortDirectionKeys,
-                viewState.SortDirectionKey);
+                viewState.SortDirectionKey,
+                _settings.SetDynamicLibraryAchievementsSortDirectionCommand);
+            _settings.ModernTheme.DynamicLibraryAchievementStatusFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementStatusFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(viewState.FilterKey, DynamicThemeOptionGroups.AchievementStatusGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicLibraryAchievementsStatusFilterCommand);
+            _settings.ModernTheme.DynamicLibraryAchievementProgressFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementProgressFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(viewState.FilterKey, DynamicThemeOptionGroups.AchievementProgressGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicLibraryAchievementsProgressFilterCommand);
+            _settings.ModernTheme.DynamicLibraryAchievementRarityFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementRarityFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(viewState.FilterKey, DynamicThemeOptionGroups.AchievementRarityGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicLibraryAchievementsRarityFilterCommand);
+            _settings.ModernTheme.DynamicLibraryAchievementTrophyFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementTrophyFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(viewState.FilterKey, DynamicThemeOptionGroups.AchievementTrophyGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicLibraryAchievementsTrophyFilterCommand);
+            _settings.ModernTheme.DynamicLibraryAchievementCustomizationFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementCustomizationFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(viewState.FilterKey, DynamicThemeOptionGroups.AchievementCustomizationGroups, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicLibraryAchievementsCustomizationFilterCommand);
             if (updateOptions)
             {
                 ApplyDynamicOptionBindings();
@@ -2203,6 +2418,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var state = _runtimeState.Library ?? new LibraryRuntimeState();
             var viewState = _runtimeState.GameSummaries;
             var items = BuildDynamicGameSummaries(state, viewState);
+            AttachGameSummaryCommands(items);
 
             _settings.ModernTheme.DynamicGameSummaries = ProjectGameSummaries(items);
             _settings.ModernTheme.DynamicGameSummariesProviderKey = viewState.ProviderKey;
@@ -2219,16 +2435,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.DynamicGameSummariesDefaultSortDirectionKey = viewState.DefaultSortDirectionKey;
             _settings.ModernTheme.DynamicGameSummariesProviderOptions = DynamicThemeOptionFactory.CreateProviderOptions(
                 (state.AllGamesWithAchievements ?? Enumerable.Empty<GameAchievementSummary>()).Select(item => item?.ProviderKey),
-                viewState.ProviderKey);
+                viewState.ProviderKey,
+                _settings.FilterDynamicGameSummariesByProviderCommand);
             _settings.ModernTheme.DynamicGameSummariesFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.GameSummaryFilterKeys,
-                viewState.FilterKey);
+                viewState.FilterKey,
+                _settings.SetDynamicGameSummariesFilterCommand);
             _settings.ModernTheme.DynamicGameSummariesSortOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.GameSummarySortKeys,
-                viewState.SortKey);
+                viewState.SortKey,
+                _settings.SortDynamicGameSummariesCommand);
             _settings.ModernTheme.DynamicGameSummariesSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.SortDirectionKeys,
-                viewState.SortDirectionKey);
+                viewState.SortDirectionKey,
+                _settings.SetDynamicGameSummariesSortDirectionCommand);
             if (updateOptions)
             {
                 ApplyDynamicOptionBindings();
@@ -2249,9 +2469,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var friendItems = BuildDynamicFriendSummaries(state, _runtimeState.FriendSummaries);
             var gameItems = BuildDynamicFriendGameSummaries(state, _runtimeState.FriendGameSummaries);
             var achievementItems = BuildDynamicFriendAchievements(state, _runtimeState.FriendAchievements);
+            AttachFriendSummaryCommands(friendItems);
+            AttachFriendAchievementCommands(achievementItems);
 
             _settings.ModernTheme.DynamicFriendSummaries = new ObservableCollection<FriendSummaryItem>(friendItems);
-            _settings.ModernTheme.DynamicFriendGameSummaryRows = new ObservableCollection<FriendGameSummaryItem>(gameItems);
             _settings.ModernTheme.DynamicFriendGameSummaries = ProjectFriendGameSummaries(gameItems);
             _settings.ModernTheme.DynamicFriendAchievements = new ObservableCollection<FriendAchievementDisplayItem>(achievementItems);
 
@@ -2292,36 +2513,89 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 value => _settings.ModernTheme.DynamicFriendAchievementsSortDirectionKey = value,
                 value => _settings.ModernTheme.DynamicFriendAchievementsSortDirectionLabel = value);
 
-            _settings.ModernTheme.DynamicFriendScopeProviderOptions = CreateFriendProviderOptions(state, scope.ProviderKey);
-            _settings.ModernTheme.DynamicFriendScopeUserOptions = CreateFriendUserOptions(state, scope.ProviderKey, scope.UserKey);
-            _settings.ModernTheme.DynamicFriendScopeGameOptions = CreateFriendGameOptions(state, scope.ProviderKey, scope.UserKey, scope.GameKey);
+            _settings.ModernTheme.DynamicFriendScopeProviderOptions = CreateFriendProviderOptions(
+                state,
+                scope.ProviderKey,
+                _settings.SetDynamicFriendScopeProviderCommand);
+            _settings.ModernTheme.DynamicFriendScopeUserOptions = CreateFriendUserOptions(
+                state,
+                scope.ProviderKey,
+                scope.UserKey,
+                _settings.SetDynamicFriendScopeUserCommand);
+            _settings.ModernTheme.DynamicFriendScopeGameOptions = CreateFriendGameOptions(
+                state,
+                scope.ProviderKey,
+                scope.UserKey,
+                scope.GameKey,
+                _settings.SetDynamicFriendScopeGameCommand);
             _settings.ModernTheme.DynamicFriendSummariesFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.FriendSummaryFilterKeys,
-                _runtimeState.FriendSummaries.FilterKey);
+                _runtimeState.FriendSummaries.FilterKey,
+                _settings.SetDynamicFriendSummariesFilterCommand);
             _settings.ModernTheme.DynamicFriendSummariesSortOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.FriendSummarySortKeys,
-                _runtimeState.FriendSummaries.SortKey);
+                _runtimeState.FriendSummaries.SortKey,
+                _settings.SortDynamicFriendSummariesCommand);
             _settings.ModernTheme.DynamicFriendSummariesSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.SortDirectionKeys,
-                _runtimeState.FriendSummaries.SortDirectionKey);
+                _runtimeState.FriendSummaries.SortDirectionKey,
+                _settings.SetDynamicFriendSummariesSortDirectionCommand);
+            _settings.ModernTheme.DynamicFriendSummaryLastUnlockFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.FriendSummaryFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.FriendSummaries.FilterKey, DynamicThemeOptionGroups.FriendLastUnlockGroup, DynamicThemeOptionGroups.FriendSummaryFilterGroupMap),
+                _settings.SetDynamicFriendSummariesLastUnlockFilterCommand);
             _settings.ModernTheme.DynamicFriendGameSummariesFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.GameSummaryFilterKeys,
-                _runtimeState.FriendGameSummaries.FilterKey);
+                _runtimeState.FriendGameSummaries.FilterKey,
+                _settings.SetDynamicFriendGameSummariesFilterCommand);
             _settings.ModernTheme.DynamicFriendGameSummariesSortOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.GameSummarySortKeys,
-                _runtimeState.FriendGameSummaries.SortKey);
+                _runtimeState.FriendGameSummaries.SortKey,
+                _settings.SortDynamicFriendGameSummariesCommand);
             _settings.ModernTheme.DynamicFriendGameSummariesSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.SortDirectionKeys,
-                _runtimeState.FriendGameSummaries.SortDirectionKey);
+                _runtimeState.FriendGameSummaries.SortDirectionKey,
+                _settings.SetDynamicFriendGameSummariesSortDirectionCommand);
+            _settings.ModernTheme.DynamicFriendGameProgressFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.GameProgressFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.FriendGameSummaries.FilterKey, DynamicThemeOptionGroups.GameProgressGroups, DynamicThemeOptionGroups.GameSummaryFilterGroupMap),
+                _settings.SetDynamicFriendGameSummariesProgressFilterCommand);
+            _settings.ModernTheme.DynamicFriendGameActivityFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.GameActivityFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.FriendGameSummaries.FilterKey, DynamicThemeOptionGroups.GameActivityGroups, DynamicThemeOptionGroups.GameSummaryFilterGroupMap),
+                _settings.SetDynamicFriendGameSummariesActivityFilterCommand);
             _settings.ModernTheme.DynamicFriendAchievementsFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementFilterKeys,
-                _runtimeState.FriendAchievements.FilterKey);
+                _runtimeState.FriendAchievements.FilterKey,
+                _settings.SetDynamicFriendAchievementsFilterCommand);
             _settings.ModernTheme.DynamicFriendAchievementsSortOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.LibraryAchievementSortKeys,
-                _runtimeState.FriendAchievements.SortKey);
+                _runtimeState.FriendAchievements.SortKey,
+                _settings.SortDynamicFriendAchievementsCommand);
             _settings.ModernTheme.DynamicFriendAchievementsSortDirectionOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.SortDirectionKeys,
-                _runtimeState.FriendAchievements.SortDirectionKey);
+                _runtimeState.FriendAchievements.SortDirectionKey,
+                _settings.SetDynamicFriendAchievementsSortDirectionCommand);
+            _settings.ModernTheme.DynamicFriendAchievementStatusFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementStatusFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.FriendAchievements.FilterKey, DynamicThemeOptionGroups.AchievementStatusGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicFriendAchievementsStatusFilterCommand);
+            _settings.ModernTheme.DynamicFriendAchievementProgressFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementProgressFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.FriendAchievements.FilterKey, DynamicThemeOptionGroups.AchievementProgressGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicFriendAchievementsProgressFilterCommand);
+            _settings.ModernTheme.DynamicFriendAchievementRarityFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementRarityFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.FriendAchievements.FilterKey, DynamicThemeOptionGroups.AchievementRarityGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicFriendAchievementsRarityFilterCommand);
+            _settings.ModernTheme.DynamicFriendAchievementTrophyFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementTrophyFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.FriendAchievements.FilterKey, DynamicThemeOptionGroups.AchievementTrophyGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicFriendAchievementsTrophyFilterCommand);
+            _settings.ModernTheme.DynamicFriendAchievementCustomizationFilterOptions = DynamicThemeOptionFactory.CreateOptions(
+                DynamicThemeOptionGroups.AchievementCustomizationFilterKeys,
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.FriendAchievements.FilterKey, DynamicThemeOptionGroups.AchievementCustomizationGroups, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicFriendAchievementsCustomizationFilterCommand);
 
             if (updateOptions)
             {
@@ -2349,18 +2623,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private static ObservableCollection<DynamicThemeOption> CreateFriendProviderOptions(
             FriendRuntimeState state,
-            string selectedKey)
+            string selectedKey,
+            ICommand applyCommand)
         {
             var providerKeys = (state?.Friends ?? Enumerable.Empty<FriendSummaryItem>())
                 .Select(friend => friend?.ProviderKey)
                 .Concat((state?.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>()).Select(game => game?.ProviderKey));
-            return DynamicThemeOptionFactory.CreateProviderOptions(providerKeys, selectedKey);
+            return DynamicThemeOptionFactory.CreateProviderOptions(providerKeys, selectedKey, applyCommand);
         }
 
         private static ObservableCollection<DynamicThemeOption> CreateFriendUserOptions(
             FriendRuntimeState state,
             string providerKey,
-            string selectedKey)
+            string selectedKey,
+            ICommand applyCommand)
         {
             var friends = (state?.Friends ?? Enumerable.Empty<FriendSummaryItem>())
                 .Where(friend => friend != null && ProviderMatches(friend.ProviderKey, providerKey))
@@ -2376,14 +2652,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 .OrderBy(option => option.Label, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
 
-            return CreateScopedOptions(friends, selectedKey);
+            return CreateScopedOptions(friends, selectedKey, applyCommand);
         }
 
         private static ObservableCollection<DynamicThemeOption> CreateFriendGameOptions(
             FriendRuntimeState state,
             string providerKey,
             string userKey,
-            string selectedKey)
+            string selectedKey,
+            ICommand applyCommand)
         {
             var options = GetFriendGameScopeCandidates(state, providerKey, userKey)
                 .GroupBy(FriendOverviewProjection.GetGameScopeKey, StringComparer.OrdinalIgnoreCase)
@@ -2398,7 +2675,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 .OrderBy(option => option.Label, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
 
-            return CreateScopedOptions(options, selectedKey);
+            return CreateScopedOptions(options, selectedKey, applyCommand);
         }
 
         private static IEnumerable<FriendGameSummaryItem> GetFriendGameScopeCandidates(
@@ -2417,26 +2694,45 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private static ObservableCollection<DynamicThemeOption> CreateScopedOptions(
             IList<DynamicThemeOption> scopedOptions,
-            string selectedKey)
+            string selectedKey,
+            ICommand applyCommand)
         {
+            scopedOptions = scopedOptions ?? Array.Empty<DynamicThemeOption>();
             var options = new List<DynamicThemeOption>
             {
-                new DynamicThemeOption(DynamicThemeViewKeys.All, DynamicThemeLabels.GetLabel(DynamicThemeViewKeys.All, DynamicThemeViewKeys.All),
-                    (scopedOptions ?? Array.Empty<DynamicThemeOption>()).Sum(option => option?.Count ?? 0))
+                new DynamicThemeOption(
+                    DynamicThemeViewKeys.All,
+                    DynamicThemeLabels.GetLabel(DynamicThemeViewKeys.All, DynamicThemeViewKeys.All),
+                    scopedOptions.Sum(option => option?.Count ?? 0),
+                    IsThemeOptionSelected(DynamicThemeViewKeys.All, selectedKey),
+                    applyCommand)
             };
 
-            if (scopedOptions != null)
-            {
-                options.AddRange(scopedOptions);
-            }
+            options.AddRange(scopedOptions
+                .Where(option => option != null)
+                .Select(option => new DynamicThemeOption(
+                    option.Key,
+                    option.Label,
+                    option.Count,
+                    IsThemeOptionSelected(option.Key, selectedKey),
+                    applyCommand)));
 
             if (!FriendOverviewProjection.IsAllScope(selectedKey) &&
                 options.All(option => !string.Equals(option.Key, selectedKey, StringComparison.OrdinalIgnoreCase)))
             {
-                options.Add(new DynamicThemeOption(selectedKey, selectedKey));
+                options.Add(new DynamicThemeOption(
+                    selectedKey,
+                    selectedKey,
+                    isSelected: true,
+                    applyCommand: applyCommand));
             }
 
             return new ObservableCollection<DynamicThemeOption>(options);
+        }
+
+        private static bool IsThemeOptionSelected(string key, string selectedKey)
+        {
+            return string.Equals(key ?? string.Empty, selectedKey ?? string.Empty, StringComparison.OrdinalIgnoreCase);
         }
 
         private static string GetFriendScopeUserLabel(FriendRuntimeState state, string userKey)
@@ -2485,29 +2781,37 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.DynamicAchievementsGameLabel = selectedGameLabel ?? string.Empty;
             _settings.ModernTheme.DynamicAchievementGameOptions = DynamicThemeOptionFactory.CreateGameOptions(
                 library.AllGamesWithAchievements,
-                selectedGameKey);
+                selectedGameKey,
+                _settings.SetDynamicAchievementsGameCommand);
 
             _settings.ModernTheme.DynamicAchievementStatusFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementStatusFilterKeys,
-                null);
+                DynamicThemeOptionGroups.GetGroupSelection(selectedGameView.FilterKey, DynamicThemeOptionGroups.AchievementStatusGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicAchievementsStatusFilterCommand);
             _settings.ModernTheme.DynamicAchievementProgressFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementProgressFilterKeys,
-                null);
+                DynamicThemeOptionGroups.GetGroupSelection(selectedGameView.FilterKey, DynamicThemeOptionGroups.AchievementProgressGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicAchievementsProgressFilterCommand);
             _settings.ModernTheme.DynamicAchievementRarityFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementRarityFilterKeys,
-                null);
+                DynamicThemeOptionGroups.GetGroupSelection(selectedGameView.FilterKey, DynamicThemeOptionGroups.AchievementRarityGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicAchievementsRarityFilterCommand);
             _settings.ModernTheme.DynamicAchievementTrophyFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementTrophyFilterKeys,
-                null);
+                DynamicThemeOptionGroups.GetGroupSelection(selectedGameView.FilterKey, DynamicThemeOptionGroups.AchievementTrophyGroup, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicAchievementsTrophyFilterCommand);
             _settings.ModernTheme.DynamicAchievementCustomizationFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.AchievementCustomizationFilterKeys,
-                null);
+                DynamicThemeOptionGroups.GetGroupSelection(selectedGameView.FilterKey, DynamicThemeOptionGroups.AchievementCustomizationGroups, DynamicThemeOptionGroups.AchievementFilterGroupMap),
+                _settings.SetDynamicAchievementsCustomizationFilterCommand);
             _settings.ModernTheme.DynamicGameProgressFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.GameProgressFilterKeys,
-                null);
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.GameSummaries.FilterKey, DynamicThemeOptionGroups.GameProgressGroups, DynamicThemeOptionGroups.GameSummaryFilterGroupMap),
+                _settings.SetDynamicGameSummariesProgressFilterCommand);
             _settings.ModernTheme.DynamicGameActivityFilterOptions = DynamicThemeOptionFactory.CreateOptions(
                 DynamicThemeOptionGroups.GameActivityFilterKeys,
-                null);
+                DynamicThemeOptionGroups.GetGroupSelection(_runtimeState.GameSummaries.FilterKey, DynamicThemeOptionGroups.GameActivityGroups, DynamicThemeOptionGroups.GameSummaryFilterGroupMap),
+                _settings.SetDynamicGameSummariesActivityFilterCommand);
         }
 
         private List<AchievementDetail> BuildDynamicSelectedGameAchievements(
@@ -3060,7 +3364,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
         private bool TryNormalizeProviderKey(object parameter, out string providerKey)
         {
-            var raw = DynamicThemeFilterExpression.NormalizeParameter(parameter);
+            var raw = ExtractProviderKeyParameter(parameter);
             if (string.IsNullOrWhiteSpace(raw))
             {
                 providerKey = null;

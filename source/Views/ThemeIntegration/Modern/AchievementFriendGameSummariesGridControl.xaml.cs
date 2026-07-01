@@ -3,6 +3,7 @@ using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
@@ -72,12 +73,86 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private void LoadData()
         {
             var theme = EffectiveTheme;
-            DisplayItems = (theme?.DynamicFriendGameSummaryRows ?? new System.Collections.ObjectModel.ObservableCollection<FriendGameSummaryItem>())
-                .Cast<GameSummaryItem>()
-                .ToList();
+            DisplayItems = ProjectDisplayItems(theme?.DynamicFriendGameSummaries);
             ColumnSettingsKey = FriendOverviewProjection.IsAllScope(theme?.DynamicFriendScopeUserKey)
                 ? "FriendsOverviewGameSummaries"
                 : "FriendsOverviewSelectedFriendGameSummaries";
+        }
+
+        private static List<GameSummaryItem> ProjectDisplayItems(IEnumerable<FriendGameAchievementSummary> summaries)
+        {
+            return (summaries ?? Enumerable.Empty<FriendGameAchievementSummary>())
+                .Where(summary => summary != null)
+                .Select(ProjectDisplayItem)
+                .Cast<GameSummaryItem>()
+                .ToList();
+        }
+
+        private static FriendGameSummaryItem ProjectDisplayItem(FriendGameAchievementSummary summary)
+        {
+            var gameId = summary.GameId != Guid.Empty ? summary.GameId : (Guid?)null;
+            return new FriendGameSummaryItem
+            {
+                ProviderKey = summary.ProviderKey,
+                Provider = !string.IsNullOrWhiteSpace(summary.ProviderName) ? summary.ProviderName : summary.Platform,
+                ProviderIconKey = string.IsNullOrWhiteSpace(summary.ProviderKey) ? null : "ProviderIcon" + summary.ProviderKey,
+                AppId = summary.AppId,
+                PlayniteGameId = gameId,
+                GameName = summary.GameName,
+                SortingName = summary.Name,
+                GameCoverPath = summary.CoverImagePath,
+                PlatformText = summary.Platform,
+                LastPlayed = summary.LastFriendPlayedUtc ?? summary.LastPlayed,
+                PlaytimeSeconds = ToPlaytimeSeconds(summary.TotalFriendPlaytimeMinutes),
+                TotalAchievements = summary.AchievementCount,
+                UnlockedAchievements = summary.UniqueFriendUnlockedAchievementsCount,
+                CollectionScore = summary.CollectionScore,
+                CollectionScoreTotal = summary.CollectionScoreTotal,
+                PrestigeScore = summary.PrestigeScore,
+                PrestigeScoreTotal = summary.PrestigeScoreTotal,
+                Points = summary.Points,
+                CommonCount = summary.Common?.Unlocked ?? 0,
+                TotalCommonPossible = summary.Common?.Total ?? 0,
+                UncommonCount = summary.Uncommon?.Unlocked ?? 0,
+                TotalUncommonPossible = summary.Uncommon?.Total ?? 0,
+                RareCount = summary.Rare?.Unlocked ?? 0,
+                TotalRarePossible = summary.Rare?.Total ?? 0,
+                UltraRareCount = summary.UltraRare?.Unlocked ?? 0,
+                TotalUltraRarePossible = summary.UltraRare?.Total ?? 0,
+                TrophyPlatinumCount = summary.TrophyPlatinumCount,
+                TrophyGoldCount = summary.TrophyGoldCount,
+                TrophySilverCount = summary.TrophySilverCount,
+                TrophyBronzeCount = summary.TrophyBronzeCount,
+                TrophyPlatinumTotal = summary.TrophyPlatinumTotal,
+                TrophyGoldTotal = summary.TrophyGoldTotal,
+                TrophySilverTotal = summary.TrophySilverTotal,
+                TrophyBronzeTotal = summary.TrophyBronzeTotal,
+                IsCompleted = summary.IsCompleted,
+                LastFriendUnlockUtc = summary.LastFriendUnlockUtc,
+                FriendCount = summary.FriendCount,
+                FriendsWithUnlocksCount = summary.FriendsWithUnlocksCount,
+                FriendUnlockedAchievementsCount = summary.FriendUnlockedAchievementsCount,
+                UniqueFriendUnlockedAchievementsCount = summary.UniqueFriendUnlockedAchievementsCount,
+                TotalFriendPlaytimeMinutes = summary.TotalFriendPlaytimeMinutes,
+                AverageFriendPlaytimeMinutes = summary.AverageFriendPlaytimeMinutes,
+                LastFriendPlayedUtc = summary.LastFriendPlayedUtc,
+                LastFriendScrapedUtc = summary.LastFriendScrapedUtc,
+                LastFriendScrapeStatus = summary.LastFriendScrapeStatus,
+                SetDynamicAchievementsGameCommand = summary.SetDynamicAchievementsGameCommand,
+                FilterDynamicGameSummariesByProviderCommand = summary.FilterDynamicGameSummariesByProviderCommand,
+                OpenViewAchievementsWindow = summary.OpenViewAchievementsWindow,
+                OpenManageAchievementsWindow = summary.OpenManageAchievementsWindow,
+                SetDynamicFriendScopeProviderCommand = summary.SetDynamicFriendScopeProviderCommand,
+                SetDynamicFriendScopeGameCommand = summary.SetDynamicFriendScopeGameCommand
+            };
+        }
+
+        private static ulong ToPlaytimeSeconds(long minutes)
+        {
+            var normalized = Math.Max(0L, minutes);
+            return normalized > (long)(ulong.MaxValue / 60UL)
+                ? ulong.MaxValue
+                : (ulong)normalized * 60UL;
         }
     }
 }

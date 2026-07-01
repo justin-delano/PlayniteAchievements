@@ -105,6 +105,14 @@ namespace PlayniteAchievements.Models.Achievements
 
         public Game Game { get; set; }
 
+        public System.Windows.Input.ICommand SetDynamicAchievementsGameCommand { get; set; }
+
+        public System.Windows.Input.ICommand FilterDynamicLibraryAchievementsByProviderCommand { get; set; }
+
+        public System.Windows.Input.ICommand OpenViewAchievementsWindow { get; set; }
+
+        public System.Windows.Input.ICommand OpenManageAchievementsWindow { get; set; }
+
         public bool HasRarityPercent => GlobalPercentUnlocked.HasValue;
 
         public RarityTier Rarity { get; set; } = RarityTier.Common;
@@ -257,6 +265,14 @@ namespace PlayniteAchievements.ViewModels
         public string FriendAvatarPath { get; set; }
 
         public Guid? PlayniteGameId { get; set; }
+
+        public System.Windows.Input.ICommand SetDynamicAchievementsGameCommand { get; set; }
+
+        public System.Windows.Input.ICommand FilterDynamicLibraryAchievementsByProviderCommand { get; set; }
+
+        public System.Windows.Input.ICommand OpenViewAchievementsWindow { get; set; }
+
+        public System.Windows.Input.ICommand OpenManageAchievementsWindow { get; set; }
 
         public string ApiName { get; set; }
 

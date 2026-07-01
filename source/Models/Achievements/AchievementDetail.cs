@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.Serialization;
+using System.Windows.Input;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
@@ -85,6 +86,18 @@ namespace PlayniteAchievements.Models.Achievements
         /// </summary>
         [IgnoreDataMember]
         public string ProviderKey { get; set; }
+
+        [IgnoreDataMember]
+        public ICommand SetDynamicAchievementsGameCommand { get; set; }
+
+        [IgnoreDataMember]
+        public ICommand FilterDynamicLibraryAchievementsByProviderCommand { get; set; }
+
+        [IgnoreDataMember]
+        public ICommand OpenViewAchievementsWindow { get; set; }
+
+        [IgnoreDataMember]
+        public ICommand OpenManageAchievementsWindow { get; set; }
 
         [IgnoreDataMember]
         public string IconDisplay => AchievementIconResolver.GetUnlockedDisplayIcon(UnlockedIconPath);

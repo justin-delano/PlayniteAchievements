@@ -1,10 +1,22 @@
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Friends;
+using Playnite.SDK.Data;
 using System;
+using System.Runtime.Serialization;
+using System.Windows.Input;
 
 namespace PlayniteAchievements.ViewModels
 {
     public sealed class FriendGameSummaryItem : GameSummaryItem
     {
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand SetDynamicFriendScopeProviderCommand { get; set; }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand SetDynamicFriendScopeGameCommand { get; set; }
+
         private int _friendCount;
         private int _friendsWithUnlocksCount;
         private int _friendUnlockedAchievementsCount;
@@ -14,6 +26,22 @@ namespace PlayniteAchievements.ViewModels
         private DateTime? _lastFriendPlayedUtc;
         private DateTime? _lastFriendScrapedUtc;
         private string _lastFriendScrapeStatus;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string FriendGameScopeKey => FriendOverviewProjection.GetGameScopeKey(this);
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string Key => FriendGameScopeKey;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string Label => GameName;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int Count => FriendUnlockedAchievementsCount;
 
         public int FriendCount
         {
@@ -43,7 +71,13 @@ namespace PlayniteAchievements.ViewModels
         public int FriendUnlockedAchievementsCount
         {
             get => _friendUnlockedAchievementsCount;
-            set => SetValue(ref _friendUnlockedAchievementsCount, value);
+            set
+            {
+                if (SetValueAndReturn(ref _friendUnlockedAchievementsCount, value))
+                {
+                    OnPropertyChanged(nameof(Count));
+                }
+            }
         }
 
         public int UniqueFriendUnlockedAchievementsCount

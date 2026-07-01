@@ -151,8 +151,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private readonly BulkObservableCollection<FriendGameAchievementSummary> _dynamicFriendGameSummaries = new BulkObservableCollection<FriendGameAchievementSummary>();
         [DontSerialize]
-        private readonly BulkObservableCollection<FriendGameSummaryItem> _dynamicFriendGameSummaryRows = new BulkObservableCollection<FriendGameSummaryItem>();
-        [DontSerialize]
         private readonly BulkObservableCollection<FriendAchievementDisplayItem> _dynamicFriendAchievements = new BulkObservableCollection<FriendAchievementDisplayItem>();
         [DontSerialize]
         private string _dynamicFriendScopeProviderKey = DynamicThemeViewKeys.All;
@@ -226,6 +224,22 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementsSortOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementsSortDirectionOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendSummaryLastUnlockFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendGameProgressFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendGameActivityFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementStatusFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementProgressFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementRarityFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementTrophyFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicFriendAchievementCustomizationFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
 
         [DontSerialize]
         private List<AchievementDetail> _allAchievementsUnlockAsc = new List<AchievementDetail>();
@@ -269,6 +283,16 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementsSortOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
         private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementsSortDirectionOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementStatusFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementProgressFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementRarityFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementTrophyFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<DynamicThemeOption> _dynamicLibraryAchievementCustomizationFilterOptions = new BulkObservableCollection<DynamicThemeOption>();
         [DontSerialize]
         private List<AchievementDetail> _mostRecentUnlocks = new List<AchievementDetail>();
         [DontSerialize]
@@ -731,6 +755,41 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
 
         [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementStatusFilterOptions
+        {
+            get => _dynamicLibraryAchievementStatusFilterOptions;
+            set => ReplaceCollection(_dynamicLibraryAchievementStatusFilterOptions, value, nameof(DynamicLibraryAchievementStatusFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementProgressFilterOptions
+        {
+            get => _dynamicLibraryAchievementProgressFilterOptions;
+            set => ReplaceCollection(_dynamicLibraryAchievementProgressFilterOptions, value, nameof(DynamicLibraryAchievementProgressFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementRarityFilterOptions
+        {
+            get => _dynamicLibraryAchievementRarityFilterOptions;
+            set => ReplaceCollection(_dynamicLibraryAchievementRarityFilterOptions, value, nameof(DynamicLibraryAchievementRarityFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementTrophyFilterOptions
+        {
+            get => _dynamicLibraryAchievementTrophyFilterOptions;
+            set => ReplaceCollection(_dynamicLibraryAchievementTrophyFilterOptions, value, nameof(DynamicLibraryAchievementTrophyFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementCustomizationFilterOptions
+        {
+            get => _dynamicLibraryAchievementCustomizationFilterOptions;
+            set => ReplaceCollection(_dynamicLibraryAchievementCustomizationFilterOptions, value, nameof(DynamicLibraryAchievementCustomizationFilterOptions));
+        }
+
+        [DontSerialize]
         public ObservableCollection<GameAchievementSummary> CompletedGamesAsc
         {
             get => _completedGamesAsc;
@@ -892,6 +951,27 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
 
         [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummaryLastUnlockFilterOptions
+        {
+            get => _dynamicFriendSummaryLastUnlockFilterOptions;
+            set => ReplaceCollection(_dynamicFriendSummaryLastUnlockFilterOptions, value, nameof(DynamicFriendSummaryLastUnlockFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameProgressFilterOptions
+        {
+            get => _dynamicFriendGameProgressFilterOptions;
+            set => ReplaceCollection(_dynamicFriendGameProgressFilterOptions, value, nameof(DynamicFriendGameProgressFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameActivityFilterOptions
+        {
+            get => _dynamicFriendGameActivityFilterOptions;
+            set => ReplaceCollection(_dynamicFriendGameActivityFilterOptions, value, nameof(DynamicFriendGameActivityFilterOptions));
+        }
+
+        [DontSerialize]
         public ObservableCollection<FriendSummaryItem> DynamicFriendSummaries
         {
             get => _dynamicFriendSummaries;
@@ -903,18 +983,6 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicFriendGameSummaries;
             set => ReplaceCollection(_dynamicFriendGameSummaries, value, nameof(DynamicFriendGameSummaries));
-        }
-
-        /// <summary>
-        /// Internal <see cref="FriendGameSummaryItem"/> feed for the shipped friend summaries grid.
-        /// Mirrors <see cref="DynamicFriendGameSummaries"/> but preserves the view-model row type
-        /// the shared grid control binds against; not part of the external theme contract.
-        /// </summary>
-        [DontSerialize]
-        public ObservableCollection<FriendGameSummaryItem> DynamicFriendGameSummaryRows
-        {
-            get => _dynamicFriendGameSummaryRows;
-            set => ReplaceCollection(_dynamicFriendGameSummaryRows, value, nameof(DynamicFriendGameSummaryRows));
         }
 
         [DontSerialize]
@@ -1174,6 +1242,41 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicFriendAchievementsSortDirectionOptions;
             set => ReplaceCollection(_dynamicFriendAchievementsSortDirectionOptions, value, nameof(DynamicFriendAchievementsSortDirectionOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementStatusFilterOptions
+        {
+            get => _dynamicFriendAchievementStatusFilterOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementStatusFilterOptions, value, nameof(DynamicFriendAchievementStatusFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementProgressFilterOptions
+        {
+            get => _dynamicFriendAchievementProgressFilterOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementProgressFilterOptions, value, nameof(DynamicFriendAchievementProgressFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementRarityFilterOptions
+        {
+            get => _dynamicFriendAchievementRarityFilterOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementRarityFilterOptions, value, nameof(DynamicFriendAchievementRarityFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementTrophyFilterOptions
+        {
+            get => _dynamicFriendAchievementTrophyFilterOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementTrophyFilterOptions, value, nameof(DynamicFriendAchievementTrophyFilterOptions));
+        }
+
+        [DontSerialize]
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementCustomizationFilterOptions
+        {
+            get => _dynamicFriendAchievementCustomizationFilterOptions;
+            set => ReplaceCollection(_dynamicFriendAchievementCustomizationFilterOptions, value, nameof(DynamicFriendAchievementCustomizationFilterOptions));
         }
 
         [DontSerialize]

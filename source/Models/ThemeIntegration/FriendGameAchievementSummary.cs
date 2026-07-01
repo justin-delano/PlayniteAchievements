@@ -1,7 +1,10 @@
 using System;
+using System.Runtime.Serialization;
 using System.Windows.Input;
+using Playnite.SDK.Data;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Friends;
 
 namespace PlayniteAchievements.Models.ThemeIntegration
 {
@@ -14,6 +17,33 @@ namespace PlayniteAchievements.Models.ThemeIntegration
     /// </summary>
     public sealed class FriendGameAchievementSummary : GameAchievementSummary
     {
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand SetDynamicFriendScopeProviderCommand { get; set; }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand SetDynamicFriendScopeGameCommand { get; set; }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string FriendGameScopeKey => FriendOverviewProjection.BuildGameUnlockKey(
+            ProviderKey,
+            AppId,
+            GameId != Guid.Empty ? GameId : (Guid?)null) ?? FriendOverviewProjection.AllScopeKey;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string Key => FriendGameScopeKey;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string Label => GameName;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int Count => FriendUnlockedAchievementsCount;
+
         private int _friendCount;
         private int _friendsWithUnlocksCount;
         private int _friendUnlockedAchievementsCount;
@@ -84,6 +114,37 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         /// </summary>
         public int AppId { get; set; }
 
+        public int CollectionScore { get; set; }
+
+        public int CollectionScoreTotal { get; set; }
+
+        public int PrestigeScore { get; set; }
+
+        public int PrestigeScoreTotal { get; set; }
+
+        public int Points { get; set; }
+
+        public int TrophyPlatinumCount { get; set; }
+
+        public int TrophyGoldCount { get; set; }
+
+        public int TrophySilverCount { get; set; }
+
+        public int TrophyBronzeCount { get; set; }
+
+        public int TrophyPlatinumTotal { get; set; }
+
+        public int TrophyGoldTotal { get; set; }
+
+        public int TrophySilverTotal { get; set; }
+
+        public int TrophyBronzeTotal { get; set; }
+
+        public bool HasTrophyTypes => TrophyPlatinumCount > 0 ||
+                                      TrophyGoldCount > 0 ||
+                                      TrophySilverCount > 0 ||
+                                      TrophyBronzeCount > 0;
+
         /// <summary>
         /// Legacy alias for <see cref="GameAchievementSummary.Name"/> used by friend theme bindings.
         /// </summary>
@@ -129,7 +190,13 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public int FriendUnlockedAchievementsCount
         {
             get => _friendUnlockedAchievementsCount;
-            set => SetValue(ref _friendUnlockedAchievementsCount, Math.Max(0, value));
+            set
+            {
+                if (SetValueAndReturn(ref _friendUnlockedAchievementsCount, Math.Max(0, value)))
+                {
+                    OnPropertyChanged(nameof(Count));
+                }
+            }
         }
 
         /// <summary>

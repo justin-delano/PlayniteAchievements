@@ -1,12 +1,24 @@
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Friends;
+using Playnite.SDK.Data;
 using System;
+using System.Runtime.Serialization;
+using System.Windows.Input;
 
 namespace PlayniteAchievements.ViewModels
 {
     public sealed class FriendSummaryItem : ObservableObject
     {
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand SetDynamicFriendScopeProviderCommand { get; set; }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand SetDynamicFriendScopeUserCommand { get; set; }
+
         private string _displayName;
         private string _avatarPath;
         private int _sharedGamesCount;
@@ -18,9 +30,50 @@ namespace PlayniteAchievements.ViewModels
         private DateTime? _lastUnlockUtc;
         private DateTime? _lastRefreshedUtc;
         private long _totalPlaytimeMinutes;
+        private string _providerKey;
+        private string _externalUserId;
 
-        public string ProviderKey { get; set; }
-        public string ExternalUserId { get; set; }
+        public string ProviderKey
+        {
+            get => _providerKey;
+            set
+            {
+                if (SetValueAndReturn(ref _providerKey, value))
+                {
+                    OnPropertyChanged(nameof(FriendScopeKey));
+                    OnPropertyChanged(nameof(Key));
+                }
+            }
+        }
+
+        public string ExternalUserId
+        {
+            get => _externalUserId;
+            set
+            {
+                if (SetValueAndReturn(ref _externalUserId, value))
+                {
+                    OnPropertyChanged(nameof(FriendScopeKey));
+                    OnPropertyChanged(nameof(Key));
+                }
+            }
+        }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string FriendScopeKey => FriendOverviewProjection.GetFriendScopeKey(this);
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string Key => FriendScopeKey;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public string Label => DisplayName;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int Count => UnlockedAchievementsCount;
 
         public string ProviderDisplayName
         {
@@ -37,7 +90,13 @@ namespace PlayniteAchievements.ViewModels
         public string DisplayName
         {
             get => _displayName;
-            set => SetValue(ref _displayName, value);
+            set
+            {
+                if (SetValueAndReturn(ref _displayName, value))
+                {
+                    OnPropertyChanged(nameof(Label));
+                }
+            }
         }
 
         public string AvatarPath
@@ -72,6 +131,7 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _unlockedAchievementsCount, value))
                 {
                     OnPropertyChanged(nameof(CountsText));
+                    OnPropertyChanged(nameof(Count));
                 }
             }
         }
