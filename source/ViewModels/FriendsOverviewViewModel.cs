@@ -814,7 +814,13 @@ namespace PlayniteAchievements.ViewModels
                 // Heavy work (summary SQL + per-game presentation resolution) runs off
                 // the UI thread; the window stays responsive while data loads.
                 data = await Task
-                    .Run(() => _friendCache?.LoadFriendsOverviewData(hideSpoilers, 0))
+                    .Run(() =>
+                    {
+                        using (PerfScope.Start(_logger, "FriendsOverview.LoadCache", thresholdMs: 25))
+                        {
+                            return _friendCache?.LoadFriendsOverviewData(hideSpoilers, 0);
+                        }
+                    })
                     .ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -838,11 +844,14 @@ namespace PlayniteAchievements.ViewModels
                     _allUnlockedAchievements = data.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
                     _projection = new FriendOverviewProjection(data);
 
-                    _friendSearchIndex.Rebuild(_allFriends);
-                    _gameSearchIndex.Rebuild(_allGames);
-                    _achievementSearchIndex.Rebuild(_allRecentUnlocks.Concat(_allUnlockedAchievements));
-                    UpdateFilterOptions();
-                    ApplyFilters();
+                    using (PerfScope.Start(_logger, "FriendsOverview.ApplyOnUiThread", thresholdMs: 15))
+                    {
+                        _friendSearchIndex.Rebuild(_allFriends);
+                        _gameSearchIndex.Rebuild(_allGames);
+                        _achievementSearchIndex.Rebuild(_allRecentUnlocks.Concat(_allUnlockedAchievements));
+                        UpdateFilterOptions();
+                        ApplyFilters();
+                    }
 
                     StatusText = HasData
                         ? null
