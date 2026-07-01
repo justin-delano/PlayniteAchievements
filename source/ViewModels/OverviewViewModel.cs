@@ -1418,6 +1418,12 @@ namespace PlayniteAchievements.ViewModels
                         () => _dataBuilder.Build(_settings, revealedCopy, cancel),
                         cancel).ConfigureAwait(false);
 
+                    // Still off the UI thread: precompute the search-text maps so ApplySnapshot
+                    // only performs a cheap swap instead of tokenizing every item on the UI thread.
+                    var globalEntries = _globalAchievementSearchIndex.BuildEntries(snapshot?.Achievements);
+                    var gameEntries = _gameSummarySearchIndex.BuildEntries(snapshot?.GameSummaries);
+                    var recentEntries = _recentAchievementSearchIndex.BuildEntries(snapshot?.RecentAchievements);
+
                     System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
                     {
                         if (_disposed || !_isActive)
@@ -1430,7 +1436,7 @@ namespace PlayniteAchievements.ViewModels
                             return;
                         }
 
-                        ApplySnapshot(snapshot);
+                        ApplySnapshot(snapshot, globalEntries, gameEntries, recentEntries);
                     });
                 }
                 finally
@@ -1708,7 +1714,11 @@ namespace PlayniteAchievements.ViewModels
             try { cts?.Dispose(); } catch { }
         }
 
-        private void ApplySnapshot(OverviewDataSnapshot snapshot)
+        private void ApplySnapshot(
+            OverviewDataSnapshot snapshot,
+            Dictionary<AchievementDisplayItem, string> globalSearchEntries = null,
+            Dictionary<GameSummaryItem, string> gameSummarySearchEntries = null,
+            Dictionary<AchievementDisplayItem, string> recentSearchEntries = null)
         {
             if (_disposed)
             {
@@ -1724,7 +1734,14 @@ namespace PlayniteAchievements.ViewModels
 
             _latestSnapshot = snapshot;
             _allAchievements = snapshot.Achievements ?? new List<AchievementDisplayItem>();
-            _globalAchievementSearchIndex.Rebuild(_allAchievements);
+            if (globalSearchEntries != null)
+            {
+                _globalAchievementSearchIndex.LoadEntries(globalSearchEntries);
+            }
+            else
+            {
+                _globalAchievementSearchIndex.Rebuild(_allAchievements);
+            }
 
             if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulkAll)
             {
@@ -1736,9 +1753,18 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _allGameSummaries = snapshot.GameSummaries ?? new List<GameSummaryItem>();
-            _gameSummarySearchIndex.Rebuild(_allGameSummaries);
+            if (gameSummarySearchEntries != null)
+            {
+                _gameSummarySearchIndex.LoadEntries(gameSummarySearchEntries);
+            }
+            else
+            {
+                _gameSummarySearchIndex.Rebuild(_allGameSummaries);
+            }
+
             SetRecentAchievementsSource(
-                snapshot.RecentAchievements);
+                snapshot.RecentAchievements,
+                recentSearchEntries);
 
             UpdateProviderFilterOptions(_allGameSummaries);
             UpdateCompletenessFilterOptions();
@@ -1771,11 +1797,19 @@ namespace PlayniteAchievements.ViewModels
         }
 
         private void SetRecentAchievementsSource(
-            List<AchievementDisplayItem> recentAchievements)
+            List<AchievementDisplayItem> recentAchievements,
+            Dictionary<AchievementDisplayItem, string> recentSearchEntries = null)
         {
             _allRecentAchievements = recentAchievements ?? new List<AchievementDisplayItem>();
             _filteredRecentAchievements = new List<AchievementDisplayItem>(_allRecentAchievements);
-            _recentAchievementSearchIndex.Rebuild(_allRecentAchievements);
+            if (recentSearchEntries != null)
+            {
+                _recentAchievementSearchIndex.LoadEntries(recentSearchEntries);
+            }
+            else
+            {
+                _recentAchievementSearchIndex.Rebuild(_allRecentAchievements);
+            }
         }
 
         private bool ApplyFragmentDelta(string key, OverviewGameFragment fragment)
