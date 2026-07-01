@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
@@ -53,6 +54,8 @@ namespace PlayniteAchievements.ViewModels
         private FriendGameSummaryItem _selectedGame;
         private bool _isApplyingFilters;
         private bool _isRefreshing;
+        private bool _disposed;
+        private int _loadVersion;
         private string _statusText;
         private string _friendSearchText;
         private string _gameSearchText;
@@ -798,51 +801,81 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private Task LoadFromCacheAsync()
+        private async Task LoadFromCacheAsync()
         {
+            // Latest-wins guard: a newer load supersedes any in-flight one so its
+            // (possibly stale) results are discarded when they arrive on the UI thread.
+            var version = Interlocked.Increment(ref _loadVersion);
+            var hideSpoilers = _settings?.Persisted?.FriendsOverviewHideSpoilers ?? true;
+
+            FriendsOverviewData data;
             try
             {
-                var persisted = _settings?.Persisted;
-                var data = _friendCache?.LoadFriendsOverviewData(
-                    persisted?.FriendsOverviewHideSpoilers ?? true,
-                    0);
-
-                _allFriends = data?.Friends ?? new List<FriendSummaryItem>();
-                _allGames = data?.Games ?? new List<FriendGameSummaryItem>();
-                _allRecentUnlocks = data?.RecentUnlocks ?? new List<FriendAchievementDisplayItem>();
-                _allUnlockedAchievements = data?.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
-                _projection = new FriendOverviewProjection(data);
-
-                _friendSearchIndex.Rebuild(_allFriends);
-                _gameSearchIndex.Rebuild(_allGames);
-                _achievementSearchIndex.Rebuild(_allRecentUnlocks.Concat(_allUnlockedAchievements));
-                UpdateFilterOptions();
-                ApplyFilters();
-
-                StatusText = HasData
-                    ? null
-                    : ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NoData") ??
-                      "No friend achievement data yet.";
-                OnPropertyChanged(nameof(HasData));
-                OnPropertyChanged(nameof(IsProviderDisabled));
+                // Heavy work (summary SQL + per-game presentation resolution) runs off
+                // the UI thread; the window stays responsive while data loads.
+                data = await Task
+                    .Run(() => _friendCache?.LoadFriendsOverviewData(hideSpoilers, 0))
+                    .ConfigureAwait(false);
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to load friends overview cache data.");
-                _allFriends = new List<FriendSummaryItem>();
-                _allGames = new List<FriendGameSummaryItem>();
-                _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
-                _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
-                _projection = new FriendOverviewProjection(null);
-                FilteredFriends.ReplaceAll(Array.Empty<FriendSummaryItem>());
-                FilteredGames.ReplaceAll(Array.Empty<FriendGameSummaryItem>());
-                DisplayedAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
-                StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_LoadFailed") ??
-                             "Failed to load friend achievement data.";
-                OnPropertyChanged(nameof(HasData));
+                data = null;
             }
 
-            return Task.CompletedTask;
+            void Apply()
+            {
+                if (_disposed || version != Volatile.Read(ref _loadVersion))
+                {
+                    return;
+                }
+
+                if (data != null)
+                {
+                    _allFriends = data.Friends ?? new List<FriendSummaryItem>();
+                    _allGames = data.Games ?? new List<FriendGameSummaryItem>();
+                    _allRecentUnlocks = data.RecentUnlocks ?? new List<FriendAchievementDisplayItem>();
+                    _allUnlockedAchievements = data.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
+                    _projection = new FriendOverviewProjection(data);
+
+                    _friendSearchIndex.Rebuild(_allFriends);
+                    _gameSearchIndex.Rebuild(_allGames);
+                    _achievementSearchIndex.Rebuild(_allRecentUnlocks.Concat(_allUnlockedAchievements));
+                    UpdateFilterOptions();
+                    ApplyFilters();
+
+                    StatusText = HasData
+                        ? null
+                        : ResourceProvider.GetString("LOCPlayAch_FriendsOverview_NoData") ??
+                          "No friend achievement data yet.";
+                    OnPropertyChanged(nameof(HasData));
+                    OnPropertyChanged(nameof(IsProviderDisabled));
+                }
+                else
+                {
+                    _allFriends = new List<FriendSummaryItem>();
+                    _allGames = new List<FriendGameSummaryItem>();
+                    _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
+                    _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
+                    _projection = new FriendOverviewProjection(null);
+                    FilteredFriends.ReplaceAll(Array.Empty<FriendSummaryItem>());
+                    FilteredGames.ReplaceAll(Array.Empty<FriendGameSummaryItem>());
+                    DisplayedAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
+                    StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_LoadFailed") ??
+                                 "Failed to load friend achievement data.";
+                    OnPropertyChanged(nameof(HasData));
+                }
+            }
+
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher != null)
+            {
+                dispatcher.InvokeIfNeeded(Apply);
+            }
+            else
+            {
+                Apply();
+            }
         }
 
         private void ApplyFilters()
@@ -1254,6 +1287,8 @@ namespace PlayniteAchievements.ViewModels
 
         public void Dispose()
         {
+            _disposed = true;
+
             if (_refreshRuntime != null)
             {
                 _refreshRuntime.RebuildProgress -= OnRebuildProgress;
