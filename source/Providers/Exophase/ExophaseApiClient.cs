@@ -52,6 +52,15 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
+            // Drop any fragment or query string first: profile links look like
+            // /game/{slug}/achievements/#4768201, and the trailing "#..." would otherwise
+            // prevent the end-anchored pattern below from matching (yielding a null slug).
+            var separatorIndex = url.IndexOfAny(new[] { '#', '?' });
+            if (separatorIndex >= 0)
+            {
+                url = url.Substring(0, separatorIndex);
+            }
+
             // Match pattern: /game/{slug}/ followed by achievements, trophies, challenges, or end of URL
             var match = System.Text.RegularExpressions.Regex.Match(url, @"/game/([^/]+)(?:/(?:achievements|trophies|challenges))?/?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (match.Success && match.Groups.Count > 1)
@@ -229,7 +238,8 @@ namespace PlayniteAchievements.Providers.Exophase
         public async Task<List<AchievementDetail>> FetchAchievementsAsync(
             string achievementUrl,
             string acceptLanguage,
-            CancellationToken ct)
+            CancellationToken ct,
+            bool waitForImages = false)
         {
             if (string.IsNullOrWhiteSpace(achievementUrl))
             {
@@ -239,7 +249,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
             try
             {
-                var html = await FetchHtmlViaWebViewAsync(achievementUrl, ct).ConfigureAwait(false);
+                var html = await FetchHtmlViaWebViewAsync(achievementUrl, ct, waitForImages).ConfigureAwait(false);
 
                 if (string.IsNullOrWhiteSpace(html))
                 {
@@ -271,7 +281,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// Fetches HTML from a URL using offscreen WebView to bypass Cloudflare.
         /// Restores cookies from snapshot before fetching to ensure authenticated session.
         /// </summary>
-        private async Task<string> FetchHtmlViaWebViewAsync(string url, CancellationToken ct)
+        private async Task<string> FetchHtmlViaWebViewAsync(string url, CancellationToken ct, bool waitForImages = false)
         {
             // Load cookies from snapshot before creating WebView
             List<HttpCookie> snapshotCookies = null;
@@ -330,6 +340,14 @@ namespace PlayniteAchievements.Providers.Exophase
                             return null;
                         }
 
+                        // Let the page's images finish loading before returning. The WebView's own image
+                        // requests warm Exophase's CDN (which generates the award thumbnails on first
+                        // request), so a subsequent HTTP download hits 200 instead of the initial 404.
+                        if (waitForImages)
+                        {
+                            await WaitForImagesLoadedAsync(view, ct);
+                        }
+
                         return html;
                     }
                     catch (OperationCanceledException)
@@ -351,7 +369,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Fetches a rendered public Exophase page through the same WebView path used by achievement pages.
         /// </summary>
-        internal async Task<string> FetchRenderedHtmlAsync(string url, CancellationToken ct, int postLoadDelayMs = 1000)
+        internal async Task<string> FetchRenderedHtmlAsync(string url, CancellationToken ct, int postLoadDelayMs = 1000, bool scrollToLoad = false)
         {
             if (string.IsNullOrWhiteSpace(url))
             {
@@ -376,6 +394,11 @@ namespace PlayniteAchievements.Providers.Exophase
                         if (postLoadDelayMs > 0)
                         {
                             await Task.Delay(postLoadDelayMs, ct).ConfigureAwait(false);
+                        }
+
+                        if (scrollToLoad)
+                        {
+                            await AutoScrollToLoadAsync(view, ct).ConfigureAwait(false);
                         }
 
                         var html = await view.GetPageSourceAsync().ConfigureAwait(false);
@@ -408,6 +431,54 @@ namespace PlayniteAchievements.Providers.Exophase
 
             var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
             return await responseTask.ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Repeatedly scrolls an offscreen view to the bottom to trigger lazy-loaded content (such as a
+        /// user's full games list, which appends on scroll rather than paginating) until the page height
+        /// stops growing across two consecutive passes or a hard cap is reached.
+        /// </summary>
+        private static async Task AutoScrollToLoadAsync(IWebView view, CancellationToken ct)
+        {
+            double lastHeight = 0;
+            var stableCount = 0;
+            for (var pass = 0; pass < 40 && stableCount < 2; pass++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var eval = await view
+                    .EvaluateScriptAsync("window.scrollTo(0, document.body.scrollHeight); document.body.scrollHeight;")
+                    .ConfigureAwait(false);
+
+                double height = 0;
+                if (eval?.Success == true && eval.Result != null)
+                {
+                    try
+                    {
+                        height = Convert.ToDouble(eval.Result);
+                    }
+                    catch
+                    {
+                        height = 0;
+                    }
+                }
+
+                if (height > 0 && height <= lastHeight)
+                {
+                    stableCount++;
+                }
+                else
+                {
+                    stableCount = 0;
+                }
+
+                if (height > lastHeight)
+                {
+                    lastHeight = height;
+                }
+
+                await Task.Delay(700, ct).ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -492,6 +563,65 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             return await valueFactory(ct);
+        }
+
+        /// <summary>
+        /// Best-effort wait until the page's images have finished loading in the WebView, so the CDN has
+        /// generated the (lazily-created) award thumbnails before callers download them over HTTP.
+        /// Bounded and self-cancelling: if the offscreen view is not actually fetching images (the pending
+        /// count stops decreasing), it stops early rather than burning the full timeout.
+        /// </summary>
+        private static async Task WaitForImagesLoadedAsync(IWebView view, CancellationToken ct)
+        {
+            const int maxAttempts = 24;   // ~6s cap at 250ms
+            const int delayMs = 250;
+            const int maxStall = 4;       // give up if pending doesn't move for ~1s
+
+            var lastPending = -1;
+            var stallCount = 0;
+
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var eval = await view.EvaluateScriptAsync(
+                    "(function(){var i=Array.prototype.slice.call(document.images);" +
+                    "return i.length + '|' + i.filter(function(x){return !x.complete;}).length;})()")
+                    .ConfigureAwait(false);
+
+                var total = -1;
+                var pending = -1;
+                if (eval?.Success == true && eval.Result != null)
+                {
+                    var parts = eval.Result.ToString().Split('|');
+                    if (parts.Length == 2)
+                    {
+                        int.TryParse(parts[0], out total);
+                        int.TryParse(parts[1], out pending);
+                    }
+                }
+
+                // No images to wait for (or the view does not expose them) - nothing to warm.
+                if (total <= 0 || pending == 0)
+                {
+                    return;
+                }
+
+                if (pending == lastPending)
+                {
+                    if (++stallCount >= maxStall)
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    stallCount = 0;
+                    lastPending = pending;
+                }
+
+                await Task.Delay(delayMs, ct).ConfigureAwait(false);
+            }
         }
 
         private static bool ContainsAchievementMarkup(string html)

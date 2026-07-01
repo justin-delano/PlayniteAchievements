@@ -480,7 +480,7 @@ namespace PlayniteAchievements.Views
 
         private ContextMenu BuildGameMenu(object data)
         {
-            return GameRowContextMenuBuilder.BuildGameMenu(
+            var menu = GameRowContextMenuBuilder.BuildGameMenu(
                 data,
                 this,
                 _viewModel?.RefreshFriendSelectedGameCommand,
@@ -490,6 +490,75 @@ namespace PlayniteAchievements.Views
                 _achievementOverridesService,
                 _cacheManager,
                 _logger);
+
+            // Unowned (provider-only) friend games have no Playnite Guid, so the shared builder
+            // offers them only Refresh. Add a Clear Data item that removes the game's cached
+            // friend data across all friends, mirroring the owned-game Clear Data action.
+            if (menu != null && IsClearableUnownedGame(data, out var unownedGame))
+            {
+                menu.Items.Add(new Separator());
+                menu.Items.Add(GameRowContextMenuBuilder.CreateMenuItem(
+                    this,
+                    "LOCPlayAch_Menu_ClearData",
+                    () => ClearUnownedGame(unownedGame)));
+            }
+
+            return menu;
+        }
+
+        private static bool IsClearableUnownedGame(object data, out FriendGameSummaryItem game)
+        {
+            game = data as FriendGameSummaryItem;
+            return game != null
+                   && !game.PlayniteGameId.HasValue
+                   && !string.IsNullOrWhiteSpace(game.ProviderKey)
+                   && (game.AppId > 0 || !string.IsNullOrWhiteSpace(game.ProviderGameKey));
+        }
+
+        private void ClearUnownedGame(FriendGameSummaryItem game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            var name = string.IsNullOrWhiteSpace(game.GameName) ? game.ProviderGameKey : game.GameName;
+            var message = string.Format(
+                GetText("LOCPlayAch_Menu_ClearData_ConfirmSingle", "Clear cached data for {0}?"),
+                name);
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                message,
+                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var clearResult = _friendCache?.ClearUnownedFriendGame(game.ProviderKey, game.AppId, game.ProviderGameKey);
+                if (clearResult != null && !clearResult.Success)
+                {
+                    _logger?.Warn($"Failed to clear unowned friend game data for {game.ProviderKey}/{game.AppId}/{game.ProviderGameKey}: {clearResult.ErrorMessage}");
+                }
+
+                _viewModel?.ClearGameSelection();
+                _ = _viewModel?.LoadAsync();
+
+                _playniteApi?.Dialogs?.ShowMessage(
+                    GetText("LOCPlayAch_Status_Succeeded", "Succeeded"),
+                    GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to clear unowned friend game {game.ProviderKey}/{game.AppId}/{game.ProviderGameKey}.");
+            }
         }
 
         private ContextMenu BuildFriendMenu(FriendSummaryItem friend)
@@ -520,6 +589,14 @@ namespace PlayniteAchievements.Views
                 menu.Items.Add(libraryItem);
             }
 
+            var clearItem = new MenuItem
+            {
+                Header = GetText("LOCPlayAch_Menu_ClearFriend", "Clear Friend"),
+                IsEnabled = IsClearableFriend(friend)
+            };
+            clearItem.Click += (_, __) => ClearFriend(friend);
+            menu.Items.Add(clearItem);
+
             var ignoreItem = new MenuItem
             {
                 Header = GetText("LOCPlayAch_Menu_IgnoreFriend", "Ignore Friend"),
@@ -528,6 +605,60 @@ namespace PlayniteAchievements.Views
             ignoreItem.Click += (_, __) => IgnoreFriend(friend);
             menu.Items.Add(ignoreItem);
             return menu;
+        }
+
+        private void ClearFriend(FriendSummaryItem friend)
+        {
+            if (!IsClearableFriend(friend))
+            {
+                return;
+            }
+
+            var name = string.IsNullOrWhiteSpace(friend.DisplayName)
+                ? friend.ExternalUserId
+                : friend.DisplayName;
+            var message = string.Format(
+                GetText(
+                    "LOCPlayAch_Menu_ClearFriend_Confirm",
+                    "Clear cached achievement data for {0}? It will be re-fetched on the next friend refresh."),
+                name);
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                message,
+                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);
+                if (deleteResult != null && !deleteResult.Success)
+                {
+                    _logger?.Warn($"Failed to clear friend data for {friend.ProviderKey}/{friend.ExternalUserId}: {deleteResult.ErrorMessage}");
+                }
+
+                _viewModel?.ClearFriendSelection();
+                _ = _viewModel?.LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to clear friend {friend.ProviderKey}/{friend.ExternalUserId}.");
+                _playniteApi?.Dialogs?.ShowErrorMessage(
+                    string.Format(GetText("LOCPlayAch_Status_Failed", "Failed: {0}"), ex.Message),
+                    GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"));
+            }
+        }
+
+        private static bool IsClearableFriend(FriendSummaryItem friend)
+        {
+            return friend != null &&
+                   !string.IsNullOrWhiteSpace(friend.ProviderKey) &&
+                   !string.IsNullOrWhiteSpace(friend.ExternalUserId);
         }
 
         private void ToggleFriendLibraryScope(FriendSummaryItem friend, bool enableFull)

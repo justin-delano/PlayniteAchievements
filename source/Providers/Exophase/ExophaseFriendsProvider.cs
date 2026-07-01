@@ -22,8 +22,13 @@ namespace PlayniteAchievements.Providers.Exophase
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly SemaphoreSlim _webViewGate = new SemaphoreSlim(1, 1);
-        private readonly Dictionary<string, IReadOnlyList<ExophaseFriendAchievementRow>> _awardRowsByFriendPlatform =
-            new Dictionary<string, IReadOnlyList<ExophaseFriendAchievementRow>>(StringComparer.OrdinalIgnoreCase);
+
+        // Per-refresh map of (friend username + provider game key) -> the friend's per-game context id,
+        // parsed from the profile games page as the "#{id}" fragment on each game's achievements link.
+        // Used to build the friend-scoped achievement URL. Populated during the ownership pass (which
+        // always runs before achievements) and cleared each refresh.
+        private readonly Dictionary<string, string> _friendGameContextIds =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public ExophaseFriendsProvider(
             ExophaseApiClient apiClient,
@@ -41,7 +46,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public Task<FriendsProviderResult<FriendsRefreshPreparation>> BeginRefreshAsync(CancellationToken cancel)
         {
-            _awardRowsByFriendPlatform.Clear();
+            _friendGameContextIds.Clear();
             return Task.FromResult(FriendsProviderResult<FriendsRefreshPreparation>.FromData(new FriendsRefreshPreparation
             {
                 CanRefreshAchievements = true
@@ -50,7 +55,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public void EndRefresh()
         {
-            _awardRowsByFriendPlatform.Clear();
+            _friendGameContextIds.Clear();
         }
 
         public Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsAsync(CancellationToken cancel)
@@ -76,44 +81,67 @@ namespace PlayniteAchievements.Providers.Exophase
             FriendIdentity friend,
             CancellationToken cancel)
         {
-            var config = _settings.GetFriend(friend?.ExternalUserId);
+            var friendId = friend?.ExternalUserId;
+            var config = _settings.GetFriend(friendId);
             if (config == null)
             {
+                _logger?.Warn($"[ExophaseFriends] GetOwnedGames: no saved friend configuration for '{friendId}'; returning 0 games. " +
+                    "The friend may have been removed from Exophase settings or the username no longer matches.");
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(Array.Empty<FriendGameOwnership>());
             }
 
             var platforms = NormalizePlatforms(config.SelectedPlatforms);
+            _logger?.Info($"[ExophaseFriends] GetOwnedGames: friend='{config.Username}', scope={config.LibraryScope}, " +
+                $"platforms=[{string.Join(", ", platforms)}] (count={platforms.Count}).");
             if (platforms.Count == 0)
             {
+                _logger?.Warn($"[ExophaseFriends] GetOwnedGames: friend '{config.Username}' has no platforms selected, " +
+                    "so there is nothing to fetch (fetched will be 0). Select at least one platform for this friend in Exophase settings.");
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(Array.Empty<FriendGameOwnership>());
             }
 
+            // Exophase lists every platform's games together on a single profile page: there is no
+            // per-platform page and the ?environment= filter is ignored. Fetch the profile once (with
+            // scroll to load the lazily-appended entries) and filter to the friend's selected platforms.
+            var allGames = await FetchOwnedGamesAsync(config.Username, cancel).ConfigureAwait(false);
+            var selectedPlatforms = new HashSet<string>(platforms, StringComparer.OrdinalIgnoreCase);
+
             var result = new List<FriendGameOwnership>();
-            foreach (var platform in platforms)
+            var skippedOtherPlatform = 0;
+            foreach (var game in allGames)
             {
                 cancel.ThrowIfCancellationRequested();
-                var games = await FetchOwnedGamesForPlatformAsync(config.Username, platform, cancel).ConfigureAwait(false);
-                foreach (var game in games)
+                if (string.IsNullOrWhiteSpace(game.Platform) || !selectedPlatforms.Contains(game.Platform))
                 {
-                    var key = ExophaseFriendGameKey.Build(platform, game.Slug);
-                    if (string.IsNullOrWhiteSpace(key))
-                    {
-                        continue;
-                    }
-
-                    result.Add(new FriendGameOwnership
-                    {
-                        ProviderKey = Provider,
-                        ExternalUserId = config.Username,
-                        ProviderGameKey = key,
-                        ProviderPlatformKey = ExophaseDataProvider.MapSlugToProviderPlatformKey(platform),
-                        PlayniteGameId = ResolveMappedPlayniteGameId(key, platform, game.Title),
-                        GameName = game.Title,
-                        IconUrl = game.ImageUrl,
-                        CoverUrl = game.ImageUrl,
-                        PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeMinutes)
-                    });
+                    skippedOtherPlatform++;
+                    continue;
                 }
+
+                var key = ExophaseFriendGameKey.Build(game.Platform, game.Slug);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                // Remember the friend's per-game context id so the achievement pass can build the
+                // friend-scoped achievement URL for this exact (friend, game) pair.
+                if (!string.IsNullOrWhiteSpace(game.ContextId))
+                {
+                    _friendGameContextIds[BuildContextMapKey(config.Username, key)] = game.ContextId;
+                }
+
+                result.Add(new FriendGameOwnership
+                {
+                    ProviderKey = Provider,
+                    ExternalUserId = config.Username,
+                    ProviderGameKey = key,
+                    ProviderPlatformKey = ExophaseDataProvider.MapSlugToProviderPlatformKey(game.Platform),
+                    PlayniteGameId = ResolveMappedPlayniteGameId(key, game.Platform, game.Title),
+                    GameName = game.Title,
+                    IconUrl = game.ImageUrl,
+                    CoverUrl = game.ImageUrl,
+                    PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeMinutes)
+                });
             }
 
             var deduped = result
@@ -122,6 +150,9 @@ namespace PlayniteAchievements.Providers.Exophase
                 .OrderBy(item => item.GameName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+            _logger?.Info($"[ExophaseFriends] GetOwnedGames: '{config.Username}' parsed {allGames.Count} profile game(s), " +
+                $"kept {deduped.Count} on selected platform(s) [{string.Join(", ", platforms)}] " +
+                $"(skipped {skippedOtherPlatform} on other platforms).");
             return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(deduped);
         }
 
@@ -139,10 +170,17 @@ namespace PlayniteAchievements.Providers.Exophase
 
             var url = ExophaseApiClient.BuildUrlFromSlug(parsed.GameSlug);
             var achievements = await _apiClient
-                .FetchAchievementsAsync(url, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel)
+                .FetchAchievementsAsync(url, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
                 .ConfigureAwait(false);
 
             var rows = achievements ?? new List<AchievementDetail>();
+
+            // Reuse the main provider's rarity assignment so friend achievements get the same
+            // percentage/rarity tiers instead of defaulting to Common.
+            ExophaseDataProvider.ApplyProviderOwnedRarity(
+                rows,
+                ExophaseDataProvider.MapSlugToProviderPlatformKey(parsed.PlatformSlug));
+
             return FriendsProviderResult<FriendGameDefinition>.FromData(new FriendGameDefinition
             {
                 ProviderKey = Provider,
@@ -170,133 +208,81 @@ namespace PlayniteAchievements.Providers.Exophase
                 return FriendsProviderResult<FriendGameAchievements>.Failed("Exophase friend id or game key is missing.");
             }
 
-            var allRows = await FetchAwardRowsForPlatformAsync(friend.ExternalUserId, parsed.PlatformSlug, cancel)
-                .ConfigureAwait(false);
-            var rows = allRows
-                .Where(row => string.Equals(row.GameSlug, parsed.GameSlug, StringComparison.OrdinalIgnoreCase))
-                .Select(ToFriendAchievementRow)
+            // The friend's games page links each game to /game/{slug}/achievements/#{contextId}, which
+            // renders that friend's unlock state. Reuse the main provider's achievement fetch+parse
+            // against that friend-scoped URL: FetchAchievementsAsync waits for the JS-loaded unlock data
+            // and ParseAchievementsHtml yields names, descriptions, full-size icons AND unlock times for
+            // the friend in one pass (no separate awards scrape).
+            var contextId = GetFriendGameContextId(friend.ExternalUserId, providerGameKey);
+            var achievementUrl = BuildFriendAchievementUrl(parsed.GameSlug, contextId);
+            var achievements = await _apiClient
+                .FetchAchievementsAsync(achievementUrl, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
+                .ConfigureAwait(false) ?? new List<AchievementDetail>();
+
+            // Reuse the main provider's rarity assignment (percentage -> rarity tier) so friend
+            // achievements are not all reported as Common.
+            ExophaseDataProvider.ApplyProviderOwnedRarity(
+                achievements,
+                ExophaseDataProvider.MapSlugToProviderPlatformKey(parsed.PlatformSlug));
+
+            var rows = achievements
+                .Where(achievement => achievement != null && achievement.Unlocked)
+                .Select(achievement => new FriendAchievementRow
+                {
+                    DisplayName = achievement.DisplayName,
+                    Description = achievement.Description,
+                    IconUrl = achievement.UnlockedIconPath,
+                    Unlocked = true,
+                    UnlockTimeUtc = achievement.UnlockTimeUtc,
+                    ProgressNum = achievement.ProgressNum,
+                    ProgressDenom = achievement.ProgressDenom
+                })
                 .ToList();
+
+            _logger?.Debug($"[ExophaseFriends] GetFriendGameAchievements: friend='{friend.ExternalUserId}', " +
+                $"gameKey='{providerGameKey}', contextId='{contextId ?? "(none)"}' -> " +
+                $"{achievements.Count} achievement(s), {rows.Count} unlocked.");
 
             return FriendsProviderResult<FriendGameAchievements>.FromData(new FriendGameAchievements
             {
                 Friend = friend,
                 ProviderGameKey = providerGameKey,
                 LastUpdatedUtc = DateTime.UtcNow,
-                StatsUnavailable = false,
+                StatsUnavailable = achievements.Count == 0,
                 Rows = rows
             });
         }
 
-        private async Task<IReadOnlyList<ExophaseFriendGame>> FetchOwnedGamesForPlatformAsync(
+        private async Task<IReadOnlyList<ExophaseFriendGame>> FetchOwnedGamesAsync(
             string username,
-            string platform,
             CancellationToken cancel)
         {
-            var result = new List<ExophaseFriendGame>();
-            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var queue = new Queue<string>();
-            queue.Enqueue(BuildGamesUrl(username, platform, 1));
-            queue.Enqueue(BuildProfileUrl(username, platform));
-
-            while (queue.Count > 0 && visited.Count < 25)
+            var url = BuildProfileUrl(username);
+            var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: true).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(html))
             {
-                cancel.ThrowIfCancellationRequested();
-                var url = queue.Dequeue();
-                if (!visited.Add(url))
-                {
-                    continue;
-                }
-
-                var html = await FetchRenderedHtmlSerializedAsync(url, cancel).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(html))
-                {
-                    continue;
-                }
-
-                var page = ExophaseFriendPageParser.ParseGames(html, platform);
-                result.AddRange(page.Games);
-                foreach (var next in page.NextUrls.Where(next => !visited.Contains(next)))
-                {
-                    queue.Enqueue(next);
-                }
+                _logger?.Warn($"[ExophaseFriends] Profile fetch: empty or blocked HTML from {url}. " +
+                    "The page may require login, have been rate-limited, or failed to render.");
+                return Array.Empty<ExophaseFriendGame>();
             }
 
-            return result
+            var page = ExophaseFriendPageParser.ParseGames(html);
+            var deduped = page.Games
                 .Where(game => !string.IsNullOrWhiteSpace(game?.Slug))
-                .GroupBy(game => game.Slug, StringComparer.OrdinalIgnoreCase)
+                .GroupBy(game => (game.Platform ?? string.Empty) + "|" + game.Slug, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
                 .ToList();
-        }
-
-        private async Task<IReadOnlyList<ExophaseFriendAchievementRow>> FetchAwardRowsForPlatformAsync(
-            string username,
-            string platform,
-            CancellationToken cancel)
-        {
-            var cacheKey = username.Trim() + "|" + platform.Trim();
-            if (_awardRowsByFriendPlatform.TryGetValue(cacheKey, out var cached))
-            {
-                return cached;
-            }
-
-            var result = new List<ExophaseFriendAchievementRow>();
-            var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var queue = new Queue<string>();
-            queue.Enqueue(BuildAwardsUrl(username, platform, 1));
-
-            while (queue.Count > 0 && visited.Count < 25)
-            {
-                cancel.ThrowIfCancellationRequested();
-                var url = queue.Dequeue();
-                if (!visited.Add(url))
-                {
-                    continue;
-                }
-
-                var html = await FetchRenderedHtmlSerializedAsync(url, cancel).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(html))
-                {
-                    continue;
-                }
-
-                var page = ExophaseFriendPageParser.ParseAwards(html);
-                result.AddRange(page.Rows);
-                foreach (var next in page.NextUrls.Where(next => !visited.Contains(next)))
-                {
-                    queue.Enqueue(next);
-                }
-            }
-
-            var deduped = result
-                .GroupBy(row => row.GameSlug + "\u001f" + NormalizeText(row.DisplayName), StringComparer.OrdinalIgnoreCase)
-                .Select(group => group
-                    .OrderByDescending(row => row.UnlockTimeUtc ?? DateTime.MinValue)
-                    .First())
-                .ToList();
-            _awardRowsByFriendPlatform[cacheKey] = deduped;
+            _logger?.Debug($"[ExophaseFriends] Profile fetch: {url} -> htmlLength={html.Length}, " +
+                $"parsedGames={page.Games.Count}, uniqueGames={deduped.Count}.");
             return deduped;
         }
 
-        private static FriendAchievementRow ToFriendAchievementRow(ExophaseFriendAchievementRow row)
-        {
-            return new FriendAchievementRow
-            {
-                DisplayName = row?.DisplayName,
-                Description = row?.Description,
-                IconUrl = row?.IconUrl,
-                Unlocked = row?.Unlocked ?? false,
-                UnlockTimeUtc = row?.UnlockTimeUtc,
-                ProgressNum = row?.ProgressNum,
-                ProgressDenom = row?.ProgressDenom
-            };
-        }
-
-        private async Task<string> FetchRenderedHtmlSerializedAsync(string url, CancellationToken cancel)
+        private async Task<string> FetchRenderedHtmlSerializedAsync(string url, CancellationToken cancel, bool scrollToLoad = false)
         {
             await _webViewGate.WaitAsync(cancel).ConfigureAwait(false);
             try
             {
-                return await _apiClient.FetchRenderedHtmlAsync(url, cancel).ConfigureAwait(false);
+                return await _apiClient.FetchRenderedHtmlAsync(url, cancel, scrollToLoad: scrollToLoad).ConfigureAwait(false);
             }
             finally
             {
@@ -439,36 +425,33 @@ namespace PlayniteAchievements.Providers.Exophase
             return costs[right.Length];
         }
 
-        private static string BuildProfileUrl(string username, string platform)
+        private static string BuildProfileUrl(string username)
         {
-            var url = $"https://www.exophase.com/user/{Uri.EscapeDataString(username.Trim())}/";
-            return string.IsNullOrWhiteSpace(platform)
+            // The base profile page lists every platform's games on one page (the ?environment= filter
+            // is ignored by Exophase), so no query string is appended.
+            return $"https://www.exophase.com/user/{Uri.EscapeDataString(username.Trim())}/";
+        }
+
+        private static string BuildContextMapKey(string username, string providerGameKey)
+        {
+            return (username?.Trim() ?? string.Empty) + "|" + (providerGameKey?.Trim() ?? string.Empty);
+        }
+
+        private string GetFriendGameContextId(string username, string providerGameKey)
+        {
+            return _friendGameContextIds.TryGetValue(BuildContextMapKey(username, providerGameKey), out var contextId)
+                ? contextId
+                : null;
+        }
+
+        private static string BuildFriendAchievementUrl(string gameSlug, string contextId)
+        {
+            // Mirrors the games-page link: /game/{slug}/achievements/#{contextId} renders the friend's
+            // unlock state. Without a context id this falls back to the plain (viewer-scoped) page.
+            var url = ExophaseApiClient.BuildUrlFromSlug(gameSlug);
+            return string.IsNullOrWhiteSpace(contextId)
                 ? url
-                : url + "?environment=" + Uri.EscapeDataString(platform.Trim());
-        }
-
-        private static string BuildGamesUrl(string username, string platform, int page)
-        {
-            var url = $"https://www.exophase.com/user/{Uri.EscapeDataString(username.Trim())}/games/";
-            var query = "?environment=" + Uri.EscapeDataString(platform.Trim());
-            if (page > 1)
-            {
-                query += "&page=" + page.ToString(CultureInfo.InvariantCulture);
-            }
-
-            return url + query;
-        }
-
-        private static string BuildAwardsUrl(string username, string platform, int page)
-        {
-            var url = $"https://www.exophase.com/user/{Uri.EscapeDataString(username.Trim())}/awards/";
-            var query = "?environment=" + Uri.EscapeDataString(platform.Trim());
-            if (page > 1)
-            {
-                query += "&page=" + page.ToString(CultureInfo.InvariantCulture);
-            }
-
-            return url + query;
+                : url + "#" + contextId.Trim();
         }
 
         private static List<string> NormalizePlatforms(IEnumerable<string> platforms)
@@ -493,43 +476,22 @@ namespace PlayniteAchievements.Providers.Exophase
             return Regex.Replace(lower, @"\s+", " ").Trim();
         }
 
-        private static string NormalizeText(string value)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? string.Empty
-                : Regex.Replace(WebUtility.HtmlDecode(value), @"\s+", " ").Trim();
-        }
-
         private sealed class ExophaseFriendGame
         {
             public string Slug { get; set; }
             public string Title { get; set; }
             public string ImageUrl { get; set; }
-            public int PlaytimeMinutes { get; set; }
-        }
+            public string Platform { get; set; }
 
-        private sealed class ExophaseFriendAchievementRow
-        {
-            public string GameSlug { get; set; }
-            public string DisplayName { get; set; }
-            public string Description { get; set; }
-            public string IconUrl { get; set; }
-            public bool Unlocked { get; set; }
-            public DateTime? UnlockTimeUtc { get; set; }
-            public int? ProgressNum { get; set; }
-            public int? ProgressDenom { get; set; }
+            // Friend's per-game context id from the games-page achievement link fragment
+            // (/game/{slug}/achievements/#{ContextId}); scopes the achievement page to this friend.
+            public string ContextId { get; set; }
+            public int PlaytimeMinutes { get; set; }
         }
 
         private sealed class ParsedGamesPage
         {
             public List<ExophaseFriendGame> Games { get; set; } = new List<ExophaseFriendGame>();
-            public List<string> NextUrls { get; set; } = new List<string>();
-        }
-
-        private sealed class ParsedAwardsPage
-        {
-            public List<ExophaseFriendAchievementRow> Rows { get; set; } = new List<ExophaseFriendAchievementRow>();
-            public List<string> NextUrls { get; set; } = new List<string>();
         }
 
         private static class ExophaseFriendGameKey
@@ -560,7 +522,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
         private static class ExophaseFriendPageParser
         {
-            public static ParsedGamesPage ParseGames(string html, string platform)
+            public static ParsedGamesPage ParseGames(string html)
             {
                 var result = new ParsedGamesPage();
                 var doc = LoadDocument(html);
@@ -569,24 +531,32 @@ namespace PlayniteAchievements.Providers.Exophase
                     return result;
                 }
 
-                foreach (var link in Nodes(doc.DocumentNode.SelectNodes("//a[contains(@href, '/game/')]")))
+                // Each game row exposes its title as <h3><a href=".../game/{slug}/achievements/#id">Title</a>.
+                // Prefer the heading anchors so award-icon and navigation links are not mistaken for games;
+                // fall back to any /game/ anchor if the markup changes.
+                var links = doc.DocumentNode.SelectNodes("//h3/a[contains(@href, '/game/')]")
+                    ?? doc.DocumentNode.SelectNodes("//a[contains(@href, '/game/')]");
+
+                foreach (var link in Nodes(links))
                 {
-                    var href = NormalizeUrl(link.GetAttributeValue("href", null));
+                    var rawHref = link.GetAttributeValue("href", null);
+                    var href = NormalizeUrl(rawHref);
                     var slug = ExophaseApiClient.ExtractSlugFromUrl(href);
                     if (string.IsNullOrWhiteSpace(slug))
                     {
                         continue;
                     }
 
-                    var container = FindContainer(link);
+                    var contextId = ExtractFragmentId(rawHref);
+                    var container = FindGameContainer(link);
+                    var platform = DerivePlatform(container, slug);
                     var title = FirstNonEmpty(
-                        Clean(link.GetAttributeValue("title", null)),
                         Clean(link.InnerText),
-                        Clean(container?.SelectSingleNode(".//img")?.GetAttributeValue("alt", null)),
+                        Clean(link.GetAttributeValue("title", null)),
+                        Clean(container?.SelectSingleNode(".//div[contains(@class, 'col-image')]//img")?.GetAttributeValue("alt", null)),
                         SlugToTitle(slug, platform));
                     var image = NormalizeUrl(FirstNonEmpty(
-                        link.SelectSingleNode(".//img")?.GetAttributeValue("src", null),
-                        link.SelectSingleNode(".//img")?.GetAttributeValue("data-src", null),
+                        container?.SelectSingleNode(".//div[contains(@class, 'col-image')]//img")?.GetAttributeValue("src", null),
                         container?.SelectSingleNode(".//img")?.GetAttributeValue("src", null),
                         container?.SelectSingleNode(".//img")?.GetAttributeValue("data-src", null)));
 
@@ -595,110 +565,13 @@ namespace PlayniteAchievements.Providers.Exophase
                         Slug = slug,
                         Title = title,
                         ImageUrl = image,
+                        Platform = platform,
+                        ContextId = contextId,
                         PlaytimeMinutes = ParsePlaytimeMinutes(container?.InnerText)
                     });
                 }
 
-                result.NextUrls.AddRange(ParseNextUrls(doc));
                 return result;
-            }
-
-            public static ParsedAwardsPage ParseAwards(string html)
-            {
-                var result = new ParsedAwardsPage();
-                var doc = LoadDocument(html);
-                if (doc?.DocumentNode == null)
-                {
-                    return result;
-                }
-
-                var containers = doc.DocumentNode
-                    .SelectNodes("//*[self::tr or self::li or contains(@class, 'award') or contains(@class, 'achievement')]");
-                foreach (var container in Nodes(containers))
-                {
-                    var gameLink = container.SelectSingleNode(".//a[contains(@href, '/game/')]");
-                    var slug = ExophaseApiClient.ExtractSlugFromUrl(NormalizeUrl(gameLink?.GetAttributeValue("href", null)));
-                    if (string.IsNullOrWhiteSpace(slug))
-                    {
-                        continue;
-                    }
-
-                    var displayName = ResolveAwardName(container, gameLink);
-                    if (string.IsNullOrWhiteSpace(displayName))
-                    {
-                        continue;
-                    }
-
-                    result.Rows.Add(new ExophaseFriendAchievementRow
-                    {
-                        GameSlug = slug,
-                        DisplayName = displayName,
-                        Description = Clean(FirstNonEmpty(
-                            container.SelectSingleNode(".//*[contains(@class, 'description')]")?.InnerText,
-                            container.SelectSingleNode(".//*[contains(@class, 'desc')]")?.InnerText)),
-                        IconUrl = NormalizeUrl(FirstNonEmpty(
-                            container.SelectSingleNode(".//img")?.GetAttributeValue("src", null),
-                            container.SelectSingleNode(".//img")?.GetAttributeValue("data-src", null))),
-                        Unlocked = true,
-                        UnlockTimeUtc = ParseUnlockTime(container)
-                    });
-                }
-
-                result.NextUrls.AddRange(ParseNextUrls(doc));
-                return result;
-            }
-
-            private static string ResolveAwardName(HtmlNode container, HtmlNode gameLink)
-            {
-                var explicitName = FirstNonEmpty(
-                    container.GetAttributeValue("data-title", null),
-                    container.SelectSingleNode(".//*[contains(@class, 'award-title')]")?.InnerText,
-                    container.SelectSingleNode(".//*[contains(@class, 'achievement-title')]")?.InnerText,
-                    container.SelectSingleNode(".//*[contains(@class, 'title')]")?.InnerText,
-                    container.SelectSingleNode(".//h3")?.InnerText,
-                    container.SelectSingleNode(".//h4")?.InnerText);
-                if (!string.IsNullOrWhiteSpace(explicitName))
-                {
-                    return Clean(explicitName);
-                }
-
-                var anchors = Nodes(container.SelectNodes(".//a"));
-                foreach (var anchor in anchors)
-                {
-                    if (ReferenceEquals(anchor, gameLink))
-                    {
-                        continue;
-                    }
-
-                    var text = Clean(anchor.InnerText);
-                    if (!string.IsNullOrWhiteSpace(text))
-                    {
-                        return text;
-                    }
-                }
-
-                return null;
-            }
-
-            private static IEnumerable<string> ParseNextUrls(HtmlDocument doc)
-            {
-                foreach (var link in Nodes(doc.DocumentNode.SelectNodes("//a[@href]")))
-                {
-                    var rel = link.GetAttributeValue("rel", string.Empty);
-                    var text = Clean(link.InnerText);
-                    if (!string.Equals(rel, "next", StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(text, "next", StringComparison.OrdinalIgnoreCase) &&
-                        !Regex.IsMatch(link.GetAttributeValue("href", string.Empty), @"[?&]page=\d+", RegexOptions.IgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    var url = NormalizeUrl(link.GetAttributeValue("href", null));
-                    if (!string.IsNullOrWhiteSpace(url))
-                    {
-                        yield return url;
-                    }
-                }
             }
 
             private static HtmlDocument LoadDocument(string html)
@@ -718,23 +591,69 @@ namespace PlayniteAchievements.Providers.Exophase
                 return nodes ?? Enumerable.Empty<HtmlNode>();
             }
 
-            private static HtmlNode FindContainer(HtmlNode node)
+            private static string ExtractFragmentId(string href)
             {
-                var current = node;
-                for (var i = 0; i < 4 && current != null; i++)
+                if (string.IsNullOrWhiteSpace(href))
+                {
+                    return null;
+                }
+
+                var hashIndex = href.IndexOf('#');
+                if (hashIndex < 0 || hashIndex >= href.Length - 1)
+                {
+                    return null;
+                }
+
+                var fragment = href.Substring(hashIndex + 1).Trim();
+                return string.IsNullOrWhiteSpace(fragment) ? null : fragment;
+            }
+
+            private static HtmlNode FindGameContainer(HtmlNode link)
+            {
+                var current = link;
+                for (var i = 0; i < 6 && current?.ParentNode != null; i++)
                 {
                     current = current.ParentNode;
-                    var className = current?.GetAttributeValue("class", string.Empty) ?? string.Empty;
-                    if (current?.Name == "tr" ||
-                        current?.Name == "li" ||
-                        className.IndexOf("game", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                        className.IndexOf("card", StringComparison.OrdinalIgnoreCase) >= 0)
+                    if (current.SelectSingleNode(".//div[contains(@class, 'col-image')]") != null ||
+                        current.SelectSingleNode(".//i[contains(@class, 'exo-icon-service-')]") != null)
                     {
                         return current;
                     }
                 }
 
-                return node.ParentNode;
+                return link.ParentNode;
+            }
+
+            private static string DerivePlatform(HtmlNode container, string slug)
+            {
+                if (container != null)
+                {
+                    // The service icon carries the platform: <i class="exo-icon-service-origin ...">.
+                    var serviceIcon = container.SelectSingleNode(".//i[contains(@class, 'exo-icon-service-')]");
+                    var iconClass = serviceIcon?.GetAttributeValue("class", string.Empty) ?? string.Empty;
+                    var iconMatch = Regex.Match(iconClass, @"exo-icon-service-([a-z0-9]+)", RegexOptions.IgnoreCase);
+                    if (iconMatch.Success)
+                    {
+                        return iconMatch.Groups[1].Value.ToLowerInvariant();
+                    }
+
+                    // Fall back to the media host path: https://m.exophase.com/{platform}/games/...
+                    var imageSrc = container.SelectSingleNode(".//img")?.GetAttributeValue("src", null) ?? string.Empty;
+                    var imageMatch = Regex.Match(imageSrc, @"exophase\.com/([a-z0-9]+)/(?:games|awards)/", RegexOptions.IgnoreCase);
+                    if (imageMatch.Success)
+                    {
+                        return imageMatch.Groups[1].Value.ToLowerInvariant();
+                    }
+                }
+
+                // Last resort: the platform suffix embedded in the slug (e.g. dead-space-3-origin -> origin).
+                var lastDash = (slug ?? string.Empty).LastIndexOf('-');
+                if (lastDash > 0 && lastDash < slug.Length - 1)
+                {
+                    return slug.Substring(lastDash + 1).ToLowerInvariant();
+                }
+
+                return null;
             }
 
             private static string SlugToTitle(string slug, string platform)
@@ -774,21 +693,6 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 return Math.Max(0, total);
-            }
-
-            private static DateTime? ParseUnlockTime(HtmlNode container)
-            {
-                var datetime = FirstNonEmpty(
-                    container.SelectSingleNode(".//time")?.GetAttributeValue("datetime", null),
-                    container.GetAttributeValue("data-date", null),
-                    container.GetAttributeValue("data-unlocked", null));
-                if (!string.IsNullOrWhiteSpace(datetime) &&
-                    DateTime.TryParse(datetime, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var parsed))
-                {
-                    return parsed;
-                }
-
-                return null;
             }
 
             private static string NormalizeUrl(string url)

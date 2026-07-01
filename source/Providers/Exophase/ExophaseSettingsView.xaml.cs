@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
 using System.Threading;
@@ -11,6 +12,7 @@ using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Logging;
+using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Providers.Exophase
 {
@@ -34,6 +36,14 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public new ExophaseSettings Settings => _exophaseSettings;
 
+        /// <summary>
+        /// Friend rows bound to the settings friends grid. The view owns this collection; each row is a
+        /// view model that persists back to <see cref="ExophaseSettings.Friends"/> on edit. The grid
+        /// binds to it once, so per-friend edits update cells in place without ItemsSource resets.
+        /// </summary>
+        public ObservableCollection<ExophaseFriendListItem> Friends { get; } =
+            new ObservableCollection<ExophaseFriendListItem>();
+
         public ExophaseSettingsView(ExophaseSessionManager sessionManager)
         {
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
@@ -52,7 +62,7 @@ namespace PlayniteAchievements.Providers.Exophase
             base.Initialize(settings);
             SetAuthStatusVisualState(pending: true, success: false);
             SetAuthStatusByKey("LOCPlayAch_Auth_NotChecked");
-            RefreshExophaseFriendsGrid();
+            LoadFriends();
         }
 
         private void UpdateAuthStatus(AuthProbeResult result)
@@ -247,8 +257,38 @@ namespace PlayniteAchievements.Providers.Exophase
             _exophaseSettings.ManagedProviders = managedProviders;
         }
 
-        private ExophaseFriendSettings SelectedExophaseFriend =>
-            ExophaseFriendsGrid?.SelectedItem as ExophaseFriendSettings;
+        /// <summary>
+        /// Rebuilds the <see cref="Friends"/> row collection from the current settings. Called on load
+        /// and after add/remove; per-friend edits mutate rows in place and persist via the row callback.
+        /// </summary>
+        private void LoadFriends()
+        {
+            Friends.Clear();
+            if (_exophaseSettings?.Friends == null)
+            {
+                return;
+            }
+
+            foreach (var friend in _exophaseSettings.Friends)
+            {
+                Friends.Add(new ExophaseFriendListItem(friend, PersistFriends));
+            }
+        }
+
+        /// <summary>
+        /// Writes the current row view models back to <see cref="ExophaseSettings.Friends"/>. Invoked by
+        /// each row when its scope or platform selection changes; never rebuilds the row collection, so
+        /// there is no re-entrancy.
+        /// </summary>
+        private void PersistFriends()
+        {
+            if (_exophaseSettings == null)
+            {
+                return;
+            }
+
+            _exophaseSettings.Friends = Friends.Select(item => item.ToModel()).ToList();
+        }
 
         private void AddExophaseFriend_Click(object sender, RoutedEventArgs e)
         {
@@ -265,168 +305,40 @@ namespace PlayniteAchievements.Providers.Exophase
 
             _exophaseSettings.AddOrUpdateFriend(username);
             NewFriendUsernameTextBox.Text = string.Empty;
-            RefreshExophaseFriendsGrid(username.Trim());
+            LoadFriends();
         }
 
-        private void RemoveExophaseFriend_Click(object sender, RoutedEventArgs e)
+        private void RemoveFriend_Click(object sender, RoutedEventArgs e)
         {
-            var selected = SelectedExophaseFriend;
-            if (_exophaseSettings == null || selected == null)
+            if (_exophaseSettings == null ||
+                !((sender as FrameworkElement)?.DataContext is ExophaseFriendListItem item))
             {
                 return;
             }
 
-            _exophaseSettings.RemoveFriend(selected.Username);
-            RefreshExophaseFriendsGrid();
+            _exophaseSettings.RemoveFriend(item.Username);
+            LoadFriends();
         }
 
-        private void ExophaseFriendsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void FullLibraryToggle_Click(object sender, RoutedEventArgs e)
         {
-            RefreshSelectedFriendEditors();
-        }
-
-        private void ExophaseFriendScope_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            var selected = SelectedExophaseFriend;
-            if (_exophaseSettings == null || selected == null || !(ExophaseFriendScopeComboBox?.SelectedItem is ComboBoxItem item))
+            if (!(sender is CheckBox checkBox) ||
+                !(checkBox.DataContext is ExophaseFriendListItem item) ||
+                _exophaseSettings == null)
             {
                 return;
             }
 
-            selected.LibraryScope = string.Equals(item.Tag as string, "Full", StringComparison.OrdinalIgnoreCase)
-                ? FriendLibraryScope.Full
-                : FriendLibraryScope.Shared;
-            _exophaseSettings.Friends = _exophaseSettings.Friends;
-            RefreshExophaseFriendsGrid(selected.Username);
-        }
-
-        private void FriendPlatform_CheckboxLoaded(object sender, RoutedEventArgs e)
-        {
-            RefreshFriendPlatformCheckbox(sender as CheckBox);
-        }
-
-        private void FriendPlatform_CheckChanged(object sender, RoutedEventArgs e)
-        {
-            var selected = SelectedExophaseFriend;
-            if (_exophaseSettings == null || selected == null || !(sender is CheckBox checkbox))
+            var enable = checkBox.IsChecked == true;
+            if (enable && !FriendLibraryScopeHelper.ConfirmFullLibraryEnable())
             {
+                checkBox.IsChecked = false;
+                item.IsFullLibrary = false;
                 return;
             }
 
-            var token = GetFriendPlatformToken(checkbox);
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return;
-            }
-
-            var platforms = new HashSet<string>(selected.SelectedPlatforms ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
-            if (checkbox.IsChecked == true)
-            {
-                platforms.Add(token.Trim().ToLowerInvariant());
-            }
-            else
-            {
-                platforms.Remove(token.Trim());
-            }
-
-            selected.SelectedPlatforms = platforms.OrderBy(platform => platform, StringComparer.OrdinalIgnoreCase).ToList();
-            _exophaseSettings.Friends = _exophaseSettings.Friends;
-            RefreshExophaseFriendsGrid(selected.Username);
-        }
-
-        private void RefreshExophaseFriendsGrid(string selectedUsername = null)
-        {
-            if (ExophaseFriendsGrid == null || _exophaseSettings == null)
-            {
-                return;
-            }
-
-            _exophaseSettings.Friends = _exophaseSettings.Friends;
-            ExophaseFriendsGrid.ItemsSource = null;
-            ExophaseFriendsGrid.ItemsSource = _exophaseSettings.Friends;
-
-            var selected = _exophaseSettings.Friends.FirstOrDefault(friend =>
-                string.Equals(friend.Username, selectedUsername, StringComparison.OrdinalIgnoreCase));
-            if (selected != null)
-            {
-                ExophaseFriendsGrid.SelectedItem = selected;
-            }
-            else if (_exophaseSettings.Friends.Count > 0 && ExophaseFriendsGrid.SelectedItem == null)
-            {
-                ExophaseFriendsGrid.SelectedItem = _exophaseSettings.Friends[0];
-            }
-
-            RefreshSelectedFriendEditors();
-        }
-
-        private void RefreshSelectedFriendEditors()
-        {
-            var selected = SelectedExophaseFriend;
-            if (ExophaseFriendScopeComboBox != null)
-            {
-                foreach (var item in ExophaseFriendScopeComboBox.Items.OfType<ComboBoxItem>())
-                {
-                    var isFull = selected?.LibraryScope == FriendLibraryScope.Full;
-                    if (string.Equals(item.Tag as string, isFull ? "Full" : "Shared", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ExophaseFriendScopeComboBox.SelectedItem = item;
-                        break;
-                    }
-                }
-            }
-
-            RefreshFriendPlatformCheckboxes();
-        }
-
-        private void RefreshFriendPlatformCheckboxes()
-        {
-            RefreshFriendPlatformCheckboxes(this);
-        }
-
-        private void RefreshFriendPlatformCheckboxes(DependencyObject root)
-        {
-            if (root == null)
-            {
-                return;
-            }
-
-            var count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
-            for (var i = 0; i < count; i++)
-            {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
-                RefreshFriendPlatformCheckbox(child as CheckBox);
-                RefreshFriendPlatformCheckboxes(child);
-            }
-        }
-
-        private void RefreshFriendPlatformCheckbox(CheckBox checkbox)
-        {
-            var selected = SelectedExophaseFriend;
-            if (checkbox == null || checkbox.Tag == null || selected == null)
-            {
-                return;
-            }
-
-            var token = GetFriendPlatformToken(checkbox);
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                return;
-            }
-
-            checkbox.IsChecked = (selected.SelectedPlatforms ?? new List<string>())
-                .Contains(token, StringComparer.OrdinalIgnoreCase);
-        }
-
-        private static string GetFriendPlatformToken(CheckBox checkbox)
-        {
-            var tag = checkbox?.Tag as string;
-            if (string.IsNullOrWhiteSpace(tag) ||
-                !tag.StartsWith("friend:", StringComparison.OrdinalIgnoreCase))
-            {
-                return null;
-            }
-
-            return tag.Substring("friend:".Length).Trim();
+            // The row setter raises the change callback, which persists the updated friend list.
+            item.IsFullLibrary = enable;
         }
     }
 }

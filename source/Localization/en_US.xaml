@@ -14,6 +14,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Actions">Actions</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_ExcludeFromSummaries">Exclude from Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Action_IncludeInSummaries">Include in Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Add">Add</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_AddType">Add Type</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ApplyToSelected">Apply To Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Ascending">Ascending</sys:String>
@@ -116,6 +117,7 @@
     <sys:String x:Key="LOCPlayAch_Column_GamesWithUnlocks">Games With Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Unlocks">Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastUnlock">Last Unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_LastError">Last Error</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_FriendsWithUnlocks">Friends With Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastFriendUnlock">Last Friend Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
@@ -202,6 +204,8 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">Ignore Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnignoreFriend">Unignore Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend_Confirm">Ignore {0}? Their cached friend achievement data will be deleted and they will be skipped during friend refreshes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearFriend">Clear Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_ClearFriend_Confirm">Clear cached achievement data for {0}? It will be re-fetched on the next friend refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UseFullLibrary">Use Full Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UseSharedLibrary">Use Shared Library</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
@@ -550,6 +554,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms">Managed Platforms</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_ManagedPlatforms_Help">Games on these platforms will use Exophase instead of modern providers. Check platforms you want Exophase to manage.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Exophase_Note">Note: For games on unchecked platforms, use Manage Achievements to include individually.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Exophase_SelectPlatforms">Select platforms</sys:String>
+    <sys:String x:Key="LOCPlayAch_Exophase_PlatformsSelectedCount">{0} selected</sys:String>
 
     <!-- Provider: HoYoverse -->
     <sys:String x:Key="LOCPlayAch_Settings_Hoyoverse_EnableGenshin">Enable Genshin Impact</sys:String>

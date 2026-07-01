@@ -123,6 +123,8 @@ namespace PlayniteAchievements.Services.Friends
 
         FriendUnownedCacheClearResult ClearUnownedFriendGameData();
 
+        FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey);
+
         FriendCacheWriteResult SaveFriendGameAchievements(
             string providerKey,
             string externalUserId,

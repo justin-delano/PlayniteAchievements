@@ -856,6 +856,24 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        FriendCacheWriteResult IFriendCacheManager.ClearUnownedFriendGame(
+            string providerKey,
+            int appId,
+            string providerGameKey)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("ClearUnownedFriendGame");
+                var result = _store.ClearUnownedFriendGame(providerKey, appId, providerGameKey);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
         FriendCacheWriteResult IFriendCacheManager.SaveFriendGameAchievements(
             string providerKey,
             string externalUserId,

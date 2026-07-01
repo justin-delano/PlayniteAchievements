@@ -1771,6 +1771,97 @@ namespace PlayniteAchievements.Services.Database
             }
         }
 
+        public FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            var normalizedGameKey = NormalizeProviderGameKey(providerGameKey);
+            if (!HasProviderGameIdentity(appId, normalizedGameKey))
+            {
+                return FriendCacheWriteResult.Failed("Provider game identity is missing.");
+            }
+
+            // Shared predicate selecting the single unowned (provider-only) Games row(s) for this
+            // provider game. Matching either ProviderGameId or ProviderGameKey mirrors the provider
+            // identity semantics used elsewhere; the OR is safe because DbValue(null) binds DBNull,
+            // which never equals a stored key (and appId <= 0 never matches a real ProviderGameId).
+            const string gameFilter =
+                "g.ProviderKey = ? AND (g.PlayniteGameId IS NULL OR TRIM(g.PlayniteGameId) = '') " +
+                "AND (g.ProviderGameId = ? OR g.ProviderGameKey = ?)";
+
+            try
+            {
+                WithDb(db =>
+                {
+                    db.RunTransaction(() =>
+                    {
+                        db.ExecuteNonQuery(
+                            @"DELETE FROM UserAchievements
+                              WHERE UserGameProgressId IN (
+                                  SELECT ugp.Id
+                                  FROM UserGameProgress ugp
+                                  INNER JOIN Games g ON g.Id = ugp.GameId
+                                  INNER JOIN Users u ON u.Id = ugp.UserId
+                                  WHERE u.IsCurrentUser = 0 AND " + gameFilter + ");",
+                            providerKey, appId, DbValue(normalizedGameKey));
+                        db.ExecuteNonQuery(
+                            @"DELETE FROM UserGameProgress
+                              WHERE Id IN (
+                                  SELECT ugp.Id
+                                  FROM UserGameProgress ugp
+                                  INNER JOIN Games g ON g.Id = ugp.GameId
+                                  INNER JOIN Users u ON u.Id = ugp.UserId
+                                  WHERE u.IsCurrentUser = 0 AND " + gameFilter + ");",
+                            providerKey, appId, DbValue(normalizedGameKey));
+                        db.ExecuteNonQuery(
+                            @"DELETE FROM FriendOwnership
+                              WHERE GameId IN (
+                                  SELECT g.Id FROM Games g WHERE " + gameFilter + ");",
+                            providerKey, appId, DbValue(normalizedGameKey));
+                        db.ExecuteNonQuery(
+                            @"DELETE FROM AchievementDefinitions
+                              WHERE GameId IN (
+                                  SELECT g.Id
+                                  FROM Games g
+                                  WHERE " + gameFilter + @"
+                                    AND NOT EXISTS (
+                                        SELECT 1
+                                        FROM UserGameProgress ugp
+                                        INNER JOIN Users u ON u.Id = ugp.UserId
+                                        WHERE ugp.GameId = g.Id
+                                          AND u.IsCurrentUser = 1
+                                    ));",
+                            providerKey, appId, DbValue(normalizedGameKey));
+                        db.ExecuteNonQuery(
+                            @"DELETE FROM Games
+                              WHERE Id IN (
+                                  SELECT g.Id
+                                  FROM Games g
+                                  WHERE " + gameFilter + @"
+                                    AND NOT EXISTS (
+                                        SELECT 1
+                                        FROM UserGameProgress ugp
+                                        INNER JOIN Users u ON u.Id = ugp.UserId
+                                        WHERE ugp.GameId = g.Id
+                                          AND u.IsCurrentUser = 1
+                                    ));",
+                            providerKey, appId, DbValue(normalizedGameKey));
+                        db.ExecuteNonQuery(
+                            @"DELETE FROM ProviderGameDefinitionState
+                              WHERE ProviderKey = ?
+                                AND (ProviderGameId = ? OR ProviderGameKey = ?);",
+                            providerKey, appId, DbValue(normalizedGameKey));
+                    });
+                });
+
+                return FriendCacheWriteResult.Ok(incomingCount: 1, writtenCount: 1, skippedCount: 0);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to clear unowned friend game data for {providerKey}/{ToProviderGameLogKey(appId, normalizedGameKey)}.");
+                return FriendCacheWriteResult.Failed(ex.Message);
+            }
+        }
+
         public FriendCacheWriteResult SaveFriendGameAchievements(
             string providerKey,
             string externalUserId,
@@ -3714,7 +3805,11 @@ namespace PlayniteAchievements.Services.Database
                     GlobalPercentUnlocked = detail.GlobalPercentUnlocked,
                     Rarity = detail.Rarity,
                     UnlockTimeUtc = friendUnlockTimeUtc,
-                    Unlocked = isUnlockedByMe,
+                    // These rows are the friend's unlocked achievements (the query filters to
+                    // ua.Unlocked = 1), so mark them unlocked for display. DisplayIcon renders a greyscale
+                    // locked icon when Unlocked is false; keying off the current user's unlock state
+                    // (isUnlockedByMe) greyed out the friend's achievements the viewer had not earned.
+                    Unlocked = true,
                     ProgressNum = detail.ProgressNum,
                     ProgressDenom = detail.ProgressDenom,
                     ProviderKey = row.ProviderKey,

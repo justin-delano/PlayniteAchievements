@@ -17,7 +17,7 @@ namespace PlayniteAchievements.Services.Friends
     internal sealed class FriendsRefreshRuntime
     {
         private const int FriendRefreshParallelism = 4;
-        private static readonly TimeSpan DefaultDefinitionTtl = TimeSpan.FromDays(30);
+        private static readonly TimeSpan DefaultDefinitionTtl = TimeSpan.FromDays(7);
 
         // Steam library cover art (~600x900) is small enough to cache at full resolution.
         private const int ImageDecodeSize = 0;
@@ -700,8 +700,18 @@ namespace PlayniteAchievements.Services.Friends
             int decodeSize,
             CancellationToken cancel)
         {
-            achievement.UnlockedIconPath = await DownloadAchievementIconAsync(achievement.UnlockedIconPath, decodeSize, cancel).ConfigureAwait(false);
-            achievement.LockedIconPath = await DownloadAchievementIconAsync(achievement.LockedIconPath, decodeSize, cancel).ConfigureAwait(false);
+            var unlockedSource = achievement.UnlockedIconPath;
+            var lockedSource = achievement.LockedIconPath;
+
+            var unlocked = await DownloadAchievementIconAsync(unlockedSource, decodeSize, cancel).ConfigureAwait(false);
+            achievement.UnlockedIconPath = unlocked;
+
+            // Providers like Exophase use the same image for the locked and unlocked states. Reuse the
+            // already-downloaded result instead of fetching (and warming up) the identical URL a second
+            // time, which otherwise doubles the per-achievement download cost.
+            achievement.LockedIconPath = string.Equals(lockedSource, unlockedSource, StringComparison.OrdinalIgnoreCase)
+                ? unlocked
+                : await DownloadAchievementIconAsync(lockedSource, decodeSize, cancel).ConfigureAwait(false);
         }
 
         private async Task<string> DownloadAchievementIconAsync(string url, int decodeSize, CancellationToken cancel)
