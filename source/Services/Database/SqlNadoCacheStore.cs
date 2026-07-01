@@ -1156,6 +1156,29 @@ namespace PlayniteAchievements.Services.Database
             return CreateGamePresentation(playniteGame);
         }
 
+        // Memoized variant: many friend rows (games and, especially, individual achievements)
+        // point at the same Playnite game, so resolving a game's presentation once per load
+        // avoids repeated metadata-formatter work for every achievement of that game.
+        private GamePresentation ResolveGamePresentation(
+            Guid? playniteGameId,
+            Dictionary<Guid, GamePresentation> cache)
+        {
+            if (cache == null)
+            {
+                return ResolveGamePresentation(playniteGameId);
+            }
+
+            var key = playniteGameId ?? Guid.Empty;
+            if (cache.TryGetValue(key, out var cached))
+            {
+                return cached;
+            }
+
+            var presentation = ResolveGamePresentation(playniteGameId);
+            cache[key] = presentation;
+            return presentation;
+        }
+
         private GamePresentation CreateGamePresentation(Playnite.SDK.Models.Game playniteGame)
         {
             return new GamePresentation
@@ -2117,6 +2140,10 @@ namespace PlayniteAchievements.Services.Database
             {
                 var data = new FriendsOverviewData();
 
+                // Shared across the games list and both achievement lists so each game's
+                // presentation is resolved at most once per load.
+                var presentationCache = new Dictionary<Guid, GamePresentation>();
+
                 data.Friends = LoadFriendSummaryRows(db)
                     .Select(row => new FriendSummaryItem
                     {
@@ -2140,7 +2167,7 @@ namespace PlayniteAchievements.Services.Database
                     .Select(row =>
                     {
                         var playniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId);
-                        var presentation = ResolveGamePresentation(playniteGameId);
+                        var presentation = ResolveGamePresentation(playniteGameId, presentationCache);
                         var providerName = ProviderRegistry.GetLocalizedName(row.ProviderKey);
                         var item = new FriendGameSummaryItem
                         {
@@ -2188,8 +2215,8 @@ namespace PlayniteAchievements.Services.Database
                     })
                     .ToList();
 
-                data.RecentUnlocks = MapFriendRecentUnlocks(LoadFriendRecentUnlockRows(db, recentLimit));
-                data.AllUnlockedAchievements = MapFriendRecentUnlocks(LoadFriendUnlockedAchievementRows(db));
+                data.RecentUnlocks = MapFriendRecentUnlocks(LoadFriendRecentUnlockRows(db, recentLimit), presentationCache);
+                data.AllUnlockedAchievements = MapFriendRecentUnlocks(LoadFriendUnlockedAchievementRows(db), presentationCache);
                 ApplyFriendSummaryScores(data.Friends, data.AllUnlockedAchievements);
                 return data;
             });
@@ -2996,177 +3023,127 @@ namespace PlayniteAchievements.Services.Database
         private static List<FriendSummaryRow> LoadFriendSummaryRows(SQLiteDatabase db)
         {
             var recentCutoffIso = ToIso(DateTime.UtcNow.AddDays(-30));
+
+            // Per-friend stats are pre-aggregated once (grouped by UserId) and joined back to
+            // the friend rows, replacing the previous six correlated subqueries per friend.
             return db.Load<FriendSummaryRow>(
-                @"SELECT
+                @"WITH ownership AS (
+                    SELECT fo.UserId AS UserId,
+                           COUNT(DISTINCT fo.GameId) AS SharedGamesCount,
+                           COALESCE(SUM(fo.PlaytimeForeverMinutes), 0) AS TotalPlaytimeMinutes
+                    FROM FriendOwnership fo
+                    INNER JOIN Users u ON u.Id = fo.UserId
+                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    GROUP BY fo.UserId
+                ),
+                unlocks AS (
+                    SELECT ugp.UserId AS UserId,
+                           COUNT(DISTINCT ugp.GameId) AS GamesWithUnlocksCount,
+                           COUNT(ua.Id) AS UnlockedAchievementsCount,
+                           COUNT(CASE WHEN ua.UnlockTimeUtc IS NOT NULL AND ua.UnlockTimeUtc >= ? THEN ua.Id END) AS RecentUnlockCount,
+                           MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
+                    FROM UserGameProgress ugp
+                    INNER JOIN Users u ON u.Id = ugp.UserId
+                    INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    GROUP BY ugp.UserId
+                )
+                SELECT
                     u.ProviderKey AS ProviderKey,
                     u.ExternalUserId AS ExternalUserId,
                     u.DisplayName AS DisplayName,
                     u.AvatarUrl AS AvatarUrl,
                     u.AvatarPath AS AvatarPath,
-                    (
-                        SELECT COUNT(DISTINCT fo.GameId)
-                        FROM FriendOwnership fo
-                        WHERE fo.UserId = u.Id
-                    ) AS SharedGamesCount,
-                    (
-                        SELECT COUNT(DISTINCT ugp.GameId)
-                        FROM UserGameProgress ugp
-                        INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                        WHERE ugp.UserId = u.Id
-                    ) AS GamesWithUnlocksCount,
-                    (
-                        SELECT COUNT(DISTINCT ua.Id)
-                        FROM UserGameProgress ugp
-                        INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                        WHERE ugp.UserId = u.Id
-                    ) AS UnlockedAchievementsCount,
-                    (
-                        SELECT COUNT(DISTINCT ua.Id)
-                        FROM UserGameProgress ugp
-                        INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                        WHERE ugp.UserId = u.Id
-                          AND ua.UnlockTimeUtc IS NOT NULL
-                          AND ua.UnlockTimeUtc >= ?
-                    ) AS RecentUnlockCount,
-                    (
-                        SELECT MAX(ua.UnlockTimeUtc)
-                        FROM UserGameProgress ugp
-                        INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                        WHERE ugp.UserId = u.Id
-                    ) AS LastUnlockUtc,
+                    COALESCE(o.SharedGamesCount, 0) AS SharedGamesCount,
+                    COALESCE(un.GamesWithUnlocksCount, 0) AS GamesWithUnlocksCount,
+                    COALESCE(un.UnlockedAchievementsCount, 0) AS UnlockedAchievementsCount,
+                    COALESCE(un.RecentUnlockCount, 0) AS RecentUnlockCount,
+                    un.LastUnlockUtc AS LastUnlockUtc,
                     u.LastRefreshedUtc AS LastRefreshedUtc,
-                    (
-                        SELECT COALESCE(SUM(fo.PlaytimeForeverMinutes), 0)
-                        FROM FriendOwnership fo
-                        WHERE fo.UserId = u.Id
-                    ) AS TotalPlaytimeMinutes
+                    COALESCE(o.TotalPlaytimeMinutes, 0) AS TotalPlaytimeMinutes
                   FROM Users u
+                  LEFT JOIN ownership o ON o.UserId = u.Id
+                  LEFT JOIN unlocks un ON un.UserId = u.Id
                   WHERE u.IsCurrentUser = 0
                     AND u.IsActiveFriend = 1
                     AND u.FriendSource IS NOT NULL
-                  ORDER BY LastUnlockUtc DESC, u.DisplayName;",
+                  ORDER BY un.LastUnlockUtc DESC, u.DisplayName;",
                 recentCutoffIso).ToList();
         }
 
         private static List<FriendGameSummaryRow> LoadFriendGameSummaryRows(SQLiteDatabase db)
         {
+            // Per-game friend stats are pre-aggregated once (grouped by GameId) across three
+            // source CTEs and joined back to the game rows, replacing the previous eleven
+            // correlated subqueries per game. Ownership is the driving set, so only games a
+            // friend owns appear (matching the previous EXISTS filter).
             return db.Load<FriendGameSummaryRow>(
-                @"SELECT
+                @"WITH ownership AS (
+                    SELECT fo.GameId AS GameId,
+                           COUNT(DISTINCT u.Id) AS FriendCount,
+                           COALESCE(SUM(fo.PlaytimeForeverMinutes), 0) AS TotalPlaytimeMinutes,
+                           COALESCE(AVG(fo.PlaytimeForeverMinutes), 0) AS AveragePlaytimeMinutes,
+                           MAX(fo.LastPlayedUtc) AS LastPlayedUtc,
+                           MAX(fo.LastScrapedUtc) AS LastScrapedUtc
+                    FROM FriendOwnership fo
+                    INNER JOIN Users u ON u.Id = fo.UserId
+                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    GROUP BY fo.GameId
+                ),
+                unlocks AS (
+                    SELECT ugp.GameId AS GameId,
+                           COUNT(DISTINCT u.Id) AS FriendsWithUnlocksCount,
+                           COUNT(ua.Id) AS UnlockedAchievementsCount,
+                           COUNT(DISTINCT ua.AchievementDefinitionId) AS UniqueUnlockedAchievementsCount,
+                           MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
+                    FROM Users u
+                    INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
+                    INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    GROUP BY ugp.GameId
+                ),
+                totals AS (
+                    SELECT ad.GameId AS GameId, COUNT(*) AS TotalAchievements
+                    FROM AchievementDefinitions ad
+                    GROUP BY ad.GameId
+                ),
+                scrapeStatus AS (
+                    SELECT GameId, LastScrapeStatus
+                    FROM (
+                        SELECT fo.GameId AS GameId,
+                               fo.LastScrapeStatus AS LastScrapeStatus,
+                               ROW_NUMBER() OVER (PARTITION BY fo.GameId ORDER BY fo.LastScrapedUtc DESC) AS rn
+                        FROM FriendOwnership fo
+                        INNER JOIN Users u ON u.Id = fo.UserId
+                        WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                          AND fo.LastScrapeStatus IS NOT NULL
+                    )
+                    WHERE rn = 1
+                )
+                SELECT
                     g.ProviderKey AS ProviderKey,
                     g.ProviderGameId AS ProviderGameId,
                     g.PlayniteGameId AS PlayniteGameId,
                     g.GameName AS GameName,
-                    (
-                        SELECT COUNT(DISTINCT u.Id)
-                        FROM FriendOwnership fo
-                        INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE fo.GameId = g.Id
-                          AND u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS FriendCount,
-                    (
-                        SELECT COUNT(DISTINCT u.Id)
-                        FROM Users u
-                        INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id AND ugp.GameId = g.Id
-                        INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                        WHERE u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS FriendsWithUnlocksCount,
-                    (
-                        SELECT COUNT(DISTINCT ua.Id)
-                        FROM Users u
-                        INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id AND ugp.GameId = g.Id
-                        INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                        WHERE u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS UnlockedAchievementsCount,
-                    (
-                        SELECT COUNT(DISTINCT ua.AchievementDefinitionId)
-                        FROM Users u
-                        INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id AND ugp.GameId = g.Id
-                        INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                        WHERE u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS UniqueUnlockedAchievementsCount,
-                    (
-                        SELECT COUNT(DISTINCT ad.Id)
-                        FROM AchievementDefinitions ad
-                        WHERE ad.GameId = g.Id
-                    ) AS TotalAchievements,
-                    (
-                        SELECT MAX(ua.UnlockTimeUtc)
-                        FROM Users u
-                        INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id AND ugp.GameId = g.Id
-                        INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                        WHERE u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS LastUnlockUtc,
-                    (
-                        SELECT COALESCE(SUM(fo.PlaytimeForeverMinutes), 0)
-                        FROM FriendOwnership fo
-                        INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE fo.GameId = g.Id
-                          AND u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS TotalPlaytimeMinutes,
-                    (
-                        SELECT COALESCE(AVG(fo.PlaytimeForeverMinutes), 0)
-                        FROM FriendOwnership fo
-                        INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE fo.GameId = g.Id
-                          AND u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS AveragePlaytimeMinutes,
-                    (
-                        SELECT MAX(fo.LastPlayedUtc)
-                        FROM FriendOwnership fo
-                        INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE fo.GameId = g.Id
-                          AND u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS LastPlayedUtc,
-                    (
-                        SELECT MAX(fo.LastScrapedUtc)
-                        FROM FriendOwnership fo
-                        INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE fo.GameId = g.Id
-                          AND u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    ) AS LastScrapedUtc,
-                    (
-                        SELECT fo.LastScrapeStatus
-                        FROM FriendOwnership fo
-                        INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE fo.GameId = g.Id
-                          AND u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                          AND fo.LastScrapeStatus IS NOT NULL
-                        ORDER BY fo.LastScrapedUtc DESC
-                        LIMIT 1
-                    ) AS LastScrapeStatus,
+                    o.FriendCount AS FriendCount,
+                    COALESCE(un.FriendsWithUnlocksCount, 0) AS FriendsWithUnlocksCount,
+                    COALESCE(un.UnlockedAchievementsCount, 0) AS UnlockedAchievementsCount,
+                    COALESCE(un.UniqueUnlockedAchievementsCount, 0) AS UniqueUnlockedAchievementsCount,
+                    COALESCE(t.TotalAchievements, 0) AS TotalAchievements,
+                    un.LastUnlockUtc AS LastUnlockUtc,
+                    o.TotalPlaytimeMinutes AS TotalPlaytimeMinutes,
+                    o.AveragePlaytimeMinutes AS AveragePlaytimeMinutes,
+                    o.LastPlayedUtc AS LastPlayedUtc,
+                    o.LastScrapedUtc AS LastScrapedUtc,
+                    ss.LastScrapeStatus AS LastScrapeStatus,
                     g.IconPath AS IconPath,
                     g.CoverPath AS CoverPath
                   FROM Games g
-                  WHERE EXISTS (
-                        SELECT 1
-                        FROM FriendOwnership fo
-                        INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE fo.GameId = g.Id
-                          AND u.IsCurrentUser = 0
-                          AND u.IsActiveFriend = 1
-                          AND u.FriendSource IS NOT NULL
-                    )
-                  ORDER BY LastUnlockUtc DESC, g.GameName;").ToList();
+                  INNER JOIN ownership o ON o.GameId = g.Id
+                  LEFT JOIN unlocks un ON un.GameId = g.Id
+                  LEFT JOIN totals t ON t.GameId = g.Id
+                  LEFT JOIN scrapeStatus ss ON ss.GameId = g.Id
+                  ORDER BY un.LastUnlockUtc DESC, g.GameName;").ToList();
         }
 
         private static List<FriendGameLinkRow> LoadFriendGameLinkRows(SQLiteDatabase db)
@@ -3263,7 +3240,9 @@ namespace PlayniteAchievements.Services.Database
             return db.Load<FriendRecentUnlockRow>(sql.ToString()).ToList();
         }
 
-        private List<FriendAchievementDisplayItem> MapFriendRecentUnlocks(IEnumerable<FriendRecentUnlockRow> rows)
+        private List<FriendAchievementDisplayItem> MapFriendRecentUnlocks(
+            IEnumerable<FriendRecentUnlockRow> rows,
+            Dictionary<Guid, GamePresentation> presentationCache = null)
         {
             var result = new List<FriendAchievementDisplayItem>();
             foreach (var row in rows ?? Enumerable.Empty<FriendRecentUnlockRow>())
@@ -3298,7 +3277,7 @@ namespace PlayniteAchievements.Services.Database
                 };
 
                 var playniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId);
-                var presentation = ResolveGamePresentation(playniteGameId);
+                var presentation = ResolveGamePresentation(playniteGameId, presentationCache);
                 var item = new FriendAchievementDisplayItem
                 {
                     ApiName = detail.ApiName,
