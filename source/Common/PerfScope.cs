@@ -9,9 +9,25 @@ namespace PlayniteAchievements.Common
     internal sealed class PerfScope : IDisposable
     {
         private const int SevereThresholdMs = 250;
-        // Local diagnostic toggle: set true when you want perf tracing.
-        // Keep this runtime-evaluated to avoid constant-folded unreachable branches.
-        private static readonly bool PerfTracingEnabled = false;
+        // Diagnostic toggle for perf tracing. Off by default (Start/StartStartup return null, so
+        // `using` scopes are a no-op with zero overhead). Enable at runtime without recompiling by
+        // setting the environment variable PLAYNITEACHIEVEMENTS_PERF=1 (or true) before launching
+        // Playnite. Kept runtime-evaluated to avoid constant-folded unreachable branches.
+        private static readonly bool PerfTracingEnabled = ResolveTracingEnabled();
+
+        private static bool ResolveTracingEnabled()
+        {
+            try
+            {
+                var value = Environment.GetEnvironmentVariable("PLAYNITEACHIEVEMENTS_PERF");
+                return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         private readonly ILogger _logger;
         private readonly string _tag;
