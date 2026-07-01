@@ -9,7 +9,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
     /// Summary of achievement progress for a single game, used in library overview displays.
     /// Represents a "trophy card" showing progress, trophy counts, and metadata for one game.
     /// </summary>
-    public sealed class GameAchievementSummary : ObservableObject
+    public class GameAchievementSummary : ObservableObject
     {
         private int _progress;
         private int _goldCount;

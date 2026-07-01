@@ -92,6 +92,8 @@
     <Compile Include="..\..\source\Services\SearchTextIndex.cs" Link="Source\Services\SearchTextIndex.cs" />
     <Compile Include="..\..\source\Services\Overview\OverviewAchievementFilters.cs" Link="Source\Services\Overview\OverviewAchievementFilters.cs" />
     <Compile Include="..\..\source\Services\Overview\OverviewGameSummaryFilters.cs" Link="Source\Services\Overview\OverviewGameSummaryFilters.cs" />
+    <Compile Include="..\..\source\Services\Summaries\AchievementGameStats.cs" Link="Source\Services\Summaries\AchievementGameStats.cs" />
+    <Compile Include="..\..\source\Services\Summaries\AchievementStatsAccumulator.cs" Link="Source\Services\Summaries\AchievementStatsAccumulator.cs" />
     <Compile Include="..\..\source\Services\PlayniteGameMetadataFormatter.cs" Link="Source\Services\PlayniteGameMetadataFormatter.cs" />
     <Compile Include="..\..\source\Services\BackupHelper.cs" Link="Source\Services\BackupHelper.cs" />
     <Compile Include="..\..\source\Models\RebuildProgressModels.cs" Link="Source\Models\RebuildProgressModels.cs" />
@@ -260,6 +262,7 @@
     <Compile Include="..\..\source\Models\Achievements\Scoring\AchievementScoreCalculator.cs" Link="Source\Models\Achievements\Scoring\AchievementScoreCalculator.cs" />
     <Compile Include="..\..\source\Models\Achievements\Scoring\AchievementScoreSnapshot.cs" Link="Source\Models\Achievements\Scoring\AchievementScoreSnapshot.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\GameAchievementSummary.cs" Link="Source\Models\ThemeIntegration\GameAchievementSummary.cs" />
+    <Compile Include="..\..\source\Models\ThemeIntegration\FriendGameAchievementSummary.cs" Link="Source\Models\ThemeIntegration\FriendGameAchievementSummary.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeOption.cs" Link="Source\Models\ThemeIntegration\DynamicThemeOption.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeOptionGroups.cs" Link="Source\Models\ThemeIntegration\DynamicThemeOptionGroups.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeViewState.cs" Link="Source\Models\ThemeIntegration\DynamicThemeViewState.cs" />

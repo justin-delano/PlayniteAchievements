@@ -25,6 +25,7 @@ using Playnite.SDK.Plugins;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Logging;
+using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.ThemeIntegration;
 using PlayniteAchievements.Services.ThemeMigration;
 using PlayniteAchievements.Services.Tagging;
@@ -64,6 +65,7 @@ namespace PlayniteAchievements
         private readonly RefreshRuntime _refreshService;
         private readonly AchievementOverridesService _achievementOverridesService;
         private readonly AchievementDataService _achievementDataService;
+        private readonly LibraryProjectionService _libraryProjectionService;
         private readonly ICacheManager _cacheManager;
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
@@ -281,6 +283,14 @@ namespace PlayniteAchievements
                         _settingsViewModel.Settings,
                         _logger,
                         _gameCustomDataStore);
+                    _libraryProjectionService = new LibraryProjectionService(
+                        _achievementDataService,
+                        providers,
+                        PlayniteApi,
+                        _settingsViewModel.Settings,
+                        _cacheManager,
+                        _gameCustomDataStore,
+                        _logger);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
                     _notifications = new NotificationPublisher(api, settings, _logger);
                     _refreshCoordinator = new RefreshEntryPoint(
@@ -309,6 +319,7 @@ namespace PlayniteAchievements
                         PersistSettingsForUi,
                         _achievementOverridesService,
                         _achievementDataService,
+                        _libraryProjectionService,
                         _gameCustomDataStore,
                         _settingsViewModel.Settings,
                         _manualSourceRegistry,
@@ -350,6 +361,7 @@ namespace PlayniteAchievements
                         PlayniteApi,
                         _refreshService,
                         _achievementDataService,
+                        _libraryProjectionService,
                         _refreshCoordinator,
                         _settingsViewModel.Settings,
                         _fullscreenWindowService,
@@ -420,7 +432,7 @@ namespace PlayniteAchievements
                 Opened = () =>
                 {
                     return new OverviewHostControl(
-                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar),
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar),
                         _logger,
                         PlayniteApi,
                         _refreshService,
@@ -493,6 +505,12 @@ namespace PlayniteAchievements
             using (PerfScope.StartStartup(_logger, "OnApplicationStarted", thresholdMs: 50))
             {
                 _applicationStarted = true;
+
+                // Warm the overview/start-page projection now that the game library is loaded, so
+                // resolved game presentation (cover, icon, playtime, last played, metadata) reflects
+                // Playnite's populated database rather than the blank values an early startup warm
+                // would bake in.
+                _libraryProjectionService?.Warm();
 
                 var dispatcher = PlayniteApi?.MainView?.UIDispatcher
                     ?? System.Windows.Application.Current?.Dispatcher;
@@ -611,6 +629,7 @@ namespace PlayniteAchievements
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
             try { _windowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowService"); }
+            try { _libraryProjectionService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose libraryProjectionService"); }
             try { _imageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose imageService"); }
             try { _diskImageService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose diskImageService"); }
             try { _manualSourceRegistry?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose manualSourceRegistry"); }
@@ -694,6 +713,12 @@ namespace PlayniteAchievements
             // Listen for game database changes to auto-refresh new entries and clean up removed games.
             PlayniteApi?.Database?.Games?.ItemCollectionChanged += Games_ItemCollectionChanged;
             _eventSubscriptions.Add(() => PlayniteApi?.Database?.Games?.ItemCollectionChanged -= Games_ItemCollectionChanged);
+
+            // Invalidate the cached library projection when a game's Playnite-owned fields change
+            // (playtime, last played, cover, icon, metadata) so the overview/start page rebuild
+            // against fresh values instead of serving a stale cached snapshot.
+            PlayniteApi?.Database?.Games?.ItemUpdated += Games_ItemUpdated;
+            _eventSubscriptions.Add(() => PlayniteApi?.Database?.Games?.ItemUpdated -= Games_ItemUpdated);
         }
 
         private void SubscribePluginEventHandlers()
@@ -815,6 +840,11 @@ namespace PlayniteAchievements
         private void Games_ItemCollectionChanged(object sender, ItemCollectionChangedEventArgs<Game> e)
         {
             _logger.Info("Games_ItemCollectionChanged triggered.");
+
+            // Games added/removed change what the overview and start page project; drop the cached
+            // library projection so the next open rebuilds against the current library.
+            _libraryProjectionService?.Invalidate();
+
             if (e == null)
             {
                 return;
@@ -853,6 +883,14 @@ namespace PlayniteAchievements
                     _ = TriggerRemovedGameCleanupAsync(game);
                 }
             }
+        }
+
+        private void Games_ItemUpdated(object sender, ItemUpdatedEventArgs<Game> e)
+        {
+            // A game's Playnite-owned fields (playtime, last played, cover, icon, metadata) changed;
+            // invalidate so the cached overview/start-page projection is rebuilt with fresh values.
+            // Invalidate() coalesces bursts (e.g. library scans) via its warm debounce.
+            _libraryProjectionService?.Invalidate();
         }
 
         private Task TriggerNewGamesRefreshAsync(List<Guid> gameIds)

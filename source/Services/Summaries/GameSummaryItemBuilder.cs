@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
@@ -104,82 +103,9 @@ namespace PlayniteAchievements.Services.Summaries
                 return item;
             }
 
-            var achievements = gameData.Achievements;
-            int total = achievements.Count;
-            int unlocked = 0;
-            int common = 0, uncommon = 0, rare = 0, ultraRare = 0;
-            int totalCommon = 0, totalUncommon = 0, totalRare = 0, totalUltraRare = 0;
-            int trophyPlatinum = 0, trophyGold = 0, trophySilver = 0, trophyBronze = 0;
-            int trophyPlatinumTotal = 0, trophyGoldTotal = 0, trophySilverTotal = 0, trophyBronzeTotal = 0;
-            int collectionScore = 0, prestigeScore = 0;
-            int collectionScoreTotal = 0, prestigeScoreTotal = 0;
-            int points = 0;
-            DateTime? lastUnlockUtc = null;
-
-            for (var i = 0; i < achievements.Count; i++)
-            {
-                var ach = achievements[i];
-                if (ach == null)
-                {
-                    continue;
-                }
-
-                AchievementDisplayItem.AccumulateRarity(ach, ref totalCommon, ref totalUncommon, ref totalRare, ref totalUltraRare);
-                collectionScoreTotal = AddClamped(collectionScoreTotal, ach.CollectionScore);
-                prestigeScoreTotal = AddClamped(prestigeScoreTotal, ach.PrestigeScore);
-                AchievementDisplayItem.AccumulateTrophy(
-                    ach,
-                    ref trophyPlatinumTotal,
-                    ref trophyGoldTotal,
-                    ref trophySilverTotal,
-                    ref trophyBronzeTotal);
-
-                if (!ach.Unlocked)
-                {
-                    continue;
-                }
-
-                unlocked++;
-                AchievementDisplayItem.AccumulateRarity(ach, ref common, ref uncommon, ref rare, ref ultraRare);
-                AchievementDisplayItem.AccumulateTrophy(ach, ref trophyPlatinum, ref trophyGold, ref trophySilver, ref trophyBronze);
-                collectionScore = AddClamped(collectionScore, ach.CollectionScore);
-                prestigeScore = AddClamped(prestigeScore, ach.PrestigeScore);
-                points = AddClamped(points, ach.Points ?? 0);
-
-                if (ach.UnlockTimeUtc.HasValue)
-                {
-                    var unlockUtc = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value);
-                    if (!lastUnlockUtc.HasValue || unlockUtc > lastUnlockUtc.Value)
-                    {
-                        lastUnlockUtc = unlockUtc;
-                    }
-                }
-            }
-
-            item.TotalAchievements = total;
-            item.UnlockedAchievements = unlocked;
-            item.CommonCount = common;
-            item.UncommonCount = uncommon;
-            item.RareCount = rare;
-            item.UltraRareCount = ultraRare;
-            item.CollectionScore = collectionScore;
-            item.PrestigeScore = prestigeScore;
-            item.CollectionScoreTotal = collectionScoreTotal;
-            item.PrestigeScoreTotal = prestigeScoreTotal;
-            item.Points = points;
-            item.TotalCommonPossible = totalCommon;
-            item.TotalUncommonPossible = totalUncommon;
-            item.TotalRarePossible = totalRare;
-            item.TotalUltraRarePossible = totalUltraRare;
-            item.TrophyPlatinumCount = trophyPlatinum;
-            item.TrophyGoldCount = trophyGold;
-            item.TrophySilverCount = trophySilver;
-            item.TrophyBronzeCount = trophyBronze;
-            item.TrophyPlatinumTotal = trophyPlatinumTotal;
-            item.TrophyGoldTotal = trophyGoldTotal;
-            item.TrophySilverTotal = trophySilverTotal;
-            item.TrophyBronzeTotal = trophyBronzeTotal;
-            item.LastUnlockUtc = lastUnlockUtc;
+            AchievementStatsAccumulator
+                .FromAchievements(gameData.Achievements)
+                .ApplyTo(item);
 
             return item;
         }
@@ -254,19 +180,5 @@ namespace PlayniteAchievements.Services.Summaries
             return _playniteApi?.Database?.GetFullFilePath(path) ?? path;
         }
 
-        private static int AddClamped(int current, int value)
-        {
-            if (value <= 0)
-            {
-                return current;
-            }
-
-            if (current > int.MaxValue - value)
-            {
-                return int.MaxValue;
-            }
-
-            return current + value;
-        }
     }
 }

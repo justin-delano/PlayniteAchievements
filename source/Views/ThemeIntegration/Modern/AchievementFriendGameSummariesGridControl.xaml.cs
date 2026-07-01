@@ -72,7 +72,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private void LoadData()
         {
             var theme = EffectiveTheme;
-            DisplayItems = (theme?.DynamicFriendGameSummaries ?? new System.Collections.ObjectModel.ObservableCollection<FriendGameSummaryItem>())
+            DisplayItems = (theme?.DynamicFriendGameSummaryRows ?? new System.Collections.ObjectModel.ObservableCollection<FriendGameSummaryItem>())
                 .Cast<GameSummaryItem>()
                 .ToList();
             ColumnSettingsKey = FriendOverviewProjection.IsAllScope(theme?.DynamicFriendScopeUserKey)

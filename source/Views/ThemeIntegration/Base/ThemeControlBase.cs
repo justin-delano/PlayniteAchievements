@@ -1273,7 +1273,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public ObservableCollection<FriendSummaryItem> DynamicFriendSummaries => _modernThemeOverride?.DynamicFriendSummaries ?? _settings?.DynamicFriendSummaries;
 
-        public ObservableCollection<FriendGameSummaryItem> DynamicFriendGameSummaries => _modernThemeOverride?.DynamicFriendGameSummaries ?? _settings?.DynamicFriendGameSummaries;
+        public ObservableCollection<FriendGameAchievementSummary> DynamicFriendGameSummaries => _modernThemeOverride?.DynamicFriendGameSummaries ?? _settings?.DynamicFriendGameSummaries;
 
         public ObservableCollection<FriendAchievementDisplayItem> DynamicFriendAchievements => _modernThemeOverride?.DynamicFriendAchievements ?? _settings?.DynamicFriendAchievements;
 

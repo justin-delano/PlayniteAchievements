@@ -2,6 +2,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Summaries;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -46,7 +47,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     new AchievementRarityStats());
             }
 
-            var total = achievements.Count;
             var game = data.Game;
             for (int i = 0; i < achievements.Count; i++)
             {
@@ -59,17 +59,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
             }
 
-            var unlocked = 0;
-            for (int i = 0; i < achievements.Count; i++)
-            {
-                if (achievements[i]?.Unlocked == true)
-                {
-                    unlocked++;
-                }
-            }
-
-            var locked = total - unlocked;
-            var percent = AchievementCompletionPercentCalculator.ComputeRoundedPercent(unlocked, total);
+            var stats = AchievementStatsAccumulator.FromAchievements(achievements);
+            var locked = stats.LockedAchievements;
+            var percent = stats.ProgressPercent;
             var hasCustomOrder = data.AchievementOrder != null && data.AchievementOrder.Count > 0;
             var defaultOrder = hasCustomOrder
                 ? AchievementOrderHelper.ApplyOrder(
@@ -97,46 +89,18 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 nameof(AchievementDisplayItem.RaritySortValue),
                 ListSortDirection.Descending);
 
-            var common = new AchievementRarityStats();
-            var uncommon = new AchievementRarityStats();
-            var rare = new AchievementRarityStats();
-            var ultra = new AchievementRarityStats();
-
-            for (int i = 0; i < all.Count; i++)
-            {
-                var achievement = all[i];
-                if (achievement == null)
-                {
-                    continue;
-                }
-
-                var target = achievement.Rarity switch
-                {
-                    RarityTier.UltraRare => ultra,
-                    RarityTier.Rare => rare,
-                    RarityTier.Uncommon => uncommon,
-                    _ => common
-                };
-
-                target.Total++;
-                if (achievement.Unlocked)
-                {
-                    target.Unlocked++;
-                }
-                else
-                {
-                    target.Locked++;
-                }
-            }
-
+            var common = stats.CommonStats;
+            var uncommon = stats.UncommonStats;
+            var rare = stats.RareStats;
+            var ultra = stats.UltraRareStats;
             var rareAndUltra = AchievementRarityStatsCombiner.Combine(rare, ultra);
 
             return new SelectedGameRuntimeState(
                 gameId,
                 data.LastUpdatedUtc,
                 true,
-                total,
-                unlocked,
+                stats.TotalAchievements,
+                stats.UnlockedAchievements,
                 locked,
                 percent,
                 data.IsCompleted,

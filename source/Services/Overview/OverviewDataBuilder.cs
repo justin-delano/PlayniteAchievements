@@ -464,30 +464,7 @@ namespace PlayniteAchievements.Services.Overview
                 settings,
                 gameData.PlayniteGameId,
                 gameData.UseSeparateLockedIconsWhenAvailable);
-            int gameTotal = achievements.Count;
-            int gameUnlocked = 0;
-            int gameCommon = 0;
-            int gameUncommon = 0;
-            int gameRare = 0;
-            int gameUltraRare = 0;
-
-            int gameTotalCommon = 0;
-            int gameTotalUncommon = 0;
-            int gameTotalRare = 0;
-            int gameTotalUltraRare = 0;
-
-            int gameTrophyPlatinum = 0;
-            int gameTrophyGold = 0;
-            int gameTrophySilver = 0;
-            int gameTrophyBronze = 0;
-            int gameTrophyPlatinumTotal = 0;
-            int gameTrophyGoldTotal = 0;
-            int gameTrophySilverTotal = 0;
-            int gameTrophyBronzeTotal = 0;
-            int gameCollectionScore = 0;
-            int gamePrestigeScore = 0;
-            int gameCollectionScoreTotal = 0;
-            int gamePrestigeScoreTotal = 0;
+            var stats = new AchievementGameStats();
 
             for (var i = 0; i < achievements.Count; i++)
             {
@@ -496,6 +473,8 @@ namespace PlayniteAchievements.Services.Overview
                 {
                     continue;
                 }
+
+                AchievementStatsAccumulator.Add(stats, ach);
 
                 if (includeAchievementItems)
                 {
@@ -512,33 +491,10 @@ namespace PlayniteAchievements.Services.Overview
                     }
                 }
 
-                AchievementDisplayItem.AccumulateRarity(ach, ref gameTotalCommon, ref gameTotalUncommon, ref gameTotalRare, ref gameTotalUltraRare);
-                gameCollectionScoreTotal = AddClamped(gameCollectionScoreTotal, ach.CollectionScore);
-                gamePrestigeScoreTotal = AddClamped(gamePrestigeScoreTotal, ach.PrestigeScore);
-                AchievementDisplayItem.AccumulateTrophy(
-                    ach,
-                    ref gameTrophyPlatinumTotal,
-                    ref gameTrophyGoldTotal,
-                    ref gameTrophySilverTotal,
-                    ref gameTrophyBronzeTotal);
-
                 if (ach.Unlocked)
                 {
-                    gameUnlocked++;
-
-                    AchievementDisplayItem.AccumulateRarity(ach, ref gameCommon, ref gameUncommon, ref gameRare, ref gameUltraRare);
-
-                    AchievementDisplayItem.AccumulateTrophy(ach, ref gameTrophyPlatinum, ref gameTrophyGold, ref gameTrophySilver, ref gameTrophyBronze);
-
-                    gameCollectionScore = AddClamped(gameCollectionScore, ach.CollectionScore);
-                    gamePrestigeScore = AddClamped(gamePrestigeScore, ach.PrestigeScore);
-
                     if (ach.UnlockTimeUtc.HasValue)
                     {
-                        var unlockUtc = DateTimeUtilities.AsUtcKind(ach.UnlockTimeUtc.Value);
-                        var unlockDate = unlockUtc.Date;
-                        Increment(fragment.UnlockCountsByDate, unlockDate);
-
                         if (gameData.PlayniteGameId.HasValue)
                         {
                             var recentItem = AchievementDisplayItem.CreateRecent(
@@ -557,30 +513,34 @@ namespace PlayniteAchievements.Services.Overview
                 }
             }
 
-            fragment.TotalAchievements = gameTotal;
-            fragment.UnlockedAchievements = gameUnlocked;
-            fragment.CommonCount = gameCommon;
-            fragment.UncommonCount = gameUncommon;
-            fragment.RareCount = gameRare;
-            fragment.UltraRareCount = gameUltraRare;
+            fragment.TotalAchievements = stats.TotalAchievements;
+            fragment.UnlockedAchievements = stats.UnlockedAchievements;
+            fragment.CommonCount = stats.CommonCount;
+            fragment.UncommonCount = stats.UncommonCount;
+            fragment.RareCount = stats.RareCount;
+            fragment.UltraRareCount = stats.UltraRareCount;
 
-            fragment.TrophyPlatinumCount = gameTrophyPlatinum;
-            fragment.TrophyGoldCount = gameTrophyGold;
-            fragment.TrophySilverCount = gameTrophySilver;
-            fragment.TrophyBronzeCount = gameTrophyBronze;
-            fragment.TrophyPlatinumTotal = gameTrophyPlatinumTotal;
-            fragment.TrophyGoldTotal = gameTrophyGoldTotal;
-            fragment.TrophySilverTotal = gameTrophySilverTotal;
-            fragment.TrophyBronzeTotal = gameTrophyBronzeTotal;
-            fragment.CollectionScore = gameCollectionScore;
-            fragment.PrestigeScore = gamePrestigeScore;
-            fragment.CollectionScoreTotal = gameCollectionScoreTotal;
-            fragment.PrestigeScoreTotal = gamePrestigeScoreTotal;
+            fragment.TrophyPlatinumCount = stats.TrophyPlatinumCount;
+            fragment.TrophyGoldCount = stats.TrophyGoldCount;
+            fragment.TrophySilverCount = stats.TrophySilverCount;
+            fragment.TrophyBronzeCount = stats.TrophyBronzeCount;
+            fragment.TrophyPlatinumTotal = stats.TrophyPlatinumTotal;
+            fragment.TrophyGoldTotal = stats.TrophyGoldTotal;
+            fragment.TrophySilverTotal = stats.TrophySilverTotal;
+            fragment.TrophyBronzeTotal = stats.TrophyBronzeTotal;
+            fragment.CollectionScore = stats.CollectionScore;
+            fragment.PrestigeScore = stats.PrestigeScore;
+            fragment.CollectionScoreTotal = stats.CollectionScoreTotal;
+            fragment.PrestigeScoreTotal = stats.PrestigeScoreTotal;
 
-            fragment.TotalCommonPossible = gameTotalCommon;
-            fragment.TotalUncommonPossible = gameTotalUncommon;
-            fragment.TotalRarePossible = gameTotalRare;
-            fragment.TotalUltraRarePossible = gameTotalUltraRare;
+            fragment.TotalCommonPossible = stats.TotalCommonPossible;
+            fragment.TotalUncommonPossible = stats.TotalUncommonPossible;
+            fragment.TotalRarePossible = stats.TotalRarePossible;
+            fragment.TotalUltraRarePossible = stats.TotalUltraRarePossible;
+            foreach (var kvp in stats.UnlockCountsByDate)
+            {
+                fragment.UnlockCountsByDate[kvp.Key] = kvp.Value;
+            }
 
             fragment.IsCompleted = gameData.IsCompleted;
 

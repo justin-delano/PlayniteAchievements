@@ -2133,11 +2133,11 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                     .ToArray());
         }
 
-        private static void AssertFriendGameNames(IEnumerable<FriendGameSummaryItem> games, params string[] expectedNames)
+        private static void AssertFriendGameNames(IEnumerable<FriendGameAchievementSummary> games, params string[] expectedNames)
         {
             CollectionAssert.AreEqual(
                 expectedNames,
-                (games ?? Enumerable.Empty<FriendGameSummaryItem>())
+                (games ?? Enumerable.Empty<FriendGameAchievementSummary>())
                     .Select(item => item?.GameName)
                     .ToArray());
         }

@@ -17,6 +17,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Views;
@@ -38,6 +39,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly RefreshRuntime _refreshService;
         private readonly Action _persistSettingsForUi;
         private readonly AchievementDataService _achievementDataService;
+        private readonly LibraryProjectionService _libraryProjectionService;
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly AchievementSelectionPipeline _selectedGamePipeline;
         private readonly RefreshEntryPoint _refreshCoordinator;
@@ -106,10 +108,11 @@ namespace PlayniteAchievements.ViewModels
         private ListSortDirection _selectedGameSortDirection;
 
 
-        public OverviewViewModel(
+        internal OverviewViewModel(
             RefreshRuntime refreshRuntime,
             Action persistSettingsForUi,
             AchievementDataService achievementDataService,
+            LibraryProjectionService libraryProjectionService,
             GameCustomDataStore gameCustomDataStore,
             RefreshEntryPoint refreshEntryPoint,
             IPlayniteAPI playniteApi,
@@ -120,6 +123,7 @@ namespace PlayniteAchievements.ViewModels
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _persistSettingsForUi = persistSettingsForUi ?? throw new ArgumentNullException(nameof(persistSettingsForUi));
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
+            _libraryProjectionService = libraryProjectionService;
             _gameCustomDataStore = gameCustomDataStore;
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _playniteApi = playniteApi;
@@ -1415,7 +1419,9 @@ namespace PlayniteAchievements.ViewModels
                     }
                     OverviewDataSnapshot snapshot;
                     snapshot = await Task.Run(
-                        () => _dataBuilder.Build(_settings, revealedCopy, cancel),
+                        () => _libraryProjectionService != null
+                            ? _libraryProjectionService.GetOverviewSnapshot(_settings, revealedCopy, cancel)
+                            : _dataBuilder.Build(_settings, revealedCopy, cancel),
                         cancel).ConfigureAwait(false);
 
                     // Still off the UI thread: precompute the search-text maps so ApplySnapshot
