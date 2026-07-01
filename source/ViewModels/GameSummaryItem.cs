@@ -74,6 +74,7 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public int AppId { get; set; } // Stays as AppId is immutable ID
+        public string ProviderGameKey { get; set; }
         public Guid? PlayniteGameId { get; set; }
 
         private int _totalAchievements;

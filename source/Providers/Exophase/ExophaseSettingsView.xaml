@@ -217,6 +217,76 @@
                                TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
+
+            <Border Style="{StaticResource SectionBorderStyle}"
+                    Margin="0,0,0,16"
+                    IsEnabled="{Binding Settings.IsEnabled}">
+                <StackPanel>
+                    <TextBlock Text="Exophase Friends"
+                               Style="{StaticResource SectionHeaderStyle}"/>
+                    <Grid Margin="0,8,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="NewFriendUsernameTextBox"
+                                 Grid.Column="0"
+                                 Margin="0,0,8,0"/>
+                        <Button Grid.Column="1"
+                                Content="{DynamicResource LOCPlayAch_Common_Add}"
+                                Click="AddExophaseFriend_Click"
+                                Style="{StaticResource AuthActionButtonStyle}"/>
+                    </Grid>
+
+                    <DataGrid x:Name="ExophaseFriendsGrid"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              HeadersVisibility="Column"
+                              MinHeight="120"
+                              SelectionChanged="ExophaseFriendsGrid_SelectionChanged"
+                              Margin="0,0,0,12">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="2*"/>
+                            <DataGridTextColumn Header="Scope" Binding="{Binding LibraryScope}" Width="*"/>
+                            <DataGridTextColumn Header="Platforms" Binding="{Binding PlatformSummary}" Width="2*"/>
+                            <DataGridTextColumn Header="Last Error" Binding="{Binding LastError}" Width="2*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Margin="0,0,12,0">
+                            <Button Content="{DynamicResource LOCPlayAch_Button_Remove}"
+                                    Click="RemoveExophaseFriend_Click"
+                                    Style="{StaticResource AuthActionButtonStyle}"
+                                    Margin="0,0,0,8"/>
+                            <ComboBox x:Name="ExophaseFriendScopeComboBox"
+                                      SelectionChanged="ExophaseFriendScope_SelectionChanged">
+                                <ComboBoxItem Content="Shared" Tag="Shared"/>
+                                <ComboBoxItem Content="Full" Tag="Full"/>
+                            </ComboBox>
+                        </StackPanel>
+
+                        <UniformGrid Grid.Column="1" Columns="3">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_Steam}" Tag="friend:steam" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_PSN}" Tag="friend:psn" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_Xbox}" Tag="friend:xbox" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_GOG}" Tag="friend:gog" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_Epic}" Tag="friend:epic" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_BattleNet}" Tag="friend:blizzard" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_EA}" Tag="friend:origin" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_GooglePlay}" Tag="friend:android" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_Apple}" Tag="friend:apple" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_Ubisoft}" Tag="friend:ubisoft" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Provider_RetroAchievements}" Tag="friend:retro" Loaded="FriendPlatform_CheckboxLoaded" Click="FriendPlatform_CheckChanged" Margin="0,0,8,8"/>
+                        </UniformGrid>
+                    </Grid>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </settings:ProviderSettingsViewBase>

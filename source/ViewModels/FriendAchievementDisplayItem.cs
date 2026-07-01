@@ -28,10 +28,12 @@ namespace PlayniteAchievements.ViewModels
 
         [DontSerialize]
         [IgnoreDataMember]
-        public string FriendGameScopeKey => FriendOverviewProjection.BuildGameUnlockKey(ProviderKey, AppId, PlayniteGameId)
+        public string FriendGameScopeKey => FriendOverviewProjection.BuildGameUnlockKey(ProviderKey, ProviderGameKey, AppId, PlayniteGameId)
             ?? FriendOverviewProjection.AllScopeKey;
 
         public int AppId { get; set; }
+
+        public string ProviderGameKey { get; set; }
 
         public DateTime? FriendUnlockTimeUtc
         {

@@ -323,6 +323,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         public async Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
             FriendIdentity friend,
+            string providerGameKey,
             int appId,
             string gameName,
             CancellationToken cancel)
@@ -384,6 +385,7 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         public async Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
+            string providerGameKey,
             int appId,
             string gameName,
             CancellationToken cancel)

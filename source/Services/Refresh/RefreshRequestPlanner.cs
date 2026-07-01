@@ -304,6 +304,11 @@ namespace PlayniteAchievements.Services
                 .Where(id => id > 0)
                 .Distinct()
                 .ToList();
+            IReadOnlyCollection<string> providerGameKeys = resolvedOptions.ProviderGameKeys?
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
             IReadOnlyCollection<string> friendExternalUserIds = resolvedOptions.FriendExternalUserIds?
                 .Where(id => !string.IsNullOrWhiteSpace(id))
                 .Select(id => id.Trim())
@@ -311,7 +316,8 @@ namespace PlayniteAchievements.Services
                 .ToList();
             var libraryScope = ResolveCustomFriendLibraryScope(
                 scope,
-                providerAppIds);
+                providerAppIds,
+                providerGameKeys);
 
             // Installed scope has fixed semantics: only installed Playnite library games.
             if (scope == FriendRefreshScope.Installed)
@@ -321,7 +327,8 @@ namespace PlayniteAchievements.Services
 
             if (scope == FriendRefreshScope.SelectedGame &&
                 (playniteGameIds == null || playniteGameIds.Count == 0) &&
-                (providerAppIds == null || providerAppIds.Count == 0))
+                (providerAppIds == null || providerAppIds.Count == 0) &&
+                (providerGameKeys == null || providerGameKeys.Count == 0))
             {
                 return new ResolvedRequest
                 {
@@ -354,6 +361,7 @@ namespace PlayniteAchievements.Services
                     LibraryScope = libraryScope,
                     PlayniteGameIds = playniteGameIds,
                     ProviderAppIds = providerAppIds,
+                    ProviderGameKeys = providerGameKeys,
                     FriendExternalUserIds = friendExternalUserIds,
                     RefreshTtl = resolvedOptions.RefreshTtl,
                     DefinitionTtl = resolvedOptions.DefinitionTtl
@@ -363,9 +371,11 @@ namespace PlayniteAchievements.Services
 
         private static FriendLibraryScope ResolveCustomFriendLibraryScope(
             FriendRefreshScope scope,
-            IReadOnlyCollection<int> providerAppIds)
+            IReadOnlyCollection<int> providerAppIds,
+            IReadOnlyCollection<string> providerGameKeys)
         {
-            if (providerAppIds?.Count > 0)
+            if (providerAppIds?.Count > 0 ||
+                providerGameKeys?.Count > 0)
             {
                 return FriendLibraryScope.Full;
             }

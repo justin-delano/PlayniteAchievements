@@ -438,12 +438,14 @@ namespace PlayniteAchievements.Services.Tests
 
             public Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
                 FriendIdentity friend,
+                string providerGameKey,
                 int appId,
                 string gameName,
                 CancellationToken cancel) =>
                 Task.FromResult(FriendsProviderResult<FriendGameAchievements>.FromData(new FriendGameAchievements()));
 
             public Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
+                string providerGameKey,
                 int appId,
                 string gameName,
                 CancellationToken cancel) =>

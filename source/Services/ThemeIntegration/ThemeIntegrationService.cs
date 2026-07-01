@@ -1560,6 +1560,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         openManageAchievementsWindow: hasLocalGame ? GetOpenManageAchievementsCommand(gameId) : null)
                     {
                         AppId = item.AppId,
+                        ProviderGameKey = item.ProviderGameKey,
                         FriendCount = item.FriendCount,
                         FriendsWithUnlocksCount = item.FriendsWithUnlocksCount,
                         FriendUnlockedAchievementsCount = item.FriendUnlockedAchievementsCount,
@@ -2011,15 +2012,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 case DynamicThemeOption option:
                     return option.Key;
                 case FriendGameSummaryItem game:
-                    return FriendOverviewProjection.BuildGameUnlockKey(game.ProviderKey, game.AppId, game.PlayniteGameId);
+                    return FriendOverviewProjection.BuildGameUnlockKey(game.ProviderKey, game.ProviderGameKey, game.AppId, game.PlayniteGameId);
                 case FriendGameAchievementSummary summary:
                     return FriendOverviewProjection.BuildGameUnlockKey(
                         summary.ProviderKey,
+                        summary.ProviderGameKey,
                         summary.AppId,
                         summary.GameId != Guid.Empty ? summary.GameId : (Guid?)null);
                 case FriendAchievementDisplayItem achievement:
                     return FriendOverviewProjection.BuildGameUnlockKey(
                         achievement.ProviderKey,
+                        achievement.ProviderGameKey,
                         achievement.AppId,
                         achievement.PlayniteGameId);
                 default:

@@ -802,6 +802,7 @@ namespace PlayniteAchievements.Services
 
         FriendCacheWriteResult IFriendCacheManager.SaveProviderGameImagePaths(
             string providerKey,
+            string providerGameKey,
             int appId,
             string iconAbsolutePath,
             string coverAbsolutePath)
@@ -809,7 +810,7 @@ namespace PlayniteAchievements.Services
             lock (_sync)
             {
                 EnsureReady_Locked("SaveProviderGameImagePaths");
-                var result = _store.SaveProviderGameImagePaths(providerKey, appId, iconAbsolutePath, coverAbsolutePath);
+                var result = _store.SaveProviderGameImagePaths(providerKey, providerGameKey, appId, iconAbsolutePath, coverAbsolutePath);
                 if (result?.Success == true)
                 {
                     RaiseCacheInvalidatedEvent();
@@ -819,15 +820,15 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        Dictionary<int, FriendGameDefinitionState> IFriendCacheManager.LoadFriendGameDefinitionStates(
+        Dictionary<string, FriendGameDefinitionState> IFriendCacheManager.LoadFriendGameDefinitionStates(
             string providerKey,
-            IReadOnlyCollection<int> appIds)
+            IReadOnlyCollection<string> providerGameKeys)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("LoadFriendGameDefinitionStates");
-                return _store.LoadFriendGameDefinitionStates(providerKey, appIds) ??
-                       new Dictionary<int, FriendGameDefinitionState>();
+                return _store.LoadFriendGameDefinitionStates(providerKey, providerGameKeys) ??
+                       new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
             }
         }
 
@@ -858,13 +859,14 @@ namespace PlayniteAchievements.Services
         FriendCacheWriteResult IFriendCacheManager.SaveFriendGameAchievements(
             string providerKey,
             string externalUserId,
+            string providerGameKey,
             int appId,
             FriendGameAchievements achievements)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("SaveFriendGameAchievements");
-                var result = _store.SaveFriendGameAchievements(providerKey, externalUserId, appId, achievements);
+                var result = _store.SaveFriendGameAchievements(providerKey, externalUserId, providerGameKey, appId, achievements);
                 if (result?.Success == true)
                 {
                     RaiseCacheInvalidatedEvent();

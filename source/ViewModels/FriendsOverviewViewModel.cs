@@ -703,7 +703,7 @@ namespace PlayniteAchievements.ViewModels
                 return true;
             }
 
-            if (TryGetProviderAppTarget(game, out var providerKey, out var appId))
+            if (TryGetProviderAppTarget(game, out var providerKey, out var appId, out var providerGameKey))
             {
                 request = new RefreshRequest
                 {
@@ -713,7 +713,8 @@ namespace PlayniteAchievements.ViewModels
                         ProviderKeys = new[] { providerKey },
                         Scope = FriendRefreshScope.SelectedGame,
                         LibraryScope = FriendLibraryScope.Full,
-                        ProviderAppIds = new[] { appId },
+                        ProviderAppIds = appId > 0 ? new[] { appId } : null,
+                        ProviderGameKeys = !string.IsNullOrWhiteSpace(providerGameKey) ? new[] { providerGameKey } : null,
                         FriendExternalUserIds = new[] { friend.ExternalUserId }
                     }
                 };
@@ -736,7 +737,7 @@ namespace PlayniteAchievements.ViewModels
                 return true;
             }
 
-            if (TryGetProviderAppTarget(game, out var providerKey, out var appId))
+            if (TryGetProviderAppTarget(game, out var providerKey, out var appId, out var providerGameKey))
             {
                 request = new RefreshRequest
                 {
@@ -746,7 +747,8 @@ namespace PlayniteAchievements.ViewModels
                         ProviderKeys = new[] { providerKey },
                         Scope = FriendRefreshScope.SelectedGame,
                         LibraryScope = FriendLibraryScope.Full,
-                        ProviderAppIds = new[] { appId }
+                        ProviderAppIds = appId > 0 ? new[] { appId } : null,
+                        ProviderGameKeys = !string.IsNullOrWhiteSpace(providerGameKey) ? new[] { providerGameKey } : null
                     }
                 };
                 return true;
@@ -772,7 +774,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (TryGetPlayniteGameId(parameter, out _) ||
-                TryGetProviderAppTarget(parameter, out _, out _))
+                TryGetProviderAppTarget(parameter, out _, out _, out _))
             {
                 game = parameter;
                 return true;
@@ -1114,27 +1116,30 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private static bool TryGetProviderAppTarget(object parameter, out string providerKey, out int appId)
+        private static bool TryGetProviderAppTarget(object parameter, out string providerKey, out int appId, out string providerGameKey)
         {
             switch (parameter)
             {
                 case FriendGameSummaryItem game
                     when !game.PlayniteGameId.HasValue &&
                          !string.IsNullOrWhiteSpace(game.ProviderKey) &&
-                         game.AppId > 0:
+                         (game.AppId > 0 || !string.IsNullOrWhiteSpace(game.ProviderGameKey)):
                     providerKey = game.ProviderKey.Trim();
                     appId = game.AppId;
+                    providerGameKey = game.ProviderGameKey?.Trim();
                     return true;
                 case FriendAchievementDisplayItem achievement
                     when !achievement.PlayniteGameId.HasValue &&
                          !string.IsNullOrWhiteSpace(achievement.ProviderKey) &&
-                         achievement.AppId > 0:
+                         (achievement.AppId > 0 || !string.IsNullOrWhiteSpace(achievement.ProviderGameKey)):
                     providerKey = achievement.ProviderKey.Trim();
                     appId = achievement.AppId;
+                    providerGameKey = achievement.ProviderGameKey?.Trim();
                     return true;
                 default:
                     providerKey = null;
                     appId = 0;
+                    providerGameKey = null;
                     return false;
             }
         }

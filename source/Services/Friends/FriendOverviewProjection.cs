@@ -91,7 +91,7 @@ namespace PlayniteAchievements.Services.Friends
                 return false;
             }
 
-            var gameKey = BuildGameUnlockKey(game.ProviderKey, game.AppId, game.PlayniteGameId);
+            var gameKey = BuildGameUnlockKey(game.ProviderKey, game.ProviderGameKey, game.AppId, game.PlayniteGameId);
             if (!string.IsNullOrWhiteSpace(gameKey) && _gameUnlockKeys.Contains(gameKey))
             {
                 return true;
@@ -110,7 +110,7 @@ namespace PlayniteAchievements.Services.Friends
                 return false;
             }
 
-            var key = BuildFriendGameUnlockKey(friend.ProviderKey, friend.ExternalUserId, game.AppId, game.PlayniteGameId);
+            var key = BuildFriendGameUnlockKey(friend.ProviderKey, friend.ExternalUserId, game.ProviderGameKey, game.AppId, game.PlayniteGameId);
             if (!string.IsNullOrWhiteSpace(key) && _friendGameUnlockKeys.Contains(key))
             {
                 return true;
@@ -134,7 +134,7 @@ namespace PlayniteAchievements.Services.Friends
 
         public static string GetGameScopeKey(FriendGameSummaryItem game)
         {
-            return BuildGameUnlockKey(game?.ProviderKey, game?.AppId ?? 0, game?.PlayniteGameId) ?? AllScopeKey;
+            return BuildGameUnlockKey(game?.ProviderKey, game?.ProviderGameKey, game?.AppId ?? 0, game?.PlayniteGameId) ?? AllScopeKey;
         }
 
         public static string BuildFriendKey(string providerKey, string externalUserId)
@@ -153,6 +153,7 @@ namespace PlayniteAchievements.Services.Friends
         public static string BuildFriendGameUnlockKey(
             string providerKey,
             string externalUserId,
+            string providerGameKey,
             int appId,
             Guid? playniteGameId)
         {
@@ -161,17 +162,22 @@ namespace PlayniteAchievements.Services.Friends
                 return null;
             }
 
-            var gameKey = BuildGameUnlockKey(providerKey, appId, playniteGameId);
+            var gameKey = BuildGameUnlockKey(providerKey, providerGameKey, appId, playniteGameId);
             return string.IsNullOrWhiteSpace(gameKey)
                 ? null
                 : externalUserId.Trim().ToLowerInvariant() + "|" + gameKey;
         }
 
-        public static string BuildGameUnlockKey(string providerKey, int appId, Guid? playniteGameId)
+        public static string BuildGameUnlockKey(string providerKey, string providerGameKey, int appId, Guid? playniteGameId)
         {
             var provider = string.IsNullOrWhiteSpace(providerKey)
                 ? string.Empty
                 : providerKey.Trim().ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(providerGameKey))
+            {
+                return provider + "|key:" + providerGameKey.Trim().ToLowerInvariant();
+            }
+
             if (appId > 0)
             {
                 return provider + "|app:" + appId.ToString("D", CultureInfo.InvariantCulture);
@@ -223,6 +229,12 @@ namespace PlayniteAchievements.Services.Friends
                 return left.AppId == right.AppId;
             }
 
+            if (!string.IsNullOrWhiteSpace(left.ProviderGameKey) &&
+                !string.IsNullOrWhiteSpace(right.ProviderGameKey))
+            {
+                return string.Equals(left.ProviderGameKey.Trim(), right.ProviderGameKey.Trim(), StringComparison.OrdinalIgnoreCase);
+            }
+
             return left.PlayniteGameId.HasValue &&
                    right.PlayniteGameId.HasValue &&
                    left.PlayniteGameId.Value == right.PlayniteGameId.Value;
@@ -243,6 +255,12 @@ namespace PlayniteAchievements.Services.Friends
             if (achievement.AppId > 0 && game.AppId > 0)
             {
                 return achievement.AppId == game.AppId;
+            }
+
+            if (!string.IsNullOrWhiteSpace(achievement.ProviderGameKey) &&
+                !string.IsNullOrWhiteSpace(game.ProviderGameKey))
+            {
+                return string.Equals(achievement.ProviderGameKey.Trim(), game.ProviderGameKey.Trim(), StringComparison.OrdinalIgnoreCase);
             }
 
             return achievement.PlayniteGameId.HasValue &&
@@ -267,6 +285,12 @@ namespace PlayniteAchievements.Services.Friends
                 return link.AppId == game.AppId;
             }
 
+            if (!string.IsNullOrWhiteSpace(link.ProviderGameKey) &&
+                !string.IsNullOrWhiteSpace(game.ProviderGameKey))
+            {
+                return string.Equals(link.ProviderGameKey.Trim(), game.ProviderGameKey.Trim(), StringComparison.OrdinalIgnoreCase);
+            }
+
             return link.PlayniteGameId.HasValue &&
                    game.PlayniteGameId.HasValue &&
                    link.PlayniteGameId.Value == game.PlayniteGameId.Value;
@@ -279,7 +303,7 @@ namespace PlayniteAchievements.Services.Friends
 
             foreach (var game in _aggregateGames)
             {
-                var gameKey = BuildGameUnlockKey(game?.ProviderKey, game?.AppId ?? 0, game?.PlayniteGameId);
+                var gameKey = BuildGameUnlockKey(game?.ProviderKey, game?.ProviderGameKey, game?.AppId ?? 0, game?.PlayniteGameId);
                 if (!string.IsNullOrWhiteSpace(gameKey) && !gamesByKey.ContainsKey(gameKey))
                 {
                     gamesByKey[gameKey] = game;
@@ -289,7 +313,7 @@ namespace PlayniteAchievements.Services.Friends
             var linksByFriendGameKey = new Dictionary<string, FriendGameLinkItem>(StringComparer.OrdinalIgnoreCase);
             foreach (var link in _friendGameLinks)
             {
-                var key = BuildFriendGameUnlockKey(link?.ProviderKey, link?.ExternalUserId, link?.AppId ?? 0, link?.PlayniteGameId);
+                var key = BuildFriendGameUnlockKey(link?.ProviderKey, link?.ExternalUserId, link?.ProviderGameKey, link?.AppId ?? 0, link?.PlayniteGameId);
                 if (!string.IsNullOrWhiteSpace(key) && !linksByFriendGameKey.ContainsKey(key))
                 {
                     linksByFriendGameKey[key] = link;
@@ -302,6 +326,7 @@ namespace PlayniteAchievements.Services.Friends
                     achievement => BuildFriendGameUnlockKey(
                         achievement.ProviderKey,
                         achievement.FriendExternalUserId,
+                        achievement.ProviderGameKey,
                         achievement.AppId,
                         achievement.PlayniteGameId),
                     StringComparer.OrdinalIgnoreCase);
@@ -315,7 +340,7 @@ namespace PlayniteAchievements.Services.Friends
 
                 var sample = group.FirstOrDefault();
                 var friendKey = BuildFriendKey(sample?.ProviderKey, sample?.FriendExternalUserId);
-                var gameKey = BuildGameUnlockKey(sample?.ProviderKey, sample?.AppId ?? 0, sample?.PlayniteGameId);
+                var gameKey = BuildGameUnlockKey(sample?.ProviderKey, sample?.ProviderGameKey, sample?.AppId ?? 0, sample?.PlayniteGameId);
                 if (string.IsNullOrWhiteSpace(friendKey) ||
                     string.IsNullOrWhiteSpace(gameKey) ||
                     !gamesByKey.TryGetValue(gameKey, out var baseGame))
@@ -342,7 +367,7 @@ namespace PlayniteAchievements.Services.Friends
             var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var achievement in _allUnlockedAchievements)
             {
-                var gameKey = BuildGameUnlockKey(achievement?.ProviderKey, achievement?.AppId ?? 0, achievement?.PlayniteGameId);
+                var gameKey = BuildGameUnlockKey(achievement?.ProviderKey, achievement?.ProviderGameKey, achievement?.AppId ?? 0, achievement?.PlayniteGameId);
                 if (!string.IsNullOrWhiteSpace(gameKey))
                 {
                     keys.Add(gameKey);
@@ -360,6 +385,7 @@ namespace PlayniteAchievements.Services.Friends
                 var friendGameKey = BuildFriendGameUnlockKey(
                     achievement?.ProviderKey,
                     achievement?.FriendExternalUserId,
+                    achievement?.ProviderGameKey,
                     achievement?.AppId ?? 0,
                     achievement?.PlayniteGameId);
                 if (!string.IsNullOrWhiteSpace(friendGameKey))
@@ -392,6 +418,7 @@ namespace PlayniteAchievements.Services.Friends
                 ProviderIconKey = source.ProviderIconKey,
                 ProviderColorHex = source.ProviderColorHex,
                 AppId = source.AppId,
+                ProviderGameKey = source.ProviderGameKey,
                 PlayniteGameId = source.PlayniteGameId,
                 GameName = source.GameName,
                 SortingName = source.SortingName,

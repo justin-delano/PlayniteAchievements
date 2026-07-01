@@ -38,6 +38,7 @@ namespace PlayniteAchievements.Providers.Exophase
         private readonly IPlayniteAPI _playniteApi;
         private readonly ExophaseSessionManager _sessionManager;
         private readonly ExophaseApiClient _apiClient;
+        private readonly ExophaseFriendsProvider _friendsProvider;
         private readonly Dictionary<Guid, string> _slugCache = new Dictionary<Guid, string>();
         private readonly object _slugCacheLock = new object();
         private static readonly TimeSpan SlugCacheTtl = TimeSpan.FromHours(1);
@@ -65,7 +66,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public ISessionManager AuthSession => _sessionManager;
 
-        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => _friendsProvider;
 
         public bool CanResolveAchievementPageUrl(AchievementPageLinkContext context)
         {
@@ -200,6 +201,7 @@ namespace PlayniteAchievements.Providers.Exophase
             _apiClient = new ExophaseApiClient(playniteApi, logger, _sessionManager.CookieSnapshotStore);
 
             _providerSettings = ProviderRegistry.Settings<ExophaseSettings>();
+            _friendsProvider = new ExophaseFriendsProvider(_apiClient, _providerSettings, playniteApi, logger);
         }
 
         #endregion
@@ -384,7 +386,7 @@ namespace PlayniteAchievements.Providers.Exophase
             if (string.IsNullOrWhiteSpace(slug))
             {
                 _logger?.Warn($"[Exophase] Could not resolve slug for game '{game.Name}' - returning empty result");
-                return CreateGameResult(game, providerPlatformKey, false, new List<AchievementDetail>());
+                return CreateGameResult(game, providerPlatformKey, slug, false, new List<AchievementDetail>());
             }
 
             // Fetch achievement page (includes schema + user progress when authenticated).
@@ -400,7 +402,7 @@ namespace PlayniteAchievements.Providers.Exophase
             if (achievements == null || achievements.Count == 0)
             {
                 _logger?.Warn($"[Exophase] No achievements found for slug: {slug}, URL: {achievementUrl}");
-                return CreateGameResult(game, providerPlatformKey, false, new List<AchievementDetail>());
+                return CreateGameResult(game, providerPlatformKey, slug, false, new List<AchievementDetail>());
             }
 
             _logger?.Info($"[Exophase] Fetched {achievements.Count} achievements for '{game.Name}'");
@@ -422,12 +424,13 @@ namespace PlayniteAchievements.Providers.Exophase
             _logger?.Info($"[Exophase] Unlock stats AFTER ApplyProviderOwnedRarity: {unlockedAfterRarity}/{achievements.Count} unlocked");
 
             _logger?.Info($"[Exophase] === RefreshGameAsync COMPLETE for '{game.Name}' ===");
-            return CreateGameResult(game, providerPlatformKey, true, achievements);
+            return CreateGameResult(game, providerPlatformKey, slug, true, achievements);
         }
 
         private GameAchievementData CreateGameResult(
             Game game,
             string providerPlatformKey,
+            string slug,
             bool hasAchievements,
             List<AchievementDetail> achievements)
         {
@@ -439,6 +442,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 LibrarySourceName = game?.Source?.Name,
                 HasAchievements = hasAchievements,
                 GameName = game.Name,
+                ProviderGameKey = string.IsNullOrWhiteSpace(slug) ? null : slug.Trim(),
                 PlayniteGameId = game.Id,
                 Achievements = achievements ?? new List<AchievementDetail>()
             };

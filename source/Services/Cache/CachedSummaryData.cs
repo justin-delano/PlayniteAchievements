@@ -31,6 +31,8 @@ namespace PlayniteAchievements.Services
 
         public int AppId { get; set; }
 
+        public string ProviderGameKey { get; set; }
+
         public string GameName { get; set; }
 
         public bool HasAchievements { get; set; }
@@ -97,6 +99,8 @@ namespace PlayniteAchievements.Services
         public string ProviderPlatformKey { get; set; }
 
         public int AppId { get; set; }
+
+        public string ProviderGameKey { get; set; }
 
         public string GameName { get; set; }
 

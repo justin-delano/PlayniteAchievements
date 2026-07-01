@@ -44,7 +44,8 @@ namespace PlayniteAchievements.Models.Friends
             return options != null &&
                    options.LibraryScope == FriendLibraryScope.Full &&
                    (ScopePermitsProviderOnlyGames(options.Scope) ||
-                    options.ProviderAppIds?.Any(id => id > 0) == true);
+                    options.ProviderAppIds?.Any(id => id > 0) == true ||
+                    options.ProviderGameKeys?.Any(key => !string.IsNullOrWhiteSpace(key)) == true);
         }
     }
 
@@ -54,6 +55,7 @@ namespace PlayniteAchievements.Models.Friends
         public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Shared;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
+        public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public TimeSpan? RefreshTtl { get; set; }
         public TimeSpan? DefinitionTtl { get; set; }
@@ -71,6 +73,11 @@ namespace PlayniteAchievements.Models.Friends
                 ProviderAppIds = ProviderAppIds?
                     .Where(id => id > 0)
                     .Distinct()
+                    .ToList(),
+                ProviderGameKeys = ProviderGameKeys?
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 FriendExternalUserIds = FriendExternalUserIds?
                     .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -90,6 +97,7 @@ namespace PlayniteAchievements.Models.Friends
         public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Full;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
+        public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public TimeSpan? RefreshTtl { get; set; }
         public TimeSpan? DefinitionTtl { get; set; }
@@ -112,6 +120,11 @@ namespace PlayniteAchievements.Models.Friends
                 ProviderAppIds = ProviderAppIds?
                     .Where(id => id > 0)
                     .Distinct()
+                    .ToList(),
+                ProviderGameKeys = ProviderGameKeys?
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 FriendExternalUserIds = FriendExternalUserIds?
                     .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -160,6 +173,9 @@ namespace PlayniteAchievements.Models.Friends
         public string ProviderKey { get; set; }
         public string ExternalUserId { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
+        public string ProviderPlatformKey { get; set; }
+        public Guid? PlayniteGameId { get; set; }
         public string GameName { get; set; }
         public string IconUrl { get; set; }
         public string CoverUrl { get; set; }
@@ -183,6 +199,7 @@ namespace PlayniteAchievements.Models.Friends
     {
         public FriendIdentity Friend { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
         public DateTime LastUpdatedUtc { get; set; } = DateTime.UtcNow;
         public bool StatsUnavailable { get; set; }
         public bool TransientFailure { get; set; }
@@ -202,6 +219,8 @@ namespace PlayniteAchievements.Models.Friends
     {
         public string ProviderKey { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
+        public string ProviderPlatformKey { get; set; }
         public string GameName { get; set; }
         public string IconUrl { get; set; }
         public FriendGameDefinitionStatus Status { get; set; } = FriendGameDefinitionStatus.Unavailable;
@@ -230,11 +249,13 @@ namespace PlayniteAchievements.Models.Friends
 
         Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
             FriendIdentity friend,
+            string providerGameKey,
             int appId,
             string gameName,
             CancellationToken cancel);
 
         Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
+            string providerGameKey,
             int appId,
             string gameName,
             CancellationToken cancel);

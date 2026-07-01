@@ -42,6 +42,7 @@ namespace PlayniteAchievements.Services.Database
             public string ProviderKey { get; set; }
             public string ProviderPlatformKey { get; set; }
             public long? ProviderGameId { get; set; }
+            public string ProviderGameKey { get; set; }
             public string PlayniteGameId { get; set; }
             public string GameName { get; set; }
             public string LibrarySourceName { get; set; }
@@ -109,6 +110,7 @@ namespace PlayniteAchievements.Services.Database
             public string ProviderKey { get; set; }
             public string ProviderPlatformKey { get; set; }
             public long? ProviderGameId { get; set; }
+            public string ProviderGameKey { get; set; }
             public string PlayniteGameId { get; set; }
             public string GameName { get; set; }
             public long CommonCount { get; set; }
@@ -136,6 +138,7 @@ namespace PlayniteAchievements.Services.Database
             public string ProviderKey { get; set; }
             public string ProviderPlatformKey { get; set; }
             public long? ProviderGameId { get; set; }
+            public string ProviderGameKey { get; set; }
             public string PlayniteGameId { get; set; }
             public string GameName { get; set; }
             public string ApiName { get; set; }
@@ -189,6 +192,7 @@ namespace PlayniteAchievements.Services.Database
             public string AvatarUrl { get; set; }
             public string LastRefreshedUtc { get; set; }
             public long? ProviderGameId { get; set; }
+            public string ProviderGameKey { get; set; }
             public string PlayniteGameId { get; set; }
             public string GameName { get; set; }
             public int PlaytimeForeverMinutes { get; set; }
@@ -217,6 +221,7 @@ namespace PlayniteAchievements.Services.Database
         {
             public string ProviderKey { get; set; }
             public long? ProviderGameId { get; set; }
+            public string ProviderGameKey { get; set; }
             public string PlayniteGameId { get; set; }
             public string GameName { get; set; }
             public long FriendCount { get; set; }
@@ -239,6 +244,7 @@ namespace PlayniteAchievements.Services.Database
             public string ProviderKey { get; set; }
             public string ExternalUserId { get; set; }
             public long? ProviderGameId { get; set; }
+            public string ProviderGameKey { get; set; }
             public string PlayniteGameId { get; set; }
             public long PlaytimeForeverMinutes { get; set; }
             public string LastPlayedUtc { get; set; }
@@ -247,7 +253,8 @@ namespace PlayniteAchievements.Services.Database
         private sealed class ProviderGameDefinitionStateRow
         {
             public string ProviderKey { get; set; }
-            public long ProviderGameId { get; set; }
+            public long? ProviderGameId { get; set; }
+            public string ProviderGameKey { get; set; }
             public string GameName { get; set; }
             public string IconUrl { get; set; }
             public string Status { get; set; }
@@ -259,6 +266,7 @@ namespace PlayniteAchievements.Services.Database
         {
             public string ProviderKey { get; set; }
             public long? ProviderGameId { get; set; }
+            public string ProviderGameKey { get; set; }
             public string PlayniteGameId { get; set; }
             public string GameName { get; set; }
             public string FriendExternalUserId { get; set; }
@@ -481,6 +489,7 @@ namespace PlayniteAchievements.Services.Database
                         g.ProviderKey AS ProviderKey,
                         g.ProviderPlatformKey AS ProviderPlatformKey,
                         g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
                         g.PlayniteGameId AS PlayniteGameId,
                         g.GameName AS GameName,
                         g.LibrarySourceName AS LibrarySourceName
@@ -585,6 +594,7 @@ namespace PlayniteAchievements.Services.Database
                             g.ProviderKey AS ProviderKey,
                             g.ProviderPlatformKey AS ProviderPlatformKey,
                             g.ProviderGameId AS ProviderGameId,
+                            g.ProviderGameKey AS ProviderGameKey,
                             g.PlayniteGameId AS PlayniteGameId,
                             g.GameName AS GameName,
                             g.LibrarySourceName AS LibrarySourceName,
@@ -608,6 +618,7 @@ namespace PlayniteAchievements.Services.Database
                         ProviderKey,
                         ProviderPlatformKey,
                         ProviderGameId,
+                        ProviderGameKey,
                         PlayniteGameId,
                         GameName,
                         LibrarySourceName
@@ -769,6 +780,7 @@ namespace PlayniteAchievements.Services.Database
                         ProviderKey = row.ProviderKey,
                         ProviderPlatformKey = row.ProviderPlatformKey,
                         AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                        ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                         GameName = row.GameName,
                         HasAchievements = row.HasAchievements != 0,
                         LastUpdatedUtc = ParseUtc(row.LastUpdatedUtc) ?? DateTime.UtcNow,
@@ -858,6 +870,7 @@ namespace PlayniteAchievements.Services.Database
                         g.ProviderKey AS ProviderKey,
                         g.ProviderPlatformKey AS ProviderPlatformKey,
                         g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
                         g.PlayniteGameId AS PlayniteGameId,
                         g.GameName AS GameName,
                         ROW_NUMBER() OVER (
@@ -880,6 +893,7 @@ namespace PlayniteAchievements.Services.Database
                     lp.ProviderKey AS ProviderKey,
                     lp.ProviderPlatformKey AS ProviderPlatformKey,
                     lp.ProviderGameId AS ProviderGameId,
+                    lp.ProviderGameKey AS ProviderGameKey,
                     lp.PlayniteGameId AS PlayniteGameId,
                     lp.GameName AS GameName,
                     SUM(CASE WHEN LOWER(COALESCE(ad.Rarity, '')) = 'common' AND ua.Unlocked = 1 THEN 1 ELSE 0 END) AS CommonCount,
@@ -914,6 +928,7 @@ namespace PlayniteAchievements.Services.Database
                     lp.ProviderKey,
                     lp.ProviderPlatformKey,
                     lp.ProviderGameId,
+                    lp.ProviderGameKey,
                     lp.PlayniteGameId,
                     lp.GameName
                 ORDER BY lp.LastUpdatedUtc DESC, lp.CacheKey;").ToList();
@@ -1025,6 +1040,7 @@ namespace PlayniteAchievements.Services.Database
                         g.ProviderKey AS ProviderKey,
                         g.ProviderPlatformKey AS ProviderPlatformKey,
                         g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
                         g.PlayniteGameId AS PlayniteGameId,
                         g.GameName AS GameName,
                         ROW_NUMBER() OVER (
@@ -1043,6 +1059,7 @@ namespace PlayniteAchievements.Services.Database
                     lp.ProviderKey AS ProviderKey,
                     lp.ProviderPlatformKey AS ProviderPlatformKey,
                     lp.ProviderGameId AS ProviderGameId,
+                    lp.ProviderGameKey AS ProviderGameKey,
                     lp.PlayniteGameId AS PlayniteGameId,
                     lp.GameName AS GameName,
                     ad.ApiName AS ApiName,
@@ -1105,6 +1122,7 @@ namespace PlayniteAchievements.Services.Database
                     ProviderKey = row.ProviderKey,
                     ProviderPlatformKey = row.ProviderPlatformKey,
                     AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                    ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                     GameName = row.GameName,
                     ApiName = row.ApiName,
                     DisplayName = row.DisplayName,
@@ -1301,7 +1319,12 @@ namespace PlayniteAchievements.Services.Database
 
             var nowIso = ToIso(DateTime.UtcNow);
             var validOwnership = (ownership ?? Array.Empty<FriendGameOwnership>())
-                .Where(item => item?.AppId > 0)
+                .Where(item => HasProviderGameIdentity(item?.AppId ?? 0, item?.ProviderGameKey))
+                .Select(item =>
+                {
+                    item.ProviderGameKey = NormalizeProviderGameKey(item.ProviderGameKey);
+                    return item;
+                })
                 .ToList();
             var incomingCount = validOwnership.Count;
             var writtenCount = 0;
@@ -1327,6 +1350,9 @@ namespace PlayniteAchievements.Services.Database
                                 db,
                                 providerKey,
                                 item.AppId,
+                                item.ProviderGameKey,
+                                item.ProviderPlatformKey,
+                                item.PlayniteGameId,
                                 options?.IncludeProviderOnlyGames == true,
                                 item.GameName,
                                 item.IconUrl,
@@ -1368,9 +1394,14 @@ namespace PlayniteAchievements.Services.Database
             FriendGameDefinition definition)
         {
             providerKey = NormalizeProviderKey(providerKey);
-            if (definition == null || definition.AppId <= 0)
+            if (definition != null)
             {
-                return FriendCacheWriteResult.Failed("Friend game definition is missing an app id.");
+                definition.ProviderGameKey = NormalizeProviderGameKey(definition.ProviderGameKey);
+            }
+
+            if (definition == null || !HasProviderGameIdentity(definition.AppId, definition.ProviderGameKey))
+            {
+                return FriendCacheWriteResult.Failed("Friend game definition is missing a provider game id.");
             }
 
             var now = DateTime.UtcNow;
@@ -1391,11 +1422,13 @@ namespace PlayniteAchievements.Services.Database
                             definition.Achievements != null &&
                             definition.Achievements.Count > 0)
                         {
-                            var game = LoadAnyGameByAppId(db, providerKey, definition.AppId);
+                            var game = LoadAnyGameByAppId(db, providerKey, definition.AppId, definition.ProviderGameKey);
                             var gameId = game?.Id ?? EnsureProviderOnlyGame(
                                 db,
                                 providerKey,
                                 definition.AppId,
+                                definition.ProviderGameKey,
+                                definition.ProviderPlatformKey,
                                 definition.GameName,
                                 nowIso);
                             if (gameId > 0)
@@ -1414,6 +1447,7 @@ namespace PlayniteAchievements.Services.Database
                             db,
                             providerKey,
                             definition.AppId,
+                            definition.ProviderGameKey,
                             definition.GameName,
                             definition.IconUrl,
                             status,
@@ -1429,41 +1463,67 @@ namespace PlayniteAchievements.Services.Database
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Failed to save friend game definition for provider={providerKey}, appId={definition.AppId}.");
+                _logger?.Warn(ex, $"Failed to save friend game definition for provider={providerKey}, game={ToProviderGameLogKey(definition.AppId, definition.ProviderGameKey)}.");
                 return FriendCacheWriteResult.Failed(ex.Message);
             }
         }
 
-        public Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
+        public Dictionary<string, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
             string providerKey,
-            IReadOnlyCollection<int> appIds)
+            IReadOnlyCollection<string> providerGameKeys)
         {
             providerKey = NormalizeProviderKey(providerKey);
-            var ids = (appIds ?? Array.Empty<int>())
-                .Where(id => id > 0)
-                .Distinct()
+            var keys = (providerGameKeys ?? Array.Empty<string>())
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
-            if (ids.Count == 0)
+            if (keys.Count == 0)
             {
-                return new Dictionary<int, FriendGameDefinitionState>();
+                return new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
             }
 
             return WithDb(db =>
             {
-                var sql = new StringBuilder(
-                    @"SELECT ProviderKey, ProviderGameId, GameName, IconUrl, Status, LastCheckedUtc
+                var numericIds = keys
+                    .Select(key => int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : 0)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var slugKeys = keys
+                    .Where(key => !int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                    .ToList();
+
+                var result = new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
+                var clauses = new List<string>();
+                var args = new List<object> { providerKey };
+
+                if (numericIds.Count > 0)
+                {
+                    clauses.Add("ProviderGameId IN (" + string.Join(",", numericIds.Select(_ => "?")) + ")");
+                    args.AddRange(numericIds.Cast<object>());
+                }
+
+                if (slugKeys.Count > 0)
+                {
+                    clauses.Add("ProviderGameKey IN (" + string.Join(",", slugKeys.Select(_ => "?")) + ")");
+                    args.AddRange(slugKeys.Cast<object>());
+                }
+
+                if (clauses.Count == 0)
+                {
+                    return result;
+                }
+
+                var sql =
+                    @"SELECT ProviderKey, ProviderGameId, ProviderGameKey, GameName, IconUrl, Status, LastCheckedUtc
                       FROM ProviderGameDefinitionState
                       WHERE ProviderKey = ?
-                        AND ProviderGameId IN (");
-                sql.Append(string.Join(",", ids.Select(_ => "?")));
-                sql.Append(");");
+                        AND (" + string.Join(" OR ", clauses) + ");";
 
-                var args = new List<object> { providerKey };
-                args.AddRange(ids.Cast<object>());
-
-                var result = db.Load<ProviderGameDefinitionStateRow>(sql.ToString(), args.ToArray())
-                    .Where(row => row != null && row.ProviderGameId > 0)
-                    .GroupBy(row => (int)row.ProviderGameId)
+                result = db.Load<ProviderGameDefinitionStateRow>(sql, args.ToArray())
+                    .Where(row => row != null && HasProviderGameIdentity((int)Math.Max(0, row.ProviderGameId ?? 0), row.ProviderGameKey))
+                    .GroupBy(row => ToProviderGameCacheKey((int)Math.Max(0, row.ProviderGameId ?? 0), row.ProviderGameKey), StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(
                         group => group.Key,
                         group =>
@@ -1472,7 +1532,8 @@ namespace PlayniteAchievements.Services.Database
                             return new FriendGameDefinitionState
                             {
                                 ProviderKey = row.ProviderKey,
-                                AppId = (int)Math.Max(0, row.ProviderGameId),
+                                AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                                ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                                 GameName = row.GameName,
                                 IconUrl = row.IconUrl,
                                 Status = ParseDefinitionStatus(row.Status),
@@ -1480,41 +1541,65 @@ namespace PlayniteAchievements.Services.Database
                             };
                         });
 
-                var missingIds = ids
-                    .Where(id => !result.ContainsKey(id))
+                var missingKeys = keys
+                    .Where(key => !result.ContainsKey(key))
                     .ToList();
-                if (missingIds.Count == 0)
+                if (missingKeys.Count == 0)
                 {
                     return result;
                 }
 
-                var ownedSql = new StringBuilder(
+                var missingNumericIds = missingKeys
+                    .Select(key => int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : 0)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var missingSlugKeys = missingKeys
+                    .Where(key => !int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                    .ToList();
+                var ownedClauses = new List<string>();
+                var ownedArgs = new List<object> { providerKey };
+                if (missingNumericIds.Count > 0)
+                {
+                    ownedClauses.Add("g.ProviderGameId IN (" + string.Join(",", missingNumericIds.Select(_ => "?")) + ")");
+                    ownedArgs.AddRange(missingNumericIds.Cast<object>());
+                }
+
+                if (missingSlugKeys.Count > 0)
+                {
+                    ownedClauses.Add("g.ProviderGameKey IN (" + string.Join(",", missingSlugKeys.Select(_ => "?")) + ")");
+                    ownedArgs.AddRange(missingSlugKeys.Cast<object>());
+                }
+
+                if (ownedClauses.Count == 0)
+                {
+                    return result;
+                }
+
+                var ownedSql =
                     @"SELECT
                         g.ProviderKey AS ProviderKey,
                         g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
                         g.GameName AS GameName,
                         COUNT(ad.Id) AS DefinitionCount,
                         g.LastUpdatedUtc AS LastCheckedUtc
                       FROM Games g
                       LEFT JOIN AchievementDefinitions ad ON ad.GameId = g.Id
                       WHERE g.ProviderKey = ?
-                        AND g.ProviderGameId IN (");
-                ownedSql.Append(string.Join(",", missingIds.Select(_ => "?")));
-                ownedSql.Append(
-                    @")
+                        AND (" + string.Join(" OR ", ownedClauses) + @")
                         AND g.PlayniteGameId IS NOT NULL
                         AND TRIM(g.PlayniteGameId) <> ''
-                      GROUP BY g.Id, g.ProviderKey, g.ProviderGameId, g.GameName, g.LastUpdatedUtc;");
+                      GROUP BY g.Id, g.ProviderKey, g.ProviderGameId, g.ProviderGameKey, g.GameName, g.LastUpdatedUtc;";
 
-                var ownedArgs = new List<object> { providerKey };
-                ownedArgs.AddRange(missingIds.Cast<object>());
-                foreach (var row in db.Load<ProviderGameDefinitionStateRow>(ownedSql.ToString(), ownedArgs.ToArray())
-                             .Where(row => row != null && row.ProviderGameId > 0))
+                foreach (var row in db.Load<ProviderGameDefinitionStateRow>(ownedSql, ownedArgs.ToArray())
+                             .Where(row => row != null && HasProviderGameIdentity((int)Math.Max(0, row.ProviderGameId ?? 0), row.ProviderGameKey)))
                 {
-                    result[(int)row.ProviderGameId] = new FriendGameDefinitionState
+                    result[ToProviderGameCacheKey((int)Math.Max(0, row.ProviderGameId ?? 0), row.ProviderGameKey)] = new FriendGameDefinitionState
                     {
                         ProviderKey = row.ProviderKey,
-                        AppId = (int)Math.Max(0, row.ProviderGameId),
+                        AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                        ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                         GameName = row.GameName,
                         Status = row.DefinitionCount > 0
                             ? FriendGameDefinitionStatus.Ok
@@ -1529,12 +1614,14 @@ namespace PlayniteAchievements.Services.Database
 
         public FriendCacheWriteResult SaveProviderGameImagePaths(
             string providerKey,
+            string providerGameKey,
             int appId,
             string iconAbsolutePath,
             string coverAbsolutePath)
         {
             providerKey = NormalizeProviderKey(providerKey);
-            if (appId <= 0)
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            if (!HasProviderGameIdentity(appId, providerGameKey))
             {
                 return FriendCacheWriteResult.Failed("Provider game id is missing.");
             }
@@ -1551,26 +1638,45 @@ namespace PlayniteAchievements.Services.Database
                 var nowIso = ToIso(DateTime.UtcNow);
                 WithDb(db =>
                 {
-                    db.ExecuteNonQuery(
-                        @"UPDATE Games
+                    if (!string.IsNullOrWhiteSpace(providerGameKey))
+                    {
+                        db.ExecuteNonQuery(
+                            @"UPDATE Games
                           SET IconPath = COALESCE(?, IconPath),
                               CoverPath = COALESCE(?, CoverPath),
                               LastUpdatedUtc = ?
                           WHERE ProviderKey = ?
-                            AND ProviderGameId = ?
+                            AND ProviderGameKey = ?
                             AND (PlayniteGameId IS NULL OR TRIM(PlayniteGameId) = '');",
-                        DbValue(iconPath),
-                        DbValue(coverPath),
-                        nowIso,
-                        providerKey,
-                        appId);
+                            DbValue(iconPath),
+                            DbValue(coverPath),
+                            nowIso,
+                            providerKey,
+                            providerGameKey);
+                    }
+                    else
+                    {
+                        db.ExecuteNonQuery(
+                            @"UPDATE Games
+                              SET IconPath = COALESCE(?, IconPath),
+                                  CoverPath = COALESCE(?, CoverPath),
+                                  LastUpdatedUtc = ?
+                              WHERE ProviderKey = ?
+                                AND ProviderGameId = ?
+                                AND (PlayniteGameId IS NULL OR TRIM(PlayniteGameId) = '');",
+                            DbValue(iconPath),
+                            DbValue(coverPath),
+                            nowIso,
+                            providerKey,
+                            appId);
+                    }
                 });
 
                 return FriendCacheWriteResult.Ok(incomingCount: 1, writtenCount: 1, skippedCount: 0);
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Failed to save provider game image paths for {providerKey}/{appId}.");
+                _logger?.Warn(ex, $"Failed to save provider game image paths for {providerKey}/{ToProviderGameLogKey(appId, providerGameKey)}.");
                 return FriendCacheWriteResult.Failed(ex.Message);
             }
         }
@@ -1668,11 +1774,18 @@ namespace PlayniteAchievements.Services.Database
         public FriendCacheWriteResult SaveFriendGameAchievements(
             string providerKey,
             string externalUserId,
+            string providerGameKey,
             int appId,
             FriendGameAchievements achievements)
         {
             providerKey = NormalizeProviderKey(providerKey);
-            if (string.IsNullOrWhiteSpace(externalUserId) || appId <= 0)
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            if (string.IsNullOrWhiteSpace(providerGameKey) && !string.IsNullOrWhiteSpace(achievements?.ProviderGameKey))
+            {
+                providerGameKey = NormalizeProviderGameKey(achievements.ProviderGameKey);
+            }
+
+            if (string.IsNullOrWhiteSpace(externalUserId) || !HasProviderGameIdentity(appId, providerGameKey))
             {
                 return FriendCacheWriteResult.Failed("Friend id or app id is missing.");
             }
@@ -1689,7 +1802,7 @@ namespace PlayniteAchievements.Services.Database
                     db.RunTransaction(() =>
                     {
                         var user = LoadFriendUser(db, providerKey, externalUserId);
-                        var game = LoadAnyGameByAppId(db, providerKey, appId);
+                        var game = LoadAnyGameByAppId(db, providerKey, appId, providerGameKey);
                         if (user == null || game == null)
                         {
                             return;
@@ -1754,7 +1867,7 @@ namespace PlayniteAchievements.Services.Database
             }
             catch (Exception ex)
             {
-                _logger?.Warn(ex, $"Failed to save friend achievements for provider={providerKey}, friend={externalUserId}, appId={appId}.");
+                _logger?.Warn(ex, $"Failed to save friend achievements for provider={providerKey}, friend={externalUserId}, game={ToProviderGameLogKey(appId, providerGameKey)}.");
                 return FriendCacheWriteResult.Failed(ex.Message);
             }
         }
@@ -1770,6 +1883,11 @@ namespace PlayniteAchievements.Services.Database
 
             return WithDb(db =>
             {
+                if (options.ProviderGameKeys?.Count > 0)
+                {
+                    return LoadProviderGameKeyFriendRefreshCandidates(db, providerKey, options);
+                }
+
                 if (options.ProviderAppIds?.Count > 0)
                 {
                     return LoadProviderAppFriendRefreshCandidates(db, providerKey, options);
@@ -1879,6 +1997,7 @@ namespace PlayniteAchievements.Services.Database
                         u.AvatarUrl AS AvatarUrl,
                         u.LastRefreshedUtc AS LastRefreshedUtc,
                         g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
                         g.PlayniteGameId AS PlayniteGameId,
                         g.GameName AS GameName,
                         fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
@@ -1892,8 +2011,10 @@ namespace PlayniteAchievements.Services.Database
                         AND u.IsCurrentUser = 0
                         AND u.IsActiveFriend = 1
                         AND g.ProviderKey = ?
-                        AND g.ProviderGameId IS NOT NULL
-                        AND g.ProviderGameId > 0");
+                        AND (
+                            (g.ProviderGameId IS NOT NULL AND g.ProviderGameId > 0)
+                            OR (g.ProviderGameKey IS NOT NULL AND TRIM(g.ProviderGameKey) <> '')
+                        )");
 
             var args = new List<object> { providerKey, providerKey };
 
@@ -1965,6 +2086,7 @@ namespace PlayniteAchievements.Services.Database
                         u.AvatarUrl AS AvatarUrl,
                         u.LastRefreshedUtc AS LastRefreshedUtc,
                         g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
                         g.PlayniteGameId AS PlayniteGameId,
                         g.GameName AS GameName,
                         fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
@@ -1986,6 +2108,65 @@ namespace PlayniteAchievements.Services.Database
 
             var args = new List<object> { providerKey, providerKey };
             args.AddRange(appIds.Cast<object>());
+
+            var friendIds = NormalizeFriendFilterIds(options?.FriendExternalUserIds);
+            if (friendIds.Count > 0)
+            {
+                sql.Append(" AND u.ExternalUserId IN (");
+                sql.Append(string.Join(",", friendIds.Select(_ => "?")));
+                sql.Append(')');
+                args.AddRange(friendIds.Cast<object>());
+            }
+
+            sql.Append(" ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;");
+
+            return MapFriendRefreshCandidates(
+                db.Load<FriendRefreshCandidateRow>(sql.ToString(), args.ToArray()).ToList());
+        }
+
+        private static List<FriendRefreshCandidate> LoadProviderGameKeyFriendRefreshCandidates(
+            SQLiteDatabase db,
+            string providerKey,
+            FriendRefreshOptions options)
+        {
+            var providerGameKeys = options?.ProviderGameKeys?
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
+            if (providerGameKeys.Count == 0)
+            {
+                return new List<FriendRefreshCandidate>();
+            }
+
+            var sql = new StringBuilder(
+                    @"SELECT
+                        u.ProviderKey AS ProviderKey,
+                        u.ExternalUserId AS ExternalUserId,
+                        u.DisplayName AS DisplayName,
+                        u.AvatarUrl AS AvatarUrl,
+                        u.LastRefreshedUtc AS LastRefreshedUtc,
+                        g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
+                        g.PlayniteGameId AS PlayniteGameId,
+                        g.GameName AS GameName,
+                        fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
+                        fo.LastPlayedUtc AS LastPlayedUtc,
+                        fo.LastScrapedUtc AS LastScrapedUtc,
+                        fo.LastScrapeStatus AS LastScrapeStatus
+                      FROM FriendOwnership fo
+                      INNER JOIN Users u ON u.Id = fo.UserId
+                      INNER JOIN Games g ON g.Id = fo.GameId
+                      WHERE u.ProviderKey = ?
+                        AND u.IsCurrentUser = 0
+                        AND u.IsActiveFriend = 1
+                        AND g.ProviderKey = ?
+                        AND g.ProviderGameKey IN (");
+            sql.Append(string.Join(",", providerGameKeys.Select(_ => "?")));
+            sql.Append(')');
+
+            var args = new List<object> { providerKey, providerKey };
+            args.AddRange(providerGameKeys.Cast<object>());
 
             var friendIds = NormalizeFriendFilterIds(options?.FriendExternalUserIds);
             if (friendIds.Count > 0)
@@ -2045,6 +2226,7 @@ namespace PlayniteAchievements.Services.Database
                         g.ProviderKey AS ProviderKey,
                         g.ProviderPlatformKey AS ProviderPlatformKey,
                         g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
                         g.PlayniteGameId AS PlayniteGameId,
                         g.GameName AS GameName,
                         g.LibrarySourceName AS LibrarySourceName,
@@ -2056,8 +2238,10 @@ namespace PlayniteAchievements.Services.Database
                     WHERE cu.ProviderKey = ?
                       AND cu.IsCurrentUser = 1
                       AND g.ProviderKey = ?
-                      AND g.ProviderGameId IS NOT NULL
-                      AND g.ProviderGameId > 0
+                      AND (
+                          (g.ProviderGameId IS NOT NULL AND g.ProviderGameId > 0)
+                          OR (g.ProviderGameKey IS NOT NULL AND TRIM(g.ProviderGameKey) <> '')
+                      )
                       AND g.PlayniteGameId IS NOT NULL
                       AND TRIM(g.PlayniteGameId) <> ''");
 
@@ -2079,6 +2263,7 @@ namespace PlayniteAchievements.Services.Database
                     u.AvatarUrl AS AvatarUrl,
                     u.LastRefreshedUtc AS LastRefreshedUtc,
                     g.ProviderGameId AS ProviderGameId,
+                    g.ProviderGameKey AS ProviderGameKey,
                     g.PlayniteGameId AS PlayniteGameId,
                     g.GameName AS GameName,
                     COALESCE(fo.PlaytimeForeverMinutes, 0) AS PlaytimeForeverMinutes,
@@ -2112,7 +2297,7 @@ namespace PlayniteAchievements.Services.Database
         private static List<FriendRefreshCandidate> MapFriendRefreshCandidates(IEnumerable<FriendRefreshCandidateRow> rows)
         {
             return (rows ?? Enumerable.Empty<FriendRefreshCandidateRow>())
-                .Where(row => row?.ProviderGameId > 0)
+                .Where(row => row != null && HasProviderGameIdentity((int)Math.Max(0, row.ProviderGameId ?? 0), row.ProviderGameKey))
                 .Select(row => new FriendRefreshCandidate
                 {
                     Friend = new FriendIdentity
@@ -2124,6 +2309,7 @@ namespace PlayniteAchievements.Services.Database
                         LastRefreshedUtc = ParseUtc(row.LastRefreshedUtc)
                     },
                     AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                    ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                     PlayniteGameId = ParseGuid(row.PlayniteGameId),
                     GameName = row.GameName,
                     PlaytimeForeverMinutes = Math.Max(0, row.PlaytimeForeverMinutes),
@@ -2178,6 +2364,7 @@ namespace PlayniteAchievements.Services.Database
                             ProviderIconKey = string.IsNullOrWhiteSpace(row.ProviderKey) ? null : "ProviderIcon" + row.ProviderKey,
                             ProviderColorHex = "#888888",
                             AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                            ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                             PlayniteGameId = playniteGameId,
                             GameName = row.GameName,
                             SortingName = presentation.SortingName ?? row.GameName,
@@ -2212,6 +2399,7 @@ namespace PlayniteAchievements.Services.Database
                         ProviderKey = row.ProviderKey,
                         ExternalUserId = row.ExternalUserId,
                         AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                        ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                         PlayniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId),
                         PlaytimeForeverMinutes = Math.Max(0, row.PlaytimeForeverMinutes),
                         LastPlayedUtc = ParseUtc(row.LastPlayedUtc)
@@ -2286,8 +2474,35 @@ namespace PlayniteAchievements.Services.Database
         {
             var gamePart = !string.IsNullOrWhiteSpace(game?.PlayniteGameId)
                 ? game.PlayniteGameId.Trim()
-                : (game?.ProviderGameId?.ToString(CultureInfo.InvariantCulture) ?? "unknown");
+                : (!string.IsNullOrWhiteSpace(game?.ProviderGameKey)
+                    ? game.ProviderGameKey.Trim()
+                    : (game?.ProviderGameId?.ToString(CultureInfo.InvariantCulture) ?? "unknown"));
             return $"friend:{providerKey}:{externalUserId}:{gamePart}";
+        }
+
+        private static string NormalizeProviderGameKey(string providerGameKey)
+        {
+            return string.IsNullOrWhiteSpace(providerGameKey)
+                ? null
+                : providerGameKey.Trim();
+        }
+
+        private static bool HasProviderGameIdentity(int appId, string providerGameKey)
+        {
+            return appId > 0 || !string.IsNullOrWhiteSpace(providerGameKey);
+        }
+
+        private static string ToProviderGameCacheKey(int appId, string providerGameKey)
+        {
+            var normalized = NormalizeProviderGameKey(providerGameKey);
+            return !string.IsNullOrWhiteSpace(normalized)
+                ? normalized
+                : (appId > 0 ? appId.ToString(CultureInfo.InvariantCulture) : null);
+        }
+
+        private static string ToProviderGameLogKey(int appId, string providerGameKey)
+        {
+            return ToProviderGameCacheKey(appId, providerGameKey) ?? "unknown";
         }
 
         private long UpsertFriendUser(
@@ -2405,10 +2620,26 @@ namespace PlayniteAchievements.Services.Database
                 externalUserId.Trim()).FirstOrDefault();
         }
 
-        private static GameRow LoadSharedGameByAppId(SQLiteDatabase db, string providerKey, int appId)
+        private static GameRow LoadSharedGameByAppId(SQLiteDatabase db, string providerKey, int appId, string providerGameKey)
         {
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            if (!string.IsNullOrWhiteSpace(providerGameKey))
+            {
+                return db.Load<GameRow>(
+                    @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                      FROM Games
+                      WHERE ProviderKey = ?
+                        AND ProviderGameKey = ?
+                        AND PlayniteGameId IS NOT NULL
+                        AND TRIM(PlayniteGameId) <> ''
+                      ORDER BY LastUpdatedUtc DESC, Id DESC
+                      LIMIT 1;",
+                    providerKey,
+                    providerGameKey).FirstOrDefault();
+            }
+
             return db.Load<GameRow>(
-                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
                   FROM Games
                   WHERE ProviderKey = ?
                     AND ProviderGameId = ?
@@ -2420,10 +2651,26 @@ namespace PlayniteAchievements.Services.Database
                 appId).FirstOrDefault();
         }
 
-        private static GameRow LoadAnyGameByAppId(SQLiteDatabase db, string providerKey, int appId)
+        private static GameRow LoadAnyGameByAppId(SQLiteDatabase db, string providerKey, int appId, string providerGameKey = null)
         {
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            if (!string.IsNullOrWhiteSpace(providerGameKey))
+            {
+                return db.Load<GameRow>(
+                    @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                      FROM Games
+                      WHERE ProviderKey = ?
+                        AND ProviderGameKey = ?
+                      ORDER BY CASE WHEN PlayniteGameId IS NOT NULL AND TRIM(PlayniteGameId) <> '' THEN 0 ELSE 1 END,
+                               LastUpdatedUtc DESC,
+                               Id DESC
+                      LIMIT 1;",
+                    providerKey,
+                    providerGameKey).FirstOrDefault();
+            }
+
             return db.Load<GameRow>(
-                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
                   FROM Games
                   WHERE ProviderKey = ?
                     AND ProviderGameId = ?
@@ -2435,10 +2682,43 @@ namespace PlayniteAchievements.Services.Database
                 appId).FirstOrDefault();
         }
 
-        private static GameRow LoadProviderOnlyGameByAppId(SQLiteDatabase db, string providerKey, int appId)
+        private static GameRow LoadGameByPlayniteId(SQLiteDatabase db, string providerKey, Guid playniteGameId)
         {
+            if (playniteGameId == Guid.Empty)
+            {
+                return null;
+            }
+
             return db.Load<GameRow>(
-                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                  FROM Games
+                  WHERE ProviderKey = ?
+                    AND PlayniteGameId = ?
+                  ORDER BY LastUpdatedUtc DESC, Id DESC
+                  LIMIT 1;",
+                providerKey,
+                playniteGameId.ToString()).FirstOrDefault();
+        }
+
+        private static GameRow LoadProviderOnlyGameByAppId(SQLiteDatabase db, string providerKey, int appId, string providerGameKey = null)
+        {
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            if (!string.IsNullOrWhiteSpace(providerGameKey))
+            {
+                return db.Load<GameRow>(
+                    @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                      FROM Games
+                      WHERE ProviderKey = ?
+                        AND ProviderGameKey = ?
+                        AND (PlayniteGameId IS NULL OR TRIM(PlayniteGameId) = '')
+                      ORDER BY LastUpdatedUtc DESC, Id DESC
+                      LIMIT 1;",
+                    providerKey,
+                    providerGameKey).FirstOrDefault();
+            }
+
+            return db.Load<GameRow>(
+                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
                   FROM Games
                   WHERE ProviderKey = ?
                     AND ProviderGameId = ?
@@ -2453,18 +2733,48 @@ namespace PlayniteAchievements.Services.Database
             SQLiteDatabase db,
             string providerKey,
             int appId,
+            string providerGameKey,
+            string providerPlatformKey,
+            Guid? playniteGameId,
             bool allowProviderOnly,
             string gameName,
             string iconUrl,
             string nowIso)
         {
-            var shared = LoadSharedGameByAppId(db, providerKey, appId);
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            if (playniteGameId.HasValue && playniteGameId.Value != Guid.Empty)
+            {
+                var mapped = LoadGameByPlayniteId(db, providerKey, playniteGameId.Value);
+                if (mapped != null)
+                {
+                    UpdateMappedGameIdentity(db, mapped.Id, appId, providerGameKey, providerPlatformKey, gameName, nowIso);
+                    mapped.ProviderGameId = appId > 0 ? appId : mapped.ProviderGameId;
+                    mapped.ProviderGameKey = providerGameKey ?? mapped.ProviderGameKey;
+                    return mapped;
+                }
+
+                var mappedId = EnsureMappedProviderGame(
+                    db,
+                    providerKey,
+                    appId,
+                    providerGameKey,
+                    providerPlatformKey,
+                    playniteGameId.Value,
+                    gameName,
+                    nowIso);
+                if (mappedId > 0)
+                {
+                    return LoadGameByPlayniteId(db, providerKey, playniteGameId.Value);
+                }
+            }
+
+            var shared = LoadSharedGameByAppId(db, providerKey, appId, providerGameKey);
             if (shared != null || !allowProviderOnly)
             {
                 return shared;
             }
 
-            var providerOnly = LoadProviderOnlyGameByAppId(db, providerKey, appId);
+            var providerOnly = LoadProviderOnlyGameByAppId(db, providerKey, appId, providerGameKey);
             if (providerOnly != null)
             {
                 if (!string.IsNullOrWhiteSpace(gameName) &&
@@ -2484,9 +2794,9 @@ namespace PlayniteAchievements.Services.Database
                 return providerOnly;
             }
 
-            var gameId = EnsureProviderOnlyGame(db, providerKey, appId, gameName, nowIso);
+            var gameId = EnsureProviderOnlyGame(db, providerKey, appId, providerGameKey, providerPlatformKey, gameName, nowIso);
             return gameId > 0
-                ? LoadProviderOnlyGameByAppId(db, providerKey, appId)
+                ? LoadProviderOnlyGameByAppId(db, providerKey, appId, providerGameKey)
                 : null;
         }
 
@@ -2494,26 +2804,30 @@ namespace PlayniteAchievements.Services.Database
             SQLiteDatabase db,
             string providerKey,
             int appId,
+            string providerGameKey,
+            string providerPlatformKey,
             string gameName,
             string nowIso)
         {
-            var existing = LoadAnyGameByAppId(db, providerKey, appId);
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            var existing = LoadAnyGameByAppId(db, providerKey, appId, providerGameKey);
             if (existing != null)
             {
                 return existing.Id;
             }
 
             var name = string.IsNullOrWhiteSpace(gameName)
-                ? $"{providerKey} App {appId}"
+                ? $"{providerKey} Game {ToProviderGameLogKey(appId, providerGameKey)}"
                 : gameName.Trim();
             db.ExecuteNonQuery(
                 @"INSERT INTO Games
-                    (ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
+                    (ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
                   VALUES
-                    (?, ?, ?, NULL, ?, ?, ?, ?);",
+                    (?, ?, ?, ?, NULL, ?, ?, ?, ?);",
                 providerKey,
-                DbValue(providerKey),
-                appId,
+                DbValue(string.IsNullOrWhiteSpace(providerPlatformKey) ? providerKey : providerPlatformKey.Trim()),
+                appId > 0 ? (object)appId : DBNull.Value,
+                DbValue(providerGameKey),
                 DbValue(name),
                 DbValue(providerKey),
                 nowIso,
@@ -2521,45 +2835,144 @@ namespace PlayniteAchievements.Services.Database
             return db.ExecuteScalar<long>("SELECT last_insert_rowid();");
         }
 
+        private static long EnsureMappedProviderGame(
+            SQLiteDatabase db,
+            string providerKey,
+            int appId,
+            string providerGameKey,
+            string providerPlatformKey,
+            Guid playniteGameId,
+            string gameName,
+            string nowIso)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return 0;
+            }
+
+            var existing = LoadGameByPlayniteId(db, providerKey, playniteGameId);
+            if (existing != null)
+            {
+                UpdateMappedGameIdentity(db, existing.Id, appId, providerGameKey, providerPlatformKey, gameName, nowIso);
+                return existing.Id;
+            }
+
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            var name = string.IsNullOrWhiteSpace(gameName)
+                ? $"{providerKey} Game {ToProviderGameLogKey(appId, providerGameKey)}"
+                : gameName.Trim();
+            db.ExecuteNonQuery(
+                @"INSERT INTO Games
+                    (ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
+                  VALUES
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                providerKey,
+                DbValue(string.IsNullOrWhiteSpace(providerPlatformKey) ? providerKey : providerPlatformKey.Trim()),
+                appId > 0 ? (object)appId : DBNull.Value,
+                DbValue(providerGameKey),
+                playniteGameId.ToString(),
+                DbValue(name),
+                DbValue(providerKey),
+                nowIso,
+                nowIso);
+            return db.ExecuteScalar<long>("SELECT last_insert_rowid();");
+        }
+
+        private static void UpdateMappedGameIdentity(
+            SQLiteDatabase db,
+            long gameId,
+            int appId,
+            string providerGameKey,
+            string providerPlatformKey,
+            string gameName,
+            string nowIso)
+        {
+            if (gameId <= 0)
+            {
+                return;
+            }
+
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+            db.ExecuteNonQuery(
+                @"UPDATE Games
+                  SET ProviderPlatformKey = COALESCE(?, ProviderPlatformKey),
+                      ProviderGameId = COALESCE(?, ProviderGameId),
+                      ProviderGameKey = COALESCE(?, ProviderGameKey),
+                      GameName = COALESCE(?, GameName),
+                      LastUpdatedUtc = ?
+                  WHERE Id = ?;",
+                DbValue(string.IsNullOrWhiteSpace(providerPlatformKey) ? null : providerPlatformKey.Trim()),
+                appId > 0 ? (object)appId : DBNull.Value,
+                DbValue(providerGameKey),
+                DbValue(string.IsNullOrWhiteSpace(gameName) ? null : gameName.Trim()),
+                nowIso,
+                gameId);
+        }
+
         private static void UpsertProviderGameDefinitionState(
             SQLiteDatabase db,
             string providerKey,
             int appId,
+            string providerGameKey,
             string gameName,
             string iconUrl,
             string status,
             string checkedIso,
             string nowIso)
         {
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
             db.ExecuteNonQuery(
                 @"INSERT OR IGNORE INTO ProviderGameDefinitionState
-                    (ProviderKey, ProviderGameId, GameName, IconUrl, Status, LastCheckedUtc, CreatedUtc, UpdatedUtc)
+                    (ProviderKey, ProviderGameId, ProviderGameKey, GameName, IconUrl, Status, LastCheckedUtc, CreatedUtc, UpdatedUtc)
                   VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?);",
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?);",
                 providerKey,
-                appId,
+                appId > 0 ? (object)appId : DBNull.Value,
+                DbValue(providerGameKey),
                 DbValue(gameName),
                 DbValue(iconUrl),
                 DbValue(status),
                 checkedIso,
                 nowIso,
                 nowIso);
-            db.ExecuteNonQuery(
-                @"UPDATE ProviderGameDefinitionState
+            if (!string.IsNullOrWhiteSpace(providerGameKey))
+            {
+                db.ExecuteNonQuery(
+                    @"UPDATE ProviderGameDefinitionState
                   SET GameName = ?,
                       IconUrl = ?,
                       Status = ?,
                       LastCheckedUtc = ?,
                       UpdatedUtc = ?
                   WHERE ProviderKey = ?
-                    AND ProviderGameId = ?;",
-                DbValue(gameName),
-                DbValue(iconUrl),
-                DbValue(status),
-                checkedIso,
-                nowIso,
-                providerKey,
-                appId);
+                    AND ProviderGameKey = ?;",
+                    DbValue(gameName),
+                    DbValue(iconUrl),
+                    DbValue(status),
+                    checkedIso,
+                    nowIso,
+                    providerKey,
+                    providerGameKey);
+            }
+            else
+            {
+                db.ExecuteNonQuery(
+                    @"UPDATE ProviderGameDefinitionState
+                      SET GameName = ?,
+                          IconUrl = ?,
+                          Status = ?,
+                          LastCheckedUtc = ?,
+                          UpdatedUtc = ?
+                      WHERE ProviderKey = ?
+                        AND ProviderGameId = ?;",
+                    DbValue(gameName),
+                    DbValue(iconUrl),
+                    DbValue(status),
+                    checkedIso,
+                    nowIso,
+                    providerKey,
+                    appId);
+            }
         }
 
         private static FriendUnownedCacheStats LoadUnownedFriendGameCacheStats(SQLiteDatabase db)
@@ -3134,6 +3547,7 @@ namespace PlayniteAchievements.Services.Database
                 SELECT
                     g.ProviderKey AS ProviderKey,
                     g.ProviderGameId AS ProviderGameId,
+                    g.ProviderGameKey AS ProviderGameKey,
                     g.PlayniteGameId AS PlayniteGameId,
                     g.GameName AS GameName,
                     o.FriendCount AS FriendCount,
@@ -3164,6 +3578,7 @@ namespace PlayniteAchievements.Services.Database
                     g.ProviderKey AS ProviderKey,
                     u.ExternalUserId AS ExternalUserId,
                     g.ProviderGameId AS ProviderGameId,
+                    g.ProviderGameKey AS ProviderGameKey,
                     g.PlayniteGameId AS PlayniteGameId,
                     fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
                     fo.LastPlayedUtc AS LastPlayedUtc
@@ -3190,6 +3605,7 @@ namespace PlayniteAchievements.Services.Database
                 @"SELECT
                     g.ProviderKey AS ProviderKey,
                     g.ProviderGameId AS ProviderGameId,
+                    g.ProviderGameKey AS ProviderGameKey,
                     g.PlayniteGameId AS PlayniteGameId,
                     g.GameName AS GameName,
                     u.ExternalUserId AS FriendExternalUserId,
@@ -3303,6 +3719,7 @@ namespace PlayniteAchievements.Services.Database
                     ProgressDenom = detail.ProgressDenom,
                     ProviderKey = row.ProviderKey,
                     AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
+                    ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                     GameName = row.GameName,
                     SortingName = presentation.SortingName ?? row.GameName,
                     PlayniteGameId = playniteGameId,
@@ -3546,7 +3963,7 @@ namespace PlayniteAchievements.Services.Database
         {
             // Find a Game entry for this CacheKey from a non-Unmapped provider
             return db.Load<GameRow>(
-                                @"SELECT g.Id, g.ProviderKey, g.ProviderPlatformKey, g.ProviderGameId, g.PlayniteGameId, g.GameName, g.LibrarySourceName, g.FirstSeenUtc, g.LastUpdatedUtc
+                                @"SELECT g.Id, g.ProviderKey, g.ProviderPlatformKey, g.ProviderGameId, g.ProviderGameKey, g.PlayniteGameId, g.GameName, g.LibrarySourceName, g.FirstSeenUtc, g.LastUpdatedUtc
                   FROM Games g
                   WHERE g.PlayniteGameId = ?
                     AND g.ProviderKey <> 'Unmapped'
@@ -3930,13 +4347,14 @@ namespace PlayniteAchievements.Services.Database
         {
             var playniteGameId = data.PlayniteGameId?.ToString();
             long? providerGameId = data.AppId > 0 ? data.AppId : (long?)null;
+            var providerGameKey = NormalizeProviderGameKey(data.ProviderGameKey);
             var isRetroAchievements = SqlNadoCacheBehavior.IsRetroAchievementsProvider(providerKey);
 
             GameRow game = null;
             if (!string.IsNullOrWhiteSpace(playniteGameId))
             {
                 game = db.Load<GameRow>(
-                                        @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                                        @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
                       FROM Games
                       WHERE ProviderKey = ? AND PlayniteGameId = ?
                       LIMIT 1;",
@@ -3948,12 +4366,19 @@ namespace PlayniteAchievements.Services.Database
                 SqlNadoCacheBehavior.ShouldFallbackToProviderGameIdLookup(providerKey, playniteGameId, providerGameId))
             {
                 game = db.Load<GameRow>(
-                                        @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                                        @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
                       FROM Games
                       WHERE ProviderKey = ? AND ProviderGameId = ?
                       LIMIT 1;",
                     providerKey,
                     providerGameId.Value).FirstOrDefault();
+            }
+
+            if (game == null &&
+                !string.IsNullOrWhiteSpace(providerGameKey) &&
+                !string.IsNullOrWhiteSpace(playniteGameId))
+            {
+                game = LoadProviderOnlyGameByAppId(db, providerKey, 0, providerGameKey);
             }
 
             if (game == null &&
@@ -3969,7 +4394,7 @@ namespace PlayniteAchievements.Services.Database
                 if (isRetroAchievements && providerGameId.HasValue && !string.IsNullOrWhiteSpace(playniteGameId))
                 {
                     var mirroredRows = db.Load<GameRow>(
-                                                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                                                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
                           FROM Games
                           WHERE ProviderKey = ?
                             AND ProviderGameId = ?
@@ -3993,12 +4418,13 @@ namespace PlayniteAchievements.Services.Database
 
                 db.ExecuteNonQuery(
                     @"INSERT INTO Games
-                        (ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
+                        (ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
                       VALUES
-                        (?, ?, ?, ?, ?, ?, ?, ?);",
+                        (?, ?, ?, ?, ?, ?, ?, ?, ?);",
                     providerKey,
                     DbValue(data.ProviderPlatformKey),
                     providerGameId.HasValue ? (object)providerGameId.Value : DBNull.Value,
+                    DbValue(providerGameKey),
                     DbValue(playniteGameId),
                     DbValue(data.GameName),
                     DbValue(data.LibrarySourceName),
@@ -4011,6 +4437,7 @@ namespace PlayniteAchievements.Services.Database
                 @"UPDATE Games
                   SET ProviderPlatformKey = ?,
                       ProviderGameId = ?,
+                      ProviderGameKey = ?,
                       PlayniteGameId = ?,
                       GameName = ?,
                       LibrarySourceName = ?,
@@ -4018,6 +4445,7 @@ namespace PlayniteAchievements.Services.Database
                   WHERE Id = ?;",
                 DbValue(data.ProviderPlatformKey),
                 providerGameId.HasValue ? (object)providerGameId.Value : DBNull.Value,
+                DbValue(providerGameKey),
                 DbValue(playniteGameId),
                 DbValue(data.GameName),
                 DbValue(data.LibrarySourceName),
@@ -4354,6 +4782,7 @@ namespace PlayniteAchievements.Services.Database
                 // ExcludedByUser is populated by callers from settings
                 GameName = progress?.GameName,
                 AppId = (int)Math.Max(0, progress?.ProviderGameId ?? 0),
+                ProviderGameKey = NormalizeProviderGameKey(progress?.ProviderGameKey),
                 PlayniteGameId = ParseGuid(progress?.PlayniteGameId),
                 Achievements = new List<AchievementDetail>()
             };

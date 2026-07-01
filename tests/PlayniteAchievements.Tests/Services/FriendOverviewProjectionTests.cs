@@ -118,10 +118,11 @@ namespace PlayniteAchievements.Tests.Services
             var gameId = Guid.Parse("33333333-3333-3333-3333-333333333333");
 
             Assert.AreEqual("steam|alice", FriendOverviewProjection.BuildFriendKey(" Steam ", " Alice "));
-            Assert.AreEqual("steam|app:10", FriendOverviewProjection.BuildGameUnlockKey(" Steam ", 10, gameId));
+            Assert.AreEqual("steam|app:10", FriendOverviewProjection.BuildGameUnlockKey(" Steam ", null, 10, gameId));
+            Assert.AreEqual("exophase|key:ps5|foo", FriendOverviewProjection.BuildGameUnlockKey(" Exophase ", " PS5|foo ", 0, null));
             Assert.AreEqual(
                 "alice|steam|app:10",
-                FriendOverviewProjection.BuildFriendGameUnlockKey(" Steam ", " Alice ", 10, gameId));
+                FriendOverviewProjection.BuildFriendGameUnlockKey(" Steam ", " Alice ", null, 10, gameId));
         }
 
         private static FriendAchievementDisplayItem Achievement(

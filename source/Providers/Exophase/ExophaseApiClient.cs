@@ -349,6 +349,68 @@ namespace PlayniteAchievements.Providers.Exophase
         }
 
         /// <summary>
+        /// Fetches a rendered public Exophase page through the same WebView path used by achievement pages.
+        /// </summary>
+        internal async Task<string> FetchRenderedHtmlAsync(string url, CancellationToken ct, int postLoadDelayMs = 1000)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return null;
+            }
+
+            List<HttpCookie> snapshotCookies = null;
+            var snapshotLoaded = _cookieSnapshotStore?.TryLoad(out snapshotCookies) ?? false;
+
+            var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
+            {
+                using (var view = _playniteApi.WebViews.CreateOffscreenView())
+                {
+                    try
+                    {
+                        if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
+                        {
+                            await RestoreCookiesAsync(view, snapshotCookies, ct).ConfigureAwait(false);
+                        }
+
+                        await view.NavigateAndWaitAsync(url, timeoutMs: 20000).ConfigureAwait(false);
+                        if (postLoadDelayMs > 0)
+                        {
+                            await Task.Delay(postLoadDelayMs, ct).ConfigureAwait(false);
+                        }
+
+                        var html = await view.GetPageSourceAsync().ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(html))
+                        {
+                            return null;
+                        }
+
+                        if (html.Contains("Just a moment") ||
+                            html.Contains("Cloudflare") ||
+                            html.Contains("Verifying you are human"))
+                        {
+                            _logger?.Warn("[Exophase] Cloudflare challenge detected on rendered page");
+                            return null;
+                        }
+
+                        return html;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Error(ex, "[Exophase] Failed to fetch rendered HTML via WebView");
+                        return null;
+                    }
+                }
+            });
+
+            var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
+            return await responseTask.ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Restores cookies to a WebView from a snapshot.
         /// </summary>
         private async Task RestoreCookiesAsync(IWebView view, IReadOnlyList<HttpCookie> cookies, CancellationToken ct)

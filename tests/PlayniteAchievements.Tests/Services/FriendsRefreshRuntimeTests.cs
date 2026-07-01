@@ -198,9 +198,9 @@ namespace PlayniteAchievements.Services.Tests
         {
             var cache = new FakeFriendCache
             {
-                DefinitionStates = new Dictionary<int, FriendGameDefinitionState>
+                DefinitionStates = new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase)
                 {
-                    [100] = new FriendGameDefinitionState
+                    ["100"] = new FriendGameDefinitionState
                     {
                         ProviderKey = "Steam",
                         AppId = 100,
@@ -493,8 +493,8 @@ namespace PlayniteAchievements.Services.Tests
             private int _saveProviderOnlyOwnershipCalls;
 
             public List<FriendRefreshCandidate> Candidates { get; set; } = new List<FriendRefreshCandidate>();
-            public Dictionary<int, FriendGameDefinitionState> DefinitionStates { get; set; } =
-                new Dictionary<int, FriendGameDefinitionState>();
+            public Dictionary<string, FriendGameDefinitionState> DefinitionStates { get; set; } =
+                new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
             public int SaveFriendListCalls => _saveFriendListCalls;
             public int SaveFriendOwnershipCalls => _saveFriendOwnershipCalls;
             public int SaveFriendGameAchievementsCalls => _saveFriendGameAchievementsCalls;
@@ -535,17 +535,18 @@ namespace PlayniteAchievements.Services.Tests
 
             public FriendCacheWriteResult SaveProviderGameImagePaths(
                 string providerKey,
+                string providerGameKey,
                 int appId,
                 string iconAbsolutePath,
                 string coverAbsolutePath) =>
                 FriendCacheWriteResult.Ok(1, 1, 0);
 
-            public Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
+            public Dictionary<string, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
                 string providerKey,
-                IReadOnlyCollection<int> appIds) =>
+                IReadOnlyCollection<string> providerGameKeys) =>
                 DefinitionStates
-                    .Where(pair => appIds?.Contains(pair.Key) == true)
-                    .ToDictionary(pair => pair.Key, pair => pair.Value);
+                    .Where(pair => providerGameKeys?.Contains(pair.Key) == true)
+                    .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
             public FriendUnownedCacheStats GetUnownedFriendGameCacheStats() =>
                 new FriendUnownedCacheStats();
@@ -556,6 +557,7 @@ namespace PlayniteAchievements.Services.Tests
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,
                 string externalUserId,
+                string providerGameKey,
                 int appId,
                 FriendGameAchievements achievements)
             {
@@ -704,6 +706,7 @@ namespace PlayniteAchievements.Services.Tests
 
             public async Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
                 FriendIdentity friend,
+                string providerGameKey,
                 int appId,
                 string gameName,
                 CancellationToken cancel)
@@ -723,6 +726,7 @@ namespace PlayniteAchievements.Services.Tests
                         {
                             Friend = friend,
                             AppId = appId,
+                            ProviderGameKey = providerGameKey,
                             LastUpdatedUtc = DateTime.UtcNow
                         });
                 }
@@ -733,6 +737,7 @@ namespace PlayniteAchievements.Services.Tests
             }
 
             public Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
+                string providerGameKey,
                 int appId,
                 string gameName,
                 CancellationToken cancel)
@@ -747,6 +752,7 @@ namespace PlayniteAchievements.Services.Tests
                 {
                     ProviderKey = ProviderKey,
                     AppId = appId,
+                    ProviderGameKey = providerGameKey,
                     GameName = gameName,
                     Status = DefinitionStatusToReturn,
                     LastCheckedUtc = DateTime.UtcNow,

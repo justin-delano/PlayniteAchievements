@@ -30,6 +30,7 @@ namespace PlayniteAchievements.Services.Friends
     {
         public FriendIdentity Friend { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
         public Guid? PlayniteGameId { get; set; }
         public string GameName { get; set; }
         public int PlaytimeForeverMinutes { get; set; }
@@ -47,6 +48,7 @@ namespace PlayniteAchievements.Services.Friends
     {
         public string ProviderKey { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
         public string GameName { get; set; }
         public string IconUrl { get; set; }
         public FriendGameDefinitionStatus Status { get; set; } = FriendGameDefinitionStatus.Unavailable;
@@ -86,6 +88,7 @@ namespace PlayniteAchievements.Services.Friends
         public string ProviderKey { get; set; }
         public string ExternalUserId { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
         public Guid? PlayniteGameId { get; set; }
         public long PlaytimeForeverMinutes { get; set; }
         public DateTime? LastPlayedUtc { get; set; }
@@ -107,13 +110,14 @@ namespace PlayniteAchievements.Services.Friends
 
         FriendCacheWriteResult SaveProviderGameImagePaths(
             string providerKey,
+            string providerGameKey,
             int appId,
             string iconAbsolutePath,
             string coverAbsolutePath);
 
-        Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
+        Dictionary<string, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
             string providerKey,
-            IReadOnlyCollection<int> appIds);
+            IReadOnlyCollection<string> providerGameKeys);
 
         FriendUnownedCacheStats GetUnownedFriendGameCacheStats();
 
@@ -122,6 +126,7 @@ namespace PlayniteAchievements.Services.Friends
         FriendCacheWriteResult SaveFriendGameAchievements(
             string providerKey,
             string externalUserId,
+            string providerGameKey,
             int appId,
             FriendGameAchievements achievements);
 

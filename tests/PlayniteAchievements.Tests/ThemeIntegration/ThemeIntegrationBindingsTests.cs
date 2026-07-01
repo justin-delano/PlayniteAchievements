@@ -2594,15 +2594,16 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
 
             public FriendCacheWriteResult SaveProviderGameImagePaths(
                 string providerKey,
+                string providerGameKey,
                 int appId,
                 string iconAbsolutePath,
                 string coverAbsolutePath) =>
                 FriendCacheWriteResult.Ok();
 
-            public Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
+            public Dictionary<string, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
                 string providerKey,
-                IReadOnlyCollection<int> appIds) =>
-                new Dictionary<int, FriendGameDefinitionState>();
+                IReadOnlyCollection<string> providerGameKeys) =>
+                new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
 
             public FriendUnownedCacheStats GetUnownedFriendGameCacheStats() =>
                 new FriendUnownedCacheStats();
@@ -2613,6 +2614,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,
                 string externalUserId,
+                string providerGameKey,
                 int appId,
                 FriendGameAchievements achievements) =>
                 FriendCacheWriteResult.Ok();

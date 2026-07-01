@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Controls;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Logging;
@@ -49,6 +52,7 @@ namespace PlayniteAchievements.Providers.Exophase
             base.Initialize(settings);
             SetAuthStatusVisualState(pending: true, success: false);
             SetAuthStatusByKey("LOCPlayAch_Auth_NotChecked");
+            RefreshExophaseFriendsGrid();
         }
 
         private void UpdateAuthStatus(AuthProbeResult result)
@@ -241,6 +245,188 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             _exophaseSettings.ManagedProviders = managedProviders;
+        }
+
+        private ExophaseFriendSettings SelectedExophaseFriend =>
+            ExophaseFriendsGrid?.SelectedItem as ExophaseFriendSettings;
+
+        private void AddExophaseFriend_Click(object sender, RoutedEventArgs e)
+        {
+            if (_exophaseSettings == null)
+            {
+                return;
+            }
+
+            var username = NewFriendUsernameTextBox?.Text;
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return;
+            }
+
+            _exophaseSettings.AddOrUpdateFriend(username);
+            NewFriendUsernameTextBox.Text = string.Empty;
+            RefreshExophaseFriendsGrid(username.Trim());
+        }
+
+        private void RemoveExophaseFriend_Click(object sender, RoutedEventArgs e)
+        {
+            var selected = SelectedExophaseFriend;
+            if (_exophaseSettings == null || selected == null)
+            {
+                return;
+            }
+
+            _exophaseSettings.RemoveFriend(selected.Username);
+            RefreshExophaseFriendsGrid();
+        }
+
+        private void ExophaseFriendsGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshSelectedFriendEditors();
+        }
+
+        private void ExophaseFriendScope_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var selected = SelectedExophaseFriend;
+            if (_exophaseSettings == null || selected == null || !(ExophaseFriendScopeComboBox?.SelectedItem is ComboBoxItem item))
+            {
+                return;
+            }
+
+            selected.LibraryScope = string.Equals(item.Tag as string, "Full", StringComparison.OrdinalIgnoreCase)
+                ? FriendLibraryScope.Full
+                : FriendLibraryScope.Shared;
+            _exophaseSettings.Friends = _exophaseSettings.Friends;
+            RefreshExophaseFriendsGrid(selected.Username);
+        }
+
+        private void FriendPlatform_CheckboxLoaded(object sender, RoutedEventArgs e)
+        {
+            RefreshFriendPlatformCheckbox(sender as CheckBox);
+        }
+
+        private void FriendPlatform_CheckChanged(object sender, RoutedEventArgs e)
+        {
+            var selected = SelectedExophaseFriend;
+            if (_exophaseSettings == null || selected == null || !(sender is CheckBox checkbox))
+            {
+                return;
+            }
+
+            var token = GetFriendPlatformToken(checkbox);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            var platforms = new HashSet<string>(selected.SelectedPlatforms ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
+            if (checkbox.IsChecked == true)
+            {
+                platforms.Add(token.Trim().ToLowerInvariant());
+            }
+            else
+            {
+                platforms.Remove(token.Trim());
+            }
+
+            selected.SelectedPlatforms = platforms.OrderBy(platform => platform, StringComparer.OrdinalIgnoreCase).ToList();
+            _exophaseSettings.Friends = _exophaseSettings.Friends;
+            RefreshExophaseFriendsGrid(selected.Username);
+        }
+
+        private void RefreshExophaseFriendsGrid(string selectedUsername = null)
+        {
+            if (ExophaseFriendsGrid == null || _exophaseSettings == null)
+            {
+                return;
+            }
+
+            _exophaseSettings.Friends = _exophaseSettings.Friends;
+            ExophaseFriendsGrid.ItemsSource = null;
+            ExophaseFriendsGrid.ItemsSource = _exophaseSettings.Friends;
+
+            var selected = _exophaseSettings.Friends.FirstOrDefault(friend =>
+                string.Equals(friend.Username, selectedUsername, StringComparison.OrdinalIgnoreCase));
+            if (selected != null)
+            {
+                ExophaseFriendsGrid.SelectedItem = selected;
+            }
+            else if (_exophaseSettings.Friends.Count > 0 && ExophaseFriendsGrid.SelectedItem == null)
+            {
+                ExophaseFriendsGrid.SelectedItem = _exophaseSettings.Friends[0];
+            }
+
+            RefreshSelectedFriendEditors();
+        }
+
+        private void RefreshSelectedFriendEditors()
+        {
+            var selected = SelectedExophaseFriend;
+            if (ExophaseFriendScopeComboBox != null)
+            {
+                foreach (var item in ExophaseFriendScopeComboBox.Items.OfType<ComboBoxItem>())
+                {
+                    var isFull = selected?.LibraryScope == FriendLibraryScope.Full;
+                    if (string.Equals(item.Tag as string, isFull ? "Full" : "Shared", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ExophaseFriendScopeComboBox.SelectedItem = item;
+                        break;
+                    }
+                }
+            }
+
+            RefreshFriendPlatformCheckboxes();
+        }
+
+        private void RefreshFriendPlatformCheckboxes()
+        {
+            RefreshFriendPlatformCheckboxes(this);
+        }
+
+        private void RefreshFriendPlatformCheckboxes(DependencyObject root)
+        {
+            if (root == null)
+            {
+                return;
+            }
+
+            var count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+            for (var i = 0; i < count; i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+                RefreshFriendPlatformCheckbox(child as CheckBox);
+                RefreshFriendPlatformCheckboxes(child);
+            }
+        }
+
+        private void RefreshFriendPlatformCheckbox(CheckBox checkbox)
+        {
+            var selected = SelectedExophaseFriend;
+            if (checkbox == null || checkbox.Tag == null || selected == null)
+            {
+                return;
+            }
+
+            var token = GetFriendPlatformToken(checkbox);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            checkbox.IsChecked = (selected.SelectedPlatforms ?? new List<string>())
+                .Contains(token, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string GetFriendPlatformToken(CheckBox checkbox)
+        {
+            var tag = checkbox?.Tag as string;
+            if (string.IsNullOrWhiteSpace(tag) ||
+                !tag.StartsWith("friend:", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return tag.Substring("friend:".Length).Trim();
         }
     }
 }

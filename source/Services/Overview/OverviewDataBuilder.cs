@@ -292,6 +292,7 @@ namespace PlayniteAchievements.Services.Overview
                     RegionText = presentation.RegionText,
                     PlaytimeSeconds = presentation.PlaytimeSeconds,
                     AppId = game.AppId,
+                    ProviderGameKey = game.ProviderGameKey,
                     PlayniteGameId = game.PlayniteGameId,
                     TotalAchievements = game.TotalAchievements,
                     UnlockedAchievements = game.UnlockedAchievements,
@@ -587,6 +588,7 @@ namespace PlayniteAchievements.Services.Overview
                         ProviderPlatformKey = recent.ProviderPlatformKey,
                         GameName = recent.GameName,
                         AppId = recent.AppId,
+                        ProviderGameKey = recent.ProviderGameKey,
                         PlayniteGameId = recent.PlayniteGameId,
                         Game = presentation.Game,
                         HasAchievements = true,
@@ -747,6 +749,11 @@ namespace PlayniteAchievements.Services.Overview
             if (!string.IsNullOrWhiteSpace(recent?.CacheKey))
             {
                 return recent.CacheKey.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(recent?.ProviderGameKey))
+            {
+                return $"{recent.ProviderKey ?? "Unknown"}::{recent.ProviderGameKey.Trim()}";
             }
 
             return $"{recent?.ProviderKey ?? "Unknown"}::{recent?.GameName ?? "Unknown"}";

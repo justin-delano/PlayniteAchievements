@@ -440,7 +440,7 @@ namespace PlayniteAchievements.Services.Friends
                     {
                         Friend = friend,
                         Ownership = ownedGames
-                            .Where(item => item?.AppId > 0)
+                            .Where(item => HasProviderGameIdentity(item))
                             .ToList()
                     });
                 }
@@ -485,28 +485,45 @@ namespace PlayniteAchievements.Services.Friends
                 return;
             }
 
+            var requestedProviderGameKeys = options?.ProviderGameKeys?
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
             var requestedAppIds = options?.ProviderAppIds?
                 .Where(id => id > 0)
+                .Select(id => id.ToString())
                 .Distinct()
                 .ToList();
-            var requestedAppIdSet = requestedAppIds?.Count > 0
-                ? new HashSet<int>(requestedAppIds)
+            var requestedKeys = new List<string>();
+            if (requestedProviderGameKeys?.Count > 0)
+            {
+                requestedKeys.AddRange(requestedProviderGameKeys);
+            }
+
+            if (requestedAppIds?.Count > 0)
+            {
+                requestedKeys.AddRange(requestedAppIds);
+            }
+
+            var requestedKeySet = requestedKeys.Count > 0
+                ? new HashSet<string>(requestedKeys, StringComparer.OrdinalIgnoreCase)
                 : null;
 
-            var ownershipByAppId = snapshots
+            var ownershipByKey = snapshots
                 .SelectMany(snapshot => snapshot.Ownership)
-                .Where(item => item?.AppId > 0 &&
-                               (requestedAppIdSet == null || requestedAppIdSet.Contains(item.AppId)))
-                .GroupBy(item => item.AppId)
+                .Where(item => HasProviderGameIdentity(item) &&
+                               (requestedKeySet == null || requestedKeySet.Contains(GetProviderGameCacheKey(item))))
+                .GroupBy(GetProviderGameCacheKey, StringComparer.OrdinalIgnoreCase)
                 .ToDictionary(group => group.Key, group => group.ToList());
-            if (ownershipByAppId.Count == 0)
+            if (ownershipByKey.Count == 0)
             {
                 return;
             }
 
-            var appIds = ownershipByAppId.Keys.OrderBy(id => id).ToList();
-            var states = _friendCache.LoadFriendGameDefinitionStates(providerKey, appIds) ??
-                         new Dictionary<int, FriendGameDefinitionState>();
+            var providerGameKeys = ownershipByKey.Keys.OrderBy(key => key, StringComparer.OrdinalIgnoreCase).ToList();
+            var states = _friendCache.LoadFriendGameDefinitionStates(providerKey, providerGameKeys) ??
+                         new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
             var definitionTtl = options.DefinitionTtl.GetValueOrDefault(DefaultDefinitionTtl);
             if (definitionTtl <= TimeSpan.Zero)
             {
@@ -514,31 +531,34 @@ namespace PlayniteAchievements.Services.Friends
             }
 
             var cutoffUtc = DateTime.UtcNow - definitionTtl;
-            var dueAppIds = appIds
-                .Where(appId => IsDefinitionCheckDue(states.TryGetValue(appId, out var state) ? state : null, cutoffUtc))
+            var dueProviderGameKeys = providerGameKeys
+                .Where(key => IsDefinitionCheckDue(states.TryGetValue(key, out var state) ? state : null, cutoffUtc))
                 .ToList();
 
-            if (dueAppIds.Count > 0)
+            if (dueProviderGameKeys.Count > 0)
             {
                 var limiter = CreateScanRateLimiter();
-                for (var i = 0; i < dueAppIds.Count; i++)
+                for (var i = 0; i < dueProviderGameKeys.Count; i++)
                 {
                     cancel.ThrowIfCancellationRequested();
-                    var appId = dueAppIds[i];
-                    var gameName = ResolveOwnershipGameName(ownershipByAppId[appId], providerKey, appId);
+                    var providerGameKey = dueProviderGameKeys[i];
+                    var ownershipRows = ownershipByKey[providerGameKey];
+                    var sample = ownershipRows.FirstOrDefault(item => item != null);
+                    var appId = Math.Max(0, sample?.AppId ?? 0);
+                    var gameName = ResolveOwnershipGameName(ownershipRows, providerKey, providerGameKey);
                     Report(
                         reportProgress,
                         Format(
                             "LOCPlayAch_FriendsRefresh_Progress_Definitions",
                             "Checking friend game definitions {0}/{1}...",
                             i + 1,
-                            dueAppIds.Count),
+                            dueProviderGameKeys.Count),
                         i,
-                        dueAppIds.Count + 1);
+                        dueProviderGameKeys.Count + 1);
 
                     await limiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
                     var definitionResult = await limiter.ExecuteWithRetryAsync(
-                        () => friendsProvider.GetFriendGameDefinitionAsync(appId, gameName, cancel),
+                        () => friendsProvider.GetFriendGameDefinitionAsync(providerGameKey, appId, gameName, cancel),
                         IsTransientError,
                         cancel).ConfigureAwait(false);
 
@@ -556,6 +576,7 @@ namespace PlayniteAchievements.Services.Friends
                     {
                         ProviderKey = providerKey,
                         AppId = appId,
+                        ProviderGameKey = providerGameKey,
                         GameName = gameName,
                         Status = definitionResult?.TransientFailure == true
                             ? FriendGameDefinitionStatus.Transient
@@ -565,6 +586,7 @@ namespace PlayniteAchievements.Services.Friends
 
                     definition.ProviderKey = providerKey;
                     definition.AppId = appId;
+                    definition.ProviderGameKey = providerGameKey;
                     if (string.IsNullOrWhiteSpace(definition.GameName))
                     {
                         definition.GameName = gameName;
@@ -575,16 +597,16 @@ namespace PlayniteAchievements.Services.Friends
                     var writeDefinition = _friendCache.SaveFriendGameDefinition(providerKey, definition);
                     if (writeDefinition?.Success != true)
                     {
-                        _logger?.Warn($"Failed to save friend game definition for {providerKey}/{appId}: {writeDefinition?.ErrorMessage}");
+                        _logger?.Warn($"Failed to save friend game definition for {providerKey}/{providerGameKey}: {writeDefinition?.ErrorMessage}");
                     }
                 }
             }
 
-            var discoveredAppIds = new HashSet<int>(appIds);
+            var discoveredProviderGameKeys = new HashSet<string>(providerGameKeys, StringComparer.OrdinalIgnoreCase);
             foreach (var snapshot in snapshots)
             {
                 var providerOnlyOwnership = snapshot.Ownership
-                    .Where(item => item?.AppId > 0 && discoveredAppIds.Contains(item.AppId))
+                    .Where(item => HasProviderGameIdentity(item) && discoveredProviderGameKeys.Contains(GetProviderGameCacheKey(item)))
                     .ToList();
                 if (providerOnlyOwnership.Count == 0)
                 {
@@ -608,7 +630,7 @@ namespace PlayniteAchievements.Services.Friends
                 }
             }
 
-            await DownloadUnownedGameImagesAsync(providerKey, discoveredAppIds, ownershipByAppId, cancel).ConfigureAwait(false);
+            await DownloadUnownedGameImagesAsync(providerKey, discoveredProviderGameKeys, ownershipByKey, cancel).ConfigureAwait(false);
         }
 
         // Downloads friend avatars into the per-user icon cache and records the local path on each
@@ -716,27 +738,29 @@ namespace PlayniteAchievements.Services.Friends
         // and persists the local paths so the summaries grid can render them like owned games.
         private async Task DownloadUnownedGameImagesAsync(
             string providerKey,
-            HashSet<int> appIds,
-            Dictionary<int, List<FriendGameOwnership>> ownershipByAppId,
+            HashSet<string> providerGameKeys,
+            Dictionary<string, List<FriendGameOwnership>> ownershipByKey,
             CancellationToken cancel)
         {
-            if (_imageService == null || appIds == null || appIds.Count == 0)
+            if (_imageService == null || providerGameKeys == null || providerGameKeys.Count == 0)
             {
                 return;
             }
 
-            await Task.WhenAll(appIds.Select(appId =>
-                    DownloadUnownedGameImageAsync(providerKey, appId, ownershipByAppId, cancel)))
+            await Task.WhenAll(providerGameKeys.Select(providerGameKey =>
+                    DownloadUnownedGameImageAsync(providerKey, providerGameKey, ownershipByKey, cancel)))
                 .ConfigureAwait(false);
         }
 
         private async Task DownloadUnownedGameImageAsync(
             string providerKey,
-            int appId,
-            Dictionary<int, List<FriendGameOwnership>> ownershipByAppId,
+            string providerGameKey,
+            Dictionary<string, List<FriendGameOwnership>> ownershipByKey,
             CancellationToken cancel)
         {
-            if (!ownershipByAppId.TryGetValue(appId, out var owners))
+            if (string.IsNullOrWhiteSpace(providerGameKey) ||
+                ownershipByKey == null ||
+                !ownershipByKey.TryGetValue(providerGameKey, out var owners))
             {
                 return;
             }
@@ -765,12 +789,12 @@ namespace PlayniteAchievements.Services.Friends
                     return;
                 }
 
-                _friendCache.SaveProviderGameImagePaths(providerKey, appId, iconPath, coverPath);
+                _friendCache.SaveProviderGameImagePaths(providerKey, source.ProviderGameKey ?? providerGameKey, source.AppId, iconPath, coverPath);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, $"Failed to cache unowned game images for {providerKey}/{appId}.");
+                _logger?.Debug(ex, $"Failed to cache unowned game images for {providerKey}/{providerGameKey}.");
             }
         }
 
@@ -867,7 +891,7 @@ namespace PlayniteAchievements.Services.Friends
             RateLimiter limiter,
             CancellationToken cancel)
         {
-            if (candidate?.Friend == null || candidate.AppId <= 0)
+            if (candidate?.Friend == null || !HasProviderGameIdentity(candidate.AppId, candidate.ProviderGameKey))
             {
                 return true;
             }
@@ -890,6 +914,7 @@ namespace PlayniteAchievements.Services.Friends
             var scrapeResult = await limiter.ExecuteWithRetryAsync(
                 () => friendsProvider.GetFriendGameAchievementsAsync(
                     candidate.Friend,
+                    candidate.ProviderGameKey,
                     candidate.AppId,
                     candidate.GameName,
                     cancel),
@@ -910,11 +935,12 @@ namespace PlayniteAchievements.Services.Friends
             var writeAchievements = _friendCache.SaveFriendGameAchievements(
                 providerKey,
                 candidate.Friend.ExternalUserId,
+                candidate.ProviderGameKey,
                 candidate.AppId,
                 achievements);
             if (writeAchievements?.Success != true)
             {
-                _logger?.Warn($"Failed to save friend achievements for {providerKey}/{candidate.Friend.ExternalUserId}/{candidate.AppId}: {writeAchievements?.ErrorMessage}");
+                _logger?.Warn($"Failed to save friend achievements for {providerKey}/{candidate.Friend.ExternalUserId}/{GetProviderGameCacheKey(candidate)}: {writeAchievements?.ErrorMessage}");
                 return true;
             }
 
@@ -1004,7 +1030,37 @@ namespace PlayniteAchievements.Services.Friends
                 return _fullLibraryIdsResolver(providerKey) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
 
+            if (string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase))
+            {
+                return GetProviderFriendIdSet(
+                    "PlayniteAchievements.Providers.Exophase.ExophaseSettings",
+                    "GetFullLibraryFriendIds",
+                    "Failed to load Exophase full-library friend ids.");
+            }
+
             return GetSteamFriendIdSet(providerKey, "GetFullLibrarySteamIds", "Failed to load Steam full-library friend ids.");
+        }
+
+        private HashSet<string> GetProviderFriendIdSet(string settingsTypeName, string methodName, string logMessage)
+        {
+            try
+            {
+                var settingsType = typeof(ProviderRegistry).Assembly.GetType(settingsTypeName);
+                if (settingsType == null)
+                {
+                    return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                var settings = ResolveProviderSettings(settingsType);
+                var getIds = settingsType.GetMethod(methodName);
+                var ids = getIds?.Invoke(settings, null) as IEnumerable<string>;
+                return new HashSet<string>(ids ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, logMessage);
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
         }
 
         private HashSet<string> GetSteamFriendIdSet(string providerKey, string methodName, string logMessage)
@@ -1160,14 +1216,41 @@ namespace PlayniteAchievements.Services.Friends
         private static string ResolveOwnershipGameName(
             IReadOnlyList<FriendGameOwnership> ownership,
             string providerKey,
-            int appId)
+            string providerGameKey)
         {
             var name = ownership?
                 .Select(item => item?.GameName)
                 .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
             return !string.IsNullOrWhiteSpace(name)
                 ? name.Trim()
-                : $"{providerKey} App {appId}";
+                : $"{providerKey} Game {providerGameKey}";
+        }
+
+        private static bool HasProviderGameIdentity(FriendGameOwnership ownership)
+        {
+            return ownership != null && HasProviderGameIdentity(ownership.AppId, ownership.ProviderGameKey);
+        }
+
+        private static bool HasProviderGameIdentity(int appId, string providerGameKey)
+        {
+            return appId > 0 || !string.IsNullOrWhiteSpace(providerGameKey);
+        }
+
+        private static string GetProviderGameCacheKey(FriendGameOwnership ownership)
+        {
+            return ownership == null ? null : GetProviderGameCacheKey(ownership.AppId, ownership.ProviderGameKey);
+        }
+
+        private static string GetProviderGameCacheKey(FriendRefreshCandidate candidate)
+        {
+            return candidate == null ? null : GetProviderGameCacheKey(candidate.AppId, candidate.ProviderGameKey);
+        }
+
+        private static string GetProviderGameCacheKey(int appId, string providerGameKey)
+        {
+            return !string.IsNullOrWhiteSpace(providerGameKey)
+                ? providerGameKey.Trim()
+                : (appId > 0 ? appId.ToString() : null);
         }
 
         private FriendRefreshOptions NormalizeOptions(FriendRefreshOptions options)
@@ -1207,7 +1290,8 @@ namespace PlayniteAchievements.Services.Friends
                 return false;
             }
 
-            if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -1281,6 +1365,7 @@ namespace PlayniteAchievements.Services.Friends
             {
                 Friend = candidate.Friend,
                 AppId = candidate.AppId,
+                ProviderGameKey = candidate.ProviderGameKey,
                 LastUpdatedUtc = DateTime.UtcNow,
                 StatsUnavailable = true,
                 TransientFailure = scrapeResult?.TransientFailure == true,
