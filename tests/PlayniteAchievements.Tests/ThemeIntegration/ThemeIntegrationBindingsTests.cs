@@ -1665,8 +1665,71 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.AreEqual(FriendOverviewProjection.GetFriendScopeKey(data.Friends[0]), settings.DynamicFriendScopeUserKey);
             AssertFriendGameNames(settings.DynamicFriendGameSummaries, "Game One", "Game Two");
             AssertFriendAchievementNames(settings.DynamicFriendAchievements, "Recent Only", "Alice Game Two");
-            Assert.AreEqual(600UL * 60UL, settings.DynamicFriendGameSummaries.Single(item => item.AppId == 10).PlaytimeSeconds);
-            Assert.AreEqual(Utc(2026, 1, 7, 0, 0, 0), settings.DynamicFriendGameSummaries.Single(item => item.AppId == 10).LastPlayed);
+            var gameOne = settings.DynamicFriendGameSummaries.Single(item => item.AppId == 10);
+            Assert.AreEqual(1, gameOne.FriendUnlockedAchievementsCount);
+            Assert.AreEqual(1, gameOne.UniqueFriendUnlockedAchievementsCount);
+            Assert.AreEqual(1, gameOne.UnlockedAchievements);
+            Assert.AreEqual(4, gameOne.TotalAchievements);
+            Assert.AreEqual(25, gameOne.FriendCompletionPercent);
+            Assert.AreEqual(25, gameOne.Progression);
+            Assert.AreEqual("25%", gameOne.ProgressionText);
+            Assert.AreEqual(600, gameOne.TotalFriendPlaytimeMinutes);
+            Assert.AreEqual(600UL * 60UL, gameOne.PlaytimeSeconds);
+            Assert.AreEqual(Utc(2026, 1, 7, 0, 0, 0), gameOne.LastPlayed);
+            Assert.AreEqual(Utc(2026, 1, 4, 0, 0, 0), gameOne.LastFriendUnlockUtc);
+        }
+
+        [TestMethod]
+        public void FriendDynamicLists_GameCommandRejectsGamesOutsideSelectedFriendScope()
+        {
+            var data = CreateFriendOverviewData();
+            using var context = CreateServiceContext(friendCache: new FakeFriendCache(data));
+            var settings = context.Settings;
+            var aliceKey = FriendOverviewProjection.GetFriendScopeKey(data.Friends[0]);
+            var gogGameKey = FriendOverviewProjection.GetGameScopeKey(data.Games[2]);
+
+            settings.SetDynamicFriendScopeUserCommand.Execute(aliceKey);
+            settings.SetDynamicFriendScopeGameCommand.Execute(gogGameKey);
+
+            Assert.AreEqual(aliceKey, settings.DynamicFriendScopeUserKey);
+            Assert.AreEqual(DynamicThemeViewKeys.All, settings.DynamicFriendScopeGameKey);
+            AssertFriendGameNames(settings.DynamicFriendGameSummaries, "Game One", "Game Two");
+            AssertFriendAchievementNames(settings.DynamicFriendAchievements, "Recent Only", "Alice Game Two");
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    DynamicThemeViewKeys.All,
+                    FriendOverviewProjection.GetGameScopeKey(data.Games[0]),
+                    FriendOverviewProjection.GetGameScopeKey(data.Games[1])
+                },
+                settings.DynamicFriendScopeGameOptions.Select(option => option.Key).ToArray());
+        }
+
+        [TestMethod]
+        public void FriendDynamicLists_FriendSummarySortUsesSharedGamesKeyAndAcceptsLegacyAchievementCount()
+        {
+            var data = CreateFriendOverviewData();
+            data.Friends[0].SharedGamesCount = 1;
+            data.Friends[1].SharedGamesCount = 3;
+            data.Friends[2].SharedGamesCount = 2;
+            using var context = CreateServiceContext(friendCache: new FakeFriendCache(data));
+            var settings = context.Settings;
+
+            var sortKeys = settings.DynamicFriendSummariesSortOptions
+                .Select(option => option.Key)
+                .ToList();
+            CollectionAssert.Contains(sortKeys, DynamicThemeViewKeys.SharedGamesCount);
+            CollectionAssert.DoesNotContain(sortKeys, DynamicThemeViewKeys.AchievementCount);
+
+            settings.SortDynamicFriendSummariesCommand.Execute(DynamicThemeViewKeys.SharedGamesCount);
+
+            Assert.AreEqual(DynamicThemeViewKeys.SharedGamesCount, settings.DynamicFriendSummariesSortKey);
+            AssertFriendNames(settings.DynamicFriendSummaries, "Bob", "Cora", "Alice");
+
+            settings.SortDynamicFriendSummariesCommand.Execute(DynamicThemeViewKeys.AchievementCount);
+
+            Assert.AreEqual(DynamicThemeViewKeys.SharedGamesCount, settings.DynamicFriendSummariesSortKey);
+            AssertFriendNames(settings.DynamicFriendSummaries, "Bob", "Cora", "Alice");
         }
 
         [TestMethod]

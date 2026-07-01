@@ -1283,6 +1283,7 @@ namespace PlayniteAchievements.Services.Database
             var incomingCount = validOwnership.Count;
             var writtenCount = 0;
             var skippedCount = 0;
+            var seenSharedGameIds = new HashSet<long>();
 
             try
             {
@@ -1320,6 +1321,12 @@ namespace PlayniteAchievements.Services.Database
                             }
 
                             writtenCount++;
+                            seenSharedGameIds.Add(game.Id);
+                        }
+
+                        if (options?.IncludeProviderOnlyGames != true)
+                        {
+                            DeleteStaleSharedFriendOwnership(db, user.Id, seenSharedGameIds);
                         }
                     });
                 });
@@ -1975,14 +1982,8 @@ namespace PlayniteAchievements.Services.Database
         private static bool ShouldIncludeProviderOnlyFriendRows(FriendRefreshOptions options)
         {
             // Provider-only (unowned) rows are written only for friends who opted into the full
-            // library, so it is safe to include them whenever the scope permits full-library work.
-            if (options == null)
-            {
-                return false;
-            }
-
-            return options.Scope == FriendRefreshScope.Recent ||
-                   options.Scope == FriendRefreshScope.Full;
+            // library, so include them only when the request-level policy permits full-library work.
+            return options?.IncludesProviderOnlyGames() == true;
         }
 
         private static List<string> NormalizeFriendFilterIds(IReadOnlyCollection<string> friendExternalUserIds)
@@ -2066,7 +2067,8 @@ namespace PlayniteAchievements.Services.Database
                   LEFT JOIN FriendOwnership fo ON fo.UserId = u.Id AND fo.GameId = g.Id
                   WHERE u.ProviderKey = ?
                     AND u.IsCurrentUser = 0
-                    AND u.IsActiveFriend = 1");
+                    AND u.IsActiveFriend = 1
+                    AND u.FriendSource IS NOT NULL");
 
             args.Add(providerKey);
 
@@ -2668,11 +2670,21 @@ namespace PlayniteAchievements.Services.Database
             return FriendOwnershipExists(db, userId, gameId);
         }
 
-        private static void DeleteStaleFriendOwnership(SQLiteDatabase db, long userId, HashSet<long> seenGameIds)
+        private static void DeleteStaleSharedFriendOwnership(SQLiteDatabase db, long userId, HashSet<long> seenGameIds)
         {
             if (seenGameIds == null || seenGameIds.Count == 0)
             {
-                db.ExecuteNonQuery("DELETE FROM FriendOwnership WHERE UserId = ?;", userId);
+                db.ExecuteNonQuery(
+                    @"DELETE FROM FriendOwnership
+                      WHERE UserId = ?
+                        AND EXISTS (
+                            SELECT 1
+                            FROM Games g
+                            WHERE g.Id = FriendOwnership.GameId
+                              AND g.PlayniteGameId IS NOT NULL
+                              AND TRIM(g.PlayniteGameId) <> ''
+                        );",
+                    userId);
                 return;
             }
 
@@ -2680,20 +2692,17 @@ namespace PlayniteAchievements.Services.Database
             var args = new List<object> { userId };
             args.AddRange(seenGameIds.Cast<object>());
             db.ExecuteNonQuery(
-                "DELETE FROM FriendOwnership WHERE UserId = ? AND GameId NOT IN (" + placeholders + ");",
+                @"DELETE FROM FriendOwnership
+                  WHERE UserId = ?
+                    AND GameId NOT IN (" + placeholders + @")
+                    AND EXISTS (
+                        SELECT 1
+                        FROM Games g
+                        WHERE g.Id = FriendOwnership.GameId
+                          AND g.PlayniteGameId IS NOT NULL
+                          AND TRIM(g.PlayniteGameId) <> ''
+                    );",
                 args.ToArray());
-        }
-
-        private static int CountFriendOwnershipRows(SQLiteDatabase db, long userId)
-        {
-            if (db == null || userId <= 0)
-            {
-                return 0;
-            }
-
-            return (int)Math.Max(0, db.ExecuteScalar<long>(
-                "SELECT COUNT(*) FROM FriendOwnership WHERE UserId = ?;",
-                new object[] { userId }));
         }
 
         private static bool FriendOwnershipExists(SQLiteDatabase db, long userId, long gameId)
@@ -2962,7 +2971,9 @@ namespace PlayniteAchievements.Services.Database
                         ExternalUserId = row.ExternalUserId,
                         DisplayName = row.DisplayName,
                         AvatarUrl = row.AvatarUrl,
-                        AvatarPath = row.AvatarPath
+                        AvatarPath = !string.IsNullOrWhiteSpace(row.AvatarPath)
+                            ? MakeAbsolutePath(row.AvatarPath)
+                            : row.AvatarUrl
                     })
                     .ToList());
             }

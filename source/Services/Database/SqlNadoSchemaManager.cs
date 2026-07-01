@@ -816,6 +816,16 @@ namespace PlayniteAchievements.Services.Database
             EnsureRequiredColumn(friendOwnershipColumns, "CreatedUtc", "FriendOwnership", missing);
             EnsureRequiredColumn(friendOwnershipColumns, "UpdatedUtc", "FriendOwnership", missing);
 
+            var providerGameDefinitionStateColumns = GetColumnNames(db, "ProviderGameDefinitionState");
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "ProviderKey", "ProviderGameDefinitionState", missing);
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "ProviderGameId", "ProviderGameDefinitionState", missing);
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "GameName", "ProviderGameDefinitionState", missing);
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "IconUrl", "ProviderGameDefinitionState", missing);
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "Status", "ProviderGameDefinitionState", missing);
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "LastCheckedUtc", "ProviderGameDefinitionState", missing);
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "CreatedUtc", "ProviderGameDefinitionState", missing);
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "UpdatedUtc", "ProviderGameDefinitionState", missing);
+
             // Note: Index verification is intentionally NOT done here because indexes are
             // created in CreateProviderKeyIndexes which runs AFTER this verification passes.
             // For fresh databases, the indexes don't exist yet at this point.

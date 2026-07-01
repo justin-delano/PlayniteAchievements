@@ -126,8 +126,8 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         /// <summary>
-        /// Rebuilds the <see cref="Friends"/> collection from cached active friends and the ignored
-        /// friend set in provider settings, annotating each with its current full-library opt-in.
+        /// Rebuilds the <see cref="Friends"/> collection from cached active friends plus persisted
+        /// ignored/full-library rows, annotating each with its current toggles.
         /// </summary>
         private void LoadFriends()
         {
@@ -137,58 +137,19 @@ namespace PlayniteAchievements.Providers.Steam
                 return;
             }
 
-            var ignoredIds = _steamSettings.GetIgnoredSteamIds();
-            var fullLibraryIds = _steamSettings.GetFullLibrarySteamIds();
-            var items = new List<SteamFriendListItem>();
+            List<FriendIdentity> active = null;
 
             try
             {
                 var cache = PlayniteAchievementsPlugin.Instance?.RefreshRuntime?.Cache as IFriendCacheManager;
-                var active = cache?.LoadFriendIdentities("Steam") ?? new List<FriendIdentity>();
-                foreach (var friend in active)
-                {
-                    var id = friend?.ExternalUserId?.Trim();
-                    if (string.IsNullOrWhiteSpace(id) || ignoredIds.Contains(id))
-                    {
-                        continue;
-                    }
-
-                    items.Add(new SteamFriendListItem
-                    {
-                        SteamId = id,
-                        DisplayName = string.IsNullOrWhiteSpace(friend.DisplayName) ? id : friend.DisplayName,
-                        AvatarUrl = friend.AvatarUrl,
-                        IsIgnored = false,
-                        UseFullLibrary = fullLibraryIds.Contains(id)
-                    });
-                }
+                active = cache?.LoadFriendIdentities("Steam") ?? new List<FriendIdentity>();
             }
             catch (Exception ex)
             {
                 Logger.Debug(ex, "Failed to load active Steam friends for settings table.");
             }
 
-            foreach (var ignored in _steamSettings.IgnoredFriends)
-            {
-                var id = ignored?.SteamId?.Trim();
-                if (string.IsNullOrWhiteSpace(id))
-                {
-                    continue;
-                }
-
-                items.Add(new SteamFriendListItem
-                {
-                    SteamId = id,
-                    DisplayName = string.IsNullOrWhiteSpace(ignored.DisplayName) ? id : ignored.DisplayName,
-                    AvatarUrl = ignored.AvatarUrl,
-                    IsIgnored = true,
-                    UseFullLibrary = fullLibraryIds.Contains(id)
-                });
-            }
-
-            foreach (var item in items
-                .OrderBy(i => i.IsIgnored)
-                .ThenBy(i => i.DisplayName, StringComparer.CurrentCultureIgnoreCase))
+            foreach (var item in SteamFriendListBuilder.BuildItems(_steamSettings, active))
             {
                 Friends.Add(item);
             }

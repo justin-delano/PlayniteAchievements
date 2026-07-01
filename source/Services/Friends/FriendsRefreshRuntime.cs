@@ -36,7 +36,6 @@ namespace PlayniteAchievements.Services.Friends
         private readonly Func<string, HashSet<string>> _fullLibraryIdsResolver;
 
         public FriendsRefreshRuntime(
-            IReadOnlyList<IDataProvider> providers,
             IFriendCacheManager friendCache,
             ProviderRegistry providerRegistry,
             PlayniteAchievementsSettings settings,
@@ -486,9 +485,18 @@ namespace PlayniteAchievements.Services.Friends
                 return;
             }
 
+            var requestedAppIds = options?.ProviderAppIds?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            var requestedAppIdSet = requestedAppIds?.Count > 0
+                ? new HashSet<int>(requestedAppIds)
+                : null;
+
             var ownershipByAppId = snapshots
                 .SelectMany(snapshot => snapshot.Ownership)
-                .Where(item => item?.AppId > 0)
+                .Where(item => item?.AppId > 0 &&
+                               (requestedAppIdSet == null || requestedAppIdSet.Contains(item.AppId)))
                 .GroupBy(item => item.AppId)
                 .ToDictionary(group => group.Key, group => group.ToList());
             if (ownershipByAppId.Count == 0)
@@ -506,13 +514,6 @@ namespace PlayniteAchievements.Services.Friends
             }
 
             var cutoffUtc = DateTime.UtcNow - definitionTtl;
-            var okAppIds = new HashSet<int>(
-                states.Values
-                    .Where(state => state?.Status == FriendGameDefinitionStatus.Ok &&
-                                    state.LastCheckedUtc.HasValue &&
-                                    state.LastCheckedUtc.Value >= cutoffUtc)
-                    .Select(state => state.AppId));
-
             var dueAppIds = appIds
                 .Where(appId => IsDefinitionCheckDue(states.TryGetValue(appId, out var state) ? state : null, cutoffUtc))
                 .ToList();
@@ -575,31 +576,17 @@ namespace PlayniteAchievements.Services.Friends
                     if (writeDefinition?.Success != true)
                     {
                         _logger?.Warn($"Failed to save friend game definition for {providerKey}/{appId}: {writeDefinition?.ErrorMessage}");
-                        continue;
-                    }
-
-                    if (definition.Status == FriendGameDefinitionStatus.Ok)
-                    {
-                        okAppIds.Add(appId);
-                    }
-                    else if (definition.Status != FriendGameDefinitionStatus.Transient)
-                    {
-                        okAppIds.Remove(appId);
                     }
                 }
             }
 
-            if (okAppIds.Count == 0)
-            {
-                return;
-            }
-
+            var discoveredAppIds = new HashSet<int>(appIds);
             foreach (var snapshot in snapshots)
             {
-                var achievementBearingOwnership = snapshot.Ownership
-                    .Where(item => item?.AppId > 0 && okAppIds.Contains(item.AppId))
+                var providerOnlyOwnership = snapshot.Ownership
+                    .Where(item => item?.AppId > 0 && discoveredAppIds.Contains(item.AppId))
                     .ToList();
-                if (achievementBearingOwnership.Count == 0)
+                if (providerOnlyOwnership.Count == 0)
                 {
                     continue;
                 }
@@ -607,7 +594,7 @@ namespace PlayniteAchievements.Services.Friends
                 var writeOwnership = _friendCache.SaveFriendOwnership(
                     providerKey,
                     snapshot.Friend.ExternalUserId,
-                    achievementBearingOwnership,
+                    providerOnlyOwnership,
                     new FriendOwnershipSaveOptions { IncludeProviderOnlyGames = true });
                 if (writeOwnership?.Success != true)
                 {
@@ -621,7 +608,7 @@ namespace PlayniteAchievements.Services.Friends
                 }
             }
 
-            await DownloadUnownedGameImagesAsync(providerKey, okAppIds, ownershipByAppId, cancel).ConfigureAwait(false);
+            await DownloadUnownedGameImagesAsync(providerKey, discoveredAppIds, ownershipByAppId, cancel).ConfigureAwait(false);
         }
 
         // Downloads friend avatars into the per-user icon cache and records the local path on each
@@ -729,16 +716,16 @@ namespace PlayniteAchievements.Services.Friends
         // and persists the local paths so the summaries grid can render them like owned games.
         private async Task DownloadUnownedGameImagesAsync(
             string providerKey,
-            HashSet<int> okAppIds,
+            HashSet<int> appIds,
             Dictionary<int, List<FriendGameOwnership>> ownershipByAppId,
             CancellationToken cancel)
         {
-            if (_imageService == null || okAppIds == null || okAppIds.Count == 0)
+            if (_imageService == null || appIds == null || appIds.Count == 0)
             {
                 return;
             }
 
-            await Task.WhenAll(okAppIds.Select(appId =>
+            await Task.WhenAll(appIds.Select(appId =>
                     DownloadUnownedGameImageAsync(providerKey, appId, ownershipByAppId, cancel)))
                 .ConfigureAwait(false);
         }
@@ -1005,41 +992,7 @@ namespace PlayniteAchievements.Services.Friends
 
         private HashSet<string> GetIgnoredFriendIds(string providerKey)
         {
-            if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase))
-            {
-                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            }
-
-            try
-            {
-                var steamSettingsType = typeof(ProviderRegistry).Assembly.GetType(
-                    "PlayniteAchievements.Providers.Steam.SteamSettings");
-                if (steamSettingsType == null)
-                {
-                    return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                }
-
-                object settings = null;
-                if (_providerRegistry != null)
-                {
-                    var getSettings = typeof(ProviderRegistry).GetMethod("GetSettings");
-                    settings = getSettings?.MakeGenericMethod(steamSettingsType).Invoke(_providerRegistry, null);
-                }
-                else
-                {
-                    var settingsMethod = typeof(ProviderRegistry).GetMethod(nameof(ProviderRegistry.Settings));
-                    settings = settingsMethod?.MakeGenericMethod(steamSettingsType).Invoke(null, null);
-                }
-
-                var getIgnoredSteamIds = steamSettingsType.GetMethod("GetIgnoredSteamIds");
-                var ids = getIgnoredSteamIds?.Invoke(settings, null) as IEnumerable<string>;
-                return new HashSet<string>(ids ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "Failed to load Steam ignored friend ids.");
-                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            }
+            return GetSteamFriendIdSet(providerKey, "GetIgnoredSteamIds", "Failed to load Steam ignored friend ids.");
         }
 
         // Steam friends who opted into the full library scope. Resolved via reflection for the same
@@ -1051,6 +1004,11 @@ namespace PlayniteAchievements.Services.Friends
                 return _fullLibraryIdsResolver(providerKey) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
 
+            return GetSteamFriendIdSet(providerKey, "GetFullLibrarySteamIds", "Failed to load Steam full-library friend ids.");
+        }
+
+        private HashSet<string> GetSteamFriendIdSet(string providerKey, string methodName, string logMessage)
+        {
             if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase))
             {
                 return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -1065,27 +1023,33 @@ namespace PlayniteAchievements.Services.Friends
                     return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 }
 
-                object settings = null;
-                if (_providerRegistry != null)
-                {
-                    var getSettings = typeof(ProviderRegistry).GetMethod("GetSettings");
-                    settings = getSettings?.MakeGenericMethod(steamSettingsType).Invoke(_providerRegistry, null);
-                }
-                else
-                {
-                    var settingsMethod = typeof(ProviderRegistry).GetMethod(nameof(ProviderRegistry.Settings));
-                    settings = settingsMethod?.MakeGenericMethod(steamSettingsType).Invoke(null, null);
-                }
-
-                var getFullLibrarySteamIds = steamSettingsType.GetMethod("GetFullLibrarySteamIds");
-                var ids = getFullLibrarySteamIds?.Invoke(settings, null) as IEnumerable<string>;
+                var settings = ResolveProviderSettings(steamSettingsType);
+                var getIds = steamSettingsType.GetMethod(methodName);
+                var ids = getIds?.Invoke(settings, null) as IEnumerable<string>;
                 return new HashSet<string>(ids ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "Failed to load Steam full-library friend ids.");
+                _logger?.Debug(ex, logMessage);
                 return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
+        }
+
+        private object ResolveProviderSettings(Type settingsType)
+        {
+            if (settingsType == null)
+            {
+                return null;
+            }
+
+            if (_providerRegistry != null)
+            {
+                var getSettings = typeof(ProviderRegistry).GetMethod("GetSettings");
+                return getSettings?.MakeGenericMethod(settingsType).Invoke(_providerRegistry, null);
+            }
+
+            var settingsMethod = typeof(ProviderRegistry).GetMethod(nameof(ProviderRegistry.Settings));
+            return settingsMethod?.MakeGenericMethod(settingsType).Invoke(null, null);
         }
 
         private static bool FriendUsesFullLibrary(HashSet<string> fullLibraryIds, FriendIdentity friend)
@@ -1185,7 +1149,7 @@ namespace PlayniteAchievements.Services.Friends
                 return true;
             }
 
-            if (state.Status == FriendGameDefinitionStatus.Transient)
+            if (state.Status != FriendGameDefinitionStatus.Ok)
             {
                 return true;
             }
@@ -1233,12 +1197,12 @@ namespace PlayniteAchievements.Services.Friends
                    options.Scope == FriendRefreshScope.Recent ||
                    options.Scope == FriendRefreshScope.Custom ||
                    (options.Scope == FriendRefreshScope.Full &&
-                    options.LibraryScope == FriendLibraryScope.Full);
+                    options.IncludesProviderOnlyGames());
         }
 
         private static bool ShouldDiscoverUnowned(string providerKey, FriendRefreshOptions options)
         {
-            if (options?.LibraryScope != FriendLibraryScope.Full)
+            if (options?.IncludesProviderOnlyGames() != true)
             {
                 return false;
             }
@@ -1248,8 +1212,7 @@ namespace PlayniteAchievements.Services.Friends
                 return false;
             }
 
-            return options.Scope == FriendRefreshScope.Recent ||
-                   options.Scope == FriendRefreshScope.Full;
+            return true;
         }
 
         private static void MarkAuthFailure(RebuildPayload payload, string providerKey, bool authRequired)

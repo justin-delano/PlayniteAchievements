@@ -1821,14 +1821,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 }
             }
 
-            if (!FriendOverviewProjection.IsAllScope(scope.GameKey))
+            if (!FriendOverviewProjection.IsAllScope(scope.GameKey) &&
+                !GetFriendGameScopeCandidates(state, scope.ProviderKey, scope.UserKey)
+                    .Any(game => string.Equals(
+                        FriendOverviewProjection.GetGameScopeKey(game),
+                        scope.GameKey,
+                        StringComparison.OrdinalIgnoreCase)))
             {
-                var game = state.Projection?.FindGame(scope.GameKey);
-                if (game == null ||
-                    !ProviderMatches(game.ProviderKey, scope.ProviderKey))
-                {
-                    scope.GameKey = DynamicThemeViewKeys.All;
-                }
+                scope.GameKey = DynamicThemeViewKeys.All;
             }
         }
 
@@ -1867,7 +1867,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return DynamicThemeViewKeys.All;
             }
 
-            return _runtimeState.Friends?.AggregateGames
+            var state = _runtimeState.Friends ?? FriendRuntimeState.Empty;
+            var scope = _runtimeState.FriendScope;
+            return GetFriendGameScopeCandidates(state, scope.ProviderKey, scope.UserKey)
                 .Select(FriendOverviewProjection.GetGameScopeKey)
                 .FirstOrDefault(key => string.Equals(key, raw, StringComparison.OrdinalIgnoreCase));
         }
@@ -2295,14 +2297,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             string userKey,
             string selectedKey)
         {
-            var projection = state?.Projection;
-            var selectedFriend = projection?.FindFriend(userKey);
-            IEnumerable<FriendGameSummaryItem> games = selectedFriend != null
-                ? projection.GetSelectedFriendGames(selectedFriend)
-                : state?.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>();
-
-            var options = games
-                .Where(game => game != null && ProviderMatches(game.ProviderKey, providerKey))
+            var options = GetFriendGameScopeCandidates(state, providerKey, userKey)
                 .GroupBy(FriendOverviewProjection.GetGameScopeKey, StringComparer.OrdinalIgnoreCase)
                 .Select(group =>
                 {
@@ -2316,6 +2311,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 .ToList();
 
             return CreateScopedOptions(options, selectedKey);
+        }
+
+        private static IEnumerable<FriendGameSummaryItem> GetFriendGameScopeCandidates(
+            FriendRuntimeState state,
+            string providerKey,
+            string userKey)
+        {
+            var projection = state?.Projection;
+            var selectedFriend = projection?.FindFriend(userKey);
+            IEnumerable<FriendGameSummaryItem> games = selectedFriend != null
+                ? projection.GetSelectedFriendGames(selectedFriend)
+                : state?.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>();
+
+            return games.Where(game => game != null && ProviderMatches(game.ProviderKey, providerKey));
         }
 
         private static ObservableCollection<DynamicThemeOption> CreateScopedOptions(
@@ -2683,6 +2692,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                             .ThenBy(item => item?.DisplayName ?? string.Empty, comparer)
                         : source.OrderBy(item => item?.UnlockedAchievementsCount ?? 0)
                             .ThenBy(item => item?.DisplayName ?? string.Empty, comparer);
+                case DynamicThemeViewKeys.SharedGamesCount:
                 case DynamicThemeViewKeys.AchievementCount:
                     return descending
                         ? source.OrderByDescending(item => item?.SharedGamesCount ?? 0)

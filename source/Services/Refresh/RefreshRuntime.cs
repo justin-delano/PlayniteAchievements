@@ -174,7 +174,6 @@ namespace PlayniteAchievements.Services
 
             _providers = providers.ToList();
             _friendsRefreshRuntime = new FriendsRefreshRuntime(
-                _providers,
                 _cacheService as IFriendCacheManager,
                 _providerRegistry,
                 _settings,

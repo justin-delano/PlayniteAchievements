@@ -152,6 +152,22 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void FriendsOverview_FriendContextMenuIncludesRefreshFriend()
+        {
+            var code = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml.cs"));
+            var localization = File.ReadAllText(FindRepoFile("source", "Localization", "en_US.xaml"));
+
+            AssertContainsAll(
+                code,
+                "LOCPlayAch_Menu_RefreshFriend",
+                "RefreshFriendSelectedGameCommand",
+                "GameRowContextMenuBuilder.ExecuteCommand(refreshCommand, friend)");
+            AssertContainsAll(
+                localization,
+                "LOCPlayAch_Menu_RefreshFriend");
+        }
+
+        [TestMethod]
         public void ThemeControlRegistry_RegistersFriendThemeControls()
         {
             var registry = File.ReadAllText(FindRepoFile("source", "Services", "ThemeIntegration", "ThemeControlRegistry.cs"));
@@ -162,9 +178,14 @@ namespace PlayniteAchievements.Tests.Views
 
             AssertContainsAll(
                 registry,
+                "AchievementChart",
+                "AchievementBarChart",
+                "AchievementPieChart",
                 "AchievementFriendSummariesGrid",
                 "AchievementFriendGameSummariesGrid",
                 "AchievementFriendAchievementsGrid",
+                "AchievementBarChartControl",
+                "AchievementPieChartControl",
                 "AchievementFriendSummariesGridControl",
                 "AchievementFriendGameSummariesGridControl",
                 "AchievementFriendAchievementsGridControl");

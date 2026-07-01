@@ -92,7 +92,7 @@ namespace PlayniteAchievements.ViewModels
             RefreshFullCommand = new AsyncCommand(async _ => await RefreshFriendsAsync(RefreshModeType.FriendsFull).ConfigureAwait(true), _ => CanRefresh());
             RefreshSharedCommand = new AsyncCommand(async _ => await RefreshFriendsAsync(RefreshModeType.FriendsShared).ConfigureAwait(true), _ => CanRefresh());
             RefreshInstalledCommand = new AsyncCommand(async _ => await RefreshFriendsAsync(RefreshModeType.FriendsInstalled).ConfigureAwait(true), _ => CanRefresh());
-            RefreshFriendSelectedGameCommand = new AsyncCommand(ExecuteFriendSelectedGameRefreshAsync, parameter => CanRefreshSelectedFriendGame(parameter));
+            RefreshFriendSelectedGameCommand = new AsyncCommand(ExecuteSelectedFriendTargetRefreshAsync, parameter => CanRefreshSelectedFriendTarget(parameter));
             OpenGameInLibraryCommand = new RelayCommand(OpenGameInLibrary);
             RefreshOrCancelCommand = RefreshCommand;
             ClearSelectionCommand = new RelayCommand(_ => ClearSelection());
@@ -487,7 +487,7 @@ namespace PlayniteAchievements.ViewModels
                 string.Equals(mode?.Key, SelectedRefreshMode, StringComparison.Ordinal));
             if (selected?.Type == RefreshModeType.FriendsSelectedGame)
             {
-                await ExecuteFriendSelectedGameRefreshAsync(SelectedGame).ConfigureAwait(true);
+                await ExecuteSelectedFriendTargetRefreshAsync(null).ConfigureAwait(true);
                 return;
             }
 
@@ -568,56 +568,182 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private async Task ExecuteFriendSelectedGameRefreshAsync(object parameter)
+        private async Task ExecuteSelectedFriendTargetRefreshAsync(object parameter)
         {
             if (!CanRefresh())
             {
                 return;
             }
 
-            if (TryGetPlayniteGameId(parameter, out var gameId))
+            if (TryBuildSelectedFriendRefreshRequest(parameter, SelectedFriend, SelectedGame, out var request))
             {
                 await ExecuteFriendRefreshRequestAsync(
-                    new RefreshRequest
-                    {
-                        Mode = RefreshModeType.FriendsSelectedGame,
-                        SingleGameId = gameId
-                    },
-                    "Friend selected-game refresh failed.").ConfigureAwait(true);
+                    request,
+                    "Friend selected refresh failed.").ConfigureAwait(true);
                 return;
             }
 
-            if (TryGetProviderAppTarget(parameter, out var providerKey, out var appId))
-            {
-                await ExecuteFriendRefreshRequestAsync(
-                    new RefreshRequest
-                    {
-                        Mode = RefreshModeType.FriendsCustom,
-                        CustomFriendOptions = new FriendCustomRefreshOptions
-                        {
-                            ProviderKeys = new[] { providerKey },
-                            Scope = FriendRefreshScope.SelectedGame,
-                            LibraryScope = FriendLibraryScope.Full,
-                            ProviderAppIds = new[] { appId }
-                        }
-                    },
-                    "Friend selected-game refresh failed.").ConfigureAwait(true);
-                return;
-            }
-
-            if (!TryGetPlayniteGameId(parameter, out _))
-            {
-                StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectGameForRefresh") ??
-                             "Select a game before refreshing this friend game.";
-                return;
-            }
+            StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectTargetForRefresh") ??
+                         "Select a friend or game before refreshing selected friend data.";
         }
 
-        private bool CanRefreshSelectedFriendGame(object parameter)
+        private bool CanRefreshSelectedFriendTarget(object parameter)
         {
             return CanRefresh() &&
-                   (TryGetPlayniteGameId(parameter, out _) ||
-                    TryGetProviderAppTarget(parameter, out _, out _));
+                   TryBuildSelectedFriendRefreshRequest(parameter, SelectedFriend, SelectedGame, out _);
+        }
+
+        internal static bool TryBuildSelectedFriendRefreshRequest(
+            object parameter,
+            FriendSummaryItem selectedFriend,
+            FriendGameSummaryItem selectedGame,
+            out RefreshRequest request)
+        {
+            request = null;
+
+            var parameterIsFriend = TryGetFriendTarget(parameter, out var parameterFriend);
+            var parameterIsGame = TryGetGameTarget(parameter, out var parameterGame);
+
+            var friend = parameterIsFriend
+                ? parameterFriend
+                : selectedFriend;
+            var game = parameterIsFriend
+                ? null
+                : (parameterIsGame ? parameterGame : selectedGame);
+
+            if (friend != null && game == null)
+            {
+                request = new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        ProviderKeys = new[] { friend.ProviderKey },
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(FriendRefreshScope.Full),
+                        FriendExternalUserIds = new[] { friend.ExternalUserId }
+                    }
+                };
+                return true;
+            }
+
+            if (friend != null && game != null)
+            {
+                return TryBuildSelectedFriendGameRefreshRequest(friend, game, out request);
+            }
+
+            if (game != null)
+            {
+                return TryBuildSelectedGameRefreshRequest(game, out request);
+            }
+
+            return false;
+        }
+
+        private static bool TryBuildSelectedFriendGameRefreshRequest(
+            FriendSummaryItem friend,
+            object game,
+            out RefreshRequest request)
+        {
+            request = null;
+            if (!TryGetFriendTarget(friend, out friend))
+            {
+                return false;
+            }
+
+            if (TryGetPlayniteGameId(game, out var gameId))
+            {
+                request = new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        ProviderKeys = new[] { friend.ProviderKey },
+                        Scope = FriendRefreshScope.SelectedGame,
+                        LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(FriendRefreshScope.SelectedGame),
+                        PlayniteGameIds = new[] { gameId },
+                        FriendExternalUserIds = new[] { friend.ExternalUserId }
+                    }
+                };
+                return true;
+            }
+
+            if (TryGetProviderAppTarget(game, out var providerKey, out var appId))
+            {
+                request = new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        ProviderKeys = new[] { providerKey },
+                        Scope = FriendRefreshScope.SelectedGame,
+                        LibraryScope = FriendLibraryScope.Full,
+                        ProviderAppIds = new[] { appId },
+                        FriendExternalUserIds = new[] { friend.ExternalUserId }
+                    }
+                };
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryBuildSelectedGameRefreshRequest(object game, out RefreshRequest request)
+        {
+            request = null;
+            if (TryGetPlayniteGameId(game, out var gameId))
+            {
+                request = new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsSelectedGame,
+                    SingleGameId = gameId
+                };
+                return true;
+            }
+
+            if (TryGetProviderAppTarget(game, out var providerKey, out var appId))
+            {
+                request = new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        ProviderKeys = new[] { providerKey },
+                        Scope = FriendRefreshScope.SelectedGame,
+                        LibraryScope = FriendLibraryScope.Full,
+                        ProviderAppIds = new[] { appId }
+                    }
+                };
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetFriendTarget(object parameter, out FriendSummaryItem friend)
+        {
+            friend = parameter as FriendSummaryItem;
+            return friend != null &&
+                   !string.IsNullOrWhiteSpace(friend.ProviderKey) &&
+                   !string.IsNullOrWhiteSpace(friend.ExternalUserId);
+        }
+
+        private static bool TryGetGameTarget(object parameter, out object game)
+        {
+            game = null;
+            if (parameter == null)
+            {
+                return false;
+            }
+
+            if (TryGetPlayniteGameId(parameter, out _) ||
+                TryGetProviderAppTarget(parameter, out _, out _))
+            {
+                game = parameter;
+                return true;
+            }
+
+            return false;
         }
 
         private void OnRebuildProgress(object sender, ProgressReport report)

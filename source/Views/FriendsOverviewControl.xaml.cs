@@ -466,6 +466,15 @@ namespace PlayniteAchievements.Views
         private ContextMenu BuildFriendMenu(FriendSummaryItem friend)
         {
             var menu = new ContextMenu();
+            var refreshCommand = _viewModel?.RefreshFriendSelectedGameCommand;
+            var refreshItem = new MenuItem
+            {
+                Header = GetText("LOCPlayAch_Menu_RefreshFriend", "Refresh Friend"),
+                IsEnabled = refreshCommand?.CanExecute(friend) == true
+            };
+            refreshItem.Click += (_, __) => GameRowContextMenuBuilder.ExecuteCommand(refreshCommand, friend);
+            menu.Items.Add(refreshItem);
+            menu.Items.Add(new Separator());
 
             if (FriendLibraryScopeHelper.IsSteamFriend(friend?.ProviderKey) &&
                 !string.IsNullOrWhiteSpace(friend?.ExternalUserId))

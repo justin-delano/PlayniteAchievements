@@ -36,6 +36,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public const string Provider = "Provider";
         public const string Progress = "Progress";
         public const string AchievementCount = "AchievementCount";
+        public const string SharedGamesCount = "SharedGamesCount";
         public const string Status = "Status";
         public const string RarityPercent = "RarityPercent";
         public const string Points = "Points";

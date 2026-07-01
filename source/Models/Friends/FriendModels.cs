@@ -24,6 +24,30 @@ namespace PlayniteAchievements.Models.Friends
         Full
     }
 
+    public static class FriendRefreshPolicy
+    {
+        public static FriendLibraryScope GetDefaultLibraryScope(FriendRefreshScope scope)
+        {
+            return ScopePermitsProviderOnlyGames(scope)
+                ? FriendLibraryScope.Full
+                : FriendLibraryScope.Shared;
+        }
+
+        public static bool ScopePermitsProviderOnlyGames(FriendRefreshScope scope)
+        {
+            return scope == FriendRefreshScope.Recent ||
+                   scope == FriendRefreshScope.Full;
+        }
+
+        public static bool IncludesProviderOnlyGames(this FriendRefreshOptions options)
+        {
+            return options != null &&
+                   options.LibraryScope == FriendLibraryScope.Full &&
+                   (ScopePermitsProviderOnlyGames(options.Scope) ||
+                    options.ProviderAppIds?.Any(id => id > 0) == true);
+        }
+    }
+
     public sealed class FriendRefreshOptions
     {
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
@@ -63,7 +87,7 @@ namespace PlayniteAchievements.Models.Friends
     {
         public IReadOnlyCollection<string> ProviderKeys { get; set; }
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
-        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Shared;
+        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Full;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }

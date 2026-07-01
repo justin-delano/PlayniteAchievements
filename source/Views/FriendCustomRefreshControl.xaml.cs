@@ -398,19 +398,34 @@ namespace PlayniteAchievements.Views
                     continue;
                 }
 
-                var isEnabled = _refreshRuntime.ProviderRegistry?.IsProviderEnabled(provider.ProviderKey) ?? true;
-                option.IsEnabled = isEnabled;
-                var wasSelectable = option.IsSelectable;
-                option.IsAuthenticated = isEnabled &&
-                    await _refreshRuntime.IsProviderAuthenticatedAsync(provider, CancellationToken.None).ConfigureAwait(true);
-
-                // Default newly-confirmed providers to selected so the run is ready without re-checking.
-                if (!wasSelectable && option.IsSelectable)
+                try
                 {
-                    option.IsSelected = true;
+                    var isEnabled = _refreshRuntime.ProviderRegistry?.IsProviderEnabled(provider.ProviderKey) ?? true;
+                    option.IsEnabled = isEnabled;
+                    var wasSelectable = option.IsSelectable;
+                    option.IsAuthenticated = isEnabled &&
+                        await _refreshRuntime.IsProviderAuthenticatedAsync(provider, CancellationToken.None).ConfigureAwait(true);
+
+                    // Default newly-confirmed providers to selected so the run is ready without re-checking.
+                    if (!wasSelectable && option.IsSelectable)
+                    {
+                        option.IsSelected = true;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    option.IsAuthenticated = false;
+                    Logger?.Warn(ex, $"Failed to refresh friend custom auth state for provider {option.ProviderKey}.");
                 }
             }
 
+            _friendView?.Refresh();
+            _sharedGameView?.Refresh();
+            _libraryGameView?.Refresh();
             RecalculateSummary();
         }
 
@@ -571,7 +586,8 @@ namespace PlayniteAchievements.Views
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var gameIds = _allSharedGameItems.Concat(_allLibraryGameItems)
+            var gameSource = ShowLibraryGames ? _allLibraryGameItems : _allSharedGameItems;
+            var gameIds = gameSource
                 .Where(item => item.IsSelected)
                 .Select(item => item.Id)
                 .Where(id => Guid.TryParse(id, out _))
@@ -588,6 +604,7 @@ namespace PlayniteAchievements.Views
             {
                 ProviderKeys = providerKeys,
                 Scope = SelectedScope,
+                LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(SelectedScope),
                 PlayniteGameIds = gameIds.Count > 0 ? gameIds : null,
                 FriendExternalUserIds = friendIds.Count > 0 ? friendIds : null
             };

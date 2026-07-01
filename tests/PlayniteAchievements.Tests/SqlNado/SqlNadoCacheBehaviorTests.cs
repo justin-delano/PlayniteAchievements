@@ -300,6 +300,28 @@ namespace PlayniteAchievements.SqlNado.Tests
             StringAssert.Contains(store, "LastPlayedUtc = ParseUtc(row.LastPlayedUtc)");
         }
 
+        [TestMethod]
+        public void CacheStore_FriendIdentitiesExposeAbsoluteAvatarPath()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "AvatarPath = !string.IsNullOrWhiteSpace(row.AvatarPath)");
+            StringAssert.Contains(store, "? MakeAbsolutePath(row.AvatarPath)");
+            StringAssert.Contains(store, ": row.AvatarUrl");
+        }
+
+        [TestMethod]
+        public void CacheStore_NormalFriendOwnershipCleanupPreservesProviderOnlyRows()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "if (options?.IncludeProviderOnlyGames != true)");
+            StringAssert.Contains(store, "DeleteStaleSharedFriendOwnership(db, user.Id, seenSharedGameIds);");
+            StringAssert.Contains(store, "private static void DeleteStaleSharedFriendOwnership");
+            StringAssert.Contains(store, "g.PlayniteGameId IS NOT NULL");
+            StringAssert.Contains(store, "TRIM(g.PlayniteGameId) <> ''");
+        }
+
         private static string FindRepoFile(params string[] parts)
         {
             var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);

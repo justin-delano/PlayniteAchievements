@@ -161,6 +161,41 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(FriendLibraryScope.Shared, resolved.FriendOptions.LibraryScope);
         }
 
+        [DataTestMethod]
+        [DataRow(FriendRefreshScope.Recent, FriendLibraryScope.Full, true)]
+        [DataRow(FriendRefreshScope.Full, FriendLibraryScope.Full, true)]
+        [DataRow(FriendRefreshScope.Recent, FriendLibraryScope.Shared, false)]
+        [DataRow(FriendRefreshScope.Full, FriendLibraryScope.Shared, false)]
+        [DataRow(FriendRefreshScope.Shared, FriendLibraryScope.Full, false)]
+        [DataRow(FriendRefreshScope.Installed, FriendLibraryScope.Full, false)]
+        [DataRow(FriendRefreshScope.SelectedGame, FriendLibraryScope.Full, false)]
+        public void FriendRefreshPolicy_IncludesProviderOnlyGames_RequiresScopeAndLibraryScope(
+            FriendRefreshScope scope,
+            FriendLibraryScope libraryScope,
+            bool expected)
+        {
+            var options = new FriendRefreshOptions
+            {
+                Scope = scope,
+                LibraryScope = libraryScope
+            };
+
+            Assert.AreEqual(expected, options.IncludesProviderOnlyGames());
+        }
+
+        [TestMethod]
+        public void FriendRefreshPolicy_IncludesProviderOnlyGames_AllowsExplicitProviderAppIds()
+        {
+            var options = new FriendRefreshOptions
+            {
+                Scope = FriendRefreshScope.Custom,
+                LibraryScope = FriendLibraryScope.Full,
+                ProviderAppIds = new[] { 10 }
+            };
+
+            Assert.IsTrue(options.IncludesProviderOnlyGames());
+        }
+
         [TestMethod]
         public void Resolve_FriendsCustom_FiltersProvidersAndUsesSelectedGameScope()
         {
@@ -189,10 +224,100 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreSame(steamProvider, resolved.ProviderScope[0]);
             Assert.IsNotNull(resolved.FriendOptions);
             Assert.AreEqual(FriendRefreshScope.SelectedGame, resolved.FriendOptions.Scope);
+            Assert.AreEqual(FriendLibraryScope.Shared, resolved.FriendOptions.LibraryScope);
             Assert.AreEqual(refreshTtl, resolved.FriendOptions.RefreshTtl);
             CollectionAssert.AreEqual(
                 new[] { gameId },
                 resolved.FriendOptions.PlayniteGameIds.ToList());
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsCustom_DefaultsToFullLibraryScopeForBroadScope()
+        {
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Recent
+                    }
+                },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(FriendLibraryScope.Full, resolved.FriendOptions.LibraryScope);
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsCustom_BroadScopeUsesDefaultFullLibraryScope()
+        {
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Recent,
+                        LibraryScope = FriendLibraryScope.Shared
+                    }
+                },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(FriendLibraryScope.Full, resolved.FriendOptions.LibraryScope);
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsCustom_SharedScopeNormalizesToSharedLibraryScope()
+        {
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Shared,
+                        LibraryScope = FriendLibraryScope.Full
+                    }
+                },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(FriendRefreshScope.Shared, resolved.FriendOptions.Scope);
+            Assert.AreEqual(FriendLibraryScope.Shared, resolved.FriendOptions.LibraryScope);
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsCustom_ProviderAppIdsForceFullLibraryScope()
+        {
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.SelectedGame,
+                        LibraryScope = FriendLibraryScope.Shared,
+                        ProviderAppIds = new[] { 10 }
+                    }
+                },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(FriendLibraryScope.Full, resolved.FriendOptions.LibraryScope);
         }
 
         [TestMethod]
@@ -222,6 +347,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsTrue(resolved.ShouldExecute);
             Assert.IsNotNull(resolved.FriendOptions);
             Assert.AreEqual(FriendRefreshScope.Installed, resolved.FriendOptions.Scope);
+            Assert.AreEqual(FriendLibraryScope.Shared, resolved.FriendOptions.LibraryScope);
             CollectionAssert.AreEquivalent(
                 new[] { installedId },
                 resolved.FriendOptions.PlayniteGameIds.ToList());

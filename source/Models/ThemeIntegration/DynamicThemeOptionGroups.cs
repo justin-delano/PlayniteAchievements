@@ -169,7 +169,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             DynamicThemeViewKeys.Provider,
             DynamicThemeViewKeys.LastUnlock,
             DynamicThemeViewKeys.UnlockedCount,
-            DynamicThemeViewKeys.AchievementCount
+            DynamicThemeViewKeys.SharedGamesCount
         };
 
         public static readonly string[] SortDirectionKeys =
@@ -218,7 +218,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             CreateCanonicalKeyMap(GameSummarySortKeys);
 
         public static readonly IReadOnlyDictionary<string, string> FriendSummarySortKeyMap =
-            CreateCanonicalKeyMap(FriendSummarySortKeys);
+            CreateFriendSummarySortKeyMap();
 
         public static readonly IReadOnlyDictionary<string, string> SortDirectionKeyMap =
             CreateCanonicalKeyMap(SortDirectionKeys);
@@ -359,6 +359,18 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 }
             }
 
+            return map;
+        }
+
+        private static IReadOnlyDictionary<string, string> CreateFriendSummarySortKeyMap()
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in FriendSummarySortKeys)
+            {
+                map[key] = key;
+            }
+
+            map[DynamicThemeViewKeys.AchievementCount] = DynamicThemeViewKeys.SharedGamesCount;
             return map;
         }
 

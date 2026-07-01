@@ -279,7 +279,7 @@ namespace PlayniteAchievements.Tests.Providers
             };
 
             Assert.IsTrue(BattleNetGameSupport.IsSupported(BattleNetGame("World of Warcraft"), settings));
-            Assert.IsFalse(BattleNetGameSupport.IsSupported(BattleNetGame("StarCraft II"), settings));
+            Assert.IsTrue(BattleNetGameSupport.IsSupported(BattleNetGame("StarCraft II"), settings));
             Assert.IsFalse(BattleNetGameSupport.IsSupported(BattleNetGame("Overwatch 2"), settings));
             Assert.IsFalse(BattleNetGameSupport.IsSupported(BattleNetGame("Diablo IV"), settings));
             Assert.IsFalse(BattleNetGameSupport.IsSupported(BattleNetGame("Warcraft III: Reforged"), settings));

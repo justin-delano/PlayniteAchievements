@@ -256,7 +256,7 @@ namespace PlayniteAchievements.Services
                 FriendOptions = new FriendRefreshOptions
                 {
                     Scope = scope,
-                    LibraryScope = ResolveFriendLibraryScope(scope),
+                    LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(scope),
                     PlayniteGameIds = ids
                 }
             };
@@ -309,6 +309,9 @@ namespace PlayniteAchievements.Services
                 .Select(id => id.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            var libraryScope = ResolveCustomFriendLibraryScope(
+                scope,
+                providerAppIds);
 
             // Installed scope has fixed semantics: only installed Playnite library games.
             if (scope == FriendRefreshScope.Installed)
@@ -348,9 +351,7 @@ namespace PlayniteAchievements.Services
                 FriendOptions = new FriendRefreshOptions
                 {
                     Scope = scope,
-                    LibraryScope = providerAppIds?.Count > 0
-                        ? FriendLibraryScope.Full
-                        : ResolveFriendLibraryScope(scope),
+                    LibraryScope = libraryScope,
                     PlayniteGameIds = playniteGameIds,
                     ProviderAppIds = providerAppIds,
                     FriendExternalUserIds = friendExternalUserIds,
@@ -360,17 +361,16 @@ namespace PlayniteAchievements.Services
             };
         }
 
-        // Request-level capability flag. Per-friend full-library opt-in is resolved later in
-        // FriendsRefreshRuntime; here we only signal whether the scope permits full-library work at
-        // all. Recent/Full scopes may include full-library friends; other scopes never do.
-        private FriendLibraryScope ResolveFriendLibraryScope(FriendRefreshScope scope)
+        private static FriendLibraryScope ResolveCustomFriendLibraryScope(
+            FriendRefreshScope scope,
+            IReadOnlyCollection<int> providerAppIds)
         {
-            if (scope == FriendRefreshScope.Recent || scope == FriendRefreshScope.Full)
+            if (providerAppIds?.Count > 0)
             {
                 return FriendLibraryScope.Full;
             }
 
-            return FriendLibraryScope.Shared;
+            return FriendRefreshPolicy.GetDefaultLibraryScope(scope);
         }
 
         private RefreshModeType ResolveMode(RefreshRequest request)

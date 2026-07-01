@@ -214,6 +214,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">Please enter a valid PSN NP Communication ID such as NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">Please enter a valid Xbox Title ID (8-character hex or decimal).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Single Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Refresh Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone</sys:String>
@@ -439,7 +440,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsCustom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsInstalled">Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsRecent">Recent</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsSelectedGame">Selected Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsSelectedGame">Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsShared">Shared</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Missing</sys:String>
@@ -853,6 +854,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">Friend refresh failed.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_NotAvailable">Friends Overview is not available.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectGameForRefresh">Select a game before refreshing this friend game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectTargetForRefresh">Select a friend or game before refreshing selected friend data.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_Header">Custom Friends Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectedGameScope">Selected game: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SummaryFormat">Platforms: {0} | Scope: {1}</sys:String>

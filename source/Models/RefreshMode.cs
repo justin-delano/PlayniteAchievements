@@ -54,6 +54,7 @@ namespace PlayniteAchievements.Models
             switch (mode)
             {
                 case RefreshModeType.LibrarySelected:
+                case RefreshModeType.FriendsSelectedGame:
                     return "LOCPlayAch_RefreshModeShort_Selected";
                 default:
                     return $"LOCPlayAch_RefreshModeShort_{mode}";

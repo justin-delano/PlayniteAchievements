@@ -53,6 +53,9 @@
     <Compile Include="..\..\source\Providers\Steam\SteamTimeParser.cs" Link="Source\Providers\Steam\SteamTimeParser.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamStatsPageClassifier.cs" Link="Source\Providers\Steam\SteamStatsPageClassifier.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamImageUrls.cs" Link="Source\Providers\Steam\SteamImageUrls.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamSettings.cs" Link="Source\Providers\Steam\SteamSettings.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamFriendListItem.cs" Link="Source\Providers\Steam\SteamFriendListItem.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamFriendListBuilder.cs" Link="Source\Providers\Steam\SteamFriendListBuilder.cs" />
     <Compile Include="..\..\source\Models\RefreshMode.cs" Link="Source\Models\RefreshMode.cs" />
     <Compile Include="..\..\source\Models\CustomRefreshOptions.cs" Link="Source\Models\CustomRefreshOptions.cs" />
     <Compile Include="..\..\source\Models\RefreshRequest.cs" Link="Source\Models\RefreshRequest.cs" />
