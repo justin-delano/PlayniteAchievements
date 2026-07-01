@@ -195,6 +195,7 @@
     <Compile Include="..\..\source\ViewModels\FriendAchievementDisplayItem.cs" Link="Source\ViewModels\FriendAchievementDisplayItem.cs" />
     <Compile Include="..\..\source\ViewModels\FriendGameSummaryItem.cs" Link="Source\ViewModels\FriendGameSummaryItem.cs" />
     <Compile Include="..\..\source\ViewModels\FriendSummaryItem.cs" Link="Source\ViewModels\FriendSummaryItem.cs" />
+    <Compile Include="..\..\source\ViewModels\IOverviewRefreshHeaderViewModel.cs" Link="Source\ViewModels\IOverviewRefreshHeaderViewModel.cs" />
     <Compile Include="..\..\source\ViewModels\FriendsOverviewViewModel.cs" Link="Source\ViewModels\FriendsOverviewViewModel.cs" />
     <Compile Include="..\..\source\ViewModels\GameSummaryItem.cs" Link="Source\ViewModels\GameSummaryItem.cs" />
     <Compile Include="..\..\source\ViewModels\ProviderPlatformFilter.cs" Link="Source\ViewModels\ProviderPlatformFilter.cs" />

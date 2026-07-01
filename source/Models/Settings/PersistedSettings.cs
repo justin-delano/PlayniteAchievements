@@ -92,7 +92,6 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewRarityPieChart = true;
         private bool _showOverviewTrophyPieChart = true;
         private bool _showOverviewPiePercentages = true;
-        private bool _enableFriendsOverview = true;
         private bool _friendsOverviewHideSpoilers = true;
         private bool _fullLibraryWarningAccepted = false;
         private int _friendsOverviewRefreshTtlHours = 24;
@@ -848,15 +847,6 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showTopMenuBarButton;
             set => SetValue(ref _showTopMenuBarButton, value);
-        }
-
-        /// <summary>
-        /// When true, enables the Steam-only Friends Overview surface and background friend refresh.
-        /// </summary>
-        public bool EnableFriendsOverview
-        {
-            get => _enableFriendsOverview;
-            set => SetValue(ref _enableFriendsOverview, value);
         }
 
         /// <summary>
@@ -3135,7 +3125,6 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewGameMetadataPlaytime = this.ShowOverviewGameMetadataPlaytime,
                 ShowOverviewGameMetadataRegion = this.ShowOverviewGameMetadataRegion,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
-                EnableFriendsOverview = this.EnableFriendsOverview,
                 FriendsOverviewHideSpoilers = this.FriendsOverviewHideSpoilers,
                 FullLibraryWarningAccepted = this.FullLibraryWarningAccepted,
                 FriendsOverviewRefreshTtlHours = this.FriendsOverviewRefreshTtlHours,

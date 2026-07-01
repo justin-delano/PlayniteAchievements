@@ -28,7 +28,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public class OverviewViewModel : ObservableObject, IDisposable
+    public class OverviewViewModel : ObservableObject, IDisposable, IOverviewRefreshHeaderViewModel
     {
         /// <summary>
         /// Returns true if unplayed games are included during refreshes.

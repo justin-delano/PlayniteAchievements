@@ -19,7 +19,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    internal sealed class FriendsOverviewViewModel : ObservableObject, IDisposable
+    internal sealed class FriendsOverviewViewModel : ObservableObject, IDisposable, IOverviewRefreshHeaderViewModel
     {
         private readonly IFriendCacheManager _friendCache;
         private readonly RefreshEntryPoint _refreshCoordinator;
@@ -94,7 +94,7 @@ namespace PlayniteAchievements.ViewModels
             RefreshInstalledCommand = new AsyncCommand(async _ => await RefreshFriendsAsync(RefreshModeType.FriendsInstalled).ConfigureAwait(true), _ => CanRefresh());
             RefreshFriendSelectedGameCommand = new AsyncCommand(ExecuteSelectedFriendTargetRefreshAsync, parameter => CanRefreshSelectedFriendTarget(parameter));
             OpenGameInLibraryCommand = new RelayCommand(OpenGameInLibrary);
-            RefreshOrCancelCommand = RefreshCommand;
+            RefreshOrCancelCommand = new RelayCommand(ExecuteRefreshOrCancel, _ => CanExecuteRefreshOrCancel());
             ClearSelectionCommand = new RelayCommand(_ => ClearSelection());
             ClearFriendSelectionCommand = new RelayCommand(_ => ClearFriendSelection());
             ClearGameSelectionCommand = new RelayCommand(_ => ClearGameSelection());
@@ -124,6 +124,7 @@ namespace PlayniteAchievements.ViewModels
         public ObservableCollection<string> TypeFilterOptions { get; }
         public ObservableCollection<string> CategoryFilterOptions { get; }
         public ObservableCollection<RefreshMode> FriendRefreshModes { get; }
+        public ObservableCollection<RefreshMode> RefreshModes => FriendRefreshModes;
 
         public ICommand RefreshCommand { get; }
         public ICommand RefreshRecentCommand { get; }
@@ -232,6 +233,8 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _selectedRefreshMode, value))
                 {
                     OnPropertyChanged(nameof(RefreshModeSelectionText));
+                    OnPropertyChanged(nameof(RefreshActionButtonText));
+                    OnPropertyChanged(nameof(RefreshOrCancelButtonText));
                 }
             }
         }
@@ -242,10 +245,15 @@ namespace PlayniteAchievements.ViewModels
             ?? ResourceProvider.GetString("LOCPlayAch_Button_Refresh")
             ?? "Refresh";
 
-        public string RefreshActionButtonText => ResourceProvider.GetString("LOCPlayAch_Button_Refresh") ?? "Refresh";
+        public string RefreshActionButtonText => string.Equals(
+            SelectedRefreshMode,
+            RefreshModeType.FriendsCustom.GetKey(),
+            StringComparison.Ordinal)
+            ? ResourceProvider.GetString("LOCPlayAch_Button_Configure") ?? "Configure"
+            : ResourceProvider.GetString("LOCPlayAch_Button_Refresh") ?? "Refresh";
 
         public string RefreshOrCancelButtonText => IsRefreshing
-            ? ResourceProvider.GetString("LOCPlayAch_FriendsOverview_RefreshingShort") ?? "Refreshing..."
+            ? ResourceProvider.GetString("LOCPlayAch_Button_Cancel") ?? "Cancel"
             : RefreshActionButtonText;
 
         public bool IsRefreshing
@@ -479,6 +487,30 @@ namespace PlayniteAchievements.ViewModels
         private bool CanRefresh()
         {
             return !IsRefreshing;
+        }
+
+        public void CancelRefresh()
+        {
+            _refreshRuntime?.CancelCurrentRebuild();
+        }
+
+        private bool CanExecuteRefreshOrCancel()
+        {
+            return IsRefreshing || CanRefresh();
+        }
+
+        private void ExecuteRefreshOrCancel(object parameter)
+        {
+            if (IsRefreshing)
+            {
+                CancelRefresh();
+                return;
+            }
+
+            if (CanRefresh())
+            {
+                _ = RefreshSelectedModeAsync();
+            }
         }
 
         private async Task RefreshSelectedModeAsync()
@@ -1186,6 +1218,7 @@ namespace PlayniteAchievements.ViewModels
             (RefreshSharedCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (RefreshInstalledCommand as AsyncCommand)?.RaiseCanExecuteChanged();
             (RefreshFriendSelectedGameCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+            (RefreshOrCancelCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)

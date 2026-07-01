@@ -168,6 +168,56 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void MergedOverview_HeaderWiresSubviewSwitcherBeforeRefreshControls()
+        {
+            var xaml = File.ReadAllText(FindRepoFile("source", "Views", "OverviewControl.xaml"));
+
+            AssertContainsAll(
+                xaml,
+                "x:Name=\"OverviewSubViewButton\"",
+                "x:Name=\"FriendsSubViewButton\"",
+                "LOCPlayAch_Overview_SubView_Overview",
+                "LOCPlayAch_Overview_SubView_Friends",
+                "ActiveRefreshHeader.RefreshModeSelectionText",
+                "ActiveRefreshHeader.RefreshOrCancelCommand",
+                "x:Name=\"FriendsOverviewContentHost\"");
+
+            Assert.IsTrue(
+                xaml.IndexOf("x:Name=\"FriendsSubViewButton\"", StringComparison.Ordinal) <
+                xaml.IndexOf("x:Name=\"RefreshModeSelectionButton\"", StringComparison.Ordinal),
+                "Subview switcher should appear before refresh controls.");
+        }
+
+        [TestMethod]
+        public void MergedOverview_OnlyRegistersOneSidebarEntry()
+        {
+            var plugin = File.ReadAllText(FindRepoFile("source", "PlayniteAchievementsPlugin.cs"));
+
+            Assert.AreEqual(1, CountOccurrences(plugin, "yield return new SidebarItem"));
+            AssertContainsNone(
+                plugin,
+                "LOCPlayAch_Menu_OpenFriendsOverview",
+                "return new FriendsOverviewControl");
+        }
+
+        [TestMethod]
+        public void MergedOverview_RemovesStandaloneFriendsOverviewWindowPath()
+        {
+            var windowService = File.ReadAllText(FindRepoFile("source", "Services", "UI", "PluginWindowService.cs"));
+            var windows = File.ReadAllText(FindRepoFile("source", "PlayniteAchievementsPlugin.Windows.cs"));
+            var menus = File.ReadAllText(FindRepoFile("source", "PlayniteAchievementsPlugin.Menus.cs"));
+
+            AssertContainsNone(
+                windowService,
+                "OpenFriendsOverviewWindow",
+                "FriendsOverviewWindowPlacementKey",
+                "_friendsOverviewWindow",
+                "ContainsFriendsOverviewControl");
+            AssertContainsNone(windows, "OpenFriendsOverviewWindow");
+            AssertContainsNone(menus, "LOCPlayAch_Menu_OpenFriendsOverview");
+        }
+
+        [TestMethod]
         public void ThemeControlRegistry_RegistersFriendThemeControls()
         {
             var registry = File.ReadAllText(FindRepoFile("source", "Services", "ThemeIntegration", "ThemeControlRegistry.cs"));
@@ -225,6 +275,24 @@ namespace PlayniteAchievements.Tests.Views
                 .ToList();
 
             CollectionAssert.AreEqual(new List<string>(), present);
+        }
+
+        private static int CountOccurrences(string content, string value)
+        {
+            if (string.IsNullOrEmpty(content) || string.IsNullOrEmpty(value))
+            {
+                return 0;
+            }
+
+            var count = 0;
+            var index = 0;
+            while ((index = content.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                index += value.Length;
+            }
+
+            return count;
         }
 
         private static string FindRepoFile(params string[] parts)

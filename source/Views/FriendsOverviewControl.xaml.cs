@@ -20,6 +20,13 @@ namespace PlayniteAchievements.Views
 {
     public partial class FriendsOverviewControl : UserControl, IDisposable
     {
+        public static readonly DependencyProperty IsEmbeddedProperty =
+            DependencyProperty.Register(
+                nameof(IsEmbedded),
+                typeof(bool),
+                typeof(FriendsOverviewControl),
+                new PropertyMetadata(false));
+
         private readonly FriendsOverviewViewModel _viewModel;
         private readonly ILogger _logger;
         private readonly OverviewLaunchContext _launchContext;
@@ -35,6 +42,18 @@ namespace PlayniteAchievements.Views
         {
             InitializeComponent();
         }
+
+        public bool IsEmbedded
+        {
+            get => (bool)GetValue(IsEmbeddedProperty);
+            set => SetValue(IsEmbeddedProperty, value);
+        }
+
+        internal IOverviewRefreshHeaderViewModel RefreshHeader => _viewModel;
+
+        internal FriendsOverviewViewModel ViewModel => _viewModel;
+
+        internal bool HasAnySelection => _viewModel?.HasAnySelection == true;
 
         internal FriendsOverviewControl(
             ILogger logger,
@@ -110,6 +129,11 @@ namespace PlayniteAchievements.Views
             _viewModel?.Dispose();
         }
 
+        internal void ClearSelectionFromHost()
+        {
+            ClearSelection();
+        }
+
         private void ClearFriendSearch_Click(object sender, RoutedEventArgs e)
         {
             _viewModel?.ClearFriendSearch();
@@ -144,6 +168,11 @@ namespace PlayniteAchievements.Views
         }
 
         private void ClearSelection_Click(object sender, RoutedEventArgs e)
+        {
+            ClearSelection();
+        }
+
+        private void ClearSelection()
         {
             _viewModel?.ClearSelection();
             ClearGridSelection(FriendSummariesGridControl?.InternalDataGrid);

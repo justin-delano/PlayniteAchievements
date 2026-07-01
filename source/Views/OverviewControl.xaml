@@ -1,4 +1,5 @@
 <UserControl x:Class="PlayniteAchievements.Views.OverviewControl"
+             x:Name="OverviewControlRoot"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -6,6 +7,7 @@
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:models="clr-namespace:PlayniteAchievements.Models.Achievements"
+             xmlns:rootModels="clr-namespace:PlayniteAchievements.Models"
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
@@ -398,6 +400,69 @@
                 </Setter>
             </Style>
 
+            <!-- Underline tab style for the Overview/Friends view switch.
+                 Text-only tabs; the active tab (Tag="active") gets accent text and
+                 an accent underline bar. No chevron, no border, no fill. -->
+            <Style x:Key="OverviewSubViewSwitchButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
+                <Setter Property="MinHeight" Value="24"/>
+                <Setter Property="Padding" Value="2,2"/>
+                <Setter Property="Margin" Value="0"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text.Secondary}"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="True"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid Background="Transparent">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="2"/>
+                                </Grid.RowDefinitions>
+                                <TextBlock x:Name="Label"
+                                           Grid.Row="0"
+                                           Text="{TemplateBinding Content}"
+                                           Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                           FontWeight="{TemplateBinding FontWeight}"
+                                           Foreground="{TemplateBinding Foreground}"
+                                           Margin="{TemplateBinding Padding}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="NoWrap"/>
+                                <Border x:Name="Underline"
+                                        Grid.Row="1"
+                                        Height="2"
+                                        Margin="2,0"
+                                        VerticalAlignment="Bottom"
+                                        HorizontalAlignment="Stretch"
+                                        CornerRadius="1"
+                                        Background="{DynamicResource PlayAch.Brush.Accent}"
+                                        Visibility="Hidden"/>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                                    <Setter TargetName="Underline" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="Underline" Property="Opacity" Value="0.4"/>
+                                </Trigger>
+                                <Trigger Property="Tag" Value="active">
+                                    <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Underline" Property="Visibility" Value="Visible"/>
+                                    <Setter TargetName="Underline" Property="Opacity" Value="1"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Label" Property="Opacity" Value="0.55"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <!-- Button style that disables during refresh -->
         <Style x:Key="RefreshButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
                 <Setter Property="Padding" Value="10,3"/>
@@ -505,7 +570,7 @@
                 <Style TargetType="Border">
                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
                     <Style.Triggers>
-                        <DataTrigger Binding="{Binding ShowProgress}" Value="True">
+                        <DataTrigger Binding="{Binding ActiveRefreshHeader.ShowProgress, ElementName=OverviewControlRoot}" Value="True">
                             <Setter Property="BorderThickness" Value="0"/>
                         </DataTrigger>
                     </Style.Triggers>
@@ -546,11 +611,44 @@
 
                     <StackPanel Orientation="Horizontal"
                                 VerticalAlignment="Center"
+                                Margin="18,0,0,0">
+                        <Button x:Name="OverviewSubViewButton"
+                                Content="{DynamicResource LOCPlayAch_Overview_SubView_Overview}"
+                                Click="OverviewSubViewButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource OverviewSubViewSwitchButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Overview}">
+                                            <Setter Property="Tag" Value="active"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+
+                        <Button x:Name="FriendsSubViewButton"
+                                Content="{DynamicResource LOCPlayAch_Overview_SubView_Friends}"
+                                Click="FriendsSubViewButton_Click"
+                                Margin="18,0,0,0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource OverviewSubViewSwitchButtonStyle}">
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Friends}">
+                                            <Setter Property="Tag" Value="active"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center"
                                 HorizontalAlignment="Left"
-                                Margin="24,0,0,0">
+                                Margin="18,0,0,0">
                         <Button x:Name="RefreshModeSelectionButton"
                                 Style="{StaticResource AchievementSelectorButtonStyle}"
-                                Content="{Binding RefreshModeSelectionText}"
+                                Content="{Binding ActiveRefreshHeader.RefreshModeSelectionText, ElementName=OverviewControlRoot}"
                                 Click="RefreshModeSelectionButton_Click"
                                 HorizontalContentAlignment="Center"
                                 MinWidth="94"
@@ -565,8 +663,8 @@
                         </Button>
 
                         <Button x:Name="RefreshActionButton"
-                                Content="{Binding RefreshOrCancelButtonText}"
-                                Command="{Binding RefreshOrCancelCommand}"
+                                Content="{Binding ActiveRefreshHeader.RefreshOrCancelButtonText, ElementName=OverviewControlRoot}"
+                                Command="{Binding ActiveRefreshHeader.RefreshOrCancelCommand, ElementName=OverviewControlRoot}"
                                 Style="{StaticResource RefreshButtonStyle}"
                                 Margin="0"/>
                     </StackPanel>
@@ -574,13 +672,26 @@
 
                 <!-- Right: Collection and Prestige scores -->
                 <StackPanel Grid.Row="1"
-                            Grid.Column="1"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            MaxWidth="740"
-                            Margin="18,0,0,0"
-                            Visibility="{Binding ShowOverviewScoreCards, Converter={StaticResource BoolToVis}}">
+                             Grid.Column="1"
+                             Orientation="Horizontal"
+                             HorizontalAlignment="Right"
+                             VerticalAlignment="Center"
+                             MaxWidth="740"
+                             Margin="18,0,0,0">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding ShowOverviewScoreCards}" Value="True"/>
+                                        <Condition Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Overview}"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </StackPanel.Style>
 
                     <controls:ScoreCardControl Width="300"
                                                ScoreCard="{Binding CollectionScoreCard}"
@@ -601,6 +712,26 @@
                                                Visibility="{Binding ShowOverviewPrestigeScoreCard, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
 
+                <Button x:Name="FriendsClearSelectionButton"
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Content="&#x2715;"
+                        ToolTip="{DynamicResource LOCPlayAch_FriendsOverview_ClearSelection}"
+                        Click="FriendsClearSelectionButton_Click"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource ClearGameSelectionButtonStyle}">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding ShowFriendsClearSelection, ElementName=OverviewControlRoot}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+
             </Grid>
         </Border>
 
@@ -610,16 +741,16 @@
                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                 BorderThickness="0,0,0,1"
                 Padding="16,8"
-                Visibility="{Binding ShowProgress, Converter={StaticResource BoolToVis}}">
+                Visibility="{Binding ActiveRefreshHeader.ShowProgress, ElementName=OverviewControlRoot, Converter={StaticResource BoolToVis}}">
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="{Binding ProgressMessage}"
+                <TextBlock Text="{Binding ActiveRefreshHeader.ProgressMessage, ElementName=OverviewControlRoot}"
                            Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                            Opacity="{StaticResource PlayAch.Opacity.Secondary}"
                            TextTrimming="CharacterEllipsis"
                            Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
-                <ProgressBar Value="{Binding ProgressPercent}"
-                             Height="6"
+                <ProgressBar Value="{Binding ActiveRefreshHeader.ProgressPercent, ElementName=OverviewControlRoot, Mode=OneWay}"
+                              Height="6"
                              Minimum="0"
                              Maximum="100"/>
             </StackPanel>
@@ -628,7 +759,17 @@
         <!-- ROW 2: Tab Content -->
         <Grid Grid.Row="2">
             <!-- Overview Tab Content -->
-            <Grid x:Name="OverviewContent" Visibility="Visible">
+            <Grid x:Name="OverviewContent">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Overview}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition x:Name="OverviewLeftColumn" Width="*" MinWidth="560"/>
                     <ColumnDefinition Width="4"/>
@@ -1314,6 +1455,19 @@
                             Focusable="False"
                             IsTabStop="False"/>
             </Grid>
+
+            <ContentControl x:Name="FriendsOverviewContentHost">
+                <ContentControl.Style>
+                    <Style TargetType="ContentControl">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Friends}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ContentControl.Style>
+            </ContentControl>
         </Grid>
     </Grid>
     </Border>
