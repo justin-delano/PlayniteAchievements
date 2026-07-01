@@ -1420,9 +1420,15 @@ namespace PlayniteAchievements.ViewModels
 
                     // Still off the UI thread: precompute the search-text maps so ApplySnapshot
                     // only performs a cheap swap instead of tokenizing every item on the UI thread.
-                    var globalEntries = _globalAchievementSearchIndex.BuildEntries(snapshot?.Achievements);
-                    var gameEntries = _gameSummarySearchIndex.BuildEntries(snapshot?.GameSummaries);
-                    var recentEntries = _recentAchievementSearchIndex.BuildEntries(snapshot?.RecentAchievements);
+                    Dictionary<AchievementDisplayItem, string> globalEntries;
+                    Dictionary<GameSummaryItem, string> gameEntries;
+                    Dictionary<AchievementDisplayItem, string> recentEntries;
+                    using (PerfScope.Start(_logger, "Overview.BuildSearchEntries", thresholdMs: 15))
+                    {
+                        globalEntries = _globalAchievementSearchIndex.BuildEntries(snapshot?.Achievements);
+                        gameEntries = _gameSummarySearchIndex.BuildEntries(snapshot?.GameSummaries);
+                        recentEntries = _recentAchievementSearchIndex.BuildEntries(snapshot?.RecentAchievements);
+                    }
 
                     System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
                     {
@@ -1436,7 +1442,10 @@ namespace PlayniteAchievements.ViewModels
                             return;
                         }
 
-                        ApplySnapshot(snapshot, globalEntries, gameEntries, recentEntries);
+                        using (PerfScope.Start(_logger, "Overview.ApplySnapshot", thresholdMs: 15))
+                        {
+                            ApplySnapshot(snapshot, globalEntries, gameEntries, recentEntries);
+                        }
                     });
                 }
                 finally
@@ -1777,7 +1786,10 @@ namespace PlayniteAchievements.ViewModels
 
             RefreshFilter();
             ApplyLeftFilters();
-            UpdateAggregatePieCharts();
+            using (PerfScope.Start(_logger, "Overview.UpdateAggregatePieCharts", thresholdMs: 15))
+            {
+                UpdateAggregatePieCharts();
+            }
 
             SyncRecentAchievementsDisplay();
 
