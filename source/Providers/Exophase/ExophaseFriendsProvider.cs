@@ -102,7 +102,8 @@ namespace PlayniteAchievements.Providers.Exophase
                     continue;
                 }
 
-                var family = ResolveCurrentUserFamilyKey(label.ProviderKey, label.ProviderPlatformKey);
+                var family = ExophaseFriendPlatformMatcher.ResolveStoredGameFamilyKey(
+                    label.ProviderKey, label.ProviderPlatformKey);
                 if (string.IsNullOrWhiteSpace(family))
                 {
                     continue;
@@ -136,21 +137,6 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             _currentUserGameFamilyById.Clear();
             _currentUserGameIdsByFamilyName.Clear();
-        }
-
-        // The canonical friend platform key for a cached current-user game. Prefer the stored servicing
-        // ProviderKey (e.g. PSN, Steam, RPCS3->PSN); for aggregator/inclusion providers whose key is not a
-        // platform (Exophase, Manual), fall back to the stored sub-platform hint so a self-tracked platform
-        // still matches a friend's game on that platform.
-        private static string ResolveCurrentUserFamilyKey(string providerKey, string providerPlatformKey)
-        {
-            var mapped = ExophaseFriendPlatformMatcher.MapProviderKeyToFriendPlatformKey(providerKey);
-            if (!string.IsNullOrWhiteSpace(mapped))
-            {
-                return mapped;
-            }
-
-            return ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(providerPlatformKey);
         }
 
         private static string BuildFamilyNameKey(string familyKey, string normalizedName)

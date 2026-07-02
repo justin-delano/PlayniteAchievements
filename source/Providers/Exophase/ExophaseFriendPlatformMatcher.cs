@@ -144,6 +144,25 @@ namespace PlayniteAchievements.Providers.Exophase
         }
 
         /// <summary>
+        /// Canonical friend platform key for a cached current-user game, from the labels the plugin stored
+        /// at scan time. Prefers the servicing <paramref name="providerKey"/> (e.g. PSN, Steam, RPCS3->PSN);
+        /// for aggregator/inclusion providers whose key is not itself a platform (Exophase, Manual) it falls
+        /// back to the stored sub-platform hint <paramref name="providerPlatformKey"/>, so a platform the
+        /// user self-tracks through an aggregator still matches a friend's game on that platform. Returns
+        /// null when neither yields a platform.
+        /// </summary>
+        public static string ResolveStoredGameFamilyKey(string providerKey, string providerPlatformKey)
+        {
+            var mapped = MapProviderKeyToFriendPlatformKey(providerKey);
+            if (!string.IsNullOrWhiteSpace(mapped))
+            {
+                return mapped;
+            }
+
+            return ResolveProviderPlatformKey(providerPlatformKey);
+        }
+
+        /// <summary>
         /// Resolves the Exophase achievement-page endpoint segment for a platform. PSN games live
         /// under /trophies/, Ubisoft/Uplay under /challenges/, and everything else under
         /// /achievements/. Keyed on the canonical provider platform key so every caller agrees on
