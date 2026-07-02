@@ -649,7 +649,8 @@ namespace PlayniteAchievements.Services.Friends
         }
 
         // Downloads friend avatars into the per-user icon cache and records the local path on each
-        // identity so it is persisted (and displayed) instead of a remote URL.
+        // identity so it is persisted (and displayed) instead of a remote URL. Avatars are named
+        // stably per friend (provider + user id) rather than by URL hash.
         private async Task DownloadFriendAvatarsAsync(
             string providerKey,
             IReadOnlyList<FriendIdentity> friends,
@@ -660,13 +661,45 @@ namespace PlayniteAchievements.Services.Friends
                 return;
             }
 
-            await Task.WhenAll(friends.Select(friend => DownloadFriendAvatarAsync(providerKey, friend, cancel)))
+            // Because the avatar filename no longer changes when the source URL changes, compare the
+            // incoming URL against the persisted one (single load per provider) so a friend's new
+            // avatar is re-downloaded while unchanged avatars reuse the cached file.
+            var persistedAvatarUrls = LoadPersistedAvatarUrls(providerKey);
+
+            await Task.WhenAll(friends
+                    .Select(friend => DownloadFriendAvatarAsync(providerKey, friend, persistedAvatarUrls, cancel)))
                 .ConfigureAwait(false);
+        }
+
+        private Dictionary<string, string> LoadPersistedAvatarUrls(string providerKey)
+        {
+            var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                var persisted = _friendCache?.LoadFriendIdentities(providerKey);
+                if (persisted != null)
+                {
+                    foreach (var identity in persisted)
+                    {
+                        if (identity != null && !string.IsNullOrWhiteSpace(identity.ExternalUserId))
+                        {
+                            map[identity.ExternalUserId] = identity.AvatarUrl;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to load persisted friend avatar URLs for {providerKey}.");
+            }
+
+            return map;
         }
 
         private async Task DownloadFriendAvatarAsync(
             string providerKey,
             FriendIdentity friend,
+            Dictionary<string, string> persistedAvatarUrls,
             CancellationToken cancel)
         {
             if (friend == null || string.IsNullOrWhiteSpace(friend.AvatarUrl))
@@ -676,8 +709,14 @@ namespace PlayniteAchievements.Services.Friends
 
             try
             {
+                var relativePath = FriendImageCachePathBuilder.BuildAvatarRelativePath(providerKey, friend.ExternalUserId);
+                var targetPath = _imageService.ResolveCacheRelativePath(relativePath);
+
+                var changed = !persistedAvatarUrls.TryGetValue(friend.ExternalUserId ?? string.Empty, out var previousUrl) ||
+                    !string.Equals(previousUrl, friend.AvatarUrl, StringComparison.OrdinalIgnoreCase);
+
                 var path = await _imageService
-                    .GetOrDownloadIconAsync(friend.AvatarUrl, ImageDecodeSize, cancel, FriendImageCacheFolders.Avatars)
+                    .GetOrDownloadIconToPathAsync(friend.AvatarUrl, targetPath, ImageDecodeSize, cancel, overwriteExistingTarget: changed)
                     .ConfigureAwait(false);
                 if (!string.IsNullOrWhiteSpace(path))
                 {
@@ -704,21 +743,32 @@ namespace PlayniteAchievements.Services.Friends
             }
 
             var decodeSize = ResolveAchievementIconDecodeSize();
+
+            // Stable, collision-safe filename stems keyed by achievement ApiName, so a game's icons
+            // land at friendgames/{provider}/{gameKey}/{stem}.png and are shared across every friend
+            // that owns the game (never re-downloaded once present).
+            var stems = AchievementIconCachePathBuilder.BuildFileStems(
+                definition.Achievements.Where(achievement => achievement != null).Select(achievement => achievement.ApiName));
+
             await Task.WhenAll(definition.Achievements
                     .Where(achievement => achievement != null)
-                    .Select(achievement => DownloadAchievementIconsAsync(achievement, decodeSize, cancel)))
+                    .Select(achievement => DownloadAchievementIconsAsync(definition, achievement, stems, decodeSize, cancel)))
                 .ConfigureAwait(false);
         }
 
         private async Task DownloadAchievementIconsAsync(
+            FriendGameDefinition definition,
             AchievementDetail achievement,
+            IReadOnlyDictionary<string, string> stems,
             int decodeSize,
             CancellationToken cancel)
         {
             var unlockedSource = achievement.UnlockedIconPath;
             var lockedSource = achievement.LockedIconPath;
+            var stem = ResolveAchievementStem(stems, achievement.ApiName);
 
-            var unlocked = await DownloadAchievementIconAsync(unlockedSource, decodeSize, cancel).ConfigureAwait(false);
+            var unlocked = await DownloadAchievementIconAsync(
+                definition, unlockedSource, stem, AchievementIconVariant.Unlocked, decodeSize, cancel).ConfigureAwait(false);
             achievement.UnlockedIconPath = unlocked;
 
             // Providers like Exophase use the same image for the locked and unlocked states. Reuse the
@@ -726,10 +776,25 @@ namespace PlayniteAchievements.Services.Friends
             // time, which otherwise doubles the per-achievement download cost.
             achievement.LockedIconPath = string.Equals(lockedSource, unlockedSource, StringComparison.OrdinalIgnoreCase)
                 ? unlocked
-                : await DownloadAchievementIconAsync(lockedSource, decodeSize, cancel).ConfigureAwait(false);
+                : await DownloadAchievementIconAsync(
+                    definition, lockedSource, stem, AchievementIconVariant.Locked, decodeSize, cancel).ConfigureAwait(false);
         }
 
-        private async Task<string> DownloadAchievementIconAsync(string url, int decodeSize, CancellationToken cancel)
+        private static string ResolveAchievementStem(IReadOnlyDictionary<string, string> stems, string apiName)
+        {
+            var key = apiName?.Trim();
+            return !string.IsNullOrEmpty(key) && stems != null && stems.TryGetValue(key, out var stem)
+                ? stem
+                : null;
+        }
+
+        private async Task<string> DownloadAchievementIconAsync(
+            FriendGameDefinition definition,
+            string url,
+            string stem,
+            AchievementIconVariant variant,
+            int decodeSize,
+            CancellationToken cancel)
         {
             if (string.IsNullOrWhiteSpace(url) || !url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
@@ -738,8 +803,13 @@ namespace PlayniteAchievements.Services.Friends
 
             try
             {
+                var fileName = FriendImageCachePathBuilder.GetAchievementFileName(stem, variant);
+                var relativePath = FriendImageCachePathBuilder.BuildGameImageRelativePath(
+                    definition.ProviderKey, definition.ProviderGameKey, fileName);
+                var targetPath = _imageService.ResolveCacheRelativePath(relativePath);
+
                 var path = await _imageService
-                    .GetOrDownloadIconAsync(url, decodeSize, cancel, FriendImageCacheFolders.Games)
+                    .GetOrDownloadIconToPathAsync(url, targetPath, decodeSize, cancel)
                     .ConfigureAwait(false);
                 return string.IsNullOrWhiteSpace(path) ? url : path;
             }
@@ -794,8 +864,8 @@ namespace PlayniteAchievements.Services.Friends
 
             try
             {
-                var localPath = await _imageService
-                    .GetOrDownloadIconAsync(bannerUrl, ImageDecodeSize, cancel, FriendImageCacheFolders.Games)
+                var localPath = await DownloadGameImageAsync(
+                    providerKey, providerGameKey, bannerUrl, FriendImageCachePathBuilder.GameIconFileName, cancel)
                     .ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(localPath))
                 {
@@ -830,31 +900,48 @@ namespace PlayniteAchievements.Services.Friends
                 return;
             }
 
+            var gameKey = source.ProviderGameKey ?? providerGameKey;
             try
             {
-                var iconPath = string.IsNullOrWhiteSpace(source.IconUrl)
-                    ? null
-                    : await _imageService
-                        .GetOrDownloadIconAsync(source.IconUrl, ImageDecodeSize, cancel, FriendImageCacheFolders.Games)
-                        .ConfigureAwait(false);
-                var coverPath = string.IsNullOrWhiteSpace(source.CoverUrl)
-                    ? null
-                    : await _imageService
-                        .GetOrDownloadIconAsync(source.CoverUrl, ImageDecodeSize, cancel, FriendImageCacheFolders.Games)
-                        .ConfigureAwait(false);
+                var iconPath = await DownloadGameImageAsync(
+                    providerKey, gameKey, source.IconUrl, FriendImageCachePathBuilder.GameIconFileName, cancel).ConfigureAwait(false);
+                var coverPath = await DownloadGameImageAsync(
+                    providerKey, gameKey, source.CoverUrl, FriendImageCachePathBuilder.GameCoverFileName, cancel).ConfigureAwait(false);
 
                 if (string.IsNullOrWhiteSpace(iconPath) && string.IsNullOrWhiteSpace(coverPath))
                 {
                     return;
                 }
 
-                _friendCache.SaveProviderGameImagePaths(providerKey, source.ProviderGameKey ?? providerGameKey, source.AppId, iconPath, coverPath);
+                _friendCache.SaveProviderGameImagePaths(providerKey, gameKey, source.AppId, iconPath, coverPath);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"Failed to cache unowned game images for {providerKey}/{providerGameKey}.");
             }
+        }
+
+        // Downloads a friend game's cover/icon art into the stable friendgames/{provider}/{gameKey}/
+        // folder. Shared across every friend that owns the game and reused (not re-downloaded) once
+        // present, because these images are keyed by game rather than by source URL.
+        private async Task<string> DownloadGameImageAsync(
+            string providerKey,
+            string gameKey,
+            string url,
+            string fileName,
+            CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return null;
+            }
+
+            var relativePath = FriendImageCachePathBuilder.BuildGameImageRelativePath(providerKey, gameKey, fileName);
+            var targetPath = _imageService.ResolveCacheRelativePath(relativePath);
+            return await _imageService
+                .GetOrDownloadIconToPathAsync(url, targetPath, ImageDecodeSize, cancel)
+                .ConfigureAwait(false);
         }
 
         private async Task RefreshAchievementsAsync(
