@@ -189,6 +189,12 @@ namespace PlayniteAchievements.Models.Friends
 
     public sealed class FriendAchievementRow
     {
+        /// <summary>
+        /// Stable, language-independent achievement identifier (e.g. the Steam api name) when the
+        /// provider can resolve one. Preferred over display text when matching to canonical
+        /// achievement definitions. Null for providers that expose no stable key.
+        /// </summary>
+        public string ApiName { get; set; }
         public string DisplayName { get; set; }
         public string Description { get; set; }
         public string IconUrl { get; set; }
