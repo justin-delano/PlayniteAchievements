@@ -44,6 +44,42 @@ namespace PlayniteAchievements.Tests.Providers
                 ExophaseFriendPlatformMatcher.ExtractPlatformSlugFromFriendGameKey("origin|titanfall-2-origin"));
         }
 
+        [DataTestMethod]
+        [DataRow("psn", "trophies")]
+        [DataRow("ps3", "trophies")]
+        [DataRow("ps4", "trophies")]
+        [DataRow("ps5", "trophies")]
+        [DataRow("vita", "trophies")]
+        [DataRow("ps2", "trophies")]
+        [DataRow("psp", "trophies")]
+        [DataRow("PSN", "trophies")]
+        [DataRow("ubisoft", "challenges")]
+        [DataRow("uplay", "challenges")]
+        [DataRow("steam", "achievements")]
+        [DataRow("xbox-360", "achievements")]
+        [DataRow("origin", "achievements")]
+        [DataRow("unknown", "achievements")]
+        public void ResolveExophaseEndpoint_MapsPlatformFamilyToEndpoint(string platform, string expected)
+        {
+            Assert.AreEqual(expected, ExophaseFriendPlatformMatcher.ResolveExophaseEndpoint(platform));
+        }
+
+        [DataTestMethod]
+        [DataRow("ps4", "PSN")]
+        [DataRow("ps5", "PSN")]
+        [DataRow("ps3", "PSN")]
+        [DataRow("vita", "PSN")]
+        [DataRow("xbox-360", "Xbox")]
+        [DataRow("xbox-one", "Xbox")]
+        [DataRow("uplay", "Ubisoft")]
+        [DataRow("origin", "EA")]
+        public void ResolveProviderPlatformKey_FoldsDerivedTokenIntoFamily(string derivedToken, string expected)
+        {
+            // The friend ownership filter compares these keys, so e.g. a game tagged "ps4" must fold
+            // into "PSN" to match a coarse "psn" selection.
+            Assert.AreEqual(expected, ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(derivedToken));
+        }
+
         private static bool IsSameProviderPlatform(
             string sourceName = null,
             string platformName = null,
