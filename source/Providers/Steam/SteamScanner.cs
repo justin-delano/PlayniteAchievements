@@ -304,7 +304,7 @@ namespace PlayniteAchievements.Providers.Steam
             return gameData;
         }
 
-        private Task<SchemaAndPercentages> FetchSchemaAsync(string accessToken, int appId, CancellationToken cancel)
+        internal Task<SchemaAndPercentages> FetchSchemaAsync(string accessToken, int appId, CancellationToken cancel)
         {
             var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage) ? "english" : _settings.Persisted.GlobalLanguage.Trim();
             return _steamApiClient.GetSchemaForGameDetailedAsync(
@@ -365,42 +365,6 @@ namespace PlayniteAchievements.Providers.Steam
                 throw new SteamTransientException($"[SteamAch] Transient scrape result for appId={appId}. detail={detail}, status={status}");
             }
 
-            var iconFileToAchievements = new Dictionary<string, List<SchemaAchievement>>(StringComparer.OrdinalIgnoreCase);
-
-            if (schema?.Achievements != null)
-            {
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Schema has {schema.Achievements.Count} achievements for appId={appId}");
-
-                foreach (var ach in schema.Achievements)
-                {
-                    if (string.IsNullOrWhiteSpace(ach.Name))
-                        continue;
-
-                    var iconFile = ExtractIconFilename(ach.Icon);
-                    if (!string.IsNullOrWhiteSpace(iconFile))
-                    {
-                        if (!iconFileToAchievements.ContainsKey(iconFile))
-                            iconFileToAchievements[iconFile] = new List<SchemaAchievement>();
-                        iconFileToAchievements[iconFile].Add(ach);
-                    }
-
-                    var iconGrayFile = ExtractIconFilename(ach.IconGray);
-                    if (!string.IsNullOrWhiteSpace(iconGrayFile) &&
-                        !string.Equals(iconGrayFile, iconFile, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!iconFileToAchievements.ContainsKey(iconGrayFile))
-                            iconFileToAchievements[iconGrayFile] = new List<SchemaAchievement>();
-                        iconFileToAchievements[iconGrayFile].Add(ach);
-                    }
-                }
-
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Built iconFileToAchievements with {iconFileToAchievements.Count} icon entries");
-            }
-            else
-            {
-                // _logger?.Warn($"[SteamAch] FetchUnlockedAsync: Schema is null or has no achievements for appId={appId}");
-            }
-
             var data = new UserUnlockedAchievements
             {
                 LastUpdatedUtc = DateTime.UtcNow,
@@ -413,71 +377,29 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (scraped.Rows != null)
             {
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Scraped {scraped.Rows.Count} rows for appId={appId}");
-                int withTime = 0, withoutTime = 0, matched = 0, fallbackMatches = 0;
+                var apiNamesByRow = ResolveScrapedApiNames(schema, scraped.Rows);
 
                 foreach (var row in scraped.Rows)
                 {
-                    var iconFile = ExtractIconFilename(row.IconUrl);
-                    if (!string.IsNullOrWhiteSpace(iconFile) && iconFileToAchievements.TryGetValue(iconFile, out var achievements))
+                    if (row == null ||
+                        !apiNamesByRow.TryGetValue(row, out var apiName) ||
+                        string.IsNullOrWhiteSpace(apiName))
                     {
-                        string apiName = null;
+                        continue;
+                    }
 
-                        if (achievements.Count == 1)
+                    data.ProgressNum[apiName] = row.ProgressNum;
+                    data.ProgressDenom[apiName] = row.ProgressDenom;
+
+                    if (row.IsUnlocked)
+                    {
+                        data.UnlockedApiNames.Add(apiName);
+                        if (row.UnlockTimeUtc.HasValue)
                         {
-                            // Icon maps to exactly one achievement - use it directly
-                            apiName = achievements[0].Name;
-                        }
-                        else
-                        {
-                            var rowDescription = NormalizeMatchText(row.Description);
-                            var rowDisplayName = NormalizeMatchText(row.DisplayName);
-
-                            // Multiple achievements share this icon - prioritize: Description, then DisplayName
-                            var descMatches = achievements.Where(a =>
-                                string.Equals(
-                                    NormalizeMatchText(a.Description),
-                                    rowDescription,
-                                    StringComparison.OrdinalIgnoreCase)).ToList();
-
-                            if (descMatches.Count == 1)
-                            {
-                                apiName = descMatches[0].Name;
-                            }
-                            else
-                            {
-                                // Description matched zero or multiple - fall back to DisplayName
-                                apiName = achievements.FirstOrDefault(a =>
-                                    string.Equals(
-                                        NormalizeMatchText(a.DisplayName),
-                                        rowDisplayName,
-                                        StringComparison.OrdinalIgnoreCase))?.Name;
-                            }
-
-                            if (apiName != null)
-                                fallbackMatches++;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(apiName))
-                        {
-                            data.ProgressNum[apiName] = row.ProgressNum;
-                            data.ProgressDenom[apiName] = row.ProgressDenom;
-
-                            if (row.IsUnlocked)
-                            {
-                                data.UnlockedApiNames.Add(apiName);
-                                if (row.UnlockTimeUtc.HasValue)
-                                {
-                                    data.UnlockTimesUtc[apiName] = row.UnlockTimeUtc.Value;
-                                }
-
-                                matched++;
-                                if (row.UnlockTimeUtc.HasValue) withTime++; else withoutTime++;
-                            }
+                            data.UnlockTimesUtc[apiName] = row.UnlockTimeUtc.Value;
                         }
                     }
                 }
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Processed rows - withTime={withTime}, withoutTime={withoutTime}, matched={matched}, fallbackMatches={fallbackMatches}");
             }
 
             return data;
@@ -504,6 +426,122 @@ namespace PlayniteAchievements.Providers.Steam
             return string.IsNullOrWhiteSpace(value)
                 ? string.Empty
                 : value.Trim();
+        }
+
+        /// <summary>
+        /// Reconstructs the stable achievement api name for each scraped row by matching the row's
+        /// icon filename against the schema's icon/icongray hashes. Icon hashes are language
+        /// independent, so this resolves api names even when the scraped display text is in a
+        /// different language than the schema. Description/display name are used only as a tie
+        /// breaker when multiple achievements share an icon.
+        /// </summary>
+        internal static IReadOnlyDictionary<ScrapedAchievement, string> ResolveScrapedApiNames(
+            SchemaAndPercentages schema,
+            IReadOnlyCollection<ScrapedAchievement> rows)
+        {
+            var result = new Dictionary<ScrapedAchievement, string>();
+            if (rows == null || rows.Count == 0)
+            {
+                return result;
+            }
+
+            var iconFileToAchievements = BuildIconFileToAchievements(schema);
+            if (iconFileToAchievements.Count == 0)
+            {
+                return result;
+            }
+
+            foreach (var row in rows)
+            {
+                if (row == null)
+                {
+                    continue;
+                }
+
+                var apiName = ResolveRowApiName(row, iconFileToAchievements);
+                if (!string.IsNullOrWhiteSpace(apiName))
+                {
+                    result[row] = apiName;
+                }
+            }
+
+            return result;
+        }
+
+        private static Dictionary<string, List<SchemaAchievement>> BuildIconFileToAchievements(SchemaAndPercentages schema)
+        {
+            var iconFileToAchievements = new Dictionary<string, List<SchemaAchievement>>(StringComparer.OrdinalIgnoreCase);
+            if (schema?.Achievements == null)
+            {
+                return iconFileToAchievements;
+            }
+
+            foreach (var ach in schema.Achievements)
+            {
+                if (string.IsNullOrWhiteSpace(ach.Name))
+                {
+                    continue;
+                }
+
+                var iconFile = ExtractIconFilename(ach.Icon);
+                if (!string.IsNullOrWhiteSpace(iconFile))
+                {
+                    if (!iconFileToAchievements.ContainsKey(iconFile))
+                        iconFileToAchievements[iconFile] = new List<SchemaAchievement>();
+                    iconFileToAchievements[iconFile].Add(ach);
+                }
+
+                var iconGrayFile = ExtractIconFilename(ach.IconGray);
+                if (!string.IsNullOrWhiteSpace(iconGrayFile) &&
+                    !string.Equals(iconGrayFile, iconFile, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!iconFileToAchievements.ContainsKey(iconGrayFile))
+                        iconFileToAchievements[iconGrayFile] = new List<SchemaAchievement>();
+                    iconFileToAchievements[iconGrayFile].Add(ach);
+                }
+            }
+
+            return iconFileToAchievements;
+        }
+
+        private static string ResolveRowApiName(
+            ScrapedAchievement row,
+            Dictionary<string, List<SchemaAchievement>> iconFileToAchievements)
+        {
+            var iconFile = ExtractIconFilename(row.IconUrl);
+            if (string.IsNullOrWhiteSpace(iconFile) ||
+                !iconFileToAchievements.TryGetValue(iconFile, out var achievements))
+            {
+                return null;
+            }
+
+            if (achievements.Count == 1)
+            {
+                // Icon maps to exactly one achievement - use it directly.
+                return achievements[0].Name;
+            }
+
+            var rowDescription = NormalizeMatchText(row.Description);
+            var rowDisplayName = NormalizeMatchText(row.DisplayName);
+
+            // Multiple achievements share this icon - prioritize: Description, then DisplayName.
+            var descMatches = achievements.Where(a =>
+                string.Equals(
+                    NormalizeMatchText(a.Description),
+                    rowDescription,
+                    StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (descMatches.Count == 1)
+            {
+                return descMatches[0].Name;
+            }
+
+            // Description matched zero or multiple - fall back to DisplayName.
+            return achievements.FirstOrDefault(a =>
+                string.Equals(
+                    NormalizeMatchText(a.DisplayName),
+                    rowDisplayName,
+                    StringComparison.OrdinalIgnoreCase))?.Name;
         }
 
         // ---------------------------------------------------------------------
