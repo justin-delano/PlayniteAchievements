@@ -718,6 +718,9 @@ namespace PlayniteAchievements.Tests.ViewModels
                 new List<FriendRefreshCandidate>();
 
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => _data;
+
+            public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() =>
+                new List<CurrentUserGameLabel>();
         }
     }
 }

@@ -623,6 +623,11 @@ namespace PlayniteAchievements.Services.Tests
 
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) =>
                 new FriendsOverviewData();
+
+            public IReadOnlyList<CurrentUserGameLabel> CurrentUserGameLabels { get; set; } =
+                new List<CurrentUserGameLabel>();
+
+            public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() => CurrentUserGameLabels;
         }
 
         private sealed class FakeDataProvider : IDataProvider

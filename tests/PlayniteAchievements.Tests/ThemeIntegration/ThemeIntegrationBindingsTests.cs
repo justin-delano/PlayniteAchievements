@@ -2634,6 +2634,9 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 new List<FriendRefreshCandidate>();
 
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => Data;
+
+            public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() =>
+                new List<CurrentUserGameLabel>();
         }
 
         private sealed class FakeLogger : ILogger

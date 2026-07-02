@@ -943,6 +943,37 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        IReadOnlyList<CurrentUserGameLabel> IFriendCacheManager.LoadCurrentUserGameLabels()
+        {
+            List<KeyValuePair<string, GameAchievementData>> records;
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadCurrentUserGameLabels");
+                records = _store.LoadAllCurrentUserGameDataByCacheKey() ??
+                          new List<KeyValuePair<string, GameAchievementData>>();
+            }
+
+            var labels = new List<CurrentUserGameLabel>(records.Count);
+            for (var i = 0; i < records.Count; i++)
+            {
+                var data = records[i].Value;
+                if (data?.PlayniteGameId == null || data.PlayniteGameId == Guid.Empty)
+                {
+                    continue;
+                }
+
+                labels.Add(new CurrentUserGameLabel
+                {
+                    PlayniteGameId = data.PlayniteGameId.Value,
+                    GameName = data.GameName,
+                    ProviderKey = data.ProviderKey,
+                    ProviderPlatformKey = data.ProviderPlatformKey
+                });
+            }
+
+            return labels;
+        }
+
         public void Dispose()
         {
             try

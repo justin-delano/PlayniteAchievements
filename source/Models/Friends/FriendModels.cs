@@ -269,4 +269,28 @@ namespace PlayniteAchievements.Models.Friends
             string gameName,
             CancellationToken cancel);
     }
+
+    /// <summary>
+    /// A current-user game as recorded in the plugin cache: the Playnite game id plus the servicing
+    /// provider label the plugin stored at scan time. Supplied to friend providers that map a friend's
+    /// games to the local library by name, so they match on the stored platform label rather than
+    /// re-deriving platform from Playnite Source/Platform strings.
+    /// </summary>
+    public sealed class CurrentUserGameLabel
+    {
+        public Guid PlayniteGameId { get; set; }
+        public string GameName { get; set; }
+        public string ProviderKey { get; set; }
+        public string ProviderPlatformKey { get; set; }
+    }
+
+    /// <summary>
+    /// Optional capability for a friend provider that resolves friend games against the current user's
+    /// local library. The refresh runtime supplies the current user's cached game labels once per
+    /// refresh; the provider owns how it indexes and matches them.
+    /// </summary>
+    public interface ICurrentUserGameLabelReceiver
+    {
+        void SetCurrentUserGameLabels(IReadOnlyList<CurrentUserGameLabel> labels);
+    }
 }
