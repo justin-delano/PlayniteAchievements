@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Services.Database;
 using SqlNado;
 
@@ -174,6 +175,48 @@ namespace PlayniteAchievements.SqlNado.Tests
                 dbWriteFailedCount,
                 remainingFileCount);
             Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void BuildDefinitionsFromFriendRows_SeedsFromRowsWithApiNameAndDisplayName()
+        {
+            var rows = new[]
+            {
+                new FriendAchievementRow { ApiName = "plat", DisplayName = "Platinum", Description = "All trophies", Unlocked = true },
+                new FriendAchievementRow { ApiName = "story", DisplayName = "Story done", Description = "Finish", Unlocked = false }
+            };
+
+            var defs = SqlNadoCacheBehavior.BuildDefinitionsFromFriendRows(rows);
+
+            Assert.AreEqual(2, defs.Count);
+            Assert.AreEqual("plat", defs[0].ApiName);
+            Assert.AreEqual("Platinum", defs[0].DisplayName);
+            Assert.AreEqual("All trophies", defs[0].Description);
+        }
+
+        [TestMethod]
+        public void BuildDefinitionsFromFriendRows_SkipsRowsMissingKeyOrName_AndDedupesByApiName()
+        {
+            var rows = new[]
+            {
+                new FriendAchievementRow { ApiName = "", DisplayName = "No key" },
+                new FriendAchievementRow { ApiName = "only-key", DisplayName = "  " },
+                new FriendAchievementRow { ApiName = "dup", DisplayName = "First" },
+                new FriendAchievementRow { ApiName = " DUP ", DisplayName = "Second (dupe key)" },
+                null
+            };
+
+            var defs = SqlNadoCacheBehavior.BuildDefinitionsFromFriendRows(rows);
+
+            Assert.AreEqual(1, defs.Count);
+            Assert.AreEqual("dup", defs[0].ApiName);
+            Assert.AreEqual("First", defs[0].DisplayName);
+        }
+
+        [TestMethod]
+        public void BuildDefinitionsFromFriendRows_NullInput_ReturnsEmpty()
+        {
+            Assert.AreEqual(0, SqlNadoCacheBehavior.BuildDefinitionsFromFriendRows(null).Count);
         }
 
         [TestMethod]

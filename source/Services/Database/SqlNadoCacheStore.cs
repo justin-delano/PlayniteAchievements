@@ -1913,9 +1913,25 @@ namespace PlayniteAchievements.Services.Database
                             return;
                         }
 
-                        var definitions = LoadAchievementDefinitionsForGame(db, game.Id);
-                        var totalAchievements = definitions.Count;
                         var incomingRows = achievements?.Rows ?? new List<FriendAchievementRow>();
+
+                        var definitions = LoadAchievementDefinitionsForGame(db, game.Id);
+                        if (definitions.Count == 0)
+                        {
+                            // No cached definitions for this game (e.g. a shared-library friend's game that
+                            // was never scraped for definitions and that the current user does not own under
+                            // this provider). Seed definitions from this unlock scrape so the friend's
+                            // unlocks can be recorded. When definitions already exist (from the user's own
+                            // data or a prior scrape) they are reused and only unlock status is merged.
+                            var seededDefinitions = SqlNadoCacheBehavior.BuildDefinitionsFromFriendRows(incomingRows);
+                            if (seededDefinitions.Count > 0)
+                            {
+                                UpsertAchievementDefinitions(db, game.Id, seededDefinitions, nowIso, updatedIso);
+                                definitions = LoadAchievementDefinitionsForGame(db, game.Id);
+                            }
+                        }
+
+                        var totalAchievements = definitions.Count;
                         var matchedRows = MapFriendRowsToDefinitions(definitions, incomingRows);
 
                         var cacheKey = BuildFriendCacheKey(providerKey, externalUserId, game);
@@ -3065,6 +3081,29 @@ namespace PlayniteAchievements.Services.Database
             }
 
             providerGameKey = NormalizeProviderGameKey(providerGameKey);
+
+            // Upgrade an existing provider-only row for this game in place (attach the PlayniteGameId)
+            // rather than inserting a second row. A cross-provider aggregator friend game (ProviderKey
+            // "Exophase" mapped to, say, a "PSN" library game) already has a provider-only row carrying
+            // its achievement definitions; creating a separate mapped row would split those definitions
+            // away from the ownership/progress/achievements that then attach to the mapped row, dropping
+            // every scraped unlock. Reusing the row keeps them on one Games.Id. No unique-index conflict:
+            // LoadGameByPlayniteId above already confirmed no mapped row exists for this PlayniteGameId.
+            var providerOnly = LoadProviderOnlyGameByAppId(db, providerKey, appId, providerGameKey);
+            if (providerOnly != null)
+            {
+                db.ExecuteNonQuery(
+                    @"UPDATE Games
+                      SET PlayniteGameId = ?,
+                          LastUpdatedUtc = ?
+                      WHERE Id = ?;",
+                    playniteGameId.ToString(),
+                    nowIso,
+                    providerOnly.Id);
+                UpdateMappedGameIdentity(db, providerOnly.Id, appId, providerGameKey, providerPlatformKey, gameName, nowIso);
+                return providerOnly.Id;
+            }
+
             var name = string.IsNullOrWhiteSpace(gameName)
                 ? $"{providerKey} Game {ToProviderGameLogKey(appId, providerGameKey)}"
                 : gameName.Trim();
