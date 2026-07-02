@@ -286,6 +286,15 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
+        // Resolves an icon_cache-rooted relative path (e.g. "icon_cache/friendgames/...") to an
+        // absolute path under the cache root, for callers that build their own stable target paths.
+        internal string ResolveCacheRelativePath(string relativePath)
+        {
+            return string.IsNullOrWhiteSpace(relativePath)
+                ? null
+                : Path.Combine(_cacheRoot, relativePath);
+        }
+
         internal string GetAchievementIconCachePath(
             string gameId,
             bool preserveOriginalResolution,
