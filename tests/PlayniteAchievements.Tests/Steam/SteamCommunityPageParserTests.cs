@@ -203,6 +203,48 @@ namespace PlayniteAchievements.Steam.Tests
         }
 
         [TestMethod]
+        public void ParseOwnedGames_ParsesFrenchCommaDecimalHoursOnRecord()
+        {
+            const string xml =
+                "<gamesList><games>" +
+                "<game><appID>440</appID><name>Team Fortress 2</name><hoursOnRecord>12,5</hoursOnRecord></game>" +
+                "</games></gamesList>";
+
+            var game = SteamCommunityPageParser.ParseOwnedGames(xml).Single();
+
+            Assert.AreEqual(440, game.AppId);
+            Assert.AreEqual(750, game.PlaytimeForever);
+        }
+
+        [TestMethod]
+        public void ParseOwnedGames_ParsesSpaceThousandsWithCommaDecimalHoursOnRecord()
+        {
+            const string xml =
+                "<gamesList><games>" +
+                "<game><appID>440</appID><name>Team Fortress 2</name><hoursOnRecord>1 234,5</hoursOnRecord></game>" +
+                "</games></gamesList>";
+
+            var game = SteamCommunityPageParser.ParseOwnedGames(xml).Single();
+
+            Assert.AreEqual(74070, game.PlaytimeForever);
+        }
+
+        [TestMethod]
+        public void ParseOwnedGames_ParsesFrenchHtmlHoursUnit()
+        {
+            const string html =
+                "<div class=\"gameslistitems_GameListItem_fr\">" +
+                "<a href=\"https://steamcommunity.com/app/440\">Team Fortress 2</a>" +
+                "<div>TOTAL PLAYED</div><div>12,5 heures</div>" +
+                "</div>";
+
+            var game = SteamCommunityPageParser.ParseOwnedGames(html).Single();
+
+            Assert.AreEqual(440, game.AppId);
+            Assert.AreEqual(750, game.PlaytimeForever);
+        }
+
+        [TestMethod]
         public void ParseOwnedGames_MapsModernHtmlRowsWithImageAppUrls()
         {
             const string html =

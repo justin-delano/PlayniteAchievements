@@ -404,6 +404,30 @@ namespace PlayniteAchievements.SqlNado.Tests
             StringAssert.Contains(store, "// Image source URLs are not persisted; the header banner is downloaded to");
         }
 
+        [TestMethod]
+        public void ResolveFriendDefinition_PrefersStableApiName_OverLocalizedDisplayText()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            // The stable api name is tried before the display-name/description/icon fallbacks so a
+            // friend's localized achievement text still matches the canonical definition.
+            StringAssert.Contains(store, "var rowApiName = NormalizeMatchText(row.ApiName);");
+            StringAssert.Contains(store, "string.Equals(NormalizeMatchText(def.ApiName), rowApiName, StringComparison.OrdinalIgnoreCase)");
+            var apiNameIndex = store.IndexOf("var byApiName = definitions", StringComparison.Ordinal);
+            var displayNameIndex = store.IndexOf("var exact = definitions", StringComparison.Ordinal);
+            Assert.IsTrue(apiNameIndex > 0 && apiNameIndex < displayNameIndex,
+                "ApiName match must precede the display-name match.");
+        }
+
+        [TestMethod]
+        public void NormalizeMatchText_FoldsDiacritics()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "NormalizationForm.FormD");
+            StringAssert.Contains(store, "UnicodeCategory.NonSpacingMark");
+        }
+
         private static string FindRepoFile(params string[] parts)
         {
             var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
