@@ -3486,6 +3486,23 @@ namespace PlayniteAchievements.Services.Database
             FriendAchievementRow row,
             HashSet<long> usedDefinitionIds)
         {
+            // Prefer a stable, language-independent key (e.g. Steam api name) when the friend row
+            // carries one. This matches correctly even when the friend's display text is in a
+            // different language than the stored definitions. Falls through to display-name/icon
+            // matching for providers that expose no stable key.
+            var rowApiName = NormalizeMatchText(row.ApiName);
+            if (!string.IsNullOrEmpty(rowApiName))
+            {
+                var byApiName = definitions
+                    .Where(def => !usedDefinitionIds.Contains(def.Id) &&
+                                  string.Equals(NormalizeMatchText(def.ApiName), rowApiName, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                if (byApiName.Count == 1)
+                {
+                    return byApiName[0];
+                }
+            }
+
             var rowDisplay = NormalizeMatchText(row.DisplayName);
             var rowDescription = NormalizeMatchText(row.Description);
 
@@ -3968,7 +3985,44 @@ namespace PlayniteAchievements.Services.Database
 
         private static string NormalizeMatchText(string value)
         {
-            return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            // Fold diacritics (NFD decompose + drop combining marks) and collapse internal
+            // whitespace so accent-only differences (e.g. "Épée" vs "Epee") compare equal. This is
+            // language neutral: it removes accents, it does not translate. Both the friend row and
+            // the definition text pass through here, so matching stays symmetric.
+            var decomposed = value.Trim().Normalize(NormalizationForm.FormD);
+            var builder = new StringBuilder(decomposed.Length);
+            var lastWasWhitespace = false;
+            foreach (var ch in decomposed)
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(ch) == UnicodeCategory.NonSpacingMark)
+                {
+                    continue;
+                }
+
+                if (char.IsWhiteSpace(ch))
+                {
+                    if (builder.Length > 0)
+                    {
+                        lastWasWhitespace = true;
+                    }
+                    continue;
+                }
+
+                if (lastWasWhitespace)
+                {
+                    builder.Append(' ');
+                    lastWasWhitespace = false;
+                }
+
+                builder.Append(ch);
+            }
+
+            return builder.ToString().Normalize(NormalizationForm.FormC);
         }
 
         private static string ExtractIconFilename(string iconUrl)
