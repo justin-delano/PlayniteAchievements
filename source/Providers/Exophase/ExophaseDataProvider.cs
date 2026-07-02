@@ -399,8 +399,11 @@ namespace PlayniteAchievements.Providers.Exophase
                 return CreateGameResult(game, providerPlatformKey, slug, false, new List<AchievementDetail>());
             }
 
-            // Fetch achievement page (includes schema + user progress when authenticated).
-            var achievementUrl = ExophaseApiClient.BuildUrlFromSlug(slug);
+            // Fetch achievement page (includes schema + user progress when authenticated). Pass the
+            // resolved platform key so the endpoint is driven by the known platform instead of the
+            // slug suffix, matching the friends path and removing the dependency on the search-API
+            // slug carrying a recognized -ps*/-uplay suffix.
+            var achievementUrl = ExophaseApiClient.BuildUrlFromSlug(slug, providerPlatformKey);
             var acceptLanguage = ExophaseApiClient.MapLanguageToAcceptLanguage(language);
             _logger?.Info($"[Exophase] Fetching achievements from URL: {achievementUrl}");
             _logger?.Debug($"[Exophase] Accept-Language header: {acceptLanguage}");
@@ -1093,29 +1096,16 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             if (string.IsNullOrWhiteSpace(slug)) return null;
 
-            switch (slug)
+            // Route through the single canonical family map so this and the friends path agree on
+            // every platform. Unknown slugs keep the historical Title-cased fallback.
+            var providerKey = ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(slug);
+            if (!string.IsNullOrWhiteSpace(providerKey))
             {
-                case "steam": return "Steam";
-                case "gog": return "GOG";
-                case "epic": return "Epic";
-                case "blizzard": return "BattleNet";
-                case "origin": return "EA";
-                case "xbox": return "Xbox";
-                case "xbox-one": return "Xbox";
-                case "xbox-360": return "Xbox";
-                case "psn": return "PSN";
-                case "ps3": return "PSN";
-                case "ps4": return "PSN";
-                case "ps5": return "PSN";
-                case "vita": return "PSN";
-                case "retro": return "RetroAchievements";
-                case "android": return "GooglePlay";
-                case "apple": return "Apple";
-                case "ubisoft": return "Ubisoft";
-                case "uplay": return "Ubisoft";
-                default:
-                    return char.ToUpper(slug[0]) + slug.Substring(1);
+                return providerKey;
             }
+
+            var trimmed = slug.Trim();
+            return trimmed.Length == 0 ? null : char.ToUpper(trimmed[0]) + trimmed.Substring(1);
         }
 
         private static string ExtractPlatformTokenFromSlug(string slug)
