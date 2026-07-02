@@ -300,6 +300,7 @@
     <Compile Include="..\..\source\Services\Friends\FriendOverviewProjection.cs" Link="Source\Services\Friends\FriendOverviewProjection.cs" />
     <Compile Include="..\..\source\Services\Friends\FriendsRefreshRuntime.cs" Link="Source\Services\Friends\FriendsRefreshRuntime.cs" />
     <Compile Include="..\..\source\Services\Friends\FriendImageCacheKeys.cs" Link="Source\Services\Friends\FriendImageCacheKeys.cs" />
+    <Compile Include="..\..\source\Services\Friends\FriendImageCachePathBuilder.cs" Link="Source\Services\Friends\FriendImageCachePathBuilder.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\ControlMappings.cs" Link="Source\Services\ThemeMigration\ControlMappings.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\CustomMigrationSelection.cs" Link="Source\Services\ThemeMigration\CustomMigrationSelection.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\MigrationMode.cs" Link="Source\Services\ThemeMigration\MigrationMode.cs" />
