@@ -54,6 +54,14 @@ namespace PlayniteAchievements.Services.Images
             return CustomFolderName;
         }
 
+        // Sanitizes an arbitrary value into a single filesystem-safe path segment, reusing the same
+        // rules as achievement stems (invalid-char stripping, reserved-name guarding, length cap).
+        // Used for provider/game-key folder segments in the friend image cache.
+        internal static string SanitizeSegment(string value)
+        {
+            return SanitizeApiName(value);
+        }
+
         public static IReadOnlyDictionary<string, string> BuildFileStems(IEnumerable<string> apiNames)
         {
             var normalizedApiNames = (apiNames ?? Array.Empty<string>())
