@@ -120,8 +120,11 @@ namespace PlayniteAchievements.Providers.Exophase
                 foreach (var slug in slugs)
                 {
                     var achievementUrl = ExophaseApiClient.BuildUrlFromSlug(slug);
+
+                    // Warm the CDN for award thumbnails so the subsequent icon downloads hit 200 rather
+                    // than the initial cold-CDN 404 (paid once per game via the stable icon cache).
                     var fetchedAchievements = await _apiClient
-                        .FetchAchievementsAsync(achievementUrl, acceptLanguage, ct)
+                        .FetchAchievementsAsync(achievementUrl, acceptLanguage, ct, waitForImages: true)
                         .ConfigureAwait(false);
 
                     if (fetchedAchievements == null || fetchedAchievements.Count == 0)
