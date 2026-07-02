@@ -87,9 +87,12 @@ namespace PlayniteAchievements.Providers.Exophase
                 case "xbox-360":
                     return "Xbox";
                 case "psn":
+                case "ps1":
+                case "ps2":
                 case "ps3":
                 case "ps4":
                 case "ps5":
+                case "psp":
                 case "vita":
                     return "PSN";
                 case "retro": return "RetroAchievements";
@@ -100,6 +103,23 @@ namespace PlayniteAchievements.Providers.Exophase
                     return "Ubisoft";
                 default:
                     return null;
+            }
+        }
+
+        /// <summary>
+        /// Resolves the Exophase achievement-page endpoint segment for a platform. PSN games live
+        /// under /trophies/, Ubisoft/Uplay under /challenges/, and everything else under
+        /// /achievements/. Keyed on the canonical provider platform key so every caller agrees on
+        /// the endpoint for a given platform family, whatever slug/token variant it arrived as.
+        /// </summary>
+        public static string ResolveExophaseEndpoint(string platformSlugOrProviderKey)
+        {
+            var providerKey = ResolveProviderPlatformKey(platformSlugOrProviderKey);
+            switch (providerKey)
+            {
+                case "PSN": return "trophies";
+                case "Ubisoft": return "challenges";
+                default: return "achievements";
             }
         }
 
@@ -274,9 +294,12 @@ namespace PlayniteAchievements.Providers.Exophase
             "origin",
             "xbox",
             "psn",
+            "ps1",
+            "ps2",
             "ps3",
             "ps4",
             "ps5",
+            "psp",
             "vita",
             "retro",
             "android",
