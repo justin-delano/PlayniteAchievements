@@ -878,7 +878,7 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             var platformSlug = NormalizePlatformTokenForExophaseSlug(GetExophasePlatformSlug(game));
-            var normalizedName = NormalizeGameName(game.Name);
+            var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(game.Name);
             _logger?.Debug($"[Exophase] Resolving slug for '{game.Name}' (platform: {platformSlug ?? "unknown"})");
 
             if (string.IsNullOrWhiteSpace(platformSlug))
@@ -941,35 +941,14 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            var normalizedSearch = gameName.ToLowerInvariant().Trim();
+            var normalizedSearch = ExophaseGameNameMatcher.NormalizeGameName(gameName);
 
             var scored = games.Select(g =>
             {
-                var score = 0;
-                var title = (g.Title ?? string.Empty).ToLowerInvariant().Trim();
+                var title = ExophaseGameNameMatcher.NormalizeGameName(g.Title ?? string.Empty);
+                var score = ExophaseGameNameMatcher.ComputeMatchScore(normalizedSearch, title);
 
-                if (title == normalizedSearch)
-                {
-                    score += 100;
-                }
-                else if (title.StartsWith(normalizedSearch))
-                {
-                    score += 80;
-                }
-                else if (title.Contains(normalizedSearch))
-                {
-                    score += 60;
-                }
-                else if (normalizedSearch.Contains(title))
-                {
-                    score += 50;
-                }
-                else
-                {
-                    score += -100;
-                }
-
-                if (!string.IsNullOrWhiteSpace(platformSlug) && !string.IsNullOrWhiteSpace(g.EndpointAwards))
+                if (score > 0 && !string.IsNullOrWhiteSpace(platformSlug) && !string.IsNullOrWhiteSpace(g.EndpointAwards))
                 {
                     if (g.EndpointAwards.IndexOf($"-{platformSlug}", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
@@ -1205,104 +1184,8 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            var normalizedName = NormalizeGameNameForSlug(game.Name);
+            var normalizedName = ExophaseGameNameMatcher.NormalizeGameNameForSlug(game.Name);
             return $"{normalizedName}-{platformSlug}";
-        }
-
-        #endregion
-
-        #region Name Normalization
-
-        /// <summary>
-        /// Normalizes a game name for use in a slug.
-        /// Lowercase, spaces/special chars to hyphens, remove consecutive hyphens.
-        /// </summary>
-        private static string NormalizeGameNameForSlug(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return null;
-            }
-
-            var normalized = NormalizeGameName(name).ToLowerInvariant();
-
-            var chars = new char[normalized.Length];
-            var charIndex = 0;
-            var lastWasHyphen = false;
-
-            foreach (var c in normalized)
-            {
-                if (char.IsLetterOrDigit(c))
-                {
-                    chars[charIndex++] = c;
-                    lastWasHyphen = false;
-                }
-                else if (!lastWasHyphen)
-                {
-                    chars[charIndex++] = '-';
-                    lastWasHyphen = true;
-                }
-            }
-
-            if (charIndex > 0 && chars[charIndex - 1] == '-')
-            {
-                charIndex--;
-            }
-
-            return new string(chars, 0, charIndex);
-        }
-
-        /// <summary>
-        /// Normalizes a game name for searching.
-        /// Removes edition suffixes and special characters.
-        /// </summary>
-        private static string NormalizeGameName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return name;
-            }
-
-            var normalized = name.Trim();
-
-            var suffixes = new[]
-            {
-                " - Definitive Edition",
-                " - Game of the Year Edition",
-                " - Complete Edition",
-                " - Collector's Edition",
-                " - Deluxe Edition",
-                " - Standard Edition",
-                " - Ultimate Edition",
-                " - Premium Edition",
-                " Definitive Edition",
-                " Game of the Year Edition",
-                " Complete Edition",
-                " Collector's Edition",
-                " Deluxe Edition",
-                " Standard Edition",
-                " Ultimate Edition",
-                " Premium Edition",
-                " (Definitive Edition)",
-                " (Game of the Year Edition)",
-                " (Complete Edition)",
-                " (Collector's Edition)",
-                " (Deluxe Edition)",
-                " (Standard Edition)",
-                " (Ultimate Edition)",
-                " (Premium Edition)"
-            };
-
-            foreach (var suffix in suffixes)
-            {
-                if (normalized.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                {
-                    normalized = normalized.Substring(0, normalized.Length - suffix.Length);
-                    break;
-                }
-            }
-
-            return normalized.Trim();
         }
 
         #endregion
