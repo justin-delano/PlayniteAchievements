@@ -1,7 +1,10 @@
 using Playnite.SDK;
+using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
@@ -493,9 +496,36 @@ namespace PlayniteAchievements.Views
             // Unowned (provider-only) friend games have no Playnite Guid, so the shared builder
             // offers them only Refresh. Add a Clear Data item that removes the game's cached
             // friend data across all friends, mirroring the owned-game Clear Data action.
+            var addedMaintenanceSeparator = false;
+            void EnsureMaintenanceSeparator()
+            {
+                if (!addedMaintenanceSeparator)
+                {
+                    menu.Items.Add(new Separator());
+                    addedMaintenanceSeparator = true;
+                }
+            }
+
+            if (menu != null && IsMappableExophaseFriendGame(data, out var exophaseGame))
+            {
+                EnsureMaintenanceSeparator();
+                menu.Items.Add(CreateTextMenuItem(
+                    exophaseGame.PlayniteGameId.HasValue
+                        ? GetText("LOCPlayAch_Menu_ChangePlayniteMapping", "Change Playnite Mapping")
+                        : GetText("LOCPlayAch_Menu_MapToPlayniteGame", "Map to Playnite Game"),
+                    () => EditExophaseFriendGameMapping(exophaseGame)));
+
+                if (HasManualExophaseFriendGameMapping(exophaseGame))
+                {
+                    menu.Items.Add(CreateTextMenuItem(
+                        GetText("LOCPlayAch_Menu_ClearPlayniteMapping", "Clear Playnite Mapping"),
+                        () => ClearExophaseFriendGameMapping(exophaseGame)));
+                }
+            }
+
             if (menu != null && IsClearableUnownedGame(data, out var unownedGame))
             {
-                menu.Items.Add(new Separator());
+                EnsureMaintenanceSeparator();
                 menu.Items.Add(GameRowContextMenuBuilder.CreateMenuItem(
                     this,
                     "LOCPlayAch_Menu_ClearData",
@@ -512,6 +542,159 @@ namespace PlayniteAchievements.Views
                    && !game.PlayniteGameId.HasValue
                    && !string.IsNullOrWhiteSpace(game.ProviderKey)
                    && (game.AppId > 0 || !string.IsNullOrWhiteSpace(game.ProviderGameKey));
+        }
+
+        private static bool IsMappableExophaseFriendGame(object data, out FriendGameSummaryItem game)
+        {
+            game = data as FriendGameSummaryItem;
+            return game != null &&
+                   string.Equals(game.ProviderKey, "Exophase", StringComparison.OrdinalIgnoreCase) &&
+                   !string.IsNullOrWhiteSpace(game.ProviderGameKey);
+        }
+
+        private static bool HasManualExophaseFriendGameMapping(FriendGameSummaryItem game)
+        {
+            var key = ExophaseSettings.NormalizeFriendGameMappingKey(game?.ProviderGameKey);
+            return !string.IsNullOrWhiteSpace(key) &&
+                   ProviderRegistry.Settings<ExophaseSettings>().FriendGameMappings?.ContainsKey(key) == true;
+        }
+
+        private MenuItem CreateTextMenuItem(string header, Action onClick)
+        {
+            var item = new MenuItem { Header = header };
+            item.Click += (_, __) => onClick?.Invoke();
+            return item;
+        }
+
+        private void EditExophaseFriendGameMapping(FriendGameSummaryItem game)
+        {
+            if (!IsMappableExophaseFriendGame(game, out game))
+            {
+                return;
+            }
+
+            try
+            {
+                var selected = PlayniteGamePickerDialog.Pick(
+                    Window.GetWindow(this),
+                    _playniteApi?.Database?.Games,
+                    GetText("LOCPlayAch_Menu_MapToPlayniteGame", "Map to Playnite Game"),
+                    game.GameName);
+                if (selected == null)
+                {
+                    return;
+                }
+
+                var friendPlatform = ExophaseFriendPlatformMatcher.ExtractPlatformSlugFromFriendGameKey(game.ProviderGameKey);
+                if (!ExophaseFriendPlatformMatcher.IsSameProviderPlatform(selected, friendPlatform))
+                {
+                    _playniteApi?.Dialogs?.ShowMessage(
+                        string.Format(
+                            GetText(
+                                "LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch",
+                                "The selected Playnite game is not on the same platform as the Exophase friend game ({0})."),
+                            string.IsNullOrWhiteSpace(friendPlatform) ? "unknown" : friendPlatform),
+                        GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                SaveExophaseFriendGameMapping(game, selected);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to edit Exophase friend game mapping for {game.ProviderGameKey}.");
+                _playniteApi?.Dialogs?.ShowErrorMessage(
+                    string.Format(GetText("LOCPlayAch_Status_Failed", "Failed: {0}"), ex.Message),
+                    GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"));
+            }
+        }
+
+        private void SaveExophaseFriendGameMapping(FriendGameSummaryItem game, Game playniteGame)
+        {
+            if (game == null || playniteGame == null || playniteGame.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            var key = ExophaseSettings.NormalizeFriendGameMappingKey(game.ProviderGameKey);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var settings = ProviderRegistry.Settings<ExophaseSettings>();
+            var mappings = new Dictionary<string, Guid>(
+                settings.FriendGameMappings ?? new Dictionary<string, Guid>(),
+                StringComparer.OrdinalIgnoreCase)
+            {
+                [key] = playniteGame.Id
+            };
+            settings.FriendGameMappings = mappings;
+            ProviderRegistry.Write(settings, persistToDisk: true);
+            PlayniteAchievementsPlugin.NotifySettingsSaved();
+
+            if (!game.PlayniteGameId.HasValue)
+            {
+                var clearResult = _friendCache?.ClearUnownedFriendGame(game.ProviderKey, game.AppId, game.ProviderGameKey);
+                if (clearResult != null && !clearResult.Success)
+                {
+                    _logger?.Warn($"Failed to clear provider-only Exophase row after mapping {game.ProviderGameKey}: {clearResult.ErrorMessage}");
+                }
+            }
+
+            RefreshExophaseProviderGame(game);
+            _ = _viewModel?.LoadAsync();
+        }
+
+        private void ClearExophaseFriendGameMapping(FriendGameSummaryItem game)
+        {
+            if (!IsMappableExophaseFriendGame(game, out game))
+            {
+                return;
+            }
+
+            try
+            {
+                var key = ExophaseSettings.NormalizeFriendGameMappingKey(game.ProviderGameKey);
+                var settings = ProviderRegistry.Settings<ExophaseSettings>();
+                var mappings = new Dictionary<string, Guid>(
+                    settings.FriendGameMappings ?? new Dictionary<string, Guid>(),
+                    StringComparer.OrdinalIgnoreCase);
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    mappings.Remove(key);
+                }
+
+                settings.FriendGameMappings = mappings;
+                ProviderRegistry.Write(settings, persistToDisk: true);
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
+                RefreshExophaseProviderGame(game);
+                _ = _viewModel?.LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to clear Exophase friend game mapping for {game.ProviderGameKey}.");
+            }
+        }
+
+        private void RefreshExophaseProviderGame(FriendGameSummaryItem game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            var refreshTarget = new FriendGameSummaryItem
+            {
+                ProviderKey = game.ProviderKey,
+                Provider = game.Provider,
+                AppId = game.AppId,
+                ProviderGameKey = game.ProviderGameKey,
+                GameName = game.GameName
+            };
+            GameRowContextMenuBuilder.ExecuteCommand(_viewModel?.RefreshFriendSelectedGameCommand, refreshTarget);
         }
 
         private void ClearUnownedGame(FriendGameSummaryItem game)

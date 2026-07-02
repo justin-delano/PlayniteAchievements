@@ -142,7 +142,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task RefreshAsync_RecentFullLibraryFriend_DiscoversDefinitionsAndPersistsProviderOnlyOwnership()
+        public async Task RefreshAsync_FullLibraryFriend_DiscoversDefinitionsAndPersistsProviderOnlyOwnership()
         {
             var cache = new FakeFriendCache();
             var friends = new FakeFriendsProvider("Steam")
@@ -155,7 +155,7 @@ namespace PlayniteAchievements.Services.Tests
                     new IDataProvider[] { new FakeDataProvider("Steam", friends) },
                     new FriendRefreshOptions
                     {
-                        Scope = FriendRefreshScope.Recent,
+                        Scope = FriendRefreshScope.Full,
                         LibraryScope = FriendLibraryScope.Full
                     },
                     reportProgress: null)
@@ -182,7 +182,7 @@ namespace PlayniteAchievements.Services.Tests
                     new IDataProvider[] { new FakeDataProvider("Steam", friends) },
                     new FriendRefreshOptions
                     {
-                        Scope = FriendRefreshScope.Recent,
+                        Scope = FriendRefreshScope.Full,
                         LibraryScope = FriendLibraryScope.Full
                     },
                     reportProgress: null)
@@ -220,7 +220,7 @@ namespace PlayniteAchievements.Services.Tests
                     new IDataProvider[] { new FakeDataProvider("Steam", friends) },
                     new FriendRefreshOptions
                     {
-                        Scope = FriendRefreshScope.Recent,
+                        Scope = FriendRefreshScope.Full,
                         LibraryScope = FriendLibraryScope.Full
                     },
                     reportProgress: null)
@@ -263,17 +263,17 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task RefreshAsync_RecentSharedLibraryFriend_DoesNotDiscoverProviderOnlyOwnership()
+        public async Task RefreshAsync_Recent_DoesNotDiscoverProviderOnlyOwnership()
         {
-            // A friend not opted into the full library is refreshed for shared games only, even when
-            // the request scope (Recent) permits full-library discovery.
+            // Recent is strictly playtime-delta based; it never discovers provider-only libraries,
+            // even for a full-library friend and a Full request-level library scope.
             var cache = new FakeFriendCache();
             var friends = new FakeFriendsProvider("Steam")
             {
                 FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") }
             };
 
-            await CreateRuntime(cache)
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
                 .RefreshAsync(
                     new IDataProvider[] { new FakeDataProvider("Steam", friends) },
                     new FriendRefreshOptions
@@ -340,6 +340,45 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(1, friends.GetOwnedGamesCalls);
             Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
             Assert.AreEqual(FriendLibraryScope.Full, cache.LastLoadOptions.LibraryScope);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_ExophaseFullScope_RefreshesSharedFriendOwnershipForMapping()
+        {
+            var playniteGameId = Guid.NewGuid();
+            var cache = new FakeFriendCache();
+            var friends = new FakeFriendsProvider("Exophase")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1"), MakeFriend("2") },
+                OwnedGamesToReturn = new List<FriendGameOwnership>
+                {
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "Exophase",
+                        ExternalUserId = "1",
+                        ProviderGameKey = "origin|titanfall-2-origin",
+                        ProviderPlatformKey = "EA",
+                        PlayniteGameId = playniteGameId,
+                        GameName = "Titanfall 2"
+                    }
+                }
+            };
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Exophase", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = FriendLibraryScope.Shared
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(2, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(2, cache.SaveFriendOwnershipCalls);
+            Assert.AreEqual(0, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(FriendRefreshScope.Full, cache.LastLoadOptions.Scope);
         }
 
         [TestMethod]

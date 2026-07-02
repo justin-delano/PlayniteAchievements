@@ -35,8 +35,7 @@ namespace PlayniteAchievements.Models.Friends
 
         public static bool ScopePermitsProviderOnlyGames(FriendRefreshScope scope)
         {
-            return scope == FriendRefreshScope.Recent ||
-                   scope == FriendRefreshScope.Full;
+            return scope == FriendRefreshScope.Full;
         }
 
         public static bool IncludesProviderOnlyGames(this FriendRefreshOptions options)

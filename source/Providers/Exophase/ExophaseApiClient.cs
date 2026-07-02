@@ -960,6 +960,47 @@ namespace PlayniteAchievements.Providers.Exophase
             return NormalizeIconUrlCandidate(imgNode.GetAttributeValue("src", string.Empty));
         }
 
+        internal static string ResolveImageUrl(HtmlNode node)
+        {
+            var imgNode = string.Equals(node?.Name, "img", StringComparison.OrdinalIgnoreCase)
+                ? node
+                : node?.SelectSingleNode(".//img[@data-normal or @data-src or @data-lazy-src or @data-original or @srcset or @src]");
+            if (imgNode == null)
+            {
+                return string.Empty;
+            }
+
+            return FirstNonEmpty(
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("data-normal", string.Empty)),
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("data-src", string.Empty)),
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("data-lazy-src", string.Empty)),
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("data-original", string.Empty)),
+                NormalizeIconUrlCandidate(SelectSrcSetCandidate(imgNode.GetAttributeValue("srcset", string.Empty))),
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("src", string.Empty)));
+        }
+
+        private static string SelectSrcSetCandidate(string srcset)
+        {
+            if (string.IsNullOrWhiteSpace(srcset))
+            {
+                return string.Empty;
+            }
+
+            var candidates = srcset
+                .Split(',')
+                .Select(candidate => candidate.Trim())
+                .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+                .Select(candidate => candidate.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
+                .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+                .ToList();
+            return candidates.Count == 0 ? string.Empty : candidates[candidates.Count - 1];
+        }
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            return values?.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+        }
+
         private static string NormalizeIconUrlCandidate(string url)
         {
             if (string.IsNullOrWhiteSpace(url))
@@ -977,6 +1018,19 @@ namespace PlayniteAchievements.Providers.Exophase
             if (normalized.StartsWith("//", StringComparison.Ordinal))
             {
                 return "https:" + normalized;
+            }
+
+            if (normalized.StartsWith("/", StringComparison.Ordinal))
+            {
+                var host = Regex.IsMatch(normalized, @"^/(?:[a-z0-9-]+)/(?:games|awards)/", RegexOptions.IgnoreCase)
+                    ? "https://m.exophase.com"
+                    : "https://www.exophase.com";
+                return host + normalized;
+            }
+
+            if (Regex.IsMatch(normalized, @"^(?:m\.|www\.)?exophase\.com/", RegexOptions.IgnoreCase))
+            {
+                return "https://" + normalized;
             }
 
             return normalized;

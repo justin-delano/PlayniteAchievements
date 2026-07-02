@@ -323,6 +323,44 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [TestMethod]
+        public void CacheStore_ExophaseStringKeysDoNotFallbackToStaleSharedMappings()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "ShouldUseSharedFriendGameFallback(providerKey, providerGameKey, playniteGameId)");
+            StringAssert.Contains(store, "return !IsExophaseProvider(providerKey) || string.IsNullOrWhiteSpace(providerGameKey);");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendGameAndAchievementRowsShareImageResolution()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "GameLogo = ResolveFriendGameIconPath(presentation, row.IconPath)");
+            StringAssert.Contains(store, "GameCoverPath = ResolveFriendGameCoverPath(presentation, row.CoverPath)");
+            StringAssert.Contains(store, "GameIconPath = ResolveFriendGameIconPath(presentation, row.IconPath)");
+            StringAssert.Contains(store, "GameCoverPath = ResolveFriendGameCoverPath(presentation, row.CoverPath)");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendAchievementRowsRequireCurrentOwnership()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "INNER JOIN FriendOwnership fo ON fo.UserId = u.Id AND fo.GameId = g.Id");
+        }
+
+        [TestMethod]
+        public void CacheStore_RecentFriendCandidatesUsePlaytimeDeltaOnly()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, @"AND COALESCE(fo.Playtime2WeeksMinutes, 0) > 0");
+            Assert.IsFalse(store.Contains("fo.LastScrapedUtc IS NULL"));
+            Assert.IsFalse(store.Contains("fo.LastScrapedUtc < ?"));
+        }
+
+        [TestMethod]
         public void CacheStore_DeleteFriendData_PreserveFriendRecord_SkipsUsersDelete()
         {
             var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));

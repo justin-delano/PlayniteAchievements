@@ -54,11 +54,78 @@ namespace PlayniteAchievements.Providers.Tests
             Assert.AreEqual("https://m.exophase.com/blizzard/awards/s/example.png", iconUrl);
         }
 
+        [TestMethod]
+        public void ResolveImageUrl_WithLazyDataSrc_UsesDataSrc()
+        {
+            var node = LoadImageNode(@"
+<div class=""col-image"">
+    <img class=""lazyload""
+         src=""data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==""
+         data-src=""https://m.exophase.com/origin/games/s/titanfall-2.jpg?123"" />
+</div>");
+
+            var imageUrl = ExophaseApiClient.ResolveImageUrl(node);
+
+            Assert.AreEqual("https://m.exophase.com/origin/games/s/titanfall-2.jpg?123", imageUrl);
+        }
+
+        [TestMethod]
+        public void ResolveImageUrl_WithSrcSet_UsesLargestCandidate()
+        {
+            var node = LoadImageNode(@"
+<div class=""col-image"">
+    <img srcset=""https://m.exophase.com/origin/games/s/titanfall-2-small.jpg 1x,
+                 //m.exophase.com/origin/games/l/titanfall-2-large.jpg 2x"" />
+</div>");
+
+            var imageUrl = ExophaseApiClient.ResolveImageUrl(node);
+
+            Assert.AreEqual("https://m.exophase.com/origin/games/l/titanfall-2-large.jpg", imageUrl);
+        }
+
+        [TestMethod]
+        public void ResolveImageUrl_WithRelativeGameCdnPath_MakesAbsolute()
+        {
+            var node = LoadImageNode(@"
+<div class=""col-image"">
+    <img data-src=""/origin/games/s/titanfall-2.jpg?123"" />
+</div>");
+
+            var imageUrl = ExophaseApiClient.ResolveImageUrl(node);
+
+            Assert.AreEqual("https://m.exophase.com/origin/games/s/titanfall-2.jpg?123", imageUrl);
+        }
+
+        [TestMethod]
+        public void ExtractSlugFromUrl_ProfileAchievementLinkWithFragment_ReturnsSlug()
+        {
+            var slug = ExophaseApiClient.ExtractSlugFromUrl(
+                "https://www.exophase.com/game/titanfall-2-origin/achievements/#4768201");
+
+            Assert.AreEqual("titanfall-2-origin", slug);
+        }
+
+        [TestMethod]
+        public void ExtractSlugFromUrl_ProfileAchievementLinkWithQuery_ReturnsSlug()
+        {
+            var slug = ExophaseApiClient.ExtractSlugFromUrl(
+                "https://www.exophase.com/game/titanfall-2-origin/achievements/?foo=bar");
+
+            Assert.AreEqual("titanfall-2-origin", slug);
+        }
+
         private static HtmlNode LoadNode(string html)
         {
             var doc = new HtmlDocument();
             doc.LoadHtml(html);
             return doc.DocumentNode.SelectSingleNode("//li");
+        }
+
+        private static HtmlNode LoadImageNode(string html)
+        {
+            var doc = new HtmlDocument();
+            doc.LoadHtml(html);
+            return doc.DocumentNode.SelectSingleNode("//div");
         }
     }
 }

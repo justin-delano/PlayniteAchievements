@@ -317,6 +317,7 @@ namespace PlayniteAchievements.Services
                 .ToList();
             var libraryScope = ResolveCustomFriendLibraryScope(
                 scope,
+                resolvedOptions.LibraryScope,
                 providerAppIds,
                 providerGameKeys);
 
@@ -374,6 +375,7 @@ namespace PlayniteAchievements.Services
 
         private static FriendLibraryScope ResolveCustomFriendLibraryScope(
             FriendRefreshScope scope,
+            FriendLibraryScope requestedLibraryScope,
             IReadOnlyCollection<int> providerAppIds,
             IReadOnlyCollection<string> providerGameKeys)
         {
@@ -383,7 +385,14 @@ namespace PlayniteAchievements.Services
                 return FriendLibraryScope.Full;
             }
 
-            return FriendRefreshPolicy.GetDefaultLibraryScope(scope);
+            if (scope == FriendRefreshScope.Full)
+            {
+                return requestedLibraryScope == FriendLibraryScope.Full
+                    ? FriendLibraryScope.Full
+                    : FriendLibraryScope.Shared;
+            }
+
+            return FriendLibraryScope.Shared;
         }
 
         private RefreshModeType ResolveMode(RefreshRequest request)

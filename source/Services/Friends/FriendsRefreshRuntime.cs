@@ -224,7 +224,7 @@ namespace PlayniteAchievements.Services.Friends
                 _logger?.Debug(
                     $"Saved {providerKey} friend list: fetched={friends.Count}, active={writeFriends.WrittenCount}, skipped={writeFriends.SkippedCount}.");
 
-                if (ShouldRefreshOwnership(options))
+                if (ShouldRefreshOwnership(providerKey, options))
                 {
                     await RefreshOwnershipAsync(
                         friendsProvider,
@@ -392,7 +392,9 @@ namespace PlayniteAchievements.Services.Friends
             // In the Full scope, shared-library friends need no ownership fetch: Full already covers the
             // entire owned library. Only full-library friends require ownership here (to discover the
             // games they own that the current user does not).
-            if (scope == FriendRefreshScope.Full && !friendUsesFullLibrary)
+            if (scope == FriendRefreshScope.Full &&
+                !friendUsesFullLibrary &&
+                !RequiresOwnershipMapping(providerKey))
             {
                 return true;
             }
@@ -1328,11 +1330,16 @@ namespace PlayniteAchievements.Services.Friends
             return normalized;
         }
 
-        private static bool ShouldRefreshOwnership(FriendRefreshOptions options)
+        private static bool ShouldRefreshOwnership(string providerKey, FriendRefreshOptions options)
         {
             if (options == null)
             {
                 return false;
+            }
+
+            if (RequiresOwnershipMapping(providerKey))
+            {
+                return true;
             }
 
             return options.Scope == FriendRefreshScope.Shared ||
@@ -1340,6 +1347,11 @@ namespace PlayniteAchievements.Services.Friends
                    options.Scope == FriendRefreshScope.Custom ||
                    (options.Scope == FriendRefreshScope.Full &&
                     options.IncludesProviderOnlyGames());
+        }
+
+        private static bool RequiresOwnershipMapping(string providerKey)
+        {
+            return string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool ShouldDiscoverUnowned(string providerKey, FriendRefreshOptions options)

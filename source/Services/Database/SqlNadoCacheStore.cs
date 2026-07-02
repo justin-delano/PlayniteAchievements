@@ -1994,6 +1994,18 @@ namespace PlayniteAchievements.Services.Database
                     (options.Scope == FriendRefreshScope.Custom && options.PlayniteGameIds?.Count > 0))
                 {
                     var currentUserCandidates = LoadCurrentUserFriendRefreshCandidates(db, providerKey, options);
+                    if (ShouldUseMappedFriendOwnershipCandidates(providerKey, options))
+                    {
+                        currentUserCandidates.AddRange(LoadSharedFriendRefreshCandidates(
+                            db,
+                            providerKey,
+                            cutoffIso,
+                            recentOnly: false,
+                            includeProviderOnly: false,
+                            providerOnlyOnly: false,
+                            options));
+                    }
+
                     if (options.Scope == FriendRefreshScope.Full &&
                         ShouldIncludeProviderOnlyFriendRows(options))
                     {
@@ -2007,7 +2019,7 @@ namespace PlayniteAchievements.Services.Database
                             options));
                     }
 
-                    return currentUserCandidates;
+                    return DeduplicateFriendRefreshCandidates(currentUserCandidates);
                 }
 
                 return LoadSharedFriendRefreshCandidates(
@@ -2148,14 +2160,7 @@ namespace PlayniteAchievements.Services.Database
             if (recentOnly)
             {
                 sql.Append(
-                    @" AND (
-                            fo.LastScrapedUtc IS NULL
-                            OR fo.LastScrapedUtc = ''
-                            OR fo.LastScrapedUtc < ?
-                            OR fo.LastScrapeStatus = 'transient'
-                            OR COALESCE(fo.Playtime2WeeksMinutes, 0) > 0
-                          )");
-                args.Add(cutoffIso);
+                    @" AND COALESCE(fo.Playtime2WeeksMinutes, 0) > 0");
             }
 
             sql.Append(" ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;");
@@ -2288,6 +2293,36 @@ namespace PlayniteAchievements.Services.Database
             // Provider-only (unowned) rows are written only for friends who opted into the full
             // library, so include them only when the request-level policy permits full-library work.
             return options?.IncludesProviderOnlyGames() == true;
+        }
+
+        private static bool ShouldUseMappedFriendOwnershipCandidates(string providerKey, FriendRefreshOptions options)
+        {
+            return string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase) &&
+                   (options?.Scope == FriendRefreshScope.Full ||
+                    options?.Scope == FriendRefreshScope.Installed ||
+                    options?.Scope == FriendRefreshScope.SelectedGame ||
+                    (options?.Scope == FriendRefreshScope.Custom && options.PlayniteGameIds?.Count > 0));
+        }
+
+        private static List<FriendRefreshCandidate> DeduplicateFriendRefreshCandidates(
+            IEnumerable<FriendRefreshCandidate> candidates)
+        {
+            return (candidates ?? Enumerable.Empty<FriendRefreshCandidate>())
+                .Where(candidate => candidate?.Friend != null)
+                .GroupBy(BuildFriendRefreshCandidateKey, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToList();
+        }
+
+        private static string BuildFriendRefreshCandidateKey(FriendRefreshCandidate candidate)
+        {
+            var friendId = candidate?.Friend?.ExternalUserId?.Trim() ?? string.Empty;
+            var gameKey = !string.IsNullOrWhiteSpace(candidate?.ProviderGameKey)
+                ? "key:" + candidate.ProviderGameKey.Trim()
+                : (candidate?.AppId > 0
+                    ? "app:" + candidate.AppId.ToString(CultureInfo.InvariantCulture)
+                    : "playnite:" + (candidate?.PlayniteGameId?.ToString() ?? string.Empty));
+            return friendId + "\u001f" + gameKey;
         }
 
         private static List<string> NormalizeFriendFilterIds(IReadOnlyCollection<string> friendExternalUserIds)
@@ -2480,8 +2515,8 @@ namespace PlayniteAchievements.Services.Database
                             PlayniteGameId = playniteGameId,
                             GameName = row.GameName,
                             SortingName = presentation.SortingName ?? row.GameName,
-                            GameLogo = presentation.IconPath ?? MakeAbsolutePath(row.IconPath),
-                            GameCoverPath = presentation.CoverPath ?? MakeAbsolutePath(row.CoverPath),
+                            GameLogo = ResolveFriendGameIconPath(presentation, row.IconPath),
+                            GameCoverPath = ResolveFriendGameCoverPath(presentation, row.CoverPath),
                             PlatformText = presentation.PlatformText,
                             Platforms = presentation.Platforms,
                             RegionText = presentation.RegionText,
@@ -2611,6 +2646,16 @@ namespace PlayniteAchievements.Services.Database
             return string.IsNullOrWhiteSpace(resolved) ? "Unknown" : resolved.Trim();
         }
 
+        private string ResolveFriendGameIconPath(GamePresentation presentation, string cachedIconPath)
+        {
+            return presentation?.IconPath ?? MakeAbsolutePath(cachedIconPath);
+        }
+
+        private string ResolveFriendGameCoverPath(GamePresentation presentation, string cachedCoverPath)
+        {
+            return presentation?.CoverPath ?? MakeAbsolutePath(cachedCoverPath);
+        }
+
         private static string BuildFriendCacheKey(string providerKey, string externalUserId, GameRow game)
         {
             var gamePart = !string.IsNullOrWhiteSpace(game?.PlayniteGameId)
@@ -2626,6 +2671,11 @@ namespace PlayniteAchievements.Services.Database
             return string.IsNullOrWhiteSpace(providerGameKey)
                 ? null
                 : providerGameKey.Trim();
+        }
+
+        private static bool IsExophaseProvider(string providerKey)
+        {
+            return string.Equals(providerKey?.Trim(), "Exophase", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool HasProviderGameIdentity(int appId, string providerGameKey)
@@ -2909,7 +2959,9 @@ namespace PlayniteAchievements.Services.Database
                 }
             }
 
-            var shared = LoadSharedGameByAppId(db, providerKey, appId, providerGameKey);
+            var shared = ShouldUseSharedFriendGameFallback(providerKey, providerGameKey, playniteGameId)
+                ? LoadSharedGameByAppId(db, providerKey, appId, providerGameKey)
+                : null;
             if (shared != null || !allowProviderOnly)
             {
                 return shared;
@@ -2939,6 +2991,20 @@ namespace PlayniteAchievements.Services.Database
             return gameId > 0
                 ? LoadProviderOnlyGameByAppId(db, providerKey, appId, providerGameKey)
                 : null;
+        }
+
+        private static bool ShouldUseSharedFriendGameFallback(string providerKey, string providerGameKey, Guid? playniteGameId)
+        {
+            if (playniteGameId.HasValue && playniteGameId.Value != Guid.Empty)
+            {
+                return true;
+            }
+
+            // Steam/native integer app ids intentionally fall back to the current user's matching
+            // shared library row. Exophase string keys are already platform-harmonized by the provider;
+            // when it declines to emit a Playnite id, reusing an old mapped row would reintroduce
+            // cross-platform merges (for example an Origin friend game landing on a Steam library row).
+            return !IsExophaseProvider(providerKey) || string.IsNullOrWhiteSpace(providerGameKey);
         }
 
         private static long EnsureProviderOnlyGame(
@@ -3789,6 +3855,7 @@ namespace PlayniteAchievements.Services.Database
                   FROM Users u
                   INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
                   INNER JOIN Games g ON g.Id = ugp.GameId
+                  INNER JOIN FriendOwnership fo ON fo.UserId = u.Id AND fo.GameId = g.Id
                   INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id
                   INNER JOIN AchievementDefinitions ad ON ad.Id = ua.AchievementDefinitionId
                   LEFT JOIN Users su ON su.ProviderKey = g.ProviderKey AND su.IsCurrentUser = 1
@@ -3883,8 +3950,8 @@ namespace PlayniteAchievements.Services.Database
                     GameName = row.GameName,
                     SortingName = presentation.SortingName ?? row.GameName,
                     PlayniteGameId = playniteGameId,
-                    GameIconPath = presentation.IconPath ?? MakeAbsolutePath(row.IconPath),
-                    GameCoverPath = presentation.CoverPath ?? MakeAbsolutePath(row.CoverPath),
+                    GameIconPath = ResolveFriendGameIconPath(presentation, row.IconPath),
+                    GameCoverPath = ResolveFriendGameCoverPath(presentation, row.CoverPath),
                     FriendName = row.FriendName,
                     FriendExternalUserId = row.FriendExternalUserId,
                     FriendAvatarPath = !string.IsNullOrWhiteSpace(row.FriendAvatarPath)

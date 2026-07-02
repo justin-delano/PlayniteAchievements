@@ -159,7 +159,11 @@ namespace PlayniteAchievements.Providers.Exophase
                     GameName = game.Title,
                     IconUrl = game.ImageUrl,
                     CoverUrl = game.ImageUrl,
-                    PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeMinutes)
+                    PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeMinutes),
+                    Playtime2WeeksMinutes = game.RecentPlaytimeMinutes > 0
+                        ? (int?)game.RecentPlaytimeMinutes
+                        : null,
+                    LastPlayedUtc = game.LastPlayedUtc
                 });
             }
 
@@ -420,23 +424,39 @@ namespace PlayniteAchievements.Providers.Exophase
             string username,
             CancellationToken cancel)
         {
-            var url = BuildProfileUrl(username);
-            var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: true).ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(html))
+            var urls = new[]
             {
-                _logger?.Warn($"[ExophaseFriends] Profile fetch: empty or blocked HTML from {url}. " +
-                    "The page may require login, have been rate-limited, or failed to render.");
-                return Array.Empty<ExophaseFriendGame>();
+                BuildProfileUrl(username),
+                BuildGamesUrl(username)
+            }
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var games = new List<ExophaseFriendGame>();
+            foreach (var url in urls)
+            {
+                cancel.ThrowIfCancellationRequested();
+                var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: true).ConfigureAwait(false);
+                if (string.IsNullOrWhiteSpace(html))
+                {
+                    _logger?.Warn($"[ExophaseFriends] Profile fetch: empty or blocked HTML from {url}. " +
+                        "The page may require login, have been rate-limited, or failed to render.");
+                    continue;
+                }
+
+                var page = ExophaseFriendPageParser.ParseGames(html);
+                games.AddRange(page.Games);
+                _logger?.Debug($"[ExophaseFriends] Profile fetch: {url} -> htmlLength={html.Length}, " +
+                    $"parsedGames={page.Games.Count}.");
             }
 
-            var page = ExophaseFriendPageParser.ParseGames(html);
-            var deduped = page.Games
+            var deduped = games
                 .Where(game => !string.IsNullOrWhiteSpace(game?.Slug))
                 .GroupBy(game => (game.Platform ?? string.Empty) + "|" + game.Slug, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group.First())
                 .ToList();
-            _logger?.Debug($"[ExophaseFriends] Profile fetch: {url} -> htmlLength={html.Length}, " +
-                $"parsedGames={page.Games.Count}, uniqueGames={deduped.Count}.");
+            _logger?.Debug($"[ExophaseFriends] Profile fetch: '{username}' -> parsedGames={games.Count}, uniqueGames={deduped.Count}.");
             return deduped;
         }
 
@@ -460,7 +480,9 @@ namespace PlayniteAchievements.Providers.Exophase
                 _settings.FriendGameMappings?.TryGetValue(normalizedKey, out var manualGameId) == true &&
                 manualGameId != Guid.Empty)
             {
-                return manualGameId;
+                return IsMappedPlayniteGameCompatible(manualGameId, platform, localOverrideSlug: null)
+                    ? manualGameId
+                    : null;
             }
 
             var slug = ExophaseFriendGameKey.Parse(providerGameKey).GameSlug;
@@ -468,10 +490,38 @@ namespace PlayniteAchievements.Providers.Exophase
                 .FirstOrDefault(pair => string.Equals(pair.Value, slug, StringComparison.OrdinalIgnoreCase));
             if (overrideMatch.Key != Guid.Empty)
             {
-                return overrideMatch.Key;
+                return IsMappedPlayniteGameCompatible(overrideMatch.Key, platform, slug)
+                    ? overrideMatch.Key
+                    : null;
             }
 
             return ResolveAutomaticPlayniteGameId(platform, title);
+        }
+
+        private bool IsMappedPlayniteGameCompatible(Guid playniteGameId, string platform, string localOverrideSlug)
+        {
+            if (playniteGameId == Guid.Empty)
+            {
+                return false;
+            }
+
+            var friendProviderKey = ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(platform);
+            if (string.IsNullOrWhiteSpace(friendProviderKey))
+            {
+                return false;
+            }
+
+            var game = _playniteApi?.Database?.Games?.Get(playniteGameId);
+            var gameProviderKey = ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(game);
+            if (!string.IsNullOrWhiteSpace(gameProviderKey))
+            {
+                return string.Equals(gameProviderKey, friendProviderKey, StringComparison.OrdinalIgnoreCase);
+            }
+
+            var overridePlatform = ExophaseFriendPlatformMatcher.ExtractPlatformSlugFromGameSlug(localOverrideSlug);
+            var overrideProviderKey = ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(overridePlatform);
+            return !string.IsNullOrWhiteSpace(overrideProviderKey) &&
+                   string.Equals(overrideProviderKey, friendProviderKey, StringComparison.OrdinalIgnoreCase);
         }
 
         private Guid? ResolveAutomaticPlayniteGameId(string platform, string title)
@@ -488,7 +538,7 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             var candidates = _playniteApi.Database.Games
-                .Where(game => game != null && IsPlatformCompatible(game, platform))
+                .Where(game => game != null && ExophaseFriendPlatformMatcher.IsSameProviderPlatform(game, platform))
                 .Select(game => new
                 {
                     Game = game,
@@ -506,44 +556,6 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             return null;
-        }
-
-        private static bool IsPlatformCompatible(Game game, string platform)
-        {
-            if (game == null || string.IsNullOrWhiteSpace(platform))
-            {
-                return true;
-            }
-
-            var token = platform.Trim().ToLowerInvariant();
-            var source = game.Source?.Name ?? string.Empty;
-            var platforms = string.Join(" ", game.Platforms?.Select(item => item?.Name) ?? Enumerable.Empty<string>());
-            var haystack = (source + " " + platforms).ToLowerInvariant();
-
-            if (token == "steam") return haystack.Contains("steam");
-            if (token == "gog") return haystack.Contains("gog");
-            if (token == "epic") return haystack.Contains("epic");
-            if (token == "psn" || token == "ps3" || token == "ps4" || token == "ps5" || token == "vita")
-            {
-                return haystack.Contains("playstation") || haystack.Contains("psn") || haystack.Contains(token);
-            }
-
-            if (token.StartsWith("xbox", StringComparison.Ordinal))
-            {
-                return haystack.Contains("xbox");
-            }
-
-            if (token == "android" || token == "apple")
-            {
-                return haystack.Contains(token) || haystack.Contains("ios") || haystack.Contains("mobile");
-            }
-
-            if (token == "ubisoft" || token == "uplay")
-            {
-                return haystack.Contains("ubisoft") || haystack.Contains("uplay");
-            }
-
-            return true;
         }
 
         private static double TitleSimilarity(string left, string right)
@@ -595,6 +607,11 @@ namespace PlayniteAchievements.Providers.Exophase
             return $"https://www.exophase.com/user/{Uri.EscapeDataString(username.Trim())}/";
         }
 
+        private static string BuildGamesUrl(string username)
+        {
+            return $"https://www.exophase.com/user/{Uri.EscapeDataString(username.Trim())}/games/";
+        }
+
         private static string BuildContextMapKey(string username, string providerGameKey)
         {
             return (username?.Trim() ?? string.Empty) + "|" + (providerGameKey?.Trim() ?? string.Empty);
@@ -621,9 +638,14 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             return (platforms ?? Enumerable.Empty<string>())
                 .Where(platform => !string.IsNullOrWhiteSpace(platform))
-                .Select(platform => platform.Trim().ToLowerInvariant())
+                .Select(NormalizePlatformSlug)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        private static string NormalizePlatformSlug(string platform)
+        {
+            return ExophaseFriendPlatformMatcher.NormalizePlatformSlug(platform);
         }
 
         private static string NormalizeTitle(string value)
@@ -650,6 +672,8 @@ namespace PlayniteAchievements.Providers.Exophase
             // (/game/{slug}/achievements/#{ContextId}); scopes the achievement page to this friend.
             public string ContextId { get; set; }
             public int PlaytimeMinutes { get; set; }
+            public int RecentPlaytimeMinutes { get; set; }
+            public DateTime? LastPlayedUtc { get; set; }
         }
 
         private sealed class ParsedGamesPage
@@ -721,9 +745,9 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 return NormalizeUrl(FirstNonEmpty(
-                    doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'col-game-information')]//a[contains(@class, 'image')]//img")?.GetAttributeValue("src", null),
-                    doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'feature-header')]//img")?.GetAttributeValue("src", null),
-                    doc.DocumentNode.SelectSingleNode("//a[contains(@class, 'image')]//img")?.GetAttributeValue("src", null)));
+                    ExophaseApiClient.ResolveImageUrl(doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'col-game-information')]//a[contains(@class, 'image')]")),
+                    ExophaseApiClient.ResolveImageUrl(doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'feature-header')]")),
+                    ExophaseApiClient.ResolveImageUrl(doc.DocumentNode.SelectSingleNode("//a[contains(@class, 'image')]"))));
             }
 
             public static ParsedGamesPage ParseGames(string html)
@@ -760,9 +784,10 @@ namespace PlayniteAchievements.Providers.Exophase
                         Clean(container?.SelectSingleNode(".//div[contains(@class, 'col-image')]//img")?.GetAttributeValue("alt", null)),
                         SlugToTitle(slug, platform));
                     var image = NormalizeUrl(FirstNonEmpty(
-                        container?.SelectSingleNode(".//div[contains(@class, 'col-image')]//img")?.GetAttributeValue("src", null),
-                        container?.SelectSingleNode(".//img")?.GetAttributeValue("src", null),
-                        container?.SelectSingleNode(".//img")?.GetAttributeValue("data-src", null)));
+                        ExophaseApiClient.ResolveImageUrl(container?.SelectSingleNode(".//div[contains(@class, 'col-image')]")),
+                        ExophaseApiClient.ResolveImageUrl(container)));
+                    var recentDateContext = ResolveRecentDateContextUtc(container);
+                    var lastPlayedUtc = ParseLastPlayedUtc(container) ?? recentDateContext;
 
                     result.Games.Add(new ExophaseFriendGame
                     {
@@ -771,7 +796,9 @@ namespace PlayniteAchievements.Providers.Exophase
                         ImageUrl = image,
                         Platform = platform,
                         ContextId = contextId,
-                        PlaytimeMinutes = ParsePlaytimeMinutes(container?.InnerText)
+                        PlaytimeMinutes = ParsePlaytimeMinutes(container?.InnerText),
+                        RecentPlaytimeMinutes = ParseRecentPlaytimeMinutes(container?.InnerText, recentDateContext.HasValue),
+                        LastPlayedUtc = lastPlayedUtc
                     });
                 }
 
@@ -838,15 +865,15 @@ namespace PlayniteAchievements.Providers.Exophase
                     var iconMatch = Regex.Match(iconClass, @"exo-icon-service-([a-z0-9]+)", RegexOptions.IgnoreCase);
                     if (iconMatch.Success)
                     {
-                        return iconMatch.Groups[1].Value.ToLowerInvariant();
+                        return NormalizePlatformSlug(iconMatch.Groups[1].Value);
                     }
 
                     // Fall back to the media host path: https://m.exophase.com/{platform}/games/...
-                    var imageSrc = container.SelectSingleNode(".//img")?.GetAttributeValue("src", null) ?? string.Empty;
+                    var imageSrc = ExophaseApiClient.ResolveImageUrl(container) ?? string.Empty;
                     var imageMatch = Regex.Match(imageSrc, @"exophase\.com/([a-z0-9]+)/(?:games|awards)/", RegexOptions.IgnoreCase);
                     if (imageMatch.Success)
                     {
-                        return imageMatch.Groups[1].Value.ToLowerInvariant();
+                        return NormalizePlatformSlug(imageMatch.Groups[1].Value);
                     }
                 }
 
@@ -854,7 +881,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 var lastDash = (slug ?? string.Empty).LastIndexOf('-');
                 if (lastDash > 0 && lastDash < slug.Length - 1)
                 {
-                    return slug.Substring(lastDash + 1).ToLowerInvariant();
+                    return NormalizePlatformSlug(slug.Substring(lastDash + 1));
                 }
 
                 return null;
@@ -897,6 +924,346 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 return Math.Max(0, total);
+            }
+
+            private static int ParseRecentPlaytimeMinutes(string text, bool hasRecentDateContext)
+            {
+                text = Clean(text);
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    return 0;
+                }
+
+                if (!hasRecentDateContext &&
+                    !Regex.IsMatch(
+                        text,
+                        @"\b(today|yesterday|last\s+24\s+hours?|past\s+24\s+hours?|this\s+week|last\s+week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+                        RegexOptions.IgnoreCase))
+                {
+                    return 0;
+                }
+
+                return ParsePlaytimeMinutes(text);
+            }
+
+            private static DateTime? ParseLastPlayedUtc(HtmlNode container)
+            {
+                if (container == null)
+                {
+                    return null;
+                }
+
+                var nodeDate = FindDateTimeInNode(container);
+                if (nodeDate.HasValue)
+                {
+                    return nodeDate.Value;
+                }
+
+                var text = Clean(container.InnerText);
+                if (LooksLikeLastPlayedText(text) &&
+                    TryParseDateText(text, out var parsed))
+                {
+                    return parsed;
+                }
+
+                return null;
+            }
+
+            private static bool LooksLikeLastPlayedText(string text)
+            {
+                return !string.IsNullOrWhiteSpace(text) &&
+                       Regex.IsMatch(
+                           text,
+                           @"\b(last\s+played|played\s+on|recently\s+played)\b",
+                           RegexOptions.IgnoreCase);
+            }
+
+            private static DateTime? ResolveRecentDateContextUtc(HtmlNode container)
+            {
+                var current = container;
+                for (var depth = 0; depth < 8 && current != null; depth++, current = current.ParentNode)
+                {
+                    var isCurrentDateHeader = IsLikelyDateHeader(current);
+                    var nodeDate = isCurrentDateHeader
+                        ? FindDateTimeInNode(current, directOnly: true)
+                        : null;
+                    if (nodeDate.HasValue)
+                    {
+                        return nodeDate.Value;
+                    }
+
+                    if (TryParseDateText(Clean(current.InnerText), out var inlineDate) &&
+                        isCurrentDateHeader)
+                    {
+                        return inlineDate;
+                    }
+
+                    var previous = current.PreviousSibling;
+                    for (var i = 0; i < 12 && previous != null; i++, previous = previous.PreviousSibling)
+                    {
+                        if (string.IsNullOrWhiteSpace(previous.InnerText) &&
+                            !previous.HasChildNodes)
+                        {
+                            continue;
+                        }
+
+                        if (!IsLikelyDateHeader(previous))
+                        {
+                            continue;
+                        }
+
+                        nodeDate = FindDateTimeInNode(previous);
+                        if (nodeDate.HasValue)
+                        {
+                            return nodeDate.Value;
+                        }
+
+                        if (TryParseDateText(Clean(previous.InnerText), out var siblingDate) &&
+                            IsLikelyDateHeader(previous))
+                        {
+                            return siblingDate;
+                        }
+                    }
+                }
+
+                return null;
+            }
+
+            private static DateTime? FindDateTimeInNode(HtmlNode node, bool directOnly = false)
+            {
+                if (node == null)
+                {
+                    return null;
+                }
+
+                foreach (var candidate in EnumerateDateNodes(node, directOnly))
+                {
+                    var parsed = ParseDateTimeAttribute(candidate);
+                    if (parsed.HasValue)
+                    {
+                        return parsed.Value;
+                    }
+                }
+
+                return null;
+            }
+
+            private static IEnumerable<HtmlNode> EnumerateDateNodes(HtmlNode node, bool directOnly)
+            {
+                if (node == null)
+                {
+                    yield break;
+                }
+
+                if (HasDateAttribute(node))
+                {
+                    yield return node;
+                }
+
+                var xpath = directOnly
+                    ? "./*[@datetime or @data-date or @data-timestamp or @title]"
+                    : ".//*[@datetime or @data-date or @data-timestamp or @title]";
+                foreach (var child in Nodes(node.SelectNodes(xpath)))
+                {
+                    yield return child;
+                }
+            }
+
+            private static bool HasDateAttribute(HtmlNode node)
+            {
+                return node?.Attributes["datetime"] != null ||
+                       node?.Attributes["data-date"] != null ||
+                       node?.Attributes["data-timestamp"] != null ||
+                       node?.Attributes["title"] != null;
+            }
+
+            private static DateTime? ParseDateTimeAttribute(HtmlNode node)
+            {
+                var raw = FirstNonEmpty(
+                    node?.GetAttributeValue("datetime", null),
+                    node?.GetAttributeValue("data-date", null),
+                    node?.GetAttributeValue("data-timestamp", null),
+                    node?.GetAttributeValue("title", null));
+                if (string.IsNullOrWhiteSpace(raw))
+                {
+                    return null;
+                }
+
+                raw = WebUtility.HtmlDecode(raw.Trim());
+                if (long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unix))
+                {
+                    try
+                    {
+                        if (unix > 9999999999L)
+                        {
+                            unix /= 1000;
+                        }
+
+                        return DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime;
+                    }
+                    catch
+                    {
+                        return null;
+                    }
+                }
+
+                if (DateTimeOffset.TryParse(
+                        raw,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                        out var offset))
+                {
+                    return offset.UtcDateTime;
+                }
+
+                return TryParseDateText(raw, out var parsed) ? parsed : (DateTime?)null;
+            }
+
+            private static bool TryParseDateText(string text, out DateTime dateUtc)
+            {
+                dateUtc = default(DateTime);
+                text = Clean(text);
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    return false;
+                }
+
+                var today = DateTime.UtcNow.Date;
+                if (Regex.IsMatch(text, @"\btoday\b", RegexOptions.IgnoreCase))
+                {
+                    dateUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
+                    return true;
+                }
+
+                if (Regex.IsMatch(text, @"\byesterday\b", RegexOptions.IgnoreCase))
+                {
+                    dateUtc = DateTime.SpecifyKind(today.AddDays(-1), DateTimeKind.Utc);
+                    return true;
+                }
+
+                var weekdayMatch = Regex.Match(
+                    text,
+                    @"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+                    RegexOptions.IgnoreCase);
+                if (weekdayMatch.Success &&
+                    TryParseWeekday(weekdayMatch.Groups[1].Value, out var weekday))
+                {
+                    var daysBack = ((int)today.DayOfWeek - (int)weekday + 7) % 7;
+                    dateUtc = DateTime.SpecifyKind(today.AddDays(-daysBack), DateTimeKind.Utc);
+                    return true;
+                }
+
+                var dateMatch = Regex.Match(
+                    text,
+                    @"\b(?:\d{1,2}\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,?\s+\d{4})?\b",
+                    RegexOptions.IgnoreCase);
+                if (!dateMatch.Success)
+                {
+                    dateMatch = Regex.Match(text, @"\b\d{4}-\d{1,2}-\d{1,2}\b", RegexOptions.IgnoreCase);
+                }
+
+                if (!dateMatch.Success)
+                {
+                    return false;
+                }
+
+                var value = dateMatch.Value;
+                if (!Regex.IsMatch(value, @"\b\d{4}\b"))
+                {
+                    value = value + " " + today.Year.ToString(CultureInfo.InvariantCulture);
+                }
+
+                if (!DateTime.TryParse(
+                        value,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                        out var parsedDate))
+                {
+                    return false;
+                }
+
+                dateUtc = DateTime.SpecifyKind(parsedDate.Date, DateTimeKind.Utc);
+                return true;
+            }
+
+            private static bool TryParseWeekday(string value, out DayOfWeek day)
+            {
+                switch ((value ?? string.Empty).Trim().ToLowerInvariant())
+                {
+                    case "sunday":
+                        day = DayOfWeek.Sunday;
+                        return true;
+                    case "monday":
+                        day = DayOfWeek.Monday;
+                        return true;
+                    case "tuesday":
+                        day = DayOfWeek.Tuesday;
+                        return true;
+                    case "wednesday":
+                        day = DayOfWeek.Wednesday;
+                        return true;
+                    case "thursday":
+                        day = DayOfWeek.Thursday;
+                        return true;
+                    case "friday":
+                        day = DayOfWeek.Friday;
+                        return true;
+                    case "saturday":
+                        day = DayOfWeek.Saturday;
+                        return true;
+                    default:
+                        day = default(DayOfWeek);
+                        return false;
+                }
+            }
+
+            private static bool IsLikelyDateHeader(HtmlNode node)
+            {
+                var text = Clean(node?.InnerText);
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    return false;
+                }
+
+                if (node.SelectSingleNode(".//a[contains(@href, '/game/')]") != null)
+                {
+                    return false;
+                }
+
+                var name = node?.Name ?? string.Empty;
+                if (Regex.IsMatch(name, @"^h[1-6]$", RegexOptions.IgnoreCase))
+                {
+                    return true;
+                }
+
+                var className = node?.GetAttributeValue("class", string.Empty) ?? string.Empty;
+                if (Regex.IsMatch(className, @"\b(date|day|activity|header|title)\b", RegexOptions.IgnoreCase))
+                {
+                    return true;
+                }
+
+                return IsCompactDateText(text);
+            }
+
+            private static bool IsCompactDateText(string text)
+            {
+                if (string.IsNullOrWhiteSpace(text) || text.Length > 48)
+                {
+                    return false;
+                }
+
+                return Regex.IsMatch(
+                           text,
+                           @"^(today|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)$",
+                           RegexOptions.IgnoreCase) ||
+                       Regex.IsMatch(
+                           text,
+                           @"^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,?\s+\d{4})?$",
+                           RegexOptions.IgnoreCase) ||
+                       Regex.IsMatch(
+                           text,
+                           @"^\d{4}-\d{1,2}-\d{1,2}$",
+                           RegexOptions.IgnoreCase);
             }
 
             private static string NormalizeUrl(string url)

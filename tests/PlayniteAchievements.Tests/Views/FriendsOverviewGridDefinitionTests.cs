@@ -168,6 +168,20 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void FriendsOverview_ExophaseFriendGameContextMenuCanEditMappings()
+        {
+            var code = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml.cs"));
+
+            AssertContainsAll(
+                code,
+                "IsMappableExophaseFriendGame",
+                "PlayniteGamePickerDialog.Pick",
+                "settings.FriendGameMappings = mappings",
+                "ExophaseFriendPlatformMatcher.IsSameProviderPlatform",
+                "RefreshExophaseProviderGame(game)");
+        }
+
+        [TestMethod]
         public void MergedOverview_HeaderWiresSubviewSwitcherBeforeRefreshControls()
         {
             var xaml = File.ReadAllText(FindRepoFile("source", "Views", "OverviewControl.xaml"));

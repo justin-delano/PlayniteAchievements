@@ -127,14 +127,13 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [DataTestMethod]
-        [DataRow(RefreshModeType.FriendsRecent, FriendRefreshScope.Recent)]
-        [DataRow(RefreshModeType.FriendsFull, FriendRefreshScope.Full)]
-        public void Resolve_BroadFriendModes_PermitFullLibraryScope(
+        [DataRow(RefreshModeType.FriendsRecent, FriendRefreshScope.Recent, FriendLibraryScope.Shared)]
+        [DataRow(RefreshModeType.FriendsFull, FriendRefreshScope.Full, FriendLibraryScope.Full)]
+        public void Resolve_BroadFriendModes_UseModeLibraryScopePolicy(
             RefreshModeType mode,
-            FriendRefreshScope expectedScope)
+            FriendRefreshScope expectedScope,
+            FriendLibraryScope expectedLibraryScope)
         {
-            // Recent/Full requests permit full-library work; the per-friend opt-in is applied later in
-            // FriendsRefreshRuntime, so the request-level scope is Full.
             var planner = CreatePlanner(Array.Empty<Game>());
             var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
 
@@ -144,7 +143,7 @@ namespace PlayniteAchievements.Services.Tests
 
             Assert.IsTrue(resolved.ShouldExecute);
             Assert.AreEqual(expectedScope, resolved.FriendOptions.Scope);
-            Assert.AreEqual(FriendLibraryScope.Full, resolved.FriendOptions.LibraryScope);
+            Assert.AreEqual(expectedLibraryScope, resolved.FriendOptions.LibraryScope);
         }
 
         [TestMethod]
@@ -163,7 +162,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [DataTestMethod]
-        [DataRow(FriendRefreshScope.Recent, FriendLibraryScope.Full, true)]
+        [DataRow(FriendRefreshScope.Recent, FriendLibraryScope.Full, false)]
         [DataRow(FriendRefreshScope.Full, FriendLibraryScope.Full, true)]
         [DataRow(FriendRefreshScope.Recent, FriendLibraryScope.Shared, false)]
         [DataRow(FriendRefreshScope.Full, FriendLibraryScope.Shared, false)]
@@ -234,7 +233,7 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void Resolve_FriendsCustom_DefaultsToFullLibraryScopeForBroadScope()
+        public void Resolve_FriendsCustom_RecentDefaultsToSharedLibraryScope()
         {
             var planner = CreatePlanner(Array.Empty<Game>());
             var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
@@ -251,11 +250,11 @@ namespace PlayniteAchievements.Services.Tests
                 new IDataProvider[] { friendProvider });
 
             Assert.IsTrue(resolved.ShouldExecute);
-            Assert.AreEqual(FriendLibraryScope.Full, resolved.FriendOptions.LibraryScope);
+            Assert.AreEqual(FriendLibraryScope.Shared, resolved.FriendOptions.LibraryScope);
         }
 
         [TestMethod]
-        public void Resolve_FriendsCustom_BroadScopeUsesDefaultFullLibraryScope()
+        public void Resolve_FriendsCustom_RecentIgnoresRequestedFullLibraryScope()
         {
             var planner = CreatePlanner(Array.Empty<Game>());
             var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
@@ -273,7 +272,32 @@ namespace PlayniteAchievements.Services.Tests
                 new IDataProvider[] { friendProvider });
 
             Assert.IsTrue(resolved.ShouldExecute);
-            Assert.AreEqual(FriendLibraryScope.Full, resolved.FriendOptions.LibraryScope);
+            Assert.AreEqual(FriendLibraryScope.Shared, resolved.FriendOptions.LibraryScope);
+        }
+
+        [DataTestMethod]
+        [DataRow(FriendLibraryScope.Shared)]
+        [DataRow(FriendLibraryScope.Full)]
+        public void Resolve_FriendsCustom_FullScopeRespectsRequestedLibraryScope(FriendLibraryScope libraryScope)
+        {
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = libraryScope
+                    }
+                },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(FriendRefreshScope.Full, resolved.FriendOptions.Scope);
+            Assert.AreEqual(libraryScope, resolved.FriendOptions.LibraryScope);
         }
 
         [TestMethod]

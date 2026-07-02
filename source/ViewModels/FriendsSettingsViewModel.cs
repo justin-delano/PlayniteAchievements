@@ -289,6 +289,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void PersistAndNotify(string providerKey)
         {
+            SyncExophaseProviderFriends(providerKey);
             FriendSettingsSyncService.SyncConfiguredFriendsToCache(_settings.Persisted, _friendCache, _logger, providerKey);
             try
             {
@@ -298,6 +299,70 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Warn(ex, "Failed to persist Friends settings changes.");
+            }
+        }
+
+        private void SyncExophaseProviderFriends(string providerKey)
+        {
+            if (!string.IsNullOrWhiteSpace(providerKey) &&
+                !string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var persisted = _settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var exophaseSettings = _providerRegistry?.GetSettings<ExophaseSettings>() ??
+                                       ProviderRegistry.Settings<ExophaseSettings>();
+                if (exophaseSettings == null)
+                {
+                    return;
+                }
+
+                var existingByUser = (exophaseSettings.Friends ?? new List<ExophaseFriendSettings>())
+                    .Where(friend => !string.IsNullOrWhiteSpace(friend?.Username))
+                    .GroupBy(friend => ExophaseSettings.NormalizeUsername(friend.Username), StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+
+                var friends = persisted
+                    .GetFriendSettings("Exophase", includeIgnored: false)
+                    .Where(friend => !string.IsNullOrWhiteSpace(friend?.ExternalUserId))
+                    .Select(friend =>
+                    {
+                        existingByUser.TryGetValue(friend.ExternalUserId, out var existing);
+                        return new ExophaseFriendSettings
+                        {
+                            Username = friend.ExternalUserId,
+                            DisplayName = string.IsNullOrWhiteSpace(friend.DisplayName) ? friend.ExternalUserId : friend.DisplayName,
+                            AvatarUrl = friend.AvatarUrl ?? existing?.AvatarUrl,
+                            AvatarPath = friend.AvatarPath ?? existing?.AvatarPath,
+                            SelectedPlatforms = friend.SelectedPlatforms?.ToList() ?? new List<string>(),
+                            LibraryScope = friend.LibraryScope == FriendLibraryScope.Full
+                                ? FriendLibraryScope.Full
+                                : FriendLibraryScope.Shared,
+                            AddedUtc = friend.AddedUtc == default(DateTime)
+                                ? (existing?.AddedUtc == default(DateTime) ? DateTime.UtcNow : existing?.AddedUtc ?? DateTime.UtcNow)
+                                : friend.AddedUtc,
+                            LastRefreshedUtc = friend.LastRefreshedUtc ?? existing?.LastRefreshedUtc,
+                            LastProbedUtc = friend.LastProbedUtc ?? existing?.LastProbedUtc,
+                            LastProbeStatus = friend.LastProbeStatus ?? existing?.LastProbeStatus,
+                            LastError = friend.LastError ?? existing?.LastError
+                        };
+                    })
+                    .ToList();
+
+                exophaseSettings.Friends = friends;
+                _providerRegistry?.Save(exophaseSettings, persistToDisk: false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, "Failed to mirror Friends settings into Exophase provider settings.");
             }
         }
     }
