@@ -531,73 +531,26 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            var normalizedTitle = NormalizeTitle(title);
+            var normalizedTitle = ExophaseGameNameMatcher.NormalizeGameName(title);
             if (string.IsNullOrWhiteSpace(normalizedTitle))
             {
                 return null;
             }
 
-            var candidates = _playniteApi.Database.Games
+            // Auto-map only on a single, exact normalized match (edition suffixes stripped
+            // on both sides via the shared matcher, so "Titanfall 2 Deluxe Edition" == the
+            // friend's "Titanfall 2"). Fuzzy/near matches (numbered sequels, punctuation
+            // differences) are too ambiguous to auto-merge safely, so leave those to manual
+            // mapping (FriendGameMappings / SlugOverrides).
+            var exactMatches = _playniteApi.Database.Games
                 .Where(game => game != null && ExophaseFriendPlatformMatcher.IsSameProviderPlatform(game, platform))
-                .Select(game => new
-                {
-                    Game = game,
-                    Score = TitleSimilarity(normalizedTitle, NormalizeTitle(game.Name))
-                })
-                .Where(item => item.Score >= 0.92)
-                .OrderByDescending(item => item.Score)
-                .Take(3)
+                .Where(game => ExophaseGameNameMatcher.ComputeMatchScore(
+                    normalizedTitle,
+                    ExophaseGameNameMatcher.NormalizeGameName(game.Name)) == ExophaseGameNameMatcher.ExactMatchScore)
+                .Take(2)
                 .ToList();
 
-            if (candidates.Count == 1 ||
-                (candidates.Count > 1 && candidates[0].Score >= 0.98 && candidates[0].Score - candidates[1].Score >= 0.05))
-            {
-                return candidates[0].Game.Id;
-            }
-
-            return null;
-        }
-
-        private static double TitleSimilarity(string left, string right)
-        {
-            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
-            {
-                return 0;
-            }
-
-            if (string.Equals(left, right, StringComparison.OrdinalIgnoreCase))
-            {
-                return 1;
-            }
-
-            var distance = LevenshteinDistance(left, right);
-            var max = Math.Max(left.Length, right.Length);
-            return max <= 0 ? 0 : 1d - ((double)distance / max);
-        }
-
-        private static int LevenshteinDistance(string left, string right)
-        {
-            var costs = new int[right.Length + 1];
-            for (var j = 0; j < costs.Length; j++)
-            {
-                costs[j] = j;
-            }
-
-            for (var i = 1; i <= left.Length; i++)
-            {
-                costs[0] = i;
-                var previous = i - 1;
-                for (var j = 1; j <= right.Length; j++)
-                {
-                    var current = costs[j];
-                    costs[j] = Math.Min(
-                        Math.Min(costs[j] + 1, costs[j - 1] + 1),
-                        previous + (left[i - 1] == right[j - 1] ? 0 : 1));
-                    previous = current;
-                }
-            }
-
-            return costs[right.Length];
+            return exactMatches.Count == 1 ? exactMatches[0].Id : (Guid?)null;
         }
 
         private static string BuildProfileUrl(string username)
@@ -646,19 +599,6 @@ namespace PlayniteAchievements.Providers.Exophase
         private static string NormalizePlatformSlug(string platform)
         {
             return ExophaseFriendPlatformMatcher.NormalizePlatformSlug(platform);
-        }
-
-        private static string NormalizeTitle(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            var lower = WebUtility.HtmlDecode(value).ToLowerInvariant();
-            lower = Regex.Replace(lower, @"[^\p{L}\p{Nd}]+", " ");
-            lower = Regex.Replace(lower, @"\b(the|a|an|edition|remastered|remaster|complete|definitive)\b", " ");
-            return Regex.Replace(lower, @"\s+", " ").Trim();
         }
 
         private sealed class ExophaseFriendGame
