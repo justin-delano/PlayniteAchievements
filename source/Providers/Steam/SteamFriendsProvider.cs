@@ -361,6 +361,13 @@ namespace PlayniteAchievements.Providers.Steam
                     transientFailure: true);
             }
 
+            // Reconstruct stable api names from the schema's icon hashes so friend rows match the
+            // canonical definitions by language-independent key rather than localized display text.
+            // A schema failure degrades gracefully: rows keep a null ApiName and the merge falls
+            // back to display-name/icon matching.
+            var apiNamesByRow = await ResolveScrapedApiNamesAsync(token.WebApiToken, appId, scrape?.Rows, cancel)
+                .ConfigureAwait(false);
+
             var data = new FriendGameAchievements
             {
                 Friend = friend,
@@ -369,7 +376,7 @@ namespace PlayniteAchievements.Providers.Steam
                 StatsUnavailable = scrape?.StatsUnavailable == true,
                 TransientFailure = scrape?.TransientFailure == true,
                 DetailCode = scrape?.DetailCode ?? SteamScrapeDetail.None,
-                Rows = MapRows(scrape?.Rows)
+                Rows = MapRows(scrape?.Rows, apiNamesByRow)
             };
 
             if (data.TransientFailure)
@@ -568,12 +575,41 @@ namespace PlayniteAchievements.Providers.Steam
             };
         }
 
-        private static List<FriendAchievementRow> MapRows(IEnumerable<ScrapedAchievement> rows)
+        private async Task<IReadOnlyDictionary<ScrapedAchievement, string>> ResolveScrapedApiNamesAsync(
+            string accessToken,
+            int appId,
+            IReadOnlyCollection<ScrapedAchievement> rows,
+            CancellationToken cancel)
+        {
+            if (rows == null || rows.Count == 0 || string.IsNullOrWhiteSpace(accessToken))
+            {
+                return new Dictionary<ScrapedAchievement, string>();
+            }
+
+            try
+            {
+                var schema = await _scanner.FetchSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
+                return SteamScanner.ResolveScrapedApiNames(schema, rows);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Steam friend achievement api-name reconstruction failed for appId={appId}.");
+                return new Dictionary<ScrapedAchievement, string>();
+            }
+        }
+
+        private static List<FriendAchievementRow> MapRows(
+            IEnumerable<ScrapedAchievement> rows,
+            IReadOnlyDictionary<ScrapedAchievement, string> apiNamesByRow)
         {
             return rows?
                 .Where(row => row != null)
                 .Select(row => new FriendAchievementRow
                 {
+                    ApiName = apiNamesByRow != null && apiNamesByRow.TryGetValue(row, out var apiName)
+                        ? apiName
+                        : null,
                     DisplayName = row.DisplayName,
                     Description = row.Description,
                     IconUrl = row.IconUrl,
