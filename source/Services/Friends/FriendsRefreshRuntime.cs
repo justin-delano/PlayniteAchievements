@@ -191,6 +191,19 @@ namespace PlayniteAchievements.Services.Friends
 
                 var preparation = preparationResult.Data ?? new FriendsRefreshPreparation();
                 payload.FriendSummary.ProvidersProcessed++;
+
+                // Providers that map friend games to the local library by name (Exophase) match on the
+                // servicing provider label the plugin stored for each current-user game, rather than
+                // re-deriving platform from Playnite Source/Platform strings. Supply that index once per
+                // provider refresh, before the ownership pass that performs the mapping.
+                if (friendsProvider is ICurrentUserGameLabelReceiver labelReceiver)
+                {
+                    var currentUserLabels = _friendCache.LoadCurrentUserGameLabels() ??
+                                            new List<CurrentUserGameLabel>();
+                    labelReceiver.SetCurrentUserGameLabels(currentUserLabels);
+                    _logger?.Debug(
+                        $"Supplied {currentUserLabels.Count} current-user game label(s) to {providerKey} friend merge.");
+                }
                 Report(reportProgress, Format("LOCPlayAch_FriendsRefresh_Progress_Friends", "Refreshing {0} friends...", providerKey), 0, 2);
 
                 var friendsResult = await friendsProvider.GetFriendsAsync(cancel).ConfigureAwait(false);

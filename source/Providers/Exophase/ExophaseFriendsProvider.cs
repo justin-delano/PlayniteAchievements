@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Exophase
 {
-    internal sealed class ExophaseFriendsProvider : IFriendsProvider
+    internal sealed class ExophaseFriendsProvider : IFriendsProvider, ICurrentUserGameLabelReceiver
     {
         private const string Provider = "Exophase";
         private readonly ExophaseApiClient _apiClient;
@@ -32,6 +32,15 @@ namespace PlayniteAchievements.Providers.Exophase
         // always runs before achievements) and cleared each refresh.
         private readonly Dictionary<string, string> _friendGameContextIds =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Per-refresh index of the current user's cached games, keyed on the servicing provider label
+        // the plugin stored at scan time (see CurrentUserGameLabel). Populated by the refresh runtime via
+        // SetCurrentUserGameLabels before the ownership pass and cleared each refresh. Used to auto-map a
+        // friend's game to a local game without re-deriving platform from Playnite Source/Platform strings.
+        private readonly Dictionary<Guid, string> _currentUserGameFamilyById =
+            new Dictionary<Guid, string>();
+        private readonly Dictionary<string, List<Guid>> _currentUserGameIdsByFamilyName =
+            new Dictionary<string, List<Guid>>(StringComparer.OrdinalIgnoreCase);
 
         public ExophaseFriendsProvider(
             ExophaseApiClient apiClient,
@@ -52,6 +61,7 @@ namespace PlayniteAchievements.Providers.Exophase
         public Task<FriendsProviderResult<FriendsRefreshPreparation>> BeginRefreshAsync(CancellationToken cancel)
         {
             _friendGameContextIds.Clear();
+            ClearCurrentUserGameIndex();
 
             // Load and validate the encrypted cookie snapshot once for this refresh; every per-friend
             // and per-game fetch reuses the cached cookies instead of decrypting the file per call.
@@ -70,7 +80,82 @@ namespace PlayniteAchievements.Providers.Exophase
         public void EndRefresh()
         {
             _friendGameContextIds.Clear();
+            ClearCurrentUserGameIndex();
             _apiClient.EndCookieSession();
+        }
+
+        // Receives the current user's cached game labels for this refresh and indexes them by servicing
+        // provider label + normalized name, so the ownership merge can resolve a friend's game to a local
+        // game using the stored provider label rather than re-deriving platform from Source/Platform.
+        public void SetCurrentUserGameLabels(IReadOnlyList<CurrentUserGameLabel> labels)
+        {
+            ClearCurrentUserGameIndex();
+            if (labels == null)
+            {
+                return;
+            }
+
+            foreach (var label in labels)
+            {
+                if (label == null || label.PlayniteGameId == Guid.Empty)
+                {
+                    continue;
+                }
+
+                var family = ResolveCurrentUserFamilyKey(label.ProviderKey, label.ProviderPlatformKey);
+                if (string.IsNullOrWhiteSpace(family))
+                {
+                    continue;
+                }
+
+                _currentUserGameFamilyById[label.PlayniteGameId] = family;
+
+                var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(label.GameName);
+                if (string.IsNullOrWhiteSpace(normalizedName))
+                {
+                    continue;
+                }
+
+                var key = BuildFamilyNameKey(family, normalizedName);
+                if (!_currentUserGameIdsByFamilyName.TryGetValue(key, out var ids))
+                {
+                    ids = new List<Guid>();
+                    _currentUserGameIdsByFamilyName[key] = ids;
+                }
+
+                if (!ids.Contains(label.PlayniteGameId))
+                {
+                    ids.Add(label.PlayniteGameId);
+                }
+            }
+
+            _logger?.Info($"[ExophaseFriends] Indexed {_currentUserGameFamilyById.Count} current-user game(s) by stored provider label for friend merge.");
+        }
+
+        private void ClearCurrentUserGameIndex()
+        {
+            _currentUserGameFamilyById.Clear();
+            _currentUserGameIdsByFamilyName.Clear();
+        }
+
+        // The canonical friend platform key for a cached current-user game. Prefer the stored servicing
+        // ProviderKey (e.g. PSN, Steam, RPCS3->PSN); for aggregator/inclusion providers whose key is not a
+        // platform (Exophase, Manual), fall back to the stored sub-platform hint so a self-tracked platform
+        // still matches a friend's game on that platform.
+        private static string ResolveCurrentUserFamilyKey(string providerKey, string providerPlatformKey)
+        {
+            var mapped = ExophaseFriendPlatformMatcher.MapProviderKeyToFriendPlatformKey(providerKey);
+            if (!string.IsNullOrWhiteSpace(mapped))
+            {
+                return mapped;
+            }
+
+            return ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(providerPlatformKey);
+        }
+
+        private static string BuildFamilyNameKey(string familyKey, string normalizedName)
+        {
+            return familyKey + "\n" + normalizedName;
         }
 
         public async Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsAsync(CancellationToken cancel)
@@ -520,9 +605,9 @@ namespace PlayniteAchievements.Providers.Exophase
                 return false;
             }
 
-            var game = _playniteApi?.Database?.Games?.Get(playniteGameId);
-            var gameProviderKey = ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(game);
-            if (!string.IsNullOrWhiteSpace(gameProviderKey))
+            // Prefer the servicing provider label the plugin stored for this game at scan time.
+            if (_currentUserGameFamilyById.TryGetValue(playniteGameId, out var gameProviderKey) &&
+                !string.IsNullOrWhiteSpace(gameProviderKey))
             {
                 return string.Equals(gameProviderKey, friendProviderKey, StringComparison.OrdinalIgnoreCase);
             }
@@ -535,7 +620,13 @@ namespace PlayniteAchievements.Providers.Exophase
 
         private Guid? ResolveAutomaticPlayniteGameId(string platform, string title)
         {
-            if (string.IsNullOrWhiteSpace(title) || _playniteApi?.Database?.Games == null)
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                return null;
+            }
+
+            var friendProviderKey = ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(platform);
+            if (string.IsNullOrWhiteSpace(friendProviderKey))
             {
                 return null;
             }
@@ -546,20 +637,17 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            // Auto-map only on a single, exact normalized match (edition suffixes stripped
-            // on both sides via the shared matcher, so "Titanfall 2 Deluxe Edition" == the
-            // friend's "Titanfall 2"). Fuzzy/near matches (numbered sequels, punctuation
-            // differences) are too ambiguous to auto-merge safely, so leave those to manual
-            // mapping (FriendGameMappings / SlugOverrides).
-            var exactMatches = _playniteApi.Database.Games
-                .Where(game => game != null && ExophaseFriendPlatformMatcher.IsSameProviderPlatform(game, platform))
-                .Where(game => ExophaseGameNameMatcher.ComputeMatchScore(
-                    normalizedTitle,
-                    ExophaseGameNameMatcher.NormalizeGameName(game.Name)) == ExophaseGameNameMatcher.ExactMatchScore)
-                .Take(2)
-                .ToList();
-
-            return exactMatches.Count == 1 ? exactMatches[0].Id : (Guid?)null;
+            // Match against the current user's cached games using the servicing provider label the plugin
+            // stored at scan time (see SetCurrentUserGameLabels), not a re-derived Source/Platform slug.
+            // Auto-map only on a single, exact normalized-name match on the same platform family (edition
+            // suffixes stripped on both sides via the shared matcher, so "Titanfall 2 Deluxe Edition" ==
+            // the friend's "Titanfall 2"). Ambiguous multi-matches are left to manual mapping
+            // (FriendGameMappings / SlugOverrides).
+            return _currentUserGameIdsByFamilyName.TryGetValue(
+                       BuildFamilyNameKey(friendProviderKey, normalizedTitle), out var ids) &&
+                   ids.Count == 1
+                ? ids[0]
+                : (Guid?)null;
         }
 
         private static string BuildProfileUrl(string username)
