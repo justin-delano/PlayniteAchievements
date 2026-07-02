@@ -18,6 +18,7 @@ namespace PlayniteAchievements.Services
         public List<GameAchievementData> AllGameData { get; set; } = new List<GameAchievementData>();
         public Dictionary<Guid, GameAchievementData> GameDataById { get; } = new Dictionary<Guid, GameAchievementData>();
         public bool IsRebuilding { get; set; }
+        public ProgressReport LastProgress { get; set; }
 
         public virtual bool ValidateCanStartRefresh()
         {
@@ -66,6 +67,11 @@ namespace PlayniteAchievements.Services
             return report != null && report.TotalSteps > 0 && report.CurrentStep >= report.TotalSteps;
         }
 
+        public virtual ProgressReport GetLastRebuildProgress()
+        {
+            return LastProgress;
+        }
+
         public void RaiseCacheInvalidated()
         {
             CacheInvalidated?.Invoke(this, EventArgs.Empty);
@@ -73,6 +79,7 @@ namespace PlayniteAchievements.Services
 
         public void RaiseRebuildProgress(ProgressReport report)
         {
+            LastProgress = report;
             RebuildProgress?.Invoke(this, report);
         }
     }

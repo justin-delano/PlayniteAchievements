@@ -874,6 +874,34 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        FriendCacheWriteResult IFriendCacheManager.ClearFriendProviderOnlyGame(
+            string providerKey,
+            string externalUserId,
+            int appId,
+            string providerGameKey)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("ClearFriendProviderOnlyGame");
+                var result = _store.ClearFriendProviderOnlyGame(providerKey, externalUserId, appId, providerGameKey);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
+        bool IFriendCacheManager.IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("IsProviderGameMappedToPlayniteLibrary");
+                return _store.IsProviderGameMappedToPlayniteLibrary(providerKey, appId, providerGameKey);
+            }
+        }
+
         FriendCacheWriteResult IFriendCacheManager.SaveFriendGameAchievements(
             string providerKey,
             string externalUserId,

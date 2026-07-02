@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Services.Database;
 using SqlNado;
@@ -182,7 +183,22 @@ namespace PlayniteAchievements.SqlNado.Tests
         {
             var rows = new[]
             {
-                new FriendAchievementRow { ApiName = "plat", DisplayName = "Platinum", Description = "All trophies", Unlocked = true },
+                new FriendAchievementRow
+                {
+                    ApiName = "plat",
+                    DisplayName = "Platinum",
+                    Description = "All trophies",
+                    UnlockedIconUrl = "unlocked.png",
+                    LockedIconUrl = "locked.png",
+                    Points = 90,
+                    Category = "Finale Pack",
+                    CategoryType = "DLC",
+                    TrophyType = "platinum",
+                    Hidden = true,
+                    GlobalPercentUnlocked = 1.2,
+                    Rarity = RarityTier.UltraRare,
+                    Unlocked = true
+                },
                 new FriendAchievementRow { ApiName = "story", DisplayName = "Story done", Description = "Finish", Unlocked = false }
             };
 
@@ -192,6 +208,16 @@ namespace PlayniteAchievements.SqlNado.Tests
             Assert.AreEqual("plat", defs[0].ApiName);
             Assert.AreEqual("Platinum", defs[0].DisplayName);
             Assert.AreEqual("All trophies", defs[0].Description);
+            Assert.AreEqual("unlocked.png", defs[0].UnlockedIconPath);
+            Assert.AreEqual("locked.png", defs[0].LockedIconPath);
+            Assert.AreEqual(90, defs[0].Points);
+            Assert.AreEqual("Finale Pack", defs[0].Category);
+            Assert.AreEqual("DLC", defs[0].CategoryType);
+            Assert.AreEqual("platinum", defs[0].TrophyType);
+            Assert.IsTrue(defs[0].Hidden);
+            Assert.IsTrue(defs[0].IsCapstone);
+            Assert.AreEqual(1.2, defs[0].GlobalPercentUnlocked);
+            Assert.AreEqual(RarityTier.UltraRare, defs[0].Rarity);
         }
 
         [TestMethod]
@@ -419,9 +445,10 @@ namespace PlayniteAchievements.SqlNado.Tests
         {
             var overview = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml.cs"));
 
-            StringAssert.Contains(overview, "DeleteFriendData(friend.ProviderKey, friend.ExternalUserId, preserveFriendRecord: true)");
+            StringAssert.Contains(overview, "foreach (var account in GetConfigurableFriendAccounts(friend))");
+            StringAssert.Contains(overview, "DeleteFriendData(account.ProviderKey, account.ExternalUserId, preserveFriendRecord: true)");
             // Ignore keeps the full delete (no preserve flag).
-            StringAssert.Contains(overview, "DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);");
+            StringAssert.Contains(overview, "DeleteFriendData(account.ProviderKey, account.ExternalUserId);");
         }
 
         [TestMethod]
@@ -460,6 +487,46 @@ namespace PlayniteAchievements.SqlNado.Tests
             var displayNameIndex = store.IndexOf("var exact = definitions", StringComparison.Ordinal);
             Assert.IsTrue(apiNameIndex > 0 && apiNameIndex < displayNameIndex,
                 "ApiName match must precede the display-name match.");
+        }
+
+        [TestMethod]
+        public void CacheStore_ExophaseMappedFriendAchievementsReuseCurrentUserDefinitions()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "TryRefreshMappedCurrentUserDefinitionsForProxyGame(");
+            StringAssert.Contains(store, "LoadMappedCurrentUserDefinitionsForProxyGame(db, game)");
+            StringAssert.Contains(store, "ExophaseFriendPlatformMatcher.ResolveStoredGameFamilyKey");
+            StringAssert.Contains(store, "CreateAchievementDetailFromDefinitionRow");
+            StringAssert.Contains(store, "ShouldRefreshDefinitionsFromFriendRows(definitions, seededDefinitions)");
+            Assert.IsFalse(store.Contains("UpdateAchievementDefinitionMetadataFromFriendRows"),
+                "Exophase friend metadata must not overwrite mapped/native current-user definitions.");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendAchievementRowsResolveMyUnlocksByPlayniteGameAndApiName()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "WITH CurrentUnlocks AS");
+            StringAssert.Contains(store, "GROUP BY cg.PlayniteGameId, cad.ApiName");
+            StringAssert.Contains(store, "LEFT JOIN CurrentUnlocks cu ON cu.PlayniteGameId = g.PlayniteGameId");
+            StringAssert.Contains(store, "AND cu.ApiName = ad.ApiName");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendAchievementRowsApplyCustomDataForAllProviders()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "var customDataByGameId = new Dictionary<Guid, ResolvedGameCustomData>();");
+            StringAssert.Contains(store, "ApplyCustomDataToFriendAchievement(item, customData);");
+            StringAssert.Contains(store, "GameCustomDataLookup.ResolveGameCustomData(");
+            StringAssert.Contains(store, "_plugin?.GameCustomDataStore");
+            StringAssert.Contains(store, "customData.AchievementCategoryOverrides");
+            StringAssert.Contains(store, "customData.AchievementCategoryTypeOverrides");
+            StringAssert.Contains(store, "AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryOverride)");
+            StringAssert.Contains(store, "AchievementCategoryTypeHelper.NormalizeOrDefault(categoryTypeOverride)");
         }
 
         [TestMethod]

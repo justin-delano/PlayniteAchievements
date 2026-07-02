@@ -88,6 +88,7 @@ namespace PlayniteAchievements.Services.Friends
     {
         public string ProviderKey { get; set; }
         public string ExternalUserId { get; set; }
+        public string FriendGroupId { get; set; }
         public int AppId { get; set; }
         public string ProviderGameKey { get; set; }
         public Guid? PlayniteGameId { get; set; }
@@ -125,6 +126,14 @@ namespace PlayniteAchievements.Services.Friends
         FriendUnownedCacheClearResult ClearUnownedFriendGameData();
 
         FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey);
+
+        FriendCacheWriteResult ClearFriendProviderOnlyGame(
+            string providerKey,
+            string externalUserId,
+            int appId,
+            string providerGameKey);
+
+        bool IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey);
 
         FriendCacheWriteResult SaveFriendGameAchievements(
             string providerKey,

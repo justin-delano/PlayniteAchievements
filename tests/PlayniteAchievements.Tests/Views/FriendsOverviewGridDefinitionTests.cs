@@ -19,16 +19,18 @@ namespace PlayniteAchievements.Tests.Views
                 xaml,
                 "ColumnKey=\"Avatar\"",
                 "FriendSummaryFriend",
-                "FriendSummaryProvider",
                 "FriendSummarySharedGames",
                 "FriendSummaryGamesWithUnlocks",
                 "FriendSummaryUnlocks",
                 "FriendSummaryPrestigeScore",
                 "FriendSummaryCollectionScore",
-                "FriendSummaryLastUnlock",
-                "GameSummaryProviderIconStyle");
+                "FriendSummaryPrestigeLevel",
+                "FriendSummaryCollectionLevel",
+                "FriendSummaryLastUnlock");
             AssertContainsNone(
                 xaml,
+                "FriendSummaryProvider",
+                "GameSummaryProviderIconStyle",
                 "FriendSummaryRecentUnlocks",
                 "FriendSummaryLastRefreshed",
                 "FriendSummaryTotalPlaytime");

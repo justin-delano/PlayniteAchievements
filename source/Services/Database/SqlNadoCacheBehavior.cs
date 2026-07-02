@@ -39,11 +39,28 @@ namespace PlayniteAchievements.Services.Database
                     ApiName = apiName,
                     DisplayName = row.DisplayName,
                     Description = row.Description,
+                    UnlockedIconPath = FirstNonBlank(row.UnlockedIconUrl, row.IconUrl),
+                    LockedIconPath = FirstNonBlank(row.LockedIconUrl, row.IconUrl, row.UnlockedIconUrl),
+                    Points = row.Points,
+                    ScaledPoints = row.ScaledPoints,
+                    Category = row.Category,
+                    CategoryType = row.CategoryType,
+                    TrophyType = row.TrophyType,
+                    Hidden = row.Hidden,
+                    IsCapstone = row.IsCapstone ||
+                        string.Equals(row.TrophyType?.Trim(), "platinum", StringComparison.OrdinalIgnoreCase),
+                    GlobalPercentUnlocked = row.GlobalPercentUnlocked,
+                    Rarity = row.Rarity ?? RarityTier.Common,
                     ProgressDenom = row.ProgressDenom
                 });
             }
 
             return result;
+        }
+
+        private static string FirstNonBlank(params string[] values)
+        {
+            return values?.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
         }
 
         public static List<long> ComputeStaleDefinitionIds(

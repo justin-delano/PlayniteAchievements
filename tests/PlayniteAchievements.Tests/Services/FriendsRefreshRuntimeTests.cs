@@ -194,6 +194,98 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_FullLibraryProviderOnlyGameWithZeroUnlocks_DoesNotPersistFriendData()
+        {
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") },
+                AchievementRowsToReturn = new List<FriendAchievementRow>()
+            };
+
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = FriendLibraryScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(1, friends.GetFriendGameAchievementsCalls);
+            Assert.AreEqual(0, cache.SaveProviderOnlyOwnershipCalls);
+            Assert.AreEqual(0, cache.SaveFriendGameAchievementsCalls);
+            Assert.AreEqual(1, cache.ClearFriendProviderOnlyGameCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_FullLibraryProviderOnlyGameWithFriendUnlocks_PersistsOwnershipAndAchievements()
+        {
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") },
+                AchievementRowsToReturn = new List<FriendAchievementRow>
+                {
+                    new FriendAchievementRow { ApiName = "A", DisplayName = "A", Unlocked = true }
+                }
+            };
+
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = FriendLibraryScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(1, cache.SaveProviderOnlyOwnershipCalls);
+            Assert.AreEqual(1, cache.SaveFriendGameAchievementsCalls);
+            Assert.AreEqual(0, cache.ClearFriendProviderOnlyGameCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_ProviderOnlyCandidateWithZeroUnlocks_ClearsStaleFriendGameData()
+        {
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false,
+                Candidates = new List<FriendRefreshCandidate>
+                {
+                    MakeCandidate("1", 100)
+                }
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") },
+                AchievementRowsToReturn = new List<FriendAchievementRow>()
+            };
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions { Scope = FriendRefreshScope.Recent },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(1, friends.GetFriendGameAchievementsCalls);
+            Assert.AreEqual(0, cache.SaveFriendGameAchievementsCalls);
+            Assert.AreEqual(1, cache.ClearFriendProviderOnlyGameCalls);
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_FullLibraryFriend_RetriesCachedNoAchievementsDefinition()
         {
             var cache = new FakeFriendCache
@@ -461,6 +553,100 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_Shared_ReportsMonotonicProgressWithFriendAndGameNames()
+        {
+            var reports = new List<ProgressEvent>();
+            var cache = new FakeFriendCache
+            {
+                Candidates = new List<FriendRefreshCandidate>
+                {
+                    MakeCandidate("1", 100),
+                    MakeCandidate("2", 200)
+                }
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity>
+                {
+                    MakeFriend("1"),
+                    MakeFriend("2")
+                }
+            };
+
+            await CreateRuntime(cache, enableParallelProviderRefresh: false)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions { Scope = FriendRefreshScope.Shared },
+                    reportProgress: (message, current, total) => reports.Add(new ProgressEvent(message, current, total)))
+                .ConfigureAwait(false);
+
+            Assert.IsTrue(reports.Count > 0);
+            Assert.IsTrue(reports.All(report => report.Total == FriendRefreshProgressSession.TotalUnits));
+            for (var i = 1; i < reports.Count; i++)
+            {
+                Assert.IsTrue(
+                    reports[i].Current >= reports[i - 1].Current,
+                    $"Progress regressed from {reports[i - 1].Current} to {reports[i].Current}: {reports[i].Message}");
+            }
+
+            var messageText = string.Join("\n", reports.Select(report => report.Message ?? "<null>"));
+            Assert.IsTrue(reports.Any(report => report.Message?.Contains("Friend 1") == true), messageText);
+            Assert.IsTrue(reports.Any(report => report.Message?.Contains("Friend 1 - Game 100") == true), messageText);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_FullLibraryFriend_UsesUserFacingGameCheckProgressText()
+        {
+            var reports = new List<ProgressEvent>();
+            var cache = new FakeFriendCache();
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") }
+            };
+
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = FriendLibraryScope.Full
+                    },
+                    reportProgress: (message, current, total) => reports.Add(new ProgressEvent(message, current, total)))
+                .ConfigureAwait(false);
+
+            var messages = reports
+                .Select(report => report.Message)
+                .Where(message => !string.IsNullOrWhiteSpace(message))
+                .ToList();
+            Assert.IsTrue(
+                messages.Any(message => message.IndexOf("Checking friend games", StringComparison.OrdinalIgnoreCase) >= 0),
+                string.Join("\n", messages));
+            Assert.IsFalse(messages.Any(message => message.IndexOf("definition", StringComparison.OrdinalIgnoreCase) >= 0));
+            Assert.IsFalse(messages.Any(message => message.IndexOf("schema", StringComparison.OrdinalIgnoreCase) >= 0));
+            Assert.IsFalse(messages.Any(message => message.IndexOf("unlock marker", StringComparison.OrdinalIgnoreCase) >= 0));
+        }
+
+        [TestMethod]
+        public void CountAchievementIconDownloadAttempts_TreatsDuplicateLockedUnlockedUrlAsOneAttempt()
+        {
+            Assert.AreEqual(
+                1,
+                FriendsRefreshRuntime.CountAchievementIconDownloadAttempts(new AchievementDetail
+                {
+                    UnlockedIconPath = "https://cdn.example/icon.png",
+                    LockedIconPath = "https://cdn.example/icon.png"
+                }));
+            Assert.AreEqual(
+                2,
+                FriendsRefreshRuntime.CountAchievementIconDownloadAttempts(new AchievementDetail
+                {
+                    UnlockedIconPath = "https://cdn.example/unlocked.png",
+                    LockedIconPath = "https://cdn.example/locked.png"
+                }));
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_BeginAuthFailure_MarksAuthRequiredAndEndsRefresh()
         {
             var cache = new FakeFriendCache();
@@ -523,6 +709,20 @@ namespace PlayniteAchievements.Services.Tests
                 GameName = "Game " + appId
             };
 
+        private sealed class ProgressEvent
+        {
+            public ProgressEvent(string message, int current, int total)
+            {
+                Message = message;
+                Current = current;
+                Total = total;
+            }
+
+            public string Message { get; }
+            public int Current { get; }
+            public int Total { get; }
+        }
+
         private sealed class FakeFriendCache : IFriendCacheManager
         {
             private int _saveFriendListCalls;
@@ -530,15 +730,18 @@ namespace PlayniteAchievements.Services.Tests
             private int _saveFriendGameAchievementsCalls;
             private int _saveFriendGameDefinitionCalls;
             private int _saveProviderOnlyOwnershipCalls;
+            private int _clearFriendProviderOnlyGameCalls;
 
             public List<FriendRefreshCandidate> Candidates { get; set; } = new List<FriendRefreshCandidate>();
             public Dictionary<string, FriendGameDefinitionState> DefinitionStates { get; set; } =
                 new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
+            public bool ProviderGamesMappedToPlayniteLibrary { get; set; } = true;
             public int SaveFriendListCalls => _saveFriendListCalls;
             public int SaveFriendOwnershipCalls => _saveFriendOwnershipCalls;
             public int SaveFriendGameAchievementsCalls => _saveFriendGameAchievementsCalls;
             public int SaveFriendGameDefinitionCalls => _saveFriendGameDefinitionCalls;
             public int SaveProviderOnlyOwnershipCalls => _saveProviderOnlyOwnershipCalls;
+            public int ClearFriendProviderOnlyGameCalls => _clearFriendProviderOnlyGameCalls;
             public FriendRefreshOptions LastLoadOptions { get; private set; }
 
             public FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends)
@@ -595,6 +798,19 @@ namespace PlayniteAchievements.Services.Tests
 
             public FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey) =>
                 FriendCacheWriteResult.Ok();
+
+            public FriendCacheWriteResult ClearFriendProviderOnlyGame(
+                string providerKey,
+                string externalUserId,
+                int appId,
+                string providerGameKey)
+            {
+                Interlocked.Increment(ref _clearFriendProviderOnlyGameCalls);
+                return FriendCacheWriteResult.Ok();
+            }
+
+            public bool IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey) =>
+                ProviderGamesMappedToPlayniteLibrary;
 
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,
@@ -684,6 +900,7 @@ namespace PlayniteAchievements.Services.Tests
             public IReadOnlyList<FriendIdentity> FriendsToReturn { get; set; } = Array.Empty<FriendIdentity>();
             public IReadOnlyList<FriendGameOwnership> OwnedGamesToReturn { get; set; }
             public FriendGameDefinitionStatus DefinitionStatusToReturn { get; set; } = FriendGameDefinitionStatus.Ok;
+            public List<FriendAchievementRow> AchievementRowsToReturn { get; set; }
             public int OwnershipDelayMs { get; set; }
             public int AchievementDelayMs { get; set; }
             public int BeginCalls => _beginCalls;
@@ -774,7 +991,29 @@ namespace PlayniteAchievements.Services.Tests
                             Friend = friend,
                             AppId = appId,
                             ProviderGameKey = providerGameKey,
-                            LastUpdatedUtc = DateTime.UtcNow
+                            LastUpdatedUtc = DateTime.UtcNow,
+                            Rows = AchievementRowsToReturn?
+                                .Select(row => new FriendAchievementRow
+                                {
+                                    ApiName = row.ApiName,
+                                    DisplayName = row.DisplayName,
+                                    Description = row.Description,
+                                    IconUrl = row.IconUrl,
+                                    UnlockedIconUrl = row.UnlockedIconUrl,
+                                    LockedIconUrl = row.LockedIconUrl,
+                                    Points = row.Points,
+                                    ScaledPoints = row.ScaledPoints,
+                                    TrophyType = row.TrophyType,
+                                    Hidden = row.Hidden,
+                                    IsCapstone = row.IsCapstone,
+                                    GlobalPercentUnlocked = row.GlobalPercentUnlocked,
+                                    Rarity = row.Rarity,
+                                    Unlocked = row.Unlocked,
+                                    UnlockTimeUtc = row.UnlockTimeUtc,
+                                    ProgressNum = row.ProgressNum,
+                                    ProgressDenom = row.ProgressDenom
+                                })
+                                .ToList() ?? new List<FriendAchievementRow>()
                         });
                 }
                 finally

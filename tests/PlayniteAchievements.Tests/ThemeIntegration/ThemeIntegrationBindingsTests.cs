@@ -2614,6 +2614,16 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             public FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey) =>
                 FriendCacheWriteResult.Ok();
 
+            public FriendCacheWriteResult ClearFriendProviderOnlyGame(
+                string providerKey,
+                string externalUserId,
+                int appId,
+                string providerGameKey) =>
+                FriendCacheWriteResult.Ok();
+
+            public bool IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey) =>
+                true;
+
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,
                 string externalUserId,

@@ -40,6 +40,16 @@ namespace PlayniteAchievements.Services.Images
             "images-eds-ssl.xboxlive.com"
         };
 
+        // Domains that generate thumbnails lazily on first request: the initial request for a
+        // not-yet-materialized image returns 404 (which itself triggers generation), and a later
+        // request returns 200. Those 404s are retryable, so downloads to these domains use a longer,
+        // capped retry window to let generation complete within a single refresh. Exophase award and
+        // game thumbnails behave this way.
+        private static readonly string[] LazyThumbnailDomains = new[]
+        {
+            "exophase.com"
+        };
+
         private static readonly string[] SupportedImageExtensions =
         {
             ".png",
@@ -389,6 +399,33 @@ namespace PlayniteAchievements.Services.Images
             return false;
         }
 
+        private static bool IsLazyThumbnailDomain(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                var host = new Uri(url).Host;
+                foreach (var domain in LazyThumbnailDomains)
+                {
+                    if (host.EndsWith(domain, StringComparison.OrdinalIgnoreCase) ||
+                        host.Equals(domain, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Invalid URL, treat as normal
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Get or download an icon by URI, caching to disk by URI hash.
         /// If gameId is provided, stores in per-game subfolder.
@@ -581,7 +618,12 @@ namespace PlayniteAchievements.Services.Images
 
         private async Task<byte[]> DownloadBytesAsync(string url, CancellationToken cancel)
         {
-            const int maxAttempts = 3;
+            // Lazily-generated thumbnails (e.g. Exophase) return 404 until the image is materialized;
+            // the request itself triggers generation, so retry those over a longer, capped window so
+            // the thumbnail exists by a later attempt. Other hosts keep the short 3-attempt window.
+            var lazyThumbnail = IsLazyThumbnailDomain(url);
+            var maxAttempts = lazyThumbnail ? 8 : 3;
+            const double maxBackoffSeconds = 3.0;
             var backoff = TimeSpan.FromSeconds(1);
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
@@ -633,7 +675,7 @@ namespace PlayniteAchievements.Services.Images
                         {
                             _logger?.Debug($"Download timeout for {url}, attempt {attempt}/{maxAttempts}, retrying in {backoff.TotalSeconds}s");
                             await Task.Delay(backoff, cancel).ConfigureAwait(false);
-                            backoff = TimeSpan.FromSeconds(backoff.TotalSeconds * 2);
+                            backoff = TimeSpan.FromSeconds(Math.Min(backoff.TotalSeconds * 2, maxBackoffSeconds));
                             continue;
                         }
                         return null;
@@ -645,7 +687,7 @@ namespace PlayniteAchievements.Services.Images
                         {
                             _logger?.Debug($"HTTP error for {url}, attempt {attempt}/{maxAttempts}: {ex.Message}, retrying in {backoff.TotalSeconds}s");
                             await Task.Delay(backoff, cancel).ConfigureAwait(false);
-                            backoff = TimeSpan.FromSeconds(backoff.TotalSeconds * 2);
+                            backoff = TimeSpan.FromSeconds(Math.Min(backoff.TotalSeconds * 2, maxBackoffSeconds));
                             continue;
                         }
                         return null;

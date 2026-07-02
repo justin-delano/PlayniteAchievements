@@ -85,11 +85,6 @@
                                     CanUserSort="False"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Avatar">
-                <DataGridTemplateColumn.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" Opacity="0"/>
-                    </DataTemplate>
-                </DataGridTemplateColumn.HeaderTemplate>
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
@@ -128,48 +123,6 @@
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"
                                 helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryFriend"/>
 
-            <DataGridTemplateColumn Width="44" MinWidth="28" MaxWidth="96" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_Provider}"
-                                    CanUserSort="False"
-                                    CellStyle="{StaticResource GameSummariesImageCellStyle}"
-                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryProvider">
-                <DataGridTemplateColumn.HeaderTemplate>
-                    <DataTemplate>
-                        <TextBlock Text="{Binding}" Opacity="0"/>
-                    </DataTemplate>
-                </DataGridTemplateColumn.HeaderTemplate>
-                <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
-                                        Padding="0,6">
-                            <Grid>
-                                <Image ToolTip="{Binding ProviderDisplayName}"
-                                       Style="{StaticResource GameSummaryProviderIconStyle}">
-                                    <Image.Width>
-                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,width,8,16,14">
-                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
-                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
-                                        </MultiBinding>
-                                    </Image.Width>
-                                    <Image.Height>
-                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,height,8,16,14">
-                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
-                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
-                                        </MultiBinding>
-                                    </Image.Height>
-                                    <Image.Source>
-                                        <MultiBinding Converter="{StaticResource ProviderIconConverter}">
-                                            <Binding Path="ProviderIconKey"/>
-                                            <Binding Path="ProviderColorHex"/>
-                                        </MultiBinding>
-                                    </Image.Source>
-                                </Image>
-                            </Grid>
-                        </ContentControl>
-                    </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
-
             <DataGridTextColumn Width="*" MinWidth="56" CanUserResize="True"
                                 Header="{DynamicResource LOCPlayAch_Column_SharedGames}"
                                 Binding="{Binding SharedGamesCount, StringFormat={}{0:N0}}"
@@ -200,6 +153,18 @@
                                 SortMemberPath="CollectionScore"
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"
                                 helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryCollectionScore"/>
+            <DataGridTextColumn Width="*" MinWidth="64" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_PrestigeLevel}"
+                                Binding="{Binding PrestigeLevel, StringFormat={}{0:N0}}"
+                                SortMemberPath="PrestigeLevel"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryPrestigeLevel"/>
+            <DataGridTextColumn Width="*" MinWidth="64" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_CollectionLevel}"
+                                Binding="{Binding CollectionLevel, StringFormat={}{0:N0}}"
+                                SortMemberPath="CollectionLevel"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryCollectionLevel"/>
 
             <DataGridTemplateColumn Width="*" MinWidth="72" CanUserResize="True"
                                     Header="{DynamicResource LOCPlayAch_Column_LastUnlock}"

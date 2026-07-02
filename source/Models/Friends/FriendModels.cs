@@ -198,6 +198,17 @@ namespace PlayniteAchievements.Models.Friends
         public string DisplayName { get; set; }
         public string Description { get; set; }
         public string IconUrl { get; set; }
+        public string UnlockedIconUrl { get; set; }
+        public string LockedIconUrl { get; set; }
+        public int? Points { get; set; }
+        public int? ScaledPoints { get; set; }
+        public string Category { get; set; }
+        public string CategoryType { get; set; }
+        public string TrophyType { get; set; }
+        public bool Hidden { get; set; }
+        public bool IsCapstone { get; set; }
+        public double? GlobalPercentUnlocked { get; set; }
+        public RarityTier? Rarity { get; set; }
         public bool Unlocked { get; set; }
         public DateTime? UnlockTimeUtc { get; set; }
         public int? ProgressNum { get; set; }

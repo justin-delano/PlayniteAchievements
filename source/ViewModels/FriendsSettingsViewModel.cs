@@ -14,6 +14,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Threading;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
@@ -21,14 +22,20 @@ namespace PlayniteAchievements.ViewModels
 {
     internal sealed class FriendsSettingsViewModel : ObservableObject
     {
+        private const string ExophaseProviderKey = "Exophase";
+        private const string SteamProviderKey = "Steam";
+
         private readonly PlayniteAchievementsSettings _settings;
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ProviderRegistry _providerRegistry;
         private readonly ILogger _logger;
         private readonly IFriendCacheManager _friendCache;
+        private readonly DispatcherTimer _persistDebounceTimer;
         private string _manualExophaseUsername;
         private string _statusText;
         private bool _isBusy;
+        private bool _hasPendingPersist;
+        private string _pendingPersistProviderKey;
 
         public FriendsSettingsViewModel(
             PlayniteAchievementsSettings settings,
@@ -43,21 +50,30 @@ namespace PlayniteAchievements.ViewModels
             _friendCache = plugin?.RefreshRuntime?.Cache as IFriendCacheManager;
 
             AutoDiscoverProviders = new ObservableCollection<FriendAutoDiscoverProviderItem>();
-            Friends = new ObservableCollection<FriendSettingsRowItem>();
+            Friends = new ObservableCollection<FriendSettingsPersonRowItem>();
             RefreshAutoDiscoverCommand = new AsyncCommand(_ => RefreshAutoDiscoverAsync(), _ => !IsBusy);
             AddManualFriendCommand = new AsyncCommand(_ => AddManualExophaseFriendAsync(), _ => !IsBusy && !string.IsNullOrWhiteSpace(ManualExophaseUsername));
-            RemoveFriendCommand = new RelayCommand(RemoveFriend, value => value is FriendSettingsRowItem row && row.CanRemove);
+            MergeSelectedCommand = new RelayCommand(_ => MergeSelectedFriends(), _ => CanMergeSelectedFriends());
+            UnmergeFriendCommand = new RelayCommand(UnmergeFriend, value => value is FriendSettingsPersonRowItem row && row.IsMerged);
+            RemoveFriendCommand = new RelayCommand(RemoveFriend, value => value is FriendSettingsAccountItem row && row.CanRemove);
+
+            _persistDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+            _persistDebounceTimer.Tick += OnPersistDebounceTimerTick;
 
             Initialize();
         }
 
         public ObservableCollection<FriendAutoDiscoverProviderItem> AutoDiscoverProviders { get; }
 
-        public ObservableCollection<FriendSettingsRowItem> Friends { get; }
+        public ObservableCollection<FriendSettingsPersonRowItem> Friends { get; }
 
         public ICommand RefreshAutoDiscoverCommand { get; }
 
         public ICommand AddManualFriendCommand { get; }
+
+        public ICommand MergeSelectedCommand { get; }
+
+        public ICommand UnmergeFriendCommand { get; }
 
         public ICommand RemoveFriendCommand { get; }
 
@@ -96,6 +112,7 @@ namespace PlayniteAchievements.ViewModels
                 {
                     (RefreshAutoDiscoverCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                     (AddManualFriendCommand as AsyncCommand)?.RaiseCanExecuteChanged();
+                    (MergeSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 }
             }
         }
@@ -106,12 +123,13 @@ namespace PlayniteAchievements.ViewModels
             var seeded = false;
             if (_friendCache != null)
             {
-                seeded |= FriendSettingsSyncService.MergeCachedFriends(_settings.Persisted, _friendCache, "Steam");
-                seeded |= FriendSettingsSyncService.MergeCachedFriends(_settings.Persisted, _friendCache, "Exophase", FriendSettingsSource.Manual);
+                seeded |= FriendSettingsSyncService.MergeCachedFriends(_settings.Persisted, _friendCache, SteamProviderKey);
+                seeded |= FriendSettingsSyncService.MergeCachedFriends(_settings.Persisted, _friendCache, ExophaseProviderKey, FriendSettingsSource.Manual);
                 FriendSettingsSyncService.SyncConfiguredFriendsToCache(_settings.Persisted, _friendCache, _logger);
             }
 
             BuildAutoDiscoverProviders();
+            ApplyExophasePlatformConflicts();
             RebuildFriends();
             if (migrated || seeded)
             {
@@ -123,10 +141,10 @@ namespace PlayniteAchievements.ViewModels
         {
             AutoDiscoverProviders.Clear();
             AutoDiscoverProviders.Add(new FriendAutoDiscoverProviderItem(
-                "Steam",
-                ProviderRegistry.GetLocalizedName("Steam"),
-                isAvailable: IsFriendProviderAvailable("Steam"),
-                isSelected: _settings.Persisted?.IsFriendAutoDiscoverEnabled("Steam") == true,
+                SteamProviderKey,
+                ProviderRegistry.GetLocalizedName(SteamProviderKey),
+                isAvailable: IsFriendProviderAvailable(SteamProviderKey),
+                isSelected: _settings.Persisted?.IsFriendAutoDiscoverEnabled(SteamProviderKey) == true,
                 onChanged: OnAutoDiscoverProviderChanged));
         }
 
@@ -140,18 +158,69 @@ namespace PlayniteAchievements.ViewModels
         private void RebuildFriends()
         {
             Friends.Clear();
-            var rows = (_settings.Persisted?.Friends ?? new ObservableCollection<FriendSettingsEntry>())
-                .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.ProviderKey) && !string.IsNullOrWhiteSpace(entry.ExternalUserId))
-                .OrderBy(entry => entry.IsIgnored)
-                .ThenBy(entry => ProviderRegistry.GetLocalizedName(entry.ProviderKey), StringComparer.CurrentCultureIgnoreCase)
-                .ThenBy(entry => entry.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-                .Select(entry => new FriendSettingsRowItem(entry, OnFriendRowChanged))
-                .ToList();
+            var persisted = _settings.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
 
-            foreach (var row in rows)
+            persisted.FriendMergeGroups = persisted.FriendMergeGroups;
+            var entries = (persisted.Friends ?? new ObservableCollection<FriendSettingsEntry>())
+                .Where(entry => entry != null && !string.IsNullOrWhiteSpace(entry.ProviderKey) && !string.IsNullOrWhiteSpace(entry.ExternalUserId))
+                .ToList();
+            var entriesByKey = entries
+                .GroupBy(entry => FriendAccountRef.BuildKey(entry.ProviderKey, entry.ExternalUserId), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
+            var groupedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var rows = new List<FriendSettingsPersonRowItem>();
+
+            foreach (var group in persisted.GetFriendMergeGroups())
+            {
+                var groupEntries = (group.Members ?? new List<FriendAccountRef>())
+                    .Select(member => entriesByKey.TryGetValue(member.Key, out var entry) ? entry : null)
+                    .Where(entry => entry != null)
+                    .ToList();
+                if (groupEntries.Count < 2)
+                {
+                    continue;
+                }
+
+                foreach (var entry in groupEntries)
+                {
+                    groupedKeys.Add(FriendAccountRef.BuildKey(entry.ProviderKey, entry.ExternalUserId));
+                }
+
+                rows.Add(new FriendSettingsPersonRowItem(
+                    group,
+                    groupEntries,
+                    ResolveDisabledExophasePlatformTokens(groupEntries),
+                    OnPersonRowChanged,
+                    OnAccountRowChanged,
+                    OnPersonSelectionChanged));
+            }
+
+            foreach (var entry in entries.Where(entry => !groupedKeys.Contains(FriendAccountRef.BuildKey(entry.ProviderKey, entry.ExternalUserId))))
+            {
+                rows.Add(new FriendSettingsPersonRowItem(
+                    null,
+                    new[] { entry },
+                    ResolveDisabledExophasePlatformTokens(new[] { entry }),
+                    OnPersonRowChanged,
+                    OnAccountRowChanged,
+                    OnPersonSelectionChanged));
+            }
+
+            foreach (var row in rows
+                .OrderBy(row => row.IsIgnored)
+                .ThenBy(row => row.SortProviderName, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(row => row.DisplayName, StringComparer.CurrentCultureIgnoreCase))
             {
                 Friends.Add(row);
             }
+
+            (MergeSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (UnmergeFriendCommand as RelayCommand)?.RaiseCanExecuteChanged();
+            (RemoveFriendCommand as RelayCommand)?.RaiseCanExecuteChanged();
         }
 
         private void OnAutoDiscoverProviderChanged(FriendAutoDiscoverProviderItem item)
@@ -165,20 +234,111 @@ namespace PlayniteAchievements.ViewModels
             PersistAndNotify(item.ProviderKey);
         }
 
-        private void OnFriendRowChanged(FriendSettingsRowItem row)
+        private void OnPersonSelectionChanged(FriendSettingsPersonRowItem row)
+        {
+            (MergeSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
+        }
+
+        private void OnPersonRowChanged(FriendSettingsPersonRowItem row)
         {
             if (row == null)
             {
                 return;
             }
 
-            row.WriteToEntry();
-            if (row.IsIgnored)
+            row.WritePersonSettings(_settings.Persisted);
+            ApplyExophasePlatformConflicts();
+            row.RefreshPlatformConflicts(ResolveDisabledExophasePlatformTokens(row.Accounts.Select(account => account.Entry)));
+            SchedulePersistAndNotify(null);
+        }
+
+        private void OnAccountRowChanged(FriendSettingsAccountItem account)
+        {
+            if (account == null)
             {
-                _friendCache?.DeleteFriendData(row.ProviderKey, row.ExternalUserId);
+                return;
             }
 
-            PersistAndNotify(row.ProviderKey);
+            account.WriteToEntry();
+            if (account.IsIgnored)
+            {
+                QueueFriendCacheDelete(account.ProviderKey, account.ExternalUserId);
+            }
+
+            ApplyExophasePlatformConflicts();
+            SchedulePersistAndNotify(account.ProviderKey);
+        }
+
+        private bool CanMergeSelectedFriends()
+        {
+            if (IsBusy)
+            {
+                return false;
+            }
+
+            var accounts = GetSelectedAccountRefs().ToList();
+            return accounts.Count >= 2 &&
+                   accounts.Select(account => account.ProviderKey).Distinct(StringComparer.OrdinalIgnoreCase).Count() == accounts.Count;
+        }
+
+        private void MergeSelectedFriends()
+        {
+            var selectedRows = Friends.Where(row => row.IsSelected).ToList();
+            var accounts = GetSelectedAccountRefs().ToList();
+            if (accounts.Count < 2)
+            {
+                return;
+            }
+
+            var nickname = selectedRows
+                .Select(row => row.Nickname)
+                .Concat(selectedRows.Select(row => row.DisplayName))
+                .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+            var avatar = selectedRows
+                .Select(row => row.SelectedAvatarOption?.Account)
+                .FirstOrDefault(account => account != null) ?? accounts.FirstOrDefault();
+
+            var group = _settings.Persisted?.AddOrUpdateFriendMergeGroup(accounts, nickname, avatar);
+            if (group == null)
+            {
+                StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsSettings_MergeInvalid") ??
+                             "Select at least two friends from different platforms to merge.";
+                return;
+            }
+
+            ApplyExophasePlatformConflicts();
+            RebuildFriends();
+            var mergedRow = Friends.FirstOrDefault(row => string.Equals(row.MergeGroupId, group.Id, StringComparison.OrdinalIgnoreCase));
+            if (mergedRow != null)
+            {
+                mergedRow.IsSelected = true;
+            }
+
+            PersistAndNotify(null);
+        }
+
+        private IEnumerable<FriendAccountRef> GetSelectedAccountRefs()
+        {
+            return Friends
+                .Where(row => row.IsSelected)
+                .SelectMany(row => row.GetAccountRefs())
+                .GroupBy(account => account.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .Where(account => !string.IsNullOrWhiteSpace(account?.Key));
+        }
+
+        private void UnmergeFriend(object parameter)
+        {
+            if (!(parameter is FriendSettingsPersonRowItem row) || !row.IsMerged)
+            {
+                return;
+            }
+
+            if (_settings.Persisted?.RemoveFriendMergeGroup(row.MergeGroupId) == true)
+            {
+                RebuildFriends();
+                PersistAndNotify(null);
+            }
         }
 
         private async Task RefreshAutoDiscoverAsync()
@@ -206,7 +366,7 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _settings.Persisted?.AddOrUpdateFriend(
-                "Exophase",
+                ExophaseProviderKey,
                 username,
                 username,
                 null,
@@ -215,9 +375,9 @@ namespace PlayniteAchievements.ViewModels
                 FriendLibraryScope.Shared,
                 Enumerable.Empty<string>());
             ManualExophaseUsername = string.Empty;
-            PersistAndNotify("Exophase");
+            PersistAndNotify(ExophaseProviderKey);
 
-            await RefreshRosterAsync(new[] { "Exophase" }, refreshStatus: false).ConfigureAwait(true);
+            await RefreshRosterAsync(new[] { ExophaseProviderKey }, refreshStatus: false).ConfigureAwait(true);
         }
 
         private async Task RefreshRosterAsync(IReadOnlyCollection<string> providerKeys, bool refreshStatus)
@@ -242,12 +402,13 @@ namespace PlayniteAchievements.ViewModels
                         _settings.Persisted,
                         _friendCache,
                         key,
-                        string.Equals(key, "Exophase", StringComparison.OrdinalIgnoreCase)
+                        string.Equals(key, ExophaseProviderKey, StringComparison.OrdinalIgnoreCase)
                             ? FriendSettingsSource.Manual
                             : FriendSettingsSource.AutoDiscovered);
                 }
 
                 FriendSettingsSyncService.SyncConfiguredFriendsToCache(_settings.Persisted, _friendCache, _logger);
+                ApplyExophasePlatformConflicts();
                 RebuildFriends();
                 PersistAndNotify(null);
                 StatusText = refreshStatus
@@ -274,20 +435,115 @@ namespace PlayniteAchievements.ViewModels
 
         private void RemoveFriend(object parameter)
         {
-            if (!(parameter is FriendSettingsRowItem row) || !row.CanRemove)
+            if (!(parameter is FriendSettingsAccountItem account) || !account.CanRemove)
             {
                 return;
             }
 
-            if (_settings.Persisted?.RemoveFriendSetting(row.ProviderKey, row.ExternalUserId) == true)
+            if (_settings.Persisted?.RemoveFriendSetting(account.ProviderKey, account.ExternalUserId) == true)
             {
-                _friendCache?.DeleteFriendData(row.ProviderKey, row.ExternalUserId);
+                _friendCache?.DeleteFriendData(account.ProviderKey, account.ExternalUserId);
+                ApplyExophasePlatformConflicts();
                 RebuildFriends();
-                PersistAndNotify(row.ProviderKey);
+                PersistAndNotify(account.ProviderKey);
             }
         }
 
+        private void ApplyExophasePlatformConflicts()
+        {
+            var persisted = _settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            var changed = false;
+            foreach (var group in persisted.GetFriendMergeGroups())
+            {
+                var hasSteam = group.Members?.Any(member =>
+                    string.Equals(member?.ProviderKey, SteamProviderKey, StringComparison.OrdinalIgnoreCase)) == true;
+                if (!hasSteam)
+                {
+                    continue;
+                }
+
+                foreach (var exophaseMember in group.Members.Where(member =>
+                    string.Equals(member?.ProviderKey, ExophaseProviderKey, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var entry = persisted.GetFriendSetting(ExophaseProviderKey, exophaseMember.ExternalUserId);
+                    if (entry?.SelectedPlatforms?.RemoveAll(token => string.Equals(token, "steam", StringComparison.OrdinalIgnoreCase)) > 0)
+                    {
+                        entry.SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(entry.SelectedPlatforms);
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed)
+            {
+                persisted.Friends = persisted.Friends;
+            }
+        }
+
+        private static HashSet<string> ResolveDisabledExophasePlatformTokens(IEnumerable<FriendSettingsEntry> entries)
+        {
+            var list = entries?.Where(entry => entry != null).ToList() ?? new List<FriendSettingsEntry>();
+            var disabled = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (list.Any(entry => string.Equals(entry.ProviderKey, SteamProviderKey, StringComparison.OrdinalIgnoreCase)) &&
+                list.Any(entry => string.Equals(entry.ProviderKey, ExophaseProviderKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                disabled.Add("steam");
+            }
+
+            return disabled;
+        }
+
+        private void SchedulePersistAndNotify(string providerKey)
+        {
+            if (!_hasPendingPersist)
+            {
+                _pendingPersistProviderKey = providerKey;
+                _hasPendingPersist = true;
+            }
+            else if (string.IsNullOrWhiteSpace(_pendingPersistProviderKey) ||
+                     string.IsNullOrWhiteSpace(providerKey) ||
+                     !string.Equals(_pendingPersistProviderKey, providerKey, StringComparison.OrdinalIgnoreCase))
+            {
+                _pendingPersistProviderKey = null;
+            }
+
+            _persistDebounceTimer.Stop();
+            _persistDebounceTimer.Start();
+        }
+
+        private void OnPersistDebounceTimerTick(object sender, EventArgs e)
+        {
+            _persistDebounceTimer.Stop();
+            FlushPendingPersistAndNotify();
+        }
+
+        private void FlushPendingPersistAndNotify()
+        {
+            if (!_hasPendingPersist)
+            {
+                return;
+            }
+
+            var providerKey = _pendingPersistProviderKey;
+            _pendingPersistProviderKey = null;
+            _hasPendingPersist = false;
+            PersistAndNotifyCore(providerKey);
+        }
+
         private void PersistAndNotify(string providerKey)
+        {
+            _persistDebounceTimer.Stop();
+            _pendingPersistProviderKey = null;
+            _hasPendingPersist = false;
+            PersistAndNotifyCore(providerKey);
+        }
+
+        private void PersistAndNotifyCore(string providerKey)
         {
             SyncExophaseProviderFriends(providerKey);
             FriendSettingsSyncService.SyncConfiguredFriendsToCache(_settings.Persisted, _friendCache, _logger, providerKey);
@@ -302,10 +558,32 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        private void QueueFriendCacheDelete(string providerKey, string externalUserId)
+        {
+            if (_friendCache == null ||
+                string.IsNullOrWhiteSpace(providerKey) ||
+                string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return;
+            }
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    _friendCache.DeleteFriendData(providerKey, externalUserId);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Warn(ex, $"Failed to delete ignored friend data for {providerKey}/{externalUserId}.");
+                }
+            });
+        }
+
         private void SyncExophaseProviderFriends(string providerKey)
         {
             if (!string.IsNullOrWhiteSpace(providerKey) &&
-                !string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase))
+                !string.Equals(providerKey, ExophaseProviderKey, StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }
@@ -331,7 +609,7 @@ namespace PlayniteAchievements.ViewModels
                     .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
 
                 var friends = persisted
-                    .GetFriendSettings("Exophase", includeIgnored: false)
+                    .GetFriendSettings(ExophaseProviderKey, includeIgnored: false)
                     .Where(friend => !string.IsNullOrWhiteSpace(friend?.ExternalUserId))
                     .Select(friend =>
                     {
@@ -405,18 +683,210 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 
-    internal sealed class FriendSettingsRowItem : ObservableObject
+    internal sealed class FriendSettingsPersonRowItem : ObservableObject
     {
-        private readonly FriendSettingsEntry _entry;
-        private readonly Action<FriendSettingsRowItem> _onChanged;
+        private readonly Action<FriendSettingsPersonRowItem> _onChanged;
+        private readonly Action<FriendSettingsPersonRowItem> _onSelectionChanged;
+        private bool _isSelected;
+        private string _nickname;
+        private FriendAvatarSourceOption _selectedAvatarOption;
+
+        public FriendSettingsPersonRowItem(
+            FriendMergeGroup group,
+            IEnumerable<FriendSettingsEntry> entries,
+            HashSet<string> disabledExophasePlatformTokens,
+            Action<FriendSettingsPersonRowItem> onChanged,
+            Action<FriendSettingsAccountItem> onAccountChanged,
+            Action<FriendSettingsPersonRowItem> onSelectionChanged)
+        {
+            MergeGroupId = group?.Id;
+            _nickname = group?.Nickname;
+            _onChanged = onChanged;
+            _onSelectionChanged = onSelectionChanged;
+            Accounts = new ObservableCollection<FriendSettingsAccountItem>(
+                (entries ?? Enumerable.Empty<FriendSettingsEntry>())
+                .Where(entry => entry != null)
+                .Select(entry => new FriendSettingsAccountItem(entry, disabledExophasePlatformTokens, account =>
+                {
+                    RefreshDerivedProperties();
+                    onAccountChanged?.Invoke(account);
+                })));
+            AvatarOptions = new ObservableCollection<FriendAvatarSourceOption>(
+                Accounts.Select(account => new FriendAvatarSourceOption(account)));
+            _selectedAvatarOption = ResolveSelectedAvatarOption(group?.AvatarAccount);
+            if (!IsMerged && Accounts.Count == 1)
+            {
+                _nickname = Accounts[0].Entry.Nickname;
+            }
+
+            RefreshDerivedProperties();
+        }
+
+        public string MergeGroupId { get; }
+
+        public bool IsMerged => !string.IsNullOrWhiteSpace(MergeGroupId);
+
+        public bool CanUnmerge => IsMerged;
+
+        public ObservableCollection<FriendSettingsAccountItem> Accounts { get; }
+
+        public ObservableCollection<FriendAvatarSourceOption> AvatarOptions { get; }
+
+        public bool CanChooseAvatar => IsMerged && AvatarOptions.Count > 1;
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (SetValueAndReturn(ref _isSelected, value))
+                {
+                    _onSelectionChanged?.Invoke(this);
+                }
+            }
+        }
+
+        public string Nickname
+        {
+            get => _nickname;
+            set
+            {
+                if (SetValueAndReturn(ref _nickname, string.IsNullOrWhiteSpace(value) ? null : value.Trim()))
+                {
+                    OnPropertyChanged(nameof(DisplayName));
+                    _onChanged?.Invoke(this);
+                }
+            }
+        }
+
+        public string DisplayName => FirstNonEmpty(
+            Nickname,
+            Accounts.Select(account => account.DisplayName).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)),
+            Accounts.Select(account => account.ExternalUserId).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)));
+
+        public string AvatarSource => SelectedAvatarOption?.AvatarSource ??
+                                      Accounts.Select(account => account.AvatarSource).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+        public FriendAvatarSourceOption SelectedAvatarOption
+        {
+            get => _selectedAvatarOption;
+            set
+            {
+                var next = value ?? AvatarOptions.FirstOrDefault();
+                if (!ReferenceEquals(_selectedAvatarOption, next))
+                {
+                    _selectedAvatarOption = next;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(SelectedAvatarAccountKey));
+                    OnPropertyChanged(nameof(AvatarSource));
+                    _onChanged?.Invoke(this);
+                }
+            }
+        }
+
+        public string SelectedAvatarAccountKey
+        {
+            get => SelectedAvatarOption?.AccountKey;
+            set
+            {
+                var next = string.IsNullOrWhiteSpace(value)
+                    ? AvatarOptions.FirstOrDefault()
+                    : AvatarOptions.FirstOrDefault(option => string.Equals(option.AccountKey, value, StringComparison.OrdinalIgnoreCase));
+                SelectedAvatarOption = next ?? AvatarOptions.FirstOrDefault();
+            }
+        }
+
+        public string AccountsText => string.Join(", ", Accounts.Select(account => account.ProviderDisplayName));
+
+        public string SortProviderName => IsMerged
+            ? ResourceProvider.GetString("LOCPlayAch_FriendsSettings_Merged") ?? "Merged"
+            : Accounts.FirstOrDefault()?.ProviderDisplayName;
+
+        public bool IsIgnored => Accounts.Count > 0 && Accounts.All(account => account.IsIgnored);
+
+        public IEnumerable<FriendAccountRef> GetAccountRefs()
+        {
+            return Accounts.Select(account => FriendAccountRef.From(account.ProviderKey, account.ExternalUserId));
+        }
+
+        public void WritePersonSettings(PersistedSettings settings)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            if (IsMerged)
+            {
+                settings.SetFriendMergeGroupNickname(MergeGroupId, Nickname);
+                settings.SetFriendMergeGroupAvatar(MergeGroupId, SelectedAvatarOption?.Account);
+            }
+            else
+            {
+                var account = Accounts.FirstOrDefault();
+                if (account != null)
+                {
+                    account.Entry.Nickname = string.IsNullOrWhiteSpace(Nickname) ? null : Nickname.Trim();
+                    settings.Friends = settings.Friends;
+                }
+            }
+        }
+
+        public void RefreshPlatformConflicts(HashSet<string> disabledExophasePlatformTokens)
+        {
+            foreach (var account in Accounts)
+            {
+                account.SetDisabledExophasePlatformTokens(disabledExophasePlatformTokens);
+            }
+        }
+
+        private void RefreshDerivedProperties()
+        {
+            if (!IsMerged && Accounts.Count == 1)
+            {
+                _nickname = Accounts[0].Entry.Nickname;
+            }
+
+            OnPropertyChanged(nameof(DisplayName));
+            OnPropertyChanged(nameof(AvatarSource));
+            OnPropertyChanged(nameof(AccountsText));
+            OnPropertyChanged(nameof(IsIgnored));
+            OnPropertyChanged(nameof(CanChooseAvatar));
+        }
+
+        private FriendAvatarSourceOption ResolveSelectedAvatarOption(FriendAccountRef avatarAccount)
+        {
+            if (avatarAccount != null)
+            {
+                var match = AvatarOptions.FirstOrDefault(option => option.Account?.Matches(avatarAccount.ProviderKey, avatarAccount.ExternalUserId) == true);
+                if (match != null)
+                {
+                    return match;
+                }
+            }
+
+            return AvatarOptions.FirstOrDefault(option => !string.IsNullOrWhiteSpace(option.AvatarSource)) ??
+                   AvatarOptions.FirstOrDefault();
+        }
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            return values?.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        }
+    }
+
+    internal sealed class FriendSettingsAccountItem : ObservableObject
+    {
+        private readonly Action<FriendSettingsAccountItem> _onChanged;
         private bool _isIgnored;
         private bool _useFullLibrary;
 
-        public FriendSettingsRowItem(
+        public FriendSettingsAccountItem(
             FriendSettingsEntry entry,
-            Action<FriendSettingsRowItem> onChanged)
+            HashSet<string> disabledExophasePlatformTokens,
+            Action<FriendSettingsAccountItem> onChanged)
         {
-            _entry = entry ?? throw new ArgumentNullException(nameof(entry));
+            Entry = entry ?? throw new ArgumentNullException(nameof(entry));
             _onChanged = onChanged;
             ProviderKey = entry.ProviderKey;
             ExternalUserId = entry.ExternalUserId;
@@ -433,7 +903,10 @@ namespace PlayniteAchievements.ViewModels
                     ResourceProvider.GetString(platform.LabelKey),
                     selected.Contains(platform.Token),
                     OnPlatformChanged)));
+            SetDisabledExophasePlatformTokens(disabledExophasePlatformTokens);
         }
+
+        public FriendSettingsEntry Entry { get; }
 
         public string ProviderKey { get; }
 
@@ -491,12 +964,38 @@ namespace PlayniteAchievements.ViewModels
                 ResourceProvider.GetString("LOCPlayAch_Exophase_PlatformsSelectedCount"),
                 SelectedPlatformCount);
 
+        public void SetDisabledExophasePlatformTokens(HashSet<string> disabledTokens)
+        {
+            var changed = false;
+            foreach (var platform in Platforms)
+            {
+                var shouldDisable = IsExophase &&
+                                    disabledTokens?.Contains(platform.Token) == true;
+                if (platform.IsEnabled == !shouldDisable)
+                {
+                    continue;
+                }
+
+                platform.SetEnabled(!shouldDisable);
+                if (shouldDisable && platform.IsSelected)
+                {
+                    platform.SetSelected(false, notify: false);
+                    changed = true;
+                }
+            }
+
+            if (changed)
+            {
+                OnPlatformChanged();
+            }
+        }
+
         public void WriteToEntry()
         {
-            _entry.IsIgnored = IsIgnored;
-            _entry.LibraryScope = UseFullLibrary ? FriendLibraryScope.Full : FriendLibraryScope.Shared;
-            _entry.SelectedPlatforms = Platforms
-                .Where(platform => platform.IsSelected)
+            Entry.IsIgnored = IsIgnored;
+            Entry.LibraryScope = UseFullLibrary ? FriendLibraryScope.Full : FriendLibraryScope.Shared;
+            Entry.SelectedPlatforms = Platforms
+                .Where(platform => platform.IsEnabled && platform.IsSelected)
                 .Select(platform => platform.Token)
                 .ToList();
         }
@@ -510,10 +1009,30 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 
+    internal sealed class FriendAvatarSourceOption
+    {
+        public FriendAvatarSourceOption(FriendSettingsAccountItem account)
+        {
+            Account = FriendAccountRef.From(account?.ProviderKey, account?.ExternalUserId);
+            AccountKey = Account?.Key;
+            Label = account?.ProviderDisplayName;
+            AvatarSource = account?.AvatarSource;
+        }
+
+        public FriendAccountRef Account { get; }
+
+        public string AccountKey { get; }
+
+        public string Label { get; }
+
+        public string AvatarSource { get; }
+    }
+
     internal sealed class FriendSettingsPlatformToggle : ObservableObject
     {
         private readonly Action _onChanged;
         private bool _isSelected;
+        private bool _isEnabled = true;
 
         public FriendSettingsPlatformToggle(string token, string label, bool isSelected, Action onChanged)
         {
@@ -527,15 +1046,28 @@ namespace PlayniteAchievements.ViewModels
 
         public string Label { get; }
 
+        public bool IsEnabled
+        {
+            get => _isEnabled;
+            private set => SetValue(ref _isEnabled, value);
+        }
+
         public bool IsSelected
         {
             get => _isSelected;
-            set
+            set => SetSelected(value, notify: true);
+        }
+
+        public void SetEnabled(bool value)
+        {
+            IsEnabled = value;
+        }
+
+        public void SetSelected(bool value, bool notify)
+        {
+            if (SetValueAndReturn(ref _isSelected, value) && notify)
             {
-                if (SetValueAndReturn(ref _isSelected, value))
-                {
-                    _onChanged?.Invoke();
-                }
+                _onChanged?.Invoke();
             }
         }
     }

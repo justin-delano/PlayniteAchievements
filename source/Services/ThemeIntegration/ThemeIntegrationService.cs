@@ -1882,7 +1882,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 var data = _friendCache.LoadFriendsOverviewData(
                     persisted?.FriendsOverviewHideSpoilers ?? true,
                     0);
-                return new FriendRuntimeState(data);
+                return new FriendRuntimeState(data, persisted);
             }
             catch (Exception ex)
             {
@@ -1908,7 +1908,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var scope = _runtimeState.FriendScope;
 
             if (!FriendOverviewProjection.IsAllScope(scope.ProviderKey) &&
-                !state.Friends.Any(friend => string.Equals(friend?.ProviderKey, scope.ProviderKey, StringComparison.OrdinalIgnoreCase)) &&
+                !state.Friends.Any(friend => FriendMatchesProvider(friend, scope.ProviderKey)) &&
                 !state.AggregateGames.Any(game => string.Equals(game?.ProviderKey, scope.ProviderKey, StringComparison.OrdinalIgnoreCase)))
             {
                 scope.ProviderKey = DynamicThemeViewKeys.All;
@@ -1920,7 +1920,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 var friend = state.Projection?.FindFriend(scope.UserKey);
                 if (friend == null ||
-                    !ProviderMatches(friend.ProviderKey, scope.ProviderKey))
+                    !FriendMatchesProvider(friend, scope.ProviderKey))
                 {
                     scope.UserKey = DynamicThemeViewKeys.All;
                     scope.GameKey = DynamicThemeViewKeys.All;
@@ -1992,9 +1992,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 case DynamicThemeOption option:
                     return option.Key;
                 case FriendSummaryItem friend:
-                    return FriendOverviewProjection.BuildFriendKey(friend.ProviderKey, friend.ExternalUserId);
+                    return FriendOverviewProjection.GetFriendScopeKey(friend);
                 case FriendAchievementDisplayItem achievement:
-                    return FriendOverviewProjection.BuildFriendKey(achievement.ProviderKey, achievement.FriendExternalUserId);
+                    return FriendOverviewProjection.GetFriendScopeKey(achievement);
                 default:
                     return DynamicThemeFilterExpression.NormalizeParameter(parameter);
             }
@@ -2113,7 +2113,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 case GameSummaryItem game:
                     return game.ProviderKey;
                 case FriendSummaryItem friend:
-                    return friend.ProviderKey;
+                    return GetFriendProviderScopeKeys(friend).FirstOrDefault() ?? friend.ProviderKey;
                 default:
                     return DynamicThemeFilterExpression.NormalizeParameter(parameter);
             }
@@ -2630,7 +2630,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ICommand applyCommand)
         {
             var providerKeys = (state?.Friends ?? Enumerable.Empty<FriendSummaryItem>())
-                .Select(friend => friend?.ProviderKey)
+                .SelectMany(GetFriendProviderScopeKeys)
                 .Concat((state?.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>()).Select(game => game?.ProviderKey));
             return DynamicThemeOptionFactory.CreateProviderOptions(providerKeys, selectedKey, applyCommand);
         }
@@ -2642,7 +2642,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ICommand applyCommand)
         {
             var friends = (state?.Friends ?? Enumerable.Empty<FriendSummaryItem>())
-                .Where(friend => friend != null && ProviderMatches(friend.ProviderKey, providerKey))
+                .Where(friend => FriendMatchesProvider(friend, providerKey))
                 .GroupBy(FriendOverviewProjection.GetFriendScopeKey, StringComparer.OrdinalIgnoreCase)
                 .Select(group =>
                 {
@@ -2693,6 +2693,40 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 : state?.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>();
 
             return games.Where(game => game != null && ProviderMatches(game.ProviderKey, providerKey));
+        }
+
+        private static bool FriendMatchesProvider(FriendSummaryItem friend, string scopeProviderKey)
+        {
+            if (friend == null)
+            {
+                return false;
+            }
+
+            return FriendOverviewProjection.IsAllScope(scopeProviderKey) ||
+                   GetFriendProviderScopeKeys(friend)
+                       .Any(provider => string.Equals(provider, scopeProviderKey, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static IEnumerable<string> GetFriendProviderScopeKeys(FriendSummaryItem friend)
+        {
+            if (friend == null)
+            {
+                yield break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(friend.ProviderKey) &&
+                !string.Equals(friend.ProviderKey, FriendOverviewProjection.MergedProviderKey, StringComparison.OrdinalIgnoreCase))
+            {
+                yield return friend.ProviderKey;
+            }
+
+            foreach (var provider in friend.MemberProviderKeys ?? new List<string>())
+            {
+                if (!string.IsNullOrWhiteSpace(provider))
+                {
+                    yield return provider;
+                }
+            }
         }
 
         private static ObservableCollection<DynamicThemeOption> CreateScopedOptions(
@@ -2874,7 +2908,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var scope = _runtimeState.FriendScope;
             var selectedGame = projection.FindGame(scope.GameKey);
             IEnumerable<FriendSummaryItem> source = state.Friends ?? Enumerable.Empty<FriendSummaryItem>();
-            source = ApplyProviderFilter(source, scope.ProviderKey, item => item.ProviderKey);
+            source = source.Where(friend => FriendMatchesProvider(friend, scope.ProviderKey));
             if (selectedGame != null)
             {
                 source = source.Where(friend => projection.HasUnlocksForFriendGame(friend, selectedGame));

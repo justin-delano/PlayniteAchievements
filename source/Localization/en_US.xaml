@@ -103,11 +103,14 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Avatar">Avatar</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Accounts">Accounts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Actions">Actions</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">Collection Level</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Friend">Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_FullLibrary">Full Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
@@ -118,6 +121,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Unlocks">Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastUnlock">Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastError">Last Error</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Ignore">Ignore</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_FriendsWithUnlocks">Friends With Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastFriendUnlock">Last Friend Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
@@ -125,6 +129,7 @@
     <sys:String x:Key="LOCPlayAch_Column_Playtime">Playtime</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Points">Points</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_PrestigeScore">Prestige Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_PrestigeLevel">Prestige Level</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AchievementName">Achievement Name</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_RarityTier">Rarity Tier</sys:String>
@@ -652,9 +657,14 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Friends">Friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Auto-discover friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Choose platforms that can automatically populate this list. Steam is supported in this version.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_AvatarSource">Avatar</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_ManualAdd">Add manual friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_MergeInvalid">Select at least two friends from different platforms to merge.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_MergeSelected">Merge Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_Merged">Merged</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_NoAutoProviders">No auto-discovery platforms are enabled.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_RefreshCompleteFormat">Friends refreshed: {0:N0}.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_Unmerge">Unmerge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Toggle Full Library to include a friend's games outside your library, or ignore friends to skip them.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">Refresh Friends List</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Add">Add</sys:String>
@@ -875,10 +885,17 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectionHint">Leave unselected to include all. Selections narrow the chosen scope.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_ShowLibraryGames">Show my full library instead of shared games</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders">No authenticated friend-capable platforms are available.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Achievements">Refreshing friend achievements {0}/{1}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Friends">Refreshing {0} friends...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Ownership">Refreshing friend libraries {0}/{1}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Definitions">Checking friend game definitions {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LoadingFriends">Loading friends from {0} ({1}/{2})...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Avatars">Downloading friend avatars {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_AvatarsNamed">Downloading friend avatars {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">Refreshing friend libraries {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed">Refreshing friend libraries {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecks">Checking friend games {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed">Checking friend games {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameImages">Downloading friend game images {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameImagesNamed">Downloading friend game images {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_AchievementImages">Downloading achievement images {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_AchievementImagesNamed">Downloading achievement images {0}/{1}: {2}</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->

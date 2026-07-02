@@ -23,7 +23,7 @@ namespace PlayniteAchievements.ViewModels
 
         [DontSerialize]
         [IgnoreDataMember]
-        public string FriendScopeKey => FriendOverviewProjection.BuildFriendKey(ProviderKey, FriendExternalUserId)
+        public string FriendScopeKey => FriendOverviewProjection.GetFriendScopeKey(this)
             ?? FriendOverviewProjection.AllScopeKey;
 
         [DontSerialize]
@@ -34,6 +34,10 @@ namespace PlayniteAchievements.ViewModels
         public int AppId { get; set; }
 
         public string ProviderGameKey { get; set; }
+
+        public string FriendGroupId { get; set; }
+
+        public bool UnlockedBySelf { get; set; }
 
         public DateTime? FriendUnlockTimeUtc
         {

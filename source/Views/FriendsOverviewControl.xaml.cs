@@ -756,20 +756,6 @@ namespace PlayniteAchievements.Views
             menu.Items.Add(refreshItem);
             menu.Items.Add(new Separator());
 
-            if (FriendLibraryScopeHelper.CanConfigureFriend(friend?.ProviderKey, friend?.ExternalUserId))
-            {
-                var usesFull = FriendLibraryScopeHelper.IsFullLibrary(friend.ProviderKey, friend.ExternalUserId);
-                var libraryItem = new MenuItem
-                {
-                    // Label shows the action that toggling will perform, given the current scope.
-                    Header = usesFull
-                        ? GetText("LOCPlayAch_Menu_UseSharedLibrary", "Use Shared Library")
-                        : GetText("LOCPlayAch_Menu_UseFullLibrary", "Use Full Library")
-                };
-                libraryItem.Click += (_, __) => ToggleFriendLibraryScope(friend, !usesFull);
-                menu.Items.Add(libraryItem);
-            }
-
             var clearItem = new MenuItem
             {
                 Header = GetText("LOCPlayAch_Menu_ClearFriend", "Clear Friend"),
@@ -819,10 +805,13 @@ namespace PlayniteAchievements.Views
             {
                 // Clear only cached achievement/game data; keep the friend record so they stay
                 // registered and re-populate on the next friend refresh.
-                var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId, preserveFriendRecord: true);
-                if (deleteResult != null && !deleteResult.Success)
+                foreach (var account in GetConfigurableFriendAccounts(friend))
                 {
-                    _logger?.Warn($"Failed to clear friend data for {friend.ProviderKey}/{friend.ExternalUserId}: {deleteResult.ErrorMessage}");
+                    var deleteResult = _friendCache?.DeleteFriendData(account.ProviderKey, account.ExternalUserId, preserveFriendRecord: true);
+                    if (deleteResult != null && !deleteResult.Success)
+                    {
+                        _logger?.Warn($"Failed to clear friend data for {account.ProviderKey}/{account.ExternalUserId}: {deleteResult.ErrorMessage}");
+                    }
                 }
 
                 _viewModel?.ClearFriendSelection();
@@ -839,31 +828,7 @@ namespace PlayniteAchievements.Views
 
         private static bool IsClearableFriend(FriendSummaryItem friend)
         {
-            return friend != null &&
-                   !string.IsNullOrWhiteSpace(friend.ProviderKey) &&
-                   !string.IsNullOrWhiteSpace(friend.ExternalUserId);
-        }
-
-        private void ToggleFriendLibraryScope(FriendSummaryItem friend, bool enableFull)
-        {
-            if (friend == null)
-            {
-                return;
-            }
-
-            try
-            {
-                FriendLibraryScopeHelper.SetFullLibrary(
-                    friend.ProviderKey,
-                    friend.ExternalUserId,
-                    friend.DisplayName,
-                    friend.AvatarPath,
-                    enableFull);
-            }
-            catch (Exception ex)
-            {
-                _logger?.Error(ex, $"Failed to toggle library scope for friend {friend.ProviderKey}/{friend.ExternalUserId}.");
-            }
+            return GetConfigurableFriendAccounts(friend).Any();
         }
 
         private void IgnoreFriend(FriendSummaryItem friend)
@@ -906,25 +871,28 @@ namespace PlayniteAchievements.Views
                     return;
                 }
 
-                var entry = persisted.AddOrUpdateFriend(
-                    friend.ProviderKey,
-                    friend.ExternalUserId,
-                    friend.DisplayName,
-                    friend.AvatarPath,
-                    null,
-                    FriendSettingsSource.AutoDiscovered);
-                if (entry != null)
+                foreach (var account in GetConfigurableFriendAccounts(friend))
                 {
-                    entry.IsIgnored = true;
+                    var entry = persisted.AddOrUpdateFriend(
+                        account.ProviderKey,
+                        account.ExternalUserId,
+                        friend.DisplayName,
+                        friend.AvatarPath,
+                        null,
+                        FriendSettingsSource.AutoDiscovered);
+                    if (entry != null)
+                    {
+                        entry.IsIgnored = true;
+                    }
+
+                    var deleteResult = _friendCache?.DeleteFriendData(account.ProviderKey, account.ExternalUserId);
+                    if (deleteResult != null && !deleteResult.Success)
+                    {
+                        _logger?.Warn($"Failed to delete ignored friend data for {account.ProviderKey}/{account.ExternalUserId}: {deleteResult.ErrorMessage}");
+                    }
                 }
 
-                var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);
-                if (deleteResult != null && !deleteResult.Success)
-                {
-                    _logger?.Warn($"Failed to delete ignored friend data for {friend.ProviderKey}/{friend.ExternalUserId}: {deleteResult.ErrorMessage}");
-                }
-
-                FriendSettingsSyncService.SyncConfiguredFriendsToCache(persisted, _friendCache, _logger, friend.ProviderKey);
+                FriendSettingsSyncService.SyncConfiguredFriendsToCache(persisted, _friendCache, _logger);
                 plugin.PersistSettingsForUi();
                 plugin.ThemeIntegrationService?.RequestUpdate(null, forceRefresh: true);
                 _viewModel?.ClearFriendSelection();
@@ -941,9 +909,35 @@ namespace PlayniteAchievements.Views
 
         private static bool IsConfigurableFriend(FriendSummaryItem friend)
         {
-            return friend != null &&
-                   !string.IsNullOrWhiteSpace(friend.ProviderKey) &&
-                   !string.IsNullOrWhiteSpace(friend.ExternalUserId);
+            return GetConfigurableFriendAccounts(friend).Any();
+        }
+
+        private static IEnumerable<FriendAccountRef> GetConfigurableFriendAccounts(FriendSummaryItem friend)
+        {
+            if (friend == null)
+            {
+                yield break;
+            }
+
+            if (friend.IsMergedFriend)
+            {
+                foreach (var account in friend.MemberAccounts ?? new List<FriendAccountRef>())
+                {
+                    if (!string.IsNullOrWhiteSpace(account?.ProviderKey) &&
+                        !string.IsNullOrWhiteSpace(account.ExternalUserId))
+                    {
+                        yield return account;
+                    }
+                }
+
+                yield break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(friend.ProviderKey) &&
+                !string.IsNullOrWhiteSpace(friend.ExternalUserId))
+            {
+                yield return FriendAccountRef.From(friend.ProviderKey, friend.ExternalUserId);
+            }
         }
 
         private string GetText(string resourceKey, string fallback)

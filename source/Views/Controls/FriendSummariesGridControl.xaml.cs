@@ -27,12 +27,13 @@ namespace PlayniteAchievements.Views.Controls
             {
                 ["Avatar"] = true,
                 ["FriendSummaryFriend"] = true,
-                ["FriendSummaryProvider"] = true,
                 ["FriendSummarySharedGames"] = true,
                 ["FriendSummaryGamesWithUnlocks"] = true,
                 ["FriendSummaryUnlocks"] = true,
                 ["FriendSummaryPrestigeScore"] = true,
                 ["FriendSummaryCollectionScore"] = true,
+                ["FriendSummaryPrestigeLevel"] = false,
+                ["FriendSummaryCollectionLevel"] = false,
                 ["FriendSummaryLastUnlock"] = true
             };
 
