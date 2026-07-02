@@ -334,6 +334,10 @@ namespace PlayniteAchievements.Providers.Exophase
                 .Where(achievement => achievement != null)
                 .Select(achievement => new FriendAchievementRow
                 {
+                    // Carry the stable, display-derived api name so the unlock rows match canonical
+                    // definitions by key (not just display text), and so definitions can be seeded from
+                    // this scrape when the game has none cached yet.
+                    ApiName = achievement.ApiName,
                     DisplayName = achievement.DisplayName,
                     Description = achievement.Description,
                     IconUrl = achievement.Unlocked ? achievement.UnlockedIconPath : achievement.LockedIconPath,
