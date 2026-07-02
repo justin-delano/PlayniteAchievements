@@ -405,8 +405,11 @@ namespace PlayniteAchievements.Providers.Exophase
             _logger?.Info($"[Exophase] Fetching achievements from URL: {achievementUrl}");
             _logger?.Debug($"[Exophase] Accept-Language header: {acceptLanguage}");
 
+            // Warm the CDN for award thumbnails (waitForImages) so the subsequent icon downloads for
+            // this non-provider-owned game hit 200 instead of the initial cold-CDN 404. Thanks to the
+            // stable per-game icon cache this warm cost is paid once per game rather than every refresh.
             var achievements = await _apiClient
-                .FetchAchievementsAsync(achievementUrl, acceptLanguage, cancel)
+                .FetchAchievementsAsync(achievementUrl, acceptLanguage, cancel, waitForImages: true)
                 .ConfigureAwait(false);
 
             if (achievements == null || achievements.Count == 0)
