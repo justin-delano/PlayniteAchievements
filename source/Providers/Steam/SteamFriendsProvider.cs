@@ -589,7 +589,7 @@ namespace PlayniteAchievements.Providers.Steam
             try
             {
                 var schema = await _scanner.FetchSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
-                return SteamScanner.ResolveScrapedApiNames(schema, rows);
+                return SteamAchievementApiNameResolver.Resolve(schema, rows);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
