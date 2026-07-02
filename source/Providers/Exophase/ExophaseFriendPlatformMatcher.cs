@@ -107,6 +107,43 @@ namespace PlayniteAchievements.Providers.Exophase
         }
 
         /// <summary>
+        /// Maps a stored PA provider key (the servicing provider recorded on each cached game) to the
+        /// canonical friend platform key that <see cref="ResolveProviderPlatformKey(string)"/> produces
+        /// from an Exophase platform slug. Returns null for providers that are not a
+        /// friend-matchable platform (aggregator/inclusion providers such as Exophase/Manual, and unknown
+        /// keys) so callers can fall back to the stored sub-platform hint. Emulator providers fold into
+        /// their console family so a friend's console game still matches the user's emulated copy.
+        /// </summary>
+        public static string MapProviderKeyToFriendPlatformKey(string providerKey)
+        {
+            var key = string.IsNullOrWhiteSpace(providerKey) ? null : providerKey.Trim();
+            switch (key?.ToLowerInvariant())
+            {
+                case "steam": return "Steam";
+                case "gog": return "GOG";
+                case "epic": return "Epic";
+                case "battlenet": return "BattleNet";
+                case "ea": return "EA";
+                case "ubisoft": return "Ubisoft";
+                case "psn": return "PSN";
+                case "xbox": return "Xbox";
+                case "retroachievements": return "RetroAchievements";
+                case "googleplay": return "GooglePlay";
+                case "apple": return "Apple";
+
+                // Emulators fold into the console family they emulate.
+                case "rpcs3":
+                case "shadps4":
+                    return "PSN";
+                case "xenia":
+                    return "Xbox";
+
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
         /// Resolves the Exophase achievement-page endpoint segment for a platform. PSN games live
         /// under /trophies/, Ubisoft/Uplay under /challenges/, and everything else under
         /// /achievements/. Keyed on the canonical provider platform key so every caller agrees on
