@@ -857,14 +857,17 @@ namespace PlayniteAchievements.Providers.Exophase
                     return 0;
                 }
 
-                var match = Regex.Match(text, @"(?:(\d+(?:\.\d+)?)\s*h(?:ours?)?)?\s*(?:(\d+)\s*m(?:in(?:utes?)?)?)?", RegexOptions.IgnoreCase);
+                var match = Regex.Match(text, @"(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?)?\s*(?:(\d+)\s*m(?:in(?:utes?)?)?)?", RegexOptions.IgnoreCase);
                 if (!match.Success)
                 {
                     return 0;
                 }
 
                 var total = 0;
-                if (double.TryParse(match.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var hours))
+                // Accept a comma decimal (e.g. French "12,5 h") by normalizing it to a dot before
+                // parsing with the invariant culture.
+                var hoursText = match.Groups[1].Value.Replace(',', '.');
+                if (double.TryParse(hoursText, NumberStyles.Float, CultureInfo.InvariantCulture, out var hours))
                 {
                     total += (int)Math.Round(hours * 60);
                 }
