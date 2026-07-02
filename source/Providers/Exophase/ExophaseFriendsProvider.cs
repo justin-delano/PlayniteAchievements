@@ -123,14 +123,23 @@ namespace PlayniteAchievements.Providers.Exophase
             // per-platform page and the ?environment= filter is ignored. Fetch the profile once (with
             // scroll to load the lazily-appended entries) and filter to the friend's selected platforms.
             var allGames = await FetchOwnedGamesAsync(config.ExternalUserId, cancel).ConfigureAwait(false);
-            var selectedPlatforms = new HashSet<string>(platforms, StringComparer.OrdinalIgnoreCase);
+
+            // Compare on the canonical provider platform key rather than the raw scraped token so a
+            // friend's game tagged e.g. "ps4"/"ps5"/"vita" matches the coarse "psn" selection, and
+            // "xbox-360"/"xbox-one" matches "xbox". Raw-token equality dropped these families.
+            var selectedProviderKeys = new HashSet<string>(
+                platforms
+                    .Select(ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey)
+                    .Where(key => !string.IsNullOrWhiteSpace(key)),
+                StringComparer.OrdinalIgnoreCase);
 
             var result = new List<FriendGameOwnership>();
             var skippedOtherPlatform = 0;
             foreach (var game in allGames)
             {
                 cancel.ThrowIfCancellationRequested();
-                if (string.IsNullOrWhiteSpace(game.Platform) || !selectedPlatforms.Contains(game.Platform))
+                var gameProviderKey = ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(game.Platform);
+                if (string.IsNullOrWhiteSpace(gameProviderKey) || !selectedProviderKeys.Contains(gameProviderKey))
                 {
                     skippedOtherPlatform++;
                     continue;
@@ -191,7 +200,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 return FriendsProviderResult<FriendGameDefinition>.Failed("Exophase friend game key is missing a slug.");
             }
 
-            var url = ExophaseApiClient.BuildUrlFromSlug(parsed.GameSlug);
+            var url = ExophaseApiClient.BuildUrlFromSlug(parsed.GameSlug, parsed.PlatformSlug);
             var achievements = await _apiClient
                 .FetchAchievementsAsync(url, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
                 .ConfigureAwait(false);
@@ -239,7 +248,7 @@ namespace PlayniteAchievements.Providers.Exophase
             // and ParseAchievementsHtml yields names, descriptions, full-size icons AND unlock times for
             // the friend in one pass (no separate awards scrape).
             var contextId = GetFriendGameContextId(friend.ExternalUserId, providerGameKey);
-            var achievementUrl = BuildFriendAchievementUrl(parsed.GameSlug, contextId);
+            var achievementUrl = BuildFriendAchievementUrl(parsed.GameSlug, parsed.PlatformSlug, contextId);
             var achievements = await _apiClient
                 .FetchAchievementsAsync(achievementUrl, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
                 .ConfigureAwait(false) ?? new List<AchievementDetail>();
@@ -577,11 +586,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 : null;
         }
 
-        private static string BuildFriendAchievementUrl(string gameSlug, string contextId)
+        private static string BuildFriendAchievementUrl(string gameSlug, string platformSlug, string contextId)
         {
-            // Mirrors the games-page link: /game/{slug}/achievements/#{contextId} renders the friend's
-            // unlock state. Without a context id this falls back to the plain (viewer-scoped) page.
-            var url = ExophaseApiClient.BuildUrlFromSlug(gameSlug);
+            // Mirrors the games-page link: /game/{slug}/{endpoint}/#{contextId} renders the friend's
+            // unlock state. The endpoint (trophies/challenges/achievements) is resolved from the
+            // known platform so PSN/Ubisoft games hit the right page regardless of the slug suffix.
+            // Without a context id this falls back to the plain (viewer-scoped) page.
+            var url = ExophaseApiClient.BuildUrlFromSlug(gameSlug, platformSlug);
             return string.IsNullOrWhiteSpace(contextId)
                 ? url
                 : url + "#" + contextId.Trim();
