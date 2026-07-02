@@ -156,9 +156,12 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Builds the achievement page URL from a game slug or full URL.
         /// Supports both new format (slug only) and legacy format (full URL) for backward compatibility.
-        /// PlayStation games use /trophies/, Ubisoft/Uplay uses /challenges/, others use /achievements/
+        /// PlayStation games use /trophies/, Ubisoft/Uplay uses /challenges/, others use /achievements/.
+        /// When the caller already knows the platform, pass <paramref name="platformHint"/> (an
+        /// Exophase platform slug or provider platform key) so the endpoint is driven by the known
+        /// platform rather than inferred from the slug's suffix; otherwise the suffix is used.
         /// </summary>
-        public static string BuildUrlFromSlug(string slugOrUrl)
+        public static string BuildUrlFromSlug(string slugOrUrl, string platformHint = null)
         {
             if (string.IsNullOrWhiteSpace(slugOrUrl))
             {
@@ -181,16 +184,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 return slugOrUrl;
             }
 
-            // Detect if this is a PlayStation game from the slug
-            var isPlayStation = slugOrUrl.IndexOf("-psn", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               slugOrUrl.IndexOf("-ps4", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               slugOrUrl.IndexOf("-ps5", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               slugOrUrl.IndexOf("-vita", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               slugOrUrl.IndexOf("-ps3", StringComparison.OrdinalIgnoreCase) >= 0;
-            var isUbisoft = slugOrUrl.IndexOf("-uplay", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            slugOrUrl.IndexOf("-ubisoft", StringComparison.OrdinalIgnoreCase) >= 0;
-
-            var endpointType = isPlayStation ? "trophies" : (isUbisoft ? "challenges" : "achievements");
+            // Resolve the endpoint from the known platform when a hint is supplied, otherwise infer
+            // it from the slug's own platform suffix. Both paths route through the one canonical
+            // family map so PSN -> trophies and Ubisoft -> challenges regardless of the token variant.
+            var platformSlug = !string.IsNullOrWhiteSpace(platformHint)
+                ? platformHint
+                : ExophaseFriendPlatformMatcher.ExtractPlatformSlugFromGameSlug(slugOrUrl);
+            var endpointType = ExophaseFriendPlatformMatcher.ResolveExophaseEndpoint(platformSlug);
             return $"https://www.exophase.com/game/{slugOrUrl}/{endpointType}/";
         }
 
