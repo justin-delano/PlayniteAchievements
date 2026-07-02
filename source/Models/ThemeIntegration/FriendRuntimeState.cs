@@ -26,6 +26,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public IReadOnlyList<FriendAchievementDisplayItem> RecentUnlocks =>
             Projection?.RecentUnlocks ?? new List<FriendAchievementDisplayItem>();
 
+        public IReadOnlyList<FriendAchievementDisplayItem> AllAchievements =>
+            Projection?.AllAchievements ?? new List<FriendAchievementDisplayItem>();
+
         public IReadOnlyList<FriendAchievementDisplayItem> AllUnlockedAchievements =>
             Projection?.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
     }

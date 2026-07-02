@@ -2902,10 +2902,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 : state.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>();
 
             source = ApplyProviderFilter(source, scope.ProviderKey, item => item.ProviderKey);
-            if (selectedFriend == null)
-            {
-                source = source.Where(projection.HasAnyFriendUnlocks);
-            }
 
             if (selectedGame != null)
             {
@@ -2935,7 +2931,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 selectedGame != null;
 
             IEnumerable<FriendAchievementDisplayItem> source = hasScopedSelection
-                ? state.AllUnlockedAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>()
+                ? state.AllAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>()
                 : state.RecentUnlocks ?? Enumerable.Empty<FriendAchievementDisplayItem>();
 
             source = ApplyProviderFilter(source, scope.ProviderKey, item => item.ProviderKey);

@@ -1,21 +1,26 @@
 using System;
 using System.Windows;
 using Playnite.SDK;
-using PlayniteAchievements.Providers;
-using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Views.Helpers
 {
     /// <summary>
     /// Shared logic for the per-friend library scope toggle (Full vs Shared), reused by the friend
-    /// summaries grid context menu and the Steam provider settings friends table. The opt-in set lives
-    /// in <see cref="SteamSettings.FullLibraryFriends"/>; absence means the shared (default) scope.
+    /// summaries grid context menu and central Friends settings tab. Individual choices live in
+    /// central friend settings; absence means the shared (default) scope.
     /// </summary>
     internal static class FriendLibraryScopeHelper
     {
-        public static bool IsSteamFriend(string providerKey)
+        private static readonly ILogger Logger = PluginLogger.GetLogger(nameof(FriendLibraryScopeHelper));
+
+        public static bool CanConfigureFriend(string providerKey, string externalUserId)
         {
-            return string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase);
+            return !string.IsNullOrWhiteSpace(providerKey) &&
+                   !string.IsNullOrWhiteSpace(externalUserId);
         }
 
         /// <summary>
@@ -23,12 +28,14 @@ namespace PlayniteAchievements.Views.Helpers
         /// </summary>
         public static bool IsFullLibrary(string providerKey, string externalUserId)
         {
-            if (!IsSteamFriend(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            if (!CanConfigureFriend(providerKey, externalUserId))
             {
                 return false;
             }
 
-            return ProviderRegistry.Settings<SteamSettings>()?.IsFullLibraryFriend(externalUserId) == true;
+            return PlayniteAchievementsPlugin.Instance?.Settings?.Persisted
+                ?.GetFriendSetting(providerKey, externalUserId)
+                ?.LibraryScope == FriendLibraryScope.Full;
         }
 
         /// <summary>
@@ -43,7 +50,7 @@ namespace PlayniteAchievements.Views.Helpers
             string avatarUrl,
             bool enable)
         {
-            if (!IsSteamFriend(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            if (!CanConfigureFriend(providerKey, externalUserId))
             {
                 return false;
             }
@@ -53,14 +60,33 @@ namespace PlayniteAchievements.Views.Helpers
                 return false;
             }
 
-            var settings = ProviderRegistry.Settings<SteamSettings>();
-            if (settings == null)
+            var plugin = PlayniteAchievementsPlugin.Instance;
+            var persisted = plugin?.Settings?.Persisted;
+            if (plugin == null || persisted == null)
             {
                 return false;
             }
 
-            settings.SetFullLibraryFriend(externalUserId, displayName, avatarUrl, enable);
-            ProviderRegistry.Write(settings, persistToDisk: true);
+            var entry = persisted.AddOrUpdateFriend(
+                providerKey,
+                externalUserId,
+                displayName,
+                avatarUrl,
+                null,
+                FriendSettingsSource.AutoDiscovered,
+                enable ? FriendLibraryScope.Full : FriendLibraryScope.Shared);
+            if (entry == null)
+            {
+                return false;
+            }
+
+            FriendSettingsSyncService.SyncConfiguredFriendsToCache(
+                persisted,
+                plugin.RefreshRuntime?.Cache as IFriendCacheManager,
+                Logger,
+                providerKey);
+            plugin.PersistSettingsForUi();
+            plugin.ThemeIntegrationService?.RequestUpdate(null, forceRefresh: true);
             return enable;
         }
 

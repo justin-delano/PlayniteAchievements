@@ -896,12 +896,13 @@ namespace PlayniteAchievements.Services
 
         FriendCacheWriteResult IFriendCacheManager.DeleteFriendData(
             string providerKey,
-            string externalUserId)
+            string externalUserId,
+            bool preserveFriendRecord)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("DeleteFriendData");
-                var result = _store.DeleteFriendData(providerKey, externalUserId);
+                var result = _store.DeleteFriendData(providerKey, externalUserId, preserveFriendRecord);
                 if (result?.Success == true)
                 {
                     RaiseCacheInvalidatedEvent();

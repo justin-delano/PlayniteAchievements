@@ -220,6 +220,7 @@ namespace PlayniteAchievements.Services.Database
         private sealed class FriendGameSummaryRow
         {
             public string ProviderKey { get; set; }
+            public string ProviderPlatformKey { get; set; }
             public long? ProviderGameId { get; set; }
             public string ProviderGameKey { get; set; }
             public string PlayniteGameId { get; set; }
@@ -288,6 +289,7 @@ namespace PlayniteAchievements.Services.Database
             public double? GlobalPercentUnlocked { get; set; }
             public string Rarity { get; set; }
             public string UnlockTimeUtc { get; set; }
+            public long? Unlocked { get; set; }
             public long? MyUnlocked { get; set; }
             public int? ProgressNum { get; set; }
             public int? ProgressDenom { get; set; }
@@ -1443,13 +1445,15 @@ namespace PlayniteAchievements.Services.Database
                             }
                         }
 
+                        // Image source URLs are not persisted; the header banner is downloaded to
+                        // local IconPath/CoverPath during refresh instead.
                         UpsertProviderGameDefinitionState(
                             db,
                             providerKey,
                             definition.AppId,
                             definition.ProviderGameKey,
                             definition.GameName,
-                            definition.IconUrl,
+                            null,
                             status,
                             checkedIso,
                             nowIso);
@@ -1923,7 +1927,7 @@ namespace PlayniteAchievements.Services.Database
                             game.Id,
                             cacheKey,
                             totalAchievements > 0,
-                            Math.Max((int)(existingProgress?.AchievementsUnlocked ?? 0), matchedRows.Count),
+                            Math.Max(0, matchedRows.Count(match => match?.Row?.Unlocked == true)),
                             totalAchievements,
                             updatedIso,
                             nowIso);
@@ -2017,7 +2021,7 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
-        public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId)
+        public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false)
         {
             providerKey = NormalizeProviderKey(providerKey);
             if (string.IsNullOrWhiteSpace(externalUserId))
@@ -2053,7 +2057,12 @@ namespace PlayniteAchievements.Services.Database
                                 user.Id);
                             db.ExecuteNonQuery("DELETE FROM UserGameProgress WHERE UserId = ?;", user.Id);
                             db.ExecuteNonQuery("DELETE FROM FriendOwnership WHERE UserId = ?;", user.Id);
-                            db.ExecuteNonQuery("DELETE FROM Users WHERE Id = ? AND IsCurrentUser = 0;", user.Id);
+                            if (!preserveFriendRecord)
+                            {
+                                // Removing the friend reference entirely (settings-side Remove / Ignore).
+                                // "Clear Friend" preserves this row so the friend stays registered.
+                                db.ExecuteNonQuery("DELETE FROM Users WHERE Id = ? AND IsCurrentUser = 0;", user.Id);
+                            }
                             deletedUsers++;
                         }
                     });
@@ -2447,13 +2456,25 @@ namespace PlayniteAchievements.Services.Database
                     {
                         var playniteGameId = ResolveCachedPlayniteGameId(null, row.PlayniteGameId);
                         var presentation = ResolveGamePresentation(playniteGameId, presentationCache);
-                        var providerName = ProviderRegistry.GetLocalizedName(row.ProviderKey);
+                        // Display the underlying provider (e.g. EA) via the visual fields, but keep the
+                        // raw aggregator ProviderKey (e.g. Exophase) for identity: game<->achievement and
+                        // game<->friend matching (BuildGameUnlockKey/IsSameGame in FriendOverviewProjection)
+                        // and refresh targeting compare ProviderKey against the achievement/friend rows,
+                        // which retain the aggregator key. The grid icon binds to ProviderIconKey/Provider,
+                        // not ProviderKey, so the display provider still renders.
+                        var displayProviderKey = ResolveDisplayProviderKey(row.ProviderKey, row.ProviderPlatformKey);
+                        var providerName = ProviderRegistry.GetLocalizedName(displayProviderKey);
+                        if (!ProviderRegistry.TryResolveProviderVisuals(displayProviderKey, out var providerIconKey, out var providerColorHex))
+                        {
+                            providerIconKey = string.IsNullOrWhiteSpace(displayProviderKey) ? null : "ProviderIcon" + displayProviderKey;
+                            providerColorHex = "#888888";
+                        }
                         var item = new FriendGameSummaryItem
                         {
-                            ProviderKey = row.ProviderKey,
-                            Provider = string.IsNullOrWhiteSpace(providerName) ? row.ProviderKey : providerName,
-                            ProviderIconKey = string.IsNullOrWhiteSpace(row.ProviderKey) ? null : "ProviderIcon" + row.ProviderKey,
-                            ProviderColorHex = "#888888",
+                            ProviderKey = string.IsNullOrWhiteSpace(row.ProviderKey) ? displayProviderKey : row.ProviderKey.Trim(),
+                            Provider = string.IsNullOrWhiteSpace(providerName) ? displayProviderKey : providerName,
+                            ProviderIconKey = providerIconKey,
+                            ProviderColorHex = providerColorHex,
                             AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
                             ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                             PlayniteGameId = playniteGameId,
@@ -2497,13 +2518,18 @@ namespace PlayniteAchievements.Services.Database
                     })
                     .ToList();
 
-                using (PerfScope.Start(_logger, "Friends.LoadUnlockedAchievementRows", thresholdMs: 15))
-                data.AllUnlockedAchievements = MapFriendRecentUnlocks(LoadFriendUnlockedAchievementRows(db), presentationCache);
+                using (PerfScope.Start(_logger, "Friends.LoadAchievementRows", thresholdMs: 15))
+                data.AllAchievements = MapFriendAchievementRows(LoadFriendAllAchievementRows(db), presentationCache);
+                data.AllUnlockedAchievements = data.AllAchievements
+                    .Where(item => item?.Unlocked == true)
+                    .ToList();
 
                 // Recent unlocks are the time-stamped subset of all unlocked achievements, already
                 // ordered by unlock time DESC from the query - derive them in memory rather than
-                // re-running the identical (and expensive) friend/achievement join a second time.
-                var recentUnlocked = data.AllUnlockedAchievements.Where(item => item.UnlockTimeUtc.HasValue);
+                // re-running the identical friend/achievement join a second time.
+                var recentUnlocked = data.AllUnlockedAchievements
+                    .Where(item => item.UnlockTimeUtc.HasValue)
+                    .OrderByDescending(item => item.UnlockTimeUtc ?? DateTime.MinValue);
                 data.RecentUnlocks = (recentLimit > 0 ? recentUnlocked.Take(recentLimit) : recentUnlocked).ToList();
 
                 using (PerfScope.Start(_logger, "Friends.ApplySummaryScores", thresholdMs: 15))
@@ -2545,7 +2571,20 @@ namespace PlayniteAchievements.Services.Database
                     friend.CollectionScore = scores.CollectionScore;
                     friend.PrestigeScore = scores.PrestigeScore;
                 }
+
+                friend.CollectionLevel = GetDisplayLevel(AchievementLevelCalculator.CalculateModern(friend.CollectionScore));
+                friend.PrestigeLevel = GetDisplayLevel(AchievementLevelCalculator.CalculateModern(friend.PrestigeScore));
             }
+        }
+
+        private static int GetDisplayLevel(AchievementLevelSnapshot snapshot)
+        {
+            if (snapshot == null)
+            {
+                return 0;
+            }
+
+            return snapshot.DisplayLevel > 0 ? snapshot.DisplayLevel : snapshot.Level;
         }
 
         private static string BuildFriendScoreKey(string providerKey, string externalUserId)
@@ -2560,6 +2599,17 @@ namespace PlayniteAchievements.Services.Database
 
         private static string GetFriendSource(string providerKey) =>
             string.IsNullOrWhiteSpace(providerKey) ? "Friends" : providerKey.Trim() + "Friends";
+
+        // Prefer the underlying platform key (e.g. Steam) over the aggregator key (e.g. Exophase) so
+        // friend game summaries render the display-provider icon, mirroring
+        // OverviewDataBuilder.ResolveEffectiveProviderKey.
+        private static string ResolveDisplayProviderKey(string providerKey, string providerPlatformKey)
+        {
+            var resolved = !string.IsNullOrWhiteSpace(providerPlatformKey)
+                ? providerPlatformKey
+                : providerKey;
+            return string.IsNullOrWhiteSpace(resolved) ? "Unknown" : resolved.Trim();
+        }
 
         private static string BuildFriendCacheKey(string providerKey, string externalUserId, GameRow game)
         {
@@ -3346,7 +3396,7 @@ namespace PlayniteAchievements.Services.Database
             }
 
             var usedDefinitionIds = new HashSet<long>();
-            foreach (var row in rows.Where(row => row?.Unlocked == true))
+            foreach (var row in rows.Where(row => row != null))
             {
                 var definition = ResolveFriendDefinition(definitions, row, usedDefinitionIds);
                 if (definition == null)
@@ -3431,10 +3481,11 @@ namespace PlayniteAchievements.Services.Database
             foreach (var match in matchedRows)
             {
                 var incoming = match.Row;
-                var incomingTime = NormalizeUnlockTime(incoming.UnlockTimeUtc);
+                var incomingUnlocked = incoming?.Unlocked == true ? 1L : 0L;
+                var incomingTime = incomingUnlocked != 0 ? NormalizeUnlockTime(incoming.UnlockTimeUtc) : null;
                 var incomingIso = incomingTime.HasValue ? ToIso(incomingTime.Value) : null;
-                var progressNum = incoming.ProgressNum;
-                var progressDenom = incoming.ProgressDenom;
+                var progressNum = incoming?.ProgressNum;
+                var progressDenom = incoming?.ProgressDenom;
 
                 if (!existingRows.TryGetValue(match.DefinitionId, out var existing))
                 {
@@ -3442,9 +3493,10 @@ namespace PlayniteAchievements.Services.Database
                         @"INSERT INTO UserAchievements
                             (UserGameProgressId, AchievementDefinitionId, Unlocked, UnlockTimeUtc, ProgressNum, ProgressDenom, LastUpdatedUtc, CreatedUtc)
                           VALUES
-                            (?, ?, 1, ?, ?, ?, ?, ?);",
+                            (?, ?, ?, ?, ?, ?, ?, ?);",
                         userProgressId,
                         match.DefinitionId,
+                        incomingUnlocked,
                         DbValue(incomingIso),
                         progressNum.HasValue ? (object)progressNum.Value : DBNull.Value,
                         progressDenom.HasValue ? (object)progressDenom.Value : DBNull.Value,
@@ -3454,11 +3506,13 @@ namespace PlayniteAchievements.Services.Database
                 }
 
                 var existingIso = NormalizeStoredIso(existing.UnlockTimeUtc);
-                var resolvedIso = existingIso ?? incomingIso;
+                var resolvedIso = incomingUnlocked != 0
+                    ? incomingIso ?? existingIso
+                    : null;
                 var resolvedProgressNum = progressNum ?? existing.ProgressNum;
                 var resolvedProgressDenom = progressDenom ?? existing.ProgressDenom;
 
-                var changed = existing.Unlocked != 1 ||
+                var changed = existing.Unlocked != incomingUnlocked ||
                               !NullableEquals(existingIso, resolvedIso) ||
                               existing.ProgressNum != resolvedProgressNum ||
                               existing.ProgressDenom != resolvedProgressDenom;
@@ -3469,12 +3523,13 @@ namespace PlayniteAchievements.Services.Database
 
                 db.ExecuteNonQuery(
                     @"UPDATE UserAchievements
-                      SET Unlocked = 1,
+                      SET Unlocked = ?,
                           UnlockTimeUtc = ?,
                           ProgressNum = ?,
                           ProgressDenom = ?,
                           LastUpdatedUtc = ?
                       WHERE Id = ?;",
+                    incomingUnlocked,
                     DbValue(resolvedIso),
                     resolvedProgressNum.HasValue ? (object)resolvedProgressNum.Value : DBNull.Value,
                     resolvedProgressDenom.HasValue ? (object)resolvedProgressDenom.Value : DBNull.Value,
@@ -3637,6 +3692,7 @@ namespace PlayniteAchievements.Services.Database
                 )
                 SELECT
                     g.ProviderKey AS ProviderKey,
+                    g.ProviderPlatformKey AS ProviderPlatformKey,
                     g.ProviderGameId AS ProviderGameId,
                     g.ProviderGameKey AS ProviderGameKey,
                     g.PlayniteGameId AS PlayniteGameId,
@@ -3682,15 +3738,21 @@ namespace PlayniteAchievements.Services.Database
                   ORDER BY u.ExternalUserId, g.GameName;").ToList();
         }
 
+        private static List<FriendRecentUnlockRow> LoadFriendAllAchievementRows(SQLiteDatabase db)
+        {
+            return LoadFriendAchievementRows(db, 0, requireUnlockTime: false, unlockedOnly: false);
+        }
+
         private static List<FriendRecentUnlockRow> LoadFriendUnlockedAchievementRows(SQLiteDatabase db)
         {
-            return LoadFriendAchievementRows(db, 0, requireUnlockTime: false);
+            return LoadFriendAchievementRows(db, 0, requireUnlockTime: false, unlockedOnly: true);
         }
 
         private static List<FriendRecentUnlockRow> LoadFriendAchievementRows(
             SQLiteDatabase db,
             int recentLimit,
-            bool requireUnlockTime)
+            bool requireUnlockTime,
+            bool unlockedOnly)
         {
             var sql = new StringBuilder(
                 @"SELECT
@@ -3718,6 +3780,7 @@ namespace PlayniteAchievements.Services.Database
                     ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
                     ad.Rarity AS Rarity,
                     ua.UnlockTimeUtc AS UnlockTimeUtc,
+                    ua.Unlocked AS Unlocked,
                     COALESCE(sua.Unlocked, 0) AS MyUnlocked,
                     ua.ProgressNum AS ProgressNum,
                     ua.ProgressDenom AS ProgressDenom,
@@ -3726,7 +3789,7 @@ namespace PlayniteAchievements.Services.Database
                   FROM Users u
                   INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
                   INNER JOIN Games g ON g.Id = ugp.GameId
-                  INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                  INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id
                   INNER JOIN AchievementDefinitions ad ON ad.Id = ua.AchievementDefinitionId
                   LEFT JOIN Users su ON su.ProviderKey = g.ProviderKey AND su.IsCurrentUser = 1
                   LEFT JOIN UserGameProgress sugp ON sugp.UserId = su.Id AND sugp.GameId = g.Id
@@ -3735,6 +3798,11 @@ namespace PlayniteAchievements.Services.Database
                   WHERE u.IsCurrentUser = 0
                     AND u.IsActiveFriend = 1
                     AND u.FriendSource IS NOT NULL");
+
+            if (unlockedOnly)
+            {
+                sql.Append(" AND ua.Unlocked = 1");
+            }
 
             if (requireUnlockTime)
             {
@@ -3751,7 +3819,7 @@ namespace PlayniteAchievements.Services.Database
             return db.Load<FriendRecentUnlockRow>(sql.ToString()).ToList();
         }
 
-        private List<FriendAchievementDisplayItem> MapFriendRecentUnlocks(
+        private List<FriendAchievementDisplayItem> MapFriendAchievementRows(
             IEnumerable<FriendRecentUnlockRow> rows,
             Dictionary<Guid, GamePresentation> presentationCache = null)
         {
@@ -3764,6 +3832,7 @@ namespace PlayniteAchievements.Services.Database
                 }
 
                 var friendUnlockTimeUtc = ParseUtc(row.UnlockTimeUtc);
+                var isUnlockedByFriend = row.Unlocked.GetValueOrDefault() != 0;
                 var isUnlockedByMe = row.MyUnlocked.GetValueOrDefault() != 0;
                 var detail = new AchievementDetail
                 {
@@ -3805,11 +3874,7 @@ namespace PlayniteAchievements.Services.Database
                     GlobalPercentUnlocked = detail.GlobalPercentUnlocked,
                     Rarity = detail.Rarity,
                     UnlockTimeUtc = friendUnlockTimeUtc,
-                    // These rows are the friend's unlocked achievements (the query filters to
-                    // ua.Unlocked = 1), so mark them unlocked for display. DisplayIcon renders a greyscale
-                    // locked icon when Unlocked is false; keying off the current user's unlock state
-                    // (isUnlockedByMe) greyed out the friend's achievements the viewer had not earned.
-                    Unlocked = true,
+                    Unlocked = isUnlockedByFriend,
                     ProgressNum = detail.ProgressNum,
                     ProgressDenom = detail.ProgressDenom,
                     ProviderKey = row.ProviderKey,

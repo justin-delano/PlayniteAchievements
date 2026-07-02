@@ -639,14 +639,36 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public async Task<int> RefreshFriendRosterAsync(CancellationToken cancel = default)
         {
+            var autoProviderKeys = _settings?.Persisted?.AutoDiscoverFriendProviderKeys;
+            return await RefreshFriendRosterAsync(autoProviderKeys, cancel).ConfigureAwait(false);
+        }
+
+        public async Task<int> RefreshFriendRosterAsync(
+            IReadOnlyCollection<string> providerKeys,
+            CancellationToken cancel = default)
+        {
             if (_friendsRefreshRuntime == null)
             {
                 return 0;
             }
 
+            var providerKeySet = providerKeys == null
+                ? null
+                : new HashSet<string>(
+                    providerKeys
+                        .Where(key => !string.IsNullOrWhiteSpace(key))
+                        .Select(key => key.Trim()),
+                    StringComparer.OrdinalIgnoreCase);
+
             var providers = MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
                 .Where(provider => provider?.Friends != null)
                 .ToList();
+            if (providerKeySet?.Count > 0)
+            {
+                providers = providers
+                    .Where(provider => providerKeySet.Contains(provider.ProviderKey))
+                    .ToList();
+            }
 
             if (providers.Count == 0)
             {

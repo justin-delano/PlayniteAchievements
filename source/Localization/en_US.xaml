@@ -650,8 +650,16 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Other</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Uses {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Friends">Friends</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Auto-discover friends</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Choose platforms that can automatically populate this list. Steam is supported in this version.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_ManualAdd">Add manual friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_NoAutoProviders">No auto-discovery platforms are enabled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_RefreshCompleteFormat">Friends refreshed: {0:N0}.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Toggle Full Library to include a friend's games outside your library, or ignore friends to skip them.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">Refresh Friends List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Add">Add</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Remove">Remove</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Platform">Platform</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamId">Steam ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill missing metadata. Requires Exophase authentication.</sys:String>

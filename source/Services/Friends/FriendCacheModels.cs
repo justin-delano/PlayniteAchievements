@@ -79,6 +79,7 @@ namespace PlayniteAchievements.Services.Friends
         public List<FriendSummaryItem> Friends { get; set; } = new List<FriendSummaryItem>();
         public List<FriendGameSummaryItem> Games { get; set; } = new List<FriendGameSummaryItem>();
         public List<FriendAchievementDisplayItem> RecentUnlocks { get; set; } = new List<FriendAchievementDisplayItem>();
+        public List<FriendAchievementDisplayItem> AllAchievements { get; set; } = new List<FriendAchievementDisplayItem>();
         public List<FriendAchievementDisplayItem> AllUnlockedAchievements { get; set; } = new List<FriendAchievementDisplayItem>();
         public List<FriendGameLinkItem> FriendGameLinks { get; set; } = new List<FriendGameLinkItem>();
     }
@@ -132,7 +133,9 @@ namespace PlayniteAchievements.Services.Friends
             int appId,
             FriendGameAchievements achievements);
 
-        FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId);
+        // When preserveFriendRecord is true, cached achievement/game/ownership data is cleared but the
+        // friend's Users record is kept so the friend stays registered (used by "Clear Friend").
+        FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false);
 
         List<FriendIdentity> LoadFriendIdentities(string providerKey);
 

@@ -257,7 +257,8 @@ namespace PlayniteAchievements.Services
                 {
                     Scope = scope,
                     LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(scope),
-                    PlayniteGameIds = ids
+                    PlayniteGameIds = ids,
+                    ForceDefinitionRefresh = scope == FriendRefreshScope.SelectedGame
                 }
             };
         }
@@ -364,7 +365,9 @@ namespace PlayniteAchievements.Services
                     ProviderGameKeys = providerGameKeys,
                     FriendExternalUserIds = friendExternalUserIds,
                     RefreshTtl = resolvedOptions.RefreshTtl,
-                    DefinitionTtl = resolvedOptions.DefinitionTtl
+                    DefinitionTtl = resolvedOptions.DefinitionTtl,
+                    ForceDefinitionRefresh = resolvedOptions.ForceDefinitionRefresh ||
+                                             scope == FriendRefreshScope.SelectedGame
                 }
             };
         }

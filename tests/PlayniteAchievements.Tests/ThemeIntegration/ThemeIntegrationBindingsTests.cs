@@ -2611,6 +2611,9 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             public FriendUnownedCacheClearResult ClearUnownedFriendGameData() =>
                 new FriendUnownedCacheClearResult { Success = true };
 
+            public FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey) =>
+                FriendCacheWriteResult.Ok();
+
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,
                 string externalUserId,
@@ -2619,7 +2622,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 FriendGameAchievements achievements) =>
                 FriendCacheWriteResult.Ok();
 
-            public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId) =>
+            public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false) =>
                 FriendCacheWriteResult.Ok();
 
             public List<FriendIdentity> LoadFriendIdentities(string providerKey) =>

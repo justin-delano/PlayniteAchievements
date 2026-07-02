@@ -248,6 +248,7 @@ namespace PlayniteAchievements
                 // Create provider registry
                 _providerRegistry = new ProviderRegistry(settings, ProviderDisplayOrder, _logger, _manualSourceRegistry);
                 _providerRegistry.SyncFromSettings(settings.Persisted);
+                settings.Persisted?.MigrateLegacyProviderFriends();
                 _gameCustomDataStore = _settingsViewModel.GameCustomDataStore;
                 _gameCustomDataStore.AttachRuntimeSettings(settings);
                 TryWarmCustomDataCache();

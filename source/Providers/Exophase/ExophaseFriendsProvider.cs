@@ -3,6 +3,8 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -19,6 +21,7 @@ namespace PlayniteAchievements.Providers.Exophase
         private const string Provider = "Exophase";
         private readonly ExophaseApiClient _apiClient;
         private readonly ExophaseSettings _settings;
+        private readonly PlayniteAchievementsSettings _globalSettings;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly SemaphoreSlim _webViewGate = new SemaphoreSlim(1, 1);
@@ -33,11 +36,13 @@ namespace PlayniteAchievements.Providers.Exophase
         public ExophaseFriendsProvider(
             ExophaseApiClient apiClient,
             ExophaseSettings settings,
+            PlayniteAchievementsSettings globalSettings,
             IPlayniteAPI playniteApi,
             ILogger logger)
         {
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _globalSettings = globalSettings;
             _playniteApi = playniteApi;
             _logger = logger;
         }
@@ -47,6 +52,15 @@ namespace PlayniteAchievements.Providers.Exophase
         public Task<FriendsProviderResult<FriendsRefreshPreparation>> BeginRefreshAsync(CancellationToken cancel)
         {
             _friendGameContextIds.Clear();
+
+            // Load and validate the encrypted cookie snapshot once for this refresh; every per-friend
+            // and per-game fetch reuses the cached cookies instead of decrypting the file per call.
+            // Exophase still fetches public profile/owned-games/definition pages without critical
+            // cookies, so achievements remain enabled regardless (the single log line surfaces any
+            // missing criticals), matching the prior warn-and-continue behavior.
+            var hasCriticalCookies = _apiClient.BeginCookieSession();
+            _logger?.Info($"[ExophaseFriends] BeginRefresh: cookie session prepared (allCriticalCookiesPresent={hasCriticalCookies}).");
+
             return Task.FromResult(FriendsProviderResult<FriendsRefreshPreparation>.FromData(new FriendsRefreshPreparation
             {
                 CanRefreshAchievements = true
@@ -56,25 +70,30 @@ namespace PlayniteAchievements.Providers.Exophase
         public void EndRefresh()
         {
             _friendGameContextIds.Clear();
+            _apiClient.EndCookieSession();
         }
 
-        public Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsAsync(CancellationToken cancel)
+        public async Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsAsync(CancellationToken cancel)
         {
             var now = DateTime.UtcNow;
-            var friends = (_settings.Friends ?? new List<ExophaseFriendSettings>())
-                .Where(friend => !string.IsNullOrWhiteSpace(friend?.Username))
-                .Select(friend => new FriendIdentity
+            var configs = GetConfiguredFriends(includeIgnored: false);
+            var identities = new List<FriendIdentity>();
+            foreach (var friend in configs)
+            {
+                cancel.ThrowIfCancellationRequested();
+                var updated = await RefreshProfileMetadataIfNeededAsync(friend, cancel).ConfigureAwait(false);
+                identities.Add(new FriendIdentity
                 {
                     ProviderKey = Provider,
-                    ExternalUserId = friend.Username.Trim(),
-                    DisplayName = string.IsNullOrWhiteSpace(friend.DisplayName) ? friend.Username.Trim() : friend.DisplayName.Trim(),
-                    AvatarUrl = friend.AvatarUrl,
-                    AvatarPath = friend.AvatarPath,
+                    ExternalUserId = friend.ExternalUserId.Trim(),
+                    DisplayName = string.IsNullOrWhiteSpace(updated?.DisplayName) ? friend.ExternalUserId.Trim() : updated.DisplayName.Trim(),
+                    AvatarUrl = updated?.AvatarUrl,
+                    AvatarPath = updated?.AvatarPath,
                     LastRefreshedUtc = now
-                })
-                .ToList();
+                });
+            }
 
-            return Task.FromResult(FriendsProviderResult<IReadOnlyList<FriendIdentity>>.FromData(friends));
+            return FriendsProviderResult<IReadOnlyList<FriendIdentity>>.FromData(identities);
         }
 
         public async Task<FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>> GetOwnedGamesAsync(
@@ -82,20 +101,20 @@ namespace PlayniteAchievements.Providers.Exophase
             CancellationToken cancel)
         {
             var friendId = friend?.ExternalUserId;
-            var config = _settings.GetFriend(friendId);
+            var config = GetConfiguredFriend(friendId);
             if (config == null)
             {
                 _logger?.Warn($"[ExophaseFriends] GetOwnedGames: no saved friend configuration for '{friendId}'; returning 0 games. " +
-                    "The friend may have been removed from Exophase settings or the username no longer matches.");
+                    "The friend may have been removed from Friends settings or the username no longer matches.");
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(Array.Empty<FriendGameOwnership>());
             }
 
             var platforms = NormalizePlatforms(config.SelectedPlatforms);
-            _logger?.Info($"[ExophaseFriends] GetOwnedGames: friend='{config.Username}', scope={config.LibraryScope}, " +
+            _logger?.Info($"[ExophaseFriends] GetOwnedGames: friend='{config.ExternalUserId}', scope={config.LibraryScope}, " +
                 $"platforms=[{string.Join(", ", platforms)}] (count={platforms.Count}).");
             if (platforms.Count == 0)
             {
-                _logger?.Warn($"[ExophaseFriends] GetOwnedGames: friend '{config.Username}' has no platforms selected, " +
+                _logger?.Warn($"[ExophaseFriends] GetOwnedGames: friend '{config.ExternalUserId}' has no platforms selected, " +
                     "so there is nothing to fetch (fetched will be 0). Select at least one platform for this friend in Exophase settings.");
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(Array.Empty<FriendGameOwnership>());
             }
@@ -103,7 +122,7 @@ namespace PlayniteAchievements.Providers.Exophase
             // Exophase lists every platform's games together on a single profile page: there is no
             // per-platform page and the ?environment= filter is ignored. Fetch the profile once (with
             // scroll to load the lazily-appended entries) and filter to the friend's selected platforms.
-            var allGames = await FetchOwnedGamesAsync(config.Username, cancel).ConfigureAwait(false);
+            var allGames = await FetchOwnedGamesAsync(config.ExternalUserId, cancel).ConfigureAwait(false);
             var selectedPlatforms = new HashSet<string>(platforms, StringComparer.OrdinalIgnoreCase);
 
             var result = new List<FriendGameOwnership>();
@@ -127,13 +146,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 // friend-scoped achievement URL for this exact (friend, game) pair.
                 if (!string.IsNullOrWhiteSpace(game.ContextId))
                 {
-                    _friendGameContextIds[BuildContextMapKey(config.Username, key)] = game.ContextId;
+                    _friendGameContextIds[BuildContextMapKey(config.ExternalUserId, key)] = game.ContextId;
                 }
 
                 result.Add(new FriendGameOwnership
                 {
                     ProviderKey = Provider,
-                    ExternalUserId = config.Username,
+                    ExternalUserId = config.ExternalUserId,
                     ProviderGameKey = key,
                     ProviderPlatformKey = ExophaseDataProvider.MapSlugToProviderPlatformKey(game.Platform),
                     PlayniteGameId = ResolveMappedPlayniteGameId(key, game.Platform, game.Title),
@@ -150,7 +169,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 .OrderBy(item => item.GameName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            _logger?.Info($"[ExophaseFriends] GetOwnedGames: '{config.Username}' parsed {allGames.Count} profile game(s), " +
+            _logger?.Info($"[ExophaseFriends] GetOwnedGames: '{config.ExternalUserId}' parsed {allGames.Count} profile game(s), " +
                 $"kept {deduped.Count} on selected platform(s) [{string.Join(", ", platforms)}] " +
                 $"(skipped {skippedOtherPlatform} on other platforms).");
             return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(deduped);
@@ -180,6 +199,7 @@ namespace PlayniteAchievements.Providers.Exophase
             ExophaseDataProvider.ApplyProviderOwnedRarity(
                 rows,
                 ExophaseDataProvider.MapSlugToProviderPlatformKey(parsed.PlatformSlug));
+            var headerImageUrl = await FetchGameHeaderImageAsync(parsed.GameSlug, cancel).ConfigureAwait(false);
 
             return FriendsProviderResult<FriendGameDefinition>.FromData(new FriendGameDefinition
             {
@@ -187,6 +207,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 ProviderGameKey = providerGameKey,
                 ProviderPlatformKey = ExophaseDataProvider.MapSlugToProviderPlatformKey(parsed.PlatformSlug),
                 GameName = gameName,
+                IconUrl = headerImageUrl,
                 Status = rows.Count > 0 ? FriendGameDefinitionStatus.Ok : FriendGameDefinitionStatus.NoAchievements,
                 LastCheckedUtc = DateTime.UtcNow,
                 Achievements = rows
@@ -226,13 +247,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 ExophaseDataProvider.MapSlugToProviderPlatformKey(parsed.PlatformSlug));
 
             var rows = achievements
-                .Where(achievement => achievement != null && achievement.Unlocked)
+                .Where(achievement => achievement != null)
                 .Select(achievement => new FriendAchievementRow
                 {
                     DisplayName = achievement.DisplayName,
                     Description = achievement.Description,
-                    IconUrl = achievement.UnlockedIconPath,
-                    Unlocked = true,
+                    IconUrl = achievement.Unlocked ? achievement.UnlockedIconPath : achievement.LockedIconPath,
+                    Unlocked = achievement.Unlocked,
                     UnlockTimeUtc = achievement.UnlockTimeUtc,
                     ProgressNum = achievement.ProgressNum,
                     ProgressDenom = achievement.ProgressDenom
@@ -241,7 +262,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
             _logger?.Debug($"[ExophaseFriends] GetFriendGameAchievements: friend='{friend.ExternalUserId}', " +
                 $"gameKey='{providerGameKey}', contextId='{contextId ?? "(none)"}' -> " +
-                $"{achievements.Count} achievement(s), {rows.Count} unlocked.");
+                $"{achievements.Count} achievement(s), {rows.Count(row => row.Unlocked)} unlocked.");
 
             return FriendsProviderResult<FriendGameAchievements>.FromData(new FriendGameAchievements
             {
@@ -251,6 +272,148 @@ namespace PlayniteAchievements.Providers.Exophase
                 StatsUnavailable = achievements.Count == 0,
                 Rows = rows
             });
+        }
+
+        private List<FriendSettingsEntry> GetConfiguredFriends(bool includeIgnored)
+        {
+            var central = _globalSettings?.Persisted?.GetFriendSettings(Provider, includeIgnored)
+                ?.Where(friend => !string.IsNullOrWhiteSpace(friend?.ExternalUserId))
+                .ToList();
+            if (central?.Count > 0)
+            {
+                return central;
+            }
+
+            return (_settings.Friends ?? new List<ExophaseFriendSettings>())
+                .Where(friend => !string.IsNullOrWhiteSpace(friend?.Username))
+                .Select(friend => new FriendSettingsEntry
+                {
+                    ProviderKey = Provider,
+                    ExternalUserId = friend.Username.Trim(),
+                    DisplayName = string.IsNullOrWhiteSpace(friend.DisplayName) ? friend.Username.Trim() : friend.DisplayName.Trim(),
+                    AvatarUrl = friend.AvatarUrl,
+                    AvatarPath = friend.AvatarPath,
+                    Source = FriendSettingsSource.Manual,
+                    LibraryScope = friend.LibraryScope,
+                    SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(friend.SelectedPlatforms),
+                    AddedUtc = friend.AddedUtc == default(DateTime) ? DateTime.UtcNow : friend.AddedUtc,
+                    LastRefreshedUtc = friend.LastRefreshedUtc,
+                    LastProbedUtc = friend.LastProbedUtc,
+                    LastProbeStatus = friend.LastProbeStatus,
+                    LastError = friend.LastError
+                })
+                .ToList();
+        }
+
+        private FriendSettingsEntry GetConfiguredFriend(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return null;
+            }
+
+            return GetConfiguredFriends(includeIgnored: false)
+                .FirstOrDefault(friend => string.Equals(friend.ExternalUserId, username.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        private async Task<FriendSettingsEntry> RefreshProfileMetadataIfNeededAsync(
+            FriendSettingsEntry friend,
+            CancellationToken cancel)
+        {
+            if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
+            {
+                return friend;
+            }
+
+            var live = _globalSettings?.Persisted?.GetFriendSetting(Provider, friend.ExternalUserId) ?? friend;
+            if (!ShouldProbeProfile(live))
+            {
+                return live;
+            }
+
+            try
+            {
+                var metadata = await FetchProfileMetadataAsync(friend.ExternalUserId, cancel).ConfigureAwait(false);
+                live.LastProbedUtc = DateTime.UtcNow;
+                live.LastProbeStatus = "ok";
+                live.LastError = null;
+                if (!string.IsNullOrWhiteSpace(metadata?.DisplayName))
+                {
+                    live.DisplayName = metadata.DisplayName;
+                }
+
+                if (!string.IsNullOrWhiteSpace(metadata?.AvatarUrl))
+                {
+                    live.AvatarUrl = metadata.AvatarUrl;
+                }
+
+                return live;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                live.LastProbedUtc = DateTime.UtcNow;
+                live.LastProbeStatus = "failed";
+                live.LastError = ex.Message;
+                _logger?.Debug(ex, $"[ExophaseFriends] Failed to probe profile metadata for '{friend.ExternalUserId}'.");
+                return live;
+            }
+        }
+
+        private static bool ShouldProbeProfile(FriendSettingsEntry friend)
+        {
+            if (friend == null)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(friend.AvatarUrl) && string.IsNullOrWhiteSpace(friend.AvatarPath))
+            {
+                return true;
+            }
+
+            if (!friend.LastProbedUtc.HasValue)
+            {
+                return true;
+            }
+
+            return DateTime.UtcNow - friend.LastProbedUtc.Value > TimeSpan.FromDays(7);
+        }
+
+        private async Task<ExophaseProfileMetadata> FetchProfileMetadataAsync(
+            string username,
+            CancellationToken cancel)
+        {
+            var url = BuildProfileUrl(username);
+            var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: false).ConfigureAwait(false);
+            return ExophaseFriendPageParser.ParseProfile(html);
+        }
+
+        private async Task<string> FetchGameHeaderImageAsync(string gameSlug, CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(gameSlug))
+            {
+                return null;
+            }
+
+            try
+            {
+                var url = ExophaseApiClient.BuildUrlFromSlug(gameSlug);
+                var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: false).ConfigureAwait(false);
+                return ExophaseFriendPageParser.ParseGameHeaderImageUrl(html);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[ExophaseFriends] Failed to fetch game header image for '{gameSlug}'.");
+                return null;
+            }
         }
 
         private async Task<IReadOnlyList<ExophaseFriendGame>> FetchOwnedGamesAsync(
@@ -494,6 +657,12 @@ namespace PlayniteAchievements.Providers.Exophase
             public List<ExophaseFriendGame> Games { get; set; } = new List<ExophaseFriendGame>();
         }
 
+        private sealed class ExophaseProfileMetadata
+        {
+            public string DisplayName { get; set; }
+            public string AvatarUrl { get; set; }
+        }
+
         private static class ExophaseFriendGameKey
         {
             public static string Build(string platformSlug, string gameSlug)
@@ -522,6 +691,41 @@ namespace PlayniteAchievements.Providers.Exophase
 
         private static class ExophaseFriendPageParser
         {
+            public static ExophaseProfileMetadata ParseProfile(string html)
+            {
+                var doc = LoadDocument(html);
+                if (doc?.DocumentNode == null)
+                {
+                    return new ExophaseProfileMetadata();
+                }
+
+                var header = doc.DocumentNode.SelectSingleNode("//section[contains(@class, 'section-profile-header')]")
+                    ?? doc.DocumentNode;
+                return new ExophaseProfileMetadata
+                {
+                    DisplayName = FirstNonEmpty(
+                        Clean(header.SelectSingleNode(".//div[contains(@class, 'column-username')]//h2")?.InnerText),
+                        Clean(header.SelectSingleNode(".//h2")?.InnerText)),
+                    AvatarUrl = NormalizeUrl(FirstNonEmpty(
+                        header.SelectSingleNode(".//div[contains(@class, 'avatar')]//img")?.GetAttributeValue("src", null),
+                        header.SelectSingleNode(".//img[contains(@src, '/forums/data/avatars/')]")?.GetAttributeValue("src", null)))
+                };
+            }
+
+            public static string ParseGameHeaderImageUrl(string html)
+            {
+                var doc = LoadDocument(html);
+                if (doc?.DocumentNode == null)
+                {
+                    return null;
+                }
+
+                return NormalizeUrl(FirstNonEmpty(
+                    doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'col-game-information')]//a[contains(@class, 'image')]//img")?.GetAttributeValue("src", null),
+                    doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'feature-header')]//img")?.GetAttributeValue("src", null),
+                    doc.DocumentNode.SelectSingleNode("//a[contains(@class, 'image')]//img")?.GetAttributeValue("src", null)));
+            }
+
             public static ParsedGamesPage ParseGames(string html)
             {
                 var result = new ParsedGamesPage();

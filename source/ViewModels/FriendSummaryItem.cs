@@ -26,6 +26,8 @@ namespace PlayniteAchievements.ViewModels
         private int _unlockedAchievementsCount;
         private int _collectionScore;
         private int _prestigeScore;
+        private int _collectionLevel;
+        private int _prestigeLevel;
         private int _recentUnlockCount;
         private DateTime? _lastUnlockUtc;
         private DateTime? _lastRefreshedUtc;
@@ -85,7 +87,8 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public string ProviderIconKey => string.IsNullOrWhiteSpace(ProviderKey) ? null : "ProviderIcon" + ProviderKey;
-        public string ProviderColorHex => "#888888";
+        public string ProviderColorHex =>
+            PlayniteAchievements.Providers.ProviderRegistry.GetProviderColorHex(ProviderKey);
 
         public string DisplayName
         {
@@ -146,6 +149,18 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _prestigeScore;
             set => SetValue(ref _prestigeScore, Math.Max(0, value));
+        }
+
+        public int CollectionLevel
+        {
+            get => _collectionLevel;
+            set => SetValue(ref _collectionLevel, Math.Max(0, value));
+        }
+
+        public int PrestigeLevel
+        {
+            get => _prestigeLevel;
+            set => SetValue(ref _prestigeLevel, Math.Max(0, value));
         }
 
         public int RecentUnlockCount

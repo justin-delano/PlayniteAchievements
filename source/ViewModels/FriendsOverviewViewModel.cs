@@ -46,6 +46,7 @@ namespace PlayniteAchievements.ViewModels
         private List<FriendSummaryItem> _allFriends = new List<FriendSummaryItem>();
         private List<FriendGameSummaryItem> _allGames = new List<FriendGameSummaryItem>();
         private List<FriendAchievementDisplayItem> _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
+        private List<FriendAchievementDisplayItem> _allAchievements = new List<FriendAchievementDisplayItem>();
         private List<FriendAchievementDisplayItem> _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
         private FriendOverviewProjection _projection = new FriendOverviewProjection(null);
         private readonly HashSet<string> _selectedTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -111,6 +112,8 @@ namespace PlayniteAchievements.ViewModels
             {
                 _settings.Persisted.PropertyChanged += OnPersistedSettingsChanged;
             }
+
+            PlayniteAchievementsPlugin.SettingsSaved += OnPluginSettingsSaved;
         }
 
         public BulkObservableCollection<FriendSummaryItem> FilteredFriends { get; }
@@ -306,7 +309,7 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool HasStatusText => !string.IsNullOrWhiteSpace(StatusText);
-        public bool HasData => _allFriends.Count > 0 || _allGames.Count > 0 || _allRecentUnlocks.Count > 0 || _allUnlockedAchievements.Count > 0;
+        public bool HasData => _allFriends.Count > 0 || _allGames.Count > 0 || _allRecentUnlocks.Count > 0 || _allAchievements.Count > 0 || _allUnlockedAchievements.Count > 0;
         public bool IsProviderDisabled => false;
 
         public string SelectedProviderFilterText => string.IsNullOrWhiteSpace(SelectedProviderKey)
@@ -697,7 +700,8 @@ namespace PlayniteAchievements.ViewModels
                         Scope = FriendRefreshScope.SelectedGame,
                         LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(FriendRefreshScope.SelectedGame),
                         PlayniteGameIds = new[] { gameId },
-                        FriendExternalUserIds = new[] { friend.ExternalUserId }
+                        FriendExternalUserIds = new[] { friend.ExternalUserId },
+                        ForceDefinitionRefresh = true
                     }
                 };
                 return true;
@@ -715,7 +719,8 @@ namespace PlayniteAchievements.ViewModels
                         LibraryScope = FriendLibraryScope.Full,
                         ProviderAppIds = appId > 0 ? new[] { appId } : null,
                         ProviderGameKeys = !string.IsNullOrWhiteSpace(providerGameKey) ? new[] { providerGameKey } : null,
-                        FriendExternalUserIds = new[] { friend.ExternalUserId }
+                        FriendExternalUserIds = new[] { friend.ExternalUserId },
+                        ForceDefinitionRefresh = true
                     }
                 };
                 return true;
@@ -748,7 +753,8 @@ namespace PlayniteAchievements.ViewModels
                         Scope = FriendRefreshScope.SelectedGame,
                         LibraryScope = FriendLibraryScope.Full,
                         ProviderAppIds = appId > 0 ? new[] { appId } : null,
-                        ProviderGameKeys = !string.IsNullOrWhiteSpace(providerGameKey) ? new[] { providerGameKey } : null
+                        ProviderGameKeys = !string.IsNullOrWhiteSpace(providerGameKey) ? new[] { providerGameKey } : null,
+                        ForceDefinitionRefresh = true
                     }
                 };
                 return true;
@@ -843,6 +849,7 @@ namespace PlayniteAchievements.ViewModels
                     _allFriends = data.Friends ?? new List<FriendSummaryItem>();
                     _allGames = data.Games ?? new List<FriendGameSummaryItem>();
                     _allRecentUnlocks = data.RecentUnlocks ?? new List<FriendAchievementDisplayItem>();
+                    _allAchievements = ResolveAllAchievements(data);
                     _allUnlockedAchievements = data.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
                     _projection = new FriendOverviewProjection(data);
 
@@ -850,7 +857,7 @@ namespace PlayniteAchievements.ViewModels
                     {
                         _friendSearchIndex.Rebuild(_allFriends);
                         _gameSearchIndex.Rebuild(_allGames);
-                        _achievementSearchIndex.Rebuild(_allRecentUnlocks.Concat(_allUnlockedAchievements));
+                        _achievementSearchIndex.Rebuild(_allRecentUnlocks.Concat(_allAchievements));
                         UpdateFilterOptions();
                         ApplyFilters();
                     }
@@ -867,6 +874,7 @@ namespace PlayniteAchievements.ViewModels
                     _allFriends = new List<FriendSummaryItem>();
                     _allGames = new List<FriendGameSummaryItem>();
                     _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
+                    _allAchievements = new List<FriendAchievementDisplayItem>();
                     _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
                     _projection = new FriendOverviewProjection(null);
                     FilteredFriends.ReplaceAll(Array.Empty<FriendSummaryItem>());
@@ -914,7 +922,6 @@ namespace PlayniteAchievements.ViewModels
                 var friends = _allFriends
                     .Where(friend => MatchesProvider(friend?.ProviderKey))
                     .Where(friend => _friendSearchIndex.Matches(friend, friendQuery));
-
                 if (SelectedGame != null)
                 {
                     friends = friends.Where(friend => HasUnlocksForFriendGame(friend, SelectedGame));
@@ -931,12 +938,8 @@ namespace PlayniteAchievements.ViewModels
 
                 var games = gameSource
                     .Where(game => MatchesProvider(game?.ProviderKey))
+                    .Where(game => HasAnyFriendUnlocks(game))
                     .Where(game => _gameSearchIndex.Matches(game, gameQuery));
-
-                if (SelectedFriend == null)
-                {
-                    games = games.Where(HasAnyFriendUnlocks);
-                }
 
                 var gameList = games
                     .OrderByDescending(game => game?.LastUnlockUtc ?? DateTime.MinValue)
@@ -978,7 +981,7 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 var achievementSource = HasAnySelection
-                    ? _allUnlockedAchievements
+                    ? _allAchievements
                     : _allRecentUnlocks;
 
                 var achievements = achievementSource
@@ -1155,16 +1158,16 @@ namespace PlayniteAchievements.ViewModels
                 ProviderFilterOptions,
                 _allFriends.Select(friend => friend?.ProviderKey)
                     .Concat(_allGames.Select(game => game?.ProviderKey))
-                    .Concat(_allUnlockedAchievements.Select(achievement => achievement?.ProviderKey)));
+                    .Concat(_allAchievements.Select(achievement => achievement?.ProviderKey)));
 
             ReplaceOptions(
                 TypeFilterOptions,
-                _allUnlockedAchievements.Select(achievement => achievement?.CategoryType)
+                _allAchievements.Select(achievement => achievement?.CategoryType)
                     .Concat(_allRecentUnlocks.Select(achievement => achievement?.CategoryType)));
 
             ReplaceOptions(
                 CategoryFilterOptions,
-                _allUnlockedAchievements.Select(achievement => achievement?.CategoryLabel)
+                _allAchievements.Select(achievement => achievement?.CategoryLabel)
                     .Concat(_allRecentUnlocks.Select(achievement => achievement?.CategoryLabel)));
 
             PruneFilterSelections(_selectedTypeFilters, TypeFilterOptions);
@@ -1299,6 +1302,17 @@ namespace PlayniteAchievements.ViewModels
             };
         }
 
+        private static List<FriendAchievementDisplayItem> ResolveAllAchievements(FriendsOverviewData data)
+        {
+            var all = data?.AllAchievements;
+            if (all != null && all.Count > 0)
+            {
+                return all;
+            }
+
+            return data?.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
+        }
+
         public void Dispose()
         {
             _disposed = true;
@@ -1312,6 +1326,18 @@ namespace PlayniteAchievements.ViewModels
             {
                 _settings.Persisted.PropertyChanged -= OnPersistedSettingsChanged;
             }
+
+            PlayniteAchievementsPlugin.SettingsSaved -= OnPluginSettingsSaved;
+        }
+
+        private void OnPluginSettingsSaved(object sender, EventArgs e)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _ = LoadFromCacheAsync();
         }
     }
 }

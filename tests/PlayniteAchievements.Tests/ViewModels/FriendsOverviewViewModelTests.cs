@@ -72,6 +72,40 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void ScopedFriendAchievementsUseFullRowsButRecentStaysUnlockedOnly()
+        {
+            var data = CreateData();
+            var locked = CreateAchievement(
+                "Steam",
+                "alice",
+                "Alice",
+                "https://cdn.example/alice.png",
+                10,
+                data.Games[0].PlayniteGameId.Value,
+                "Game One",
+                "Alice Locked",
+                "Story",
+                "Main",
+                new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            locked.Unlocked = false;
+            locked.UnlockTimeUtc = null;
+            data.AllAchievements = data.AllUnlockedAchievements.Concat(new[] { locked }).ToList();
+
+            var viewModel = CreateViewModel(data);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            CollectionAssert.AreEqual(
+                new[] { "Recent Only" },
+                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
+
+            viewModel.SelectedFriend = data.Friends[0];
+
+            Assert.IsTrue(viewModel.DisplayedAchievements.Any(item =>
+                item.DisplayName == "Alice Locked" &&
+                !item.Unlocked));
+        }
+
+        [TestMethod]
         public void SelectedFriendGamesUseFriendScopedSummaryRows()
         {
             var data = CreateData();
@@ -661,6 +695,9 @@ namespace PlayniteAchievements.Tests.ViewModels
             public FriendUnownedCacheClearResult ClearUnownedFriendGameData() =>
                 new FriendUnownedCacheClearResult { Success = true };
 
+            public FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey) =>
+                FriendCacheWriteResult.Ok();
+
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,
                 string externalUserId,
@@ -669,7 +706,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                 FriendGameAchievements achievements) =>
                 FriendCacheWriteResult.Ok();
 
-            public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId) =>
+            public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false) =>
                 FriendCacheWriteResult.Ok();
 
             public List<FriendIdentity> LoadFriendIdentities(string providerKey) =>

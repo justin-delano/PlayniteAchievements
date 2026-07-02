@@ -15,6 +15,7 @@ namespace PlayniteAchievements.Services.Friends
         private readonly List<FriendSummaryItem> _friends;
         private readonly List<FriendGameSummaryItem> _aggregateGames;
         private readonly List<FriendAchievementDisplayItem> _recentUnlocks;
+        private readonly List<FriendAchievementDisplayItem> _allAchievements;
         private readonly List<FriendAchievementDisplayItem> _allUnlockedAchievements;
         private readonly List<FriendGameLinkItem> _friendGameLinks;
         private readonly Dictionary<string, List<FriendGameSummaryItem>> _selectedFriendGamesByFriendKey;
@@ -27,6 +28,7 @@ namespace PlayniteAchievements.Services.Friends
             _friends = data.Friends ?? new List<FriendSummaryItem>();
             _aggregateGames = data.Games ?? new List<FriendGameSummaryItem>();
             _recentUnlocks = data.RecentUnlocks ?? new List<FriendAchievementDisplayItem>();
+            _allAchievements = ResolveAllAchievements(data);
             _allUnlockedAchievements = data.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
             _friendGameLinks = data.FriendGameLinks ?? new List<FriendGameLinkItem>();
             _selectedFriendGamesByFriendKey = BuildSelectedFriendGameSummaries();
@@ -40,6 +42,8 @@ namespace PlayniteAchievements.Services.Friends
 
         public IReadOnlyList<FriendAchievementDisplayItem> RecentUnlocks => _recentUnlocks;
 
+        public IReadOnlyList<FriendAchievementDisplayItem> AllAchievements => _allAchievements;
+
         public IReadOnlyList<FriendAchievementDisplayItem> AllUnlockedAchievements => _allUnlockedAchievements;
 
         public IReadOnlyList<FriendGameLinkItem> FriendGameLinks => _friendGameLinks;
@@ -48,6 +52,7 @@ namespace PlayniteAchievements.Services.Friends
             _friends.Count > 0 ||
             _aggregateGames.Count > 0 ||
             _recentUnlocks.Count > 0 ||
+            _allAchievements.Count > 0 ||
             _allUnlockedAchievements.Count > 0;
 
         public IReadOnlyList<FriendGameSummaryItem> GetSelectedFriendGames(FriendSummaryItem friend)
@@ -97,7 +102,7 @@ namespace PlayniteAchievements.Services.Friends
                 return true;
             }
 
-            return _allUnlockedAchievements.Count == 0 &&
+            return _allAchievements.Count == 0 &&
                    (game.FriendsWithUnlocksCount > 0 ||
                     game.FriendUnlockedAchievementsCount > 0 ||
                     game.LastFriendUnlockUtc.HasValue);
@@ -116,9 +121,8 @@ namespace PlayniteAchievements.Services.Friends
                 return true;
             }
 
-            return _allUnlockedAchievements.Count == 0 &&
-                   game.FriendsWithUnlocksCount > 0 &&
-                   _friendGameLinks.Any(link => IsSameFriend(link, friend) && IsSameGame(link, game));
+            return _allAchievements.Count == 0 &&
+                   game.FriendsWithUnlocksCount > 0;
         }
 
         public static bool IsAllScope(string scopeKey)
@@ -300,6 +304,7 @@ namespace PlayniteAchievements.Services.Friends
         {
             var next = new Dictionary<string, List<FriendGameSummaryItem>>(StringComparer.OrdinalIgnoreCase);
             var gamesByKey = new Dictionary<string, FriendGameSummaryItem>(StringComparer.OrdinalIgnoreCase);
+            var linksByFriendGameKey = new Dictionary<string, FriendGameLinkItem>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var game in _aggregateGames)
             {
@@ -310,17 +315,26 @@ namespace PlayniteAchievements.Services.Friends
                 }
             }
 
-            var linksByFriendGameKey = new Dictionary<string, FriendGameLinkItem>(StringComparer.OrdinalIgnoreCase);
             foreach (var link in _friendGameLinks)
             {
-                var key = BuildFriendGameUnlockKey(link?.ProviderKey, link?.ExternalUserId, link?.ProviderGameKey, link?.AppId ?? 0, link?.PlayniteGameId);
-                if (!string.IsNullOrWhiteSpace(key) && !linksByFriendGameKey.ContainsKey(key))
+                var friendGameKey = BuildFriendGameUnlockKey(
+                    link?.ProviderKey,
+                    link?.ExternalUserId,
+                    link?.ProviderGameKey,
+                    link?.AppId ?? 0,
+                    link?.PlayniteGameId);
+                if (string.IsNullOrWhiteSpace(friendGameKey))
                 {
-                    linksByFriendGameKey[key] = link;
+                    continue;
+                }
+
+                if (!linksByFriendGameKey.ContainsKey(friendGameKey))
+                {
+                    linksByFriendGameKey[friendGameKey] = link;
                 }
             }
 
-            var groups = _allUnlockedAchievements
+            foreach (var group in _allAchievements
                 .Where(achievement => achievement != null)
                 .GroupBy(
                     achievement => BuildFriendGameUnlockKey(
@@ -329,18 +343,12 @@ namespace PlayniteAchievements.Services.Friends
                         achievement.ProviderGameKey,
                         achievement.AppId,
                         achievement.PlayniteGameId),
-                    StringComparer.OrdinalIgnoreCase);
-
-            foreach (var group in groups)
+                    StringComparer.OrdinalIgnoreCase)
+                .Where(group => !string.IsNullOrWhiteSpace(group.Key)))
             {
-                if (string.IsNullOrWhiteSpace(group.Key))
-                {
-                    continue;
-                }
-
-                var sample = group.FirstOrDefault();
-                var friendKey = BuildFriendKey(sample?.ProviderKey, sample?.FriendExternalUserId);
-                var gameKey = BuildGameUnlockKey(sample?.ProviderKey, sample?.ProviderGameKey, sample?.AppId ?? 0, sample?.PlayniteGameId);
+                var first = group.FirstOrDefault();
+                var friendKey = BuildFriendKey(first?.ProviderKey, first?.FriendExternalUserId);
+                var gameKey = BuildGameUnlockKey(first?.ProviderKey, first?.ProviderGameKey, first?.AppId ?? 0, first?.PlayniteGameId);
                 if (string.IsNullOrWhiteSpace(friendKey) ||
                     string.IsNullOrWhiteSpace(gameKey) ||
                     !gamesByKey.TryGetValue(gameKey, out var baseGame))
@@ -349,7 +357,10 @@ namespace PlayniteAchievements.Services.Friends
                 }
 
                 linksByFriendGameKey.TryGetValue(group.Key, out var link);
-                var row = BuildSelectedFriendGameSummary(baseGame, group, link);
+                var row = BuildSelectedFriendGameSummary(
+                    baseGame,
+                    group,
+                    link);
                 if (!next.TryGetValue(friendKey, out var rows))
                 {
                     rows = new List<FriendGameSummaryItem>();
@@ -365,7 +376,7 @@ namespace PlayniteAchievements.Services.Friends
         private HashSet<string> BuildGameUnlockKeys()
         {
             var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var achievement in _allUnlockedAchievements)
+            foreach (var achievement in _allAchievements)
             {
                 var gameKey = BuildGameUnlockKey(achievement?.ProviderKey, achievement?.ProviderGameKey, achievement?.AppId ?? 0, achievement?.PlayniteGameId);
                 if (!string.IsNullOrWhiteSpace(gameKey))
@@ -380,7 +391,7 @@ namespace PlayniteAchievements.Services.Friends
         private HashSet<string> BuildFriendGameUnlockKeys()
         {
             var keys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var achievement in _allUnlockedAchievements)
+            foreach (var achievement in _allAchievements)
             {
                 var friendGameKey = BuildFriendGameUnlockKey(
                     achievement?.ProviderKey,
@@ -402,8 +413,11 @@ namespace PlayniteAchievements.Services.Friends
             IEnumerable<FriendAchievementDisplayItem> achievements,
             FriendGameLinkItem link)
         {
-            var unlocked = (achievements ?? Enumerable.Empty<FriendAchievementDisplayItem>())
+            var allAchievements = (achievements ?? Enumerable.Empty<FriendAchievementDisplayItem>())
                 .Where(achievement => achievement != null)
+                .ToList();
+            var unlocked = allAchievements
+                .Where(achievement => achievement.Unlocked)
                 .GroupBy(achievement => achievement.ApiName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
                 .Select(group => group
                     .OrderByDescending(achievement => achievement.UnlockTimeUtc ?? DateTime.MinValue)
@@ -429,7 +443,11 @@ namespace PlayniteAchievements.Services.Friends
                 RegionText = source.RegionText,
                 PlaytimeSeconds = ToPlaytimeSeconds(playtimeMinutes),
                 LastPlayed = link?.LastPlayedUtc,
-                TotalAchievements = source.TotalAchievements,
+                TotalAchievements = source.TotalAchievements > 0
+                    ? source.TotalAchievements
+                    : allAchievements
+                        .GroupBy(achievement => achievement.ApiName ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                        .Count(),
                 CollectionScoreTotal = source.CollectionScoreTotal,
                 PrestigeScoreTotal = source.PrestigeScoreTotal,
                 TotalCommonPossible = source.TotalCommonPossible,
@@ -472,6 +490,17 @@ namespace PlayniteAchievements.Services.Friends
             item.IsCompleted = item.TotalAchievements > 0 &&
                                item.UnlockedAchievements >= item.TotalAchievements;
             return item;
+        }
+
+        private static List<FriendAchievementDisplayItem> ResolveAllAchievements(FriendsOverviewData data)
+        {
+            var all = data?.AllAchievements;
+            if (all != null && all.Count > 0)
+            {
+                return all;
+            }
+
+            return data?.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();
         }
 
         private static ulong ToPlaytimeSeconds(long minutes)

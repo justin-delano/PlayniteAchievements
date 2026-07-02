@@ -12,6 +12,10 @@ namespace PlayniteAchievements
     {
         public static PlayniteAchievementsPlugin Instance { get; set; }
 
+        public static event EventHandler SettingsSaved;
+
+        public static void NotifySettingsSaved() => SettingsSaved?.Invoke(null, EventArgs.Empty);
+
         public PlayniteAchievementsSettings Settings { get; set; }
 
         public Services.AchievementDataService AchievementDataService { get; set; }

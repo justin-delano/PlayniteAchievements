@@ -1,18 +1,13 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows.Controls;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Logging;
-using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Providers.Exophase
 {
@@ -36,14 +31,6 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public new ExophaseSettings Settings => _exophaseSettings;
 
-        /// <summary>
-        /// Friend rows bound to the settings friends grid. The view owns this collection; each row is a
-        /// view model that persists back to <see cref="ExophaseSettings.Friends"/> on edit. The grid
-        /// binds to it once, so per-friend edits update cells in place without ItemsSource resets.
-        /// </summary>
-        public ObservableCollection<ExophaseFriendListItem> Friends { get; } =
-            new ObservableCollection<ExophaseFriendListItem>();
-
         public ExophaseSettingsView(ExophaseSessionManager sessionManager)
         {
             _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
@@ -62,7 +49,6 @@ namespace PlayniteAchievements.Providers.Exophase
             base.Initialize(settings);
             SetAuthStatusVisualState(pending: true, success: false);
             SetAuthStatusByKey("LOCPlayAch_Auth_NotChecked");
-            LoadFriends();
         }
 
         private void UpdateAuthStatus(AuthProbeResult result)
@@ -257,89 +243,6 @@ namespace PlayniteAchievements.Providers.Exophase
             _exophaseSettings.ManagedProviders = managedProviders;
         }
 
-        /// <summary>
-        /// Rebuilds the <see cref="Friends"/> row collection from the current settings. Called on load
-        /// and after add/remove; per-friend edits mutate rows in place and persist via the row callback.
-        /// </summary>
-        private void LoadFriends()
-        {
-            Friends.Clear();
-            if (_exophaseSettings?.Friends == null)
-            {
-                return;
-            }
-
-            foreach (var friend in _exophaseSettings.Friends)
-            {
-                Friends.Add(new ExophaseFriendListItem(friend, PersistFriends));
-            }
-        }
-
-        /// <summary>
-        /// Writes the current row view models back to <see cref="ExophaseSettings.Friends"/>. Invoked by
-        /// each row when its scope or platform selection changes; never rebuilds the row collection, so
-        /// there is no re-entrancy.
-        /// </summary>
-        private void PersistFriends()
-        {
-            if (_exophaseSettings == null)
-            {
-                return;
-            }
-
-            _exophaseSettings.Friends = Friends.Select(item => item.ToModel()).ToList();
-        }
-
-        private void AddExophaseFriend_Click(object sender, RoutedEventArgs e)
-        {
-            if (_exophaseSettings == null)
-            {
-                return;
-            }
-
-            var username = NewFriendUsernameTextBox?.Text;
-            if (string.IsNullOrWhiteSpace(username))
-            {
-                return;
-            }
-
-            _exophaseSettings.AddOrUpdateFriend(username);
-            NewFriendUsernameTextBox.Text = string.Empty;
-            LoadFriends();
-        }
-
-        private void RemoveFriend_Click(object sender, RoutedEventArgs e)
-        {
-            if (_exophaseSettings == null ||
-                !((sender as FrameworkElement)?.DataContext is ExophaseFriendListItem item))
-            {
-                return;
-            }
-
-            _exophaseSettings.RemoveFriend(item.Username);
-            LoadFriends();
-        }
-
-        private void FullLibraryToggle_Click(object sender, RoutedEventArgs e)
-        {
-            if (!(sender is CheckBox checkBox) ||
-                !(checkBox.DataContext is ExophaseFriendListItem item) ||
-                _exophaseSettings == null)
-            {
-                return;
-            }
-
-            var enable = checkBox.IsChecked == true;
-            if (enable && !FriendLibraryScopeHelper.ConfirmFullLibraryEnable())
-            {
-                checkBox.IsChecked = false;
-                item.IsFullLibrary = false;
-                return;
-            }
-
-            // The row setter raises the change callback, which persists the updated friend list.
-            item.IsFullLibrary = enable;
-        }
     }
 }
 

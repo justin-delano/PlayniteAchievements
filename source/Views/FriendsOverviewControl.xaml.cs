@@ -1,8 +1,7 @@
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Friends;
-using PlayniteAchievements.Providers;
-using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
@@ -574,8 +573,7 @@ namespace PlayniteAchievements.Views
             menu.Items.Add(refreshItem);
             menu.Items.Add(new Separator());
 
-            if (FriendLibraryScopeHelper.IsSteamFriend(friend?.ProviderKey) &&
-                !string.IsNullOrWhiteSpace(friend?.ExternalUserId))
+            if (FriendLibraryScopeHelper.CanConfigureFriend(friend?.ProviderKey, friend?.ExternalUserId))
             {
                 var usesFull = FriendLibraryScopeHelper.IsFullLibrary(friend.ProviderKey, friend.ExternalUserId);
                 var libraryItem = new MenuItem
@@ -600,7 +598,7 @@ namespace PlayniteAchievements.Views
             var ignoreItem = new MenuItem
             {
                 Header = GetText("LOCPlayAch_Menu_IgnoreFriend", "Ignore Friend"),
-                IsEnabled = IsIgnorableSteamFriend(friend)
+                IsEnabled = IsConfigurableFriend(friend)
             };
             ignoreItem.Click += (_, __) => IgnoreFriend(friend);
             menu.Items.Add(ignoreItem);
@@ -636,7 +634,9 @@ namespace PlayniteAchievements.Views
 
             try
             {
-                var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);
+                // Clear only cached achievement/game data; keep the friend record so they stay
+                // registered and re-populate on the next friend refresh.
+                var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId, preserveFriendRecord: true);
                 if (deleteResult != null && !deleteResult.Success)
                 {
                     _logger?.Warn($"Failed to clear friend data for {friend.ProviderKey}/{friend.ExternalUserId}: {deleteResult.ErrorMessage}");
@@ -685,7 +685,7 @@ namespace PlayniteAchievements.Views
 
         private void IgnoreFriend(FriendSummaryItem friend)
         {
-            if (!IsIgnorableSteamFriend(friend))
+            if (!IsConfigurableFriend(friend))
             {
                 return;
             }
@@ -716,9 +716,24 @@ namespace PlayniteAchievements.Views
 
             try
             {
-                var settings = ProviderRegistry.Settings<SteamSettings>();
-                settings.AddIgnoredFriend(friend.ExternalUserId, friend.DisplayName, friend.AvatarPath);
-                ProviderRegistry.Write(settings, persistToDisk: true);
+                var plugin = PlayniteAchievementsPlugin.Instance;
+                var persisted = plugin?.Settings?.Persisted;
+                if (plugin == null || persisted == null)
+                {
+                    return;
+                }
+
+                var entry = persisted.AddOrUpdateFriend(
+                    friend.ProviderKey,
+                    friend.ExternalUserId,
+                    friend.DisplayName,
+                    friend.AvatarPath,
+                    null,
+                    FriendSettingsSource.AutoDiscovered);
+                if (entry != null)
+                {
+                    entry.IsIgnored = true;
+                }
 
                 var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);
                 if (deleteResult != null && !deleteResult.Success)
@@ -726,6 +741,9 @@ namespace PlayniteAchievements.Views
                     _logger?.Warn($"Failed to delete ignored friend data for {friend.ProviderKey}/{friend.ExternalUserId}: {deleteResult.ErrorMessage}");
                 }
 
+                FriendSettingsSyncService.SyncConfiguredFriendsToCache(persisted, _friendCache, _logger, friend.ProviderKey);
+                plugin.PersistSettingsForUi();
+                plugin.ThemeIntegrationService?.RequestUpdate(null, forceRefresh: true);
                 _viewModel?.ClearFriendSelection();
                 _ = _viewModel?.LoadAsync();
             }
@@ -738,10 +756,10 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private static bool IsIgnorableSteamFriend(FriendSummaryItem friend)
+        private static bool IsConfigurableFriend(FriendSummaryItem friend)
         {
             return friend != null &&
-                   string.Equals(friend.ProviderKey, "Steam", StringComparison.OrdinalIgnoreCase) &&
+                   !string.IsNullOrWhiteSpace(friend.ProviderKey) &&
                    !string.IsNullOrWhiteSpace(friend.ExternalUserId);
         }
 

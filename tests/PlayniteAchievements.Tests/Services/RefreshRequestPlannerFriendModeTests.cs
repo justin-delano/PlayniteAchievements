@@ -104,6 +104,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsTrue(resolved.ShouldExecute);
             Assert.IsNotNull(resolved.FriendOptions);
             Assert.AreEqual(FriendRefreshScope.SelectedGame, resolved.FriendOptions.Scope);
+            Assert.IsTrue(resolved.FriendOptions.ForceDefinitionRefresh);
             CollectionAssert.AreEqual(
                 new[] { gameId },
                 resolved.FriendOptions.PlayniteGameIds.ToList());
@@ -225,6 +226,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsNotNull(resolved.FriendOptions);
             Assert.AreEqual(FriendRefreshScope.SelectedGame, resolved.FriendOptions.Scope);
             Assert.AreEqual(FriendLibraryScope.Shared, resolved.FriendOptions.LibraryScope);
+            Assert.IsTrue(resolved.FriendOptions.ForceDefinitionRefresh);
             Assert.AreEqual(refreshTtl, resolved.FriendOptions.RefreshTtl);
             CollectionAssert.AreEqual(
                 new[] { gameId },

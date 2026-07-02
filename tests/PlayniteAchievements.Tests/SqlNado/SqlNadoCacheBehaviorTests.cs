@@ -322,6 +322,50 @@ namespace PlayniteAchievements.SqlNado.Tests
             StringAssert.Contains(store, "TRIM(g.PlayniteGameId) <> ''");
         }
 
+        [TestMethod]
+        public void CacheStore_DeleteFriendData_PreserveFriendRecord_SkipsUsersDelete()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            // Clear keeps the friend registered; only Remove/Ignore hard-delete the Users row.
+            StringAssert.Contains(store, "public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false)");
+            StringAssert.Contains(store, "if (!preserveFriendRecord)");
+            StringAssert.Contains(store, "DELETE FROM Users WHERE Id = ? AND IsCurrentUser = 0;");
+        }
+
+        [TestMethod]
+        public void ClearFriend_PreservesFriendRecord_WhileRemoveAndIgnoreDoNot()
+        {
+            var overview = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml.cs"));
+
+            StringAssert.Contains(overview, "DeleteFriendData(friend.ProviderKey, friend.ExternalUserId, preserveFriendRecord: true)");
+            // Ignore keeps the full delete (no preserve flag).
+            StringAssert.Contains(overview, "DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendGameSummary_UsesDisplayProviderKey()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "g.ProviderPlatformKey AS ProviderPlatformKey");
+            StringAssert.Contains(store, "ResolveDisplayProviderKey(row.ProviderKey, row.ProviderPlatformKey)");
+            StringAssert.Contains(store, "ProviderRegistry.TryResolveProviderVisuals(displayProviderKey");
+        }
+
+        [TestMethod]
+        public void FriendGameImages_DownloadedToPaths_NotPersistedAsUrl()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Friends", "FriendsRefreshRuntime.cs"));
+
+            // Header banner is downloaded and stored as local icon+cover paths.
+            StringAssert.Contains(runtime, "DownloadDefinitionGameImageAsync(providerKey, providerGameKey, appId, definition.IconUrl, cancel)");
+            StringAssert.Contains(runtime, "_friendCache.SaveProviderGameImagePaths(providerKey, providerGameKey, appId, localPath, localPath);");
+            // The source URL is not persisted into the definition state.
+            StringAssert.Contains(store, "// Image source URLs are not persisted; the header banner is downloaded to");
+        }
+
         private static string FindRepoFile(params string[] parts)
         {
             var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);

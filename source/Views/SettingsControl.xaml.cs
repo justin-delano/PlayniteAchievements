@@ -622,6 +622,14 @@ namespace PlayniteAchievements.Views
             // Playnite does not reliably set DataContext for settings views.
             // Bind directly to the settings model so XAML uses {Binding SomeSetting}.
             DataContext = _settingsViewModel.Settings;
+            if (FriendsSettingsContent != null)
+            {
+                FriendsSettingsContent.Content = new FriendsSettingsTab(
+                    _settingsViewModel.Settings,
+                    _plugin,
+                    _providerRegistry,
+                    _logger);
+            }
 
             // Initialize theme collections
             AvailableThemes = new System.Collections.ObjectModel.ObservableCollection<ThemeDiscoveryService.ThemeInfo>();

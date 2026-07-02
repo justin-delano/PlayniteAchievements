@@ -59,6 +59,7 @@ namespace PlayniteAchievements.Models.Friends
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public TimeSpan? RefreshTtl { get; set; }
         public TimeSpan? DefinitionTtl { get; set; }
+        public bool ForceDefinitionRefresh { get; set; }
 
         public FriendRefreshOptions Clone()
         {
@@ -85,7 +86,8 @@ namespace PlayniteAchievements.Models.Friends
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 RefreshTtl = RefreshTtl,
-                DefinitionTtl = DefinitionTtl
+                DefinitionTtl = DefinitionTtl,
+                ForceDefinitionRefresh = ForceDefinitionRefresh
             };
         }
     }
@@ -101,6 +103,7 @@ namespace PlayniteAchievements.Models.Friends
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public TimeSpan? RefreshTtl { get; set; }
         public TimeSpan? DefinitionTtl { get; set; }
+        public bool ForceDefinitionRefresh { get; set; }
 
         public FriendCustomRefreshOptions Clone()
         {
@@ -132,7 +135,8 @@ namespace PlayniteAchievements.Models.Friends
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 RefreshTtl = RefreshTtl,
-                DefinitionTtl = DefinitionTtl
+                DefinitionTtl = DefinitionTtl,
+                ForceDefinitionRefresh = ForceDefinitionRefresh
             };
         }
     }

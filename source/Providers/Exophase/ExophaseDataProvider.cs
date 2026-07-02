@@ -201,7 +201,7 @@ namespace PlayniteAchievements.Providers.Exophase
             _apiClient = new ExophaseApiClient(playniteApi, logger, _sessionManager.CookieSnapshotStore);
 
             _providerSettings = ProviderRegistry.Settings<ExophaseSettings>();
-            _friendsProvider = new ExophaseFriendsProvider(_apiClient, _providerSettings, playniteApi, logger);
+            _friendsProvider = new ExophaseFriendsProvider(_apiClient, _providerSettings, settings, playniteApi, logger);
         }
 
         #endregion
@@ -286,6 +286,11 @@ namespace PlayniteAchievements.Providers.Exophase
             var language = _settings.Persisted.GlobalLanguage ?? "english";
             _logger?.Debug($"[Exophase] Using language: {language}");
 
+            // Load and validate the cookie snapshot once for the whole loop; every per-game fetch
+            // reuses the cached cookies instead of decrypting the snapshot file per game.
+            _apiClient.BeginCookieSession();
+            try
+            {
             foreach (var game in gamesToRefresh)
             {
                 if (cancel.IsCancellationRequested)
@@ -363,6 +368,11 @@ namespace PlayniteAchievements.Providers.Exophase
                 $"WithoutAchievements={summary.GamesWithoutAchievements}");
 
             return payload;
+            }
+            finally
+            {
+                _apiClient.EndCookieSession();
+            }
         }
 
         /// <summary>
