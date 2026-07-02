@@ -31,11 +31,93 @@ namespace PlayniteAchievements.Providers.Exophase
         private readonly ILogger _logger;
         private readonly ExophaseCookieSnapshotStore _cookieSnapshotStore;
 
+        // Per-refresh cookie cache: when a session is active, the encrypted snapshot is loaded and
+        // validated once (in BeginCookieSession) and every fetch reuses it instead of decrypting the
+        // file per call. Mirrors SteamFriendsProvider's prepared-state pattern.
+        private readonly object _cookieSessionLock = new object();
+        private List<HttpCookie> _preparedCookies;
+        private bool _cookieSessionActive;
+
         internal ExophaseApiClient(IPlayniteAPI playniteApi, ILogger logger, ExophaseCookieSnapshotStore cookieSnapshotStore)
         {
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
             _logger = logger;
             _cookieSnapshotStore = cookieSnapshotStore;
+        }
+
+        /// <summary>
+        /// Opens a per-refresh cookie session: loads and validates the encrypted cookie snapshot once
+        /// so subsequent fetches reuse it instead of decrypting the file per call. Returns whether the
+        /// loaded snapshot contains all critical authentication cookies.
+        /// </summary>
+        internal bool BeginCookieSession()
+        {
+            List<HttpCookie> cookies = null;
+            var loaded = _cookieSnapshotStore?.TryLoad(out cookies) ?? false;
+
+            lock (_cookieSessionLock)
+            {
+                _preparedCookies = loaded ? cookies : null;
+                _cookieSessionActive = true;
+            }
+
+            if (loaded && cookies != null && cookies.Count > 0)
+            {
+                WarnIfMissingCriticalCookies(cookies);
+                return ExophaseCookieSnapshotStore.HasCriticalCookies(cookies);
+            }
+
+            _logger?.Warn("[Exophase] No snapshot cookies available for this refresh - fetches may not show unlocked achievements.");
+            return false;
+        }
+
+        /// <summary>
+        /// Closes the per-refresh cookie session and drops the cached cookies. After this, fetches fall
+        /// back to loading the snapshot per call.
+        /// </summary>
+        internal void EndCookieSession()
+        {
+            lock (_cookieSessionLock)
+            {
+                _preparedCookies = null;
+                _cookieSessionActive = false;
+            }
+        }
+
+        /// <summary>
+        /// Returns the cookies to restore before a fetch. When a cookie session is active the cached
+        /// snapshot is reused (no disk I/O, validation already logged once); otherwise the snapshot is
+        /// loaded for this call only, preserving behavior for callers that do not open a session.
+        /// </summary>
+        private (bool Loaded, List<HttpCookie> Cookies) AcquireFetchCookies()
+        {
+            lock (_cookieSessionLock)
+            {
+                if (_cookieSessionActive)
+                {
+                    var cookies = _preparedCookies;
+                    return (cookies != null && cookies.Count > 0, cookies);
+                }
+            }
+
+            List<HttpCookie> snapshotCookies = null;
+            var snapshotLoaded = _cookieSnapshotStore?.TryLoad(out snapshotCookies) ?? false;
+            if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
+            {
+                WarnIfMissingCriticalCookies(snapshotCookies);
+            }
+
+            return (snapshotLoaded, snapshotCookies);
+        }
+
+        private void WarnIfMissingCriticalCookies(IReadOnlyList<HttpCookie> cookies)
+        {
+            var missingCritical = ExophaseCookieSnapshotStore.GetMissingCriticalCookies(cookies);
+            if (missingCritical.Count > 0)
+            {
+                _logger?.Warn($"[Exophase] Missing critical auth cookies: {string.Join(", ", missingCritical)}. " +
+                    $"Achievement unlock status may not be accurate. User may need to re-authenticate.");
+            }
         }
 
         /// <summary>
@@ -283,20 +365,9 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         private async Task<string> FetchHtmlViaWebViewAsync(string url, CancellationToken ct, bool waitForImages = false)
         {
-            // Load cookies from snapshot before creating WebView
-            List<HttpCookie> snapshotCookies = null;
-            var snapshotLoaded = _cookieSnapshotStore?.TryLoad(out snapshotCookies) ?? false;
-
-            // Check for critical cookies
-            if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
-            {
-                var missingCritical = ExophaseCookieSnapshotStore.GetMissingCriticalCookies(snapshotCookies);
-                if (missingCritical.Count > 0)
-                {
-                    _logger?.Warn($"[Exophase] Missing critical auth cookies: {string.Join(", ", missingCritical)}. " +
-                        $"Achievement unlock status may not be accurate. User may need to re-authenticate.");
-                }
-            }
+            // Load cookies before creating the WebView. Reuses the per-refresh cache when a cookie
+            // session is active; otherwise loads the snapshot for this call.
+            var (snapshotLoaded, snapshotCookies) = AcquireFetchCookies();
 
             var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
             {
@@ -376,8 +447,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            List<HttpCookie> snapshotCookies = null;
-            var snapshotLoaded = _cookieSnapshotStore?.TryLoad(out snapshotCookies) ?? false;
+            var (snapshotLoaded, snapshotCookies) = AcquireFetchCookies();
 
             var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
             {
