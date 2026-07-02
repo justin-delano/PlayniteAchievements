@@ -823,6 +823,10 @@ namespace PlayniteAchievements.Providers.Steam
             return link.ParentNode;
         }
 
+        // Time-unit words for the localized "hours played" cell on scraped community pages. Covers
+        // the common Steam client languages; a bare "h" catches abbreviated forms like "12h".
+        private const string HourUnitPattern = @"hours?|hrs?|heures?|stunden|std\.?|horas?|ore|uur|timer|hodin\w*|h\b";
+
         private static int? ExtractPlaytimeMinutes(string text)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -832,7 +836,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             var totalMatch = Regex.Match(
                 text,
-                @"TOTAL\s+PLAYED\s*(?<hours>[\d,]+(?:\.\d+)?)\s*(?:hours?|hrs?)",
+                @"TOTAL\s+PLAYED\s*(?<hours>[\d.,]+)\s*(?:" + HourUnitPattern + @")",
                 RegexOptions.IgnoreCase);
             if (totalMatch.Success)
             {
@@ -841,7 +845,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             var genericMatch = Regex.Match(
                 text,
-                @"(?<hours>[\d,]+(?:\.\d+)?)\s*(?:hours?|hrs?)",
+                @"(?<hours>[\d.,]+)\s*(?:" + HourUnitPattern + @")",
                 RegexOptions.IgnoreCase);
             return genericMatch.Success
                 ? NullableHoursToMinutes(genericMatch.Groups["hours"].Value)
@@ -957,12 +961,66 @@ namespace PlayniteAchievements.Providers.Steam
 
         private static int? NullableHoursToMinutes(string value)
         {
-            if (!decimal.TryParse(value, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var hours))
+            var normalized = NormalizeNumericString(value);
+            if (!decimal.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out var hours))
             {
                 return null;
             }
 
             return Math.Max(0, (int)Math.Round(hours * 60m, MidpointRounding.AwayFromZero));
+        }
+
+        /// <summary>
+        /// Normalizes a locale-formatted number to an invariant "1234.5" form. Handles comma
+        /// decimals (French "12,5"), NBSP/space thousands separators ("1 234,5"), and mixed
+        /// dot/comma grouping ("1.234,5" / "1,234.5"). The right-most separator is treated as the
+        /// decimal point when both a dot and comma are present; a lone comma is a decimal separator
+        /// only when it looks like a fractional part (1-2 trailing digits), otherwise it is a
+        /// thousands grouping.
+        /// </summary>
+        private static string NormalizeNumericString(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+
+            // Space, non-breaking space, and narrow no-break space are thousands separators.
+            var cleaned = value.Trim()
+                .Replace(" ", string.Empty)
+                .Replace(" ", string.Empty)
+                .Replace(" ", string.Empty);
+
+            var hasDot = cleaned.IndexOf('.') >= 0;
+            var hasComma = cleaned.IndexOf(',') >= 0;
+
+            if (hasDot && hasComma)
+            {
+                if (cleaned.LastIndexOf('.') > cleaned.LastIndexOf(','))
+                {
+                    cleaned = cleaned.Replace(",", string.Empty);
+                }
+                else
+                {
+                    cleaned = cleaned.Replace(".", string.Empty).Replace(',', '.');
+                }
+            }
+            else if (hasComma)
+            {
+                var firstComma = cleaned.IndexOf(',');
+                var lastComma = cleaned.LastIndexOf(',');
+                var trailing = cleaned.Length - lastComma - 1;
+                if (firstComma == lastComma && trailing >= 1 && trailing <= 2)
+                {
+                    cleaned = cleaned.Replace(',', '.');
+                }
+                else
+                {
+                    cleaned = cleaned.Replace(",", string.Empty);
+                }
+            }
+
+            return cleaned;
         }
 
         private sealed class SteamCommunityGameJson
