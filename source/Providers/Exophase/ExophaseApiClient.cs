@@ -411,11 +411,15 @@ namespace PlayniteAchievements.Providers.Exophase
                             return null;
                         }
 
-                        // Let the page's images finish loading before returning. The WebView's own image
-                        // requests warm Exophase's CDN (which generates the award thumbnails on first
-                        // request), so a subsequent HTTP download hits 200 instead of the initial 404.
+                        // Warm Exophase's CDN before callers download award thumbnails over HTTP.
+                        // Award images carry the real CDN URL only in data-normal (src is empty or a
+                        // placeholder) and the offscreen page never scrolls, so the browser would never
+                        // request data-normal on its own. Force each image's real URL to load, then wait
+                        // for those requests to finish. The CDN generates the (lazily-created) thumbnail
+                        // on this first request, so the subsequent HTTP download hits 200 instead of 404.
                         if (waitForImages)
                         {
+                            await ForceLazyImagesToLoadAsync(view, ct);
                             await WaitForImagesLoadedAsync(view, ct);
                         }
 
@@ -633,6 +637,44 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             return await valueFactory(ct);
+        }
+
+        /// <summary>
+        /// Forces lazily-loaded award images to fetch their real CDN URL. Exophase award <c>img</c>
+        /// tags keep the real URL in <c>data-normal</c> (with an empty or placeholder <c>src</c>) and
+        /// the offscreen page is never scrolled, so the browser never requests those URLs on its own.
+        /// Assigning the real URL to <c>src</c> (and forcing eager loading) makes the browser fetch it,
+        /// which is what actually warms the CDN so a later HTTP download hits 200 instead of 404.
+        /// </summary>
+        private static async Task ForceLazyImagesToLoadAsync(IWebView view, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            // For each image, promote the first available lazy-load attribute (mirrors ResolveImageUrl)
+            // to src and mark it eager so an offscreen image still loads.
+            const string script =
+                "(function(){try{" +
+                "var imgs=Array.prototype.slice.call(document.querySelectorAll('img'));var n=0;" +
+                "imgs.forEach(function(img){" +
+                "var url=img.getAttribute('data-normal')||img.getAttribute('data-src')||" +
+                "img.getAttribute('data-lazy-src')||img.getAttribute('data-original');" +
+                "if(!url){return;}" +
+                "try{img.loading='eager';}catch(e){}" +
+                "if(img.src!==url){img.src=url;}n++;});" +
+                "return n;}catch(e){return -1;}})()";
+
+            try
+            {
+                await view.EvaluateScriptAsync(script).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Best-effort warming; fall through to WaitForImagesLoadedAsync regardless.
+            }
         }
 
         /// <summary>
