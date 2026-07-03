@@ -3156,17 +3156,6 @@
                 </Grid>
             </TabItem>
 
-            <!-- ================== TAB: FRIENDS ================== -->
-            <TabItem x:Name="FriendsTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_Friends}">
-                <TabItem.Header>
-                    <StackPanel Style="{StaticResource TabHeaderWithIconStyle}">
-                        <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xED0D;"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Friends}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <ContentControl x:Name="FriendsSettingsContent"/>
-            </TabItem>
-
             <!-- ================== TAB: PROVIDERS ================== -->
             <TabItem x:Name="ProvidersTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}">
                 <TabItem.Header>
@@ -3294,6 +3283,18 @@
                 </Grid>
             </TabItem>
 
+            <!-- ================== TAB: FRIENDS ================== -->
+            <TabItem x:Name="FriendsTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_Friends}">
+                <TabItem.Header>
+                    <StackPanel Style="{StaticResource TabHeaderWithIconStyle}">
+                        <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xED0D;"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Friends}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </TabItem.Header>
+                <ContentControl x:Name="FriendsSettingsContent"/>
+            </TabItem>
+
+            <!-- ================== TAB: THEME MIGRATION ================== -->
             <TabItem x:Name="ThemeMigrationTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_ThemeMigration_Title}">
                 <TabItem.Header>
                     <StackPanel Style="{StaticResource TabHeaderWithIconStyle}">
