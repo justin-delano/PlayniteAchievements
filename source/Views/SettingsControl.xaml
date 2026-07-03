@@ -3160,7 +3160,7 @@
             <TabItem x:Name="FriendsTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_Friends}">
                 <TabItem.Header>
                     <StackPanel Style="{StaticResource TabHeaderWithIconStyle}">
-                        <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xE716;"/>
+                        <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xED0D;"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Friends}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>

@@ -35,8 +35,7 @@ namespace PlayniteAchievements.Tests.ViewModels
             var code = File.ReadAllText(FindRepoFile("source", "ViewModels", "FriendsSettingsViewModel.cs"));
 
             StringAssert.Contains(xaml, "DataContext.UnmergeFriendCommand, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}");
-            Assert.IsFalse(xaml.Contains("IsEnabled=\"{Binding CanUnmerge}\""),
-                "Unmerge enablement should come from the command parameter CanExecute state.");
+            StringAssert.Contains(xaml, "IsEnabled=\"{Binding CanUnmerge}\"");
             StringAssert.Contains(code, "(UnmergeFriendCommand as RelayCommand)?.RaiseCanExecuteChanged();");
         }
 

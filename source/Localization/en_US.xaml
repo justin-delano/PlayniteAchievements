@@ -112,7 +112,7 @@
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">Collection Level</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Friend">Friend</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_FullLibrary">Full Library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_EntireLibrary">Entire Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Provider">Provider</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Scores">Scores</sys:String>

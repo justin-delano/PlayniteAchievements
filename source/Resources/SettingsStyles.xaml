@@ -83,6 +83,10 @@
         <Setter Property="Orientation" Value="Horizontal"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="Margin" Value="0"/>
+        <!-- Pin the header to a normal weight so the selected tab is not bolded; the selection
+             highlight box already indicates the active tab. Overrides the weight the theme's
+             TabItem inherits down when selected. -->
+        <Setter Property="TextElement.FontWeight" Value="Normal"/>
     </Style>
 
     <Style x:Key="HeaderIconStyle" TargetType="TextBlock">

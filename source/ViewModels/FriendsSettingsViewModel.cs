@@ -54,8 +54,13 @@ namespace PlayniteAchievements.ViewModels
             RefreshAutoDiscoverCommand = new AsyncCommand(_ => RefreshAutoDiscoverAsync(), _ => !IsBusy);
             AddManualFriendCommand = new AsyncCommand(_ => AddManualExophaseFriendAsync(), _ => !IsBusy && !string.IsNullOrWhiteSpace(ManualExophaseUsername));
             MergeSelectedCommand = new RelayCommand(_ => MergeSelectedFriends(), _ => CanMergeSelectedFriends());
-            UnmergeFriendCommand = new RelayCommand(UnmergeFriend, value => value is FriendSettingsPersonRowItem row && row.IsMerged);
-            RemoveFriendCommand = new RelayCommand(RemoveFriend, value => value is FriendSettingsAccountItem row && row.CanRemove);
+            // Per-row enablement is driven by the IsEnabled bindings (CanUnmerge / CanRemove) in
+            // FriendsSettingsTab.xaml. The CanExecute predicate is intentionally left open because
+            // this RelayCommand is not wired to CommandManager.RequerySuggested, so a
+            // parameter-dependent CanExecute would never re-query after CommandParameter binds and
+            // the button would stay disabled. Both execute methods guard their parameter internally.
+            UnmergeFriendCommand = new RelayCommand(UnmergeFriend);
+            RemoveFriendCommand = new RelayCommand(RemoveFriend);
 
             _persistDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _persistDebounceTimer.Tick += OnPersistDebounceTimerTick;
@@ -295,7 +300,7 @@ namespace PlayniteAchievements.ViewModels
                 .Concat(selectedRows.Select(row => row.DisplayName))
                 .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
             var avatar = selectedRows
-                .Select(row => row.SelectedAvatarOption?.Account)
+                .Select(row => row.SelectedAvatarAccount)
                 .FirstOrDefault(account => account != null) ?? accounts.FirstOrDefault();
 
             var group = _settings.Persisted?.AddOrUpdateFriendMergeGroup(accounts, nickname, avatar);
@@ -689,7 +694,6 @@ namespace PlayniteAchievements.ViewModels
         private readonly Action<FriendSettingsPersonRowItem> _onSelectionChanged;
         private bool _isSelected;
         private string _nickname;
-        private FriendAvatarSourceOption _selectedAvatarOption;
 
         public FriendSettingsPersonRowItem(
             FriendMergeGroup group,
@@ -706,14 +710,16 @@ namespace PlayniteAchievements.ViewModels
             Accounts = new ObservableCollection<FriendSettingsAccountItem>(
                 (entries ?? Enumerable.Empty<FriendSettingsEntry>())
                 .Where(entry => entry != null)
-                .Select(entry => new FriendSettingsAccountItem(entry, disabledExophasePlatformTokens, account =>
-                {
-                    RefreshDerivedProperties();
-                    onAccountChanged?.Invoke(account);
-                })));
-            AvatarOptions = new ObservableCollection<FriendAvatarSourceOption>(
-                Accounts.Select(account => new FriendAvatarSourceOption(account)));
-            _selectedAvatarOption = ResolveSelectedAvatarOption(group?.AvatarAccount);
+                .Select(entry => new FriendSettingsAccountItem(
+                    entry,
+                    disabledExophasePlatformTokens,
+                    account =>
+                    {
+                        RefreshDerivedProperties();
+                        onAccountChanged?.Invoke(account);
+                    },
+                    SelectAvatarSource)));
+            SeedAvatarSource(group?.AvatarAccount);
             if (!IsMerged && Accounts.Count == 1)
             {
                 _nickname = Accounts[0].Entry.Nickname;
@@ -729,10 +735,6 @@ namespace PlayniteAchievements.ViewModels
         public bool CanUnmerge => IsMerged;
 
         public ObservableCollection<FriendSettingsAccountItem> Accounts { get; }
-
-        public ObservableCollection<FriendAvatarSourceOption> AvatarOptions { get; }
-
-        public bool CanChooseAvatar => IsMerged && AvatarOptions.Count > 1;
 
         public bool IsSelected
         {
@@ -761,38 +763,24 @@ namespace PlayniteAchievements.ViewModels
 
         public string DisplayName => FirstNonEmpty(
             Nickname,
+            DefaultDisplayName);
+
+        // The name shown when no nickname is set: the underlying account's display name (or id).
+        // Used as the faint placeholder inside the nickname text box.
+        public string DefaultDisplayName => FirstNonEmpty(
             Accounts.Select(account => account.DisplayName).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)),
             Accounts.Select(account => account.ExternalUserId).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)));
 
-        public string AvatarSource => SelectedAvatarOption?.AvatarSource ??
-                                      Accounts.Select(account => account.AvatarSource).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+        public string AvatarSource =>
+            Accounts.FirstOrDefault(account => account.IsAvatarSource)?.AvatarSource ??
+            Accounts.Select(account => account.AvatarSource).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
 
-        public FriendAvatarSourceOption SelectedAvatarOption
+        public FriendAccountRef SelectedAvatarAccount
         {
-            get => _selectedAvatarOption;
-            set
+            get
             {
-                var next = value ?? AvatarOptions.FirstOrDefault();
-                if (!ReferenceEquals(_selectedAvatarOption, next))
-                {
-                    _selectedAvatarOption = next;
-                    OnPropertyChanged();
-                    OnPropertyChanged(nameof(SelectedAvatarAccountKey));
-                    OnPropertyChanged(nameof(AvatarSource));
-                    _onChanged?.Invoke(this);
-                }
-            }
-        }
-
-        public string SelectedAvatarAccountKey
-        {
-            get => SelectedAvatarOption?.AccountKey;
-            set
-            {
-                var next = string.IsNullOrWhiteSpace(value)
-                    ? AvatarOptions.FirstOrDefault()
-                    : AvatarOptions.FirstOrDefault(option => string.Equals(option.AccountKey, value, StringComparison.OrdinalIgnoreCase));
-                SelectedAvatarOption = next ?? AvatarOptions.FirstOrDefault();
+                var account = Accounts.FirstOrDefault(item => item.IsAvatarSource) ?? Accounts.FirstOrDefault();
+                return account == null ? null : FriendAccountRef.From(account.ProviderKey, account.ExternalUserId);
             }
         }
 
@@ -819,7 +807,7 @@ namespace PlayniteAchievements.ViewModels
             if (IsMerged)
             {
                 settings.SetFriendMergeGroupNickname(MergeGroupId, Nickname);
-                settings.SetFriendMergeGroupAvatar(MergeGroupId, SelectedAvatarOption?.Account);
+                settings.SetFriendMergeGroupAvatar(MergeGroupId, SelectedAvatarAccount);
             }
             else
             {
@@ -851,22 +839,39 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(AvatarSource));
             OnPropertyChanged(nameof(AccountsText));
             OnPropertyChanged(nameof(IsIgnored));
-            OnPropertyChanged(nameof(CanChooseAvatar));
         }
 
-        private FriendAvatarSourceOption ResolveSelectedAvatarOption(FriendAccountRef avatarAccount)
+        // Marks one account as the avatar source without firing the change/persist callback
+        // (used once during construction to reflect the stored group avatar).
+        private void SeedAvatarSource(FriendAccountRef avatarAccount)
         {
-            if (avatarAccount != null)
+            var chosen = avatarAccount != null
+                ? Accounts.FirstOrDefault(account => account.Matches(avatarAccount.ProviderKey, avatarAccount.ExternalUserId))
+                : null;
+            chosen = chosen
+                     ?? Accounts.FirstOrDefault(account => !string.IsNullOrWhiteSpace(account.AvatarSource))
+                     ?? Accounts.FirstOrDefault();
+
+            foreach (var account in Accounts)
             {
-                var match = AvatarOptions.FirstOrDefault(option => option.Account?.Matches(avatarAccount.ProviderKey, avatarAccount.ExternalUserId) == true);
-                if (match != null)
+                account.SetAvatarSourceSelected(ReferenceEquals(account, chosen));
+            }
+        }
+
+        // Radio-style handler: making one account the avatar source clears the rest, then
+        // refreshes the row avatar and persists the choice.
+        private void SelectAvatarSource(FriendSettingsAccountItem chosen)
+        {
+            foreach (var account in Accounts)
+            {
+                if (!ReferenceEquals(account, chosen))
                 {
-                    return match;
+                    account.SetAvatarSourceSelected(false);
                 }
             }
 
-            return AvatarOptions.FirstOrDefault(option => !string.IsNullOrWhiteSpace(option.AvatarSource)) ??
-                   AvatarOptions.FirstOrDefault();
+            OnPropertyChanged(nameof(AvatarSource));
+            _onChanged?.Invoke(this);
         }
 
         private static string FirstNonEmpty(params string[] values)
@@ -878,16 +883,20 @@ namespace PlayniteAchievements.ViewModels
     internal sealed class FriendSettingsAccountItem : ObservableObject
     {
         private readonly Action<FriendSettingsAccountItem> _onChanged;
+        private readonly Action<FriendSettingsAccountItem> _onAvatarSourceSelected;
         private bool _isIgnored;
         private bool _useFullLibrary;
+        private bool _isAvatarSource;
 
         public FriendSettingsAccountItem(
             FriendSettingsEntry entry,
             HashSet<string> disabledExophasePlatformTokens,
-            Action<FriendSettingsAccountItem> onChanged)
+            Action<FriendSettingsAccountItem> onChanged,
+            Action<FriendSettingsAccountItem> onAvatarSourceSelected = null)
         {
             Entry = entry ?? throw new ArgumentNullException(nameof(entry));
             _onChanged = onChanged;
+            _onAvatarSourceSelected = onAvatarSourceSelected;
             ProviderKey = entry.ProviderKey;
             ExternalUserId = entry.ExternalUserId;
             DisplayName = string.IsNullOrWhiteSpace(entry.DisplayName) ? entry.ExternalUserId : entry.DisplayName;
@@ -925,6 +934,32 @@ namespace PlayniteAchievements.ViewModels
         public bool CanRemove => Source == FriendSettingsSource.Manual;
 
         public string ProviderDisplayName => ProviderRegistry.GetLocalizedName(ProviderKey);
+
+        // Radio-style avatar-source flag. Selecting an account (true) notifies the owning row so
+        // it can clear the flag on siblings; clearing (false) is silent to avoid a notify loop.
+        public bool IsAvatarSource
+        {
+            get => _isAvatarSource;
+            set
+            {
+                if (SetValueAndReturn(ref _isAvatarSource, value) && value)
+                {
+                    _onAvatarSourceSelected?.Invoke(this);
+                }
+            }
+        }
+
+        public void SetAvatarSourceSelected(bool selected)
+        {
+            SetValueAndReturn(ref _isAvatarSource, selected);
+            OnPropertyChanged(nameof(IsAvatarSource));
+        }
+
+        public bool Matches(string providerKey, string externalUserId) =>
+            string.Equals(
+                FriendAccountRef.BuildKey(ProviderKey, ExternalUserId),
+                FriendAccountRef.BuildKey(providerKey, externalUserId),
+                StringComparison.OrdinalIgnoreCase);
 
         public string PlatformText => IsExophase
             ? PlatformButtonLabel
@@ -1007,25 +1042,6 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(PlatformText));
             _onChanged?.Invoke(this);
         }
-    }
-
-    internal sealed class FriendAvatarSourceOption
-    {
-        public FriendAvatarSourceOption(FriendSettingsAccountItem account)
-        {
-            Account = FriendAccountRef.From(account?.ProviderKey, account?.ExternalUserId);
-            AccountKey = Account?.Key;
-            Label = account?.ProviderDisplayName;
-            AvatarSource = account?.AvatarSource;
-        }
-
-        public FriendAccountRef Account { get; }
-
-        public string AccountKey { get; }
-
-        public string Label { get; }
-
-        public string AvatarSource { get; }
     }
 
     internal sealed class FriendSettingsPlatformToggle : ObservableObject
