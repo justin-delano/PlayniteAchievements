@@ -2206,7 +2206,8 @@ namespace PlayniteAchievements.Services.Friends
             }
 
             if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase))
+                !string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(providerKey, "RetroAchievements", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
@@ -2217,7 +2218,8 @@ namespace PlayniteAchievements.Services.Friends
         private static bool ShouldGuardProviderOnlyZeroUnlocks(string providerKey)
         {
             return string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase);
+                   string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(providerKey, "RetroAchievements", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool HasAnyUnlockedFriendAchievements(FriendGameAchievements achievements)

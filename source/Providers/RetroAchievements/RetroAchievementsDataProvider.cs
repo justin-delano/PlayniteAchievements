@@ -46,6 +46,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private RetroAchievementsHashIndexStore _hashIndexStore;
         private RetroAchievementsHashCacheStore _hashCacheStore;
         private RetroAchievementsScanner _scanner;
+        private RetroAchievementsFriendsProvider _friendsProvider;
 
         private string _clientUsername;
         private string _clientApiKey;
@@ -66,7 +67,19 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         public string ProviderColorHex => "#FFD700";
         public ISessionManager AuthSession => null;
 
-        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends =>
+            _friendsProvider ?? (_friendsProvider = new RetroAchievementsFriendsProvider(
+                _logger,
+                () =>
+                {
+                    EnsureInitialized();
+                    return _apiClient;
+                },
+                () =>
+                {
+                    EnsureInitialized();
+                    return _hashIndexStore;
+                }));
 
         /// <summary>
         /// Checks if RetroAchievements authentication is properly configured.

@@ -45,6 +45,15 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsRetroAchievementsAutoDiscoveryEnabled()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsTrue(settings.IsFriendAutoDiscoverEnabled("Steam"));
+            Assert.IsTrue(settings.IsFriendAutoDiscoverEnabled("RetroAchievements"));
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveProgressColumnAlignmentDefaultedFlag()
         {
             var source = new PersistedSettings { ProgressColumnAlignmentDefaulted = false };

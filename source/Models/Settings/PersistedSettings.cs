@@ -350,7 +350,8 @@ namespace PlayniteAchievements.Models.Settings
         {
             return new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             {
-                "Steam"
+                "Steam",
+                "RetroAchievements"
             };
         }
 

@@ -8,7 +8,6 @@ using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -435,7 +434,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             {
                 var raSettings = ProviderRegistry.Settings<RetroAchievementsSettings>();
                 var gameInfo = await _api.GetGameInfoAndUserProgressAsync(gameId, cancel).ConfigureAwait(false);
-                var achievements = ParseAchievements(
+                var achievements = RetroAchievementsAchievementMapper.ParseAchievements(
                     gameInfo,
                     raSettings.RaRarityStats,
                     categoryLabel: "Base",
@@ -461,7 +460,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                                 {
                                     var subsetInfo = await _api.GetGameInfoAndUserProgressAsync(subset.Id, cancel).ConfigureAwait(false);
                                     var categoryLabel = ExtractCategoryLabel(subset.Title) ?? "Subset";
-                                    var subsetAchievements = ParseAchievements(
+                                    var subsetAchievements = RetroAchievementsAchievementMapper.ParseAchievements(
                                         subsetInfo,
                                         raSettings.RaRarityStats,
                                         categoryLabel: categoryLabel,
@@ -552,176 +551,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             return string.Join(",", hashes.Select(h => string.IsNullOrWhiteSpace(h) ? "?" : h));
         }
 
-        private static List<AchievementDetail> ParseAchievements(
-            Models.RaGameInfoUserProgress gameInfo,
-            string rarityStats,
-            string categoryLabel = null,
-            bool enableAutomaticCapstoneAssignment = false)
-        {
-            var list = new List<AchievementDetail>();
-
-            if (gameInfo?.Achievements == null)
-            {
-                return list;
-            }
-
-            // Locked achievements derive rarity from this global setting; unlocked
-            // achievements instead follow their own unlock mode (see below).
-            var useHardcoreRarity = string.Equals(rarityStats, "hardcore", StringComparison.OrdinalIgnoreCase);
-
-            var totalPlayers = RetroAchievementsRarityCalculator.ResolveTotalPlayers(
-                gameInfo.NumDistinctPlayers,
-                gameInfo.NumDistinctPlayersCasual,
-                gameInfo.NumDistinctPlayersHardcore);
-
-            foreach (var kvp in gameInfo.Achievements)
-            {
-                var achId = kvp.Key;
-                var ach = kvp.Value;
-                if (ach == null) continue;
-
-                var title = ach.Title ?? achId;
-                var desc = ach.Description ?? string.Empty;
-                var badge = ach.BadgeName ?? string.Empty;
-
-                // A hardcore unlock also records DateEarned, so hardcore takes precedence.
-                var earnedInHardcore = !string.IsNullOrWhiteSpace(ach.DateEarnedHardcore);
-                var earnedSoftcore = !earnedInHardcore && !string.IsNullOrWhiteSpace(ach.DateEarned);
-
-                DateTime? unlockUtc = null;
-                if (earnedInHardcore)
-                {
-                    unlockUtc = ParseRaUtcTimestamp(ach.DateEarnedHardcore);
-                }
-                else if (earnedSoftcore)
-                {
-                    unlockUtc = ParseRaUtcTimestamp(ach.DateEarned);
-                }
-
-                // Rarity matches the unlock mode: a hardcore unlock stores hardcore
-                // rarity, a softcore-only unlock stores casual rarity. Locked
-                // achievements fall back to the global RaRarityStats setting.
-                var globalPercent = RetroAchievementsRarityCalculator.ComputePercent(
-                    ach.NumAwarded,
-                    ach.NumAwardedHardcore,
-                    totalPlayers,
-                    earnedInHardcore,
-                    earnedSoftcore,
-                    useHardcoreRarity);
-
-                if (globalPercent.HasValue)
-                {
-                    globalPercent = Math.Max(0, Math.Min(100, globalPercent.Value));
-                }
-
-                var detail = new AchievementDetail
-                {
-                    ApiName = achId,
-                    DisplayName = title,
-                    Description = desc,
-                    UnlockedIconPath = string.IsNullOrWhiteSpace(badge) ? null : $"https://i.retroachievements.org/Badge/{badge}.png",
-                    LockedIconPath = string.IsNullOrWhiteSpace(badge) ? null : $"https://i.retroachievements.org/Badge/{badge}_lock.png",
-                    Points = ach.Points,
-                    ScaledPoints = ach.TrueRatio,
-                    Category = categoryLabel,
-                    IsCapstone = enableAutomaticCapstoneAssignment &&
-                                 string.Equals(ach.Type, "win_condition", StringComparison.OrdinalIgnoreCase),
-                    // Unlocked achievements are classified by the mode they were earned in.
-                    // Locked achievements keep the default category type.
-                    CategoryType = earnedInHardcore ? "Hardcore" : earnedSoftcore ? "Softcore" : null,
-                    UnlockTimeUtc = unlockUtc,
-                    Hidden = false,
-                    Rarity = globalPercent.HasValue
-                        ? PercentRarityHelper.GetRarityTier(globalPercent.Value)
-                        : RarityTier.Common,
-                    GlobalPercentUnlocked = NormalizePercent(globalPercent)
-                };
-
-                list.Add(detail);
-            }
-
-            return list;
-        }
-
         internal static string ExtractCategoryLabel(string subsetTitle)
         {
-            if (string.IsNullOrWhiteSpace(subsetTitle))
-                return null;
-
-            // Try "[Subset - Label]" pattern first.
-            var subsetStart = subsetTitle.IndexOf("[Subset - ", StringComparison.OrdinalIgnoreCase);
-            if (subsetStart >= 0)
-            {
-                var labelStart = subsetStart + "[Subset - ".Length;
-                var labelEnd = subsetTitle.IndexOf(']', labelStart);
-                if (labelEnd > labelStart)
-                {
-                    return subsetTitle.Substring(labelStart, labelEnd - labelStart).Trim();
-                }
-            }
-
-            // Try "[Bonus]", "[Hub]", etc. — single-word bracket label.
-            var bracketStart = subsetTitle.IndexOf('[');
-            if (bracketStart >= 0)
-            {
-                var bracketEnd = subsetTitle.IndexOf(']', bracketStart + 1);
-                if (bracketEnd > bracketStart + 1)
-                {
-                    return subsetTitle.Substring(bracketStart + 1, bracketEnd - bracketStart - 1).Trim();
-                }
-            }
-
-            // Parenthesized pattern: "(Subset - Label)".
-            var parenStart = subsetTitle.IndexOf("(Subset - ", StringComparison.OrdinalIgnoreCase);
-            if (parenStart >= 0)
-            {
-                var labelStart = parenStart + "(Subset - ".Length;
-                var labelEnd = subsetTitle.IndexOf(')', labelStart);
-                if (labelEnd > labelStart)
-                {
-                    return subsetTitle.Substring(labelStart, labelEnd - labelStart).Trim();
-                }
-            }
-
-            return null;
-        }
-
-        private static DateTime? ParseRaUtcTimestamp(string s)
-        {
-            if (string.IsNullOrWhiteSpace(s)) return null;
-
-            if (DateTime.TryParseExact(s.Trim(), "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out var dt))
-            {
-                return DateTime.SpecifyKind(dt, DateTimeKind.Utc);
-            }
-
-            return null;
-        }
-
-        private static double? NormalizePercent(double? rawPercent)
-        {
-            if (!rawPercent.HasValue)
-            {
-                return null;
-            }
-
-            var value = rawPercent.Value;
-            if (double.IsNaN(value) || double.IsInfinity(value))
-            {
-                return null;
-            }
-
-            if (value < 0)
-            {
-                return 0;
-            }
-
-            if (value > 100)
-            {
-                return 100;
-            }
-
-            return value;
+            return RetroAchievementsAchievementMapper.ExtractCategoryLabel(subsetTitle);
         }
 
         private async Task<int> TryMatchGameByNameAsync(Game game, int consoleId, CancellationToken cancel)
@@ -914,20 +746,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
         private static bool IsSubsetLikeTitle(string title)
         {
-            if (string.IsNullOrWhiteSpace(title))
-            {
-                return false;
-            }
-
-            var titleLower = title.ToLowerInvariant();
-            return titleLower.Contains("[subset") ||
-                   titleLower.Contains("[tournament") ||
-                   titleLower.Contains("[event") ||
-                   titleLower.Contains("[bonus") ||
-                   titleLower.Contains("[hub") ||
-                   titleLower.Contains("[specialty") ||
-                   titleLower.Contains("[exclusive") ||
-                   titleLower.Contains("(subset");
+            return RetroAchievementsSubsetTitleResolver.IsSubsetLikeTitle(title);
         }
 
         private async Task<List<Models.RaGameListWithTitle>> GetOrFetchGameListAsync(int consoleId, CancellationToken cancel)

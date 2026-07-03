@@ -257,6 +257,107 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_RetroAchievementsFullLibraryProviderOnlyGameWithZeroUnlocks_DoesNotPersistFriendData()
+        {
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false
+            };
+            var friends = new FakeFriendsProvider("RetroAchievements")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1", "RetroAchievements") },
+                AchievementRowsToReturn = new List<FriendAchievementRow>()
+            };
+
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("RetroAchievements", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = FriendLibraryScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(1, friends.GetFriendGameAchievementsCalls);
+            Assert.AreEqual(0, cache.SaveProviderOnlyOwnershipCalls);
+            Assert.AreEqual(0, cache.SaveFriendGameAchievementsCalls);
+            Assert.AreEqual(1, cache.ClearFriendProviderOnlyGameCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_RetroAchievementsFullLibraryProviderOnlyGameWithFriendUnlocks_PersistsOwnershipAndAchievements()
+        {
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false
+            };
+            var friends = new FakeFriendsProvider("RetroAchievements")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1", "RetroAchievements") },
+                AchievementRowsToReturn = new List<FriendAchievementRow>
+                {
+                    new FriendAchievementRow { ApiName = "A", DisplayName = "A", Unlocked = true }
+                }
+            };
+
+            await CreateRuntime(cache, fullLibraryFriendIds: new[] { "1" })
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("RetroAchievements", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full,
+                        LibraryScope = FriendLibraryScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(1, friends.GetFriendGameAchievementsCalls);
+            Assert.AreEqual(1, cache.SaveProviderOnlyOwnershipCalls);
+            Assert.AreEqual(1, cache.SaveFriendGameAchievementsCalls);
+            Assert.AreEqual(0, cache.ClearFriendProviderOnlyGameCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_RetroAchievementsSharedOwnershipKeepsNumericAppIdAndEmptyProviderKey()
+        {
+            var cache = new FakeFriendCache();
+            var friends = new FakeFriendsProvider("RetroAchievements")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1", "RetroAchievements") },
+                OwnedGamesToReturn = new List<FriendGameOwnership>
+                {
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "RetroAchievements",
+                        ExternalUserId = "1",
+                        AppId = 12345,
+                        ProviderGameKey = null,
+                        GameName = "RA Game"
+                    }
+                }
+            };
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("RetroAchievements", friends) },
+                    new FriendRefreshOptions { Scope = FriendRefreshScope.Shared },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.AreEqual(1, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(0, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(1, cache.SaveFriendOwnershipCalls);
+
+            var saved = cache.SavedOwnershipRows.Single();
+            Assert.AreEqual(12345, saved.AppId);
+            Assert.IsTrue(string.IsNullOrWhiteSpace(saved.ProviderGameKey));
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_ProviderOnlyCandidateWithZeroUnlocks_ClearsStaleFriendGameData()
         {
             var cache = new FakeFriendCache
@@ -694,9 +795,12 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         private static FriendIdentity MakeFriend(string externalUserId) =>
+            MakeFriend(externalUserId, "Steam");
+
+        private static FriendIdentity MakeFriend(string externalUserId, string providerKey) =>
             new FriendIdentity
             {
-                ProviderKey = "Steam",
+                ProviderKey = providerKey,
                 ExternalUserId = externalUserId,
                 DisplayName = "Friend " + externalUserId
             };
@@ -731,6 +835,7 @@ namespace PlayniteAchievements.Services.Tests
             private int _saveFriendGameDefinitionCalls;
             private int _saveProviderOnlyOwnershipCalls;
             private int _clearFriendProviderOnlyGameCalls;
+            private readonly List<FriendGameOwnership> _savedOwnershipRows = new List<FriendGameOwnership>();
 
             public List<FriendRefreshCandidate> Candidates { get; set; } = new List<FriendRefreshCandidate>();
             public Dictionary<string, FriendGameDefinitionState> DefinitionStates { get; set; } =
@@ -743,6 +848,16 @@ namespace PlayniteAchievements.Services.Tests
             public int SaveProviderOnlyOwnershipCalls => _saveProviderOnlyOwnershipCalls;
             public int ClearFriendProviderOnlyGameCalls => _clearFriendProviderOnlyGameCalls;
             public FriendRefreshOptions LastLoadOptions { get; private set; }
+            public IReadOnlyList<FriendGameOwnership> SavedOwnershipRows
+            {
+                get
+                {
+                    lock (_savedOwnershipRows)
+                    {
+                        return _savedOwnershipRows.ToList();
+                    }
+                }
+            }
 
             public FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends)
             {
@@ -761,6 +876,12 @@ namespace PlayniteAchievements.Services.Tests
                 if (options?.IncludeProviderOnlyGames == true)
                 {
                     Interlocked.Increment(ref _saveProviderOnlyOwnershipCalls);
+                }
+
+                lock (_savedOwnershipRows)
+                {
+                    _savedOwnershipRows.AddRange((ownership ?? Array.Empty<FriendGameOwnership>())
+                        .Where(item => item != null));
                 }
 
                 var count = ownership?.Count ?? 0;

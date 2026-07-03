@@ -23,6 +23,7 @@ namespace PlayniteAchievements.ViewModels
     internal sealed class FriendsSettingsViewModel : ObservableObject
     {
         private const string ExophaseProviderKey = "Exophase";
+        private const string RetroAchievementsProviderKey = "RetroAchievements";
         private const string SteamProviderKey = "Steam";
 
         private readonly PlayniteAchievementsSettings _settings;
@@ -129,6 +130,7 @@ namespace PlayniteAchievements.ViewModels
             if (_friendCache != null)
             {
                 seeded |= FriendSettingsSyncService.MergeCachedFriends(_settings.Persisted, _friendCache, SteamProviderKey);
+                seeded |= FriendSettingsSyncService.MergeCachedFriends(_settings.Persisted, _friendCache, RetroAchievementsProviderKey);
                 seeded |= FriendSettingsSyncService.MergeCachedFriends(_settings.Persisted, _friendCache, ExophaseProviderKey, FriendSettingsSource.Manual);
                 FriendSettingsSyncService.SyncConfiguredFriendsToCache(_settings.Persisted, _friendCache, _logger);
             }
@@ -151,13 +153,29 @@ namespace PlayniteAchievements.ViewModels
                 isAvailable: IsFriendProviderAvailable(SteamProviderKey),
                 isSelected: _settings.Persisted?.IsFriendAutoDiscoverEnabled(SteamProviderKey) == true,
                 onChanged: OnAutoDiscoverProviderChanged));
+            AutoDiscoverProviders.Add(new FriendAutoDiscoverProviderItem(
+                RetroAchievementsProviderKey,
+                ProviderRegistry.GetLocalizedName(RetroAchievementsProviderKey),
+                isAvailable: IsFriendProviderAvailable(RetroAchievementsProviderKey),
+                isSelected: _settings.Persisted?.IsFriendAutoDiscoverEnabled(RetroAchievementsProviderKey) == true,
+                onChanged: OnAutoDiscoverProviderChanged));
         }
 
         private bool IsFriendProviderAvailable(string providerKey)
         {
-            return !string.IsNullOrWhiteSpace(providerKey) &&
-                   _providerRegistry?.TryGetProvider(providerKey, out var provider) == true &&
-                   provider?.Friends != null;
+            if (string.IsNullOrWhiteSpace(providerKey) ||
+                _providerRegistry?.TryGetProvider(providerKey, out var provider) != true ||
+                provider?.Friends == null)
+            {
+                return false;
+            }
+
+            if (string.Equals(providerKey, RetroAchievementsProviderKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return provider.IsAuthenticated;
+            }
+
+            return true;
         }
 
         private void RebuildFriends()
@@ -467,7 +485,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 var hasSteam = group.Members?.Any(member =>
                     string.Equals(member?.ProviderKey, SteamProviderKey, StringComparison.OrdinalIgnoreCase)) == true;
-                if (!hasSteam)
+                var hasRetroAchievements = group.Members?.Any(member =>
+                    string.Equals(member?.ProviderKey, RetroAchievementsProviderKey, StringComparison.OrdinalIgnoreCase)) == true;
+                if (!hasSteam && !hasRetroAchievements)
                 {
                     continue;
                 }
@@ -476,7 +496,20 @@ namespace PlayniteAchievements.ViewModels
                     string.Equals(member?.ProviderKey, ExophaseProviderKey, StringComparison.OrdinalIgnoreCase)))
                 {
                     var entry = persisted.GetFriendSetting(ExophaseProviderKey, exophaseMember.ExternalUserId);
-                    if (entry?.SelectedPlatforms?.RemoveAll(token => string.Equals(token, "steam", StringComparison.OrdinalIgnoreCase)) > 0)
+                    var removed = 0;
+                    if (hasSteam)
+                    {
+                        removed += entry?.SelectedPlatforms?.RemoveAll(token =>
+                            string.Equals(token, "steam", StringComparison.OrdinalIgnoreCase)) ?? 0;
+                    }
+
+                    if (hasRetroAchievements)
+                    {
+                        removed += entry?.SelectedPlatforms?.RemoveAll(token =>
+                            string.Equals(token, "retro", StringComparison.OrdinalIgnoreCase)) ?? 0;
+                    }
+
+                    if (removed > 0)
                     {
                         entry.SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(entry.SelectedPlatforms);
                         changed = true;
@@ -498,6 +531,12 @@ namespace PlayniteAchievements.ViewModels
                 list.Any(entry => string.Equals(entry.ProviderKey, ExophaseProviderKey, StringComparison.OrdinalIgnoreCase)))
             {
                 disabled.Add("steam");
+            }
+
+            if (list.Any(entry => string.Equals(entry.ProviderKey, RetroAchievementsProviderKey, StringComparison.OrdinalIgnoreCase)) &&
+                list.Any(entry => string.Equals(entry.ProviderKey, ExophaseProviderKey, StringComparison.OrdinalIgnoreCase)))
+            {
+                disabled.Add("retro");
             }
 
             return disabled;
