@@ -17,6 +17,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace PlayniteAchievements.Views
 {
@@ -350,27 +351,41 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (!TryResolveSelectedRow(sender, e, out var row, out var grid))
+            var row = ResolveDataGridRow(sender, e);
+            var grid = FindParentDataGrid(row);
+            if (row == null || grid == null)
             {
                 return;
             }
 
             if (row.DataContext is FriendSummaryItem)
             {
-                _viewModel.ClearFriendSelection();
+                if (IsSelectedRow(row, grid))
+                {
+                    _viewModel.ClearFriendSelection();
+                    ClearGridSelection(grid);
+                    QueueScrollAfterSummarySelection(row.DataContext);
+                    e.Handled = true;
+                }
+                else
+                {
+                    QueueScrollAfterSummarySelection(row.DataContext);
+                }
             }
             else if (row.DataContext is FriendGameSummaryItem)
             {
-                _viewModel.ClearGameSelection();
+                if (IsSelectedRow(row, grid))
+                {
+                    _viewModel.ClearGameSelection();
+                    ClearGridSelection(grid);
+                    QueueScrollAfterSummarySelection(row.DataContext);
+                    e.Handled = true;
+                }
+                else
+                {
+                    QueueScrollAfterSummarySelection(row.DataContext);
+                }
             }
-            else
-            {
-                return;
-            }
-
-            ClearGridSelection(grid);
-
-            e.Handled = true;
         }
 
         private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -418,9 +433,16 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            return row.IsSelected ||
+            return IsSelectedRow(row, grid);
+        }
+
+        private static bool IsSelectedRow(DataGridRow row, DataGrid grid)
+        {
+            return row != null &&
+                   grid != null &&
+                   (row.IsSelected ||
                    ReferenceEquals(grid.SelectedItem, row.DataContext) ||
-                   ReferenceEquals(grid.CurrentItem, row.DataContext);
+                   ReferenceEquals(grid.CurrentItem, row.DataContext));
         }
 
         private static DataGridRow ResolveDataGridRow(object sender, MouseButtonEventArgs e)
@@ -946,6 +968,54 @@ namespace PlayniteAchievements.Views
                    ?? ResourceProvider.GetString(resourceKey)
                    ?? fallback
                    ?? resourceKey;
+        }
+
+        private void QueueScrollAfterSummarySelection(object dataContext)
+        {
+            var action = new Action(() =>
+            {
+                if (dataContext is FriendSummaryItem)
+                {
+                    ScrollDataGridToTop(FriendGameSummariesGridControl?.InternalDataGrid);
+                    ScrollDataGridToTop(SelectedFriendGameSummariesGridControl?.InternalDataGrid);
+                    ScrollDataGridToTop(FriendsAchievementsGrid?.InternalDataGrid);
+                }
+                else if (dataContext is FriendGameSummaryItem)
+                {
+                    ScrollDataGridToTop(FriendSummariesGridControl?.InternalDataGrid);
+                    ScrollDataGridToTop(FriendsAchievementsGrid?.InternalDataGrid);
+                }
+            });
+
+            if (Dispatcher == null)
+            {
+                action();
+                return;
+            }
+
+            Dispatcher.BeginInvoke(action, DispatcherPriority.Background);
+        }
+
+        private static void ScrollDataGridToTop(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (grid.Items.Count > 0)
+                {
+                    grid.ScrollIntoView(grid.Items[0]);
+                }
+
+                VisualTreeHelpers.FindVisualChild<ScrollViewer>(grid)?.ScrollToTop();
+            }
+            catch
+            {
+                // Best effort; scrolling should not interfere with row selection.
+            }
         }
 
         private static void ClearGridSelection(DataGrid grid)

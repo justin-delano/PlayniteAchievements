@@ -468,7 +468,7 @@ namespace PlayniteAchievements.SqlNado.Tests
             var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Friends", "FriendsRefreshRuntime.cs"));
 
             // Header banner is downloaded and stored as local icon+cover paths.
-            StringAssert.Contains(runtime, "DownloadDefinitionGameImageAsync(providerKey, providerGameKey, appId, definition.IconUrl, cancel)");
+            StringAssert.Contains(runtime, "DownloadDefinitionGameImageAsync(providerKey, providerGameKey, appId, definition.IconUrl, definition.GameName, cancel, progress)");
             StringAssert.Contains(runtime, "_friendCache.SaveProviderGameImagePaths(providerKey, providerGameKey, appId, localPath, localPath);");
             // The source URL is not persisted into the definition state.
             StringAssert.Contains(store, "// Image source URLs are not persisted; the header banner is downloaded to");

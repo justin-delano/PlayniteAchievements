@@ -286,7 +286,51 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.IsTrue(
                 SpinWait.SpinUntil(
-                    () => viewModel.FilteredFriends.Any(friend => friend.DisplayName == "Dana"),
+                    () =>
+                    {
+                        try
+                        {
+                            return viewModel.FilteredFriends
+                                .ToList()
+                                .Any(friend => friend.DisplayName == "Dana");
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            return false;
+                        }
+                    },
+                    TimeSpan.FromSeconds(2)));
+        }
+
+        [TestMethod]
+        public void CacheInvalidated_DuringFriendRefresh_PreservesSelectedFriendAndGame()
+        {
+            var initialData = CreateData();
+            var updatedData = CreateData();
+            updatedData.Friends[0].DisplayName = "Alice Reloaded";
+            updatedData.Games[1].GameName = "Game Two Reloaded";
+
+            var cache = new StubFriendCache(initialData);
+            var refreshRuntime = new RefreshRuntime
+            {
+                IsRebuilding = true,
+                LastProgress = new ProgressReport { Mode = RefreshModeType.FriendsFull }
+            };
+            var viewModel = CreateViewModel(
+                cache,
+                refreshRuntime: refreshRuntime,
+                cacheInvalidationDebounceInterval: TimeSpan.Zero);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+            viewModel.SelectedFriend = initialData.Friends[0];
+            viewModel.SelectedGame = initialData.Games[1];
+
+            cache.Data = updatedData;
+            refreshRuntime.RaiseCacheInvalidated();
+
+            Assert.IsTrue(
+                SpinWait.SpinUntil(
+                    () => string.Equals(viewModel.SelectedFriend?.DisplayName, "Alice Reloaded", StringComparison.Ordinal) &&
+                          string.Equals(viewModel.SelectedGame?.GameName, "Game Two Reloaded", StringComparison.Ordinal),
                     TimeSpan.FromSeconds(2)));
         }
 

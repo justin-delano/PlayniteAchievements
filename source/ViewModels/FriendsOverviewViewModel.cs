@@ -1050,7 +1050,7 @@ namespace PlayniteAchievements.ViewModels
                         _gameSearchIndex.LoadEntries(result.GameSearchEntries);
                         _achievementSearchIndex.LoadEntries(result.AchievementSearchEntries);
                         UpdateFilterOptions();
-                        ApplyFilters();
+                        ApplyFilters(preserveSelections: true);
                     }
 
                     StatusText = HasData
@@ -1088,7 +1088,7 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void ApplyFilters()
+        private void ApplyFilters(bool preserveSelections = false)
         {
             if (_isApplyingFilters)
             {
@@ -1099,7 +1099,10 @@ namespace PlayniteAchievements.ViewModels
             {
                 _isApplyingFilters = true;
 
-                if (SelectedFriend != null && SelectedGame != null && !HasUnlocksForFriendGame(SelectedFriend, SelectedGame))
+                if (!preserveSelections &&
+                    SelectedFriend != null &&
+                    SelectedGame != null &&
+                    !HasUnlocksForFriendGame(SelectedFriend, SelectedGame))
                 {
                     _selectedGame = null;
                     OnPropertyChanged(nameof(SelectedGame));
@@ -1138,12 +1141,29 @@ namespace PlayniteAchievements.ViewModels
                     .ToList();
 
                 var selectionChanged = false;
-                if (SelectedFriend != null && !friendList.Any(friend => IsSameFriend(friend, SelectedFriend)))
+                if (SelectedFriend != null)
                 {
-                    _selectedFriend = null;
-                    OnPropertyChanged(nameof(SelectedFriend));
-                    NotifySelectionStateChanged();
-                    selectionChanged = true;
+                    var matchingFriend = friendList.FirstOrDefault(friend => IsSameFriend(friend, SelectedFriend));
+                    if (matchingFriend != null && !ReferenceEquals(_selectedFriend, matchingFriend))
+                    {
+                        _selectedFriend = matchingFriend;
+                        OnPropertyChanged(nameof(SelectedFriend));
+                        NotifySelectionStateChanged();
+                    }
+                    else if (matchingFriend == null)
+                    {
+                        if (preserveSelections)
+                        {
+                            friendList.Insert(0, SelectedFriend);
+                        }
+                        else
+                        {
+                            _selectedFriend = null;
+                            OnPropertyChanged(nameof(SelectedFriend));
+                            NotifySelectionStateChanged();
+                            selectionChanged = true;
+                        }
+                    }
                 }
 
                 if (SelectedGame != null)
@@ -1151,10 +1171,17 @@ namespace PlayniteAchievements.ViewModels
                     var matchingGame = gameList.FirstOrDefault(game => IsSameGame(game, SelectedGame));
                     if (matchingGame == null)
                     {
-                        _selectedGame = null;
-                        OnPropertyChanged(nameof(SelectedGame));
-                        NotifySelectionStateChanged();
-                        selectionChanged = true;
+                        if (preserveSelections)
+                        {
+                            gameList.Insert(0, SelectedGame);
+                        }
+                        else
+                        {
+                            _selectedGame = null;
+                            OnPropertyChanged(nameof(SelectedGame));
+                            NotifySelectionStateChanged();
+                            selectionChanged = true;
+                        }
                     }
                     else if (!ReferenceEquals(_selectedGame, matchingGame))
                     {

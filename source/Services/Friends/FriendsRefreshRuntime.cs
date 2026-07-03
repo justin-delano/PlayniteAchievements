@@ -130,7 +130,7 @@ namespace PlayniteAchievements.Services.Friends
                 progress.InitializeFriendLibraryTotal(logicalFriends.Count);
                 await RefreshOwnershipByLogicalFriendAsync(
                     logicalFriends,
-                    options.Scope,
+                    options,
                     payload,
                     payloadLock,
                     progress,
@@ -326,7 +326,7 @@ namespace PlayniteAchievements.Services.Friends
 
         private async Task RefreshOwnershipByLogicalFriendAsync(
             IReadOnlyList<LogicalFriendRefreshGroup> logicalFriends,
-            FriendRefreshScope scope,
+            FriendRefreshOptions options,
             RebuildPayload payload,
             object payloadLock,
             FriendRefreshProgressSession progress,
@@ -346,7 +346,7 @@ namespace PlayniteAchievements.Services.Friends
                     cancel.ThrowIfCancellationRequested();
                     var shouldContinue = await RefreshLogicalFriendOwnershipAsync(
                         logicalFriends[i],
-                        scope,
+                        options,
                         payload,
                         payloadLock,
                         cancel).ConfigureAwait(false);
@@ -371,7 +371,7 @@ namespace PlayniteAchievements.Services.Friends
                         {
                             var shouldContinue = await RefreshLogicalFriendOwnershipAsync(
                                 group,
-                                scope,
+                                options,
                                 payload,
                                 payloadLock,
                                 token).ConfigureAwait(false);
@@ -392,7 +392,7 @@ namespace PlayniteAchievements.Services.Friends
 
         private async Task<bool> RefreshLogicalFriendOwnershipAsync(
             LogicalFriendRefreshGroup logicalFriend,
-            FriendRefreshScope scope,
+            FriendRefreshOptions options,
             RebuildPayload payload,
             object payloadLock,
             CancellationToken cancel)
@@ -401,7 +401,7 @@ namespace PlayniteAchievements.Services.Friends
             {
                 var context = account?.Context;
                 var friend = account?.Friend;
-                if (context == null || friend == null || !ShouldRefreshOwnership(context.ProviderKey, new FriendRefreshOptions { Scope = scope, LibraryScope = FriendLibraryScope.Full }))
+                if (context == null || friend == null || !ShouldRefreshOwnership(context.ProviderKey, options))
                 {
                     continue;
                 }
@@ -410,7 +410,7 @@ namespace PlayniteAchievements.Services.Friends
                     context.Provider,
                     context.ProviderKey,
                     friend,
-                    scope,
+                    options?.Scope ?? FriendRefreshScope.Recent,
                     FriendUsesFullLibrary(context.FullLibraryIds, friend),
                     payload,
                     payloadLock,
@@ -2722,7 +2722,8 @@ namespace PlayniteAchievements.Services.Friends
         private static string Format(string resourceKey, string fallback, params object[] args)
         {
             var format = ResourceProvider.GetString(resourceKey);
-            if (string.IsNullOrWhiteSpace(format))
+            if (string.IsNullOrWhiteSpace(format) ||
+                (format.StartsWith("<!", StringComparison.Ordinal) && format.EndsWith("!>", StringComparison.Ordinal)))
             {
                 format = fallback;
             }
