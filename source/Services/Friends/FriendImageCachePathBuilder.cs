@@ -27,8 +27,8 @@ namespace PlayniteAchievements.Services.Friends
                 $"{provider}_{user}.png");
         }
 
-        // icon_cache/friendgames/{provider}/{gameKey}/{fileName}
-        public static string BuildGameImageRelativePath(string providerKey, string gameKey, string fileName)
+        // icon_cache/friendgames/{provider}/{gameKey}
+        public static string BuildGameFolderRelativePath(string providerKey, string gameKey)
         {
             var provider = AchievementIconCachePathBuilder.SanitizeSegment(providerKey);
             var game = AchievementIconCachePathBuilder.SanitizeSegment(gameKey);
@@ -36,8 +36,13 @@ namespace PlayniteAchievements.Services.Friends
                 "icon_cache",
                 FriendImageCacheFolders.Games,
                 provider,
-                game,
-                fileName);
+                game);
+        }
+
+        // icon_cache/friendgames/{provider}/{gameKey}/{fileName}
+        public static string BuildGameImageRelativePath(string providerKey, string gameKey, string fileName)
+        {
+            return Path.Combine(BuildGameFolderRelativePath(providerKey, gameKey), fileName);
         }
 
         // The achievement icon filename within a game folder: "{stem}.png" or "{stem}.locked.png".

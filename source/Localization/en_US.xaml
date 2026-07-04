@@ -112,7 +112,6 @@
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">Collection Level</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Friend">Friend</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_EntireLibrary">Entire Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Provider">Provider</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Scores">Scores</sys:String>
@@ -211,8 +210,6 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend_Confirm">Ignore {0}? Their cached friend achievement data will be deleted and they will be skipped during friend refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend">Clear Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend_Confirm">Clear cached achievement data for {0}? It will be re-fetched on the next friend refresh.</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_UseFullLibrary">Use Full Library</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_UseSharedLibrary">Use Shared Library</sys:String>
     <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Please enter a valid positive integer game ID.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Please enter a valid 8-character hexadecimal Xenia TitleID.</sys:String>
@@ -470,8 +467,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Status_Succeeded">Success!</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_TotalCounts">{0} achievements ({1} unlocked) from {2} games</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_UpdatingCache">Updating cache...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Refreshing achievements for {0} ({1})</sys:String>
-    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithIcons">Refreshing achievements for {0} ({1}) - Downloading icons {2}/{3}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Targeted_RefreshingGameWithCounts">Refreshing achievements {1}: {0}</sys:String>
 
     <!-- ================================================================= -->
     <!-- 10 Settings -->
@@ -665,7 +661,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_FriendsSettings_NoAutoProviders">No auto-discovery platforms are enabled.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_RefreshCompleteFormat">Friends refreshed: {0:N0}.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_Unmerge">Unmerge</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Toggle Full Library to include a friend's games outside your library, or ignore friends to skip them.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Ignore friends to skip them during refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">Refresh Friends List</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Add">Add</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Remove">Remove</sys:String>
@@ -869,7 +865,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refresh">Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">Refreshing friends...</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshingShort">Refreshing...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendLibrary_FullWarning">Using the full library discovers this friend's Steam games outside your Playnite library and may cache a large amount of provider-only achievement data.&#10;&#10;Enable this?</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_None">No unowned friend game data is cached.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Confirm">Clear unowned friend game data?&#10;&#10;This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:N0} friend ownership rows, {3:N0} friend progress rows, {4:N0} achievement rows, and {5:N0} definition-state rows. Owned/shared friend data and your current-user cache will be kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared {0:N0} provider-only games and {1:N0} friend progress rows.</sys:String>
@@ -883,19 +878,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectedGameScope">Selected game: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SummaryFormat">Platforms: {0} | Scope: {1}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectionHint">Leave unselected to include all. Selections narrow the chosen scope.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_ShowLibraryGames">Show my full library instead of shared games</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders">No authenticated friend-capable platforms are available.</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LoadingFriends">Loading friends from {0} ({1}/{2})...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Avatars">Downloading friend avatars {0}/{1}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_AvatarsNamed">Downloading friend avatars {0}/{1}: {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">Refreshing friend libraries {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LoadingFriends">Loading friends {1}/{2}: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">Refreshing friend libraries {0}/{1}</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed">Refreshing friend libraries {0}/{1}: {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecks">Checking friend games {0}/{1}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed">Checking friend games {0}/{1}: {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameImages">Downloading friend game images {0}/{1}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameImagesNamed">Downloading friend game images {0}/{1}: {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_AchievementImages">Downloading achievement images {0}/{1}...</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_AchievementImagesNamed">Downloading achievement images {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecks">Refreshing friend games {0}/{1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed">Refreshing friend games {0}/{1}: {2}</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->

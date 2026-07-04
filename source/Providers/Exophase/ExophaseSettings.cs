@@ -14,7 +14,6 @@ namespace PlayniteAchievements.Providers.Exophase
         public string AvatarUrl { get; set; }
         public string AvatarPath { get; set; }
         public List<string> SelectedPlatforms { get; set; } = new List<string>();
-        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Shared;
         public DateTime AddedUtc { get; set; } = DateTime.UtcNow;
         public DateTime? LastRefreshedUtc { get; set; }
         public DateTime? LastProbedUtc { get; set; }
@@ -134,7 +133,6 @@ namespace PlayniteAchievements.Providers.Exophase
             {
                 Username = normalized,
                 DisplayName = normalized,
-                LibraryScope = FriendLibraryScope.Shared,
                 SelectedPlatforms = new List<string>(),
                 AddedUtc = DateTime.UtcNow
             });
@@ -167,16 +165,6 @@ namespace PlayniteAchievements.Providers.Exophase
 
             return Friends?.FirstOrDefault(friend =>
                 string.Equals(friend?.Username, normalized, StringComparison.OrdinalIgnoreCase));
-        }
-
-        public HashSet<string> GetFullLibraryFriendIds()
-        {
-            return new HashSet<string>(
-                (Friends ?? new List<ExophaseFriendSettings>())
-                    .Where(friend => friend?.LibraryScope == FriendLibraryScope.Full)
-                    .Select(friend => NormalizeUsername(friend.Username))
-                    .Where(username => !string.IsNullOrWhiteSpace(username)),
-                StringComparer.OrdinalIgnoreCase);
         }
 
         public static HashSet<string> CreateDefaultManagedProviders()
@@ -238,7 +226,6 @@ namespace PlayniteAchievements.Providers.Exophase
                     AvatarUrl = string.IsNullOrWhiteSpace(friend.AvatarUrl) ? null : friend.AvatarUrl.Trim(),
                     AvatarPath = string.IsNullOrWhiteSpace(friend.AvatarPath) ? null : friend.AvatarPath.Trim(),
                     SelectedPlatforms = NormalizePlatformList(friend.SelectedPlatforms),
-                    LibraryScope = friend.LibraryScope == FriendLibraryScope.Full ? FriendLibraryScope.Full : FriendLibraryScope.Shared,
                     AddedUtc = friend.AddedUtc == default(DateTime) ? DateTime.UtcNow : friend.AddedUtc,
                     LastRefreshedUtc = friend.LastRefreshedUtc,
                     LastProbedUtc = friend.LastProbedUtc,

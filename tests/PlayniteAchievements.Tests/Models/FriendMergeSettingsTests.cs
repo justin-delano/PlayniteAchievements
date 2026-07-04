@@ -102,7 +102,6 @@ namespace PlayniteAchievements.Tests.Models
                 null,
                 null,
                 FriendSettingsSource.Manual,
-                FriendLibraryScope.Full,
                 new[] { "steam", "psn" });
             return settings;
         }

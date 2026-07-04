@@ -874,31 +874,40 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        FriendCacheWriteResult IFriendCacheManager.ClearFriendProviderOnlyGame(
-            string providerKey,
-            string externalUserId,
-            int appId,
-            string providerGameKey)
-        {
-            lock (_sync)
-            {
-                EnsureReady_Locked("ClearFriendProviderOnlyGame");
-                var result = _store.ClearFriendProviderOnlyGame(providerKey, externalUserId, appId, providerGameKey);
-                if (result?.Success == true)
-                {
-                    RaiseCacheInvalidatedEvent();
-                }
-
-                return result;
-            }
-        }
-
         bool IFriendCacheManager.IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("IsProviderGameMappedToPlayniteLibrary");
                 return _store.IsProviderGameMappedToPlayniteLibrary(providerKey, appId, providerGameKey);
+            }
+        }
+
+        IReadOnlyList<FriendGameMapping> IFriendCacheManager.LoadFriendGameMappings(string providerKey)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadFriendGameMappings");
+                return _store.LoadFriendGameMappings(providerKey) ?? new List<FriendGameMapping>();
+            }
+        }
+
+        FriendCacheWriteResult IFriendCacheManager.PromoteProviderOnlyGameToPlayniteBacked(
+            string providerKey,
+            int appId,
+            string providerGameKey,
+            Guid playniteGameId)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("PromoteProviderOnlyGameToPlayniteBacked");
+                var result = _store.PromoteProviderOnlyGameToPlayniteBacked(providerKey, appId, providerGameKey, playniteGameId);
+                if (result?.Success == true && result.WrittenCount > 0)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
             }
         }
 
@@ -958,6 +967,18 @@ namespace PlayniteAchievements.Services
                 EnsureReady_Locked("LoadFriendRefreshCandidates");
                 return _store.LoadFriendRefreshCandidates(providerKey, options) ??
                        new List<FriendRefreshCandidate>();
+            }
+        }
+
+        IReadOnlyDictionary<string, FriendOwnershipRecency> IFriendCacheManager.LoadFriendOwnershipRecency(
+            string providerKey,
+            string externalUserId)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadFriendOwnershipRecency");
+                return _store.LoadFriendOwnershipRecency(providerKey, externalUserId) ??
+                       new Dictionary<string, FriendOwnershipRecency>(StringComparer.OrdinalIgnoreCase);
             }
         }
 

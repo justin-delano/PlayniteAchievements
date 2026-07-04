@@ -582,7 +582,7 @@ namespace PlayniteAchievements.ViewModels
                     new RefreshRequest
                     {
                         Mode = RefreshModeType.FriendsCustom,
-                        CustomFriendOptions = customOptions
+                        Options = RefreshOptions.FromFriend(customOptions)
                     },
                     "Custom friends refresh failed.").ConfigureAwait(true);
                 return;
@@ -692,7 +692,7 @@ namespace PlayniteAchievements.ViewModels
                 request = new RefreshRequest
                 {
                     Mode = RefreshModeType.FriendsCustom,
-                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    Options = RefreshOptions.FromFriend(new FriendCustomRefreshOptions
                     {
                         ProviderKeys = friendAccounts
                             .Select(account => account.ProviderKey)
@@ -700,13 +700,12 @@ namespace PlayniteAchievements.ViewModels
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToArray(),
                         Scope = FriendRefreshScope.Full,
-                        LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(FriendRefreshScope.Full),
                         FriendExternalUserIds = friendAccounts
                             .Select(account => account.ExternalUserId)
                             .Where(id => !string.IsNullOrWhiteSpace(id))
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToArray()
-                    }
+                    })
                 };
                 return true;
             }
@@ -746,7 +745,7 @@ namespace PlayniteAchievements.ViewModels
                 request = new RefreshRequest
                 {
                     Mode = RefreshModeType.FriendsCustom,
-                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    Options = RefreshOptions.FromFriend(new FriendCustomRefreshOptions
                     {
                         ProviderKeys = friendAccounts
                             .Select(account => account.ProviderKey)
@@ -754,7 +753,6 @@ namespace PlayniteAchievements.ViewModels
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToArray(),
                         Scope = FriendRefreshScope.SelectedGame,
-                        LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(FriendRefreshScope.SelectedGame),
                         PlayniteGameIds = new[] { gameId },
                         FriendExternalUserIds = friendAccounts
                             .Select(account => account.ExternalUserId)
@@ -762,7 +760,7 @@ namespace PlayniteAchievements.ViewModels
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToArray(),
                         ForceDefinitionRefresh = true
-                    }
+                    })
                 };
                 return true;
             }
@@ -780,11 +778,10 @@ namespace PlayniteAchievements.ViewModels
                 request = new RefreshRequest
                 {
                     Mode = RefreshModeType.FriendsCustom,
-                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    Options = RefreshOptions.FromFriend(new FriendCustomRefreshOptions
                     {
                         ProviderKeys = new[] { providerKey },
                         Scope = FriendRefreshScope.SelectedGame,
-                        LibraryScope = FriendLibraryScope.Full,
                         ProviderAppIds = appId > 0 ? new[] { appId } : null,
                         ProviderGameKeys = !string.IsNullOrWhiteSpace(providerGameKey) ? new[] { providerGameKey } : null,
                         FriendExternalUserIds = friendAccounts
@@ -793,7 +790,7 @@ namespace PlayniteAchievements.ViewModels
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToArray(),
                         ForceDefinitionRefresh = true
-                    }
+                    })
                 };
                 return true;
             }
@@ -819,15 +816,14 @@ namespace PlayniteAchievements.ViewModels
                 request = new RefreshRequest
                 {
                     Mode = RefreshModeType.FriendsCustom,
-                    CustomFriendOptions = new FriendCustomRefreshOptions
+                    Options = RefreshOptions.FromFriend(new FriendCustomRefreshOptions
                     {
                         ProviderKeys = new[] { providerKey },
                         Scope = FriendRefreshScope.SelectedGame,
-                        LibraryScope = FriendLibraryScope.Full,
                         ProviderAppIds = appId > 0 ? new[] { appId } : null,
                         ProviderGameKeys = !string.IsNullOrWhiteSpace(providerGameKey) ? new[] { providerGameKey } : null,
                         ForceDefinitionRefresh = true
-                    }
+                    })
                 };
                 return true;
             }

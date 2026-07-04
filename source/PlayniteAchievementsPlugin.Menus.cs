@@ -805,7 +805,7 @@ namespace PlayniteAchievements
                             new RefreshRequest
                             {
                                 Mode = RefreshModeType.Custom,
-                                CustomOptions = customOptions
+                                Options = RefreshOptions.FromCustom(customOptions)
                             });
                     }
                 };

@@ -434,7 +434,7 @@ namespace PlayniteAchievements.Views
                     refreshRequest = new RefreshRequest
                     {
                         Mode = RefreshModeType.Custom,
-                        CustomOptions = customOptions
+                        Options = RefreshOptions.FromCustom(customOptions)
                     };
                 }
                 else

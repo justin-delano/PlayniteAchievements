@@ -2614,15 +2614,18 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             public FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey) =>
                 FriendCacheWriteResult.Ok();
 
-            public FriendCacheWriteResult ClearFriendProviderOnlyGame(
-                string providerKey,
-                string externalUserId,
-                int appId,
-                string providerGameKey) =>
-                FriendCacheWriteResult.Ok();
-
             public bool IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey) =>
                 true;
+
+            public System.Collections.Generic.IReadOnlyList<FriendGameMapping> LoadFriendGameMappings(string providerKey) =>
+                new System.Collections.Generic.List<FriendGameMapping>();
+
+            public FriendCacheWriteResult PromoteProviderOnlyGameToPlayniteBacked(
+                string providerKey,
+                int appId,
+                string providerGameKey,
+                Guid playniteGameId) =>
+                FriendCacheWriteResult.Ok();
 
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,
@@ -2642,6 +2645,11 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 string providerKey,
                 FriendRefreshOptions options) =>
                 new List<FriendRefreshCandidate>();
+
+            public IReadOnlyDictionary<string, FriendOwnershipRecency> LoadFriendOwnershipRecency(
+                string providerKey,
+                string externalUserId) =>
+                new Dictionary<string, FriendOwnershipRecency>();
 
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => Data;
 

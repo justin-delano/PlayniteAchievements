@@ -395,7 +395,6 @@ namespace PlayniteAchievements.ViewModels
                 null,
                 null,
                 FriendSettingsSource.Manual,
-                FriendLibraryScope.Shared,
                 Enumerable.Empty<string>());
             ManualExophaseUsername = string.Empty;
             PersistAndNotify(ExophaseProviderKey);
@@ -665,9 +664,6 @@ namespace PlayniteAchievements.ViewModels
                             AvatarUrl = friend.AvatarUrl ?? existing?.AvatarUrl,
                             AvatarPath = friend.AvatarPath ?? existing?.AvatarPath,
                             SelectedPlatforms = friend.SelectedPlatforms?.ToList() ?? new List<string>(),
-                            LibraryScope = friend.LibraryScope == FriendLibraryScope.Full
-                                ? FriendLibraryScope.Full
-                                : FriendLibraryScope.Shared,
                             AddedUtc = friend.AddedUtc == default(DateTime)
                                 ? (existing?.AddedUtc == default(DateTime) ? DateTime.UtcNow : existing?.AddedUtc ?? DateTime.UtcNow)
                                 : friend.AddedUtc,
@@ -924,7 +920,6 @@ namespace PlayniteAchievements.ViewModels
         private readonly Action<FriendSettingsAccountItem> _onChanged;
         private readonly Action<FriendSettingsAccountItem> _onAvatarSourceSelected;
         private bool _isIgnored;
-        private bool _useFullLibrary;
         private bool _isAvatarSource;
 
         public FriendSettingsAccountItem(
@@ -942,7 +937,6 @@ namespace PlayniteAchievements.ViewModels
             AvatarSource = !string.IsNullOrWhiteSpace(entry.AvatarPath) ? entry.AvatarPath : entry.AvatarUrl;
             Source = entry.Source;
             _isIgnored = entry.IsIgnored;
-            _useFullLibrary = entry.LibraryScope == FriendLibraryScope.Full;
 
             var selected = new HashSet<string>(entry.SelectedPlatforms ?? new List<string>(), StringComparer.OrdinalIgnoreCase);
             Platforms = new ObservableCollection<FriendSettingsPlatformToggle>(
@@ -1018,18 +1012,6 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public bool UseFullLibrary
-        {
-            get => _useFullLibrary;
-            set
-            {
-                if (SetValueAndReturn(ref _useFullLibrary, value))
-                {
-                    _onChanged?.Invoke(this);
-                }
-            }
-        }
-
         public int SelectedPlatformCount => Platforms.Count(platform => platform.IsSelected);
 
         public string PlatformButtonLabel => SelectedPlatformCount == 0
@@ -1067,7 +1049,6 @@ namespace PlayniteAchievements.ViewModels
         public void WriteToEntry()
         {
             Entry.IsIgnored = IsIgnored;
-            Entry.LibraryScope = UseFullLibrary ? FriendLibraryScope.Full : FriendLibraryScope.Shared;
             Entry.SelectedPlatforms = Platforms
                 .Where(platform => platform.IsEnabled && platform.IsSelected)
                 .Select(platform => platform.Token)

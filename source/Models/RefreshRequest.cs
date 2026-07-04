@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using PlayniteAchievements.Models.Friends;
 
 namespace PlayniteAchievements.Models
 {
@@ -30,18 +29,8 @@ namespace PlayniteAchievements.Models
         public IReadOnlyCollection<Guid> GameIds { get; set; }
 
         /// <summary>
-        /// When true, force achievement icon redownload even if the target cache files already exist.
+        /// Unified refresh options for current-user and friend refreshes.
         /// </summary>
-        public bool ForceIconRefresh { get; set; }
-
-        /// <summary>
-        /// Optional custom refresh options for ad-hoc custom mode runs.
-        /// </summary>
-        public CustomRefreshOptions CustomOptions { get; set; }
-
-        /// <summary>
-        /// Optional custom friend refresh options for ad-hoc friend refresh runs.
-        /// </summary>
-        public FriendCustomRefreshOptions CustomFriendOptions { get; set; }
+        public RefreshOptions Options { get; set; }
     }
 }

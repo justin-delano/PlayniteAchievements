@@ -338,29 +338,6 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_EntireLibrary}"
-                                                    Width="Auto"
-                                                    MinWidth="72">
-                                <DataGridTemplateColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <ItemsControl ItemsSource="{Binding Accounts}"
-                                                      HorizontalAlignment="Center">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Grid Height="{StaticResource FriendAccountItemHeight}"
-                                                          Margin="0,2">
-                                                        <CheckBox IsChecked="{Binding UseFullLibrary, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                  ToolTip="{Binding ProviderDisplayName}"
-                                                                  HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center"/>
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </DataTemplate>
-                                </DataGridTemplateColumn.CellTemplate>
-                            </DataGridTemplateColumn>
-
                             <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Ignore}"
                                                     Width="Auto"
                                                     MinWidth="60">

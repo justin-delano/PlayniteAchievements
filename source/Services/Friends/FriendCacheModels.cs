@@ -44,6 +44,31 @@ namespace PlayniteAchievements.Services.Friends
         public bool IncludeProviderOnlyGames { get; set; }
     }
 
+    /// <summary>
+    /// A provider game in the current user's Playnite library: its provider identity plus the mapped
+    /// Playnite game id. Used by the game-centric friend candidate builder to classify a friend's
+    /// freshly-scraped ownership as mapped (library) vs provider-only and to intersect with the
+    /// installed-game set, in a single cache read rather than per-game lookups.
+    /// </summary>
+    internal sealed class FriendGameMapping
+    {
+        public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
+        public Guid PlayniteGameId { get; set; }
+    }
+
+    /// <summary>
+    /// Pre-overwrite snapshot of a friend's cached ownership row, used to decide whether the
+    /// freshly-fetched owned-games data represents new activity since the last successful scrape.
+    /// </summary>
+    internal sealed class FriendOwnershipRecency
+    {
+        public int PlaytimeForeverMinutes { get; set; }
+        public DateTime? LastPlayedUtc { get; set; }
+        public DateTime? LastScrapedUtc { get; set; }
+        public string LastScrapeStatus { get; set; }
+    }
+
     internal sealed class FriendGameDefinitionState
     {
         public string ProviderKey { get; set; }
@@ -127,13 +152,19 @@ namespace PlayniteAchievements.Services.Friends
 
         FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey);
 
-        FriendCacheWriteResult ClearFriendProviderOnlyGame(
-            string providerKey,
-            string externalUserId,
-            int appId,
-            string providerGameKey);
-
         bool IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey);
+
+        // All provider games mapped to the current user's Playnite library for this provider (one row
+        // per mapped game). The game-centric candidate builder loads this once per provider to classify
+        // freshly-scraped friend ownership as mapped vs provider-only and to resolve the Playnite game id
+        // for the Installed-scope intersection, avoiding a per-game cache query.
+        IReadOnlyList<FriendGameMapping> LoadFriendGameMappings(string providerKey);
+
+        FriendCacheWriteResult PromoteProviderOnlyGameToPlayniteBacked(
+            string providerKey,
+            int appId,
+            string providerGameKey,
+            Guid playniteGameId);
 
         FriendCacheWriteResult SaveFriendGameAchievements(
             string providerKey,
@@ -151,6 +182,12 @@ namespace PlayniteAchievements.Services.Friends
         List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
             string providerKey,
             FriendRefreshOptions options);
+
+        // Pre-save snapshot of a friend's cached ownership rows (playtime / last-played / last-scrape),
+        // keyed by provider-game cache key, used by the Recent-scope recency gate.
+        IReadOnlyDictionary<string, FriendOwnershipRecency> LoadFriendOwnershipRecency(
+            string providerKey,
+            string externalUserId);
 
         FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit);
 

@@ -1,8 +1,8 @@
+using Playnite.SDK;
+using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
-using Playnite.SDK;
-using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,10 +15,12 @@ namespace PlayniteAchievements.Services
         {
             public RefreshModeType Mode { get; set; }
             public Guid? SingleGameId { get; set; }
-            public CacheRefreshOptions Options { get; set; }
+            public RefreshOptions Options { get; set; }
+            public CacheRefreshOptions CurrentUserOptions { get; set; }
             public FriendRefreshOptions FriendOptions { get; set; }
-            public bool ForceIconRefresh { get; set; }
             public IReadOnlyList<IDataProvider> ProviderScope { get; set; }
+            public IReadOnlyList<IDataProvider> CurrentProviderScope { get; set; }
+            public IReadOnlyList<IDataProvider> FriendProviderScope { get; set; }
             public bool? RunProvidersInParallelOverride { get; set; }
             public string ErrorLogMessage { get; set; }
             public string EmptySelectionLogMessage { get; set; }
@@ -46,508 +48,186 @@ namespace PlayniteAchievements.Services
         public ResolvedRequest Resolve(RefreshRequest request, IReadOnlyList<IDataProvider> authenticatedProviders)
         {
             request ??= new RefreshRequest();
+            var mode = ResolveMode(request);
+            var options = ResolveOptionsForRequest(request, mode);
+            var resolved = ResolveUnified(mode, request.SingleGameId, options, authenticatedProviders);
+            resolved.ErrorLogMessage = resolved.ErrorLogMessage ?? ResolveErrorLogMessage(mode, options);
+            return resolved;
+        }
 
-            if (request.GameIds != null && request.GameIds.Count > 0)
+        private RefreshOptions ResolveOptionsForRequest(RefreshRequest request, RefreshModeType mode)
+        {
+            if (request.GameIds?.Count > 0)
             {
-                var ids = request.GameIds
-                    .Where(id => id != Guid.Empty)
-                    .Distinct()
-                    .ToList();
-
-                return ResolveGameIdList(
-                    RefreshModeType.LibrarySelected,
-                    ids,
-                    "Library selected games refresh failed.",
-                    "No games selected in Playnite library for refresh.",
-                    bypassExclusions: true,
-                    forceIconRefresh: request.ForceIconRefresh);
+                return new RefreshOptions
+                {
+                    Subjects = RefreshSubjects.CurrentUser,
+                    Scope = RefreshGameScope.Explicit,
+                    PlayniteGameIds = request.GameIds,
+                    RespectUserExclusions = false,
+                    ForceBypassExclusionsForExplicitIncludes = true
+                }.Clone();
             }
 
-            var mode = ResolveMode(request);
+            if (request.Options != null)
+            {
+                return request.Options.Clone();
+            }
+
             switch (mode)
             {
-                case RefreshModeType.Recent:
-                    return new ResolvedRequest
-                    {
-                        Mode = mode,
-                        ShouldExecute = true,
-                        ForceIconRefresh = request.ForceIconRefresh,
-                        ErrorLogMessage = "Recent refresh failed.",
-                        Options = BuildRecentOptions()
-                    };
-
                 case RefreshModeType.Full:
-                    return new ResolvedRequest
-                    {
-                        Mode = mode,
-                        ShouldExecute = true,
-                        ForceIconRefresh = request.ForceIconRefresh,
-                        ErrorLogMessage = "Full achievement refresh failed.",
-                        Options = BuildFullOptions()
-                    };
-
+                    return BuildCurrentModeOptions(RefreshGameScope.All);
                 case RefreshModeType.Installed:
-                    return ResolveGameIdList(
-                        mode,
-                        GetInstalledGameIds(),
-                        "Installed games refresh failed.",
-                        "No installed games found for refresh.",
-                        forceIconRefresh: request.ForceIconRefresh);
-
+                    return BuildCurrentModeOptions(RefreshGameScope.Installed);
                 case RefreshModeType.Favorites:
-                    return ResolveGameIdList(
-                        mode,
-                        GetFavoriteGameIds(),
-                        "Favorites refresh failed.",
-                        "No favorite games found for refresh.",
-                        forceIconRefresh: request.ForceIconRefresh);
-
+                    return BuildCurrentModeOptions(RefreshGameScope.Favorites);
                 case RefreshModeType.Single:
-                    if (!request.SingleGameId.HasValue)
+                    return new RefreshOptions
                     {
-                        _logger?.Info("Single refresh mode requested but no game ID provided.");
-                        return new ResolvedRequest
-                        {
-                            Mode = mode,
-                            ForceIconRefresh = request.ForceIconRefresh,
-                            ShouldExecute = false
-                        };
-                    }
-
-                    return new ResolvedRequest
-                    {
-                        Mode = mode,
-                        SingleGameId = request.SingleGameId.Value,
-                        ShouldExecute = true,
-                        ForceIconRefresh = request.ForceIconRefresh,
-                        ErrorLogMessage = "Single game refresh failed.",
-                        Options = BuildSingleGameOptions(request.SingleGameId.Value)
+                        Subjects = RefreshSubjects.CurrentUser,
+                        Scope = RefreshGameScope.SelectedGame,
+                        PlayniteGameIds = request.SingleGameId.HasValue && request.SingleGameId.Value != Guid.Empty
+                            ? new[] { request.SingleGameId.Value }
+                            : null,
+                        RespectUserExclusions = false,
+                        ForceBypassExclusionsForExplicitIncludes = true
                     };
-
                 case RefreshModeType.LibrarySelected:
-                    return ResolveGameIdList(
-                        mode,
-                        GetLibrarySelectedGameIds(),
-                        "Library selected games refresh failed.",
-                        "No games selected in Playnite library for refresh.",
-                        bypassExclusions: true,
-                        forceIconRefresh: request.ForceIconRefresh);
-
+                    return BuildCurrentModeOptions(RefreshGameScope.LibrarySelected);
                 case RefreshModeType.Missing:
-                    return ResolveGameIdList(
-                        mode,
-                        GetMissingGameIds(authenticatedProviders),
-                        "Missing games refresh failed.",
-                        forceIconRefresh: request.ForceIconRefresh);
-
+                    return BuildCurrentModeOptions(RefreshGameScope.Missing);
                 case RefreshModeType.Custom:
-                    return ResolveCustom(request.CustomOptions, authenticatedProviders, request.ForceIconRefresh);
-
-                case RefreshModeType.FriendsRecent:
-                    return ResolveFriendRefresh(
-                        mode,
-                        FriendRefreshScope.Recent,
-                        authenticatedProviders,
-                        "Recent friends refresh failed.");
-
-                case RefreshModeType.FriendsFull:
-                    return ResolveFriendRefresh(
-                        mode,
-                        FriendRefreshScope.Full,
-                        authenticatedProviders,
-                        "Full friends refresh failed.");
-
-                case RefreshModeType.FriendsShared:
-                    return ResolveFriendRefresh(
-                        mode,
-                        FriendRefreshScope.Shared,
-                        authenticatedProviders,
-                        "Shared friends refresh failed.");
-
-                case RefreshModeType.FriendsInstalled:
-                    return ResolveFriendRefresh(
-                        mode,
-                        FriendRefreshScope.Installed,
-                        authenticatedProviders,
-                        "Installed friends refresh failed.",
-                        GetInstalledGameIds(),
-                        "No installed games found for friends refresh.");
-
-                case RefreshModeType.FriendsSelectedGame:
-                    if (!request.SingleGameId.HasValue || request.SingleGameId.Value == Guid.Empty)
+                    return new RefreshOptions
                     {
-                        return new ResolvedRequest
-                        {
-                            Mode = mode,
-                            ShouldExecute = false,
-                            EmptySelectionLogMessage = "No selected game provided for friends selected-game refresh."
-                        };
-                    }
-
-                    return ResolveFriendRefresh(
-                        mode,
-                        FriendRefreshScope.SelectedGame,
-                        authenticatedProviders,
-                        "Selected-game friends refresh failed.",
-                        new[] { request.SingleGameId.Value },
-                        "No selected game provided for friends selected-game refresh.");
-
-                case RefreshModeType.FriendsCustom:
-                    return ResolveFriendCustom(request.CustomFriendOptions, authenticatedProviders);
-
-                default:
-                    _logger?.Warn(string.Format(
-                        "Unknown refresh mode: {0}. Falling back to Recent.",
-                        mode));
-                    return new ResolvedRequest
-                    {
-                        Mode = RefreshModeType.Recent,
-                        ShouldExecute = true,
-                        ForceIconRefresh = request.ForceIconRefresh,
-                        ErrorLogMessage = "Recent refresh failed.",
-                        Options = BuildRecentOptions()
+                        Subjects = RefreshSubjects.CurrentUser,
+                        Scope = RefreshGameScope.All
                     };
+                case RefreshModeType.FriendsRecent:
+                    return BuildFriendModeOptions(RefreshGameScope.Recent);
+                case RefreshModeType.FriendsFull:
+                    return BuildFriendModeOptions(RefreshGameScope.All);
+                case RefreshModeType.FriendsShared:
+                    return BuildFriendModeOptions(RefreshGameScope.Shared);
+                case RefreshModeType.FriendsInstalled:
+                    return BuildFriendModeOptions(RefreshGameScope.Installed);
+                case RefreshModeType.FriendsSelectedGame:
+                    return new RefreshOptions
+                    {
+                        Subjects = RefreshSubjects.Friends,
+                        Scope = RefreshGameScope.SelectedGame,
+                        PlayniteGameIds = request.SingleGameId.HasValue && request.SingleGameId.Value != Guid.Empty
+                            ? new[] { request.SingleGameId.Value }
+                            : null,
+                        ForceDefinitionRefresh = true
+                    };
+                case RefreshModeType.FriendsCustom:
+                    return new RefreshOptions
+                    {
+                        Subjects = RefreshSubjects.Friends,
+                        Scope = RefreshGameScope.Recent
+                    };
+                case RefreshModeType.Recent:
+                default:
+                    return BuildCurrentModeOptions(RefreshGameScope.Recent);
             }
         }
 
-        private ResolvedRequest ResolveFriendRefresh(
-            RefreshModeType mode,
-            FriendRefreshScope scope,
-            IReadOnlyList<IDataProvider> authenticatedProviders,
-            string errorLogMessage,
-            IReadOnlyCollection<Guid> playniteGameIds = null,
-            string emptySelectionLogMessage = null)
+        private static RefreshOptions BuildCurrentModeOptions(RefreshGameScope scope)
         {
-            var providers = authenticatedProviders?
-                .Where(provider => provider?.Friends != null)
-                .ToList() ?? new List<IDataProvider>();
-
-            if (providers.Count == 0)
+            return new RefreshOptions
             {
-                return new ResolvedRequest
+                Subjects = RefreshSubjects.CurrentUser,
+                Scope = scope
+            };
+        }
+
+        private static RefreshOptions BuildFriendModeOptions(RefreshGameScope scope)
+        {
+            return new RefreshOptions
+            {
+                Subjects = RefreshSubjects.Friends,
+                Scope = scope
+            };
+        }
+
+        private ResolvedRequest ResolveUnified(
+            RefreshModeType mode,
+            Guid? singleGameId,
+            RefreshOptions options,
+            IReadOnlyList<IDataProvider> authenticatedProviders)
+        {
+            options = (options ?? new RefreshOptions()).Clone();
+            var providers = ResolveProviders(options, authenticatedProviders);
+            var wantsCurrent = (options.Subjects & RefreshSubjects.CurrentUser) == RefreshSubjects.CurrentUser;
+            var wantsFriends = (options.Subjects & RefreshSubjects.Friends) == RefreshSubjects.Friends;
+
+            CacheRefreshOptions currentOptions = null;
+            FriendRefreshOptions friendOptions = null;
+            IReadOnlyList<IDataProvider> currentProviders = Array.Empty<IDataProvider>();
+            IReadOnlyList<IDataProvider> friendProviders = Array.Empty<IDataProvider>();
+            string emptySelection = null;
+            string userMessage = null;
+
+            if (wantsCurrent)
+            {
+                currentProviders = providers;
+                var currentResult = ResolveCurrentOptions(mode, options, currentProviders);
+                if (currentResult.ShouldExecute)
                 {
-                    Mode = mode,
-                    ShouldExecute = false,
-                    UserMessage = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders") ??
-                                  "No authenticated friend-capable providers are available."
-                };
+                    currentOptions = currentResult.Options;
+                }
+                else
+                {
+                    emptySelection = currentResult.EmptySelectionLogMessage;
+                    userMessage = currentResult.UserMessage;
+                }
             }
 
-            var ids = playniteGameIds?
-                .Where(id => id != Guid.Empty)
-                .Distinct()
-                .ToList();
-            if (playniteGameIds != null && ids.Count == 0)
+            if (wantsFriends)
             {
-                return new ResolvedRequest
+                friendProviders = providers.Where(provider => provider?.Friends != null).ToList();
+                var friendResult = ResolveFriendOptions(mode, options, friendProviders);
+                if (friendResult.ShouldExecute)
                 {
-                    Mode = mode,
-                    ShouldExecute = false,
-                    EmptySelectionLogMessage = emptySelectionLogMessage
-                };
+                    friendOptions = friendResult.Options;
+                    friendProviders = friendResult.ProviderScope;
+                }
+                else
+                {
+                    emptySelection = FirstNonEmpty(emptySelection, friendResult.EmptySelectionLogMessage);
+                    userMessage = FirstNonEmpty(userMessage, friendResult.UserMessage);
+                }
             }
+
+            var providerScope = MergeProviderScopes(
+                currentOptions != null ? currentProviders : Array.Empty<IDataProvider>(),
+                friendOptions != null ? friendProviders : Array.Empty<IDataProvider>());
 
             return new ResolvedRequest
             {
                 Mode = mode,
-                ShouldExecute = true,
-                ErrorLogMessage = errorLogMessage,
-                ProviderScope = providers,
-                FriendOptions = new FriendRefreshOptions
-                {
-                    Scope = scope,
-                    LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(scope),
-                    PlayniteGameIds = ids,
-                    ForceDefinitionRefresh = scope == FriendRefreshScope.SelectedGame
-                }
+                SingleGameId = singleGameId,
+                Options = options,
+                CurrentUserOptions = currentOptions,
+                FriendOptions = friendOptions,
+                ProviderScope = providerScope,
+                CurrentProviderScope = currentOptions != null ? currentProviders : Array.Empty<IDataProvider>(),
+                FriendProviderScope = friendOptions != null ? friendProviders : Array.Empty<IDataProvider>(),
+                RunProvidersInParallelOverride = options.RunProvidersInParallelOverride,
+                ShouldExecute = currentOptions != null || friendOptions != null,
+                EmptySelectionLogMessage = emptySelection,
+                UserMessage = userMessage
             };
         }
 
-        private ResolvedRequest ResolveFriendCustom(
-            FriendCustomRefreshOptions options,
-            IReadOnlyList<IDataProvider> authenticatedProviders)
-        {
-            var resolvedOptions = options?.Clone() ?? new FriendCustomRefreshOptions();
-            var providers = authenticatedProviders?
-                .Where(provider => provider?.Friends != null)
-                .ToList() ?? new List<IDataProvider>();
-
-            var requestedKeys = resolvedOptions.ProviderKeys?
-                .Where(key => !string.IsNullOrWhiteSpace(key))
-                .Select(key => key.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            if (requestedKeys?.Count > 0)
-            {
-                var requestedSet = new HashSet<string>(requestedKeys, StringComparer.OrdinalIgnoreCase);
-                providers = providers
-                    .Where(provider => requestedSet.Contains(provider.ProviderKey))
-                    .ToList();
-            }
-
-            if (providers.Count == 0)
-            {
-                return new ResolvedRequest
-                {
-                    Mode = RefreshModeType.FriendsCustom,
-                    ShouldExecute = false,
-                    UserMessage = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders") ??
-                                  "No authenticated friend-capable providers are available."
-                };
-            }
-
-            var scope = resolvedOptions.Scope;
-            IReadOnlyCollection<Guid> playniteGameIds = resolvedOptions.PlayniteGameIds?
-                .Where(id => id != Guid.Empty)
-                .Distinct()
-                .ToList();
-            IReadOnlyCollection<int> providerAppIds = resolvedOptions.ProviderAppIds?
-                .Where(id => id > 0)
-                .Distinct()
-                .ToList();
-            IReadOnlyCollection<string> providerGameKeys = resolvedOptions.ProviderGameKeys?
-                .Where(key => !string.IsNullOrWhiteSpace(key))
-                .Select(key => key.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            IReadOnlyCollection<string> friendExternalUserIds = resolvedOptions.FriendExternalUserIds?
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Select(id => id.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var libraryScope = ResolveCustomFriendLibraryScope(
-                scope,
-                resolvedOptions.LibraryScope,
-                providerAppIds,
-                providerGameKeys);
-
-            // Installed scope has fixed semantics: only installed Playnite library games.
-            if (scope == FriendRefreshScope.Installed)
-            {
-                playniteGameIds = GetInstalledGameIds();
-            }
-
-            if (scope == FriendRefreshScope.SelectedGame &&
-                (playniteGameIds == null || playniteGameIds.Count == 0) &&
-                (providerAppIds == null || providerAppIds.Count == 0) &&
-                (providerGameKeys == null || providerGameKeys.Count == 0))
-            {
-                return new ResolvedRequest
-                {
-                    Mode = RefreshModeType.FriendsCustom,
-                    ShouldExecute = false,
-                    EmptySelectionLogMessage = "No games selected for custom friends refresh."
-                };
-            }
-
-            if (scope == FriendRefreshScope.Installed &&
-                (playniteGameIds == null || playniteGameIds.Count == 0))
-            {
-                return new ResolvedRequest
-                {
-                    Mode = RefreshModeType.FriendsCustom,
-                    ShouldExecute = false,
-                    EmptySelectionLogMessage = "No installed games found for custom friends refresh."
-                };
-            }
-
-            return new ResolvedRequest
-            {
-                Mode = RefreshModeType.FriendsCustom,
-                ShouldExecute = true,
-                ErrorLogMessage = "Custom friends refresh failed.",
-                ProviderScope = providers,
-                FriendOptions = new FriendRefreshOptions
-                {
-                    Scope = scope,
-                    LibraryScope = libraryScope,
-                    PlayniteGameIds = playniteGameIds,
-                    ProviderAppIds = providerAppIds,
-                    ProviderGameKeys = providerGameKeys,
-                    FriendExternalUserIds = friendExternalUserIds,
-                    RefreshTtl = resolvedOptions.RefreshTtl,
-                    DefinitionTtl = resolvedOptions.DefinitionTtl,
-                    ForceDefinitionRefresh = resolvedOptions.ForceDefinitionRefresh ||
-                                             scope == FriendRefreshScope.SelectedGame
-                }
-            };
-        }
-
-        private static FriendLibraryScope ResolveCustomFriendLibraryScope(
-            FriendRefreshScope scope,
-            FriendLibraryScope requestedLibraryScope,
-            IReadOnlyCollection<int> providerAppIds,
-            IReadOnlyCollection<string> providerGameKeys)
-        {
-            if (providerAppIds?.Count > 0 ||
-                providerGameKeys?.Count > 0)
-            {
-                return FriendLibraryScope.Full;
-            }
-
-            if (scope == FriendRefreshScope.Full)
-            {
-                return requestedLibraryScope == FriendLibraryScope.Full
-                    ? FriendLibraryScope.Full
-                    : FriendLibraryScope.Shared;
-            }
-
-            return FriendLibraryScope.Shared;
-        }
-
-        private RefreshModeType ResolveMode(RefreshRequest request)
-        {
-            if (request.Mode.HasValue)
-            {
-                return request.Mode.Value;
-            }
-
-            if (!string.IsNullOrWhiteSpace(request.ModeKey))
-            {
-                if (Enum.TryParse(request.ModeKey, out RefreshModeType parsed))
-                {
-                    return parsed;
-                }
-
-                _logger?.Warn(string.Format(
-                    "Unknown refresh mode key: {0}. Falling back to Recent.",
-                    request.ModeKey));
-            }
-
-            return RefreshModeType.Recent;
-        }
-
-        private ResolvedRequest ResolveCustom(
-            CustomRefreshOptions options,
-            IReadOnlyList<IDataProvider> authenticatedProviders,
-            bool forceIconRefresh)
-        {
-            var resolvedOptions = options?.Clone() ?? new CustomRefreshOptions();
-            var providers = ResolveCustomProviders(resolvedOptions, authenticatedProviders);
-            var runProvidersInParallel = resolvedOptions.RunProvidersInParallelOverride ?? (_settings?.Persisted?.EnableParallelProviderRefresh ?? true);
-
-            if (providers.Count == 0)
-            {
-                return new ResolvedRequest
-                {
-                    Mode = RefreshModeType.Custom,
-                    ForceIconRefresh = forceIconRefresh,
-                    ShouldExecute = false,
-                    UserMessage = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingProviders")
-                };
-            }
-
-            var scopedGames = ResolveCustomScopeGames(resolvedOptions, providers);
-            var includeIds = resolvedOptions.IncludeGameIds?
-                .Where(gameId => gameId != Guid.Empty)
-                .Distinct()
-                .ToList() ?? new List<Guid>();
-            var excludeIds = resolvedOptions.ExcludeGameIds?
-                .Where(gameId => gameId != Guid.Empty)
-                .Distinct()
-                .ToList() ?? new List<Guid>();
-
-            var explicitIncludeSet = new HashSet<Guid>(includeIds);
-            var explicitExcludeSet = new HashSet<Guid>(excludeIds);
-
-            var mergedIds = new List<Guid>();
-            var seenIds = new HashSet<Guid>();
-            foreach (var game in scopedGames)
-            {
-                if (game == null || game.Id == Guid.Empty || !seenIds.Add(game.Id))
-                {
-                    continue;
-                }
-
-                mergedIds.Add(game.Id);
-            }
-
-            foreach (var includeId in includeIds)
-            {
-                if (seenIds.Add(includeId))
-                {
-                    mergedIds.Add(includeId);
-                }
-            }
-
-            if (explicitExcludeSet.Count > 0)
-            {
-                mergedIds = mergedIds
-                    .Where(gameId => !explicitExcludeSet.Contains(gameId))
-                    .ToList();
-            }
-
-            if (resolvedOptions.RespectUserExclusions)
-            {
-                var excludedByUser = GameCustomDataLookup.GetExcludedRefreshGameIds(_settings?.Persisted);
-                if (excludedByUser != null && excludedByUser.Count > 0)
-                {
-                    mergedIds = mergedIds
-                        .Where(gameId =>
-                        {
-                            if (!excludedByUser.Contains(gameId))
-                            {
-                                return true;
-                            }
-
-                            return resolvedOptions.ForceBypassExclusionsForExplicitIncludes &&
-                                   explicitIncludeSet.Contains(gameId) &&
-                                   !explicitExcludeSet.Contains(gameId);
-                        })
-                        .ToList();
-                }
-            }
-
-            var resolvedGames = mergedIds
-                .Select(gameId => _api.Database.Games.Get(gameId))
-                .Where(game => game != null)
-                .ToList();
-
-            var targetGameIds = resolvedGames
-                .Where(game => _targetSelectionResolver.ResolveProviderForGame(game, providers) != null)
-                .Select(game => game.Id)
-                .ToList();
-
-            if (targetGameIds.Count == 0)
-            {
-                return new ResolvedRequest
-                {
-                    Mode = RefreshModeType.Custom,
-                    ForceIconRefresh = forceIconRefresh,
-                    ShouldExecute = false,
-                    UserMessage = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingGames")
-                };
-            }
-
-            return new ResolvedRequest
-            {
-                Mode = RefreshModeType.Custom,
-                ShouldExecute = true,
-                ForceIconRefresh = forceIconRefresh,
-                ErrorLogMessage = "Custom refresh failed.",
-                ProviderScope = providers,
-                RunProvidersInParallelOverride = runProvidersInParallel,
-                Options = new CacheRefreshOptions
-                {
-                    PlayniteGameIds = targetGameIds,
-                    IncludeUnplayedGames = true,
-                    BypassExclusions = true
-                }
-            };
-        }
-
-        private IReadOnlyList<IDataProvider> ResolveCustomProviders(
-            CustomRefreshOptions options,
+        private IReadOnlyList<IDataProvider> ResolveProviders(
+            RefreshOptions options,
             IReadOnlyList<IDataProvider> authenticatedProviders)
         {
             var providers = authenticatedProviders?
                 .Where(provider => provider != null)
                 .ToList() ?? new List<IDataProvider>();
-            if (providers.Count == 0)
-            {
-                return Array.Empty<IDataProvider>();
-            }
-
             var requestedKeys = options?.ProviderKeys?
                 .Where(key => !string.IsNullOrWhiteSpace(key))
                 .Select(key => key.Trim())
@@ -565,12 +245,266 @@ namespace PlayniteAchievements.Services
                 .ToList();
         }
 
-        private List<Game> ResolveCustomScopeGames(
-            CustomRefreshOptions options,
+        private sealed class CurrentOptionResult
+        {
+            public bool ShouldExecute { get; set; }
+            public CacheRefreshOptions Options { get; set; }
+            public string EmptySelectionLogMessage { get; set; }
+            public string UserMessage { get; set; }
+        }
+
+        private CurrentOptionResult ResolveCurrentOptions(
+            RefreshModeType mode,
+            RefreshOptions options,
             IReadOnlyList<IDataProvider> providers)
         {
+            if (providers == null || providers.Count == 0)
+            {
+                return new CurrentOptionResult
+                {
+                    UserMessage = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingProviders")
+                };
+            }
+
+            if (mode == RefreshModeType.Single &&
+                (options.PlayniteGameIds == null || options.PlayniteGameIds.Count == 0))
+            {
+                _logger?.Info("Single refresh mode requested but no game ID provided.");
+                return new CurrentOptionResult();
+            }
+
+            if (IsNativeBulkCurrentMode(mode, options))
+            {
+                return new CurrentOptionResult
+                {
+                    ShouldExecute = true,
+                    Options = BuildNativeCurrentOptions(mode)
+                };
+            }
+
+            var custom = options.ToCustomOptions();
+            if (options.Scope == RefreshGameScope.SelectedGame)
+            {
+                custom.Scope = CustomGameScope.Explicit;
+            }
+
+            var scopedGames = ResolveCustomScopeGames(custom, providers);
+            var includeIds = custom.IncludeGameIds?
+                .Where(gameId => gameId != Guid.Empty)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+            var excludeIds = custom.ExcludeGameIds?
+                .Where(gameId => gameId != Guid.Empty)
+                .Distinct()
+                .ToList() ?? new List<Guid>();
+            var explicitIncludeSet = new HashSet<Guid>(includeIds);
+            var explicitExcludeSet = new HashSet<Guid>(excludeIds);
+
+            var mergedIds = new List<Guid>();
+            var seenIds = new HashSet<Guid>();
+            foreach (var game in scopedGames)
+            {
+                if (game != null && game.Id != Guid.Empty && seenIds.Add(game.Id))
+                {
+                    mergedIds.Add(game.Id);
+                }
+            }
+
+            foreach (var includeId in includeIds)
+            {
+                if (seenIds.Add(includeId))
+                {
+                    mergedIds.Add(includeId);
+                }
+            }
+
+            if (explicitExcludeSet.Count > 0)
+            {
+                mergedIds = mergedIds.Where(gameId => !explicitExcludeSet.Contains(gameId)).ToList();
+            }
+
+            if (custom.RespectUserExclusions)
+            {
+                var excludedByUser = GameCustomDataLookup.GetExcludedRefreshGameIds(_settings?.Persisted);
+                if (excludedByUser?.Count > 0)
+                {
+                    mergedIds = mergedIds
+                        .Where(gameId =>
+                            !excludedByUser.Contains(gameId) ||
+                            (custom.ForceBypassExclusionsForExplicitIncludes &&
+                             explicitIncludeSet.Contains(gameId) &&
+                             !explicitExcludeSet.Contains(gameId)))
+                        .ToList();
+                }
+            }
+
+            var targetGameIds = mergedIds
+                .Select(gameId => _api.Database.Games.Get(gameId))
+                .Where(game => game != null && _targetSelectionResolver.ResolveProviderForGame(game, providers) != null)
+                .Select(game => game.Id)
+                .ToList();
+
+            if (targetGameIds.Count == 0)
+            {
+                return new CurrentOptionResult
+                {
+                    UserMessage = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingGames"),
+                    EmptySelectionLogMessage = ResolveEmptySelectionMessage(mode, options.Scope)
+                };
+            }
+
+            return new CurrentOptionResult
+            {
+                ShouldExecute = true,
+                Options = new CacheRefreshOptions
+                {
+                    PlayniteGameIds = targetGameIds,
+                    IncludeUnplayedGames = true,
+                    BypassExclusions = true
+                }
+            };
+        }
+
+        private bool IsNativeBulkCurrentMode(RefreshModeType mode, RefreshOptions options)
+        {
+            if (options == null ||
+                options.ProviderKeys?.Count > 0 ||
+                options.PlayniteGameIds?.Count > 0 ||
+                options.ExcludeGameIds?.Count > 0 ||
+                options.IncludeUnplayedOverride.HasValue ||
+                options.RecentLimitOverride.HasValue ||
+                !options.RespectUserExclusions)
+            {
+                return false;
+            }
+
+            return mode == RefreshModeType.Recent || mode == RefreshModeType.Full;
+        }
+
+        private CacheRefreshOptions BuildNativeCurrentOptions(RefreshModeType mode)
+        {
+            if (mode == RefreshModeType.Full)
+            {
+                return new CacheRefreshOptions
+                {
+                    RecentRefreshMode = false,
+                    IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
+                };
+            }
+
+            return new CacheRefreshOptions
+            {
+                RecentRefreshMode = true,
+                RecentRefreshGamesCount = _settings?.Persisted?.RecentRefreshGamesCount ?? 10,
+                IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
+            };
+        }
+
+        private sealed class FriendOptionResult
+        {
+            public bool ShouldExecute { get; set; }
+            public FriendRefreshOptions Options { get; set; }
+            public IReadOnlyList<IDataProvider> ProviderScope { get; set; } = Array.Empty<IDataProvider>();
+            public string EmptySelectionLogMessage { get; set; }
+            public string UserMessage { get; set; }
+        }
+
+        private FriendOptionResult ResolveFriendOptions(
+            RefreshModeType mode,
+            RefreshOptions options,
+            IReadOnlyList<IDataProvider> friendProviders)
+        {
+            var providers = friendProviders?.Where(provider => provider?.Friends != null).ToList() ??
+                            new List<IDataProvider>();
+            if (providers.Count == 0)
+            {
+                return new FriendOptionResult
+                {
+                    UserMessage = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders") ??
+                                  "No authenticated friend-capable providers are available."
+                };
+            }
+
+            var friendScope = ResolveFriendScope(options.Scope);
+            IReadOnlyCollection<Guid> playniteGameIds = options.PlayniteGameIds?
+                .Where(id => id != Guid.Empty)
+                .Distinct()
+                .ToList();
+            IReadOnlyCollection<int> providerAppIds = options.ProviderAppIds?
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+            IReadOnlyCollection<string> providerGameKeys = options.ProviderGameKeys?
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (friendScope == FriendRefreshScope.Installed)
+            {
+                playniteGameIds = GetInstalledGameIds();
+            }
+
+            if (friendScope == FriendRefreshScope.SelectedGame &&
+                (playniteGameIds == null || playniteGameIds.Count == 0) &&
+                (providerAppIds == null || providerAppIds.Count == 0) &&
+                (providerGameKeys == null || providerGameKeys.Count == 0))
+            {
+                return new FriendOptionResult
+                {
+                    EmptySelectionLogMessage = "No selected game provided for friends selected-game refresh."
+                };
+            }
+
+            if (friendScope == FriendRefreshScope.Installed &&
+                (playniteGameIds == null || playniteGameIds.Count == 0))
+            {
+                return new FriendOptionResult
+                {
+                    EmptySelectionLogMessage = mode == RefreshModeType.FriendsInstalled
+                        ? "No installed games found for friends refresh."
+                        : "No installed games found for custom friends refresh."
+                };
+            }
+
+            return new FriendOptionResult
+            {
+                ShouldExecute = true,
+                ProviderScope = providers,
+                Options = new FriendRefreshOptions
+                {
+                    Scope = friendScope,
+                    PlayniteGameIds = playniteGameIds,
+                    ProviderAppIds = providerAppIds,
+                    ProviderGameKeys = providerGameKeys,
+                    FriendExternalUserIds = options.FriendExternalUserIds,
+                    DefinitionTtl = options.DefinitionTtl,
+                    ForceDefinitionRefresh = options.ForceDefinitionRefresh ||
+                                             friendScope == FriendRefreshScope.SelectedGame
+                }
+            };
+        }
+
+        private static FriendRefreshScope ResolveFriendScope(RefreshGameScope scope)
+        {
+            switch (scope)
+            {
+                case RefreshGameScope.All: return FriendRefreshScope.Full;
+                case RefreshGameScope.Shared: return FriendRefreshScope.Shared;
+                case RefreshGameScope.Installed: return FriendRefreshScope.Installed;
+                case RefreshGameScope.SelectedGame: return FriendRefreshScope.SelectedGame;
+                case RefreshGameScope.Explicit: return FriendRefreshScope.Custom;
+                case RefreshGameScope.Recent:
+                default:
+                    return FriendRefreshScope.Recent;
+            }
+        }
+
+        private List<Game> ResolveCustomScopeGames(CustomRefreshOptions options, IReadOnlyList<IDataProvider> providers)
+        {
             options ??= new CustomRefreshOptions();
-            var includeUnplayed = options.IncludeUnplayedOverride ?? (_settings?.Persisted?.IncludeUnplayedGames ?? true);
+            var includeUnplayed = options.IncludeUnplayedOverride ??
+                                  (_settings?.Persisted?.IncludeUnplayedGames ?? true);
             var allGames = _api.Database.Games.Where(game => game != null).ToList();
 
             IEnumerable<Game> scopedGames;
@@ -583,7 +517,6 @@ namespace PlayniteAchievements.Services
                         scopedGames = scopedGames.Where(game => game.Playtime > 0);
                     }
                     break;
-
                 case CustomGameScope.Installed:
                     scopedGames = allGames.Where(IsInstalledOrHasOverride);
                     if (!includeUnplayed)
@@ -591,7 +524,6 @@ namespace PlayniteAchievements.Services
                         scopedGames = scopedGames.Where(game => game.Playtime > 0);
                     }
                     break;
-
                 case CustomGameScope.Favorites:
                     scopedGames = allGames.Where(game => game.Favorite);
                     if (!includeUnplayed)
@@ -599,36 +531,30 @@ namespace PlayniteAchievements.Services
                         scopedGames = scopedGames.Where(game => game.Playtime > 0);
                     }
                     break;
-
                 case CustomGameScope.Recent:
-                    var recentLimit = Math.Max(1, options.RecentLimitOverride ?? (_settings?.Persisted?.RecentRefreshGamesCount ?? 10));
+                    var recentLimit = Math.Max(1, options.RecentLimitOverride ??
+                                                  (_settings?.Persisted?.RecentRefreshGamesCount ?? 10));
                     scopedGames = allGames
                         .Where(game => game.LastActivity.HasValue)
                         .OrderByDescending(game => game.LastActivity.Value);
-
                     if (!includeUnplayed)
                     {
                         scopedGames = scopedGames.Where(game => game.Playtime > 0);
                     }
-
                     scopedGames = scopedGames.Take(recentLimit);
                     break;
-
                 case CustomGameScope.LibrarySelected:
-                    scopedGames = _api.MainView.SelectedGames?.Where(game => game != null) ?? Enumerable.Empty<Game>();
+                    scopedGames = _api.MainView.SelectedGames?.Where(game => game != null) ??
+                                  Enumerable.Empty<Game>();
                     break;
-
                 case CustomGameScope.Missing:
-                    var missingIds = GetMissingGameIds(providers);
-                    scopedGames = missingIds
+                    scopedGames = GetMissingGameIds(providers)
                         .Select(gameId => _api.Database.Games.Get(gameId))
                         .Where(game => game != null);
                     break;
-
                 case CustomGameScope.Explicit:
                     scopedGames = Enumerable.Empty<Game>();
                     break;
-
                 default:
                     scopedGames = allGames;
                     break;
@@ -642,91 +568,42 @@ namespace PlayniteAchievements.Services
             return scopedGames.ToList();
         }
 
-        private ResolvedRequest ResolveGameIdList(
-            RefreshModeType mode,
-            List<Guid> gameIds,
-            string errorLogMessage,
-            string emptySelectionLogMessage = null,
-            bool bypassExclusions = false,
-            bool forceIconRefresh = false)
+        private RefreshModeType ResolveMode(RefreshRequest request)
         {
-            if (gameIds == null || gameIds.Count == 0)
+            if (request.Mode.HasValue)
             {
-                return new ResolvedRequest
-                {
-                    Mode = mode,
-                    ForceIconRefresh = forceIconRefresh,
-                    ShouldExecute = false,
-                    EmptySelectionLogMessage = emptySelectionLogMessage
-                };
+                return request.Mode.Value;
             }
 
-            return new ResolvedRequest
+            if (!string.IsNullOrWhiteSpace(request.ModeKey))
             {
-                Mode = mode,
-                ShouldExecute = true,
-                ForceIconRefresh = forceIconRefresh,
-                ErrorLogMessage = errorLogMessage,
-                Options = new CacheRefreshOptions
+                if (Enum.TryParse(request.ModeKey, out RefreshModeType parsed))
                 {
-                    PlayniteGameIds = gameIds,
-                    IncludeUnplayedGames = true,
-                    BypassExclusions = bypassExclusions
+                    return parsed;
                 }
-            };
-        }
 
-        private CacheRefreshOptions BuildFullOptions()
-        {
-            return new CacheRefreshOptions
-            {
-                RecentRefreshMode = false,
-                IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
-            };
-        }
+                _logger?.Warn($"Unknown refresh mode key: {request.ModeKey}. Falling back to Recent.");
+            }
 
-        private CacheRefreshOptions BuildRecentOptions()
-        {
-            return new CacheRefreshOptions
-            {
-                RecentRefreshMode = true,
-                RecentRefreshGamesCount = _settings?.Persisted?.RecentRefreshGamesCount ?? 10,
-                IncludeUnplayedGames = _settings.Persisted.IncludeUnplayedGames
-            };
-        }
-
-        private static CacheRefreshOptions BuildSingleGameOptions(Guid playniteGameId)
-        {
-            return new CacheRefreshOptions
-            {
-                PlayniteGameIds = new[] { playniteGameId },
-                IncludeUnplayedGames = true,
-                BypassExclusions = true
-            };
+            return RefreshModeType.Recent;
         }
 
         private List<Guid> GetInstalledGameIds()
         {
-            IEnumerable<Game> games = _api.Database.Games
-                .Where(g => g != null && IsInstalledOrHasOverride(g));
-
+            IEnumerable<Game> games = _api.Database.Games.Where(game => game != null && IsInstalledOrHasOverride(game));
             if (!ShouldIncludeUnplayedGames())
             {
-                games = games.Where(g => g.Playtime > 0);
+                games = games.Where(game => game.Playtime > 0);
             }
 
             games = BulkRefreshGameFilter.ApplyHiddenFilter(games, _settings?.Persisted);
-
-            return games
-                .Select(g => g.Id)
-                .ToList();
+            return games.Select(game => game.Id).ToList();
         }
 
         private static bool IsInstalledOrHasOverride(Game game)
         {
             return game != null &&
-                   (game.IsInstalled ||
-                    GameCustomDataLookup.TryGetProviderOverride(game.Id, out _));
+                   (game.IsInstalled || GameCustomDataLookup.TryGetProviderOverride(game.Id, out _));
         }
 
         private List<Guid> GetMissingGameIds(IReadOnlyList<IDataProvider> authenticatedProviders)
@@ -747,23 +624,6 @@ namespace PlayniteAchievements.Services
             return _settings?.Persisted?.IncludeUnplayedGames ?? true;
         }
 
-        private List<Guid> GetFavoriteGameIds()
-        {
-            return BulkRefreshGameFilter.ApplyHiddenFilter(
-                    _api.Database.Games.Where(g => g != null && g.Favorite),
-                    _settings?.Persisted)
-                .Select(g => g.Id)
-                .ToList();
-        }
-
-        private List<Guid> GetLibrarySelectedGameIds()
-        {
-            return _api.MainView.SelectedGames?
-                .Where(g => g != null)
-                .Select(g => g.Id)
-                .ToList();
-        }
-
         private static bool ShouldApplyHiddenFilter(CustomGameScope scope)
         {
             switch (scope)
@@ -777,6 +637,76 @@ namespace PlayniteAchievements.Services
                 default:
                     return false;
             }
+        }
+
+        private static IReadOnlyList<IDataProvider> MergeProviderScopes(
+            IReadOnlyList<IDataProvider> currentProviders,
+            IReadOnlyList<IDataProvider> friendProviders)
+        {
+            var merged = new List<IDataProvider>();
+            foreach (var provider in (currentProviders ?? Array.Empty<IDataProvider>())
+                .Concat(friendProviders ?? Array.Empty<IDataProvider>()))
+            {
+                if (provider != null && !merged.Contains(provider))
+                {
+                    merged.Add(provider);
+                }
+            }
+
+            return merged;
+        }
+
+        private static string ResolveErrorLogMessage(RefreshModeType mode, RefreshOptions options)
+        {
+            if ((options?.Subjects & RefreshSubjects.All) == RefreshSubjects.All)
+            {
+                return "Unified refresh failed.";
+            }
+
+            switch (mode)
+            {
+                case RefreshModeType.Full: return "Full achievement refresh failed.";
+                case RefreshModeType.Installed: return "Installed games refresh failed.";
+                case RefreshModeType.Favorites: return "Favorites refresh failed.";
+                case RefreshModeType.Single: return "Single game refresh failed.";
+                case RefreshModeType.LibrarySelected: return "Library selected games refresh failed.";
+                case RefreshModeType.Missing: return "Missing games refresh failed.";
+                case RefreshModeType.Custom: return "Custom refresh failed.";
+                case RefreshModeType.FriendsRecent: return "Recent friends refresh failed.";
+                case RefreshModeType.FriendsFull: return "Full friends refresh failed.";
+                case RefreshModeType.FriendsShared: return "Shared friends refresh failed.";
+                case RefreshModeType.FriendsInstalled: return "Installed friends refresh failed.";
+                case RefreshModeType.FriendsSelectedGame: return "Selected-game friends refresh failed.";
+                case RefreshModeType.FriendsCustom: return "Custom friends refresh failed.";
+                case RefreshModeType.Recent:
+                default:
+                    return "Recent refresh failed.";
+            }
+        }
+
+        private static string ResolveEmptySelectionMessage(RefreshModeType mode, RefreshGameScope scope)
+        {
+            if (mode == RefreshModeType.LibrarySelected || scope == RefreshGameScope.LibrarySelected)
+            {
+                return "No games selected in Playnite library for refresh.";
+            }
+
+            if (mode == RefreshModeType.Installed || scope == RefreshGameScope.Installed)
+            {
+                return "No installed games found for refresh.";
+            }
+
+            if (mode == RefreshModeType.Favorites || scope == RefreshGameScope.Favorites)
+            {
+                return "No favorite games found for refresh.";
+            }
+
+            return null;
+        }
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            return values?.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
         }
     }
 }

@@ -95,8 +95,6 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewTrophyPieChart = true;
         private bool _showOverviewPiePercentages = true;
         private bool _friendsOverviewHideSpoilers = true;
-        private bool _fullLibraryWarningAccepted = false;
-        private int _friendsOverviewRefreshTtlHours = 24;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private bool _friendsOverviewGameSummariesUseCoverImages = true;
         private bool _friendsOverviewGameSummariesShowMetadataPlatform = true;
@@ -394,7 +392,6 @@ namespace PlayniteAchievements.Models.Settings
                 identity.AvatarPath,
                 source,
                 null,
-                null,
                 identity.LastRefreshedUtc,
                 null,
                 null);
@@ -407,7 +404,6 @@ namespace PlayniteAchievements.Models.Settings
             string avatarUrl,
             string avatarPath,
             FriendSettingsSource source,
-            FriendLibraryScope? libraryScope = null,
             IEnumerable<string> selectedPlatforms = null,
             DateTime? lastRefreshedUtc = null,
             DateTime? lastProbedUtc = null,
@@ -432,7 +428,6 @@ namespace PlayniteAchievements.Models.Settings
                     ExternalUserId = externalUserId,
                     DisplayName = string.IsNullOrWhiteSpace(displayName) ? externalUserId : displayName.Trim(),
                     Source = source,
-                    LibraryScope = libraryScope.GetValueOrDefault(FriendLibraryScope.Shared),
                     SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(selectedPlatforms),
                     AddedUtc = DateTime.UtcNow
                 };
@@ -443,13 +438,6 @@ namespace PlayniteAchievements.Models.Settings
                 if (source == FriendSettingsSource.Manual)
                 {
                     existing.Source = FriendSettingsSource.Manual;
-                }
-
-                if (libraryScope.HasValue)
-                {
-                    existing.LibraryScope = libraryScope.Value == FriendLibraryScope.Full
-                        ? FriendLibraryScope.Full
-                        : FriendLibraryScope.Shared;
                 }
 
                 if (selectedPlatforms != null)
@@ -562,16 +550,6 @@ namespace PlayniteAchievements.Models.Settings
                 StringComparer.OrdinalIgnoreCase);
         }
 
-        public HashSet<string> GetFullLibraryFriendIds(string providerKey)
-        {
-            return new HashSet<string>(
-                GetFriendSettings(providerKey, includeIgnored: false)
-                    .Where(entry => entry.LibraryScope == FriendLibraryScope.Full)
-                    .Select(entry => entry.ExternalUserId)
-                    .Where(id => !string.IsNullOrWhiteSpace(id)),
-                StringComparer.OrdinalIgnoreCase);
-        }
-
         public bool SetFriendIgnored(string providerKey, string externalUserId, bool ignored)
         {
             var entry = GetFriendSetting(providerKey, externalUserId);
@@ -581,20 +559,6 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             entry.IsIgnored = ignored;
-            Friends = Friends;
-            return true;
-        }
-
-        public bool SetFriendLibraryScope(string providerKey, string externalUserId, FriendLibraryScope scope)
-        {
-            var entry = GetFriendSetting(providerKey, externalUserId);
-            var normalized = scope == FriendLibraryScope.Full ? FriendLibraryScope.Full : FriendLibraryScope.Shared;
-            if (entry == null || entry.LibraryScope == normalized)
-            {
-                return false;
-            }
-
-            entry.LibraryScope = normalized;
             Friends = Friends;
             return true;
         }
@@ -1343,26 +1307,6 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _friendsOverviewHideSpoilers;
             set => SetValue(ref _friendsOverviewHideSpoilers, value);
-        }
-
-        /// <summary>
-        /// Tracks whether the user has acknowledged the one-time warning shown the first time they
-        /// enable the full library scope for a friend (which discovers games outside the Playnite
-        /// library and may cache a large amount of provider-only achievement data).
-        /// </summary>
-        public bool FullLibraryWarningAccepted
-        {
-            get => _fullLibraryWarningAccepted;
-            set => SetValue(ref _fullLibraryWarningAccepted, value);
-        }
-
-        /// <summary>
-        /// Minimum age in hours before an automatic friend achievement scrape is retried.
-        /// </summary>
-        public int FriendsOverviewRefreshTtlHours
-        {
-            get => _friendsOverviewRefreshTtlHours;
-            set => SetValue(ref _friendsOverviewRefreshTtlHours, Math.Max(1, value));
         }
 
         /// <summary>
@@ -3624,8 +3568,6 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewGameMetadataRegion = this.ShowOverviewGameMetadataRegion,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 FriendsOverviewHideSpoilers = this.FriendsOverviewHideSpoilers,
-                FullLibraryWarningAccepted = this.FullLibraryWarningAccepted,
-                FriendsOverviewRefreshTtlHours = this.FriendsOverviewRefreshTtlHours,
                 FriendsOverviewRecentUnlockLimit = this.FriendsOverviewRecentUnlockLimit,
                 FriendsOverviewGameSummariesUseCoverImages = this.FriendsOverviewGameSummariesUseCoverImages,
                 FriendsOverviewGameSummariesShowMetadataPlatform = this.FriendsOverviewGameSummariesShowMetadataPlatform,
@@ -4560,7 +4502,7 @@ namespace PlayniteAchievements.Models.Settings
                 }
 
                 var existed = ContainsFriendEntry(entries, "Steam", steamId);
-                var entry = EnsureFriendEntry(
+                EnsureFriendEntry(
                     entries,
                     "Steam",
                     steamId,
@@ -4569,11 +4511,6 @@ namespace PlayniteAchievements.Models.Settings
                     null,
                     FriendSettingsSource.AutoDiscovered);
                 changed |= !existed;
-                if (entry.LibraryScope != FriendLibraryScope.Full)
-                {
-                    entry.LibraryScope = FriendLibraryScope.Full;
-                    changed = true;
-                }
             }
 
             return changed;
@@ -4613,7 +4550,6 @@ namespace PlayniteAchievements.Models.Settings
                     FriendSettingsSource.Manual);
                 changed |= !existed;
 
-                var nextScope = ParseFriendLibraryScope(row["LibraryScope"]);
                 var nextPlatforms = FriendSettingsEntry.NormalizePlatformList(
                     (row["SelectedPlatforms"] as JArray)?.Select(token => token?.ToString()));
 
@@ -4622,12 +4558,6 @@ namespace PlayniteAchievements.Models.Settings
                 if (entry.Source != FriendSettingsSource.Manual)
                 {
                     entry.Source = FriendSettingsSource.Manual;
-                    changed = true;
-                }
-
-                if (entry.LibraryScope != nextScope)
-                {
-                    entry.LibraryScope = nextScope;
                     changed = true;
                 }
 
@@ -4719,25 +4649,6 @@ namespace PlayniteAchievements.Models.Settings
             }
 
             return entry;
-        }
-
-        private static FriendLibraryScope ParseFriendLibraryScope(JToken token)
-        {
-            if (token == null)
-            {
-                return FriendLibraryScope.Shared;
-            }
-
-            if (token.Type == JTokenType.Integer)
-            {
-                return token.Value<int>() == (int)FriendLibraryScope.Full
-                    ? FriendLibraryScope.Full
-                    : FriendLibraryScope.Shared;
-            }
-
-            return string.Equals(token.ToString(), nameof(FriendLibraryScope.Full), StringComparison.OrdinalIgnoreCase)
-                ? FriendLibraryScope.Full
-                : FriendLibraryScope.Shared;
         }
 
         private static DateTime? ParseNullableUtc(JToken token)

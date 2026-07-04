@@ -9,6 +9,23 @@ namespace PlayniteAchievements.Tests.Providers
     public class ExophaseFriendPlaytimeTests
     {
         [TestMethod]
+        public void ParseGames_WiresAchievementProgressCountIntoOwnershipHint()
+        {
+            var provider = File.ReadAllText(
+                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
+
+            // The game-progress award column ("6/37") is parsed for its earned/total count...
+            StringAssert.Contains(provider, "game-progress");
+            StringAssert.Contains(provider, "exo-icon-award");
+            StringAssert.Contains(provider, @"(\d+)\s*/\s*(\d+)");
+            StringAssert.Contains(provider, "ParseAchievementCounts");
+
+            // ...and the earned/total values flow into the ownership unlock hint.
+            StringAssert.Contains(provider, "AchievementUnlocksHint = game.AchievementsEarned");
+            StringAssert.Contains(provider, "AchievementTotalHint = game.AchievementsTotal");
+        }
+
+        [TestMethod]
         public void ParsePlaytimeMinutes_AcceptsCommaDecimalAndNormalizesToDot()
         {
             var provider = File.ReadAllText(

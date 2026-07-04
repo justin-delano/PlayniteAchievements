@@ -167,6 +167,8 @@ namespace PlayniteAchievements.Models.Achievements
 
         public int AppId { get; set; }
 
+        public string ProviderGameKey { get; set; }
+
         public Guid? PlayniteGameId { get; set; }
 
         public Game Game { get; set; }

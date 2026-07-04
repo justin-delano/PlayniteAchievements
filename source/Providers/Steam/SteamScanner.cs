@@ -226,6 +226,32 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             var schema = await FetchSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
+            var hasAchievements = schema?.Achievements?.Count > 0;
+            if (!hasAchievements && schema == null)
+            {
+                var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage)
+                    ? "english"
+                    : _settings.Persisted.GlobalLanguage.Trim();
+                var apiHasAchievements = await _steamApiClient
+                    .GetGameHasAchievementsAsync(accessToken, appId, language, cancel)
+                    .ConfigureAwait(false);
+                if (apiHasAchievements == false)
+                {
+                    _logger?.Debug($"[SteamAch] Skipping stats scrape for appId={appId}; Steam API reports no achievements.");
+                    return new GameAchievementData
+                    {
+                        AppId = appId,
+                        GameName = game.Name,
+                        ProviderKey = "Steam",
+                        LibrarySourceName = game?.Source?.Name,
+                        LastUpdatedUtc = DateTime.UtcNow,
+                        HasAchievements = false,
+                        PlayniteGameId = game.Id,
+                        Achievements = new List<AchievementDetail>()
+                    };
+                }
+            }
+
             var unlocked = await FetchUnlockedAsync(appId, game?.Name, steamUserId, accessToken, schema, cancel).ConfigureAwait(false);
 
             var gameData = new GameAchievementData
@@ -235,7 +261,7 @@ namespace PlayniteAchievements.Providers.Steam
                 ProviderKey = "Steam",
                 LibrarySourceName = game?.Source?.Name,
                 LastUpdatedUtc = DateTime.UtcNow,
-                HasAchievements = schema?.Achievements != null && schema.Achievements.Count > 0,
+                HasAchievements = hasAchievements,
                 PlayniteGameId = game.Id,
                 Achievements = new List<AchievementDetail>()
             };

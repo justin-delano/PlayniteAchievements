@@ -30,6 +30,15 @@ namespace PlayniteAchievements.Providers.Steam
         private static readonly Regex AppPathPattern =
             new Regex("(?:^|[/:\"'])apps?/(?<id>\\d+)(?=$|[/?#\"'&<\\s])", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        // Achievement anchors on the games page link to /stats/{appid}. Keying the earned/total
+        // hint off this numeric appid keeps the hint independent of display language and of the
+        // localized "ACHIEVEMENTS" row text that FindLikelyGameRow otherwise relies on.
+        private static readonly Regex StatsAppIdPattern =
+            new Regex(@"/stats/(?<id>\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex AchievementRatioPattern =
+            new Regex(@"(\d+)\s*/\s*(\d+)", RegexOptions.Compiled);
+
         public static bool LooksLikeFriendsPayload(string html)
         {
             return !string.IsNullOrWhiteSpace(html) &&
@@ -119,7 +128,147 @@ namespace PlayniteAchievements.Providers.Steam
                 UpsertLargestPlaytime(result, game);
             }
 
+            // The modern games page embeds per-game achievement progress in the SSR React Query
+            // cache (window.SSR.renderContext) as one {appid,unlocked,total,...} object per game,
+            // covering the whole library, while the games themselves arrive via loaderData. This is
+            // the authoritative, complete, locale-independent source for the "X/Y" hint, so apply it
+            // across the merged result first.
+            OverlayAchievementProgressFromSsr(result, html);
+
+            // Fallback for the ~20 rows the page renders with a visible achievements anchor: key the
+            // hint off the appid in each /stats/{appid} href. Fills only games the SSR pass missed.
+            OverlayAchievementHintsByAppId(result, html);
+
             return result.Values.ToList();
+        }
+
+        private static void OverlayAchievementProgressFromSsr(Dictionary<int, SteamOwnedGame> result, string html)
+        {
+            if (result == null || result.Count == 0 || string.IsNullOrWhiteSpace(html) ||
+                html.IndexOf("window.SSR", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return;
+            }
+
+            var renderContextArgument = TryExtractJsonParseArgument(html, "window.SSR.renderContext");
+            if (string.IsNullOrWhiteSpace(renderContextArgument))
+            {
+                return;
+            }
+
+            try
+            {
+                var renderContextJson = JsonConvert.DeserializeObject<string>(renderContextArgument);
+                var renderContext = JObject.Parse(renderContextJson);
+                var queryDataJson = renderContext["queryData"]?.Value<string>();
+                if (string.IsNullOrWhiteSpace(queryDataJson))
+                {
+                    return;
+                }
+
+                // Each game's progress is an individual React Query entry
+                // (state.data = {appid,unlocked,total,...}); a recursive walk collects them all.
+                AddAchievementProgressFromToken(result, JObject.Parse(queryDataJson));
+            }
+            catch
+            {
+                // Malformed or absent SSR payload: leave whatever the other sources supplied.
+            }
+        }
+
+        private static void OverlayAchievementHintsByAppId(Dictionary<int, SteamOwnedGame> result, string html)
+        {
+            if (result == null || result.Count == 0 || string.IsNullOrWhiteSpace(html) ||
+                (html.IndexOf("tab=achievements", StringComparison.OrdinalIgnoreCase) < 0 &&
+                 html.IndexOf("/stats/", StringComparison.OrdinalIgnoreCase) < 0))
+            {
+                return;
+            }
+
+            HtmlNodeCollection anchors;
+            try
+            {
+                var doc = new HtmlDocument();
+                doc.LoadHtml(html);
+                anchors = doc.DocumentNode.SelectNodes(
+                    "//a[contains(@href,'tab=achievements') or contains(@href,'/stats/')]");
+            }
+            catch
+            {
+                return;
+            }
+
+            if (anchors == null)
+            {
+                return;
+            }
+
+            foreach (var anchor in anchors)
+            {
+                var appId = ExtractStatsAppId(anchor.GetAttributeValue("href", null));
+                if (appId <= 0 || !result.TryGetValue(appId, out var existing))
+                {
+                    continue;
+                }
+
+                // The SSR pass is authoritative; only fill games it did not cover.
+                if (existing.AchievementsEarned.HasValue && existing.AchievementsTotal.HasValue)
+                {
+                    continue;
+                }
+
+                var (earned, total) = ExtractAchievementRatioNearAnchor(anchor);
+                if (!earned.HasValue || !total.HasValue)
+                {
+                    continue;
+                }
+
+                result[appId] = new SteamOwnedGame
+                {
+                    AppId = existing.AppId,
+                    Name = existing.Name,
+                    PlaytimeForever = Math.Max(0, existing.PlaytimeForever),
+                    Playtime2Weeks = existing.Playtime2Weeks,
+                    LastPlayedUnixSeconds = existing.LastPlayedUnixSeconds,
+                    AchievementsEarned = earned.Value,
+                    AchievementsTotal = total.Value
+                };
+            }
+        }
+
+        private static int ExtractStatsAppId(string href)
+        {
+            if (string.IsNullOrWhiteSpace(href))
+            {
+                return 0;
+            }
+
+            var match = StatsAppIdPattern.Match(href);
+            return match.Success
+                ? ParseInt(match.Groups["id"].Value)
+                : ExtractAppIdFromGameLink(href);
+        }
+
+        // Walks up from the achievements anchor to the nearest ancestor whose text contains an
+        // "earned/total" ratio. Starting at the anchor and widening keeps the match scoped to the
+        // same game row (rows are siblings), so it never picks up a neighbouring game's counts.
+        private static (int? Earned, int? Total) ExtractAchievementRatioNearAnchor(HtmlNode anchor)
+        {
+            var node = anchor;
+            for (var depth = 0; node != null && depth < 4; depth++, node = node.ParentNode)
+            {
+                var text = WebUtility.HtmlDecode(node.InnerText ?? string.Empty);
+                var match = AchievementRatioPattern.Match(text);
+                if (match.Success &&
+                    int.TryParse(match.Groups[1].Value, out var earned) &&
+                    int.TryParse(match.Groups[2].Value, out var total) &&
+                    total > 0)
+                {
+                    return (Math.Max(0, earned), total);
+                }
+            }
+
+            return (null, null);
         }
 
         private static List<SteamOwnedGame> ParseOwnedGamesSteamSsr(string html)
@@ -135,11 +284,6 @@ namespace PlayniteAchievements.Providers.Steam
             foreach (var game in ParseOwnedGamesFromRenderContext(html))
             {
                 UpsertLargestPlaytime(result, game);
-            }
-
-            if (result.Count > 0)
-            {
-                return result.Values.ToList();
             }
 
             foreach (var game in ParseOwnedGamesFromLoaderData(html))
@@ -368,14 +512,19 @@ namespace PlayniteAchievements.Providers.Steam
                 }
 
                 var queryData = JObject.Parse(queryDataJson);
-                foreach (var query in queryData["queries"]?.OfType<JObject>() ?? Enumerable.Empty<JObject>())
+                var queries = (queryData["queries"]?.OfType<JObject>() ?? Enumerable.Empty<JObject>()).ToList();
+                foreach (var query in queries)
                 {
-                    if (!IsOwnedGamesQuery(query["queryKey"]))
+                    var data = query["state"]?["data"];
+                    if (IsOwnedGamesQuery(query["queryKey"]))
                     {
-                        continue;
+                        AddOwnedGamesFromToken(result, data);
                     }
+                }
 
-                    AddGamesFromArray(result, query["state"]?["data"] as JArray);
+                foreach (var query in queries)
+                {
+                    AddAchievementProgressFromToken(result, query["state"]?["data"]);
                 }
             }
             catch
@@ -412,15 +561,8 @@ namespace PlayniteAchievements.Providers.Steam
                         continue;
                     }
 
-                    AddGamesFromArray(result, listData["rgGames"] as JArray);
-                    AddGamesFromArray(result, listData["rgRecentlyPlayedGames"] as JArray);
-                    foreach (var property in listData.Properties())
-                    {
-                        if (property.Value is JArray array && LooksLikeOwnedGamesArray(array))
-                        {
-                            AddGamesFromArray(result, array);
-                        }
-                    }
+                    AddOwnedGamesFromToken(result, listData);
+                    AddAchievementProgressFromToken(result, listData);
                 }
             }
             catch
@@ -429,6 +571,63 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return result.Values.ToList();
+        }
+
+        private static void AddOwnedGamesFromToken(Dictionary<int, SteamOwnedGame> result, JToken token)
+        {
+            if (result == null || token == null)
+            {
+                return;
+            }
+
+            if (token is JArray array && LooksLikeOwnedGamesArray(array))
+            {
+                AddGamesFromArray(result, array);
+                return;
+            }
+
+            foreach (var child in token.Children())
+            {
+                AddOwnedGamesFromToken(result, child);
+            }
+        }
+
+        private static void AddAchievementProgressFromToken(Dictionary<int, SteamOwnedGame> result, JToken token)
+        {
+            if (result == null || token == null)
+            {
+                return;
+            }
+
+            if (token is JArray array && LooksLikeAchievementProgressArray(array))
+            {
+                foreach (var item in array.OfType<JObject>())
+                {
+                    UpsertAchievementProgress(result, item);
+                }
+
+                return;
+            }
+
+            // A standalone progress record (one React Query entry per game on the modern page).
+            if (token is JObject obj && IsAchievementProgressObject(obj))
+            {
+                UpsertAchievementProgress(result, obj);
+                return;
+            }
+
+            foreach (var child in token.Children())
+            {
+                AddAchievementProgressFromToken(result, child);
+            }
+        }
+
+        private static bool IsAchievementProgressObject(JObject item)
+        {
+            return item != null &&
+                   item["appid"] != null &&
+                   item["total"] != null &&
+                   item["unlocked"] != null;
         }
 
         private static void AddGamesFromArray(Dictionary<int, SteamOwnedGame> result, JArray games)
@@ -456,6 +655,15 @@ namespace PlayniteAchievements.Providers.Steam
                        (item["playtime_forever"] != null ||
                         item["playtime_2weeks"] != null ||
                         item["has_community_visible_stats"] != null));
+        }
+
+        private static bool LooksLikeAchievementProgressArray(JArray array)
+        {
+            return array != null &&
+                   array.OfType<JObject>().Any(item =>
+                       item["appid"] != null &&
+                       item["total"] != null &&
+                       item["unlocked"] != null);
         }
 
         private static bool IsOwnedGamesQuery(JToken queryKey)
@@ -492,7 +700,9 @@ namespace PlayniteAchievements.Providers.Steam
                     game["title"]?.Value<string>())),
                 PlaytimeForever = Math.Max(0, playtimeForever),
                 Playtime2Weeks = playtime2Weeks.HasValue ? Math.Max(0, playtime2Weeks.Value) : (int?)null,
-                LastPlayedUnixSeconds = ReadLong(game["rtime_last_played"]) ?? ReadLong(game["last_played"])
+                LastPlayedUnixSeconds = ReadLong(game["rtime_last_played"]) ?? ReadLong(game["last_played"]),
+                AchievementsEarned = ReadInt(game["achievements_unlocked"]) ?? ReadInt(game["unlocked"]),
+                AchievementsTotal = ReadInt(game["achievements_total"]) ?? ReadInt(game["total_achievements"]) ?? ReadInt(game["total"])
             };
         }
 
@@ -745,11 +955,14 @@ namespace PlayniteAchievements.Providers.Steam
                     var row = FindLikelyGameRow(node);
                     var rowText = NormalizeWhitespace(WebUtility.HtmlDecode(row?.InnerText ?? node.ParentNode?.InnerText ?? string.Empty));
                     var playtime = ExtractPlaytimeMinutes(rowText);
+                    var (achievementsEarned, achievementsTotal) = ExtractAchievementCounts(row);
                     UpsertLargestPlaytime(result, new SteamOwnedGame
                     {
                         AppId = appId,
                         Name = ExtractGameNameFromNode(node, row),
-                        PlaytimeForever = playtime ?? 0
+                        PlaytimeForever = playtime ?? 0,
+                        AchievementsEarned = achievementsEarned,
+                        AchievementsTotal = achievementsTotal
                     });
                 }
             }
@@ -852,6 +1065,34 @@ namespace PlayniteAchievements.Providers.Steam
                 : null;
         }
 
+        // Reads the "earned/total" achievement count from a games-page row. The React page renders
+        // it as an ACHIEVEMENTS link followed by a sibling "11/17" span; scope the search to the
+        // achievements anchor's container to avoid picking up unrelated numbers, falling back to the
+        // whole row. Returns (null, null) when the row exposes no achievement progress.
+        private static (int? Earned, int? Total) ExtractAchievementCounts(HtmlNode row)
+        {
+            if (row == null)
+            {
+                return (null, null);
+            }
+
+            var anchor = row.SelectSingleNode(
+                ".//a[contains(@href, 'tab=achievements')]") ??
+                row.SelectSingleNode(".//a[contains(@href, '/stats/')]");
+            var scope = anchor?.ParentNode ?? row;
+            var text = WebUtility.HtmlDecode(scope.InnerText ?? string.Empty);
+
+            var match = Regex.Match(text, @"(\d+)\s*/\s*(\d+)");
+            if (match.Success &&
+                int.TryParse(match.Groups[1].Value, out var earned) &&
+                int.TryParse(match.Groups[2].Value, out var total))
+            {
+                return (Math.Max(0, earned), Math.Max(0, total));
+            }
+
+            return (null, null);
+        }
+
         private static string NormalizeWhitespace(string value)
         {
             return string.IsNullOrWhiteSpace(value)
@@ -880,7 +1121,44 @@ namespace PlayniteAchievements.Providers.Steam
                 Name = FirstNonEmpty(primary.Name, secondary.Name),
                 PlaytimeForever = Math.Max(0, primary.PlaytimeForever),
                 Playtime2Weeks = primary.Playtime2Weeks ?? secondary.Playtime2Weeks,
-                LastPlayedUnixSeconds = primary.LastPlayedUnixSeconds ?? secondary.LastPlayedUnixSeconds
+                LastPlayedUnixSeconds = primary.LastPlayedUnixSeconds ?? secondary.LastPlayedUnixSeconds,
+                // The achievement hint is sourced from the rendered HTML row, which is often a
+                // different source than the playtime-bearing list entry; coalesce so it is not
+                // dropped when rows for the same app are merged.
+                AchievementsEarned = primary.AchievementsEarned ?? secondary.AchievementsEarned,
+                AchievementsTotal = primary.AchievementsTotal ?? secondary.AchievementsTotal
+            };
+        }
+
+        private static void UpsertAchievementProgress(Dictionary<int, SteamOwnedGame> target, JObject progress)
+        {
+            var appId = ReadInt(progress?["appid"]) ?? 0;
+            if (target == null || appId <= 0)
+            {
+                return;
+            }
+
+            var earned = ReadInt(progress["unlocked"]);
+            var total = ReadInt(progress["total"]);
+            if (!earned.HasValue || !total.HasValue)
+            {
+                return;
+            }
+
+            if (!target.TryGetValue(appId, out var existing))
+            {
+                return;
+            }
+
+            target[appId] = new SteamOwnedGame
+            {
+                AppId = existing.AppId,
+                Name = existing.Name,
+                PlaytimeForever = Math.Max(0, existing.PlaytimeForever),
+                Playtime2Weeks = existing.Playtime2Weeks,
+                LastPlayedUnixSeconds = existing.LastPlayedUnixSeconds,
+                AchievementsEarned = existing.AchievementsEarned ?? Math.Max(0, earned.Value),
+                AchievementsTotal = existing.AchievementsTotal ?? Math.Max(0, total.Value)
             };
         }
 

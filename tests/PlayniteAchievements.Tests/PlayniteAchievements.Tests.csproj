@@ -299,10 +299,13 @@
     <Compile Include="..\..\source\Services\Refresh\BulkRefreshGameFilter.cs" Link="Source\Services\Refresh\BulkRefreshGameFilter.cs" />
     <Compile Include="..\..\source\Services\Refresh\ProviderRefreshExecutor.cs" Link="Source\Services\Refresh\ProviderRefreshExecutor.cs" />
     <Compile Include="..\..\source\Services\Refresh\RefreshRequestPlanner.cs" Link="Source\Services\Refresh\RefreshRequestPlanner.cs" />
+    <Compile Include="..\..\source\Services\Refresh\RefreshRuntime.cs" Link="Source\Services\Refresh\RefreshRuntime.cs" />
+    <Compile Include="..\..\source\Services\Refresh\RefreshStateManager.cs" Link="Source\Services\Refresh\RefreshStateManager.cs" />
     <Compile Include="..\..\source\Services\Refresh\TargetSelectionResolver.cs" Link="Source\Services\Refresh\TargetSelectionResolver.cs" />
+    <Compile Include="..\..\source\Services\ProgressReporting\ProgressReportingService.cs" Link="Source\Services\ProgressReporting\ProgressReportingService.cs" />
+    <Compile Include="..\..\source\Services\ProgressReporting\RefreshProgressReporter.cs" Link="Source\Services\ProgressReporting\RefreshProgressReporter.cs" />
     <Compile Include="..\..\source\Services\Friends\FriendCacheModels.cs" Link="Source\Services\Friends\FriendCacheModels.cs" />
     <Compile Include="..\..\source\Services\Friends\FriendOverviewProjection.cs" Link="Source\Services\Friends\FriendOverviewProjection.cs" />
-    <Compile Include="..\..\source\Services\Friends\FriendsRefreshRuntime.cs" Link="Source\Services\Friends\FriendsRefreshRuntime.cs" />
     <Compile Include="..\..\source\Services\Friends\FriendImageCacheKeys.cs" Link="Source\Services\Friends\FriendImageCacheKeys.cs" />
     <Compile Include="..\..\source\Services\Friends\FriendImageCachePathBuilder.cs" Link="Source\Services\Friends\FriendImageCachePathBuilder.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\ControlMappings.cs" Link="Source\Services\ThemeMigration\ControlMappings.cs" />

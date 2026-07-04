@@ -18,31 +18,26 @@ namespace PlayniteAchievements.Models.Friends
         Custom
     }
 
-    public enum FriendLibraryScope
-    {
-        Shared,
-        Full
-    }
-
     public static class FriendRefreshPolicy
     {
-        public static FriendLibraryScope GetDefaultLibraryScope(FriendRefreshScope scope)
-        {
-            return ScopePermitsProviderOnlyGames(scope)
-                ? FriendLibraryScope.Full
-                : FriendLibraryScope.Shared;
-        }
-
-        public static bool ScopePermitsProviderOnlyGames(FriendRefreshScope scope)
+        /// <summary>
+        /// True when the refresh scope discovers games the friend owns that are not present in the
+        /// current user's Playnite library (provider-only games). Only the Full scope does this.
+        /// </summary>
+        public static bool DiscoversProviderOnlyGames(FriendRefreshScope scope)
         {
             return scope == FriendRefreshScope.Full;
         }
 
-        public static bool IncludesProviderOnlyGames(this FriendRefreshOptions options)
+        /// <summary>
+        /// True when the refresh options discover provider-only games: either the scope does so
+        /// (Full), or the request explicitly targets provider game ids/keys (a selected-game refresh
+        /// of a friend-owned game that is not in the current user's library).
+        /// </summary>
+        public static bool DiscoversProviderOnlyGames(this FriendRefreshOptions options)
         {
             return options != null &&
-                   options.LibraryScope == FriendLibraryScope.Full &&
-                   (ScopePermitsProviderOnlyGames(options.Scope) ||
+                   (DiscoversProviderOnlyGames(options.Scope) ||
                     options.ProviderAppIds?.Any(id => id > 0) == true ||
                     options.ProviderGameKeys?.Any(key => !string.IsNullOrWhiteSpace(key)) == true);
         }
@@ -51,12 +46,10 @@ namespace PlayniteAchievements.Models.Friends
     public sealed class FriendRefreshOptions
     {
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
-        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Shared;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
-        public TimeSpan? RefreshTtl { get; set; }
         public TimeSpan? DefinitionTtl { get; set; }
         public bool ForceDefinitionRefresh { get; set; }
 
@@ -65,7 +58,6 @@ namespace PlayniteAchievements.Models.Friends
             return new FriendRefreshOptions
             {
                 Scope = Scope,
-                LibraryScope = LibraryScope,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
                     .Distinct()
@@ -84,7 +76,6 @@ namespace PlayniteAchievements.Models.Friends
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                RefreshTtl = RefreshTtl,
                 DefinitionTtl = DefinitionTtl,
                 ForceDefinitionRefresh = ForceDefinitionRefresh
             };
@@ -95,12 +86,10 @@ namespace PlayniteAchievements.Models.Friends
     {
         public IReadOnlyCollection<string> ProviderKeys { get; set; }
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
-        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Full;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
-        public TimeSpan? RefreshTtl { get; set; }
         public TimeSpan? DefinitionTtl { get; set; }
         public bool ForceDefinitionRefresh { get; set; }
 
@@ -114,7 +103,6 @@ namespace PlayniteAchievements.Models.Friends
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 Scope = Scope,
-                LibraryScope = LibraryScope,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
                     .Distinct()
@@ -133,7 +121,6 @@ namespace PlayniteAchievements.Models.Friends
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                RefreshTtl = RefreshTtl,
                 DefinitionTtl = DefinitionTtl,
                 ForceDefinitionRefresh = ForceDefinitionRefresh
             };
@@ -185,6 +172,8 @@ namespace PlayniteAchievements.Models.Friends
         public int PlaytimeForeverMinutes { get; set; }
         public int? Playtime2WeeksMinutes { get; set; }
         public DateTime? LastPlayedUtc { get; set; }
+        public int? AchievementUnlocksHint { get; set; }
+        public int? AchievementTotalHint { get; set; }
     }
 
     public sealed class FriendAchievementRow

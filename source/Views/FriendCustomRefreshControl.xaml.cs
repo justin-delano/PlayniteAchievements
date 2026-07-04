@@ -151,16 +151,13 @@ namespace PlayniteAchievements.Views
         private bool _canRun;
         private string _friendListSearchText;
         private string _gameListSearchText;
-        private bool _showLibraryGames;
 
         private readonly Dictionary<string, IDataProvider> _providersByKey =
             new Dictionary<string, IDataProvider>(StringComparer.OrdinalIgnoreCase);
         private readonly List<SelectionItem> _allFriendItems = new List<SelectionItem>();
         private readonly List<SelectionItem> _allSharedGameItems = new List<SelectionItem>();
-        private readonly List<SelectionItem> _allLibraryGameItems = new List<SelectionItem>();
         private readonly ICollectionView _friendView;
         private readonly ICollectionView _sharedGameView;
-        private readonly ICollectionView _libraryGameView;
 
         public event EventHandler RequestClose;
         public event PropertyChangedEventHandler PropertyChanged;
@@ -176,7 +173,7 @@ namespace PlayniteAchievements.Views
 
         public ICollectionView FriendItems => _friendView;
 
-        public ICollectionView GameItems => _showLibraryGames ? _libraryGameView : _sharedGameView;
+        public ICollectionView GameItems => _sharedGameView;
 
         public FriendRefreshScope SelectedScope
         {
@@ -223,23 +220,6 @@ namespace PlayniteAchievements.Views
                 _gameListSearchText = value;
                 OnPropertyChanged(nameof(GameListSearchText));
                 _sharedGameView?.Refresh();
-                _libraryGameView?.Refresh();
-            }
-        }
-
-        public bool ShowLibraryGames
-        {
-            get => _showLibraryGames;
-            set
-            {
-                if (_showLibraryGames == value)
-                {
-                    return;
-                }
-
-                _showLibraryGames = value;
-                OnPropertyChanged(nameof(ShowLibraryGames));
-                OnPropertyChanged(nameof(GameItems));
             }
         }
 
@@ -296,8 +276,6 @@ namespace PlayniteAchievements.Views
             _friendView.Filter = FriendFilter;
             _sharedGameView = CollectionViewSource.GetDefaultView(_allSharedGameItems);
             _sharedGameView.Filter = SharedGameFilter;
-            _libraryGameView = CollectionViewSource.GetDefaultView(_allLibraryGameItems);
-            _libraryGameView.Filter = LibraryGameFilter;
 
             RecalculateSummary();
             _ = RefreshProviderAuthAsync();
@@ -425,7 +403,6 @@ namespace PlayniteAchievements.Views
 
             _friendView?.Refresh();
             _sharedGameView?.Refresh();
-            _libraryGameView?.Refresh();
             RecalculateSummary();
         }
 
@@ -492,23 +469,8 @@ namespace PlayniteAchievements.Views
                     }
                 }
 
-                foreach (var game in _api.Database?.Games ?? Enumerable.Empty<Playnite.SDK.Models.Game>())
-                {
-                    if (game == null || game.Id == Guid.Empty)
-                    {
-                        continue;
-                    }
-
-                    _allLibraryGameItems.Add(new SelectionItem
-                    {
-                        Id = game.Id.ToString(),
-                        DisplayName = string.IsNullOrWhiteSpace(game.Name) ? game.Id.ToString() : game.Name
-                    });
-                }
-
                 _allFriendItems.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCultureIgnoreCase));
                 _allSharedGameItems.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCultureIgnoreCase));
-                _allLibraryGameItems.Sort((a, b) => string.Compare(a.DisplayName, b.DisplayName, StringComparison.CurrentCultureIgnoreCase));
             }
             catch (Exception ex)
             {
@@ -558,11 +520,6 @@ namespace PlayniteAchievements.Views
             return MatchesSearch(selection.DisplayName, _gameListSearchText);
         }
 
-        private bool LibraryGameFilter(object item)
-        {
-            return item is SelectionItem selection && MatchesSearch(selection.DisplayName, _gameListSearchText);
-        }
-
         private static bool MatchesSearch(string text, string query)
         {
             if (string.IsNullOrWhiteSpace(query))
@@ -586,8 +543,7 @@ namespace PlayniteAchievements.Views
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var gameSource = ShowLibraryGames ? _allLibraryGameItems : _allSharedGameItems;
-            var gameIds = gameSource
+            var gameIds = _allSharedGameItems
                 .Where(item => item.IsSelected)
                 .Select(item => item.Id)
                 .Where(id => Guid.TryParse(id, out _))
@@ -604,7 +560,6 @@ namespace PlayniteAchievements.Views
             {
                 ProviderKeys = providerKeys,
                 Scope = SelectedScope,
-                LibraryScope = FriendRefreshPolicy.GetDefaultLibraryScope(SelectedScope),
                 PlayniteGameIds = gameIds.Count > 0 ? gameIds : null,
                 FriendExternalUserIds = friendIds.Count > 0 ? friendIds : null
             };

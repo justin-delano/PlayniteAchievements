@@ -420,13 +420,29 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [TestMethod]
-        public void CacheStore_RecentFriendCandidatesUsePlaytimeDeltaOnly()
+        public void CacheStore_SelectedGameFriendCandidatesSkipCurrentUserNoAchievementGames()
         {
             var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
 
-            StringAssert.Contains(store, @"AND COALESCE(fo.Playtime2WeeksMinutes, 0) > 0");
+            StringAssert.Contains(store, "AND ugp.HasAchievements != 0");
+        }
+
+        [TestMethod]
+        public void CacheStore_RecentFriendCandidatesUsePlaytimeDeltaOnly()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
+
+            // Recent-scope recency is decided in the runtime from provider signals, not by a SQL
+            // 2-week-playtime filter or a wall-clock last-scrape TTL.
+            Assert.IsFalse(store.Contains(@"AND COALESCE(fo.Playtime2WeeksMinutes, 0) > 0"),
+                "Recent scope must no longer filter on 2-week playtime in SQL.");
             Assert.IsFalse(store.Contains("fo.LastScrapedUtc IS NULL"));
             Assert.IsFalse(store.Contains("fo.LastScrapedUtc < ?"));
+            Assert.IsFalse(runtime.Contains("RefreshTtl"), "The wall-clock friend refresh TTL must be gone.");
+
+            // Steam recency is the playtime delta since the last successful scrape.
+            StringAssert.Contains(runtime, "fresh.PlaytimeForeverMinutes > prev.PlaytimeForeverMinutes");
         }
 
         [TestMethod]
@@ -465,11 +481,14 @@ namespace PlayniteAchievements.SqlNado.Tests
         public void FriendGameImages_DownloadedToPaths_NotPersistedAsUrl()
         {
             var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
-            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Friends", "FriendsRefreshRuntime.cs"));
+            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
 
-            // Header banner is downloaded and stored as local icon+cover paths.
+            // Header banner is downloaded with the normalized cache key and stored as local icon+cover paths.
+            StringAssert.Contains(runtime, "var cacheKey = GetProviderGameCacheKey(appId, providerGameKey);");
             StringAssert.Contains(runtime, "DownloadDefinitionGameImageAsync(providerKey, providerGameKey, appId, definition.IconUrl, definition.GameName, cancel, progress)");
-            StringAssert.Contains(runtime, "_friendCache.SaveProviderGameImagePaths(providerKey, providerGameKey, appId, localPath, localPath);");
+            StringAssert.Contains(runtime, "SaveProviderGameImagePaths(providerKey, cacheKey, appId, localPath, localPath);");
+            StringAssert.Contains(runtime, "var gameKey = GetProviderGameCacheKey(source.AppId, source.ProviderGameKey)");
+            StringAssert.Contains(store, "AND (ProviderGameKey = ? OR ProviderGameId = ?)");
             // The source URL is not persisted into the definition state.
             StringAssert.Contains(store, "// Image source URLs are not persisted; the header banner is downloaded to");
         }

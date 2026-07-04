@@ -45,10 +45,10 @@ namespace PlayniteAchievements.Providers.Exophase
     /// <summary>
     /// Display/edit row for the Exophase settings friends grid. Modeled on
     /// <see cref="PlayniteAchievements.Providers.Steam.SteamFriendListItem"/>: it wraps a single
-    /// <see cref="ExophaseFriendSettings"/> and exposes the editable per-friend state (full-library
-    /// scope and selected platforms) as observable properties. Editing a row mutates the view model in
-    /// place (updating cells via binding) and invokes the change callback so the view can write the
-    /// friend list back to settings — no ItemsSource resets or selection-driven rebuilds.
+    /// <see cref="ExophaseFriendSettings"/> and exposes the editable per-friend state (selected
+    /// platforms) as observable properties. Editing a row mutates the view model in place (updating
+    /// cells via binding) and invokes the change callback so the view can write the friend list back
+    /// to settings — no ItemsSource resets or selection-driven rebuilds.
     /// </summary>
     public sealed class ExophaseFriendListItem : PlayniteAchievements.Common.ObservableObject
     {
@@ -58,8 +58,6 @@ namespace PlayniteAchievements.Providers.Exophase
         private readonly DateTime? _lastRefreshedUtc;
         private readonly DateTime? _lastProbedUtc;
         private readonly string _lastProbeStatus;
-
-        private bool _isFullLibrary;
 
         public ExophaseFriendListItem(ExophaseFriendSettings friend, Action onChanged)
         {
@@ -76,8 +74,6 @@ namespace PlayniteAchievements.Providers.Exophase
             _lastRefreshedUtc = friend.LastRefreshedUtc;
             _lastProbedUtc = friend.LastProbedUtc;
             _lastProbeStatus = friend.LastProbeStatus;
-
-            _isFullLibrary = friend.LibraryScope == FriendLibraryScope.Full;
 
             var selected = new HashSet<string>(
                 friend.SelectedPlatforms ?? new List<string>(),
@@ -100,18 +96,6 @@ namespace PlayniteAchievements.Providers.Exophase
         public string LastError { get; }
 
         public ObservableCollection<ExophaseFriendPlatformToggle> Platforms { get; }
-
-        public bool IsFullLibrary
-        {
-            get => _isFullLibrary;
-            set
-            {
-                if (SetValueAndReturn(ref _isFullLibrary, value))
-                {
-                    _onChanged?.Invoke();
-                }
-            }
-        }
 
         public int SelectedPlatformCount => Platforms.Count(toggle => toggle.IsSelected);
 
@@ -138,7 +122,6 @@ namespace PlayniteAchievements.Providers.Exophase
                 AvatarUrl = _avatarUrl,
                 AvatarPath = AvatarPath,
                 SelectedPlatforms = Platforms.Where(toggle => toggle.IsSelected).Select(toggle => toggle.Token).ToList(),
-                LibraryScope = IsFullLibrary ? FriendLibraryScope.Full : FriendLibraryScope.Shared,
                 AddedUtc = _addedUtc,
                 LastRefreshedUtc = _lastRefreshedUtc,
                 LastProbedUtc = _lastProbedUtc,

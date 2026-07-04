@@ -181,7 +181,7 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             var platforms = NormalizePlatforms(config.SelectedPlatforms);
-            _logger?.Info($"[ExophaseFriends] GetOwnedGames: friend='{config.ExternalUserId}', scope={config.LibraryScope}, " +
+            _logger?.Info($"[ExophaseFriends] GetOwnedGames: friend='{config.ExternalUserId}', " +
                 $"platforms=[{string.Join(", ", platforms)}] (count={platforms.Count}).");
             if (platforms.Count == 0)
             {
@@ -243,7 +243,9 @@ namespace PlayniteAchievements.Providers.Exophase
                     Playtime2WeeksMinutes = game.RecentPlaytimeMinutes > 0
                         ? (int?)game.RecentPlaytimeMinutes
                         : null,
-                    LastPlayedUtc = game.LastPlayedUtc
+                    LastPlayedUtc = game.LastPlayedUtc,
+                    AchievementUnlocksHint = game.AchievementsEarned,
+                    AchievementTotalHint = game.AchievementsTotal
                 });
             }
 
@@ -393,7 +395,6 @@ namespace PlayniteAchievements.Providers.Exophase
                     AvatarUrl = friend.AvatarUrl,
                     AvatarPath = friend.AvatarPath,
                     Source = FriendSettingsSource.Manual,
-                    LibraryScope = friend.LibraryScope,
                     SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(friend.SelectedPlatforms),
                     AddedUtc = friend.AddedUtc == default(DateTime) ? DateTime.UtcNow : friend.AddedUtc,
                     LastRefreshedUtc = friend.LastRefreshedUtc,
@@ -714,6 +715,12 @@ namespace PlayniteAchievements.Providers.Exophase
             public int PlaytimeMinutes { get; set; }
             public int RecentPlaytimeMinutes { get; set; }
             public DateTime? LastPlayedUtc { get; set; }
+
+            // Earned/total achievement counts from the profile row's game-progress block
+            // (rendered as "6/37"). Feed FriendGameOwnership.AchievementUnlocksHint so the
+            // refresh gate can skip provider-only games the friend has not unlocked anything in.
+            public int? AchievementsEarned { get; set; }
+            public int? AchievementsTotal { get; set; }
         }
 
         private sealed class ParsedGamesPage
@@ -827,7 +834,19 @@ namespace PlayniteAchievements.Providers.Exophase
                         ExophaseApiClient.ResolveImageUrl(container?.SelectSingleNode(".//div[contains(@class, 'col-image')]")),
                         ExophaseApiClient.ResolveImageUrl(container)));
                     var recentDateContext = ResolveRecentDateContextUtc(container);
-                    var lastPlayedUtc = ParseLastPlayedUtc(container) ?? recentDateContext;
+                    // The games listing renders a per-game "last played" cell (<div class="lastplayed">July 1, 2026</div>);
+                    // prefer it as the recency signal before the generic attribute/heading fallbacks.
+                    DateTime? lastPlayedFromCell = null;
+                    if (TryParseDateText(
+                            container?.SelectSingleNode(".//div[contains(@class, 'lastplayed')]")?.InnerText,
+                            out var parsedLastPlayedCell))
+                    {
+                        lastPlayedFromCell = parsedLastPlayedCell;
+                    }
+
+                    var lastPlayedUtc = lastPlayedFromCell ?? ParseLastPlayedUtc(container) ?? recentDateContext;
+
+                    var (achievementsEarned, achievementsTotal) = ParseAchievementCounts(container);
 
                     result.Games.Add(new ExophaseFriendGame
                     {
@@ -838,7 +857,9 @@ namespace PlayniteAchievements.Providers.Exophase
                         ContextId = contextId,
                         PlaytimeMinutes = ParsePlaytimeMinutes(container?.InnerText),
                         RecentPlaytimeMinutes = ParseRecentPlaytimeMinutes(container?.InnerText, recentDateContext.HasValue),
-                        LastPlayedUtc = lastPlayedUtc
+                        LastPlayedUtc = lastPlayedUtc,
+                        AchievementsEarned = achievementsEarned,
+                        AchievementsTotal = achievementsTotal
                     });
                 }
 
@@ -967,6 +988,35 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 return Math.Max(0, total);
+            }
+
+            // Reads the "earned/total" achievement count from a game row's game-progress block,
+            // rendered as an award icon followed by e.g. "6/37". Returns (null, null) when the row
+            // has no progress block (some platforms/games omit it) so the caller leaves the hint unset.
+            private static (int? Earned, int? Total) ParseAchievementCounts(HtmlNode container)
+            {
+                if (container == null)
+                {
+                    return (null, null);
+                }
+
+                var progressCol = container.SelectSingleNode(
+                    ".//div[contains(@class, 'game-progress')]//i[contains(@class, 'exo-icon-award')]/parent::div")
+                    ?? container.SelectSingleNode(".//div[contains(@class, 'game-progress')]//div[contains(@class, 'progress-units-top')]");
+                if (progressCol == null)
+                {
+                    return (null, null);
+                }
+
+                var match = Regex.Match(Clean(progressCol.InnerText) ?? string.Empty, @"(\d+)\s*/\s*(\d+)");
+                if (!match.Success ||
+                    !int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var earned) ||
+                    !int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var total))
+                {
+                    return (null, null);
+                }
+
+                return (Math.Max(0, earned), Math.Max(0, total));
             }
 
             private static int ParseRecentPlaytimeMinutes(string text, bool hasRecentDateContext)

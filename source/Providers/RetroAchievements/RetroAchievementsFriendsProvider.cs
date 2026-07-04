@@ -494,7 +494,9 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                         item.ImageIngame,
                         item.ImageIcon)),
                 PlaytimeForeverMinutes = 0,
-                LastPlayedUtc = ParseFirstTimestamp(item.MostRecentAwardedDate, item.HighestAwardDate)
+                LastPlayedUtc = ParseFirstTimestamp(item.MostRecentAwardedDate, item.HighestAwardDate),
+                AchievementUnlocksHint = Math.Max(0, item.NumAwarded),
+                AchievementTotalHint = Math.Max(0, item.MaxPossible)
             };
         }
 
@@ -533,6 +535,20 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             if (preferMetadata || string.IsNullOrWhiteSpace(existing.CoverUrl))
             {
                 existing.CoverUrl = FirstNonEmpty(row.CoverUrl, existing.CoverUrl);
+            }
+
+            if (row.AchievementUnlocksHint.HasValue &&
+                (!existing.AchievementUnlocksHint.HasValue ||
+                 row.AchievementUnlocksHint.Value > existing.AchievementUnlocksHint.Value))
+            {
+                existing.AchievementUnlocksHint = row.AchievementUnlocksHint;
+            }
+
+            if (row.AchievementTotalHint.HasValue &&
+                (!existing.AchievementTotalHint.HasValue ||
+                 row.AchievementTotalHint.Value > existing.AchievementTotalHint.Value))
+            {
+                existing.AchievementTotalHint = row.AchievementTotalHint;
             }
         }
 

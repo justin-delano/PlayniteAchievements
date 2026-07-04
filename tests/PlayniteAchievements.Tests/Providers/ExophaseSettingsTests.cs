@@ -143,7 +143,7 @@ namespace PlayniteAchievements.Providers.Tests
         }
 
         [TestMethod]
-        public void AddOrUpdateFriend_DefaultsToSharedWithNoPlatforms()
+        public void AddOrUpdateFriend_DefaultsToNoPlatforms()
         {
             var settings = new ExophaseSettings();
 
@@ -152,7 +152,6 @@ namespace PlayniteAchievements.Providers.Tests
             Assert.IsTrue(added);
             Assert.AreEqual(1, settings.Friends.Count);
             Assert.AreEqual("PureRuby87", settings.Friends[0].Username);
-            Assert.AreEqual(FriendLibraryScope.Shared, settings.Friends[0].LibraryScope);
             Assert.AreEqual(0, settings.Friends[0].SelectedPlatforms.Count);
         }
 
@@ -169,7 +168,7 @@ namespace PlayniteAchievements.Providers.Tests
         }
 
         [TestMethod]
-        public void FriendsSetter_NormalizesSelectedPlatformsAndScope()
+        public void FriendsSetter_NormalizesSelectedPlatforms()
         {
             var settings = new ExophaseSettings
             {
@@ -178,33 +177,13 @@ namespace PlayniteAchievements.Providers.Tests
                     new ExophaseFriendSettings
                     {
                         Username = " Beer_Here ",
-                        LibraryScope = FriendLibraryScope.Full,
                         SelectedPlatforms = new List<string> { " Steam ", "steam", "PSN" }
                     }
                 }
             };
 
             Assert.AreEqual("Beer_Here", settings.Friends[0].Username);
-            Assert.AreEqual(FriendLibraryScope.Full, settings.Friends[0].LibraryScope);
             CollectionAssert.AreEqual(new List<string> { "psn", "steam" }, settings.Friends[0].SelectedPlatforms);
-        }
-
-        [TestMethod]
-        public void GetFullLibraryFriendIds_ReturnsOnlyFullScopeFriends()
-        {
-            var settings = new ExophaseSettings
-            {
-                Friends = new List<ExophaseFriendSettings>
-                {
-                    new ExophaseFriendSettings { Username = "SharedUser", LibraryScope = FriendLibraryScope.Shared },
-                    new ExophaseFriendSettings { Username = "FullUser", LibraryScope = FriendLibraryScope.Full }
-                }
-            };
-
-            var fullIds = settings.GetFullLibraryFriendIds();
-
-            Assert.IsFalse(fullIds.Contains("SharedUser"));
-            Assert.IsTrue(fullIds.Contains("FullUser"));
         }
 
         [TestMethod]

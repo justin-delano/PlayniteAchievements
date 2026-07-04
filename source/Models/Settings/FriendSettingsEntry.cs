@@ -1,5 +1,4 @@
 using Newtonsoft.Json;
-using PlayniteAchievements.Models.Friends;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,8 +26,6 @@ namespace PlayniteAchievements.Models.Settings
         public string AvatarPath { get; set; }
 
         public FriendSettingsSource Source { get; set; } = FriendSettingsSource.AutoDiscovered;
-
-        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Shared;
 
         public bool IsIgnored { get; set; }
 
@@ -58,7 +55,6 @@ namespace PlayniteAchievements.Models.Settings
                 AvatarUrl = AvatarUrl,
                 AvatarPath = AvatarPath,
                 Source = Source,
-                LibraryScope = LibraryScope,
                 IsIgnored = IsIgnored,
                 SelectedPlatforms = SelectedPlatforms?.ToList() ?? new List<string>(),
                 AddedUtc = AddedUtc,
@@ -77,9 +73,6 @@ namespace PlayniteAchievements.Models.Settings
             Nickname = NormalizeNullable(Nickname);
             AvatarUrl = NormalizeNullable(AvatarUrl);
             AvatarPath = NormalizeNullable(AvatarPath);
-            LibraryScope = LibraryScope == FriendLibraryScope.Full
-                ? FriendLibraryScope.Full
-                : FriendLibraryScope.Shared;
             SelectedPlatforms = NormalizePlatformList(SelectedPlatforms);
             if (AddedUtc == default(DateTime))
             {
