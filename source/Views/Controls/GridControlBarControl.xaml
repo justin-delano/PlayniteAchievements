@@ -373,6 +373,53 @@
                 </DataTemplate.Triggers>
             </DataTemplate>
 
+            <Style x:Key="GridActionButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Button.Border}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="Padding" Value="10,4"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Border"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="4">
+                                <TextBlock Text="{TemplateBinding Content}"
+                                           Margin="{TemplateBinding Padding}"
+                                           VerticalAlignment="Center"
+                                           HorizontalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <DataTemplate DataType="{x:Type vm:GridActionButton}">
+                <Button Style="{StaticResource GridActionButtonStyle}"
+                        Content="{Binding Content}"
+                        Click="ActionButton_Click"
+                        MinWidth="{Binding MinWidth}"
+                        Height="{StaticResource PlayAch.Size.Control.Height}"
+                        Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                        VerticalAlignment="Center"
+                        ToolTip="{Binding ToolTip}"
+                        Visibility="{Binding IsVisible, Converter={StaticResource GridControlBarBoolToVis}}"/>
+            </DataTemplate>
+
             <DataTemplate DataType="{x:Type vm:GridModeToggle}">
                 <ToggleButton Style="{StaticResource GridModeToggleButtonStyle}"
                               Content="{Binding Content}"
