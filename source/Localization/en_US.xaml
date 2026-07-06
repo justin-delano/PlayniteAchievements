@@ -24,6 +24,7 @@
     <sys:String x:Key="LOCPlayAch_Common_Continue">Continue</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Custom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Transparent">Transparent</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Back">Back</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Default">Default</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_DeselectAll">Deselect All</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Descending">Descending</sys:String>
@@ -344,6 +345,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_AchievementOrder">Order</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Capstones">Capstones</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Category">Categories</sys:String>
+    <sys:String x:Key="LOCPlayAch_CategorySummaries_Toggle">Categories</sys:String>
+    <sys:String x:Key="LOCPlayAch_CategorySummaries_ToggleToolTip">Group achievements by category</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_CustomIcons">Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Filters">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_ManualTracking">Manual Tracking</sys:String>
@@ -507,6 +510,44 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh">Enable parallel platform refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableParallelProviderRefresh_Help">If disabled, platforms refresh sequentially in deterministic order.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnablePeriodicUpdates">Enable Background Periodic Updates</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling">Poll achievements while a game is running</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling_Description">Refresh the running game on a short interval so newly unlocked achievements can be detected before the game closes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockToasts">Show achievement unlock toasts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableFriendUnlockToasts">Show friend unlock toasts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">Poll interval (seconds):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_InGamePollRefreshFriends">Also refresh friends who own the running game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_InGameFriendRefreshMultiplier">Friend refresh every N polls:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_InGameFriendBatchSize">Friends per refresh (0 = all):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_MaxConcurrentToasts">Toasts per wave:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastDurationSeconds">Toast duration (seconds):</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition">Toast position:</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomRight">Bottom right</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_BottomLeft">Bottom left</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_TopRight">Top right</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPosition_TopLeft">Top left</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowHeader">Header line</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowName">Achievement name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityBadge">Rarity badge</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityGlow">Rarity glow</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastRarityColoredName">Rarity-colored name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityPercent">Rarity percent</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowDescription">Description</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowCategory">Category</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowGameName">Game name</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TabNotifications">Notifications</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastBehavior">Behavior</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotsHeader">Unlock screenshots</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockScreenshots">Save a screenshot when you unlock an achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectory">Screenshot folder</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectoryHint">Captures the game's monitor (with the toast) for your own unlocks and saves to &lt;folder&gt;\Game [Provider]\Number_Achievement.png. Requires unlock toasts to be enabled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewHeader">Preview</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewHint">Fire an example toast to see it on screen with your current settings, position, and slide animation.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewFriend">Friend unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleGame">Sample Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleCategory">Sample Category</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleTitle">Example Achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleDescription">An example achievement description.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleFriend">Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CaptureButton">Press keys...</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CapturePrompt">Press a shortcut...</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Description">Configure shortcuts for opening achievement windows and the overview. Game-specific hotkeys use the running game first, then the selected game.</sys:String>
@@ -653,6 +694,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Friends">Friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscover">Auto-discover friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AutoDiscoverHint">Choose platforms that can automatically populate this list. Steam is supported in this version.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership">Use Exophase for Steam friend ownership</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint">Uses the merged Exophase profile's Steam games when refreshing Steam friend ownership. Requires the Exophase provider to be enabled and falls back to Steam if Exophase cannot be used.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_AvatarSource">Avatar</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_ManualAdd">Add manual friend</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsSettings_MergeInvalid">Select at least two friends from different platforms to merge.</sys:String>
@@ -710,6 +753,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- Provider: Steam -->
     <sys:String x:Key="LOCPlayAch_Settings_SteamUserId">Steam User ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamUserId_Help">Your 64-bit Steam ID. This is automatically detected when you authenticate.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories">Use SteamHunters for Categories</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories_Help">When enabled, Steam refreshes use SteamHunters groups to fill official achievement category labels and Base/DLC types.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authenticate</sys:String>
     <!-- Provider: RPCS3 -->
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Executable Path</sys:String>
@@ -765,6 +810,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Show Game Summaries Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Show Achievement Grid Column Headers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Show Column Headers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowGridControlBar">Show Control Bar</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Use Uniform Rarity Badges</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ColorNamesByRarity">Color Names by Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsGridSort">View Achievements Grid</sys:String>
@@ -948,6 +994,9 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Tagging_RemoveAllConfirm">Remove all Playnite Achievements tags from all games?</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Removing tags...</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Syncing tags...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Text_UnknownAchievement">Unknown achievement</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Achievement unlocked</sys:String>
+    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
 
     <!-- ================================================================= -->
     <!-- 16 Rarity Sections and Time -->
