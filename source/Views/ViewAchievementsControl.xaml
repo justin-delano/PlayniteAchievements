@@ -74,7 +74,6 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -202,89 +201,8 @@
             </StackPanel>
         </Border>
 
-        <!-- Search Achievements -->
-        <Border Grid.Row="2"
-                Style="{StaticResource CardBorderStyle}"
-                Margin="16,0,16,8"
-                Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <Grid Grid.Column="0">
-                    <TextBox x:Name="SearchTextBox"
-                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
-                             Style="{StaticResource ClearableSearchTextBoxStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
-                               Tag="{Binding Text, ElementName=SearchTextBox}"
-                               VerticalAlignment="Center"
-                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                               Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
-                               IsHitTestVisible="False" Style="{StaticResource SearchPlaceholderTextStyle}"/>
-                    <Button x:Name="ClearSearchButton"
-                            Tag="{Binding Text, ElementName=SearchTextBox}"
-                            Click="ClearSearch_Click"
-                            Style="{StaticResource ClearSearchButtonStyle}"/>
-                </Grid>
-
-                <StackPanel Grid.Column="1"
-                    Orientation="Horizontal"
-                    VerticalAlignment="Center"
-                    Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
-                <Button x:Name="CategoryTypeFilterSelectionButton"
-                        Style="{StaticResource AchievementSelectorButtonStyle}"
-                        Content="{Binding SelectedCategoryTypeFilterText}"
-                        Click="CategoryTypeFilterSelectionButton_Click"
-                        Width="120"
-                        Height="{StaticResource PlayAch.Size.Control.Height}"
-                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
-                        VerticalAlignment="Center"
-                        ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Type}">
-                    <Button.ContextMenu>
-                        <ContextMenu x:Name="CategoryTypeFilterSelectionContextMenu"
-                                     Style="{StaticResource AchievementSelectorContextMenuStyle}"
-                                     ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
-                    </Button.ContextMenu>
-                </Button>
-                <Button x:Name="CategoryLabelFilterSelectionButton"
-                        Style="{StaticResource AchievementSelectorButtonStyle}"
-                        Content="{Binding SelectedCategoryLabelFilterText}"
-                        Click="CategoryLabelFilterSelectionButton_Click"
-                        Width="140"
-                        Height="{StaticResource PlayAch.Size.Control.Height}"
-                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
-                        VerticalAlignment="Center"
-                        ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Label}">
-                    <Button.ContextMenu>
-                        <ContextMenu x:Name="CategoryLabelFilterSelectionContextMenu"
-                                     Style="{StaticResource AchievementSelectorContextMenuStyle}"
-                                     ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
-                    </Button.ContextMenu>
-                </Button>
-                <CheckBox x:Name="ShowUnlockedCheckBox"
-                      Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
-                      IsChecked="{Binding ShowUnlocked}"
-                      VerticalAlignment="Center"
-                      Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-                <CheckBox x:Name="ShowLockedCheckBox"
-                      Content="{DynamicResource LOCPlayAch_Common_Locked}"
-                      IsChecked="{Binding ShowLocked}"
-                      VerticalAlignment="Center"
-                      Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-                <CheckBox x:Name="ShowHiddenCheckBox"
-                      Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
-                      IsChecked="{Binding ShowHidden}"
-                      VerticalAlignment="Center"/>
-                </StackPanel>
-
-            </Grid>
-        </Border>
-
         <!-- No Achievements Placeholder -->
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="2"
               Visibility="{Binding HasAchievements, Converter={StaticResource InverseBoolToVis}}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40">
                 <TextBlock Text="{DynamicResource LOCPlayAch_NoAchievementsTitle}"
@@ -318,16 +236,20 @@
 
         <!-- Achievements List -->
         <controls:AchievementDataGridControl x:Name="AchievementsDataGridControl"
-                                             Grid.Row="3"
+                                             Grid.Row="2"
                                              Margin="16,0,16,0"
                                              Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}"
                                              ItemsSource="{Binding Achievements}"
                                              RevealCommand="{Binding RevealAchievementCommand}"
                                              ColumnSettingsKey="SingleGame"
+                                             EnableCategoryMode="True"
+                                             CategoryColumnSettingsKey="ViewAchievementsCategorySummaries"
                                              DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                              ShowRarityGlow="{Binding ShowRarityGlow}"
                                              ColorNamesByRarity="{Binding ColorNamesByRarity}"
                                              FixedRowHeight="{Binding SingleGameGridRowHeight}"
+                                             ControlBar="{Binding AchievementsControlBar}"
+                                             ShowControlBar="{Binding ShowAchievementGridControlBar}"
                                              UseExternalSorting="True"
                                              Sorting="OnGridSorting"
                                              RowPreviewMouseRightButtonDown="AchievementRow_PreviewMouseRightButtonDown"
