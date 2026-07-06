@@ -16,43 +16,53 @@
 
             <BooleanToVisibilityConverter x:Key="GridControlBarBoolToVis"/>
 
-            <!-- Toolbar mode toggle (category-summaries mode). Mirrors AchievementSelectorButtonStyle
-                 but as a ToggleButton, with a checked state using the accent/selected brushes. -->
+            <!-- Toolbar mode toggle (category-summaries mode), rendered as a sliding switch with a
+                 trailing label. The thumb slides right and the track fills with the accent when on. -->
             <Style x:Key="GridModeToggleButtonStyle" TargetType="ToggleButton">
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Button.Border}"/>
-                <Setter Property="BorderThickness" Value="1"/>
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
-                <Setter Property="Padding" Value="10,4"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Focusable" Value="False"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleButton">
-                            <Border x:Name="Border"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    CornerRadius="4">
+                            <StackPanel Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Background="Transparent">
+                                <Border x:Name="Track"
+                                        Width="34" Height="18"
+                                        CornerRadius="9"
+                                        Background="{DynamicResource PlayAch.Brush.Button.Background}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Button.Border}"
+                                        BorderThickness="1">
+                                    <Border x:Name="Thumb"
+                                            Width="12" Height="12"
+                                            CornerRadius="6"
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Center"
+                                            Margin="3,0,0,0"
+                                            Background="{DynamicResource PlayAch.Brush.Text}"/>
+                                </Border>
                                 <TextBlock Text="{TemplateBinding Content}"
-                                           Margin="{TemplateBinding Padding}"
+                                           Margin="6,0,0,0"
                                            VerticalAlignment="Center"
-                                           HorizontalAlignment="Center"
+                                           Foreground="{TemplateBinding Foreground}"
                                            TextTrimming="CharacterEllipsis"
                                            TextWrapping="NoWrap"/>
-                            </Border>
+                            </StackPanel>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                    <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
+                                    <Setter TargetName="Track" Property="Background" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                                    <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
+                                    <Setter TargetName="Thumb" Property="Background" Value="White"/>
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter TargetName="Border" Property="Opacity" Value="0.55"/>
+                                    <Setter Property="Opacity" Value="0.55"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>
