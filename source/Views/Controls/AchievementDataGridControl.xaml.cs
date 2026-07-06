@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows;
@@ -12,6 +13,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
@@ -169,6 +171,8 @@ namespace PlayniteAchievements.Views.Controls
             {
                 control._preSortItems = null;
                 DataGridSortingHelper.ClearSortIndicators(control.AchievementsDataGrid);
+                control.ObserveItemsSourceCollection();
+                control.OnItemsSourceContentChanged();
             }
         }
 
@@ -442,6 +446,353 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(ShowColumnHeadersProperty, value);
         }
 
+        public static readonly DependencyProperty ControlBarProperty =
+            DependencyProperty.Register(nameof(ControlBar), typeof(GridControlBarViewModel),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, OnControlBarChanged));
+
+        private static void OnControlBarChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.SyncModeToggle();
+            }
+        }
+
+        public GridControlBarViewModel ControlBar
+        {
+            get => (GridControlBarViewModel)GetValue(ControlBarProperty);
+            set => SetValue(ControlBarProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowControlBarProperty =
+            DependencyProperty.Register(nameof(ShowControlBar), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(true));
+
+        public bool ShowControlBar
+        {
+            get => (bool)GetValue(ShowControlBarProperty);
+            set => SetValue(ShowControlBarProperty, value);
+        }
+
+        // ---- Category-summaries mode -------------------------------------------------------
+        // When EnableCategoryMode is set, a toggle is injected into the control bar (right of the
+        // category dropdowns). Toggling it swaps the flat achievement grid for a per-category
+        // summary grid; clicking a category drills into a filtered achievement list. All state is
+        // self-contained here so any surface hosting this control opts in with a single attribute.
+
+        private bool _isCategoryMode;
+        private string _drilledCategory;
+        private GridModeToggle _modeToggle;
+        private GridControlBarViewModel _controlBarWithToggle;
+        private INotifyCollectionChanged _observedItemsSource;
+
+        public static readonly DependencyProperty EnableCategoryModeProperty =
+            DependencyProperty.Register(nameof(EnableCategoryMode), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnEnableCategoryModeChanged));
+
+        public bool EnableCategoryMode
+        {
+            get => (bool)GetValue(EnableCategoryModeProperty);
+            set => SetValue(EnableCategoryModeProperty, value);
+        }
+
+        private static void OnEnableCategoryModeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.SyncModeToggle();
+            }
+        }
+
+        public static readonly DependencyProperty CategoryColumnSettingsKeyProperty =
+            DependencyProperty.Register(nameof(CategoryColumnSettingsKey), typeof(string),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        // Per-surface column-settings key for the embedded category grids (list + drill header),
+        // kept distinct from the achievement grid's ColumnSettingsKey so category columns persist
+        // independently. Falls back to "<ColumnSettingsKey>CategorySummaries" when unset.
+        public string CategoryColumnSettingsKey
+        {
+            get => (string)GetValue(CategoryColumnSettingsKeyProperty);
+            set => SetValue(CategoryColumnSettingsKeyProperty, value);
+        }
+
+        public static readonly DependencyProperty CategorySummariesProperty =
+            DependencyProperty.Register(nameof(CategorySummaries), typeof(IEnumerable<GameSummaryItem>),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        public IEnumerable<GameSummaryItem> CategorySummaries
+        {
+            get => (IEnumerable<GameSummaryItem>)GetValue(CategorySummariesProperty);
+            set => SetValue(CategorySummariesProperty, value);
+        }
+
+        public static readonly DependencyProperty SelectedCategorySummaryItemsProperty =
+            DependencyProperty.Register(nameof(SelectedCategorySummaryItems), typeof(IEnumerable<GameSummaryItem>),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        public IEnumerable<GameSummaryItem> SelectedCategorySummaryItems
+        {
+            get => (IEnumerable<GameSummaryItem>)GetValue(SelectedCategorySummaryItemsProperty);
+            set => SetValue(SelectedCategorySummaryItemsProperty, value);
+        }
+
+        public static readonly DependencyProperty EffectiveAchievementsProperty =
+            DependencyProperty.Register(nameof(EffectiveAchievements), typeof(IEnumerable<AchievementDisplayItem>),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        // The collection actually bound to the achievement DataGrid: the full ItemsSource in flat
+        // and drill-list modes, or the category-filtered subset while drilled in.
+        public IEnumerable<AchievementDisplayItem> EffectiveAchievements
+        {
+            get => (IEnumerable<AchievementDisplayItem>)GetValue(EffectiveAchievementsProperty);
+            set => SetValue(EffectiveAchievementsProperty, value);
+        }
+
+        public static readonly DependencyProperty AchievementGridVisibleProperty =
+            DependencyProperty.Register(nameof(AchievementGridVisible), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(true));
+
+        public bool AchievementGridVisible
+        {
+            get => (bool)GetValue(AchievementGridVisibleProperty);
+            set => SetValue(AchievementGridVisibleProperty, value);
+        }
+
+        public static readonly DependencyProperty CategoryListVisibleProperty =
+            DependencyProperty.Register(nameof(CategoryListVisible), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        public bool CategoryListVisible
+        {
+            get => (bool)GetValue(CategoryListVisibleProperty);
+            set => SetValue(CategoryListVisibleProperty, value);
+        }
+
+        public static readonly DependencyProperty DrillHeaderVisibleProperty =
+            DependencyProperty.Register(nameof(DrillHeaderVisible), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        public bool DrillHeaderVisible
+        {
+            get => (bool)GetValue(DrillHeaderVisibleProperty);
+            set => SetValue(DrillHeaderVisibleProperty, value);
+        }
+
+        public string ResolvedCategoryColumnSettingsKey
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(CategoryColumnSettingsKey))
+                {
+                    return CategoryColumnSettingsKey;
+                }
+
+                var baseKey = string.IsNullOrWhiteSpace(ColumnSettingsKey) ? "Default" : ColumnSettingsKey;
+                return baseKey + "CategorySummaries";
+            }
+        }
+
+        private void SyncModeToggle()
+        {
+            // Drop the toggle from a control bar we no longer own.
+            if (_controlBarWithToggle != null && !ReferenceEquals(_controlBarWithToggle, ControlBar))
+            {
+                _controlBarWithToggle.Items.Remove(_modeToggle);
+                _controlBarWithToggle = null;
+            }
+
+            if (!EnableCategoryMode || ControlBar == null)
+            {
+                return;
+            }
+
+            if (_controlBarWithToggle != null && _modeToggle != null && _controlBarWithToggle.Items.Contains(_modeToggle))
+            {
+                return;
+            }
+
+            _modeToggle = new GridModeToggle(
+                null,
+                null,
+                CategoryModeText("LOCPlayAch_CategorySummaries_Toggle", "Categories"),
+                () => _isCategoryMode,
+                SetCategoryMode,
+                CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"));
+
+            // Insert immediately after the last category dropdown (GridMultiSelectFilter); if there
+            // are none, fall back to the front of the strip.
+            var insertIndex = 0;
+            for (var i = 0; i < ControlBar.Items.Count; i++)
+            {
+                if (ControlBar.Items[i] is GridMultiSelectFilter)
+                {
+                    insertIndex = i + 1;
+                }
+            }
+
+            ControlBar.Items.Insert(Math.Min(insertIndex, ControlBar.Items.Count), _modeToggle);
+            _controlBarWithToggle = ControlBar;
+        }
+
+        private void SetCategoryMode(bool enabled)
+        {
+            if (_isCategoryMode == enabled)
+            {
+                return;
+            }
+
+            _isCategoryMode = enabled;
+            _drilledCategory = null;
+            SelectedCategorySummaryItems = null;
+            if (CategoryListGrid != null)
+            {
+                CategoryListGrid.SelectedItem = null;
+            }
+
+            if (enabled)
+            {
+                RebuildCategorySummaries();
+            }
+
+            ApplyCategoryViewState();
+            _modeToggle?.Refresh();
+        }
+
+        private void RebuildCategorySummaries()
+        {
+            var items = ItemsSource?.ToList();
+            CategorySummaries = items == null || items.Count == 0
+                ? null
+                : CategorySummaryBuilder.Build(items);
+        }
+
+        private void DrillIntoCategory(CategorySummaryItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            _drilledCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
+            SelectedCategorySummaryItems = new[] { (GameSummaryItem)item };
+            ApplyCategoryViewState();
+        }
+
+        private void ApplyCategoryViewState()
+        {
+            var drill = _isCategoryMode && _drilledCategory != null;
+            var list = _isCategoryMode && !drill;
+            CategoryListVisible = list;
+            DrillHeaderVisible = drill;
+            AchievementGridVisible = !list;
+            RecomputeEffectiveAchievements();
+        }
+
+        private void RecomputeEffectiveAchievements()
+        {
+            if (_isCategoryMode && _drilledCategory != null)
+            {
+                var source = ItemsSource;
+                EffectiveAchievements = source == null
+                    ? null
+                    : source.Where(i => string.Equals(
+                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(i?.CategoryLabel),
+                            _drilledCategory,
+                            StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+            }
+            else if (!ReferenceEquals(EffectiveAchievements, ItemsSource))
+            {
+                EffectiveAchievements = ItemsSource;
+            }
+        }
+
+        private void ObserveItemsSourceCollection()
+        {
+            if (_observedItemsSource != null)
+            {
+                _observedItemsSource.CollectionChanged -= OnItemsSourceCollectionChanged;
+                _observedItemsSource = null;
+            }
+
+            if (ItemsSource is INotifyCollectionChanged incc)
+            {
+                _observedItemsSource = incc;
+                incc.CollectionChanged += OnItemsSourceCollectionChanged;
+            }
+        }
+
+        private void OnItemsSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            OnItemsSourceContentChanged();
+        }
+
+        private void OnItemsSourceContentChanged()
+        {
+            if (!_isCategoryMode)
+            {
+                RecomputeEffectiveAchievements();
+                return;
+            }
+
+            RebuildCategorySummaries();
+
+            if (_drilledCategory != null)
+            {
+                var match = CategorySummaries?
+                    .OfType<CategorySummaryItem>()
+                    .FirstOrDefault(c => string.Equals(c.CategoryLabel, _drilledCategory, StringComparison.OrdinalIgnoreCase));
+                if (match == null)
+                {
+                    // The drilled category vanished (e.g. game switched); fall back to the list.
+                    _drilledCategory = null;
+                    SelectedCategorySummaryItems = null;
+                    if (CategoryListGrid != null)
+                    {
+                        CategoryListGrid.SelectedItem = null;
+                    }
+                }
+                else
+                {
+                    SelectedCategorySummaryItems = new[] { (GameSummaryItem)match };
+                }
+            }
+
+            ApplyCategoryViewState();
+        }
+
+        private void CategoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (!_isCategoryMode || _drilledCategory != null)
+            {
+                return;
+            }
+
+            if (CategoryListGrid?.SelectedItem is CategorySummaryItem item)
+            {
+                DrillIntoCategory(item);
+            }
+        }
+
+        private void CategoryBack_Click(object sender, RoutedEventArgs e)
+        {
+            _drilledCategory = null;
+            SelectedCategorySummaryItems = null;
+            if (CategoryListGrid != null)
+            {
+                CategoryListGrid.SelectedItem = null;
+            }
+
+            ApplyCategoryViewState();
+        }
+
+        private static string CategoryModeText(string key, string fallback)
+        {
+            var value = ResourceProvider.GetString(key);
+            return string.IsNullOrWhiteSpace(value) ? fallback : value;
+        }
+
         /// <summary>
         /// Occurs when a column header is clicked for sorting.
         /// Subscribe to handle sorting externally when UseExternalSorting is true.
@@ -631,6 +982,8 @@ namespace PlayniteAchievements.Views.Controls
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
             UpdateUnlockDateMode();
+            SyncModeToggle();
+            ApplyCategoryViewState();
 
             if (_isAttached)
             {
@@ -704,6 +1057,13 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
+            // Remove the injected toggle so a control bar reused across navigations does not
+            // accumulate duplicates; it is re-added on the next load.
+            if (_controlBarWithToggle != null)
+            {
+                _controlBarWithToggle.Items.Remove(_modeToggle);
+                _controlBarWithToggle = null;
+            }
         }
 
         private void AchievementsDataGrid_LoadingRow(object sender, DataGridRowEventArgs e)
@@ -1674,6 +2034,21 @@ namespace PlayniteAchievements.Views.Controls
             return Services.UI.FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(AchievementsDataGrid);
         }
 
+        public bool OpenFocusedControlBarMenuForController()
+        {
+            return ControlBarHost?.OpenFocusedSelectorForController() == true;
+        }
+
+        public bool IsControlBarFocusedForController()
+        {
+            return ControlBarHost?.IsKeyboardFocusWithin == true;
+        }
+
+        public IList<UIElement> GetControlBarControllerElements()
+        {
+            return ControlBarHost?.GetControllerElements() ?? new List<UIElement>();
+        }
+
         private bool OpenColumnVisibilityMenu(DataGrid grid, FrameworkElement owner, bool useControllerPlacement)
         {
             if (!AllowColumnVisibilityMenu || grid == null || owner == null)
@@ -1746,6 +2121,12 @@ namespace PlayniteAchievements.Views.Controls
             {
                 _subscribedPersisted.PropertyChanged -= OnPersistedSettingsChanged;
                 _subscribedPersisted = null;
+            }
+
+            if (_observedItemsSource != null)
+            {
+                _observedItemsSource.CollectionChanged -= OnItemsSourceCollectionChanged;
+                _observedItemsSource = null;
             }
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(AchievementsDataGrid, null);
             DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(AchievementsDataGrid, null);
