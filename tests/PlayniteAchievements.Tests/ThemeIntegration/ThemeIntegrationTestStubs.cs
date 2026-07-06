@@ -22,11 +22,17 @@ namespace PlayniteAchievements
 
         public Services.GameCustomDataStore GameCustomDataStore { get; set; }
 
+        public Services.ThemeIntegration.ThemeIntegrationService ThemeIntegrationService { get; set; }
+
         public IPlayniteAPI PlayniteApi { get; set; }
 
         public void SavePluginSettings(PlayniteAchievementsSettings settings)
         {
             Settings = settings;
+        }
+
+        public void RequestThemeUpdate(Game gameContext)
+        {
         }
     }
 }
@@ -287,6 +293,8 @@ namespace PlayniteAchievements.ViewModels
         public string CategoryType { get; set; }
 
         public string CategoryLabel { get; set; }
+
+        public string GameCoverPath { get; set; }
 
         public string AchievementNote { get; set; }
 
