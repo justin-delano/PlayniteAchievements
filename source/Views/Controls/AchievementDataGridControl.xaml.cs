@@ -483,8 +483,14 @@ namespace PlayniteAchievements.Views.Controls
         private bool _isCategoryMode;
         private string _drilledCategory;
         private GridModeToggle _modeToggle;
+        private GridActionButton _backButton;
         private GridControlBarViewModel _controlBarWithToggle;
         private INotifyCollectionChanged _observedItemsSource;
+        private BulkObservableCollection<AchievementDisplayItem> _drillItems;
+        private List<GameSummaryItem> _allCategorySummaries;
+        private GridSearchControl _categorySearch;
+        private GridSearchControl _originalSearch;
+        private string _categorySearchText = string.Empty;
 
         public static readonly DependencyProperty EnableCategoryModeProperty =
             DependencyProperty.Register(nameof(EnableCategoryMode), typeof(bool),
@@ -593,12 +599,14 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        // Injects the category-mode toggle and Back button into the surface-owned control bar and
+        // reconciles which items are shown for the current mode (flat / category list / drill).
         private void SyncModeToggle()
         {
-            // Drop the toggle from a control bar we no longer own.
+            // Detach from a control bar we no longer own, restoring anything we changed.
             if (_controlBarWithToggle != null && !ReferenceEquals(_controlBarWithToggle, ControlBar))
             {
-                _controlBarWithToggle.Items.Remove(_modeToggle);
+                RestoreControlBar(_controlBarWithToggle);
                 _controlBarWithToggle = null;
             }
 
@@ -607,32 +615,135 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (_controlBarWithToggle != null && _modeToggle != null && _controlBarWithToggle.Items.Contains(_modeToggle))
+            if (_categorySearch == null)
+            {
+                _categorySearch = new GridSearchControl(
+                    null,
+                    null,
+                    () => _categorySearchText,
+                    value =>
+                    {
+                        _categorySearchText = value ?? string.Empty;
+                        ApplyCategoryNameFilter();
+                    },
+                    CategoryModeText("LOCPlayAch_CategorySummaries_FilterPlaceholder", "Filter categories..."),
+                    () =>
+                    {
+                        _categorySearchText = string.Empty;
+                        ApplyCategoryNameFilter();
+                    });
+            }
+
+            if (_modeToggle == null)
+            {
+                _modeToggle = new GridModeToggle(
+                    null,
+                    null,
+                    CategoryModeText("LOCPlayAch_CategorySummaries_Toggle", "Categories"),
+                    () => _isCategoryMode,
+                    SetCategoryMode,
+                    CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"));
+            }
+
+            if (_backButton == null)
+            {
+                _backButton = new GridActionButton(
+                    CategoryModeText("LOCPlayAch_Common_Back", "Back"),
+                    CategoryBackToList,
+                    CategoryModeText("LOCPlayAch_Common_Back", "Back"));
+            }
+
+            if (!ReferenceEquals(_controlBarWithToggle, ControlBar))
+            {
+                // Back sits at the front of the strip; the toggle sits after the category dropdowns.
+                if (!ControlBar.Items.Contains(_backButton))
+                {
+                    ControlBar.Items.Insert(0, _backButton);
+                }
+
+                if (!ControlBar.Items.Contains(_modeToggle))
+                {
+                    var insertIndex = 0;
+                    for (var i = 0; i < ControlBar.Items.Count; i++)
+                    {
+                        if (ControlBar.Items[i] is GridMultiSelectFilter)
+                        {
+                            insertIndex = i + 1;
+                        }
+                    }
+
+                    ControlBar.Items.Insert(Math.Min(insertIndex, ControlBar.Items.Count), _modeToggle);
+                }
+
+                _controlBarWithToggle = ControlBar;
+            }
+
+            ApplyControlBarModeState();
+        }
+
+        // Restores the control bar to its plain (non-category) state.
+        private void RestoreControlBar(GridControlBarViewModel bar)
+        {
+            if (bar == null)
             {
                 return;
             }
 
-            _modeToggle = new GridModeToggle(
-                null,
-                null,
-                CategoryModeText("LOCPlayAch_CategorySummaries_Toggle", "Categories"),
-                () => _isCategoryMode,
-                SetCategoryMode,
-                CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"));
-
-            // Insert immediately after the last category dropdown (GridMultiSelectFilter); if there
-            // are none, fall back to the front of the strip.
-            var insertIndex = 0;
-            for (var i = 0; i < ControlBar.Items.Count; i++)
+            bar.Items.Remove(_modeToggle);
+            bar.Items.Remove(_backButton);
+            foreach (var item in bar.Items)
             {
-                if (ControlBar.Items[i] is GridMultiSelectFilter)
+                if (item is GridMultiSelectFilter)
                 {
-                    insertIndex = i + 1;
+                    item.IsVisible = true;
                 }
             }
 
-            ControlBar.Items.Insert(Math.Min(insertIndex, ControlBar.Items.Count), _modeToggle);
-            _controlBarWithToggle = ControlBar;
+            if (_originalSearch != null && ReferenceEquals(bar.Search, _categorySearch))
+            {
+                bar.Search = _originalSearch;
+            }
+        }
+
+        // Shows/hides the injected items and swaps the search box to match the active nested grid:
+        // category dropdowns are hidden in category mode, Back shows only when drilled, and the
+        // search box filters category names in the list but achievements once drilled in.
+        private void ApplyControlBarModeState()
+        {
+            var bar = _controlBarWithToggle;
+            if (bar == null)
+            {
+                return;
+            }
+
+            var drilled = _isCategoryMode && _drilledCategory != null;
+            var list = _isCategoryMode && !drilled;
+
+            foreach (var item in bar.Items)
+            {
+                if (item is GridMultiSelectFilter)
+                {
+                    item.IsVisible = !_isCategoryMode;
+                }
+            }
+
+            if (_backButton != null)
+            {
+                _backButton.IsVisible = drilled;
+            }
+
+            if (list)
+            {
+                if (!ReferenceEquals(bar.Search, _categorySearch))
+                {
+                    _originalSearch = bar.Search;
+                    bar.Search = _categorySearch;
+                }
+            }
+            else if (_originalSearch != null && ReferenceEquals(bar.Search, _categorySearch))
+            {
+                bar.Search = _originalSearch;
+            }
         }
 
         private void SetCategoryMode(bool enabled)
@@ -652,19 +763,51 @@ namespace PlayniteAchievements.Views.Controls
 
             if (enabled)
             {
+                // Clear any active achievement search so the category rollups reflect all achievements;
+                // the list's search box then filters category names instead.
+                if (ControlBar?.Search != null && !ReferenceEquals(ControlBar.Search, _categorySearch))
+                {
+                    _originalSearch = ControlBar.Search;
+                    _originalSearch.Clear();
+                }
+
+                _categorySearchText = string.Empty;
                 RebuildCategorySummaries();
             }
 
             ApplyCategoryViewState();
+            ApplyControlBarModeState();
             _modeToggle?.Refresh();
         }
 
         private void RebuildCategorySummaries()
         {
             var items = ItemsSource?.ToList();
-            CategorySummaries = items == null || items.Count == 0
+            _allCategorySummaries = items == null || items.Count == 0
                 ? null
                 : CategorySummaryBuilder.Build(items);
+            ApplyCategoryNameFilter();
+        }
+
+        private void ApplyCategoryNameFilter()
+        {
+            var all = _allCategorySummaries;
+            if (all == null)
+            {
+                CategorySummaries = null;
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(_categorySearchText))
+            {
+                CategorySummaries = all;
+                return;
+            }
+
+            var needle = _categorySearchText.Trim();
+            CategorySummaries = all
+                .Where(c => (c.GameName ?? string.Empty).IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
         }
 
         private void DrillIntoCategory(CategorySummaryItem item)
@@ -677,6 +820,7 @@ namespace PlayniteAchievements.Views.Controls
             _drilledCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
             SelectedCategorySummaryItems = new[] { (GameSummaryItem)item };
             ApplyCategoryViewState();
+            ApplyControlBarModeState();
         }
 
         private void ApplyCategoryViewState()
@@ -693,14 +837,25 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (_isCategoryMode && _drilledCategory != null)
             {
-                var source = ItemsSource;
-                EffectiveAchievements = source == null
-                    ? null
-                    : source.Where(i => string.Equals(
-                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(i?.CategoryLabel),
-                            _drilledCategory,
-                            StringComparison.OrdinalIgnoreCase))
-                        .ToList();
+                var filtered = (ItemsSource ?? Enumerable.Empty<AchievementDisplayItem>())
+                    .Where(i => string.Equals(
+                        AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(i?.CategoryLabel),
+                        _drilledCategory,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                // Mutate a stable collection in place rather than reassigning a new list, so the grid
+                // keeps its view (and column sort) instead of rebuilding it on every refresh.
+                if (_drillItems == null)
+                {
+                    _drillItems = new BulkObservableCollection<AchievementDisplayItem>();
+                }
+
+                _drillItems.ReplaceAll(filtered);
+                if (!ReferenceEquals(EffectiveAchievements, _drillItems))
+                {
+                    EffectiveAchievements = _drillItems;
+                }
             }
             else if (!ReferenceEquals(EffectiveAchievements, ItemsSource))
             {
@@ -760,6 +915,7 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             ApplyCategoryViewState();
+            ApplyControlBarModeState();
         }
 
         private void CategoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -793,8 +949,13 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            var items = EffectiveAchievements?.ToList();
-            if (items == null || items.Count == 0)
+            if (_drillItems == null)
+            {
+                return;
+            }
+
+            var items = _drillItems.ToList();
+            if (items.Count == 0)
             {
                 return;
             }
@@ -812,10 +973,10 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            EffectiveAchievements = items;
+            _drillItems.ReplaceAll(items);
         }
 
-        private void CategoryBack_Click(object sender, RoutedEventArgs e)
+        private void CategoryBackToList()
         {
             _drilledCategory = null;
             SelectedCategorySummaryItems = null;
@@ -825,6 +986,7 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             ApplyCategoryViewState();
+            ApplyControlBarModeState();
         }
 
         private static string CategoryModeText(string key, string fallback)
@@ -1097,11 +1259,11 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            // Remove the injected toggle so a control bar reused across navigations does not
-            // accumulate duplicates; it is re-added on the next load.
+            // Restore the control bar so a bar reused across navigations does not keep our injected
+            // items or hidden dropdowns; everything is re-applied on the next load.
             if (_controlBarWithToggle != null)
             {
-                _controlBarWithToggle.Items.Remove(_modeToggle);
+                RestoreControlBar(_controlBarWithToggle);
                 _controlBarWithToggle = null;
             }
         }
