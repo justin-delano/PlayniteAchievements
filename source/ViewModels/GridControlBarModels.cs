@@ -352,6 +352,26 @@ namespace PlayniteAchievements.ViewModels
         }
     }
 
+    // A momentary action button in the control bar (e.g. the category-mode Back button).
+    public sealed class GridActionButton : GridControlBarItem
+    {
+        private readonly Action _action;
+
+        public GridActionButton(string content, Action action, string toolTip = null)
+        {
+            Content = content;
+            _action = action;
+            ToolTip = toolTip;
+        }
+
+        public string Content { get; }
+
+        public void Invoke()
+        {
+            _action?.Invoke();
+        }
+    }
+
     public sealed class GridProviderPlatformFilter : GridControlBarItem
     {
         private readonly Func<string> _getDisplayText;
