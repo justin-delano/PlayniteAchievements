@@ -39,22 +39,16 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Drill-down header: Back button + header-less summary row for the selected category. -->
-        <StackPanel Grid.Row="0"
-                    Margin="0,0,0,8"
-                    Visibility="{Binding DrillHeaderVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, Converter={StaticResource CategoryModeBoolToVis}}">
-            <Button x:Name="CategoryBackButton"
-                    Click="CategoryBack_Click"
-                    Content="{DynamicResource LOCPlayAch_Common_Back}"
-                    HorizontalAlignment="Left"
-                    Margin="0,0,0,6"
-                    Style="{DynamicResource PlayAch.Button.BaseStyle}"/>
-            <controls:GameSummariesGridControl x:Name="CategoryDrillHeaderGrid"
-                                               ItemsSource="{Binding SelectedCategorySummaryItems, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
-                                               ColumnSettingsKey="{Binding ResolvedCategoryColumnSettingsKey, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
-                                               ShowColumnHeaders="False"
-                                               DisableRowSelection="True"/>
-        </StackPanel>
+        <!-- Drill-down header: header-less summary row for the selected category. The Back button
+             is injected into the control bar so it sits with the other toolbar affordances. -->
+        <controls:GameSummariesGridControl x:Name="CategoryDrillHeaderGrid"
+                                           Grid.Row="0"
+                                           Margin="0,0,0,8"
+                                           Visibility="{Binding DrillHeaderVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, Converter={StaticResource CategoryModeBoolToVis}}"
+                                           ItemsSource="{Binding SelectedCategorySummaryItems, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                           ColumnSettingsKey="{Binding ResolvedCategoryColumnSettingsKey, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                           ShowColumnHeaders="False"
+                                           DisableRowSelection="True"/>
 
         <Grid Grid.Row="1">
             <!-- Category-summaries list (one row per category label). -->
