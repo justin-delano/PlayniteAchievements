@@ -52,6 +52,14 @@ namespace PlayniteAchievements.Views.Controls
             "GameSummaryLastUnlock"
         };
 
+        // Columns with no per-category meaning; dropped entirely from category-summaries grids.
+        private static readonly string[] CategoryExcludedColumnKeys =
+        {
+            "GameSummaryPlatform",
+            "GameSummaryPlaytime",
+            "GameSummaryLastPlayed"
+        };
+
         private static readonly string[] MirroredBadgeResourceKeys =
         {
             "PlayAch.Brush.CompletedGame",
@@ -105,8 +113,31 @@ namespace PlayniteAchievements.Views.Controls
                     progress: true,
                     total: true,
                     collectionScore: false,
-                    prestigeScore: false)
+                    prestigeScore: false),
+                // Category-summaries surfaces: full game-summary set, Cover kept, platform/playtime/
+                // last-played dropped (no per-category meaning). Friend-only columns are excluded at
+                // attach time since category rows are plain GameSummaryItem.
+                ["ViewAchievementsCategorySummaries"] = CreateCategorySummaryVisibility(),
+                ["OverviewSelectedGameCategorySummaries"] = CreateCategorySummaryVisibility(),
+                ["FriendsOverviewCategorySummaries"] = CreateCategorySummaryVisibility(),
+                ["DesktopThemeCategorySummaries"] = CreateCategorySummaryVisibility()
             };
+
+        private static IReadOnlyDictionary<string, bool> CreateCategorySummaryVisibility()
+        {
+            return CreateGameSummaryVisibility(
+                cover: true,
+                game: true,
+                platform: false,
+                lastPlayed: false,
+                lastUnlock: true,
+                playtime: false,
+                progress: true,
+                total: true,
+                collectionScore: true,
+                prestigeScore: true,
+                points: true);
+        }
 
         private static IReadOnlyDictionary<string, bool> CreateGameSummaryVisibility(
             bool cover = true,
@@ -310,6 +341,32 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (bool)GetValue(DelayInitialRenderUntilNormalizedProperty);
             set => SetValue(DelayInitialRenderUntilNormalizedProperty, value);
+        }
+
+        public static readonly DependencyProperty ControlBarProperty =
+            DependencyProperty.Register(
+                nameof(ControlBar),
+                typeof(GridControlBarViewModel),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(null));
+
+        public GridControlBarViewModel ControlBar
+        {
+            get => (GridControlBarViewModel)GetValue(ControlBarProperty);
+            set => SetValue(ControlBarProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowControlBarProperty =
+            DependencyProperty.Register(
+                nameof(ShowControlBar),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowControlBar
+        {
+            get => (bool)GetValue(ShowControlBarProperty);
+            set => SetValue(ShowControlBarProperty, value);
         }
 
         public event SelectionChangedEventHandler SelectionChanged;
@@ -736,6 +793,74 @@ namespace PlayniteAchievements.Views.Controls
                         SetHeaderAlignments = map => persisted.FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments = map,
                         GetLastPlayedDateMode = () => persisted.FriendsOverviewGameSummariesLastPlayedDateMode
                     };
+                case GridSurface.ViewAchievementsCategory:
+                    return new GameSummarySurfaceSettings
+                    {
+                        GetWidths = () => persisted.ViewAchievementsCategorySummariesColumnWidths,
+                        SetWidths = map => persisted.ViewAchievementsCategorySummariesColumnWidths = map,
+                        GetOrder = () => persisted.ViewAchievementsCategorySummariesColumnOrder,
+                        SetOrder = map => persisted.ViewAchievementsCategorySummariesColumnOrder = map,
+                        GetVisibility = () => persisted.ViewAchievementsCategorySummariesColumnVisibility,
+                        SetVisibility = map => persisted.ViewAchievementsCategorySummariesColumnVisibility = map,
+                        GetAlignments = () => persisted.ViewAchievementsCategorySummariesColumnAlignments,
+                        SetAlignments = map => persisted.ViewAchievementsCategorySummariesColumnAlignments = map,
+                        GetVerticalAlignments = () => persisted.ViewAchievementsCategorySummariesColumnVerticalAlignments,
+                        SetVerticalAlignments = map => persisted.ViewAchievementsCategorySummariesColumnVerticalAlignments = map,
+                        GetHeaderAlignments = () => persisted.ViewAchievementsCategorySummariesColumnHeaderAlignments,
+                        SetHeaderAlignments = map => persisted.ViewAchievementsCategorySummariesColumnHeaderAlignments = map,
+                        GetLastPlayedDateMode = () => persisted.ViewAchievementsGameSummariesLastPlayedDateMode
+                    };
+                case GridSurface.OverviewSelectedGameCategory:
+                    return new GameSummarySurfaceSettings
+                    {
+                        GetWidths = () => persisted.OverviewSelectedGameCategorySummariesColumnWidths,
+                        SetWidths = map => persisted.OverviewSelectedGameCategorySummariesColumnWidths = map,
+                        GetOrder = () => persisted.OverviewSelectedGameCategorySummariesColumnOrder,
+                        SetOrder = map => persisted.OverviewSelectedGameCategorySummariesColumnOrder = map,
+                        GetVisibility = () => persisted.OverviewSelectedGameCategorySummariesColumnVisibility,
+                        SetVisibility = map => persisted.OverviewSelectedGameCategorySummariesColumnVisibility = map,
+                        GetAlignments = () => persisted.OverviewSelectedGameCategorySummariesColumnAlignments,
+                        SetAlignments = map => persisted.OverviewSelectedGameCategorySummariesColumnAlignments = map,
+                        GetVerticalAlignments = () => persisted.OverviewSelectedGameCategorySummariesColumnVerticalAlignments,
+                        SetVerticalAlignments = map => persisted.OverviewSelectedGameCategorySummariesColumnVerticalAlignments = map,
+                        GetHeaderAlignments = () => persisted.OverviewSelectedGameCategorySummariesColumnHeaderAlignments,
+                        SetHeaderAlignments = map => persisted.OverviewSelectedGameCategorySummariesColumnHeaderAlignments = map,
+                        GetLastPlayedDateMode = () => persisted.OverviewGameSummariesLastPlayedDateMode
+                    };
+                case GridSurface.FriendsOverviewCategory:
+                    return new GameSummarySurfaceSettings
+                    {
+                        GetWidths = () => persisted.FriendsOverviewCategorySummariesColumnWidths,
+                        SetWidths = map => persisted.FriendsOverviewCategorySummariesColumnWidths = map,
+                        GetOrder = () => persisted.FriendsOverviewCategorySummariesColumnOrder,
+                        SetOrder = map => persisted.FriendsOverviewCategorySummariesColumnOrder = map,
+                        GetVisibility = () => persisted.FriendsOverviewCategorySummariesColumnVisibility,
+                        SetVisibility = map => persisted.FriendsOverviewCategorySummariesColumnVisibility = map,
+                        GetAlignments = () => persisted.FriendsOverviewCategorySummariesColumnAlignments,
+                        SetAlignments = map => persisted.FriendsOverviewCategorySummariesColumnAlignments = map,
+                        GetVerticalAlignments = () => persisted.FriendsOverviewCategorySummariesColumnVerticalAlignments,
+                        SetVerticalAlignments = map => persisted.FriendsOverviewCategorySummariesColumnVerticalAlignments = map,
+                        GetHeaderAlignments = () => persisted.FriendsOverviewCategorySummariesColumnHeaderAlignments,
+                        SetHeaderAlignments = map => persisted.FriendsOverviewCategorySummariesColumnHeaderAlignments = map,
+                        GetLastPlayedDateMode = () => persisted.FriendsOverviewGameSummariesLastPlayedDateMode
+                    };
+                case GridSurface.DesktopThemeCategory:
+                    return new GameSummarySurfaceSettings
+                    {
+                        GetWidths = () => persisted.DesktopThemeCategorySummariesColumnWidths,
+                        SetWidths = map => persisted.DesktopThemeCategorySummariesColumnWidths = map,
+                        GetOrder = () => persisted.DesktopThemeCategorySummariesColumnOrder,
+                        SetOrder = map => persisted.DesktopThemeCategorySummariesColumnOrder = map,
+                        GetVisibility = () => persisted.DesktopThemeCategorySummariesColumnVisibility,
+                        SetVisibility = map => persisted.DesktopThemeCategorySummariesColumnVisibility = map,
+                        GetAlignments = () => persisted.DesktopThemeCategorySummariesColumnAlignments,
+                        SetAlignments = map => persisted.DesktopThemeCategorySummariesColumnAlignments = map,
+                        GetVerticalAlignments = () => persisted.DesktopThemeCategorySummariesColumnVerticalAlignments,
+                        SetVerticalAlignments = map => persisted.DesktopThemeCategorySummariesColumnVerticalAlignments = map,
+                        GetHeaderAlignments = () => persisted.DesktopThemeCategorySummariesColumnHeaderAlignments,
+                        SetHeaderAlignments = map => persisted.DesktopThemeCategorySummariesColumnHeaderAlignments = map,
+                        GetLastPlayedDateMode = () => persisted.OverviewGameSummariesLastPlayedDateMode
+                    };
                 default:
                     return new GameSummarySurfaceSettings
                     {
@@ -779,7 +904,11 @@ namespace PlayniteAchievements.Views.Controls
             StartPage,
             ViewAchievements,
             FriendsOverview,
-            FriendsOverviewSelectedFriend
+            FriendsOverviewSelectedFriend,
+            ViewAchievementsCategory,
+            OverviewSelectedGameCategory,
+            FriendsOverviewCategory,
+            DesktopThemeCategory
         }
 
         private GridSurface ResolveSurface()
@@ -805,7 +934,35 @@ namespace PlayniteAchievements.Views.Controls
                 return GridSurface.FriendsOverviewSelectedFriend;
             }
 
+            if (string.Equals(ColumnSettingsKey, "ViewAchievementsCategorySummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.ViewAchievementsCategory;
+            }
+
+            if (string.Equals(ColumnSettingsKey, "OverviewSelectedGameCategorySummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.OverviewSelectedGameCategory;
+            }
+
+            if (string.Equals(ColumnSettingsKey, "FriendsOverviewCategorySummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.FriendsOverviewCategory;
+            }
+
+            if (string.Equals(ColumnSettingsKey, "DesktopThemeCategorySummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.DesktopThemeCategory;
+            }
+
             return GridSurface.Overview;
+        }
+
+        private static bool IsCategorySurface(GridSurface surface)
+        {
+            return surface == GridSurface.ViewAchievementsCategory ||
+                   surface == GridSurface.OverviewSelectedGameCategory ||
+                   surface == GridSurface.FriendsOverviewCategory ||
+                   surface == GridSurface.DesktopThemeCategory;
         }
 
         // Keep the friend columns out of every grid except Friends Overview: collapse them so
@@ -830,6 +987,15 @@ namespace PlayniteAchievements.Views.Controls
             if (surface != GridSurface.FriendsOverviewSelectedFriend)
             {
                 foreach (var key in SelectedFriendOnlyColumnKeys)
+                {
+                    _columnPersistence.ForcedCollapsedKeys.Add(key);
+                    _columnPersistence.ExcludedVisibilityKeys.Add(key);
+                }
+            }
+
+            if (IsCategorySurface(surface))
+            {
+                foreach (var key in CategoryExcludedColumnKeys)
                 {
                     _columnPersistence.ForcedCollapsedKeys.Add(key);
                     _columnPersistence.ExcludedVisibilityKeys.Add(key);
@@ -985,6 +1151,21 @@ namespace PlayniteAchievements.Views.Controls
         public bool ActivateFocusedColumnHeaderForController()
         {
             return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(GameSummariesGrid);
+        }
+
+        public bool OpenFocusedControlBarMenuForController()
+        {
+            return ControlBarHost?.OpenFocusedSelectorForController() == true;
+        }
+
+        public bool IsControlBarFocusedForController()
+        {
+            return ControlBarHost?.IsKeyboardFocusWithin == true;
+        }
+
+        public IList<UIElement> GetControlBarControllerElements()
+        {
+            return ControlBarHost?.GetControllerElements() ?? new List<UIElement>();
         }
 
         private bool OpenColumnVisibilityMenu(DataGrid grid, FrameworkElement owner, bool useControllerPlacement)
