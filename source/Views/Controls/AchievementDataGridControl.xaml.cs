@@ -778,6 +778,43 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        private void SortDrilledAchievements(DataGridSortingEventArgs e)
+        {
+            if (e?.Column == null || string.IsNullOrWhiteSpace(e.Column.SortMemberPath))
+            {
+                return;
+            }
+
+            var sortDirection = DataGridSortingHelper.HandleSorting(AchievementsDataGrid, e, AchievementsDataGrid);
+            if (!sortDirection.HasValue)
+            {
+                // Cleared sort: restore the category's source order.
+                RecomputeEffectiveAchievements();
+                return;
+            }
+
+            var items = EffectiveAchievements?.ToList();
+            if (items == null || items.Count == 0)
+            {
+                return;
+            }
+
+            var currentSortPath = string.Empty;
+            ListSortDirection? currentSortDirection = null;
+            if (!AchievementSortHelper.TrySortItems(
+                    items,
+                    e.Column.SortMemberPath,
+                    sortDirection.Value,
+                    SortScope,
+                    ref currentSortPath,
+                    ref currentSortDirection))
+            {
+                return;
+            }
+
+            EffectiveAchievements = items;
+        }
+
         private void CategoryBack_Click(object sender, RoutedEventArgs e)
         {
             _drilledCategory = null;
@@ -1794,6 +1831,15 @@ namespace PlayniteAchievements.Views.Controls
 
         private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
+            // While drilled into a category the grid shows a self-contained filtered subset, so sort
+            // it in-memory regardless of the surface's external-sorting setting (the external handler
+            // sorts the full collection, which would not reorder the visible subset).
+            if (_isCategoryMode && _drilledCategory != null)
+            {
+                SortDrilledAchievements(e);
+                return;
+            }
+
             // Raise the Sorting event to allow external handling
             Sorting?.Invoke(this, e);
 
