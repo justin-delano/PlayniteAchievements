@@ -49,8 +49,9 @@ namespace PlayniteAchievements.Services.Summaries
                 }
 
                 var display = AchievementCategoryTypeHelper.ToCategoryLabelDisplayText(label);
-                var item = new GameSummaryItem
+                var item = new CategorySummaryItem
                 {
+                    CategoryLabel = label,
                     GameName = display,
                     SortingName = display,
                     GameCoverPath = ResolveSharedCover(bucket)
