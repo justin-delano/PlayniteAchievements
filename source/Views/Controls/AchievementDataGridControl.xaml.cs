@@ -769,9 +769,12 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (CategoryListGrid?.SelectedItem is CategorySummaryItem item)
+            var selected = e?.AddedItems != null && e.AddedItems.Count > 0
+                ? e.AddedItems[0] as CategorySummaryItem
+                : CategoryListGrid?.SelectedItem as CategorySummaryItem;
+            if (selected != null)
             {
-                DrillIntoCategory(item);
+                DrillIntoCategory(selected);
             }
         }
 
