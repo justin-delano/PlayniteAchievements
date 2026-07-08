@@ -1902,7 +1902,7 @@ namespace PlayniteAchievements.Views.Helpers
 
             refreshLastColumnGuard();
 
-            menu.Items.Add(CreateSectionHeader("Columns"));
+            menu.Items.Add(CreateSectionHeader(ResourceProvider.GetString("LOCColumns")));
             foreach (var item in visibilityItems)
             {
                 menu.Items.Add(item);
