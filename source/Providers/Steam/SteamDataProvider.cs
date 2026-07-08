@@ -15,9 +15,9 @@ using Playnite.SDK.Models;
 
 namespace PlayniteAchievements.Providers.Steam
 {
-    internal sealed class SteamDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
+    internal sealed class SteamDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
-        internal static readonly Guid SteamPluginId = Guid.Parse("CB91DFC9-B977-43BF-8E70-55F46E410FAB");
+        internal static readonly Guid SteamPluginId = SteamGameIdentity.SteamPluginId;
 
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Steam",
@@ -37,6 +37,8 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamHttpClient _steamClient;
         private readonly SteamScanner _scanner;
         private readonly SteamSessionManager _sessionManager;
+        private readonly SteamWebApiTokenResolver _tokenResolver;
+        private readonly SteamHuntersCategoryEnricher _steamHuntersCategoryEnricher;
         private readonly IFriendsProvider _friendsProvider;
         private SteamSettings _providerSettings;
 
@@ -58,10 +60,12 @@ namespace PlayniteAchievements.Providers.Steam
             // Create Steam-specific dependencies
             _steamClient = new SteamHttpClient(api, logger, _sessionManager, pluginUserDataPath);
             var steamApiClient = new SteamApiClient(_steamClient.ApiHttpClient, logger);
-            var tokenResolver = new SteamWebApiTokenResolver(_sessionManager, logger);
+            var steamHuntersApiClient = new SteamHuntersApiClient(_steamClient.ApiHttpClient, logger);
+            _steamHuntersCategoryEnricher = new SteamHuntersCategoryEnricher(steamHuntersApiClient, logger);
+            _tokenResolver = new SteamWebApiTokenResolver(_sessionManager, logger);
             _sessionManager.SetClearInMemoryAuthState(_steamClient.ClearInMemoryAuthState);
-            _scanner = new SteamScanner(settings, _steamClient, steamApiClient, tokenResolver, api, logger);
-            _friendsProvider = new SteamFriendsProvider(_steamClient, steamApiClient, _scanner, tokenResolver, logger);
+            _scanner = new SteamScanner(settings, _steamClient, steamApiClient, _tokenResolver, _steamHuntersCategoryEnricher, api, logger);
+            _friendsProvider = new SteamFriendsProvider(_steamClient, steamApiClient, _scanner, _tokenResolver, _steamHuntersCategoryEnricher, logger);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
@@ -146,6 +150,11 @@ namespace PlayniteAchievements.Providers.Steam
             return TryGetPositiveId(context?.Game?.GameId, out appId);
         }
 
+        internal static bool TryGetSteamAppId(Game game, out int appId)
+        {
+            return SteamGameIdentity.TryGetSteamAppId(game, out appId);
+        }
+
         private static bool TryGetPositiveId(string value, out int id)
         {
             return int.TryParse(
@@ -183,6 +192,17 @@ namespace PlayniteAchievements.Providers.Steam
         public void Dispose()
         {
             _steamClient?.Dispose();
+        }
+
+        public void BeginRefreshAuthContext(RefreshAuthContext context)
+        {
+            _steamHuntersCategoryEnricher?.ClearCache();
+            _tokenResolver?.BeginRefreshAuthContext(context);
+        }
+
+        public void EndRefreshAuthContext(RefreshAuthContext context)
+        {
+            _tokenResolver?.EndRefreshAuthContext(context);
         }
     }
 }

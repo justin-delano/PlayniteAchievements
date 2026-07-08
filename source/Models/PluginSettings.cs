@@ -101,6 +101,8 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _setDynamicAchievementsGameCommand;
         [DontSerialize]
+        private ICommand _filterDynamicAchievementsByRunningGameCommand;
+        [DontSerialize]
         private ICommand _setDynamicAchievementsFilterCommand;
         [DontSerialize]
         private ICommand _sortDynamicAchievementsCommand;
@@ -109,6 +111,8 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _filterDynamicLibraryAchievementsByProviderCommand;
         [DontSerialize]
+        private ICommand _filterDynamicLibraryAchievementsByRunningGameCommand;
+        [DontSerialize]
         private ICommand _setDynamicLibraryAchievementsFilterCommand;
         [DontSerialize]
         private ICommand _sortDynamicLibraryAchievementsCommand;
@@ -116,6 +120,8 @@ namespace PlayniteAchievements.Models
         private ICommand _setDynamicLibraryAchievementsSortDirectionCommand;
         [DontSerialize]
         private ICommand _filterDynamicGameSummariesByProviderCommand;
+        [DontSerialize]
+        private ICommand _filterDynamicGameSummariesByRunningGameCommand;
         [DontSerialize]
         private ICommand _setDynamicGameSummariesFilterCommand;
         [DontSerialize]
@@ -137,17 +143,23 @@ namespace PlayniteAchievements.Models
         [DontSerialize]
         private ICommand _resetDynamicFriendScopeCommand;
         [DontSerialize]
+        private ICommand _filterDynamicFriendSummariesByRunningGameCommand;
+        [DontSerialize]
         private ICommand _setDynamicFriendSummariesFilterCommand;
         [DontSerialize]
         private ICommand _sortDynamicFriendSummariesCommand;
         [DontSerialize]
         private ICommand _setDynamicFriendSummariesSortDirectionCommand;
         [DontSerialize]
+        private ICommand _filterDynamicFriendGameSummariesByRunningGameCommand;
+        [DontSerialize]
         private ICommand _setDynamicFriendGameSummariesFilterCommand;
         [DontSerialize]
         private ICommand _sortDynamicFriendGameSummariesCommand;
         [DontSerialize]
         private ICommand _setDynamicFriendGameSummariesSortDirectionCommand;
+        [DontSerialize]
+        private ICommand _filterDynamicFriendAchievementsByRunningGameCommand;
         [DontSerialize]
         private ICommand _setDynamicFriendAchievementsFilterCommand;
         [DontSerialize]
@@ -273,6 +285,13 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ICommand FilterDynamicAchievementsByRunningGameCommand
+        {
+            get => _filterDynamicAchievementsByRunningGameCommand;
+            set => SetValue(ref _filterDynamicAchievementsByRunningGameCommand, value);
+        }
+
+        [DontSerialize]
         public ICommand SetDynamicAchievementsFilterCommand
         {
             get => _setDynamicAchievementsFilterCommand;
@@ -301,6 +320,13 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ICommand FilterDynamicLibraryAchievementsByRunningGameCommand
+        {
+            get => _filterDynamicLibraryAchievementsByRunningGameCommand;
+            set => SetValue(ref _filterDynamicLibraryAchievementsByRunningGameCommand, value);
+        }
+
+        [DontSerialize]
         public ICommand SetDynamicLibraryAchievementsFilterCommand
         {
             get => _setDynamicLibraryAchievementsFilterCommand;
@@ -326,6 +352,13 @@ namespace PlayniteAchievements.Models
         {
             get => _filterDynamicGameSummariesByProviderCommand;
             set => SetValue(ref _filterDynamicGameSummariesByProviderCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand FilterDynamicGameSummariesByRunningGameCommand
+        {
+            get => _filterDynamicGameSummariesByRunningGameCommand;
+            set => SetValue(ref _filterDynamicGameSummariesByRunningGameCommand, value);
         }
 
         [DontSerialize]
@@ -399,6 +432,13 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ICommand FilterDynamicFriendSummariesByRunningGameCommand
+        {
+            get => _filterDynamicFriendSummariesByRunningGameCommand;
+            set => SetValue(ref _filterDynamicFriendSummariesByRunningGameCommand, value);
+        }
+
+        [DontSerialize]
         public ICommand SetDynamicFriendSummariesFilterCommand
         {
             get => _setDynamicFriendSummariesFilterCommand;
@@ -420,6 +460,13 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
+        public ICommand FilterDynamicFriendGameSummariesByRunningGameCommand
+        {
+            get => _filterDynamicFriendGameSummariesByRunningGameCommand;
+            set => SetValue(ref _filterDynamicFriendGameSummariesByRunningGameCommand, value);
+        }
+
+        [DontSerialize]
         public ICommand SetDynamicFriendGameSummariesFilterCommand
         {
             get => _setDynamicFriendGameSummariesFilterCommand;
@@ -438,6 +485,13 @@ namespace PlayniteAchievements.Models
         {
             get => _setDynamicFriendGameSummariesSortDirectionCommand;
             set => SetValue(ref _setDynamicFriendGameSummariesSortDirectionCommand, value);
+        }
+
+        [DontSerialize]
+        public ICommand FilterDynamicFriendAchievementsByRunningGameCommand
+        {
+            get => _filterDynamicFriendAchievementsByRunningGameCommand;
+            set => SetValue(ref _filterDynamicFriendAchievementsByRunningGameCommand, value);
         }
 
         [DontSerialize]
@@ -1032,6 +1086,12 @@ namespace PlayniteAchievements.Models
         public string DynamicGameSummariesProviderLabel => ModernTheme.DynamicGameSummariesProviderLabel ?? DynamicThemeViewKeys.All;
 
         [DontSerialize]
+        public string DynamicGameSummariesGameKey => ModernTheme.DynamicGameSummariesGameKey ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicGameSummariesGameLabel => ModernTheme.DynamicGameSummariesGameLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
         public string DynamicGameSummariesFilterKey
         {
             get => ModernTheme.DynamicGameSummariesFilterKey ?? DynamicThemeViewKeys.All;
@@ -1438,6 +1498,12 @@ namespace PlayniteAchievements.Models
 
         [DontSerialize]
         public string DynamicLibraryAchievementsProviderLabel => ModernTheme.DynamicLibraryAchievementsProviderLabel ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsGameKey => ModernTheme.DynamicLibraryAchievementsGameKey ?? DynamicThemeViewKeys.All;
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsGameLabel => ModernTheme.DynamicLibraryAchievementsGameLabel ?? DynamicThemeViewKeys.All;
 
         [DontSerialize]
         public string DynamicLibraryAchievementsFilterKey

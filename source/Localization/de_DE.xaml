@@ -617,6 +617,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- Provider: Steam -->
     <sys:String x:Key="LOCPlayAch_Settings_SteamUserId">Steam-Benutzer-ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SteamUserId_Help">Your 64-bit Steam ID. This is automatically detected when you authenticate.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories">SteamHunters für Kategorien verwenden</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamHuntersCategories_Help">Wenn aktiviert: Steam-Aktualisierungen verwenden SteamHunters-Gruppen, um offizielle Erfolgs-Kategorielabels und Base-/DLC-Typen zu ergänzen.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ReauthSteam">Authentifizieren</sys:String>
     <!-- Provider: RPCS3 -->
     <sys:String x:Key="LOCPlayAch_Settings_Rpcs3ExecutablePath">Pfad zur ausführbaren Datei</sys:String>
@@ -672,6 +674,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders">Spaltenüberschriften in Spieleübersichten anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowAchievementGridColumnHeaders">Spaltenüberschriften in Erfolgsübersichten anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowDesktopThemeAchievementGridColumnHeaders">Spaltenüberschriften anzeigen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowGridControlBar">Steuerleiste anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Vereinheitlichte Seltenheitsmarkierungen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsGridSort">View Achievements Grid</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">Erfolgsfenster anzeigen</sys:String>
@@ -861,5 +864,8 @@ Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werd
     <sys:String x:Key="LOCPlayniteAchievementsTimeToUnlock">Freischaltzeit für alles</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsUltraRare">Äußerst selten</sys:String>
     <sys:String x:Key="LOCPlayniteAchievementsUserStats">Benutzerstatistik</sys:String>
+
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership">Exophase für Steam-Freundesbesitz verwenden</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint">Fügt beim Aktualisieren des Steam-Freundesbesitzes fehlende Steam-Spiele aus dem verknüpften Exophase-Profil hinzu. Erfordert einen aktivierten Exophase-Anbieter.</sys:String>
 
 </ResourceDictionary>

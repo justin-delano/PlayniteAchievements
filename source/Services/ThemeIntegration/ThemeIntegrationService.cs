@@ -7,6 +7,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Summaries;
+using PlayniteAchievements.Services.UI;
 #if !TEST
 using PlayniteAchievements.Services.Library;
 #endif
@@ -47,8 +48,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 #endif
         private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly IFriendCacheManager _friendCache;
+        private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
+        private readonly bool _ownsFriendsOverviewDataCoordinator;
         private readonly Func<RefreshRequest, string, bool, Action<bool>, Task> _runRefreshWithGlobalProgressAsync;
         private readonly Action<Guid> _openManageAchievementsView;
+        private readonly Func<AchievementHotkeyTargetResolution> _resolveRunningGameTarget;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly FullscreenWindowService _windowService;
         private readonly ThemeRuntimeState _runtimeState = new ThemeRuntimeState();
@@ -56,6 +60,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly object _refreshLock = new object();
         private CancellationTokenSource _refreshCts;
         private static readonly TimeSpan LibraryRefreshDelay = TimeSpan.FromMilliseconds(500);
+#if TEST
+        private static readonly TimeSpan FriendRefreshDelay = TimeSpan.Zero;
+#else
+        private static readonly TimeSpan FriendRefreshDelay = TimeSpan.FromMilliseconds(500);
+#endif
         private const int ThemeRecentUnlockSummaryLimit = 10;
 
         private readonly object _updateGate = new object();
@@ -67,6 +76,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private CancellationTokenSource _activeUpdateCts;
         private Guid? _appliedGameId;
         private DateTime _appliedLastUpdatedUtc;
+        private readonly object _friendRefreshGate = new object();
+        private Task _friendRefreshRunner;
+        private CancellationTokenSource _friendRefreshCts;
+        private int _friendRefreshRequestVersion;
+        private int _friendRefreshAppliedVersion;
 
         private bool _fullscreenInitialized;
         private bool _hasLoadedLibraryState;
@@ -89,7 +103,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ILogger logger,
             Func<RefreshRequest, string, bool, Action<bool>, Task> runRefreshWithGlobalProgressAsync = null,
             Action<Guid> openManageAchievementsView = null,
-            IFriendCacheManager friendCache = null)
+            IFriendCacheManager friendCache = null,
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null,
+            Func<AchievementHotkeyTargetResolution> resolveRunningGameTarget = null)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
@@ -99,8 +115,14 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 #endif
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _friendCache = friendCache;
+            _ownsFriendsOverviewDataCoordinator = friendsOverviewDataCoordinator == null && friendCache != null;
+            _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator ??
+                (friendCache != null
+                    ? new FriendsOverviewDataCoordinator(friendCache, () => _settings?.Persisted, logger)
+                    : null);
             _runRefreshWithGlobalProgressAsync = runRefreshWithGlobalProgressAsync ?? RunRefreshWithoutGlobalProgressAsync;
             _openManageAchievementsView = openManageAchievementsView;
+            _resolveRunningGameTarget = resolveRunningGameTarget ?? ResolveRunningGameTargetFromApi;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _windowService = windowService ?? throw new ArgumentNullException(nameof(windowService));
             _logger = logger;
@@ -118,6 +140,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.OpenViewAchievementsWindow = openViewAchievementsCommand;
             _settings.OpenManageAchievementsWindow = openManageAchievementsCommand;
             _settings.SetDynamicAchievementsGameCommand = new RelayCommand(SetDynamicAchievementsGame);
+            _settings.FilterDynamicAchievementsByRunningGameCommand = new RelayCommand(_ => FilterDynamicAchievementsByRunningGame());
             _settings.SingleGameRefreshCommand = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Single));
             _settings.RecentRefreshCommand = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Recent));
             _settings.FavoritesRefreshCommand = new RelayCommand(_ => RefreshWithMode(RefreshModeType.Favorites));
@@ -170,6 +193,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 },
                 ApplyDynamicLibraryAchievementBindings,
                 ThemeDelegatedPropertyCatalog.DynamicAllGames);
+            _settings.FilterDynamicLibraryAchievementsByRunningGameCommand = new RelayCommand(_ => FilterDynamicLibraryAchievementsByRunningGame());
             _settings.SetDynamicLibraryAchievementsFilterCommand = CreateDynamicCommand(
                 nameof(PlayniteAchievementsSettings.SetDynamicLibraryAchievementsFilterCommand),
                 (object parameter, out string key) => DynamicThemeFilterExpression.TryNormalize(
@@ -217,6 +241,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 },
                 ApplyDynamicGameSummaryBindings,
                 ThemeDelegatedPropertyCatalog.DynamicAllGames);
+            _settings.FilterDynamicGameSummariesByRunningGameCommand = new RelayCommand(_ => FilterDynamicGameSummariesByRunningGame());
             _settings.SetDynamicGameSummariesFilterCommand = CreateDynamicCommand(
                 nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesFilterCommand),
                 (object parameter, out string key) => DynamicThemeFilterExpression.TryNormalize(
@@ -257,6 +282,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.SetDynamicFriendScopeUserCommand = new RelayCommand(SetDynamicFriendScopeUser);
             _settings.SetDynamicFriendScopeGameCommand = new RelayCommand(SetDynamicFriendScopeGame);
             _settings.ResetDynamicFriendScopeCommand = new RelayCommand(_ => ResetDynamicFriendScope());
+            _settings.FilterDynamicFriendSummariesByRunningGameCommand = new RelayCommand(_ => FilterDynamicFriendScopeByRunningGame(nameof(PlayniteAchievementsSettings.FilterDynamicFriendSummariesByRunningGameCommand)));
             _settings.SetDynamicFriendSummariesFilterCommand = CreateDynamicCommand(
                 nameof(PlayniteAchievementsSettings.SetDynamicFriendSummariesFilterCommand),
                 (object parameter, out string key) => DynamicThemeFilterExpression.TryNormalize(
@@ -293,6 +319,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 },
                 ApplyDynamicFriendBindings,
                 ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.FilterDynamicFriendGameSummariesByRunningGameCommand = new RelayCommand(_ => FilterDynamicFriendScopeByRunningGame(nameof(PlayniteAchievementsSettings.FilterDynamicFriendGameSummariesByRunningGameCommand)));
             _settings.SetDynamicFriendGameSummariesFilterCommand = CreateDynamicCommand(
                 nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesFilterCommand),
                 (object parameter, out string key) => DynamicThemeFilterExpression.TryNormalize(
@@ -329,6 +356,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 },
                 ApplyDynamicFriendBindings,
                 ThemeDelegatedPropertyCatalog.DynamicFriends);
+            _settings.FilterDynamicFriendAchievementsByRunningGameCommand = new RelayCommand(_ => FilterDynamicFriendScopeByRunningGame(nameof(PlayniteAchievementsSettings.FilterDynamicFriendAchievementsByRunningGameCommand)));
             _settings.SetDynamicFriendAchievementsFilterCommand = CreateDynamicCommand(
                 nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsFilterCommand),
                 (object parameter, out string key) => DynamicThemeFilterExpression.TryNormalize(
@@ -369,7 +397,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ResetDynamicLibraryAchievementsCommand = new RelayCommand(_ => ResetDynamicLibraryAchievementsToDefaults());
             _settings.ResetDynamicGameSummariesCommand = new RelayCommand(_ => ResetDynamicGameSummariesToDefaults());
 
-            _runtimeState.Friends = BuildFriendState();
+            _runtimeState.Friends = FriendRuntimeState.Empty;
             ApplyDynamicThemeDefaultsFromSettings(notify: false);
             ApplyDynamicSelectedGameBindings(updateOptions: false);
             ApplyDynamicLibraryAchievementBindings(updateOptions: false);
@@ -378,12 +406,25 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ApplyDynamicOptionBindings();
 
             _refreshService.CacheInvalidated += RefreshService_CacheInvalidated;
+            if (_friendCache != null)
+            {
+                _friendCache.FriendCacheInvalidated += FriendCache_FriendCacheInvalidated;
+                RequestFriendStateRefresh();
+            }
         }
 
         public void Dispose()
         {
             try { _settings.DynamicThemeDefaultsChanged -= Settings_DynamicThemeDefaultsChanged; } catch { }
             try { _refreshService.CacheInvalidated -= RefreshService_CacheInvalidated; } catch { }
+            try
+            {
+                if (_friendCache != null)
+                {
+                    _friendCache.FriendCacheInvalidated -= FriendCache_FriendCacheInvalidated;
+                }
+            }
+            catch { }
 
             lock (_refreshLock)
             {
@@ -397,6 +438,18 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 try { _activeUpdateCts?.Cancel(); } catch { }
                 try { _activeUpdateCts?.Dispose(); } catch { }
                 _activeUpdateCts = null;
+            }
+
+            lock (_friendRefreshGate)
+            {
+                try { _friendRefreshCts?.Cancel(); } catch { }
+                try { _friendRefreshCts?.Dispose(); } catch { }
+                _friendRefreshCts = null;
+            }
+
+            if (_ownsFriendsOverviewDataCoordinator)
+            {
+                try { _friendsOverviewDataCoordinator?.Dispose(); } catch { }
             }
         }
 
@@ -539,6 +592,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             catch
             {
             }
+
+            _friendsOverviewDataCoordinator?.Invalidate();
+            RequestFriendStateRefresh();
+        }
+
+        private void FriendCache_FriendCacheInvalidated(object sender, EventArgs e)
+        {
+            _friendsOverviewDataCoordinator?.Invalidate();
+            RequestFriendStateRefresh();
         }
 
         private Guid? ResolveSelectedGameIdForThemeUpdate()
@@ -794,9 +856,129 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 return;
             }
 
+            ApplyDynamicAchievementsGame(gameId);
+        }
+
+        private void FilterDynamicAchievementsByRunningGame()
+        {
+            if (!TryResolveRunningGameId(
+                nameof(PlayniteAchievementsSettings.FilterDynamicAchievementsByRunningGameCommand),
+                out var gameId))
+            {
+                return;
+            }
+
+            ApplyDynamicAchievementsGame(gameId);
+        }
+
+        private void ApplyDynamicAchievementsGame(Guid gameId)
+        {
             _runtimeState.SelectedGameAchievements.GameKey = gameId.ToString("D");
             _runtimeState.SelectedGameAchievements.GameLabel = ResolveGameLabel(gameId);
             PopulateSingleGameDataSync(gameId);
+        }
+
+        private void FilterDynamicLibraryAchievementsByRunningGame()
+        {
+            if (!TryResolveRunningGameId(
+                nameof(PlayniteAchievementsSettings.FilterDynamicLibraryAchievementsByRunningGameCommand),
+                out var gameId))
+            {
+                return;
+            }
+
+            EnsureAllGamesThemeDataLoaded(includeHeavyAchievementLists: true);
+
+            var state = _runtimeState.Library ?? new LibraryRuntimeState();
+            var viewState = _runtimeState.LibraryAchievements;
+            var providerKey = ResolveLibraryProviderKeyForGame(state, gameId);
+
+            viewState.HasUserSelection = true;
+            viewState.GameKey = gameId.ToString("D");
+            viewState.GameLabel = ResolveGameLabel(gameId);
+            if (!ProviderScopeMatches(viewState.ProviderKey, providerKey))
+            {
+                viewState.ProviderKey = string.IsNullOrWhiteSpace(providerKey)
+                    ? DynamicThemeViewKeys.All
+                    : providerKey;
+            }
+
+            ApplyDynamicLibraryAchievementBindings();
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicAllGames);
+        }
+
+        private void FilterDynamicGameSummariesByRunningGame()
+        {
+            if (!TryResolveRunningGameId(
+                nameof(PlayniteAchievementsSettings.FilterDynamicGameSummariesByRunningGameCommand),
+                out var gameId))
+            {
+                return;
+            }
+
+            EnsureAllGamesThemeDataLoaded(includeHeavyAchievementLists: true);
+
+            var state = _runtimeState.Library ?? new LibraryRuntimeState();
+            var viewState = _runtimeState.GameSummaries;
+            var providerKey = ResolveGameSummaryProviderKeyForGame(state, gameId);
+
+            viewState.HasUserSelection = true;
+            viewState.GameKey = gameId.ToString("D");
+            viewState.GameLabel = ResolveGameLabel(gameId);
+            if (!ProviderScopeMatches(viewState.ProviderKey, providerKey))
+            {
+                viewState.ProviderKey = string.IsNullOrWhiteSpace(providerKey)
+                    ? DynamicThemeViewKeys.All
+                    : providerKey;
+            }
+
+            ApplyDynamicGameSummaryBindings();
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicAllGames);
+        }
+
+        private void FilterDynamicFriendScopeByRunningGame(string commandName)
+        {
+            if (!TryResolveRunningGameId(commandName, out var gameId))
+            {
+                return;
+            }
+
+            var state = _runtimeState.Friends ?? FriendRuntimeState.Empty;
+            var game = FindFriendGameScopeCandidate(state, gameId);
+            if (game == null)
+            {
+                _logger?.Debug($"Ignored {commandName}: running game '{gameId:D}' is not available in friend theme data.");
+                return;
+            }
+
+            var targetGameKey = FriendOverviewProjection.GetGameScopeKey(game);
+            if (FriendOverviewProjection.IsAllScope(targetGameKey))
+            {
+                _logger?.Debug($"Ignored {commandName}: running game '{gameId:D}' has no friend game scope key.");
+                return;
+            }
+
+            var scope = _runtimeState.FriendScope;
+            if (!ProviderScopeMatches(scope.ProviderKey, game.ProviderKey))
+            {
+                scope.ProviderKey = string.IsNullOrWhiteSpace(game.ProviderKey)
+                    ? DynamicThemeViewKeys.All
+                    : game.ProviderKey;
+            }
+
+            if (!FriendOverviewProjection.IsAllScope(scope.UserKey) &&
+                !GetFriendGameScopeCandidates(state, scope.ProviderKey, scope.UserKey)
+                    .Any(candidate => string.Equals(
+                        FriendOverviewProjection.GetGameScopeKey(candidate),
+                        targetGameKey,
+                        StringComparison.OrdinalIgnoreCase)))
+            {
+                scope.UserKey = DynamicThemeViewKeys.All;
+            }
+
+            scope.GameKey = targetGameKey;
+            ApplyDynamicFriendBindings();
+            NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
         }
 
         private void OpenManageAchievementsWindow(object parameter)
@@ -864,6 +1046,45 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             gameId = selectedId.Value;
             return true;
+        }
+
+        private bool TryResolveRunningGameId(string commandName, out Guid gameId)
+        {
+            gameId = Guid.Empty;
+
+            try
+            {
+                var target = _resolveRunningGameTarget?.Invoke() ?? AchievementHotkeyTargetResolution.NoTarget;
+                if (target.HasTarget && target.GameId != Guid.Empty)
+                {
+                    gameId = target.GameId;
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to resolve running game for {commandName}.");
+            }
+
+            _logger?.Debug($"Ignored {commandName}: no running Playnite game.");
+            return false;
+        }
+
+        private AchievementHotkeyTargetResolution ResolveRunningGameTargetFromApi()
+        {
+            try
+            {
+                var runningGames = _api?.Database?.Games?
+                    .Where(game => game != null && game.Id != Guid.Empty && game.IsRunning)
+                    .ToList() ?? new List<Game>();
+
+                return AchievementHotkeyTargetResolver.ResolveRunningGame(runningGames, Array.Empty<Guid>());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to resolve running game from Playnite API.");
+                return AchievementHotkeyTargetResolution.NoTarget;
+            }
         }
 
         private string ResolveGameLabel(Guid gameId)
@@ -1361,7 +1582,6 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             ApplyDynamicLibraryAchievementBindings(updateOptions: false);
             ApplyDynamicGameSummaryBindings(updateOptions: false);
-            ApplyFriendState(BuildFriendState(), notify: false);
             ApplyDynamicOptionBindings();
 
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.CompatibilityAllGames);
@@ -1787,6 +2007,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             var state = _runtimeState.LibraryAchievements;
             state.ResetToDefault();
+            state.ResetGameScope();
             ApplyDynamicLibraryAchievementBindings();
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicAllGames);
         }
@@ -1795,6 +2016,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         {
             var state = _runtimeState.GameSummaries;
             state.ResetToDefault();
+            state.ResetGameScope();
             ApplyDynamicGameSummaryBindings();
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicAllGames);
         }
@@ -1869,20 +2091,118 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             NotifySettingProperties(ThemeDelegatedPropertyCatalog.DynamicFriends);
         }
 
-        private FriendRuntimeState BuildFriendState()
+        private void RequestFriendStateRefresh()
         {
             if (_friendCache == null)
+            {
+                return;
+            }
+
+            lock (_friendRefreshGate)
+            {
+                _friendRefreshRequestVersion++;
+                try { _friendRefreshCts?.Cancel(); } catch { }
+                try { _friendRefreshCts?.Dispose(); } catch { }
+                _friendRefreshCts = new CancellationTokenSource();
+
+                if (_friendRefreshRunner == null || _friendRefreshRunner.IsCompleted)
+                {
+                    _friendRefreshRunner = Task.Run(RunFriendStateRefreshLoop);
+                }
+            }
+        }
+
+        private async Task RunFriendStateRefreshLoop()
+        {
+            while (true)
+            {
+                int version;
+                CancellationToken token;
+                lock (_friendRefreshGate)
+                {
+                    version = _friendRefreshRequestVersion;
+                    token = _friendRefreshCts?.Token ?? CancellationToken.None;
+                }
+
+                try
+                {
+                    await Task.Delay(FriendRefreshDelay, token).ConfigureAwait(false);
+                    var state = await BuildFriendStateAsync(token).ConfigureAwait(false);
+                    token.ThrowIfCancellationRequested();
+
+                    void Apply()
+                    {
+                        if (token.IsCancellationRequested)
+                        {
+                            return;
+                        }
+
+                        lock (_friendRefreshGate)
+                        {
+                            if (version < _friendRefreshRequestVersion ||
+                                version <= _friendRefreshAppliedVersion)
+                            {
+                                return;
+                            }
+
+                            _friendRefreshAppliedVersion = version;
+                        }
+
+                        ApplyFriendState(state, notify: true);
+                    }
+
+                    var uiDispatcher = _api?.MainView?.UIDispatcher ?? Application.Current?.Dispatcher;
+                    if (uiDispatcher == null)
+                    {
+                        Apply();
+                    }
+                    else
+                    {
+                        uiDispatcher.InvokeIfNeeded(Apply, DispatcherPriority.Background);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "Failed to refresh friend theme runtime state.");
+                }
+
+                lock (_friendRefreshGate)
+                {
+                    if (version >= _friendRefreshRequestVersion)
+                    {
+                        return;
+                    }
+                }
+            }
+        }
+
+        private async Task<FriendRuntimeState> BuildFriendStateAsync(CancellationToken token)
+        {
+            if (_friendsOverviewDataCoordinator == null)
             {
                 return FriendRuntimeState.Empty;
             }
 
             try
             {
-                var persisted = _settings?.Persisted;
-                var data = _friendCache.LoadFriendsOverviewData(
-                    persisted?.FriendsOverviewHideSpoilers ?? true,
-                    0);
-                return new FriendRuntimeState(data, persisted);
+                token.ThrowIfCancellationRequested();
+                FriendsOverviewSnapshot snapshot;
+                using (PerfScope.Start(_logger, "ThemeFriends.BuildState", thresholdMs: 25))
+                {
+                    snapshot = await _friendsOverviewDataCoordinator
+                        .GetSnapshotAsync(token)
+                        .ConfigureAwait(false);
+                }
+
+                token.ThrowIfCancellationRequested();
+                return new FriendRuntimeState(snapshot?.Projection);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
@@ -2359,6 +2679,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.DynamicLibraryAchievements = items;
             _settings.ModernTheme.DynamicLibraryAchievementsProviderKey = viewState.ProviderKey;
             _settings.ModernTheme.DynamicLibraryAchievementsProviderLabel = DynamicThemeLabels.GetProviderLabel(viewState.ProviderKey);
+            _settings.ModernTheme.DynamicLibraryAchievementsGameKey = viewState.GameKey;
+            _settings.ModernTheme.DynamicLibraryAchievementsGameLabel = viewState.GameLabel;
             _settings.ModernTheme.DynamicLibraryAchievementsFilterKey = viewState.FilterKey;
             _settings.ModernTheme.DynamicLibraryAchievementsFilterLabel = DynamicThemeLabels.GetLabel(viewState.FilterKey, DynamicThemeViewKeys.All);
             _settings.ModernTheme.DynamicLibraryAchievementsSortKey = viewState.SortKey;
@@ -2426,6 +2748,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.DynamicGameSummaries = ProjectGameSummaries(items);
             _settings.ModernTheme.DynamicGameSummariesProviderKey = viewState.ProviderKey;
             _settings.ModernTheme.DynamicGameSummariesProviderLabel = DynamicThemeLabels.GetProviderLabel(viewState.ProviderKey);
+            _settings.ModernTheme.DynamicGameSummariesGameKey = viewState.GameKey;
+            _settings.ModernTheme.DynamicGameSummariesGameLabel = viewState.GameLabel;
             _settings.ModernTheme.DynamicGameSummariesFilterKey = viewState.FilterKey;
             _settings.ModernTheme.DynamicGameSummariesFilterLabel = DynamicThemeLabels.GetLabel(viewState.FilterKey, DynamicThemeViewKeys.All);
             _settings.ModernTheme.DynamicGameSummariesSortKey = viewState.SortKey;
@@ -2876,6 +3200,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             IEnumerable<AchievementDetail> source = SelectLibraryAchievementSource(state, viewState);
             source = ApplyProviderFilter(source, viewState.ProviderKey);
+            source = ApplyGameFilter(source, viewState.GameKey, item => item.Game?.Id ?? Guid.Empty);
             source = DynamicThemeFilterEvaluator.ApplyAchievementFilters(source, viewState.FilterKey);
             return source.ToList();
         }
@@ -2891,6 +3216,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
             IEnumerable<GameAchievementSummary> source = state.AllGamesWithAchievements ?? Enumerable.Empty<GameAchievementSummary>();
             source = ApplyProviderFilter(source, viewState.ProviderKey);
+            source = ApplyGameFilter(source, viewState.GameKey, item => item.GameId);
             source = DynamicThemeFilterEvaluator.ApplyGameSummaryFilters(source, viewState.FilterKey);
             return SortGameSummaries(source, viewState).ToList();
         }
@@ -3272,6 +3598,21 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 viewState?.SortDirectionKey);
         }
 
+        private static IEnumerable<TItem> ApplyGameFilter<TItem>(
+            IEnumerable<TItem> source,
+            string gameKey,
+            Func<TItem, Guid> gameIdSelector)
+            where TItem : class
+        {
+            var items = source ?? Enumerable.Empty<TItem>();
+            if (IsAllScopeKey(gameKey) || !Guid.TryParse(gameKey, out var gameId) || gameId == Guid.Empty)
+            {
+                return items;
+            }
+
+            return items.Where(item => item != null && gameIdSelector(item) == gameId);
+        }
+
         private static IEnumerable<AchievementDetail> ApplyProviderFilter(
             IEnumerable<AchievementDetail> source,
             string providerKey)
@@ -3302,6 +3643,83 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             return items.Where(item =>
                 item != null &&
                 string.Equals(providerKeySelector(item), providerKey, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static bool IsAllScopeKey(string key)
+        {
+            return string.IsNullOrWhiteSpace(key) ||
+                   string.Equals(key, DynamicThemeViewKeys.All, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool ProviderScopeMatches(string scopeProviderKey, string providerKey)
+        {
+            return IsAllScopeKey(scopeProviderKey) ||
+                   (!string.IsNullOrWhiteSpace(providerKey) &&
+                    string.Equals(scopeProviderKey, providerKey, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string ResolveLibraryProviderKeyForGame(LibraryRuntimeState state, Guid gameId)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return null;
+            }
+
+            var providerKey = (state?.AllAchievements ?? Enumerable.Empty<AchievementDetail>())
+                .Where(item => item?.Game?.Id == gameId)
+                .Select(item => item?.ProviderKey)
+                .FirstOrDefault(key => !string.IsNullOrWhiteSpace(key));
+            if (!string.IsNullOrWhiteSpace(providerKey))
+            {
+                return providerKey;
+            }
+
+            return ResolveGameSummaryProviderKeyForGame(state, gameId);
+        }
+
+        private static string ResolveGameSummaryProviderKeyForGame(LibraryRuntimeState state, Guid gameId)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return null;
+            }
+
+            return (state?.AllGamesWithAchievements ?? Enumerable.Empty<GameAchievementSummary>())
+                .Where(item => item != null && item.GameId == gameId)
+                .Select(item => item?.ProviderKey)
+                .FirstOrDefault(key => !string.IsNullOrWhiteSpace(key));
+        }
+
+        private FriendGameSummaryItem FindFriendGameScopeCandidate(FriendRuntimeState state, Guid gameId)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return null;
+            }
+
+            var scope = _runtimeState.FriendScope;
+            var candidates = (state?.AggregateGames ?? Enumerable.Empty<FriendGameSummaryItem>())
+                .Where(game => game?.PlayniteGameId == gameId)
+                .ToList();
+            if (candidates.Count == 0)
+            {
+                return null;
+            }
+
+            if (!FriendOverviewProjection.IsAllScope(scope.ProviderKey))
+            {
+                var scopedCandidate = candidates.FirstOrDefault(game =>
+                    string.Equals(game.ProviderKey, scope.ProviderKey, StringComparison.OrdinalIgnoreCase));
+                if (scopedCandidate != null)
+                {
+                    return scopedCandidate;
+                }
+            }
+
+            return candidates
+                .OrderByDescending(game => game?.FriendUnlockedAchievementsCount ?? 0)
+                .ThenBy(game => game?.GameName ?? string.Empty, StringComparer.CurrentCultureIgnoreCase)
+                .FirstOrDefault();
         }
 
         private static IEnumerable<GameAchievementSummary> SortGameSummaries(

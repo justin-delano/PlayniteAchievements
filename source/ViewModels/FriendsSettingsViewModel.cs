@@ -10,6 +10,7 @@ using PlayniteAchievements.Services.Friends;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,6 +33,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly ILogger _logger;
         private readonly IFriendCacheManager _friendCache;
         private readonly DispatcherTimer _persistDebounceTimer;
+        private ExophaseSettings _exophaseSettings;
         private string _manualExophaseUsername;
         private string _statusText;
         private bool _isBusy;
@@ -66,6 +68,7 @@ namespace PlayniteAchievements.ViewModels
             _persistDebounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             _persistDebounceTimer.Tick += OnPersistDebounceTimerTick;
 
+            InitializeExophaseSettingsSubscription();
             Initialize();
         }
 
@@ -82,6 +85,25 @@ namespace PlayniteAchievements.ViewModels
         public ICommand UnmergeFriendCommand { get; }
 
         public ICommand RemoveFriendCommand { get; }
+
+        public bool UseExophaseForSteamFriendOwnership
+        {
+            get => _settings?.Persisted?.UseExophaseForSteamFriendOwnership == true;
+            set
+            {
+                var persisted = _settings?.Persisted;
+                if (persisted == null || persisted.UseExophaseForSteamFriendOwnership == value)
+                {
+                    return;
+                }
+
+                persisted.UseExophaseForSteamFriendOwnership = value;
+                OnPropertyChanged();
+                PersistAndNotify(null);
+            }
+        }
+
+        public bool IsExophaseProviderEnabled => _exophaseSettings?.IsEnabled == true;
 
         public string ManualExophaseUsername
         {
@@ -120,6 +142,34 @@ namespace PlayniteAchievements.ViewModels
                     (AddManualFriendCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                     (MergeSelectedCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 }
+            }
+        }
+
+        private void InitializeExophaseSettingsSubscription()
+        {
+            try
+            {
+                _exophaseSettings = _providerRegistry?.GetSettings<ExophaseSettings>() ??
+                                    ProviderRegistry.Settings<ExophaseSettings>();
+                if (_exophaseSettings != null)
+                {
+                    PropertyChangedEventManager.AddHandler(
+                        _exophaseSettings,
+                        ExophaseSettings_PropertyChanged,
+                        nameof(ExophaseSettings.IsEnabled));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to attach Exophase settings state for Friends settings.");
+            }
+        }
+
+        private void ExophaseSettings_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e == null || string.Equals(e.PropertyName, nameof(ExophaseSettings.IsEnabled), StringComparison.Ordinal))
+            {
+                OnPropertyChanged(nameof(IsExophaseProviderEnabled));
             }
         }
 

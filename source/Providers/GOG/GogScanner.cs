@@ -16,12 +16,13 @@ namespace PlayniteAchievements.Providers.GOG
     /// Scanner for GOG achievements.
     /// Follows SteamScanner pattern with rate limiting and progress reporting.
     /// </summary>
-    internal sealed class GogScanner
+    internal sealed class GogScanner : IRefreshAuthContextReceiver
     {
         private readonly PlayniteAchievementsSettings _settings;
         private readonly GogApiClient _apiClient;
         private readonly GogSessionManager _sessionManager;
         private readonly ILogger _logger;
+        private RefreshAuthContext _authContext;
 
         public GogScanner(
             PlayniteAchievementsSettings settings,
@@ -41,27 +42,30 @@ namespace PlayniteAchievements.Providers.GOG
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            // Ensure auth state is loaded from current GOG web session.
-            var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
-            if (!probeResult.IsSuccess)
+            if (!HasSuccessfulScopedAuth())
             {
-                if (probeResult.Outcome == AuthOutcome.NotAuthenticated ||
-                    probeResult.Outcome == AuthOutcome.Cancelled ||
-                    probeResult.Outcome == AuthOutcome.TimedOut)
+                // Ensure auth state is loaded from current GOG web session.
+                var probeResult = await _sessionManager.ProbeAuthStateAsync(cancel).ConfigureAwait(false);
+                if (!probeResult.IsSuccess)
                 {
-                    _logger?.Warn("[GogAch] GOG not authenticated - cannot scan achievements.");
-                    return new RebuildPayload
+                    if (probeResult.Outcome == AuthOutcome.NotAuthenticated ||
+                        probeResult.Outcome == AuthOutcome.Cancelled ||
+                        probeResult.Outcome == AuthOutcome.TimedOut)
                     {
-                        Summary = new RebuildSummary(),
-                        AuthRequired = true
-                    };
-                }
-                else
-                {
-                    _logger?.Warn($"[GogAch] GOG auth probe failed with outcome={probeResult.Outcome}. Scan aborted without auth-required state.");
-                }
+                        _logger?.Warn("[GogAch] GOG not authenticated - cannot scan achievements.");
+                        return new RebuildPayload
+                        {
+                            Summary = new RebuildSummary(),
+                            AuthRequired = true
+                        };
+                    }
+                    else
+                    {
+                        _logger?.Warn($"[GogAch] GOG auth probe failed with outcome={probeResult.Outcome}. Scan aborted without auth-required state.");
+                    }
 
-                return new RebuildPayload { Summary = new RebuildSummary() };
+                    return new RebuildPayload { Summary = new RebuildSummary() };
+                }
             }
 
             _logger?.Info("[GogAch] GOG authentication verified.");
@@ -108,6 +112,24 @@ namespace PlayniteAchievements.Providers.GOG
                 delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
                 delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
                 cancel).ConfigureAwait(false);
+        }
+
+        public void BeginRefreshAuthContext(RefreshAuthContext context)
+        {
+            _authContext = context;
+        }
+
+        public void EndRefreshAuthContext(RefreshAuthContext context)
+        {
+            if (ReferenceEquals(_authContext, context))
+            {
+                _authContext = null;
+            }
+        }
+
+        private bool HasSuccessfulScopedAuth()
+        {
+            return _authContext?.IsProviderAuthenticated("GOG") == true;
         }
 
         /// <summary>

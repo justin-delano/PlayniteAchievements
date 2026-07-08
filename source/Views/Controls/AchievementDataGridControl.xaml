@@ -47,6 +47,7 @@
                                            Visibility="{Binding DrillHeaderVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, Converter={StaticResource CategoryModeBoolToVis}}"
                                            ItemsSource="{Binding SelectedCategorySummaryItems, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                            ColumnSettingsKey="{Binding ResolvedCategoryColumnSettingsKey, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                           UseCoverImages="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                            ShowColumnHeaders="True"
                                            DisableRowSelection="True"/>
 
@@ -56,6 +57,7 @@
                                                Visibility="{Binding CategoryListVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, Converter={StaticResource CategoryModeBoolToVis}}"
                                                ItemsSource="{Binding CategorySummaries, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                                ColumnSettingsKey="{Binding ResolvedCategoryColumnSettingsKey, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                               UseCoverImages="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                                ShowColumnHeaders="True"
                                                SelectionChanged="CategoryList_SelectionChanged"/>
 

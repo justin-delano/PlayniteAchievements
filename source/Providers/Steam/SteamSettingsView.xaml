@@ -95,6 +95,20 @@
                 </StackPanel>
             </Border>
 
+            <Border Style="{StaticResource SectionBorderStyle}"
+                    IsEnabled="{Binding Settings.IsEnabled}">
+                <StackPanel>
+                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_SteamHuntersCategories}"
+                              IsChecked="{Binding Settings.UseSteamHuntersForCategories, Mode=TwoWay}"
+                              FontWeight="SemiBold"
+                              FontSize="{DynamicResource PlayAch.FontSize.Body}"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SteamHuntersCategories_Help}"
+                               Style="{StaticResource MutedTextStyle}"
+                               Margin="24,8,0,0"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
         </StackPanel>
     </ScrollViewer>
 </settings:ProviderSettingsViewBase>

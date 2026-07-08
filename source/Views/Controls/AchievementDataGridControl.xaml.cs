@@ -483,6 +483,7 @@ namespace PlayniteAchievements.Views.Controls
         private bool _isCategoryMode;
         private string _drilledCategory;
         private GridModeToggle _modeToggle;
+        private GridMultiSelectFilter _connectedCategoryFilter;
         private GridActionButton _backButton;
         private GridControlBarViewModel _controlBarWithToggle;
         private INotifyCollectionChanged _observedItemsSource;
@@ -599,6 +600,70 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        // Category grouping is a per-game concept, so the toggle is only offered when the current
+        // source stays within a single game. Returns false only when two or more distinct games are
+        // positively found; a null/empty source is treated as single-game so the toggle is never
+        // hidden mid-load before data arrives.
+        private bool IsCategorySourceSingleGame()
+        {
+            var items = ItemsSource;
+            if (items == null)
+            {
+                return true;
+            }
+
+            string firstKey = null;
+            var haveFirst = false;
+            foreach (var item in items)
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                var key = item.PlayniteGameId?.ToString() ?? item.GameName ?? string.Empty;
+                if (!haveFirst)
+                {
+                    firstKey = key;
+                    haveFirst = true;
+                }
+                else if (!string.Equals(firstKey, key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // Mirrors the category dropdowns' auto-hide rule (>1 distinct label): the mode toggle is
+        // only meaningful when there is more than one category to group the achievements into.
+        private bool HasMultipleCategories()
+        {
+            var items = ItemsSource;
+            if (items == null)
+            {
+                return false;
+            }
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in items)
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                seen.Add(AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel));
+                if (seen.Count > 1)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         // Injects the category-mode toggle and Back button into the surface-owned control bar and
         // reconciles which items are shown for the current mode (flat / category list / drill).
         private void SyncModeToggle()
@@ -610,8 +675,21 @@ namespace PlayniteAchievements.Views.Controls
                 _controlBarWithToggle = null;
             }
 
-            if (!EnableCategoryMode || ControlBar == null)
+            if (!EnableCategoryMode || ControlBar == null || !IsCategorySourceSingleGame())
             {
+                // Disabled, detached, or a multi-game source: leave category mode and strip the
+                // injected toggle/Back button from the current bar if we previously added them.
+                if (_isCategoryMode)
+                {
+                    SetCategoryMode(false);
+                }
+
+                if (_controlBarWithToggle != null)
+                {
+                    RestoreControlBar(_controlBarWithToggle);
+                    _controlBarWithToggle = null;
+                }
+
                 return;
             }
 
@@ -642,7 +720,8 @@ namespace PlayniteAchievements.Views.Controls
                     CategoryModeText("LOCPlayAch_CategorySummaries_Toggle", "Categories"),
                     () => _isCategoryMode,
                     SetCategoryMode,
-                    CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"));
+                    CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"),
+                    HasMultipleCategories);
             }
 
             if (_backButton == null)
@@ -655,30 +734,83 @@ namespace PlayniteAchievements.Views.Controls
 
             if (!ReferenceEquals(_controlBarWithToggle, ControlBar))
             {
-                // Back sits at the front of the strip; the toggle sits after the category dropdowns.
-                if (!ControlBar.Items.Contains(_backButton))
+                // The last multi-select filter is the category-label dropdown (Type is added first);
+                // it becomes the right half of the segmented unit in flat mode.
+                GridMultiSelectFilter labelFilter = null;
+                for (var i = 0; i < ControlBar.Items.Count; i++)
                 {
-                    ControlBar.Items.Insert(0, _backButton);
-                }
-
-                if (!ControlBar.Items.Contains(_modeToggle))
-                {
-                    var insertIndex = 0;
-                    for (var i = 0; i < ControlBar.Items.Count; i++)
+                    if (ControlBar.Items[i] is GridMultiSelectFilter filter)
                     {
-                        if (ControlBar.Items[i] is GridMultiSelectFilter)
-                        {
-                            insertIndex = i + 1;
-                        }
+                        labelFilter = filter;
                     }
-
-                    ControlBar.Items.Insert(Math.Min(insertIndex, ControlBar.Items.Count), _modeToggle);
                 }
 
+                _connectedCategoryFilter = labelFilter;
                 _controlBarWithToggle = ControlBar;
             }
 
+            // Recompute the toggle's auto-hide; ApplyControlBarModeState positions Back/toggle.
+            _modeToggle?.Refresh();
             ApplyControlBarModeState();
+        }
+
+        // Positions the category-mode Back and toggle controls for the current mode: in flat mode the
+        // toggle is the left half of the segmented unit beside the category dropdown (trailing items);
+        // in category mode both Back and the toggle move to the leading zone, left of the search box.
+        private void UpdateModeControlPlacement()
+        {
+            var bar = _controlBarWithToggle;
+            if (bar == null || _modeToggle == null)
+            {
+                return;
+            }
+
+            if (_isCategoryMode)
+            {
+                bar.Items.Remove(_modeToggle);
+                if (_connectedCategoryFilter != null)
+                {
+                    _connectedCategoryFilter.ConnectedLeft = false;
+                }
+
+                if (_backButton != null && !bar.LeadingItems.Contains(_backButton))
+                {
+                    bar.LeadingItems.Insert(0, _backButton);
+                }
+
+                if (!bar.LeadingItems.Contains(_modeToggle))
+                {
+                    bar.LeadingItems.Add(_modeToggle);
+                }
+            }
+            else
+            {
+                if (_backButton != null)
+                {
+                    bar.LeadingItems.Remove(_backButton);
+                }
+
+                bar.LeadingItems.Remove(_modeToggle);
+
+                if (!bar.Items.Contains(_modeToggle))
+                {
+                    var insertIndex = bar.Items.Count;
+                    for (var i = 0; i < bar.Items.Count; i++)
+                    {
+                        if (bar.Items[i] is GridMultiSelectFilter)
+                        {
+                            insertIndex = i;
+                        }
+                    }
+
+                    bar.Items.Insert(Math.Min(insertIndex, bar.Items.Count), _modeToggle);
+                }
+
+                if (_connectedCategoryFilter != null)
+                {
+                    _connectedCategoryFilter.ConnectedLeft = true;
+                }
+            }
         }
 
         // Restores the control bar to its plain (non-category) state.
@@ -691,13 +823,18 @@ namespace PlayniteAchievements.Views.Controls
 
             bar.Items.Remove(_modeToggle);
             bar.Items.Remove(_backButton);
+            bar.LeadingItems.Remove(_modeToggle);
+            bar.LeadingItems.Remove(_backButton);
             foreach (var item in bar.Items)
             {
-                if (item is GridMultiSelectFilter)
+                if (item is GridMultiSelectFilter filter)
                 {
-                    item.IsVisible = true;
+                    filter.IsVisible = true;
+                    filter.ConnectedLeft = false;
                 }
             }
+
+            _connectedCategoryFilter = null;
 
             if (_originalSearch != null && ReferenceEquals(bar.Search, _categorySearch))
             {
@@ -718,6 +855,9 @@ namespace PlayniteAchievements.Views.Controls
 
             var drilled = _isCategoryMode && _drilledCategory != null;
             var list = _isCategoryMode && !drilled;
+
+            // Reflow Back/toggle between the leading zone and the segmented unit for the current mode.
+            UpdateModeControlPlacement();
 
             foreach (var item in bar.Items)
             {
@@ -885,6 +1025,11 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnItemsSourceContentChanged()
         {
+            // Re-evaluate toggle availability first: a game switch or a newly loaded multi-game feed
+            // may add or remove the category toggle (and drop us out of category mode) before the
+            // rest of this method reads _isCategoryMode.
+            SyncModeToggle();
+
             if (!_isCategoryMode)
             {
                 RecomputeEffectiveAchievements();
@@ -1450,7 +1595,10 @@ namespace PlayniteAchievements.Views.Controls
 
             if (ShouldUseSingleGameWidthFallback())
             {
-                var singleGameMap = settings?.Persisted?.SingleGameColumnWidths;
+                var singleGameMap = settings?.Persisted?.GridOptions
+                    ?.GetAchievement(GridOptionKeys.Achievement.SingleGame)
+                    ?.Columns
+                    ?.Widths;
                 if (singleGameMap != null)
                 {
                     foreach (var pair in singleGameMap)
@@ -1622,234 +1770,58 @@ namespace PlayniteAchievements.Views.Controls
 
         private Dictionary<string, bool> GetVisibilityByKey(PlayniteAchievementsSettings settings)
         {
-            if (settings?.Persisted == null)
-            {
-                return null;
-            }
-
-            switch (ColumnSettingsKey)
-            {
-                case "StartPageAchievements":
-                    return settings.Persisted.StartPageAchievementColumnVisibility;
-                case "SingleGame":
-                    return settings.Persisted.SingleGameColumnVisibility;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    return settings.Persisted.OverviewRecentAchievementColumnVisibility;
-                case "FriendsOverviewRecentAchievements":
-                    return settings.Persisted.FriendsOverviewAchievementColumnVisibility;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    return settings.Persisted.OverviewSelectedGameAchievementColumnVisibility;
-                default:
-                    return settings.Persisted.DataGridColumnVisibility;
-            }
+            return GetColumnLayoutOptions(settings)?.Visibility;
         }
 
         private void SetVisibilityByKey(PlayniteAchievementsSettings settings, Dictionary<string, bool> map)
         {
-            if (settings?.Persisted == null)
+            var options = GetColumnLayoutOptions(settings);
+            if (options != null)
             {
-                return;
-            }
-
-            switch (ColumnSettingsKey)
-            {
-                case "StartPageAchievements":
-                    settings.Persisted.StartPageAchievementColumnVisibility = map;
-                    break;
-                case "SingleGame":
-                    settings.Persisted.SingleGameColumnVisibility = map;
-                    break;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    settings.Persisted.OverviewRecentAchievementColumnVisibility = map;
-                    break;
-                case "FriendsOverviewRecentAchievements":
-                    settings.Persisted.FriendsOverviewAchievementColumnVisibility = map;
-                    break;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    settings.Persisted.OverviewSelectedGameAchievementColumnVisibility = map;
-                    break;
-                default:
-                    settings.Persisted.DataGridColumnVisibility = map;
-                    break;
+                options.Visibility = map;
             }
         }
 
         private Dictionary<string, double> GetWidthsByKey(PlayniteAchievementsSettings settings)
         {
-            if (settings?.Persisted == null)
-            {
-                return null;
-            }
-
-            return ColumnSettingsKey switch
-            {
-                "DesktopTheme" => settings.Persisted.DesktopThemeColumnWidths,
-                "SingleGame" => settings.Persisted.SingleGameColumnWidths,
-                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnWidths,
-                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnWidths,
-                "Overview" => settings.Persisted.OverviewRecentAchievementColumnWidths,
-                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnWidths,
-                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnWidths,
-                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnWidths,
-                _ => settings.Persisted.SingleGameColumnWidths
-            };
+            return GetColumnLayoutOptions(settings)?.Widths;
         }
 
         private Dictionary<string, int> GetOrderByKey(PlayniteAchievementsSettings settings)
         {
-            if (settings?.Persisted == null)
-            {
-                return null;
-            }
-
-            return ColumnSettingsKey switch
-            {
-                "DesktopTheme" => settings.Persisted.DesktopThemeColumnOrder,
-                "SingleGame" => settings.Persisted.SingleGameColumnOrder,
-                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnOrder,
-                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnOrder,
-                "Overview" => settings.Persisted.OverviewRecentAchievementColumnOrder,
-                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnOrder,
-                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnOrder,
-                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnOrder,
-                _ => settings.Persisted.SingleGameColumnOrder
-            };
+            return GetColumnLayoutOptions(settings)?.Order;
         }
 
         private Dictionary<string, GridAlignment> GetAlignmentsByKey(PlayniteAchievementsSettings settings)
         {
-            if (settings?.Persisted == null)
-            {
-                return null;
-            }
-
-            return ColumnSettingsKey switch
-            {
-                "DesktopTheme" => settings.Persisted.DesktopThemeColumnAlignments,
-                "SingleGame" => settings.Persisted.SingleGameColumnAlignments,
-                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnAlignments,
-                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnAlignments,
-                "Overview" => settings.Persisted.OverviewRecentAchievementColumnAlignments,
-                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnAlignments,
-                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnAlignments,
-                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnAlignments,
-                _ => settings.Persisted.SingleGameColumnAlignments
-            };
+            return GetColumnLayoutOptions(settings)?.CellAlignments;
         }
 
         private Dictionary<string, GridVerticalAlignment> GetCellVerticalAlignmentsByKey(PlayniteAchievementsSettings settings)
         {
-            if (settings?.Persisted == null)
-            {
-                return null;
-            }
-
-            return ColumnSettingsKey switch
-            {
-                "DesktopTheme" => settings.Persisted.DesktopThemeColumnVerticalAlignments,
-                "SingleGame" => settings.Persisted.SingleGameColumnVerticalAlignments,
-                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments,
-                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnVerticalAlignments,
-                "Overview" => settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments,
-                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments,
-                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments,
-                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnVerticalAlignments,
-                _ => settings.Persisted.SingleGameColumnVerticalAlignments
-            };
+            return GetColumnLayoutOptions(settings)?.CellVerticalAlignments;
         }
 
         private Dictionary<string, GridAlignment> GetHeaderAlignmentsByKey(PlayniteAchievementsSettings settings)
         {
-            if (settings?.Persisted == null)
-            {
-                return null;
-            }
-
-            return ColumnSettingsKey switch
-            {
-                "DesktopTheme" => settings.Persisted.DesktopThemeColumnHeaderAlignments,
-                "SingleGame" => settings.Persisted.SingleGameColumnHeaderAlignments,
-                "OverviewRecentAchievements" => settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments,
-                "FriendsOverviewRecentAchievements" => settings.Persisted.FriendsOverviewAchievementColumnHeaderAlignments,
-                "Overview" => settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments,
-                "OverviewSelectedGameAchievements" => settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments,
-                "OverviewGame" => settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments,
-                "StartPageAchievements" => settings.Persisted.StartPageAchievementColumnHeaderAlignments,
-                _ => settings.Persisted.SingleGameColumnHeaderAlignments
-            };
+            return GetColumnLayoutOptions(settings)?.HeaderAlignments;
         }
 
         private void SetOrderByKey(PlayniteAchievementsSettings settings, Dictionary<string, int> map)
         {
-            if (settings?.Persisted == null)
+            var options = GetColumnLayoutOptions(settings);
+            if (options != null)
             {
-                return;
-            }
-
-            switch (ColumnSettingsKey)
-            {
-                case "DesktopTheme":
-                    settings.Persisted.DesktopThemeColumnOrder = map;
-                    break;
-                case "SingleGame":
-                    settings.Persisted.SingleGameColumnOrder = map;
-                    break;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    settings.Persisted.OverviewRecentAchievementColumnOrder = map;
-                    break;
-                case "FriendsOverviewRecentAchievements":
-                    settings.Persisted.FriendsOverviewAchievementColumnOrder = map;
-                    break;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    settings.Persisted.OverviewSelectedGameAchievementColumnOrder = map;
-                    break;
-                case "StartPageAchievements":
-                    settings.Persisted.StartPageAchievementColumnOrder = map;
-                    break;
-                default:
-                    settings.Persisted.SingleGameColumnOrder = map;
-                    break;
+                options.Order = map;
             }
         }
 
         private void SetAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
         {
-            if (settings?.Persisted == null)
+            var options = GetColumnLayoutOptions(settings);
+            if (options != null)
             {
-                return;
-            }
-
-            switch (ColumnSettingsKey)
-            {
-                case "DesktopTheme":
-                    settings.Persisted.DesktopThemeColumnAlignments = map;
-                    break;
-                case "SingleGame":
-                    settings.Persisted.SingleGameColumnAlignments = map;
-                    break;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    settings.Persisted.OverviewRecentAchievementColumnAlignments = map;
-                    break;
-                case "FriendsOverviewRecentAchievements":
-                    settings.Persisted.FriendsOverviewAchievementColumnAlignments = map;
-                    break;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    settings.Persisted.OverviewSelectedGameAchievementColumnAlignments = map;
-                    break;
-                case "StartPageAchievements":
-                    settings.Persisted.StartPageAchievementColumnAlignments = map;
-                    break;
-                default:
-                    settings.Persisted.SingleGameColumnAlignments = map;
-                    break;
+                options.CellAlignments = map;
             }
         }
 
@@ -1857,107 +1829,41 @@ namespace PlayniteAchievements.Views.Controls
             PlayniteAchievementsSettings settings,
             Dictionary<string, GridVerticalAlignment> map)
         {
-            if (settings?.Persisted == null)
+            var options = GetColumnLayoutOptions(settings);
+            if (options != null)
             {
-                return;
-            }
-
-            switch (ColumnSettingsKey)
-            {
-                case "DesktopTheme":
-                    settings.Persisted.DesktopThemeColumnVerticalAlignments = map;
-                    break;
-                case "SingleGame":
-                    settings.Persisted.SingleGameColumnVerticalAlignments = map;
-                    break;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    settings.Persisted.OverviewRecentAchievementColumnVerticalAlignments = map;
-                    break;
-                case "FriendsOverviewRecentAchievements":
-                    settings.Persisted.FriendsOverviewAchievementColumnVerticalAlignments = map;
-                    break;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    settings.Persisted.OverviewSelectedGameAchievementColumnVerticalAlignments = map;
-                    break;
-                case "StartPageAchievements":
-                    settings.Persisted.StartPageAchievementColumnVerticalAlignments = map;
-                    break;
-                default:
-                    settings.Persisted.SingleGameColumnVerticalAlignments = map;
-                    break;
+                options.CellVerticalAlignments = map;
             }
         }
 
         private void SetHeaderAlignmentsByKey(PlayniteAchievementsSettings settings, Dictionary<string, GridAlignment> map)
         {
-            if (settings?.Persisted == null)
+            var options = GetColumnLayoutOptions(settings);
+            if (options != null)
             {
-                return;
-            }
-
-            switch (ColumnSettingsKey)
-            {
-                case "DesktopTheme":
-                    settings.Persisted.DesktopThemeColumnHeaderAlignments = map;
-                    break;
-                case "SingleGame":
-                    settings.Persisted.SingleGameColumnHeaderAlignments = map;
-                    break;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    settings.Persisted.OverviewRecentAchievementColumnHeaderAlignments = map;
-                    break;
-                case "FriendsOverviewRecentAchievements":
-                    settings.Persisted.FriendsOverviewAchievementColumnHeaderAlignments = map;
-                    break;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    settings.Persisted.OverviewSelectedGameAchievementColumnHeaderAlignments = map;
-                    break;
-                case "StartPageAchievements":
-                    settings.Persisted.StartPageAchievementColumnHeaderAlignments = map;
-                    break;
-                default:
-                    settings.Persisted.SingleGameColumnHeaderAlignments = map;
-                    break;
+                options.HeaderAlignments = map;
             }
         }
 
         private void SetWidthsByKey(PlayniteAchievementsSettings settings, Dictionary<string, double> map)
         {
-            if (settings?.Persisted == null)
+            var options = GetColumnLayoutOptions(settings);
+            if (options != null)
             {
-                return;
+                options.Widths = map;
+            }
+        }
+
+        private GridColumnLayoutOptions GetColumnLayoutOptions(PlayniteAchievementsSettings settings)
+        {
+            var persisted = settings?.Persisted;
+            if (persisted == null)
+            {
+                return null;
             }
 
-            switch (ColumnSettingsKey)
-            {
-                case "DesktopTheme":
-                    settings.Persisted.DesktopThemeColumnWidths = map;
-                    break;
-                case "SingleGame":
-                    settings.Persisted.SingleGameColumnWidths = map;
-                    break;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    settings.Persisted.OverviewRecentAchievementColumnWidths = map;
-                    break;
-                case "FriendsOverviewRecentAchievements":
-                    settings.Persisted.FriendsOverviewAchievementColumnWidths = map;
-                    break;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    settings.Persisted.OverviewSelectedGameAchievementColumnWidths = map;
-                    break;
-                case "StartPageAchievements":
-                    settings.Persisted.StartPageAchievementColumnWidths = map;
-                    break;
-                default:
-                    settings.Persisted.SingleGameColumnWidths = map;
-                    break;
-            }
+            var id = GridOptionsCatalog.ResolveAchievementId(ColumnSettingsKey);
+            return persisted.GridOptions.GetAchievement(id).Columns;
         }
 
         private static bool IsValidWidth(double width)

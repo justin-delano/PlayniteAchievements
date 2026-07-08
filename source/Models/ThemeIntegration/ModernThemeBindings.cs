@@ -114,6 +114,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private string _dynamicGameSummariesProviderLabel = DynamicThemeViewKeys.All;
         [DontSerialize]
+        private string _dynamicGameSummariesGameKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicGameSummariesGameLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
         private string _dynamicGameSummariesSortKey = DynamicThemeViewKeys.LastUnlock;
         [DontSerialize]
         private string _dynamicGameSummariesSortLabel = DynamicThemeViewKeys.LastUnlock;
@@ -255,6 +259,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         private string _dynamicLibraryAchievementsProviderKey = DynamicThemeViewKeys.All;
         [DontSerialize]
         private string _dynamicLibraryAchievementsProviderLabel = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicLibraryAchievementsGameKey = DynamicThemeViewKeys.All;
+        [DontSerialize]
+        private string _dynamicLibraryAchievementsGameLabel = DynamicThemeViewKeys.All;
         [DontSerialize]
         private string _dynamicLibraryAchievementsSortKey = DynamicThemeViewKeys.UnlockTime;
         [DontSerialize]
@@ -836,6 +844,20 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicGameSummariesProviderLabel;
             set => SetValue(ref _dynamicGameSummariesProviderLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicGameSummariesGameKey
+        {
+            get => _dynamicGameSummariesGameKey;
+            set => SetValue(ref _dynamicGameSummariesGameKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicGameSummariesGameLabel
+        {
+            get => _dynamicGameSummariesGameLabel;
+            set => SetValue(ref _dynamicGameSummariesGameLabel, value);
         }
 
         [DontSerialize]
@@ -1424,6 +1446,20 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicLibraryAchievementsProviderLabel;
             set => SetValue(ref _dynamicLibraryAchievementsProviderLabel, value);
+        }
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsGameKey
+        {
+            get => _dynamicLibraryAchievementsGameKey;
+            set => SetValue(ref _dynamicLibraryAchievementsGameKey, value);
+        }
+
+        [DontSerialize]
+        public string DynamicLibraryAchievementsGameLabel
+        {
+            get => _dynamicLibraryAchievementsGameLabel;
+            set => SetValue(ref _dynamicLibraryAchievementsGameLabel, value);
         }
 
         [DontSerialize]

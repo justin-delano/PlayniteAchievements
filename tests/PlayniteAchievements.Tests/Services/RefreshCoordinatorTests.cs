@@ -168,6 +168,27 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public async Task ExecuteAsync_PassesValidatedAuthContextToRuntime()
+        {
+            var provider = new StubDataProvider("Steam");
+            var manager = new FakeAchievementService
+            {
+                AuthenticatedProvidersToReturn = new List<IDataProvider> { provider }
+            };
+            var coordinator = CreateCoordinator(manager);
+
+            await coordinator.ExecuteAsync(
+                new RefreshRequest { Mode = RefreshModeType.Recent },
+                new RefreshExecutionPolicy { ValidateAuthentication = true }).ConfigureAwait(false);
+
+            Assert.AreEqual(1, manager.ValidateCallCount);
+            Assert.AreEqual(1, manager.ExecuteCallCount);
+            Assert.IsNotNull(manager.LastAuthenticatedProviders);
+            Assert.AreEqual(1, manager.LastAuthenticatedProviders.Count);
+            Assert.AreSame(provider, manager.LastAuthenticatedProviders[0]);
+        }
+
+        [TestMethod]
         public async Task ExecuteAsync_ProgressWindowDefersExecutionToCallback()
         {
             var manager = new FakeAchievementService();
@@ -219,19 +240,20 @@ namespace PlayniteAchievements.Services.Tests
             public RefreshRequest LastRequest { get; private set; }
             public IReadOnlyList<IDataProvider> LastAuthenticatedProviders { get; private set; }
 
-            internal override Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken externalToken = default)
+            internal override Task<RefreshAuthContext> GetRefreshAuthContextOrShowDialogAsync(CancellationToken externalToken = default)
             {
                 ValidateCallCount++;
-                return Task.FromResult(AuthenticatedProvidersToReturn ?? (IReadOnlyList<IDataProvider>)Array.Empty<IDataProvider>());
+                return Task.FromResult(RefreshAuthContext.FromAuthenticatedProviders(
+                    AuthenticatedProvidersToReturn ?? (IReadOnlyList<IDataProvider>)Array.Empty<IDataProvider>()));
             }
 
             internal override Task ExecuteRefreshAsync(
                 RefreshRequest request,
-                IReadOnlyList<IDataProvider> authenticatedProviders,
+                RefreshAuthContext authContext,
                 CancellationToken externalToken = default)
             {
                 ExecuteCallCount++;
-                LastAuthenticatedProviders = authenticatedProviders;
+                LastAuthenticatedProviders = authContext?.AuthenticatedProviders;
                 LastRequest = CloneRequest(request);
                 return Task.CompletedTask;
             }

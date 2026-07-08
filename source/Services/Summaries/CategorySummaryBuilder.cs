@@ -41,7 +41,13 @@ namespace PlayniteAchievements.Services.Summaries
                 bucket.Add(item);
             }
 
-            foreach (var label in AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(source, i => i.CategoryLabel))
+            var preferredOrder = source
+                .Where(item => item != null && item.CategoryOrderIndex < int.MaxValue)
+                .OrderBy(item => item.CategoryOrderIndex)
+                .Select(item => item.CategoryLabel)
+                .ToList();
+
+            foreach (var label in AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(source, i => i.CategoryLabel, preferredOrder))
             {
                 if (!groups.TryGetValue(label, out var bucket))
                 {
@@ -54,7 +60,8 @@ namespace PlayniteAchievements.Services.Summaries
                     CategoryLabel = label,
                     GameName = display,
                     SortingName = display,
-                    GameCoverPath = ResolveSharedCover(bucket)
+                    GameLogo = ResolveSharedImage(bucket, item => item.CategoryIconPath),
+                    GameCoverPath = ResolveSharedImage(bucket, item => item.CategoryCoverPath)
                 };
 
                 AchievementStatsAccumulator
@@ -67,31 +74,35 @@ namespace PlayniteAchievements.Services.Summaries
             return result;
         }
 
-        // A category has no cover of its own. When every achievement in the group shares a
-        // single game cover (the single-game surfaces), surface it so the Cover column stays
-        // meaningful; on cross-game surfaces the covers differ, so leave it blank.
-        private static string ResolveSharedCover(IReadOnlyList<AchievementDisplayItem> bucket)
+        private static string ResolveSharedImage(
+            IReadOnlyList<AchievementDisplayItem> bucket,
+            System.Func<AchievementDisplayItem, string> selector)
         {
-            string cover = null;
+            if (selector == null)
+            {
+                return null;
+            }
+
+            string image = null;
             foreach (var item in bucket)
             {
-                var candidate = item?.GameCoverPath;
+                var candidate = selector(item);
                 if (string.IsNullOrEmpty(candidate))
                 {
                     continue;
                 }
 
-                if (cover == null)
+                if (image == null)
                 {
-                    cover = candidate;
+                    image = candidate;
                 }
-                else if (!string.Equals(cover, candidate, System.StringComparison.OrdinalIgnoreCase))
+                else if (!string.Equals(image, candidate, System.StringComparison.OrdinalIgnoreCase))
                 {
                     return null;
                 }
             }
 
-            return cover;
+            return image;
         }
     }
 }

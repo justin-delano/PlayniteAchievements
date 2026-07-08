@@ -258,6 +258,8 @@ namespace PlayniteAchievements.ViewModels
         {
         }
 
+        public PlayniteAchievements.Models.Achievements.AchievementDetail Source { get; set; }
+
         public string DisplayName { get; set; }
 
         public string Name => DisplayName;
@@ -293,6 +295,14 @@ namespace PlayniteAchievements.ViewModels
         public string CategoryType { get; set; }
 
         public string CategoryLabel { get; set; }
+
+        public int CategoryOrderIndex { get; set; } = int.MaxValue;
+
+        public string CategoryIconPath { get; set; }
+
+        public string CategoryCoverPath { get; set; }
+
+        public string GameIconPath { get; set; }
 
         public string GameCoverPath { get; set; }
 
@@ -343,6 +353,20 @@ namespace PlayniteAchievements.ViewModels
                 : 0;
 
         public bool ShowHiddenSuffix { get; set; }
+
+        public bool ShowHiddenIcon { get; set; }
+
+        public bool ShowHiddenTitle { get; set; }
+
+        public bool ShowHiddenDescription { get; set; }
+
+        public bool ShowLockedIcon { get; set; }
+
+        public bool UseSeparateLockedIconsWhenAvailable { get; set; }
+
+        public bool ShowRarityBar { get; set; } = true;
+
+        public bool IsRevealed { get; set; }
 
         public static AchievementDisplayItem Create(
             PlayniteAchievements.Models.Achievements.GameAchievementData gameData,
@@ -434,6 +458,11 @@ namespace PlayniteAchievements.ViewModels
                 TrophyType = TrophyType,
                 CategoryType = CategoryType,
                 CategoryLabel = CategoryLabel,
+                CategoryOrderIndex = CategoryOrderIndex,
+                CategoryIconPath = CategoryIconPath,
+                CategoryCoverPath = CategoryCoverPath,
+                GameIconPath = GameIconPath,
+                GameCoverPath = GameCoverPath,
                 Hidden = Hidden,
                 IsCapstone = IsCapstone,
                 Unlocked = Unlocked,
@@ -447,7 +476,15 @@ namespace PlayniteAchievements.ViewModels
                 ProgressNum = ProgressNum,
                 ProgressDenom = ProgressDenom,
                 AchievementNote = AchievementNote,
-                ShowHiddenSuffix = ShowHiddenSuffix
+                ShowHiddenSuffix = ShowHiddenSuffix,
+                ShowHiddenIcon = ShowHiddenIcon,
+                ShowHiddenTitle = ShowHiddenTitle,
+                ShowHiddenDescription = ShowHiddenDescription,
+                ShowLockedIcon = ShowLockedIcon,
+                UseSeparateLockedIconsWhenAvailable = UseSeparateLockedIconsWhenAvailable,
+                ShowRarityBar = ShowRarityBar,
+                IsRevealed = IsRevealed,
+                Source = Source
             };
         }
 
@@ -464,8 +501,12 @@ namespace PlayniteAchievements.ViewModels
             bool showRarityBar = true,
             string sortingName = null,
             string gameIconPath = null,
-            string gameCoverPath = null)
+            string gameCoverPath = null,
+            int categoryOrderIndex = int.MaxValue,
+            string categoryIconPath = null,
+            string categoryCoverPath = null)
         {
+            Source = source;
             DisplayName = source?.DisplayName;
             Description = source?.Description;
             GameName = gameName;
@@ -489,7 +530,18 @@ namespace PlayniteAchievements.ViewModels
             ProgressNum = source?.ProgressNum;
             ProgressDenom = source?.ProgressDenom;
             AchievementNote = source?.AchievementNote;
+            ShowHiddenIcon = showHiddenIcon;
+            ShowHiddenTitle = showHiddenTitle;
+            ShowHiddenDescription = showHiddenDescription;
             ShowHiddenSuffix = showHiddenSuffix;
+            ShowLockedIcon = showLockedIcon;
+            UseSeparateLockedIconsWhenAvailable = useSeparateLockedIconsWhenAvailable;
+            ShowRarityBar = showRarityBar;
+            GameIconPath = gameIconPath;
+            GameCoverPath = gameCoverPath;
+            CategoryOrderIndex = categoryOrderIndex;
+            CategoryIconPath = categoryIconPath;
+            CategoryCoverPath = categoryCoverPath;
         }
     }
 }

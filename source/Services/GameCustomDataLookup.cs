@@ -33,6 +33,11 @@ namespace PlayniteAchievements.Services
         public Dictionary<string, string> AchievementCategoryTypeOverrides { get; set; } =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        public List<string> AchievementCategoryOrder { get; set; } = new List<string>();
+
+        public Dictionary<string, CategoryImageOverrideData> AchievementCategoryImageOverrides { get; set; } =
+            new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+
         public HashSet<string> FilteredAchievementApiNames { get; set; } =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -115,6 +120,12 @@ namespace PlayniteAchievements.Services
                                             fallbackSettings.AchievementCategoryTypeOverrides.TryGetValue(gameId, out var configuredCategoryTypeOverrides)
                                                 ? CloneStringMap(configuredCategoryTypeOverrides)
                                                 : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
+                AchievementCategoryOrder = hasCustomData
+                    ? CloneCategoryOrder(customData?.AchievementCategoryOrder)
+                    : new List<string>(),
+                AchievementCategoryImageOverrides = hasCustomData
+                    ? CloneCategoryImageOverrideMap(customData?.AchievementCategoryImageOverrides)
+                    : new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase),
                 FilteredAchievementApiNames = hasCustomData
                     ? CloneApiNameSet(customData?.FilteredAchievementApiNames)
                     : new HashSet<string>(StringComparer.OrdinalIgnoreCase),
@@ -295,6 +306,22 @@ namespace PlayniteAchievements.Services
             GameCustomDataStore store = null)
         {
             return ResolveGameCustomData(gameId, fallbackSettings, store).AchievementCategoryTypeOverrides;
+        }
+
+        public static List<string> GetAchievementCategoryOrder(
+            Guid gameId,
+            PersistedSettings fallbackSettings = null,
+            GameCustomDataStore store = null)
+        {
+            return ResolveGameCustomData(gameId, fallbackSettings, store).AchievementCategoryOrder;
+        }
+
+        public static Dictionary<string, CategoryImageOverrideData> GetAchievementCategoryImageOverrides(
+            Guid gameId,
+            PersistedSettings fallbackSettings = null,
+            GameCustomDataStore store = null)
+        {
+            return ResolveGameCustomData(gameId, fallbackSettings, store).AchievementCategoryImageOverrides;
         }
 
         public static HashSet<string> GetFilteredAchievementApiNames(
@@ -639,6 +666,57 @@ namespace PlayniteAchievements.Services
                 }
 
                 map[key] = value;
+            }
+
+            return map;
+        }
+
+        private static List<string> CloneCategoryOrder(IEnumerable<string> source)
+        {
+            var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            if (source == null)
+            {
+                return result;
+            }
+
+            foreach (var value in source)
+            {
+                var normalized = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(value);
+                if (!string.IsNullOrWhiteSpace(normalized) && seen.Add(normalized))
+                {
+                    result.Add(normalized);
+                }
+            }
+
+            return result;
+        }
+
+        private static Dictionary<string, CategoryImageOverrideData> CloneCategoryImageOverrideMap(
+            IReadOnlyDictionary<string, CategoryImageOverrideData> source)
+        {
+            var map = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+            if (source == null)
+            {
+                return map;
+            }
+
+            foreach (var pair in source)
+            {
+                var key = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                var icon = NormalizeValue(pair.Value?.Icon);
+                var cover = NormalizeValue(pair.Value?.Cover);
+                if (string.IsNullOrWhiteSpace(key) ||
+                    (string.IsNullOrWhiteSpace(icon) && string.IsNullOrWhiteSpace(cover)))
+                {
+                    continue;
+                }
+
+                map[key] = new CategoryImageOverrideData
+                {
+                    Icon = icon,
+                    Cover = cover
+                };
             }
 
             return map;

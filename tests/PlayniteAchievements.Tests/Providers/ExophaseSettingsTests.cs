@@ -183,7 +183,7 @@ namespace PlayniteAchievements.Providers.Tests
             };
 
             Assert.AreEqual("Beer_Here", settings.Friends[0].Username);
-            CollectionAssert.AreEqual(new List<string> { "psn", "steam" }, settings.Friends[0].SelectedPlatforms);
+            CollectionAssert.AreEqual(new List<string> { "psn" }, settings.Friends[0].SelectedPlatforms);
         }
 
         [TestMethod]

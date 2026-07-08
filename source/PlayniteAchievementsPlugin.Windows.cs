@@ -29,6 +29,11 @@ namespace PlayniteAchievements
             _windowService.OpenViewAchievementsWindow(gameId);
         }
 
+        public void OpenViewFriendsAchievementsWindow(Guid gameId)
+        {
+            _windowService.OpenViewFriendsAchievementsWindow(gameId);
+        }
+
         /// <summary>
         /// Opens the modern parity test view window for testing theme integration controls.
         /// </summary>

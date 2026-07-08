@@ -590,6 +590,64 @@
         </Setter>
     </Style>
 
+    <!-- Right half of a segmented unit: flat left corners and no left border so it butts flush
+         against a control on its left (e.g. the category-mode toggle), the two reading as one
+         bordered group. Mirrors AchievementSelectorButtonStyle otherwise. -->
+    <Style x:Key="AchievementSelectorButtonConnectedLeftStyle"
+           TargetType="Button"
+           BasedOn="{StaticResource AchievementSelectorButtonStyle}">
+        <Setter Property="BorderThickness" Value="0,1,1,1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="0,4,4,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="16"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0"
+                                       Text="{TemplateBinding Content}"
+                                       Margin="{TemplateBinding Padding}"
+                                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       TextWrapping="NoWrap"/>
+                            <TextBlock Grid.Column="1"
+                                       Text="▼"
+                                       VerticalAlignment="Center"
+                                       HorizontalAlignment="Right"
+                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontSize="10"
+                                       Opacity="0.85"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                        </Trigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="Border" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Selection}"/>
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Pressed}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="Border" Property="Opacity" Value="0.55"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="AchievementSelectorContextMenuStyle"
            TargetType="ContextMenu">
         <Setter Property="OverridesDefaultStyle" Value="True"/>

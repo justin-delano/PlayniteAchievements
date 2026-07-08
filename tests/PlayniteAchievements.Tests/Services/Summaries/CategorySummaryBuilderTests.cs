@@ -40,21 +40,40 @@ namespace PlayniteAchievements.Tests.Services.Summaries
         }
 
         [TestMethod]
-        public void Build_SharedCoverSurfacedOnlyWhenAllItemsAgree()
+        public void Build_SharedCategoryImagesSurfacedOnlyWhenAllItemsAgree()
         {
             var shared = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
             {
-                DisplayItem("DLC", unlocked: true, cover: "cover.png"),
-                DisplayItem("DLC", unlocked: false, cover: "cover.png")
+                DisplayItem("DLC", unlocked: true, categoryIcon: "icon.png", categoryCover: "cover.png"),
+                DisplayItem("DLC", unlocked: false, categoryIcon: "icon.png", categoryCover: "cover.png")
             });
-            Assert.AreEqual("cover.png", ((CategorySummaryItem)shared.Single()).GameCoverPath);
+            var sharedCategory = (CategorySummaryItem)shared.Single();
+            Assert.AreEqual("icon.png", sharedCategory.GameLogo);
+            Assert.AreEqual("cover.png", sharedCategory.GameCoverPath);
 
             var mixed = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
             {
-                DisplayItem("DLC", unlocked: true, cover: "a.png"),
-                DisplayItem("DLC", unlocked: false, cover: "b.png")
+                DisplayItem("DLC", unlocked: true, categoryIcon: "a.png", categoryCover: "a.png"),
+                DisplayItem("DLC", unlocked: false, categoryIcon: "b.png", categoryCover: "b.png")
             });
-            Assert.IsNull(((CategorySummaryItem)mixed.Single()).GameCoverPath);
+            var mixedCategory = (CategorySummaryItem)mixed.Single();
+            Assert.IsNull(mixedCategory.GameLogo);
+            Assert.IsNull(mixedCategory.GameCoverPath);
+        }
+
+        [TestMethod]
+        public void Build_UsesCategoryOrderIndexBeforeFirstSeenRemainder()
+        {
+            var result = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
+            {
+                DisplayItem("Base", unlocked: false, categoryOrderIndex: 1),
+                DisplayItem("Event", unlocked: false),
+                DisplayItem("DLC", unlocked: true, categoryOrderIndex: 0)
+            });
+
+            CollectionAssert.AreEqual(
+                new[] { "DLC", "Base", "Event" },
+                result.Cast<CategorySummaryItem>().Select(item => item.CategoryLabel).ToList());
         }
 
         [TestMethod]
@@ -77,14 +96,21 @@ namespace PlayniteAchievements.Tests.Services.Summaries
             Assert.AreEqual(0, CategorySummaryBuilder.Build(new List<AchievementDisplayItem>()).Count);
         }
 
-        private static AchievementDisplayItem DisplayItem(string label, bool unlocked, string cover = null)
+        private static AchievementDisplayItem DisplayItem(
+            string label,
+            bool unlocked,
+            string categoryIcon = null,
+            string categoryCover = null,
+            int categoryOrderIndex = int.MaxValue)
         {
             return new AchievementDisplayItem
             {
                 Rarity = RarityTier.Common,
                 CategoryLabel = label,
                 Unlocked = unlocked,
-                GameCoverPath = cover
+                CategoryIconPath = categoryIcon,
+                CategoryCoverPath = categoryCover,
+                CategoryOrderIndex = categoryOrderIndex
             };
         }
     }

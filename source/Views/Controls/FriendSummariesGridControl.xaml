@@ -37,7 +37,20 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <Grid>
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <controls:GridControlBarControl x:Name="ControlBarHost"
+                                    Grid.Row="0"
+                                    Margin="0,0,0,8"
+                                    ControlBar="{Binding ControlBar, RelativeSource={RelativeSource AncestorType=controls:FriendSummariesGridControl}}"
+                                    ShowControlBar="{Binding ShowControlBar, RelativeSource={RelativeSource AncestorType=controls:FriendSummariesGridControl}}"/>
+
     <DataGrid x:Name="FriendSummariesGrid"
+              Grid.Row="1"
               KeyboardNavigation.DirectionalNavigation="Contained"
               ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=controls:FriendSummariesGridControl}}"
               SelectedItem="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=controls:FriendSummariesGridControl}, Mode=TwoWay}"
@@ -186,4 +199,5 @@
             </DataGridTemplateColumn>
         </DataGrid.Columns>
     </DataGrid>
+    </Grid>
 </UserControl>

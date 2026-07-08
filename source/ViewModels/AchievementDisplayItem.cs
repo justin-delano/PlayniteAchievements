@@ -50,6 +50,9 @@ namespace PlayniteAchievements.ViewModels
         private string _categoryLabel;
         private string _gameIconPath;
         private string _gameCoverPath;
+        private int _categoryOrderIndex = int.MaxValue;
+        private string _categoryIconPath;
+        private string _categoryCoverPath;
 
         public AchievementDetail Source => _source;
 
@@ -584,6 +587,24 @@ namespace PlayniteAchievements.ViewModels
             set => SetValue(ref _gameCoverPath, value);
         }
 
+        public int CategoryOrderIndex
+        {
+            get => _categoryOrderIndex;
+            set => SetValue(ref _categoryOrderIndex, value);
+        }
+
+        public string CategoryIconPath
+        {
+            get => _categoryIconPath;
+            set => SetValue(ref _categoryIconPath, value);
+        }
+
+        public string CategoryCoverPath
+        {
+            get => _categoryCoverPath;
+            set => SetValue(ref _categoryCoverPath, value);
+        }
+
         /// <summary>
         /// True if this achievement has PlayStation trophy type data.
         /// </summary>
@@ -716,7 +737,10 @@ namespace PlayniteAchievements.ViewModels
             bool showRarityBar = true,
             string sortingName = null,
             string gameIconPath = null,
-            string gameCoverPath = null)
+            string gameCoverPath = null,
+            int categoryOrderIndex = int.MaxValue,
+            string categoryIconPath = null,
+            string categoryCoverPath = null)
         {
             SetSource(source, notifyChanges: true);
             ProviderKey = source?.ProviderKey;
@@ -736,6 +760,9 @@ namespace PlayniteAchievements.ViewModels
             CategoryLabel = source?.Category;
             GameIconPath = gameIconPath;
             GameCoverPath = gameCoverPath;
+            CategoryOrderIndex = categoryOrderIndex;
+            CategoryIconPath = categoryIconPath;
+            CategoryCoverPath = categoryCoverPath;
         }
 
         /// <summary>
@@ -761,7 +788,10 @@ namespace PlayniteAchievements.ViewModels
                 sourceItem.ShowRarityBar,
                 sourceItem.SortingName,
                 sourceItem.GameIconPath,
-                sourceItem.GameCoverPath);
+                sourceItem.GameCoverPath,
+                sourceItem.CategoryOrderIndex,
+                sourceItem.CategoryIconPath,
+                sourceItem.CategoryCoverPath);
             ProviderKey = sourceItem.ProviderKey;
             PointsValue = sourceItem.PointsValue;
             CategoryType = sourceItem.CategoryType;
@@ -979,6 +1009,9 @@ namespace PlayniteAchievements.ViewModels
             clone.CategoryLabel = _categoryLabel;
             clone.GameIconPath = _gameIconPath;
             clone.GameCoverPath = _gameCoverPath;
+            clone.CategoryOrderIndex = _categoryOrderIndex;
+            clone.CategoryIconPath = _categoryIconPath;
+            clone.CategoryCoverPath = _categoryCoverPath;
             clone.SetDynamicAchievementsGameCommand = SetDynamicAchievementsGameCommand;
             clone.FilterDynamicLibraryAchievementsByProviderCommand = FilterDynamicLibraryAchievementsByProviderCommand;
             clone.OpenViewAchievementsWindow = OpenViewAchievementsWindow;
@@ -1030,6 +1063,13 @@ namespace PlayniteAchievements.ViewModels
                 ResolvePoints(achievement, gameData));
             item.GameIconPath = gameIconPath;
             item.GameCoverPath = gameCoverPath;
+            ApplyCategoryPresentation(
+                item,
+                gameData,
+                item.CategoryLabel,
+                item.GameIconPath,
+                item.GameCoverPath,
+                gameData?.PlayniteGameId);
             var resolvedAppearanceSettings = appearanceSettings ?? CreateAppearanceSettingsSnapshot(
                 settings,
                 gameData?.PlayniteGameId,
@@ -1267,7 +1307,106 @@ namespace PlayniteAchievements.ViewModels
             item.PointsValue = pointsValue;
             item.CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(achievement.CategoryType);
             item.CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category);
+            item.GameIconPath = ResolveGameAssetPath(gameData?.Game?.Icon);
+            item.GameCoverPath = ResolveGameAssetPath(gameData?.Game?.CoverImage);
+            ApplyCategoryPresentation(
+                item,
+                gameData,
+                item.CategoryLabel,
+                item.GameIconPath,
+                item.GameCoverPath,
+                playniteGameId);
             return item;
+        }
+
+        private static void ApplyCategoryPresentation(
+            AchievementDisplayItem item,
+            GameAchievementData gameData,
+            string categoryLabel,
+            string defaultIconPath,
+            string defaultCoverPath,
+            Guid? playniteGameId)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryLabel);
+            item.CategoryOrderIndex = ResolveCategoryOrderIndex(normalizedCategory, gameData?.AchievementCategoryOrder);
+
+            CategoryImageOverrideData imageOverride = null;
+            if (!string.IsNullOrWhiteSpace(normalizedCategory) &&
+                gameData?.AchievementCategoryImageOverrides != null)
+            {
+                gameData.AchievementCategoryImageOverrides.TryGetValue(normalizedCategory, out imageOverride);
+            }
+
+            item.CategoryIconPath =
+                ResolveCategoryImageOverridePath(imageOverride?.Icon, playniteGameId) ??
+                defaultIconPath;
+            item.CategoryCoverPath =
+                ResolveCategoryImageOverridePath(imageOverride?.Cover, playniteGameId) ??
+                defaultCoverPath;
+        }
+
+        private static int ResolveCategoryOrderIndex(string categoryLabel, IReadOnlyList<string> categoryOrder)
+        {
+            if (string.IsNullOrWhiteSpace(categoryLabel) || categoryOrder == null || categoryOrder.Count == 0)
+            {
+                return int.MaxValue;
+            }
+
+            for (var i = 0; i < categoryOrder.Count; i++)
+            {
+                if (string.Equals(
+                    AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryOrder[i]),
+                    categoryLabel,
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
+
+            return int.MaxValue;
+        }
+
+        private static string ResolveCategoryImageOverridePath(string value, Guid? playniteGameId)
+        {
+            var normalized = NormalizeImagePath(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            var managedCustomIconService = PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService;
+            return playniteGameId.HasValue
+                ? managedCustomIconService?.ResolveManagedDisplayPath(normalized, playniteGameId.Value.ToString("D")) ?? normalized
+                : normalized;
+        }
+
+        private static string ResolveGameAssetPath(string value)
+        {
+            var normalized = NormalizeImagePath(value);
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return null;
+            }
+
+            try
+            {
+                return API.Instance?.Database?.GetFullFilePath(normalized) ?? normalized;
+            }
+            catch
+            {
+                return normalized;
+            }
+        }
+
+        private static string NormalizeImagePath(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
         }
 
         private static int? ResolvePoints(AchievementDetail achievement, GameAchievementData gameData)

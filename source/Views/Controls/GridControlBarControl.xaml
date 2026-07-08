@@ -16,50 +16,41 @@
 
             <BooleanToVisibilityConverter x:Key="GridControlBarBoolToVis"/>
 
-            <!-- Toolbar mode toggle (category-summaries mode), rendered as a sliding switch with a
-                 trailing label. The thumb slides right and the track fills with the accent when on. -->
+            <!-- Toolbar mode toggle (category-summaries mode), rendered as the left half of a
+                 segmented unit: a bordered, icon-only button that butts flush against the category
+                 dropdown on its right. The list glyph fills with the accent when the mode is on;
+                 when on, the adjacent dropdown is hidden so the segment rounds all four corners. -->
             <Style x:Key="GridModeToggleButtonStyle" TargetType="ToggleButton">
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="Cursor" Value="Hand"/>
                 <Setter Property="Focusable" Value="False"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
                 <Setter Property="Template">
                     <Setter.Value>
                         <ControlTemplate TargetType="ToggleButton">
-                            <StackPanel Orientation="Horizontal"
-                                        VerticalAlignment="Center"
-                                        Background="Transparent">
-                                <Border x:Name="Track"
-                                        Width="34" Height="18"
-                                        CornerRadius="9"
-                                        Background="{DynamicResource PlayAch.Brush.Button.Background}"
-                                        BorderBrush="{DynamicResource PlayAch.Brush.Button.Border}"
-                                        BorderThickness="1">
-                                    <Border x:Name="Thumb"
-                                            Width="12" Height="12"
-                                            CornerRadius="6"
-                                            HorizontalAlignment="Left"
-                                            VerticalAlignment="Center"
-                                            Margin="3,0,0,0"
-                                            Background="{DynamicResource PlayAch.Brush.Text}"/>
-                                </Border>
-                                <TextBlock Text="{TemplateBinding Content}"
-                                           Margin="6,0,0,0"
-                                           VerticalAlignment="Center"
-                                           Foreground="{TemplateBinding Foreground}"
-                                           TextTrimming="CharacterEllipsis"
-                                           TextWrapping="NoWrap"/>
-                            </StackPanel>
+                            <Border x:Name="Seg"
+                                    Background="{DynamicResource PlayAch.Brush.Button.Background}"
+                                    BorderBrush="{DynamicResource PlayAch.Brush.Button.Border}"
+                                    BorderThickness="1"
+                                    CornerRadius="4,0,0,4"
+                                    Padding="8,0"
+                                    SnapsToDevicePixels="True">
+                                <Viewbox Width="15" Height="15" VerticalAlignment="Center">
+                                    <Path x:Name="Glyph"
+                                          Data="M0,1.5 H3 V4.5 H0 Z M5.5,1.5 H16 V4.5 H5.5 Z M0,6.5 H3 V9.5 H0 Z M5.5,6.5 H16 V9.5 H5.5 Z M0,11.5 H3 V14.5 H0 Z M5.5,11.5 H16 V14.5 H5.5 Z"
+                                          Fill="{DynamicResource PlayAch.Brush.Text}"/>
+                                </Viewbox>
+                            </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Seg" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Seg" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="Track" Property="Background" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                    <Setter TargetName="Track" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                    <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
-                                    <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
-                                    <Setter TargetName="Thumb" Property="Background" Value="White"/>
+                                    <Setter TargetName="Seg" Property="CornerRadius" Value="4"/>
+                                    <Setter TargetName="Seg" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Glyph" Property="Fill" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.55"/>
@@ -281,7 +272,8 @@
             </DataTemplate>
 
             <DataTemplate DataType="{x:Type vm:GridMultiSelectFilter}">
-                <Button Style="{StaticResource AchievementSelectorButtonStyle}"
+                <Button x:Name="FilterButton"
+                        Style="{StaticResource AchievementSelectorButtonStyle}"
                         Content="{Binding DisplayText}"
                         Click="MultiSelectFilter_Click"
                         Width="{Binding Width}"
@@ -290,12 +282,19 @@
                         Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                         VerticalAlignment="Center"
                         ToolTip="{Binding ToolTip}"
-                        Visibility="{Binding IsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
+                        Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
                     <Button.ContextMenu>
                         <ContextMenu Style="{StaticResource AchievementSelectorContextMenuStyle}"
                                      ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
                     </Button.ContextMenu>
                 </Button>
+                <DataTemplate.Triggers>
+                    <!-- Segmented with the mode toggle on its left: flat left edge, no gap. -->
+                    <DataTrigger Binding="{Binding ConnectedLeft}" Value="True">
+                        <Setter TargetName="FilterButton" Property="Style" Value="{StaticResource AchievementSelectorButtonConnectedLeftStyle}"/>
+                        <Setter TargetName="FilterButton" Property="Margin" Value="0"/>
+                    </DataTrigger>
+                </DataTemplate.Triggers>
             </DataTemplate>
 
             <DataTemplate DataType="{x:Type vm:GridProviderPlatformFilter}">
@@ -308,7 +307,7 @@
                         Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                         VerticalAlignment="Center"
                         ToolTip="{Binding ToolTip}"
-                        Visibility="{Binding IsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
+                        Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
                     <Button.ContextMenu>
                         <ContextMenu Style="{StaticResource ProviderFilterContextMenuStyle}"
                                      Closed="ProviderFilterContextMenu_Closed"/>
@@ -316,22 +315,71 @@
                 </Button>
             </DataTemplate>
 
+            <!-- Filter toggle styled like the settings tabs: the border turns to the accent
+                 color (with a subtle selection fill) to signal the active state; the glyph
+                 itself keeps its normal brush and does not recolor. Keys on IsChecked, the
+                 ToggleButton analog of the tab style's IsSelected trigger
+                 (PlayAch.TabItem.BaseStyle in CommonResources.xaml). -->
+            <Style x:Key="GridToggleFilterButtonStyle" TargetType="ToggleButton">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderBrush" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="{StaticResource PlayAch.Thickness.Border}"/>
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="Focusable" Value="False"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ToggleButton">
+                            <Border x:Name="Chrome"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="{StaticResource PlayAch.Radius.Small}"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter Margin="{TemplateBinding Padding}"
+                                                  HorizontalAlignment="Center"
+                                                  VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                </Trigger>
+                                <Trigger Property="IsChecked" Value="True">
+                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
+                                    <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="Chrome" Property="Opacity" Value="{StaticResource PlayAch.Opacity.Disabled}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
             <DataTemplate DataType="{x:Type vm:GridToggleFilter}">
-                <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                          VerticalAlignment="Center"
-                          Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                          ToolTip="{Binding Content}"
-                          Visibility="{Binding IsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
+                <ToggleButton Style="{StaticResource GridToggleFilterButtonStyle}"
+                              IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                              Height="{StaticResource PlayAch.Size.Control.Height}"
+                              VerticalAlignment="Center"
+                              Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
+                              ToolTip="{Binding Content}"
+                              Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}">
                     <!-- Content is one of: text label (Icon=None), or a Status-column glyph
                          (checkmark / padlock) or the IcoFont hidden glyph. The localized name
-                         is surfaced via the CheckBox ToolTip. -->
-                    <Grid VerticalAlignment="Center">
+                         is surfaced via the ToolTip. -->
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
                         <TextBlock x:Name="TextGlyph"
                                    Text="{Binding Content}"
+                                   HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
                                    Visibility="Collapsed"/>
                         <Viewbox x:Name="CheckGlyph"
                                  Width="15" Height="15"
+                                 HorizontalAlignment="Center"
                                  VerticalAlignment="Center"
                                  Visibility="Collapsed">
                             <Path Data="{StaticResource GeoCheck}"
@@ -343,6 +391,7 @@
                         </Viewbox>
                         <Viewbox x:Name="LockGlyph"
                                  Width="15" Height="15"
+                                 HorizontalAlignment="Center"
                                  VerticalAlignment="Center"
                                  Visibility="Collapsed">
                             <Path Data="{StaticResource GeoLock}"
@@ -353,10 +402,12 @@
                                    FontFamily="{DynamicResource PlayAch.FontFamily.Icon}"
                                    Foreground="{DynamicResource PlayAch.Brush.Glyph}"
                                    FontSize="15"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
                                    VerticalAlignment="Center"
                                    Visibility="Collapsed"/>
                     </Grid>
-                </CheckBox>
+                </ToggleButton>
                 <DataTemplate.Triggers>
                     <DataTrigger Binding="{Binding Icon}" Value="None">
                         <Setter TargetName="TextGlyph" Property="Visibility" Value="Visible"/>
@@ -417,32 +468,43 @@
                         Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                         VerticalAlignment="Center"
                         ToolTip="{Binding ToolTip}"
-                        Visibility="{Binding IsVisible, Converter={StaticResource GridControlBarBoolToVis}}"/>
+                        Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}"/>
             </DataTemplate>
 
             <DataTemplate DataType="{x:Type vm:GridModeToggle}">
                 <ToggleButton Style="{StaticResource GridModeToggleButtonStyle}"
-                              Content="{Binding Content}"
                               IsChecked="{Binding IsChecked, Mode=TwoWay}"
                               Height="{StaticResource PlayAch.Size.Control.Height}"
                               Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                               VerticalAlignment="Center"
                               ToolTip="{Binding ToolTip}"
-                              Visibility="{Binding IsVisible, Converter={StaticResource GridControlBarBoolToVis}}"/>
+                              Visibility="{Binding EffectiveIsVisible, Converter={StaticResource GridControlBarBoolToVis}}"/>
             </DataTemplate>
         </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid KeyboardNavigation.DirectionalNavigation="Continue">
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*" MinWidth="100"/>
             <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <ContentControl Grid.Column="0"
+        <ItemsControl Grid.Column="0"
+                      ItemsSource="{Binding ControlBar.LeadingItems, ElementName=Root}"
+                      VerticalAlignment="Center"
+                      Margin="0,0,6,0">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>
+
+        <ContentControl Grid.Column="1"
                         Content="{Binding ControlBar.Search, ElementName=Root}"/>
 
-        <ItemsControl Grid.Column="1"
+        <ItemsControl Grid.Column="2"
                       ItemsSource="{Binding ControlBar.Items, ElementName=Root}"
                       VerticalAlignment="Center">
             <ItemsControl.ItemsPanel>

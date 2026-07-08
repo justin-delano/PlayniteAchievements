@@ -12,6 +12,7 @@
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/CommonResources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
@@ -61,6 +62,21 @@
                       HorizontalScrollBarVisibility="Disabled"
                       Margin="0,12,0,0">
             <StackPanel>
+
+                <!-- Row 0: Toast -->
+                <Border Background="{DynamicResource PlayAch.Brush.Surface}"
+                        CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                        Padding="{StaticResource PlayAch.Thickness.CardPadding}"
+                        Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="AchievementToast"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                        <local:GameViewControlHost ControlName="AchievementToast"
+                                                   HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
 
                 <!-- Row 1: Small Controls Side by Side -->
                 <Grid>

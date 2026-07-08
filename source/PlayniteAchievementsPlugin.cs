@@ -26,6 +26,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.Library;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.ThemeIntegration;
 using PlayniteAchievements.Services.ThemeMigration;
 using PlayniteAchievements.Services.Tagging;
@@ -67,6 +68,10 @@ namespace PlayniteAchievements
         private readonly AchievementDataService _achievementDataService;
         private readonly LibraryProjectionService _libraryProjectionService;
         private readonly ICacheManager _cacheManager;
+        private readonly IFriendCacheManager _friendCacheManager;
+        private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
+        private readonly FriendGameAchievementsDataCoordinator _friendGameAchievementsDataCoordinator;
+        private readonly FriendsRecentUnlocksDataCoordinator _friendsRecentUnlocksDataCoordinator;
         private readonly MemoryImageService _imageService;
         private readonly DiskImageService _diskImageService;
         private readonly ManagedCustomIconService _managedCustomIconService;
@@ -77,6 +82,14 @@ namespace PlayniteAchievements
         private readonly SubscriptionCollection _eventSubscriptions = new SubscriptionCollection();
 
         private readonly BackgroundUpdater _backgroundUpdates;
+        private readonly InGameAchievementPoller _inGamePoller;
+        private readonly ToastNotificationService _toastNotifications;
+
+        /// <summary>
+        /// Process id of the currently running game (from OnGameStarted), used to identify the
+        /// game's window/monitor for unlock screenshots. Null when no game is running.
+        /// </summary>
+        private int? _startedProcessId;
         private readonly RefreshEntryPoint _refreshCoordinator;
         private bool _applicationStarted;
 
@@ -122,6 +135,7 @@ namespace PlayniteAchievements
         /// that display authentication status or other settings-dependent information.
         /// </summary>
         public static event EventHandler SettingsSaved;
+        public static event EventHandler<AchievementUnlockedEventArgs> AchievementUnlocked;
 
         /// <summary>
         /// Raises the SettingsSaved event to notify listeners that settings have changed. Every
@@ -145,6 +159,29 @@ namespace PlayniteAchievements
             }
 
             handler.Invoke(null, EventArgs.Empty);
+        }
+
+        public static void NotifyAchievementUnlocked(AchievementUnlockedEventArgs args)
+        {
+            if (args == null)
+            {
+                return;
+            }
+
+            var handler = AchievementUnlocked;
+            if (handler == null)
+            {
+                return;
+            }
+
+            var dispatcher = Instance?.PlayniteApi?.MainView?.UIDispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(() => handler.Invoke(null, args)));
+                return;
+            }
+
+            handler.Invoke(null, args);
         }
 
         private void TryWarmCustomDataCache()
@@ -219,6 +256,13 @@ namespace PlayniteAchievements
                 return true;
             }
 
+            var friendsSingleGame = VisualTreeHelpers.FindVisualChild<ViewFriendsAchievementsControl>(window);
+            if (friendsSingleGame != null && friendsSingleGame.IsVisible)
+            {
+                friendsSingleGame.TriggerHotkeyRefresh();
+                return true;
+            }
+
             var overview = VisualTreeHelpers.FindVisualChild<OverviewControl>(window);
             if (overview != null && overview.IsVisible)
             {
@@ -288,10 +332,32 @@ namespace PlayniteAchievements
 
                     _refreshService = new RefreshRuntime(api, settings, _logger, this, providers, _diskImageService, _managedCustomIconService, _providerRegistry, ProviderRefreshOrder, onRefreshCompleted: payload => HandleRefreshAuthNotifications(payload));
                     _cacheManager = _refreshService.Cache;
+                    _friendCacheManager = _cacheManager as Services.Friends.IFriendCacheManager;
+                    _friendsOverviewDataCoordinator = new FriendsOverviewDataCoordinator(
+                        _friendCacheManager,
+                        () => _settingsViewModel?.Settings?.Persisted,
+                        _logger);
+                    _friendGameAchievementsDataCoordinator = new FriendGameAchievementsDataCoordinator(
+                        _friendCacheManager,
+                        _friendsOverviewDataCoordinator,
+                        () => _settingsViewModel?.Settings?.Persisted,
+                        _logger);
+                    _friendsRecentUnlocksDataCoordinator = new FriendsRecentUnlocksDataCoordinator(
+                        _friendCacheManager,
+                        _friendsOverviewDataCoordinator,
+                        () => _settingsViewModel?.Settings?.Persisted,
+                        _logger);
+                    if (_friendCacheManager != null)
+                    {
+                        _friendCacheManager.FriendCacheInvalidated += FriendCacheManager_FriendCacheInvalidated;
+                        _eventSubscriptions.Add(() => _friendCacheManager.FriendCacheInvalidated -= FriendCacheManager_FriendCacheInvalidated);
+                    }
+
                     _cacheManager.CacheInvalidated += (_, __) =>
                     {
                         try { _imageService?.Clear(); } catch { }
                         InvalidateStartPageData();
+                        InvalidateFriendDataCoordinators();
                     };
                     _achievementOverridesService = new AchievementOverridesService(
                         _gameCustomDataStore,
@@ -317,6 +383,21 @@ namespace PlayniteAchievements
                         _refreshService,
                         _logger,
                         runWithProgressWindow: ShowRefreshProgressControlAndRun);
+                    _toastNotifications = new ToastNotificationService(
+                        PlayniteApi,
+                        settings,
+                        _logger,
+                        () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
+                        () => _startedProcessId);
+                    _inGamePoller = new InGameAchievementPoller(
+                        PlayniteApi,
+                        settings,
+                        _logger,
+                        _cacheManager,
+                        _refreshService,
+                        providers,
+                        (request, policy) => _refreshCoordinator.ExecuteAsync(request, policy),
+                        NotifyAchievementUnlocked);
                     _backgroundUpdates = new BackgroundUpdater(_refreshCoordinator, _refreshService, _cacheManager, settings, _logger, _notifications, null);
 
                     // Create tag sync service
@@ -344,7 +425,9 @@ namespace PlayniteAchievements
                         _settingsViewModel.Settings,
                         _manualSourceRegistry,
                         () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
-                        _fullscreenControllerNavigationService);
+                        _fullscreenControllerNavigationService,
+                        _friendsOverviewDataCoordinator,
+                        _friendGameAchievementsDataCoordinator);
 
                     _achievementHotkeyTargetResolver = new AchievementHotkeyTargetResolver(PlayniteApi, _logger);
                     _achievementHotkeyService = new AchievementHotkeyService(
@@ -388,7 +471,9 @@ namespace PlayniteAchievements
                         _logger,
                         _windowService.RunRefreshWithGlobalProgressAsync,
                         gameId => _windowService.OpenManageAchievementsView(gameId, ManageAchievementsTab.Overview),
-                        _cacheManager as Services.Friends.IFriendCacheManager);
+                        _cacheManager as Services.Friends.IFriendCacheManager,
+                        _friendsOverviewDataCoordinator,
+                        _achievementHotkeyTargetResolver.ResolveRunningGame);
 
                     SubscribeDatabaseEventHandlers();
 
@@ -452,7 +537,7 @@ namespace PlayniteAchievements
                 Opened = () =>
                 {
                     return new OverviewHostControl(
-                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar),
+                        () => new OverviewControl(PlayniteApi, _logger, _refreshService, _cacheManager, PersistSettingsForUi, _achievementOverridesService, _achievementDataService, _libraryProjectionService, _gameCustomDataStore, _refreshCoordinator, _settingsViewModel.Settings, OverviewLaunchContext.Sidebar, _friendsOverviewDataCoordinator),
                         _logger,
                         PlayniteApi,
                         _refreshService,
@@ -491,11 +576,13 @@ namespace PlayniteAchievements
         {
             try
             {
+                _startedProcessId = args?.StartedProcessId;
                 _achievementHotkeyTargetResolver?.NotifyGameStarted(args?.Game);
+                _inGamePoller?.Start(args?.Game);
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "Failed to track started game for achievement hotkeys.");
+                _logger?.Debug(ex, "Failed to track started game for achievement hotkeys or in-game polling.");
             }
         }
 
@@ -503,6 +590,8 @@ namespace PlayniteAchievements
         {
             try
             {
+                _startedProcessId = null;
+                _toastNotifications?.ClearPending();
                 _achievementHotkeyTargetResolver?.NotifyGameStopped(args?.Game);
             }
             catch (Exception ex)
@@ -510,12 +599,31 @@ namespace PlayniteAchievements
                 _logger?.Debug(ex, "Failed to track stopped game for achievement hotkeys.");
             }
 
-            _logger.Info($"Game stopped: {args.Game.Name}. Triggering refresh.");
-            _ = _refreshCoordinator.ExecuteAsync(new RefreshRequest
+            _ = StopPollingAndRefreshStoppedGameAsync(args?.Game);
+        }
+
+        private async Task StopPollingAndRefreshStoppedGameAsync(Game game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            try
+            {
+                await (_inGamePoller?.StopAsync(finalPass: true) ?? Task.CompletedTask).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to stop in-game poller for {game.Name}.");
+            }
+
+            _logger.Info($"Game stopped: {game.Name}. Triggering refresh.");
+            await _refreshCoordinator.ExecuteAsync(new RefreshRequest
             {
                 Mode = RefreshModeType.Single,
-                SingleGameId = args.Game.Id
-            });
+                SingleGameId = game.Id
+            }).ConfigureAwait(false);
         }
 
         // === Lifecycle ===
@@ -531,6 +639,7 @@ namespace PlayniteAchievements
                 // Playnite's populated database rather than the blank values an early startup warm
                 // would bake in.
                 _libraryProjectionService?.Warm();
+                _friendsOverviewDataCoordinator?.Warm();
 
                 var dispatcher = PlayniteApi?.MainView?.UIDispatcher
                     ?? System.Windows.Application.Current?.Dispatcher;
@@ -566,10 +675,12 @@ namespace PlayniteAchievements
                 try
                 {
                     EnsureAchievementResourcesLoaded();
+                    new AchievementToastTemplateResolver(PlayniteApi, _logger)
+                        .LogActiveThemeOverrideDiagnostics("Startup");
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignore
+                    _logger?.Debug(ex, "Failed to log achievement toast theme override diagnostics.");
                 }
 
                 _achievementHotkeyService?.Start();
@@ -594,6 +705,15 @@ namespace PlayniteAchievements
                 RestartBackgroundUpdater();
             }
 
+            if (e.PropertyName == nameof(PersistedSettings.EnableInGamePolling) ||
+                e.PropertyName == nameof(PersistedSettings.InGamePollIntervalSeconds) ||
+                e.PropertyName == nameof(PersistedSettings.InGamePollRefreshFriends) ||
+                e.PropertyName == nameof(PersistedSettings.InGameFriendRefreshMultiplier) ||
+                e.PropertyName == nameof(PersistedSettings.InGameFriendBatchSize))
+            {
+                RestartInGamePollerForRunningGame();
+            }
+
             if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges) ||
                 e.PropertyName == nameof(PersistedSettings.RarityColors))
             {
@@ -610,8 +730,40 @@ namespace PlayniteAchievements
                 _achievementHotkeyService?.RefreshConfiguration();
             }
 
+            if (ShouldInvalidateFriendDataForSetting(e.PropertyName))
+            {
+                InvalidateFriendDataCoordinators();
+            }
+
             InvalidateStartPageData();
             _tagSyncService?.HandlePersistedSettingsPropertyChanged(e);
+        }
+
+        private void FriendCacheManager_FriendCacheInvalidated(object sender, EventArgs e)
+        {
+            InvalidateFriendDataCoordinators();
+        }
+
+        private void InvalidateFriendDataCoordinators()
+        {
+            _friendsOverviewDataCoordinator?.Invalidate();
+            _friendGameAchievementsDataCoordinator?.Invalidate();
+            _friendsRecentUnlocksDataCoordinator?.Invalidate();
+        }
+
+        private static bool ShouldInvalidateFriendDataForSetting(string propertyName)
+        {
+            return propertyName == nameof(PersistedSettings.FriendsOverviewHideSpoilers) ||
+                   propertyName == nameof(PersistedSettings.Friends) ||
+                   propertyName == nameof(PersistedSettings.FriendMergeGroups) ||
+                   propertyName == nameof(PersistedSettings.ShowHiddenIcon) ||
+                   propertyName == nameof(PersistedSettings.ShowHiddenTitle) ||
+                   propertyName == nameof(PersistedSettings.ShowHiddenDescription) ||
+                   propertyName == nameof(PersistedSettings.ShowHiddenSuffix) ||
+                   propertyName == nameof(PersistedSettings.ShowLockedIcon) ||
+                   propertyName == nameof(PersistedSettings.PreserveAchievementIconResolution) ||
+                   propertyName == nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable) ||
+                   propertyName == nameof(PersistedSettings.SeparateLockedIconEnabledGameIds);
         }
 
         private void RestartBackgroundUpdater()
@@ -627,6 +779,31 @@ namespace PlayniteAchievements
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to restart background updater.");
+            }
+        }
+
+        private void RestartInGamePollerForRunningGame()
+        {
+            try
+            {
+                var current = _inGamePoller?.CurrentGame;
+                if (current == null || current.Id == Guid.Empty)
+                {
+                    current = PlayniteApi?.Database?.Games?
+                        .Where(game => game?.IsRunning == true)
+                        .OrderByDescending(game => game.LastActivity)
+                        .FirstOrDefault();
+                }
+
+                _inGamePoller?.Stop();
+                if (_applicationStarted && current != null)
+                {
+                    _inGamePoller?.Start(current);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Failed to restart in-game achievement poller.");
             }
         }
 
@@ -646,6 +823,8 @@ namespace PlayniteAchievements
             }
 
             _backgroundUpdates.Stop();
+            try { _inGamePoller?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGamePoller"); }
+            try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
             try { _windowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowService"); }
@@ -656,6 +835,9 @@ namespace PlayniteAchievements
             try { _fullscreenControllerNavigationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenControllerNavigationService"); }
             try { _fullscreenWindowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose fullscreenWindowService"); }
             try { _themeIntegrationService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose themeIntegrationService"); }
+            try { _friendsRecentUnlocksDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendsRecentUnlocksDataCoordinator"); }
+            try { _friendGameAchievementsDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendGameAchievementsDataCoordinator"); }
+            try { _friendsOverviewDataCoordinator?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose friendsOverviewDataCoordinator"); }
             DisposeStartPageViews();
 
             // Shutdown logging system

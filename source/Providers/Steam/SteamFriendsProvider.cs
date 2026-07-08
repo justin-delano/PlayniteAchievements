@@ -17,21 +17,26 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamApiClient _steamApiClient;
         private readonly SteamScanner _scanner;
         private readonly SteamWebApiTokenResolver _tokenResolver;
+        private readonly SteamHuntersCategoryEnricher _steamHuntersCategoryEnricher;
         private readonly ILogger _logger;
         private readonly object _refreshStateLock = new object();
         private TokenState _preparedRefreshTokenState;
+        private Dictionary<int, Task<SchemaAndPercentages>> _friendRefreshSchemaTasks =
+            new Dictionary<int, Task<SchemaAndPercentages>>();
 
         public SteamFriendsProvider(
             SteamHttpClient steamClient,
             SteamApiClient steamApiClient,
             SteamScanner scanner,
             SteamWebApiTokenResolver tokenResolver,
+            SteamHuntersCategoryEnricher steamHuntersCategoryEnricher,
             ILogger logger)
         {
             _steamClient = steamClient ?? throw new ArgumentNullException(nameof(steamClient));
             _steamApiClient = steamApiClient ?? throw new ArgumentNullException(nameof(steamApiClient));
             _scanner = scanner ?? throw new ArgumentNullException(nameof(scanner));
             _tokenResolver = tokenResolver ?? throw new ArgumentNullException(nameof(tokenResolver));
+            _steamHuntersCategoryEnricher = steamHuntersCategoryEnricher;
             _logger = logger;
         }
 
@@ -40,6 +45,7 @@ namespace PlayniteAchievements.Providers.Steam
         public async Task<FriendsProviderResult<FriendsRefreshPreparation>> BeginRefreshAsync(CancellationToken cancel)
         {
             EndRefresh();
+            _steamHuntersCategoryEnricher?.ClearCache();
 
             var session = await ResolveSteamSessionFromTokenResolverAsync(cancel).ConfigureAwait(false);
             if (!session.IsSuccess)
@@ -52,6 +58,7 @@ namespace PlayniteAchievements.Providers.Steam
             lock (_refreshStateLock)
             {
                 _preparedRefreshTokenState = session;
+                _friendRefreshSchemaTasks = new Dictionary<int, Task<SchemaAndPercentages>>();
             }
 
             return FriendsProviderResult<FriendsRefreshPreparation>.FromData(new FriendsRefreshPreparation
@@ -65,6 +72,7 @@ namespace PlayniteAchievements.Providers.Steam
             lock (_refreshStateLock)
             {
                 _preparedRefreshTokenState = null;
+                _friendRefreshSchemaTasks.Clear();
             }
         }
 
@@ -395,6 +403,8 @@ namespace PlayniteAchievements.Providers.Steam
                     .GetSchemaForGameDetailedAsync(token.WebApiToken, appId, "english", cancel)
                     .ConfigureAwait(false);
                 var achievements = MapSchemaAchievements(schema);
+                await EnrichSteamHuntersCategoriesAsync(appId, gameName, achievements, cancel).ConfigureAwait(false);
+
                 var status = achievements.Count > 0
                     ? FriendGameDefinitionStatus.Ok
                     : await ResolveEmptySchemaStatusAsync(token.WebApiToken, appId, cancel).ConfigureAwait(false);
@@ -417,6 +427,26 @@ namespace PlayniteAchievements.Providers.Steam
                     "Steam game definition fetch failed.",
                     transientFailure: true);
             }
+        }
+
+        private Task EnrichSteamHuntersCategoriesAsync(
+            int appId,
+            string gameName,
+            IList<AchievementDetail> achievements,
+            CancellationToken cancel)
+        {
+            if (_steamHuntersCategoryEnricher == null ||
+                !ShouldUseSteamHuntersForCategories())
+            {
+                return Task.CompletedTask;
+            }
+
+            return _steamHuntersCategoryEnricher.EnrichAsync(appId, gameName, achievements, cancel);
+        }
+
+        private static bool ShouldUseSteamHuntersForCategories()
+        {
+            return ProviderRegistry.Settings<SteamSettings>()?.UseSteamHuntersForCategories == true;
         }
 
         private static bool IsUsableCommunityPage(SteamPageResult page)
@@ -567,14 +597,55 @@ namespace PlayniteAchievements.Providers.Steam
 
             try
             {
-                var schema = await _scanner.FetchSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
+                var schema = await FetchFriendRefreshSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
                 return SteamAchievementApiNameResolver.Resolve(schema, rows);
             }
             catch (OperationCanceledException) { throw; }
             catch (Exception ex)
             {
+                RemoveCachedFriendRefreshSchemaTask(appId);
                 _logger?.Debug(ex, $"Steam friend achievement api-name reconstruction failed for appId={appId}.");
                 return new Dictionary<ScrapedAchievement, string>();
+            }
+        }
+
+        private Task<SchemaAndPercentages> FetchFriendRefreshSchemaAsync(
+            string accessToken,
+            int appId,
+            CancellationToken cancel)
+        {
+            if (appId <= 0)
+            {
+                return _scanner.FetchSchemaAsync(accessToken, appId, cancel);
+            }
+
+            lock (_refreshStateLock)
+            {
+                if (_friendRefreshSchemaTasks == null)
+                {
+                    _friendRefreshSchemaTasks = new Dictionary<int, Task<SchemaAndPercentages>>();
+                }
+
+                if (!_friendRefreshSchemaTasks.TryGetValue(appId, out var task))
+                {
+                    task = _scanner.FetchSchemaAsync(accessToken, appId, cancel);
+                    _friendRefreshSchemaTasks[appId] = task;
+                }
+
+                return task;
+            }
+        }
+
+        private void RemoveCachedFriendRefreshSchemaTask(int appId)
+        {
+            if (appId <= 0)
+            {
+                return;
+            }
+
+            lock (_refreshStateLock)
+            {
+                _friendRefreshSchemaTasks?.Remove(appId);
             }
         }
 

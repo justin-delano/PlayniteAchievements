@@ -18,7 +18,7 @@ namespace PlayniteAchievements.Providers.GOG
     /// IDataProvider implementation for GOG achievements.
     /// Uses WebView-based authentication and GOG gameplay API.
     /// </summary>
-    public sealed class GogDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
+    public sealed class GogDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_GOG",
@@ -158,6 +158,16 @@ namespace PlayniteAchievements.Providers.GOG
         public void Dispose()
         {
             _httpClient?.Dispose();
+        }
+
+        public void BeginRefreshAuthContext(RefreshAuthContext context)
+        {
+            _scanner?.BeginRefreshAuthContext(context);
+        }
+
+        public void EndRefreshAuthContext(RefreshAuthContext context)
+        {
+            _scanner?.EndRefreshAuthContext(context);
         }
 
         /// <inheritdoc />

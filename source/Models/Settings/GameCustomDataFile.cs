@@ -19,12 +19,28 @@ namespace PlayniteAchievements.Models.Settings
         }
     }
 
+    public sealed class CategoryImageOverrideData
+    {
+        public string Icon { get; set; }
+
+        public string Cover { get; set; }
+
+        public CategoryImageOverrideData Clone()
+        {
+            return new CategoryImageOverrideData
+            {
+                Icon = Icon,
+                Cover = Cover
+            };
+        }
+    }
+
     /// <summary>
     /// Internal storage representation for per-game custom data.
     /// </summary>
     public sealed class GameCustomDataFile
     {
-        public int SchemaVersion { get; set; } = 4;
+        public int SchemaVersion { get; set; } = 5;
 
         public Guid PlayniteGameId { get; set; }
 
@@ -41,6 +57,10 @@ namespace PlayniteAchievements.Models.Settings
         public Dictionary<string, string> AchievementCategoryOverrides { get; set; }
 
         public Dictionary<string, string> AchievementCategoryTypeOverrides { get; set; }
+
+        public List<string> AchievementCategoryOrder { get; set; }
+
+        public Dictionary<string, CategoryImageOverrideData> AchievementCategoryImageOverrides { get; set; }
 
         public List<string> FilteredAchievementApiNames { get; set; }
 
@@ -85,6 +105,10 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementCategoryOrder = AchievementCategoryOrder != null
+                    ? new List<string>(AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(AchievementCategoryImageOverrides),
                 FilteredAchievementApiNames = FilteredAchievementApiNames != null
                     ? new List<string>(FilteredAchievementApiNames)
                     : null,
@@ -127,6 +151,10 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementCategoryOrder = AchievementCategoryOrder != null
+                    ? new List<string>(AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(AchievementCategoryImageOverrides),
                 FilteredAchievementApiNames = FilteredAchievementApiNames != null
                     ? new List<string>(FilteredAchievementApiNames)
                     : null,
@@ -160,7 +188,7 @@ namespace PlayniteAchievements.Models.Settings
         {
             return new GameCustomDataFile
             {
-                SchemaVersion = portable?.SchemaVersion > 0 ? portable.SchemaVersion : 4,
+                SchemaVersion = portable?.SchemaVersion > 0 ? portable.SchemaVersion : 5,
                 PlayniteGameId = playniteGameId,
                 ExcludedFromRefreshes = excludedFromRefreshes,
                 ExcludedFromSummaries = excludedFromSummaries,
@@ -175,6 +203,10 @@ namespace PlayniteAchievements.Models.Settings
                 AchievementCategoryTypeOverrides = portable?.AchievementCategoryTypeOverrides != null
                     ? new Dictionary<string, string>(portable.AchievementCategoryTypeOverrides, StringComparer.OrdinalIgnoreCase)
                     : null,
+                AchievementCategoryOrder = portable?.AchievementCategoryOrder != null
+                    ? new List<string>(portable.AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(portable?.AchievementCategoryImageOverrides),
                 FilteredAchievementApiNames = portable?.FilteredAchievementApiNames != null
                     ? new List<string>(portable.FilteredAchievementApiNames)
                     : null,
@@ -198,6 +230,28 @@ namespace PlayniteAchievements.Models.Settings
                 ProviderOverride = portable?.ProviderOverride?.Clone(),
                 ManualLink = portable?.ManualLink?.Clone()
             };
+        }
+
+        internal static Dictionary<string, CategoryImageOverrideData> CloneCategoryImageOverrideMap(
+            IReadOnlyDictionary<string, CategoryImageOverrideData> source)
+        {
+            if (source == null)
+            {
+                return null;
+            }
+
+            var clone = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in source)
+            {
+                if (string.IsNullOrWhiteSpace(pair.Key) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                clone[pair.Key] = pair.Value.Clone();
+            }
+
+            return clone.Count > 0 ? clone : null;
         }
     }
 }

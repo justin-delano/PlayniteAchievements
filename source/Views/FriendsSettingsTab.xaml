@@ -57,6 +57,15 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
+                    <CheckBox Content="{DynamicResource LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership}"
+                              IsChecked="{Binding UseExophaseForSteamFriendOwnership, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              IsEnabled="{Binding IsExophaseProviderEnabled}"
+                              Margin="0,8,0,4"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint}"
+                               Style="{StaticResource MutedTextStyle}"
+                               TextWrapping="Wrap"
+                               Margin="0,0,0,6"/>
+
                     <Button Content="{DynamicResource LOCPlayAch_Settings_RefreshFriendsList}"
                             Command="{Binding RefreshAutoDiscoverCommand}"
                             HorizontalAlignment="Left"

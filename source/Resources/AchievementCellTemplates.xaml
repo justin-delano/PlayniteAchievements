@@ -36,7 +36,7 @@
             </Viewbox.Height>
 
             <Grid Width="18" Height="18">
-                <Path Data="M 3,9 L 7,13 L 15,5"
+                <Path Data="{StaticResource GeoCheck}"
                       Stroke="{DynamicResource PlayAch.Brush.Glyph}"
                       StrokeThickness="2.3"
                       StrokeStartLineCap="Round"

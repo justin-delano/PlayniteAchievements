@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Threading;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.Steam.Models;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.ProgressReporting;
@@ -78,12 +79,12 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public PlayniteAchievements.Providers.ProviderRegistry ProviderRegistry => _providerRegistry;
 
-        internal virtual async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken ct = default)
+        internal virtual async Task<RefreshAuthContext> GetRefreshAuthContextOrShowDialogAsync(CancellationToken ct = default)
         {
-            var authenticatedProviders = await GetAuthenticatedProvidersAsync(ct).ConfigureAwait(false);
-            if (authenticatedProviders.Count > 0)
+            var authContext = await GetRefreshAuthContextAsync(ct).ConfigureAwait(false);
+            if (authContext.HasAuthenticatedProviders)
             {
-                return authenticatedProviders;
+                return authContext;
             }
 
             _logger.Info("Refresh attempted but no platforms are authenticated.");
@@ -92,7 +93,13 @@ namespace PlayniteAchievements.Services
                 ResourceProvider.GetString("LOCPlayAch_Title_PluginName"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning));
-            return Array.Empty<IDataProvider>();
+            return authContext;
+        }
+
+        internal virtual async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken ct = default)
+        {
+            var authContext = await GetRefreshAuthContextOrShowDialogAsync(ct).ConfigureAwait(false);
+            return authContext?.AuthenticatedProviders ?? Array.Empty<IDataProvider>();
         }
 
         /// <summary>
@@ -136,6 +143,24 @@ namespace PlayniteAchievements.Services
         {
             add => _cacheService.CacheInvalidated += value;
             remove => _cacheService.CacheInvalidated -= value;
+        }
+
+        public event EventHandler FriendCacheInvalidated
+        {
+            add
+            {
+                if (_cacheService is IFriendCacheManager friendCache)
+                {
+                    friendCache.FriendCacheInvalidated += value;
+                }
+            }
+            remove
+            {
+                if (_cacheService is IFriendCacheManager friendCache)
+                {
+                    friendCache.FriendCacheInvalidated -= value;
+                }
+            }
         }
 
         public RefreshRuntime(
@@ -352,6 +377,47 @@ namespace PlayniteAchievements.Services
                 .ToList() ?? new List<IDataProvider>();
         }
 
+        private static List<IRefreshAuthContextReceiver> BeginScopedRefreshAuthContext(
+            RefreshAuthContext authContext,
+            IEnumerable<IDataProvider> providers)
+        {
+            var receivers = new List<IRefreshAuthContextReceiver>();
+            if (authContext == null)
+            {
+                return receivers;
+            }
+
+            foreach (var receiver in (providers ?? Enumerable.Empty<IDataProvider>())
+                .OfType<IRefreshAuthContextReceiver>())
+            {
+                receiver.BeginRefreshAuthContext(authContext);
+                receivers.Add(receiver);
+            }
+
+            return receivers;
+        }
+
+        private static void EndScopedRefreshAuthContext(
+            RefreshAuthContext authContext,
+            IReadOnlyList<IRefreshAuthContextReceiver> receivers)
+        {
+            if (authContext == null || receivers == null)
+            {
+                return;
+            }
+
+            for (var i = receivers.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    receivers[i]?.EndRefreshAuthContext(authContext);
+                }
+                catch
+                {
+                }
+            }
+        }
+
         private async Task RunManagedAsync(
             RefreshModeType mode,
             Guid? singleGameId,
@@ -359,16 +425,19 @@ namespace PlayniteAchievements.Services
             Func<Guid, CancellationToken, Task<RebuildPayload>> runner,
             Func<RebuildPayload, string> finalMessage,
             string errorLogMessage,
-            IReadOnlyList<IDataProvider> providerScope = null)
+            IReadOnlyList<IDataProvider> providerScope = null,
+            RefreshAuthContext authContext = null)
         {
             var operationId = Guid.NewGuid();
 
-            var effectiveProviderScope = MaterializeProviderScope(providerScope);
-            if (effectiveProviderScope.Count == 0 && providerScope == null)
+            var effectiveAuthContext = authContext;
+            if (effectiveAuthContext == null && providerScope == null)
             {
-                effectiveProviderScope = MaterializeProviderScope(
-                    await GetAuthenticatedProvidersAsync(externalToken).ConfigureAwait(false));
+                effectiveAuthContext = await GetRefreshAuthContextAsync(externalToken).ConfigureAwait(false);
             }
+
+            var effectiveProviderScope = MaterializeProviderScope(
+                providerScope ?? effectiveAuthContext?.AuthenticatedProviders);
 
             if (effectiveProviderScope.Count == 0)
             {
@@ -388,6 +457,7 @@ namespace PlayniteAchievements.Services
 
             _refreshProgressReporter.Reset();
             Interlocked.Exchange(ref _savedGamesInCurrentRun, 0);
+            List<IRefreshAuthContextReceiver> authContextReceivers = null;
 
             // Report immediately so UI updates buttons before any async work
             var startMsg = ResourceProvider.GetString("LOCPlayAch_Status_Starting");
@@ -402,6 +472,8 @@ namespace PlayniteAchievements.Services
             RebuildPayload payload = null;
             try
             {
+                authContextReceivers = BeginScopedRefreshAuthContext(effectiveAuthContext, effectiveProviderScope);
+
                 // Run refresh setup/execution on background thread so UI commands are never blocked
                 // by synchronous pre-refresh work (game filtering, capability checks, etc.).
                 payload = await Task.Run(
@@ -448,6 +520,7 @@ namespace PlayniteAchievements.Services
             }
             finally
             {
+                EndScopedRefreshAuthContext(effectiveAuthContext, authContextReceivers);
                 var hasSavedGames = Interlocked.Exchange(ref _savedGamesInCurrentRun, 0) > 0;
                 var wasCanceled = cts.IsCancellationRequested;
                 var finalTotalSteps = _refreshProgressReporter.CompletionTotalSteps;
@@ -495,36 +568,84 @@ namespace PlayniteAchievements.Services
                 new List<ProviderRefreshExecutor.ProviderExecutionPlan>();
         }
 
-        public async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersAsync(CancellationToken ct = default)
+        internal virtual async Task<RefreshAuthContext> GetRefreshAuthContextAsync(CancellationToken ct = default)
         {
-            var authenticatedProviders = new List<IDataProvider>();
+            var context = new RefreshAuthContext(Guid.NewGuid());
+            var enabledProviders = _providers
+                .Where(provider => provider != null &&
+                                   (_providerRegistry == null ||
+                                    _providerRegistry.IsProviderEnabled(provider.ProviderKey)))
+                .ToList();
 
-            foreach (var provider in _providers)
+            if (enabledProviders.Count == 0)
             {
-                if (provider == null || !_providerRegistry.IsProviderEnabled(provider.ProviderKey))
-                {
-                    continue;
-                }
-
-                if (await IsProviderAuthenticatedAsync(provider, ct).ConfigureAwait(false))
-                {
-                    authenticatedProviders.Add(provider);
-                }
+                return context;
             }
 
-            return authenticatedProviders;
+            var maxParallelism = Math.Max(1, Math.Min(4, enabledProviders.Count));
+            using (var gate = new SemaphoreSlim(maxParallelism, maxParallelism))
+            {
+                var tasks = enabledProviders
+                    .Select(provider => ProbeProviderForAuthContextAsync(provider, context, gate, ct))
+                    .ToArray();
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+            }
+
+            context.SetAuthenticatedProviders(
+                enabledProviders.Where(provider => context.IsProviderAuthenticated(provider.ProviderKey)));
+            return context;
         }
 
-        private List<RefreshGameTarget> GetRefreshTargets(CacheRefreshOptions options, IReadOnlyList<IDataProvider> providers)
+        public async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersAsync(CancellationToken ct = default)
         {
-            return _targetSelectionResolver.GetRefreshTargets(options, providers)
+            var context = await GetRefreshAuthContextAsync(ct).ConfigureAwait(false);
+            return context.AuthenticatedProviders;
+        }
+
+        private async Task ProbeProviderForAuthContextAsync(
+            IDataProvider provider,
+            RefreshAuthContext context,
+            SemaphoreSlim gate,
+            CancellationToken ct)
+        {
+            await gate.WaitAsync(ct).ConfigureAwait(false);
+            var timer = Stopwatch.StartNew();
+            AuthProbeResult result = null;
+            object artifact = null;
+
+            try
+            {
+                result = await ProbeProviderAuthStateAsync(provider, ct).ConfigureAwait(false);
+                if (result?.IsSuccess == true &&
+                    provider?.AuthSession is IRefreshAuthArtifactSource artifactSource)
+                {
+                    artifact = artifactSource.GetRefreshAuthArtifact(result);
+                }
+            }
+            finally
+            {
+                timer.Stop();
+                context.SetProbeResult(provider?.ProviderKey, result, timer.ElapsedMilliseconds, artifact);
+                _logger?.Debug(
+                    $"[RefreshPerf] phase=auth.preflight provider={provider?.ProviderKey ?? "unknown"} ms={timer.ElapsedMilliseconds} outcome={result?.Outcome.ToString() ?? "null"} success={result?.IsSuccess == true}");
+                gate.Release();
+            }
+        }
+
+        private List<RefreshGameTarget> GetRefreshTargets(
+            CacheRefreshOptions options,
+            IReadOnlyList<IDataProvider> providers,
+            TargetSelectionCache targetSelectionCache = null)
+        {
+            return _targetSelectionResolver.GetRefreshTargets(options, providers, targetSelectionCache)
                 .Select(target => new RefreshGameTarget { Game = target.Game, Provider = target.Provider })
                 .ToList();
         }
 
         private CurrentRefreshPlanBuildResult BuildCurrentRefreshPlans(
             CacheRefreshOptions options,
-            IReadOnlyList<IDataProvider> providers)
+            IReadOnlyList<IDataProvider> providers,
+            TargetSelectionCache targetSelectionCache = null)
         {
             options ??= new CacheRefreshOptions();
             var scopedProviders = MaterializeProviderScope(providers);
@@ -538,7 +659,7 @@ namespace PlayniteAchievements.Services
                 return result;
             }
 
-            var refreshTargets = GetRefreshTargets(options, scopedProviders);
+            var refreshTargets = GetRefreshTargets(options, scopedProviders, targetSelectionCache);
             var orderedProviders = _targetSelectionResolver.OrderProvidersForRefresh(scopedProviders);
             var providerOrder = orderedProviders
                 .Select((provider, index) => new { provider, index })
@@ -572,7 +693,8 @@ namespace PlayniteAchievements.Services
             Guid? singleGameId = null,
             bool forceIconRefresh = false,
             IReadOnlyList<IDataProvider> providerScope = null,
-            bool? runProvidersInParallelOverride = null)
+            bool? runProvidersInParallelOverride = null,
+            TargetSelectionCache targetSelectionCache = null)
         {
             var providers = providerScope == null
                 ? MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
@@ -583,7 +705,7 @@ namespace PlayniteAchievements.Services
                 return new RebuildPayload { Summary = new RebuildSummary() };
             }
 
-            var planBuild = BuildCurrentRefreshPlans(options, providers);
+            var planBuild = BuildCurrentRefreshPlans(options, providers, targetSelectionCache);
             if (planBuild.ProviderPlans.Count == 0)
             {
                 _logger?.Warn("No matching platforms available for refresh options.");
@@ -761,7 +883,8 @@ namespace PlayniteAchievements.Services
                         .Select(key => key.Trim()),
                     StringComparer.OrdinalIgnoreCase);
 
-            var providers = MaterializeProviderScope(await GetAuthenticatedProvidersAsync(cancel).ConfigureAwait(false))
+            var authContext = await GetRefreshAuthContextAsync(cancel).ConfigureAwait(false);
+            var providers = MaterializeProviderScope(authContext.AuthenticatedProviders)
                 .Where(provider => provider?.Friends != null)
                 .ToList();
             if (providerKeySet?.Count > 0)
@@ -777,8 +900,16 @@ namespace PlayniteAchievements.Services
                 return 0;
             }
 
-            return await RefreshFriendRosterAsync(providers, cancel)
-                .ConfigureAwait(false);
+            var receivers = BeginScopedRefreshAuthContext(authContext, providers);
+            try
+            {
+                return await RefreshFriendRosterAsync(providers, cancel)
+                    .ConfigureAwait(false);
+            }
+            finally
+            {
+                EndScopedRefreshAuthContext(authContext, receivers);
+            }
         }
 
         private async Task<RebuildPayload> RefreshFriendsAsync(
@@ -820,7 +951,8 @@ namespace PlayniteAchievements.Services
             CancellationToken cancel,
             Guid operationId,
             RefreshModeType mode,
-            Guid? singleGameId)
+            Guid? singleGameId,
+            TargetSelectionCache targetSelectionCache = null)
         {
             var payload = new RebuildPayload();
             if (resolved == null)
@@ -852,7 +984,8 @@ namespace PlayniteAchievements.Services
                     singleGameId,
                     forceIconRefresh,
                     resolved.CurrentProviderScope,
-                    resolved.RunProvidersInParallelOverride).ConfigureAwait(false);
+                    resolved.RunProvidersInParallelOverride,
+                    targetSelectionCache).ConfigureAwait(false);
             }
 
             var currentProviders = MaterializeProviderScope(resolved.CurrentProviderScope);
@@ -860,7 +993,7 @@ namespace PlayniteAchievements.Services
                 .Where(provider => provider?.Friends != null)
                 .ToList();
 
-            var currentPlanBuild = BuildCurrentRefreshPlans(currentOptions, currentProviders);
+            var currentPlanBuild = BuildCurrentRefreshPlans(currentOptions, currentProviders, targetSelectionCache);
             var currentPlansByProvider = currentPlanBuild.ProviderPlans
                 .Where(plan => plan?.Provider != null && plan.Games?.Count > 0)
                 .ToDictionary(plan => plan.Provider);
@@ -888,7 +1021,8 @@ namespace PlayniteAchievements.Services
                     singleGameId,
                     forceIconRefresh,
                     resolved.CurrentProviderScope,
-                    resolved.RunProvidersInParallelOverride).ConfigureAwait(false);
+                    resolved.RunProvidersInParallelOverride,
+                    targetSelectionCache).ConfigureAwait(false);
             }
 
             if (!hasCurrentWork)
@@ -952,101 +1086,107 @@ namespace PlayniteAchievements.Services
             var friendPerf = new FriendRefreshPerfSession(_logger, friendOptions, friendProviders.Count, "combined");
             var friendPrepareTimer = Stopwatch.StartNew();
 
-            try
+            using (var friendInvalidationBatch = hasFriendWork ? _friendCache?.BeginFriendCacheInvalidationBatch() : null)
             {
-                // Combined preparation runs current-game refreshes and friend-roster loads concurrently.
-                // Drive one shared aggregate over [0, preparationUnits] so the two workstreams cannot
-                // collide or freeze each other. Initialize still tracks the current-game count so the
-                // per-game status text ("Refreshing X (n/total)") stays correct.
-                _refreshProgressReporter.Initialize(currentPlanBuild.Targets.Count);
-                _refreshProgressReporter.InitializePreparation(
-                    currentPlanBuild.Targets.Count + orderedFriendProviders.Count,
-                    preparationUnits,
-                    totalUnits);
-                var providerResults = await ProviderRefreshExecutor.ExecuteProvidersAsync(
-                    providerWorkPlans,
-                    runProvidersInParallel,
-                    async plan =>
-                    {
-                        cancel.ThrowIfCancellationRequested();
-                        var providerPayload = new RebuildPayload();
-                        var provider = plan.Provider;
-
-                        if (currentPlansByProvider.TryGetValue(provider, out var currentPlan))
+                try
+                {
+                    // Combined preparation runs current-game refreshes and friend-roster loads concurrently.
+                    // Drive one shared aggregate over [0, preparationUnits] so the two workstreams cannot
+                    // collide or freeze each other. Initialize still tracks the current-game count so the
+                    // per-game status text ("Refreshing X (n/total)") stays correct.
+                    _refreshProgressReporter.Initialize(currentPlanBuild.Targets.Count);
+                    _refreshProgressReporter.InitializePreparation(
+                        currentPlanBuild.Targets.Count + orderedFriendProviders.Count,
+                        preparationUnits,
+                        totalUnits);
+                    var providerResults = await ProviderRefreshExecutor.ExecuteProvidersAsync(
+                        providerWorkPlans,
+                        runProvidersInParallel,
+                        async plan =>
                         {
-                            var currentPayload = await ExecuteCurrentProviderPlanAsync(
-                                currentPlan,
-                                progressScope,
-                                forceIconRefresh,
-                                cancel).ConfigureAwait(false);
-                            Merge(providerPayload, currentPayload);
-                            MarkAuthFailure(providerPayload, provider.ProviderKey, currentPayload?.AuthRequired == true);
-                        }
+                            cancel.ThrowIfCancellationRequested();
+                            var providerPayload = new RebuildPayload();
+                            var provider = plan.Provider;
 
-                        if (friendProviderIndexByProvider.TryGetValue(provider, out var friendProviderIndex))
-                        {
-                            // Suppress the friend session's roster emission during phase 1 (pass null
-                            // progress); roster loads are reflected through the shared preparation
-                            // aggregate instead, so they no longer collide with current-game progress.
-                            var context = await PrepareProviderRefreshAsync(
-                                provider.Friends,
-                                friendOptions,
-                                providerPayload,
-                                progress: null,
-                                friendProviderIndex,
-                                orderedFriendProviders.Count,
-                                cancel).ConfigureAwait(false);
-
-                            var rosterFormat = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_Progress_LoadingFriends");
-                            if (string.IsNullOrWhiteSpace(rosterFormat))
+                            if (currentPlansByProvider.TryGetValue(provider, out var currentPlan))
                             {
-                                rosterFormat = "Loading friends {1}/{2}: {0}";
+                                var currentPayload = await ExecuteCurrentProviderPlanAsync(
+                                    currentPlan,
+                                    progressScope,
+                                    forceIconRefresh,
+                                    cancel).ConfigureAwait(false);
+                                Merge(providerPayload, currentPayload);
+                                MarkAuthFailure(providerPayload, provider.ProviderKey, currentPayload?.AuthRequired == true);
                             }
 
-                            _refreshProgressReporter.ReportPreparationUnitCompleted(
-                                string.Format(
-                                    rosterFormat,
-                                    string.IsNullOrWhiteSpace(provider.ProviderKey) ? "provider" : provider.ProviderKey.Trim(),
-                                    friendProviderIndex + 1,
-                                    orderedFriendProviders.Count),
-                                progressScope);
-
-                            if (context != null)
+                            if (friendProviderIndexByProvider.TryGetValue(provider, out var friendProviderIndex))
                             {
-                                lock (contextsLock)
+                                // Suppress the friend session's roster emission during phase 1 (pass null
+                                // progress); roster loads are reflected through the shared preparation
+                                // aggregate instead, so they no longer collide with current-game progress.
+                                var context = await PrepareProviderRefreshAsync(
+                                    provider.Friends,
+                                    friendOptions,
+                                    providerPayload,
+                                    progress: null,
+                                    friendProviderIndex,
+                                    orderedFriendProviders.Count,
+                                    cancel).ConfigureAwait(false);
+
+                                var rosterFormat = ResourceProvider.GetString("LOCPlayAch_FriendsRefresh_Progress_LoadingFriends");
+                                if (string.IsNullOrWhiteSpace(rosterFormat))
                                 {
-                                    contexts.Add(context);
+                                    rosterFormat = "Loading friends {1}/{2}: {0}";
+                                }
+
+                                _refreshProgressReporter.ReportPreparationUnitCompleted(
+                                    string.Format(
+                                        rosterFormat,
+                                        string.IsNullOrWhiteSpace(provider.ProviderKey) ? "provider" : provider.ProviderKey.Trim(),
+                                        friendProviderIndex + 1,
+                                        orderedFriendProviders.Count),
+                                    progressScope);
+
+                                if (context != null)
+                                {
+                                    lock (contextsLock)
+                                    {
+                                        contexts.Add(context);
+                                    }
                                 }
                             }
-                        }
 
-                        return providerPayload;
-                    },
-                    cancel).ConfigureAwait(false);
-
-                foreach (var result in providerResults)
-                {
-                    Merge(payload, result?.Payload);
-                }
-
-                if (hasFriendWork)
-                {
-                    friendPerf.LogPrepare(friendPrepareTimer, contexts, "combinedProviderWork=true");
-                    _refreshProgressReporter.ConfigureWeightedProgress(totalUnits, preparationUnits, maxReportUnits);
-                    await RefreshPreparedFriendContextsAsync(
-                        contexts,
-                        friendOptions,
-                        payload,
-                        payloadLock,
-                        friendProgress,
-                        friendPerf,
+                            return providerPayload;
+                        },
                         cancel).ConfigureAwait(false);
-                    friendPerf.LogTotal(payload, contexts);
+
+                    foreach (var result in providerResults)
+                    {
+                        Merge(payload, result?.Payload);
+                    }
+
+                    if (hasFriendWork)
+                    {
+                        friendPerf.LogPrepare(friendPrepareTimer, contexts, "combinedProviderWork=true");
+                        friendInvalidationBatch?.Flush();
+                        _refreshProgressReporter.ConfigureWeightedProgress(totalUnits, preparationUnits, maxReportUnits);
+                        await RefreshPreparedFriendContextsAsync(
+                            contexts,
+                            friendOptions,
+                            payload,
+                            payloadLock,
+                            friendProgress,
+                            friendPerf,
+                            friendInvalidationBatch,
+                            cancel).ConfigureAwait(false);
+                        friendPerf.LogTotal(payload, contexts);
+                        friendInvalidationBatch?.Flush();
+                    }
                 }
-            }
-            finally
-            {
-                EndFriendRefreshContexts(contexts);
+                finally
+                {
+                    EndFriendRefreshContexts(contexts);
+                }
             }
 
             return payload;
@@ -1220,22 +1360,26 @@ namespace PlayniteAchievements.Services
 
         private Task StartManagedResolvedRequestAsync(
             RefreshRequestPlanner.ResolvedRequest resolved,
+            RefreshAuthContext authContext = null,
+            TargetSelectionCache targetSelectionCache = null,
             CancellationToken externalToken = default)
         {
             return RunManagedAsync(
                 resolved.Mode,
                 resolved.SingleGameId,
                 externalToken,
-                (operationId, cancel) => RefreshResolvedAsync(resolved, operationId, cancel),
+                (operationId, cancel) => RefreshResolvedAsync(resolved, operationId, cancel, targetSelectionCache),
                 payload => FormatRefreshCompletionForResolvedRequest(resolved, payload),
                 resolved.ErrorLogMessage ?? "Refresh failed.",
-                resolved.ProviderScope);
+                resolved.ProviderScope,
+                authContext);
         }
 
         private async Task<RebuildPayload> RefreshResolvedAsync(
             RefreshRequestPlanner.ResolvedRequest resolved,
             Guid operationId,
-            CancellationToken cancel)
+            CancellationToken cancel,
+            TargetSelectionCache targetSelectionCache = null)
         {
             var payload = new RebuildPayload();
             if (resolved == null)
@@ -1250,7 +1394,8 @@ namespace PlayniteAchievements.Services
                     cancel,
                     operationId,
                     resolved.Mode,
-                    resolved.SingleGameId).ConfigureAwait(false);
+                    resolved.SingleGameId,
+                    targetSelectionCache).ConfigureAwait(false);
             }
 
             return payload;
@@ -1326,7 +1471,7 @@ namespace PlayniteAchievements.Services
 
         public virtual Task ExecuteRefreshAsync(RefreshRequest request, CancellationToken externalToken = default)
         {
-            return ExecuteRefreshAsync(request, authenticatedProviders: null, externalToken);
+            return ExecuteRefreshAsync(request, authContext: null, externalToken);
         }
 
         internal virtual async Task ExecuteRefreshAsync(
@@ -1334,14 +1479,30 @@ namespace PlayniteAchievements.Services
             IReadOnlyList<IDataProvider> authenticatedProviders,
             CancellationToken externalToken = default)
         {
-            var effectiveAuthenticatedProviders = MaterializeProviderScope(authenticatedProviders);
-            if (effectiveAuthenticatedProviders.Count == 0 && authenticatedProviders == null)
+            var authContext = authenticatedProviders == null
+                ? null
+                : RefreshAuthContext.FromAuthenticatedProviders(authenticatedProviders);
+            await ExecuteRefreshAsync(request, authContext, externalToken).ConfigureAwait(false);
+        }
+
+        internal virtual async Task ExecuteRefreshAsync(
+            RefreshRequest request,
+            RefreshAuthContext authContext,
+            CancellationToken externalToken = default)
+        {
+            var effectiveAuthContext = authContext;
+            if (effectiveAuthContext == null)
             {
-                effectiveAuthenticatedProviders = MaterializeProviderScope(
-                    await GetAuthenticatedProvidersAsync(externalToken).ConfigureAwait(false));
+                effectiveAuthContext = await GetRefreshAuthContextAsync(externalToken).ConfigureAwait(false);
             }
 
-            var resolved = _refreshRequestPlanner.Resolve(request, effectiveAuthenticatedProviders);
+            var effectiveAuthenticatedProviders = MaterializeProviderScope(
+                effectiveAuthContext?.AuthenticatedProviders);
+            var targetSelectionCache = new TargetSelectionCache();
+            var resolved = _refreshRequestPlanner.Resolve(
+                request,
+                effectiveAuthenticatedProviders,
+                targetSelectionCache);
             if (!resolved.ShouldExecute)
             {
                 if (!string.IsNullOrWhiteSpace(resolved.EmptySelectionLogMessage))
@@ -1359,7 +1520,12 @@ namespace PlayniteAchievements.Services
             }
 
             resolved.ProviderScope ??= effectiveAuthenticatedProviders;
-            await StartManagedResolvedRequestAsync(resolved, externalToken).ConfigureAwait(false);
+            await StartManagedResolvedRequestAsync(
+                    resolved,
+                    effectiveAuthContext,
+                    targetSelectionCache,
+                    externalToken)
+                .ConfigureAwait(false);
         }
 
         public Task ExecuteRefreshForGamesAsync(IEnumerable<Guid> gameIds, CancellationToken externalToken = default)
@@ -1461,7 +1627,8 @@ namespace PlayniteAchievements.Services
         // -----------------------------
 
         private const int FriendRefreshParallelism = 4;
-        private static readonly TimeSpan DefaultDefinitionTtl = TimeSpan.FromDays(7);
+        private const int FriendInvalidationFlushMinCompletions = 25;
+        private static readonly TimeSpan FriendInvalidationFlushInterval = TimeSpan.FromSeconds(2);
 
         private IFriendCacheManager _friendCache => _cacheService as IFriendCacheManager;
 
@@ -1487,42 +1654,48 @@ namespace PlayniteAchievements.Services
             var contexts = new List<FriendProviderRefreshContext>();
             var payloadLock = new object();
             var perf = new FriendRefreshPerfSession(_logger, options, providers.Count);
-            try
+            using (var friendInvalidationBatch = _friendCache.BeginFriendCacheInvalidationBatch())
             {
-                var prepareTimer = Stopwatch.StartNew();
-                for (var i = 0; i < providers.Count; i++)
+                try
                 {
-                    var provider = providers[i];
-                    cancel.ThrowIfCancellationRequested();
-                    var context = await PrepareProviderRefreshAsync(
-                        provider.Friends,
+                    var prepareTimer = Stopwatch.StartNew();
+                    for (var i = 0; i < providers.Count; i++)
+                    {
+                        var provider = providers[i];
+                        cancel.ThrowIfCancellationRequested();
+                        var context = await PrepareProviderRefreshAsync(
+                            provider.Friends,
+                            options,
+                            payload,
+                            progress,
+                            i,
+                            providers.Count,
+                            cancel).ConfigureAwait(false);
+                        if (context != null)
+                        {
+                            contexts.Add(context);
+                        }
+                    }
+                    perf.LogPrepare(prepareTimer, contexts);
+                    friendInvalidationBatch?.Flush();
+
+                    await RefreshPreparedFriendContextsAsync(
+                        contexts,
                         options,
                         payload,
+                        payloadLock,
                         progress,
-                        i,
-                        providers.Count,
+                        perf,
+                        friendInvalidationBatch,
                         cancel).ConfigureAwait(false);
-                    if (context != null)
-                    {
-                        contexts.Add(context);
-                    }
+
+                    perf.LogTotal(payload, contexts);
+                    friendInvalidationBatch?.Flush();
                 }
-                perf.LogPrepare(prepareTimer, contexts);
-
-                await RefreshPreparedFriendContextsAsync(
-                    contexts,
-                    options,
-                    payload,
-                    payloadLock,
-                    progress,
-                    perf,
-                    cancel).ConfigureAwait(false);
-
-                perf.LogTotal(payload, contexts);
-            }
-            finally
-            {
-                EndFriendRefreshContexts(contexts);
+                finally
+                {
+                    EndFriendRefreshContexts(contexts);
+                }
             }
 
             return payload;
@@ -1535,6 +1708,7 @@ namespace PlayniteAchievements.Services
             object payloadLock,
             FriendRefreshProgressSession progress,
             FriendRefreshPerfSession perf,
+            IFriendCacheInvalidationBatch friendInvalidationBatch,
             CancellationToken cancel)
         {
             var activeContexts = contexts
@@ -1552,10 +1726,8 @@ namespace PlayniteAchievements.Services
             activeContexts = activeContexts
                 .Where(context => context.CanContinue)
                 .ToList();
-            var requiresOwnershipRefresh = RequiresAnyOwnershipRefresh(activeContexts, options);
-            var logicalFriends = requiresOwnershipRefresh
-                ? BuildLogicalFriendGroups(activeContexts)
-                : new List<LogicalFriendRefreshGroup>();
+            var logicalFriends = BuildLogicalFriendGroups(activeContexts, options);
+            var requiresOwnershipRefresh = logicalFriends.Count > 0;
             progress.InitializeFriendLibraryTotal(logicalFriends.Count);
             if (requiresOwnershipRefresh)
             {
@@ -1566,6 +1738,7 @@ namespace PlayniteAchievements.Services
                     payloadLock,
                     progress,
                     cancel).ConfigureAwait(false);
+                friendInvalidationBatch?.Flush();
             }
             perf.LogPhase(
                 ownershipTimer,
@@ -1606,10 +1779,12 @@ namespace PlayniteAchievements.Services
                         payload,
                         payloadLock,
                         progress,
+                        friendInvalidationBatch,
                         cancel).ConfigureAwait(false);
                 }
             }
             perf.LogPhase(definitionsTimer, "friend.definitions", $"checks={definitionChecksTotal}");
+            friendInvalidationBatch?.Flush();
 
             // Mapped-game scrape work for the discovery scopes (Full/Shared/Installed) is built from the
             // fresh ownership snapshot (game-centric, live hints); provider-only games were already
@@ -1650,7 +1825,9 @@ namespace PlayniteAchievements.Services
                 payload,
                 payloadLock,
                 progress,
+                friendInvalidationBatch,
                 cancel).ConfigureAwait(false);
+            friendInvalidationBatch?.Flush();
             perf.LogPhase(
                 achievementTimer,
                 "friend.achievements",
@@ -1692,10 +1869,14 @@ namespace PlayniteAchievements.Services
                 .ToList();
 
             var saved = 0;
-            foreach (var provider in providers)
+            using (var friendInvalidationBatch = _friendCache.BeginFriendCacheInvalidationBatch())
             {
-                cancel.ThrowIfCancellationRequested();
-                saved += await RefreshProviderRosterAsync(provider.Friends, cancel).ConfigureAwait(false);
+                foreach (var provider in providers)
+                {
+                    cancel.ThrowIfCancellationRequested();
+                    saved += await RefreshProviderRosterAsync(provider.Friends, cancel).ConfigureAwait(false);
+                    friendInvalidationBatch?.Flush();
+                }
             }
 
             return saved;
@@ -1802,6 +1983,131 @@ namespace PlayniteAchievements.Services
             return writeFriends.WrittenCount;
         }
 
+        private IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabelsForFriendMatching()
+        {
+            var labels = new List<CurrentUserGameLabel>();
+            foreach (var label in _friendCache?.LoadCurrentUserGameLabels() ?? Array.Empty<CurrentUserGameLabel>())
+            {
+                if (label == null || label.PlayniteGameId == Guid.Empty)
+                {
+                    continue;
+                }
+
+                labels.Add(new CurrentUserGameLabel
+                {
+                    PlayniteGameId = label.PlayniteGameId,
+                    GameName = label.GameName,
+                    ProviderKey = label.ProviderKey,
+                    ProviderPlatformKey = label.ProviderPlatformKey,
+                    AppId = Math.Max(0, label.AppId),
+                    ProviderGameKey = label.ProviderGameKey
+                });
+            }
+
+            AddSteamLibraryCurrentUserGameLabels(labels);
+            return labels;
+        }
+
+        private void AddSteamLibraryCurrentUserGameLabels(List<CurrentUserGameLabel> labels)
+        {
+            if (labels == null)
+            {
+                return;
+            }
+
+            List<Game> games;
+            try
+            {
+                games = _api?.Database?.Games?.ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to load Playnite Steam library labels for friend matching.");
+                return;
+            }
+
+            if (games == null || games.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var game in games)
+            {
+                if (game == null ||
+                    game.Id == Guid.Empty ||
+                    !SteamGameIdentity.TryGetSteamAppId(game, out var appId))
+                {
+                    continue;
+                }
+
+                labels.Add(new CurrentUserGameLabel
+                {
+                    PlayniteGameId = game.Id,
+                    GameName = game.Name,
+                    ProviderKey = "Steam",
+                    ProviderPlatformKey = "Steam",
+                    AppId = appId
+                });
+            }
+        }
+
+        private void PromoteProviderOnlyFriendGamesFromCurrentUserLabels(
+            string providerKey,
+            IReadOnlyList<CurrentUserGameLabel> labels)
+        {
+            if (_friendCache == null ||
+                string.IsNullOrWhiteSpace(providerKey) ||
+                labels == null ||
+                labels.Count == 0)
+            {
+                return;
+            }
+
+            var promoted = 0;
+            var attempted = 0;
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var label in labels)
+            {
+                if (label == null ||
+                    label.PlayniteGameId == Guid.Empty ||
+                    !string.Equals(label.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) ||
+                    !HasProviderGameIdentity(label.AppId, label.ProviderGameKey))
+                {
+                    continue;
+                }
+
+                var providerGameKey = GetProviderGameCacheKey(label.AppId, label.ProviderGameKey);
+                var dedupeKey = providerGameKey + "|" + label.PlayniteGameId.ToString("D");
+                if (string.IsNullOrWhiteSpace(providerGameKey) ||
+                    !seen.Add(dedupeKey))
+                {
+                    continue;
+                }
+
+                attempted++;
+                var result = _friendCache.PromoteProviderOnlyGameToPlayniteBacked(
+                    providerKey,
+                    label.AppId,
+                    label.ProviderGameKey,
+                    label.PlayniteGameId);
+                if (result?.Success == true)
+                {
+                    promoted += Math.Max(0, result.WrittenCount);
+                }
+                else if (result != null)
+                {
+                    _logger?.Debug(
+                        $"Failed to promote cached friend game {providerKey}/{providerGameKey} to Playnite game {label.PlayniteGameId:D}: {result.ErrorMessage}");
+                }
+            }
+
+            if (promoted > 0)
+            {
+                _logger?.Debug(
+                    $"Promoted {promoted} cached provider-only friend game row(s) for provider={providerKey} from {attempted} current-user label candidate(s).");
+            }
+        }
+
         private async Task<FriendProviderRefreshContext> PrepareProviderRefreshAsync(
             IFriendsProvider friendsProvider,
             FriendRefreshOptions options,
@@ -1847,10 +2153,12 @@ namespace PlayniteAchievements.Services
             context.CanContinue = true;
             payload.FriendSummary.ProvidersProcessed++;
 
+            var currentUserLabels = LoadCurrentUserGameLabelsForFriendMatching();
+            context.CurrentUserLabels = currentUserLabels;
+            PromoteProviderOnlyFriendGamesFromCurrentUserLabels(providerKey, currentUserLabels);
+
             if (friendsProvider is ICurrentUserGameLabelReceiver labelReceiver)
             {
-                var currentUserLabels = _friendCache.LoadCurrentUserGameLabels() ??
-                                        new List<CurrentUserGameLabel>();
                 labelReceiver.SetCurrentUserGameLabels(currentUserLabels);
                 _logger?.Debug(
                     $"Supplied {currentUserLabels.Count} current-user game label(s) to {providerKey} friend merge.");
@@ -1860,9 +2168,56 @@ namespace PlayniteAchievements.Services
             {
                 context.CanContinue = false;
             }
+            else
+            {
+                PopulateCachedOwnershipPresence(context, options);
+            }
 
             progress?.ReportProviderRosterLoaded(providerKey);
             return context;
+        }
+
+        private void PopulateCachedOwnershipPresence(
+            FriendProviderRefreshContext context,
+            FriendRefreshOptions options)
+        {
+            if (context == null ||
+                options?.Scope != FriendRefreshScope.Recent ||
+                HasExplicitProviderGameTargets(options))
+            {
+                return;
+            }
+
+            var friendIds = (context.ScopedFriends ?? new List<FriendIdentity>())
+                .Where(friend => !string.IsNullOrWhiteSpace(friend?.ExternalUserId))
+                .Select(friend => friend.ExternalUserId.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (friendIds.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                var presence = _friendCache.LoadFriendOwnershipPresence(context.ProviderKey, friendIds) ??
+                               new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+                foreach (var entry in presence)
+                {
+                    if (entry.Value && !string.IsNullOrWhiteSpace(entry.Key))
+                    {
+                        context.FriendsWithCachedOwnership.Add(entry.Key.Trim());
+                    }
+                }
+
+                _logger?.Debug(
+                    $"Recent friend ownership cache for {context.ProviderKey}: cached={context.FriendsWithCachedOwnership.Count}, missing={Math.Max(0, friendIds.Count - context.FriendsWithCachedOwnership.Count)}.");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to load recent friend ownership cache presence for {context.ProviderKey}; ownership bootstrap will refresh all scoped friends.");
+                context.FriendsWithCachedOwnership.Clear();
+            }
         }
 
         private async Task RefreshOwnershipByLogicalFriendAsync(
@@ -1942,7 +2297,7 @@ namespace PlayniteAchievements.Services
             {
                 var context = account?.Context;
                 var friend = account?.Friend;
-                if (context == null || friend == null || !ShouldRefreshOwnership(context.ProviderKey, options))
+                if (!ShouldRefreshOwnershipForFriend(context, friend, options))
                 {
                     continue;
                 }
@@ -1951,6 +2306,7 @@ namespace PlayniteAchievements.Services
                     context.Provider,
                     context.ProviderKey,
                     friend,
+                    ResolveMergedExophaseFriendForSteamOwnership(context.ProviderKey, friend.ExternalUserId),
                     options,
                     payload,
                     payloadLock,
@@ -2223,6 +2579,7 @@ namespace PlayniteAchievements.Services
             RebuildPayload payload,
             object payloadLock,
             FriendRefreshProgressSession progress,
+            IFriendCacheInvalidationBatch friendInvalidationBatch,
             CancellationToken cancel)
         {
             if (workItems == null || workItems.Count == 0)
@@ -2231,6 +2588,7 @@ namespace PlayniteAchievements.Services
             }
 
             var maxDegreeOfParallelism = Math.Max(1, workItems.Max(item => item?.Context?.MaxDegreeOfParallelism ?? 1));
+            var invalidationFlushState = new FriendInvalidationFlushState();
             if (maxDegreeOfParallelism <= 1 || workItems.Count == 1)
             {
                 var limiter = CreateScanRateLimiter();
@@ -2247,12 +2605,15 @@ namespace PlayniteAchievements.Services
                         limiter,
                         cancel).ConfigureAwait(false);
                     progress?.ReportAchievementScrapeCompleted(FormatFriendGameDetail(item.Candidate));
+                    MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState);
                     if (!shouldContinue)
                     {
+                        MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState, force: true);
                         return;
                     }
                 }
 
+                MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState, force: true);
                 return;
             }
 
@@ -2276,6 +2637,7 @@ namespace PlayniteAchievements.Services
                                 limiter,
                                 token).ConfigureAwait(false);
                             progress?.ReportAchievementScrapeCompleted(FormatFriendGameDetail(item.Candidate));
+                            MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState);
                             if (!shouldContinue)
                             {
                                 authCts.Cancel();
@@ -2288,12 +2650,230 @@ namespace PlayniteAchievements.Services
                     cancel.ThrowIfCancellationRequested();
                 }
             }
+
+            MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState, force: true);
+        }
+
+        private async Task<FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>> GetOwnedGamesForFriendRefreshAsync(
+            IFriendsProvider friendsProvider,
+            string providerKey,
+            FriendIdentity friend,
+            string exophaseSteamOwnershipUserId,
+            RateLimiter limiter,
+            CancellationToken cancel)
+        {
+            var ownershipResult = await limiter.ExecuteWithRetryAsync(
+                () => friendsProvider.GetOwnedGamesAsync(friend, cancel),
+                IsTransientError,
+                cancel).ConfigureAwait(false);
+            if (ownershipResult?.Success != true)
+            {
+                return ownershipResult;
+            }
+
+            var augmentedResult = await TryGetExophaseSteamFriendOwnershipAsync(
+                providerKey,
+                friend,
+                exophaseSteamOwnershipUserId,
+                ownershipResult.Data,
+                limiter,
+                cancel).ConfigureAwait(false);
+            return augmentedResult ?? ownershipResult;
+        }
+
+        private async Task<FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>> TryGetExophaseSteamFriendOwnershipAsync(
+            string providerKey,
+            FriendIdentity steamFriend,
+            string exophaseUserId,
+            IReadOnlyList<FriendGameOwnership> knownSteamOwnership,
+            RateLimiter limiter,
+            CancellationToken cancel)
+        {
+            if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(steamFriend?.ExternalUserId) ||
+                string.IsNullOrWhiteSpace(exophaseUserId))
+            {
+                return null;
+            }
+
+            var source = ResolveExophaseSteamOwnershipSource();
+            if (source == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var currentUserLabels = LoadCurrentUserGameLabelsForFriendMatching();
+                var exophaseResult = await limiter.ExecuteWithRetryAsync(
+                    () => source.GetSteamOwnedGamesAsync(exophaseUserId, currentUserLabels, knownSteamOwnership, cancel),
+                    IsTransientError,
+                    cancel).ConfigureAwait(false);
+                if (exophaseResult?.Success != true)
+                {
+                    _logger?.Debug(
+                        $"Exophase Steam ownership augmentation unavailable for Steam friend {steamFriend.ExternalUserId} " +
+                        $"via Exophase/{exophaseUserId}: {exophaseResult?.ErrorMessage ?? "provider unavailable"}. Keeping Steam ownership.");
+                    return null;
+                }
+
+                var steamMappings = _friendCache?.LoadFriendGameMappings("Steam") ??
+                                    new List<FriendGameMapping>();
+                var mapped = SteamExophaseFriendOwnershipMapper.MapToSteamOwnership(
+                    steamFriend.ExternalUserId,
+                    exophaseResult.Data,
+                    steamMappings,
+                    currentUserLabels);
+                if (mapped.Ownership.Count == 0)
+                {
+                    _logger?.Debug(
+                        $"Exophase Steam ownership augmentation produced no extra Steam-mapped rows for Steam friend {steamFriend.ExternalUserId} " +
+                        $"via Exophase/{exophaseUserId} (incoming={mapped.IncomingCount}, skipped={mapped.SkippedCount}). Keeping Steam ownership.");
+                    return null;
+                }
+
+                var combined = MergeSteamOwnershipWithSupplement(knownSteamOwnership, mapped.Ownership);
+                var baseCount = knownSteamOwnership?.Count ?? 0;
+                var addedCount = combined.Count - baseCount;
+                if (addedCount <= 0)
+                {
+                    _logger?.Debug(
+                        $"Exophase Steam ownership augmentation found no new Steam AppIDs for Steam friend {steamFriend.ExternalUserId} " +
+                        $"via Exophase/{exophaseUserId} (incoming={mapped.IncomingCount}, mapped={mapped.Ownership.Count}, skipped={mapped.SkippedCount}).");
+                    return null;
+                }
+
+                _logger?.Info(
+                    $"Augmented Steam friend ownership with Exophase for Steam friend {steamFriend.ExternalUserId} " +
+                    $"via Exophase/{exophaseUserId}: steamBase={baseCount}, incoming={mapped.IncomingCount}, " +
+                    $"mapped={mapped.Ownership.Count}, added={addedCount}, skipped={mapped.SkippedCount}.");
+                return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(combined);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(
+                    ex,
+                    $"Exophase Steam ownership augmentation failed for Steam friend {steamFriend.ExternalUserId} " +
+                    $"via Exophase/{exophaseUserId}. Keeping Steam ownership.");
+                return null;
+            }
+        }
+
+        private static IReadOnlyList<FriendGameOwnership> MergeSteamOwnershipWithSupplement(
+            IReadOnlyList<FriendGameOwnership> steamOwnership,
+            IReadOnlyList<FriendGameOwnership> supplementalOwnership)
+        {
+            var merged = new List<FriendGameOwnership>();
+            var seenAppIds = new HashSet<int>();
+
+            foreach (var item in steamOwnership ?? Array.Empty<FriendGameOwnership>())
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                if (item.AppId > 0)
+                {
+                    seenAppIds.Add(item.AppId);
+                }
+
+                merged.Add(item);
+            }
+
+            foreach (var item in supplementalOwnership ?? Array.Empty<FriendGameOwnership>())
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                if (item.AppId > 0 && !seenAppIds.Add(item.AppId))
+                {
+                    continue;
+                }
+
+                merged.Add(item);
+            }
+
+            return merged;
+        }
+
+        private string ResolveMergedExophaseFriendForSteamOwnership(string providerKey, string externalUserId)
+        {
+            if (!string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(externalUserId) ||
+                !ShouldUseExophaseForSteamFriendOwnership())
+            {
+                return null;
+            }
+
+            var persisted = _settings?.Persisted;
+            var group = persisted?.GetFriendMergeGroupForAccount("Steam", externalUserId);
+            var exophaseMember = group?.Members?
+                .FirstOrDefault(member => string.Equals(member?.ProviderKey, "Exophase", StringComparison.OrdinalIgnoreCase));
+            if (string.IsNullOrWhiteSpace(exophaseMember?.ExternalUserId))
+            {
+                return null;
+            }
+
+            var exophaseFriend = persisted.GetFriendSetting("Exophase", exophaseMember.ExternalUserId);
+            return exophaseFriend == null ||
+                   exophaseFriend.IsIgnored ||
+                   string.IsNullOrWhiteSpace(exophaseFriend.ExternalUserId)
+                ? null
+                : exophaseFriend.ExternalUserId.Trim();
+        }
+
+        private bool ShouldUseExophaseForSteamFriendOwnership()
+        {
+            return _settings?.Persisted?.UseExophaseForSteamFriendOwnership == true &&
+                   IsProviderEnabledForFriendOwnership("Exophase") &&
+                   ResolveExophaseSteamOwnershipSource() != null;
+        }
+
+        private bool IsProviderEnabledForFriendOwnership(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return false;
+            }
+
+            if (_providerRegistry != null)
+            {
+                return _providerRegistry.IsProviderEnabled(providerKey);
+            }
+
+            try
+            {
+                var provider = _providers?
+                    .FirstOrDefault(item => string.Equals(item?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase));
+                var settings = provider?.GetSettings();
+                return settings == null || settings.IsEnabled;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to resolve provider enabled state for {providerKey}.");
+                return false;
+            }
+        }
+
+        private ISteamFriendOwnershipSupplementSource ResolveExophaseSteamOwnershipSource()
+        {
+            return _providers?
+                .FirstOrDefault(provider => string.Equals(provider?.ProviderKey, "Exophase", StringComparison.OrdinalIgnoreCase))
+                ?.Friends as ISteamFriendOwnershipSupplementSource;
         }
 
         private async Task<bool> RefreshOwnershipItemAsync(
             IFriendsProvider friendsProvider,
             string providerKey,
             FriendIdentity friend,
+            string exophaseSteamOwnershipUserId,
             FriendRefreshOptions options,
             RebuildPayload payload,
             object payloadLock,
@@ -2307,9 +2887,12 @@ namespace PlayniteAchievements.Services
             }
 
             var limiter = CreateScanRateLimiter();
-            var ownershipResult = await limiter.ExecuteWithRetryAsync(
-                () => friendsProvider.GetOwnedGamesAsync(friend, cancel),
-                IsTransientError,
+            var ownershipResult = await GetOwnedGamesForFriendRefreshAsync(
+                friendsProvider,
+                providerKey,
+                friend,
+                exophaseSteamOwnershipUserId,
+                limiter,
                 cancel).ConfigureAwait(false);
             if (ownershipResult?.Success != true)
             {
@@ -2332,7 +2915,10 @@ namespace PlayniteAchievements.Services
                 payload.FriendSummary.OwnershipPagesRefreshed++;
             }
 
-            var ownedGames = ScopeOwnedGamesForRefresh(ownershipResult.Data, options);
+            var scopedOwnedGames = ScopeOwnedGamesForRefresh(ownershipResult.Data, options);
+            var ownedGames = FilterOwnedGamesForProviderRefresh(providerKey, scopedOwnedGames);
+            _logger?.Debug(
+                $"[RefreshPerf] phase=friend.ownership.provider provider={providerKey} friend={friend.ExternalUserId} returned={ownershipResult.Data?.Count ?? 0} scoped={scopedOwnedGames?.Count ?? 0} filtered={ownedGames.Count} scope={options?.Scope}.");
             // Retain the fresh, hint-bearing ownership snapshot for the game-centric candidate builder.
             // The list is non-null for every scope that fetches ownership (see PrepareProviderRefreshAsync).
             if (ownershipSnapshots != null)
@@ -2390,7 +2976,8 @@ namespace PlayniteAchievements.Services
                 ownedGames,
                 new FriendOwnershipSaveOptions
                 {
-                    IncludeProviderOnlyGames = false
+                    IncludeProviderOnlyGames = false,
+                    PruneStaleShared = ShouldPruneStaleSharedOwnership(options, ownedGames)
                 });
             if (writeOwnership?.Success != true)
             {
@@ -2466,18 +3053,13 @@ namespace PlayniteAchievements.Services
             var providerGameKeys = ownershipByKey.Keys.OrderBy(key => key, StringComparer.OrdinalIgnoreCase).ToList();
             var states = _friendCache.LoadFriendGameDefinitionStates(providerKey, providerGameKeys) ??
                          new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
-            var definitionTtl = options.DefinitionTtl.GetValueOrDefault(DefaultDefinitionTtl);
-            if (definitionTtl <= TimeSpan.Zero)
-            {
-                definitionTtl = DefaultDefinitionTtl;
-            }
-
-            var cutoffUtc = DateTime.UtcNow - definitionTtl;
-            var dueProviderGameKeys = options?.ForceDefinitionRefresh == true
-                ? providerGameKeys
-                : providerGameKeys
-                    .Where(key => IsDefinitionCheckDue(states.TryGetValue(key, out var state) ? state : null, cutoffUtc))
-                    .ToList();
+            var dueProviderGameKeys = ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey)
+                ? new List<string>()
+                : options?.ForceDefinitionRefresh == true
+                    ? providerGameKeys
+                    : providerGameKeys
+                        .Where(key => IsDefinitionCheckDue(states.TryGetValue(key, out var state) ? state : null))
+                        .ToList();
 
             plan.OwnershipByKey = ownershipByKey;
             plan.ProviderGameKeys = providerGameKeys;
@@ -2506,6 +3088,7 @@ namespace PlayniteAchievements.Services
             RebuildPayload payload,
             object payloadLock,
             FriendRefreshProgressSession progress,
+            IFriendCacheInvalidationBatch friendInvalidationBatch,
             CancellationToken cancel)
         {
             var snapshots = ownershipSnapshots?
@@ -2523,6 +3106,7 @@ namespace PlayniteAchievements.Services
             var dueProviderGameKeys = plan.DueProviderGameKeys;
             var noAchievementDefinitionKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var noAchievementProbeSkips = 0;
+            var invalidationFlushState = new FriendInvalidationFlushState();
 
             if (dueProviderGameKeys.Count > 0)
             {
@@ -2592,6 +3176,7 @@ namespace PlayniteAchievements.Services
                     await DownloadDefinitionGameImageAsync(providerKey, providerGameKey, appId, definition.IconUrl, definition.GameName, cancel, progress)
                         .ConfigureAwait(false);
                     progress?.ReportDefinitionCheckCompleted(gameName);
+                    MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState);
                 }
             }
 
@@ -2642,15 +3227,26 @@ namespace PlayniteAchievements.Services
                         progress?.ReportDefinitionCheckCompleted(
                             ResolveOwnershipGameName(new[] { item }, providerKey, GetProviderGameCacheKey(item)));
                     }
+                    MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState);
 
                     if (!shouldContinue)
                     {
+                        MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState, force: true);
                         return;
                     }
                 }
             }
 
-            await DownloadUnownedGameImagesAsync(providerKey, discoveredProviderGameKeys, ownershipByKey, cancel, progress).ConfigureAwait(false);
+            // Seed-from-scrape providers (Exophase) acquire provider-only images from the game header banner in
+            // ProbeAndPersistProviderOnlyFriendGameAsync above. Skip the profile-thumbnail download here: it runs
+            // after the probe loop and, because SaveProviderGameImagePaths lets a non-null value win via
+            // COALESCE, a small thumbnail would overwrite the higher-quality banner.
+            if (!ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey))
+            {
+                await DownloadUnownedGameImagesAsync(providerKey, discoveredProviderGameKeys, ownershipByKey, cancel, progress).ConfigureAwait(false);
+            }
+
+            MaybeFlushFriendInvalidations(friendInvalidationBatch, invalidationFlushState, force: true);
             _logger?.Debug(
                 $"[RefreshPerf] phase=friend.definitions.provider provider={providerKey} providerKeys={providerGameKeys.Count} dueDefinitions={dueProviderGameKeys.Count} probeItems={plan.ProbeItemCount} noAchievementDefinitionKeys={noAchievementDefinitionKeys.Count} noAchievementProbeSkips={noAchievementProbeSkips}");
         }
@@ -2754,6 +3350,23 @@ namespace PlayniteAchievements.Services
             {
                 payload.FriendSummary.CandidatesRefreshed++;
                 payload.FriendSummary.AchievementsSaved++;
+            }
+
+            // Persist the game header banner parsed from the same achievement page as this provider-only
+            // game's icon and cover. For seed-from-scrape providers (Exophase) the definition-fetch block that
+            // normally downloads the banner is skipped, so this probe is the only place it gets captured. The
+            // provider-only Games row was created by the SaveFriendOwnership call above, so the UPDATE-only
+            // image save matches it.
+            if (!string.IsNullOrWhiteSpace(achievements.IconUrl))
+            {
+                await DownloadDefinitionGameImageAsync(
+                    providerKey,
+                    ownership.ProviderGameKey,
+                    ownership.AppId,
+                    achievements.IconUrl,
+                    ownership.GameName,
+                    cancel,
+                    progress).ConfigureAwait(false);
             }
 
             return true;
@@ -3012,12 +3625,10 @@ namespace PlayniteAchievements.Services
             var gameName = !string.IsNullOrWhiteSpace(source.GameName) ? source.GameName : gameKey;
             try
             {
-                var result = await _achievementIconService
-                    .PopulateFriendGameImageCacheAsync(
+                var result = await PopulateFriendGameImageCacheWithSteamFallbackAsync(
                         providerKey,
                         gameKey,
-                        source.IconUrl,
-                        source.CoverUrl,
+                        source,
                         cancel,
                         () => reportImageCompleted?.Invoke(gameName))
                     .ConfigureAwait(false);
@@ -3037,6 +3648,154 @@ namespace PlayniteAchievements.Services
             {
                 _logger?.Debug(ex, $"Failed to cache unowned game images for {providerKey}/{providerGameKey}.");
             }
+        }
+
+        private async Task<FriendGameImageCacheResult> PopulateFriendGameImageCacheWithSteamFallbackAsync(
+            string providerKey,
+            string gameKey,
+            FriendGameOwnership source,
+            CancellationToken cancel,
+            Action onImageResolved)
+        {
+            var result = await _achievementIconService
+                .PopulateFriendGameImageCacheAsync(
+                    providerKey,
+                    gameKey,
+                    source?.IconUrl,
+                    source?.CoverUrl,
+                    cancel,
+                    onImageResolved)
+                .ConfigureAwait(false);
+
+            if (!ShouldTrySteamGameImageFallback(providerKey, source))
+            {
+                return result;
+            }
+
+            var missingIcon = string.IsNullOrWhiteSpace(result?.IconPath);
+            var missingCover = string.IsNullOrWhiteSpace(result?.CoverPath);
+            if (!missingIcon && !missingCover)
+            {
+                return result;
+            }
+
+            if (!missingIcon && missingCover)
+            {
+                var heroResult = await TryPopulateSteamFriendGameImageFallbackAsync(
+                        providerKey,
+                        gameKey,
+                        iconUrl: null,
+                        coverUrl: SteamImageUrls.LibraryHero(source.AppId),
+                        sourceIconUrl: source.IconUrl,
+                        sourceCoverUrl: source.CoverUrl,
+                        cancel: cancel)
+                    .ConfigureAwait(false);
+                result = MergeFriendGameImageResults(result, heroResult);
+                missingCover = string.IsNullOrWhiteSpace(result?.CoverPath);
+            }
+
+            missingIcon = string.IsNullOrWhiteSpace(result?.IconPath);
+            if (!missingIcon && !missingCover)
+            {
+                return result;
+            }
+
+            var storeFallback = await SteamImageUrls
+                .GetStoreFallbackAsync(source.AppId, cancel, _logger)
+                .ConfigureAwait(false);
+            if (storeFallback == null)
+            {
+                return result;
+            }
+
+            var storeResult = await TryPopulateSteamFriendGameImageFallbackAsync(
+                    providerKey,
+                    gameKey,
+                    iconUrl: missingIcon ? storeFallback.IconUrl : null,
+                    coverUrl: missingCover ? storeFallback.CoverUrl : null,
+                    sourceIconUrl: source.IconUrl,
+                    sourceCoverUrl: source.CoverUrl,
+                    cancel: cancel)
+                .ConfigureAwait(false);
+            return MergeFriendGameImageResults(result, storeResult);
+        }
+
+        private async Task<FriendGameImageCacheResult> TryPopulateSteamFriendGameImageFallbackAsync(
+            string providerKey,
+            string gameKey,
+            string iconUrl,
+            string coverUrl,
+            string sourceIconUrl,
+            string sourceCoverUrl,
+            CancellationToken cancel)
+        {
+            var fallbackIconUrl = IsDistinctCacheableImageSource(iconUrl, sourceIconUrl) ? iconUrl : null;
+            var fallbackCoverUrl = IsDistinctCacheableImageSource(coverUrl, sourceCoverUrl) ? coverUrl : null;
+            if (string.IsNullOrWhiteSpace(fallbackIconUrl) && string.IsNullOrWhiteSpace(fallbackCoverUrl))
+            {
+                return null;
+            }
+
+            return await _achievementIconService
+                .PopulateFriendGameImageCacheAsync(
+                    providerKey,
+                    gameKey,
+                    fallbackIconUrl,
+                    fallbackCoverUrl,
+                    cancel,
+                    onImageResolved: null)
+                .ConfigureAwait(false);
+        }
+
+        private static bool ShouldTrySteamGameImageFallback(string providerKey, FriendGameOwnership source)
+        {
+            return source?.AppId > 0 &&
+                   string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsDistinctCacheableImageSource(string candidate, string original)
+        {
+            return DiskImageService.IsCacheableImageSource(candidate) &&
+                   !string.Equals(candidate?.Trim(), original?.Trim(), StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static FriendGameImageCacheResult MergeFriendGameImageResults(
+            FriendGameImageCacheResult primary,
+            FriendGameImageCacheResult fallback)
+        {
+            if (fallback == null)
+            {
+                return primary;
+            }
+
+            if (primary == null)
+            {
+                return fallback;
+            }
+
+            return new FriendGameImageCacheResult
+            {
+                IconPath = FirstNonBlank(primary.IconPath, fallback.IconPath),
+                CoverPath = FirstNonBlank(primary.CoverPath, fallback.CoverPath)
+            };
+        }
+
+        private static string FirstNonBlank(params string[] values)
+        {
+            if (values == null)
+            {
+                return null;
+            }
+
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value;
+                }
+            }
+
+            return null;
         }
 
         private async Task<bool> RefreshAchievementCandidateAsync(
@@ -3118,6 +3877,37 @@ namespace PlayniteAchievements.Services
                 : 1;
         }
 
+        private static void MaybeFlushFriendInvalidations(
+            IFriendCacheInvalidationBatch friendInvalidationBatch,
+            FriendInvalidationFlushState state,
+            bool force = false)
+        {
+            if (friendInvalidationBatch == null || state == null)
+            {
+                return;
+            }
+
+            var shouldFlush = false;
+            lock (state.Sync)
+            {
+                state.CompletedSinceFlush++;
+                var elapsed = DateTime.UtcNow - state.LastFlushUtc;
+                if (force ||
+                    state.CompletedSinceFlush >= FriendInvalidationFlushMinCompletions ||
+                    elapsed >= FriendInvalidationFlushInterval)
+                {
+                    state.CompletedSinceFlush = 0;
+                    state.LastFlushUtc = DateTime.UtcNow;
+                    shouldFlush = true;
+                }
+            }
+
+            if (shouldFlush)
+            {
+                friendInvalidationBatch.Flush();
+            }
+        }
+
         private bool TryPrepareFriendRosterFromSettingsOrCache(
             string providerKey,
             FriendRefreshOptions options,
@@ -3129,7 +3919,8 @@ namespace PlayniteAchievements.Services
                 return false;
             }
 
-            var selectedIds = NormalizeFriendSelectionIds(options?.FriendExternalUserIds);
+            var selection = ResolveProviderFriendSelection(options, providerKey);
+            var selectedIds = selection.ExternalUserIds;
             var ignoredIds = GetIgnoredFriendIds(providerKey);
             var focused = IsFocusedFriendGameRefresh(options);
             var friends = LoadConfiguredFriendIdentities(providerKey, ignoredIds, out var source);
@@ -3140,7 +3931,7 @@ namespace PlayniteAchievements.Services
 
             var scoped = new List<FriendIdentity>();
             var synthesized = 0;
-            if (selectedIds.Count > 0)
+            if (selection.HasExplicitSelection)
             {
                 foreach (var id in selectedIds)
                 {
@@ -3200,7 +3991,7 @@ namespace PlayniteAchievements.Services
             payload.FriendSummary.FriendsFetched += context.Friends.Count;
 
             _logger?.Debug(
-                $"[RefreshPerf] phase=friend.roster provider={providerKey} source={context.RosterSource} friends={context.Friends.Count} scopedFriends={context.ScopedFriends.Count} selectedIds={selectedIds.Count} synthesized={synthesized}");
+                    $"[RefreshPerf] phase=friend.roster provider={providerKey} source={context.RosterSource} friends={context.Friends.Count} scopedFriends={context.ScopedFriends.Count} selectedIds={selectedIds.Count} synthesized={synthesized}");
             return true;
         }
 
@@ -3258,7 +4049,8 @@ namespace PlayniteAchievements.Services
         }
 
         private List<LogicalFriendRefreshGroup> BuildLogicalFriendGroups(
-            IReadOnlyList<FriendProviderRefreshContext> contexts)
+            IReadOnlyList<FriendProviderRefreshContext> contexts,
+            FriendRefreshOptions options)
         {
             var groups = new Dictionary<string, LogicalFriendRefreshGroup>(StringComparer.OrdinalIgnoreCase);
             var accountLookup = new Dictionary<string, FriendIdentity>(StringComparer.OrdinalIgnoreCase);
@@ -3266,6 +4058,11 @@ namespace PlayniteAchievements.Services
             {
                 foreach (var friend in (IEnumerable<FriendIdentity>)context?.ScopedFriends ?? Array.Empty<FriendIdentity>())
                 {
+                    if (!ShouldRefreshOwnershipForFriend(context, friend, options))
+                    {
+                        continue;
+                    }
+
                     var accountKey = FriendAccountRef.BuildKey(context.ProviderKey, friend?.ExternalUserId);
                     if (!string.IsNullOrWhiteSpace(accountKey) && !accountLookup.ContainsKey(accountKey))
                     {
@@ -3278,7 +4075,9 @@ namespace PlayniteAchievements.Services
             {
                 foreach (var friend in (IEnumerable<FriendIdentity>)context?.ScopedFriends ?? Array.Empty<FriendIdentity>())
                 {
-                    if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
+                    if (friend == null ||
+                        string.IsNullOrWhiteSpace(friend.ExternalUserId) ||
+                        !ShouldRefreshOwnershipForFriend(context, friend, options))
                     {
                         continue;
                     }
@@ -3313,6 +4112,29 @@ namespace PlayniteAchievements.Services
             return groups.Values
                 .OrderBy(group => group.DisplayName, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
+        }
+
+        private static bool ShouldRefreshOwnershipForFriend(
+            FriendProviderRefreshContext context,
+            FriendIdentity friend,
+            FriendRefreshOptions options)
+        {
+            if (context == null ||
+                friend == null ||
+                !ShouldRefreshOwnership(context.ProviderKey, options))
+            {
+                return false;
+            }
+
+            if (options?.Scope == FriendRefreshScope.Recent &&
+                !HasExplicitProviderGameTargets(options) &&
+                !string.IsNullOrWhiteSpace(friend.ExternalUserId) &&
+                context.FriendsWithCachedOwnership.Contains(friend.ExternalUserId.Trim()))
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private static string ResolveLogicalFriendDisplayName(
@@ -3370,8 +4192,9 @@ namespace PlayniteAchievements.Services
             FriendRefreshOptions options)
         {
             var all = friends ?? Array.Empty<FriendIdentity>();
-            var selectedIds = NormalizeFriendSelectionIds(options?.FriendExternalUserIds);
-            if (selectedIds.Count == 0)
+            var selection = ResolveProviderFriendSelection(options, null);
+            var selectedIds = selection.ExternalUserIds;
+            if (!selection.HasExplicitSelection)
             {
                 return all;
             }
@@ -3389,6 +4212,53 @@ namespace PlayniteAchievements.Services
                     .Select(id => id.Trim()) ??
                 Enumerable.Empty<string>(),
                 StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static ProviderFriendSelection ResolveProviderFriendSelection(
+            FriendRefreshOptions options,
+            string providerKey)
+        {
+            var accounts = NormalizeFriendAccounts(options?.FriendAccounts);
+            if (accounts.Count > 0)
+            {
+                return new ProviderFriendSelection
+                {
+                    HasExplicitSelection = true,
+                    ExternalUserIds = new HashSet<string>(
+                        accounts
+                            .Where(account =>
+                                string.IsNullOrWhiteSpace(providerKey) ||
+                                string.Equals(account.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase))
+                            .Select(account => account.ExternalUserId)
+                            .Where(id => !string.IsNullOrWhiteSpace(id)),
+                        StringComparer.OrdinalIgnoreCase)
+                };
+            }
+
+            var legacyIds = NormalizeFriendSelectionIds(options?.FriendExternalUserIds);
+            return new ProviderFriendSelection
+            {
+                HasExplicitSelection = legacyIds.Count > 0,
+                ExternalUserIds = legacyIds
+            };
+        }
+
+        private static List<FriendAccountRef> NormalizeFriendAccounts(IReadOnlyCollection<FriendAccountRef> accounts)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var normalized = new List<FriendAccountRef>();
+            foreach (var account in accounts ?? Enumerable.Empty<FriendAccountRef>())
+            {
+                var next = account?.Clone()?.Normalize();
+                if (string.IsNullOrWhiteSpace(next?.Key) || !seen.Add(next.Key))
+                {
+                    continue;
+                }
+
+                normalized.Add(next);
+            }
+
+            return normalized;
         }
 
         private List<FriendRefreshCandidate> FilterIgnoredCandidates(
@@ -3539,9 +4409,21 @@ namespace PlayniteAchievements.Services
                 .ToList();
         }
 
+        private static IReadOnlyList<FriendGameOwnership> FilterOwnedGamesForProviderRefresh(
+            string providerKey,
+            IReadOnlyList<FriendGameOwnership> ownedGames)
+        {
+            return ownedGames ?? Array.Empty<FriendGameOwnership>();
+        }
+
         private static bool HasPositiveUnlockHint(FriendGameOwnership ownership)
         {
             return ownership?.AchievementUnlocksHint > 0;
+        }
+
+        private static bool ShouldSeedDefinitionsFromFriendAchievementScrape(string providerKey)
+        {
+            return string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase);
         }
 
         private static bool HasZeroUnlockHint(FriendGameOwnership ownership)
@@ -3579,6 +4461,15 @@ namespace PlayniteAchievements.Services
         {
             return options?.ProviderAppIds?.Any(id => id > 0) == true ||
                    options?.ProviderGameKeys?.Any(key => !string.IsNullOrWhiteSpace(key)) == true;
+        }
+
+        private static bool ShouldPruneStaleSharedOwnership(
+            FriendRefreshOptions options,
+            IReadOnlyList<FriendGameOwnership> ownedGames)
+        {
+            return !HasExplicitProviderGameTargets(options) &&
+                   ownedGames != null &&
+                   ownedGames.Count > 0;
         }
 
         private static bool IsFocusedFriendGameRefresh(FriendRefreshOptions options)
@@ -3686,19 +4577,14 @@ namespace PlayniteAchievements.Services
                    IsTransientError(ex.InnerException);
         }
 
-        private static bool IsDefinitionCheckDue(FriendGameDefinitionState state, DateTime cutoffUtc)
+        private static bool IsDefinitionCheckDue(FriendGameDefinitionState state)
         {
-            if (state == null || !state.LastCheckedUtc.HasValue)
-            {
-                return true;
-            }
-
-            if (state.Status != FriendGameDefinitionStatus.Ok)
-            {
-                return true;
-            }
-
-            return state.LastCheckedUtc.Value < cutoffUtc;
+            // No time-based expiry: a cached complete (Ok) schema is reused indefinitely; only
+            // never-checked or non-Ok states are re-fetched. A forced refresh (Full/selected-game)
+            // overrides this and re-fetches every discovered game.
+            return state == null ||
+                   !state.LastCheckedUtc.HasValue ||
+                   state.Status != FriendGameDefinitionStatus.Ok;
         }
 
         private static string ResolveOwnershipGameName(
@@ -3780,13 +4666,7 @@ namespace PlayniteAchievements.Services
 
         private FriendRefreshOptions NormalizeOptions(FriendRefreshOptions options)
         {
-            var normalized = options?.Clone() ?? new FriendRefreshOptions();
-            if (!normalized.DefinitionTtl.HasValue || normalized.DefinitionTtl.Value <= TimeSpan.Zero)
-            {
-                normalized.DefinitionTtl = DefaultDefinitionTtl;
-            }
-
-            return normalized;
+            return options?.Clone() ?? new FriendRefreshOptions();
         }
 
         private static bool ShouldRefreshOwnership(string providerKey, FriendRefreshOptions options)
@@ -3991,12 +4871,16 @@ namespace PlayniteAchievements.Services
             public FriendsRefreshPreparation Preparation { get; set; } = new FriendsRefreshPreparation();
             public List<FriendIdentity> Friends { get; set; } = new List<FriendIdentity>();
             public List<FriendIdentity> ScopedFriends { get; set; } = new List<FriendIdentity>();
+            public IReadOnlyList<CurrentUserGameLabel> CurrentUserLabels { get; set; } =
+                new List<CurrentUserGameLabel>();
             public string RosterSource { get; set; } = "unknown";
             public bool DiscoverUnowned { get; set; }
             public bool CanContinue { get; set; }
             public int MaxDegreeOfParallelism { get; set; } = 1;
             public List<FriendOwnershipSnapshot> OwnershipSnapshots { get; set; }
             public HashSet<string> ProbedProviderOnlyAchievementKeys { get; } =
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            public HashSet<string> FriendsWithCachedOwnership { get; } =
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             public int RawCandidatesLoaded { get; set; }
             public int CandidatesSkippedAlreadyProbed { get; set; }
@@ -4027,10 +4911,24 @@ namespace PlayniteAchievements.Services
             public FriendIdentity Friend { get; set; }
         }
 
+        private sealed class ProviderFriendSelection
+        {
+            public bool HasExplicitSelection { get; set; }
+            public HashSet<string> ExternalUserIds { get; set; } =
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
         private sealed class FriendAchievementWorkItem
         {
             public FriendProviderRefreshContext Context { get; set; }
             public FriendRefreshCandidate Candidate { get; set; }
+        }
+
+        private sealed class FriendInvalidationFlushState
+        {
+            public object Sync { get; } = new object();
+            public DateTime LastFlushUtc { get; set; } = DateTime.UtcNow;
+            public int CompletedSinceFlush { get; set; }
         }
 
         // Precomputed plan for the unowned-definition discovery phase. Computed once (a read-only cache

@@ -52,7 +52,20 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <Grid>
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <controls:GridControlBarControl x:Name="ControlBarHost"
+                                    Grid.Row="0"
+                                    Margin="0,0,0,8"
+                                    ControlBar="{Binding ControlBar, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}"
+                                    ShowControlBar="{Binding ShowControlBar, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}"/>
+
     <DataGrid x:Name="GameSummariesGrid"
+              Grid.Row="1"
               KeyboardNavigation.DirectionalNavigation="Contained"
               ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}"
               SelectedItem="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}, Mode=TwoWay}"
@@ -427,4 +440,5 @@
             </DataGridTemplateColumn>
         </DataGrid.Columns>
     </DataGrid>
+    </Grid>
 </UserControl>

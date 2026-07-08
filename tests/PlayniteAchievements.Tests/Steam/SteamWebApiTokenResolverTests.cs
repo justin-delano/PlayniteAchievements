@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Services;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -77,6 +78,41 @@ namespace PlayniteAchievements.Steam.Tests
             Assert.AreEqual("token-1", first.Token);
             Assert.AreEqual("token-2", second.Token);
             Assert.AreEqual(2, resolveCalls);
+        }
+
+        [TestMethod]
+        public async Task ResolveAsync_UsesScopedAuthContextSessionWithoutResolvingAgain()
+        {
+            var resolveCalls = 0;
+            var resolver = new SteamWebApiTokenResolver(
+                new FakeSessionManager(),
+                _ =>
+                {
+                    resolveCalls++;
+                    return Task.FromResult(new SteamWebAuthSession("76561198000000000", "fallback-token", true));
+                },
+                logger: null);
+            var context = new RefreshAuthContext(Guid.NewGuid());
+            context.SetProbeResult(
+                "Steam",
+                AuthProbeResult.AlreadyAuthenticated("76561198000000000"),
+                12,
+                new SteamWebAuthSession("76561198000000000", "preflight-token", true));
+
+            resolver.BeginRefreshAuthContext(context);
+            SteamWebApiTokenResolution result;
+            try
+            {
+                result = await resolver.ResolveAsync(CancellationToken.None).ConfigureAwait(false);
+            }
+            finally
+            {
+                resolver.EndRefreshAuthContext(context);
+            }
+
+            Assert.IsTrue(result.IsSuccess);
+            Assert.AreEqual("preflight-token", result.Token);
+            Assert.AreEqual(0, resolveCalls);
         }
 
         private sealed class FakeSessionManager : ISessionManager

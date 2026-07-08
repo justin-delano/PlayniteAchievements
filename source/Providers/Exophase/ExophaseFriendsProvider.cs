@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Exophase
 {
-    internal sealed class ExophaseFriendsProvider : IFriendsProvider, ICurrentUserGameLabelReceiver
+    internal sealed class ExophaseFriendsProvider : IFriendsProvider, ICurrentUserGameLabelReceiver, ISteamFriendOwnershipSupplementSource
     {
         private const string Provider = "Exophase";
         private readonly ExophaseApiClient _apiClient;
@@ -90,7 +90,31 @@ namespace PlayniteAchievements.Providers.Exophase
         public void SetCurrentUserGameLabels(IReadOnlyList<CurrentUserGameLabel> labels)
         {
             ClearCurrentUserGameIndex();
-            if (labels == null)
+            IndexCurrentUserGameLabels(
+                labels,
+                _currentUserGameFamilyById,
+                _currentUserGameIdsByFamilyName);
+
+            _logger?.Info($"[ExophaseFriends] Indexed {_currentUserGameFamilyById.Count} current-user game(s) by stored provider label for friend merge.");
+        }
+
+        private void ClearCurrentUserGameIndex()
+        {
+            _currentUserGameFamilyById.Clear();
+            _currentUserGameIdsByFamilyName.Clear();
+        }
+
+        private static string BuildFamilyNameKey(string familyKey, string normalizedName)
+        {
+            return familyKey + "\n" + normalizedName;
+        }
+
+        private static void IndexCurrentUserGameLabels(
+            IReadOnlyList<CurrentUserGameLabel> labels,
+            IDictionary<Guid, string> gameFamilyById,
+            IDictionary<string, List<Guid>> gameIdsByFamilyName)
+        {
+            if (labels == null || gameFamilyById == null || gameIdsByFamilyName == null)
             {
                 return;
             }
@@ -109,7 +133,7 @@ namespace PlayniteAchievements.Providers.Exophase
                     continue;
                 }
 
-                _currentUserGameFamilyById[label.PlayniteGameId] = family;
+                gameFamilyById[label.PlayniteGameId] = family;
 
                 var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(label.GameName);
                 if (string.IsNullOrWhiteSpace(normalizedName))
@@ -118,10 +142,10 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 var key = BuildFamilyNameKey(family, normalizedName);
-                if (!_currentUserGameIdsByFamilyName.TryGetValue(key, out var ids))
+                if (!gameIdsByFamilyName.TryGetValue(key, out var ids))
                 {
                     ids = new List<Guid>();
-                    _currentUserGameIdsByFamilyName[key] = ids;
+                    gameIdsByFamilyName[key] = ids;
                 }
 
                 if (!ids.Contains(label.PlayniteGameId))
@@ -129,19 +153,6 @@ namespace PlayniteAchievements.Providers.Exophase
                     ids.Add(label.PlayniteGameId);
                 }
             }
-
-            _logger?.Info($"[ExophaseFriends] Indexed {_currentUserGameFamilyById.Count} current-user game(s) by stored provider label for friend merge.");
-        }
-
-        private void ClearCurrentUserGameIndex()
-        {
-            _currentUserGameFamilyById.Clear();
-            _currentUserGameIdsByFamilyName.Clear();
-        }
-
-        private static string BuildFamilyNameKey(string familyKey, string normalizedName)
-        {
-            return familyKey + "\n" + normalizedName;
         }
 
         public async Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsAsync(CancellationToken cancel)
@@ -261,6 +272,293 @@ namespace PlayniteAchievements.Providers.Exophase
             return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(deduped);
         }
 
+        public async Task<FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>> GetSteamOwnedGamesAsync(
+            string externalUserId,
+            IReadOnlyList<CurrentUserGameLabel> currentUserLabels,
+            IReadOnlyList<FriendGameOwnership> knownSteamOwnership,
+            CancellationToken cancel)
+        {
+            if (string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.Failed("Exophase friend username is missing.");
+            }
+
+            var username = externalUserId.Trim();
+            var allGames = await FetchOwnedGamesAsync(username, cancel).ConfigureAwait(false);
+            var steamLabelsByName = BuildUniqueSteamLabelsByNormalizedName(currentUserLabels);
+            var knownSteamGames = BuildKnownSteamOwnershipIndex(knownSteamOwnership);
+            var result = new List<FriendGameOwnership>();
+            var skippedOtherPlatform = 0;
+            var skippedKnownSteam = 0;
+            var skippedNoUnlockHint = 0;
+            var resolvedFromProfile = 0;
+            var resolvedFromLibrary = 0;
+            var resolvedFromPage = 0;
+            var unresolvedSteamAppIds = 0;
+            foreach (var game in allGames)
+            {
+                cancel.ThrowIfCancellationRequested();
+                var gameProviderKey = ExophaseFriendPlatformMatcher.ResolveProviderPlatformKey(game.Platform);
+                if (!string.Equals(gameProviderKey, "Steam", StringComparison.OrdinalIgnoreCase))
+                {
+                    skippedOtherPlatform++;
+                    continue;
+                }
+
+                var key = ExophaseFriendGameKey.Build(game.Platform, game.Slug);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                if (IsKnownSteamOwnership(game, knownSteamGames))
+                {
+                    skippedKnownSteam++;
+                    continue;
+                }
+
+                if (!HasPositiveAchievementUnlock(game))
+                {
+                    skippedNoUnlockHint++;
+                    continue;
+                }
+
+                var appId = Math.Max(0, game.SteamAppId);
+                if (appId > 0)
+                {
+                    resolvedFromProfile++;
+                }
+                else if (TryResolveSteamAppIdFromLibrary(game.Title, steamLabelsByName, out appId))
+                {
+                    resolvedFromLibrary++;
+                }
+                else
+                {
+                    appId = await ResolveSteamAppIdForSupplementAsync(game, cancel)
+                        .ConfigureAwait(false);
+                    if (appId > 0)
+                    {
+                        resolvedFromPage++;
+                    }
+                }
+
+                if (appId <= 0)
+                {
+                    unresolvedSteamAppIds++;
+                    continue;
+                }
+
+                if (knownSteamGames.AppIds.Contains(appId))
+                {
+                    skippedKnownSteam++;
+                    continue;
+                }
+
+                result.Add(new FriendGameOwnership
+                {
+                    ProviderKey = Provider,
+                    ExternalUserId = username,
+                    AppId = appId,
+                    ProviderGameKey = key,
+                    ProviderPlatformKey = ExophaseDataProvider.MapSlugToProviderPlatformKey(game.Platform),
+                    GameName = game.Title,
+                    IconUrl = game.ImageUrl,
+                    CoverUrl = game.ImageUrl,
+                    PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeMinutes),
+                    Playtime2WeeksMinutes = game.RecentPlaytimeMinutes > 0
+                        ? (int?)game.RecentPlaytimeMinutes
+                        : null,
+                    LastPlayedUtc = game.LastPlayedUtc,
+                    AchievementUnlocksHint = game.AchievementsEarned,
+                    AchievementTotalHint = game.AchievementsTotal
+                });
+            }
+
+            var deduped = result
+                .GroupBy(item => item.AppId)
+                .Select(group => group.First())
+                .OrderBy(item => item.GameName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            _logger?.Info($"[ExophaseFriends] GetSteamOwnedGames: '{username}' parsed {allGames.Count} profile game(s), " +
+                $"kept {deduped.Count} extra Steam game(s) for Steam ownership augmentation " +
+                $"(skipped {skippedOtherPlatform} on other platforms, " +
+                $"skippedKnownSteam={skippedKnownSteam}, skippedNoUnlockHint={skippedNoUnlockHint}, " +
+                $"resolvedProfile={resolvedFromProfile}, resolvedLibrary={resolvedFromLibrary}, " +
+                $"resolvedPage={resolvedFromPage}, unresolvedSteamAppIds={unresolvedSteamAppIds}).");
+            return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(deduped);
+        }
+
+        private static KnownSteamOwnershipIndex BuildKnownSteamOwnershipIndex(
+            IReadOnlyList<FriendGameOwnership> ownership)
+        {
+            var index = new KnownSteamOwnershipIndex();
+            foreach (var item in ownership ?? Array.Empty<FriendGameOwnership>())
+            {
+                if (item == null)
+                {
+                    continue;
+                }
+
+                if (item.AppId > 0)
+                {
+                    index.AppIds.Add(item.AppId);
+                }
+
+                var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(item.GameName);
+                if (!string.IsNullOrWhiteSpace(normalizedName))
+                {
+                    index.NormalizedNames.Add(normalizedName);
+                }
+
+                var slug = ExophaseGameNameMatcher.NormalizeGameNameForSlug(item.GameName);
+                if (!string.IsNullOrWhiteSpace(slug))
+                {
+                    index.ExophaseSteamSlugs.Add(slug);
+                    index.ExophaseSteamSlugs.Add(slug + "-steam");
+                }
+            }
+
+            return index;
+        }
+
+        private static bool IsKnownSteamOwnership(ExophaseFriendGame game, KnownSteamOwnershipIndex knownSteamGames)
+        {
+            if (game == null || knownSteamGames == null)
+            {
+                return false;
+            }
+
+            if (game.SteamAppId > 0 && knownSteamGames.AppIds.Contains(game.SteamAppId))
+            {
+                return true;
+            }
+
+            var slug = NormalizeSteamSlugKey(game.Slug);
+            if (!string.IsNullOrWhiteSpace(slug) &&
+                knownSteamGames.ExophaseSteamSlugs.Contains(slug))
+            {
+                return true;
+            }
+
+            var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(game.Title);
+            return !string.IsNullOrWhiteSpace(normalizedName) &&
+                   knownSteamGames.NormalizedNames.Contains(normalizedName);
+        }
+
+        private static bool HasPositiveAchievementUnlock(ExophaseFriendGame game)
+        {
+            return game?.AchievementsEarned.GetValueOrDefault() > 0;
+        }
+
+        private static string NormalizeSteamSlugKey(string slug)
+        {
+            return string.IsNullOrWhiteSpace(slug)
+                ? null
+                : slug.Trim().ToLowerInvariant();
+        }
+
+        private static Dictionary<string, CurrentUserGameLabel> BuildUniqueSteamLabelsByNormalizedName(
+            IReadOnlyList<CurrentUserGameLabel> labels)
+        {
+            var labelsByName = new Dictionary<string, CurrentUserGameLabel>(StringComparer.OrdinalIgnoreCase);
+            var ambiguousNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var label in labels ?? Array.Empty<CurrentUserGameLabel>())
+            {
+                if (label == null ||
+                    label.AppId <= 0 ||
+                    !string.Equals(
+                        ExophaseFriendPlatformMatcher.ResolveStoredGameFamilyKey(
+                            label.ProviderKey,
+                            label.ProviderPlatformKey),
+                        "Steam",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(label.GameName);
+                if (string.IsNullOrWhiteSpace(normalizedName) ||
+                    ambiguousNames.Contains(normalizedName))
+                {
+                    continue;
+                }
+
+                if (labelsByName.TryGetValue(normalizedName, out var existing) &&
+                    existing.AppId != label.AppId)
+                {
+                    labelsByName.Remove(normalizedName);
+                    ambiguousNames.Add(normalizedName);
+                    continue;
+                }
+
+                labelsByName[normalizedName] = label;
+            }
+
+            return labelsByName;
+        }
+
+        private static bool TryResolveSteamAppIdFromLibrary(
+            string title,
+            IReadOnlyDictionary<string, CurrentUserGameLabel> steamLabelsByName,
+            out int appId)
+        {
+            appId = 0;
+            var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(title);
+            if (string.IsNullOrWhiteSpace(normalizedName) ||
+                steamLabelsByName == null ||
+                !steamLabelsByName.TryGetValue(normalizedName, out var label))
+            {
+                return false;
+            }
+
+            appId = Math.Max(0, label.AppId);
+            return appId > 0;
+        }
+
+        private async Task<int> ResolveSteamAppIdForSupplementAsync(
+            ExophaseFriendGame game,
+            CancellationToken cancel)
+        {
+            if (game?.SteamAppId > 0)
+            {
+                return game.SteamAppId;
+            }
+
+            if (string.IsNullOrWhiteSpace(game?.Slug))
+            {
+                return 0;
+            }
+
+            var url = ExophaseApiClient.BuildUrlFromSlug(game.Slug, game.Platform);
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return 0;
+            }
+
+            try
+            {
+                var html = await FetchRenderedHtmlSerializedAsync(url, cancel).ConfigureAwait(false);
+                var appId = ExophaseSteamAppIdParser.Extract(html);
+                if (appId <= 0)
+                {
+                    _logger?.Debug($"[ExophaseFriends] Steam app id not found on Exophase game page '{url}'.");
+                }
+
+                return appId;
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"[ExophaseFriends] Failed to resolve Steam app id from Exophase game page '{url}'.");
+                return 0;
+            }
+        }
+
         public async Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
             string providerGameKey,
             int appId,
@@ -322,9 +620,18 @@ namespace PlayniteAchievements.Providers.Exophase
             // the friend in one pass (no separate awards scrape).
             var contextId = GetFriendGameContextId(friend.ExternalUserId, providerGameKey);
             var achievementUrl = BuildFriendAchievementUrl(parsed.GameSlug, parsed.PlatformSlug, contextId);
-            var achievements = await _apiClient
-                .FetchAchievementsAsync(achievementUrl, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
-                .ConfigureAwait(false) ?? new List<AchievementDetail>();
+            var fetched = await _apiClient
+                .FetchAchievementsWithHtmlAsync(achievementUrl, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
+                .ConfigureAwait(false);
+            var achievements = fetched?.Achievements ?? new List<AchievementDetail>();
+
+            // The friend achievement page carries the game's header banner in its layout; parse it from the
+            // same HTML so provider-only friend games get a full-size icon/cover without a second request. For
+            // Exophase, definitions are seeded from this scrape (no separate GetFriendGameDefinitionAsync fetch),
+            // so this is the only chance to capture the banner during the provider-only probe.
+            var headerImageUrl = string.IsNullOrEmpty(fetched?.Html)
+                ? null
+                : ExophaseFriendPageParser.ParseGameHeaderImageUrl(fetched.Html);
 
             // Reuse the main provider's rarity assignment (percentage -> rarity tier) so friend
             // achievements are not all reported as Common.
@@ -371,6 +678,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 ProviderGameKey = providerGameKey,
                 LastUpdatedUtc = DateTime.UtcNow,
                 StatsUnavailable = achievements.Count == 0,
+                IconUrl = headerImageUrl,
                 Rows = rows
             });
         }
@@ -571,12 +879,31 @@ namespace PlayniteAchievements.Providers.Exophase
 
         private Guid? ResolveMappedPlayniteGameId(string providerGameKey, string platform, string title)
         {
+            return ResolveMappedPlayniteGameId(
+                providerGameKey,
+                platform,
+                title,
+                _currentUserGameFamilyById,
+                _currentUserGameIdsByFamilyName);
+        }
+
+        private Guid? ResolveMappedPlayniteGameId(
+            string providerGameKey,
+            string platform,
+            string title,
+            IReadOnlyDictionary<Guid, string> currentUserGameFamilyById,
+            IReadOnlyDictionary<string, List<Guid>> currentUserGameIdsByFamilyName)
+        {
             var normalizedKey = ExophaseSettings.NormalizeFriendGameMappingKey(providerGameKey);
             if (!string.IsNullOrWhiteSpace(normalizedKey) &&
                 _settings.FriendGameMappings?.TryGetValue(normalizedKey, out var manualGameId) == true &&
                 manualGameId != Guid.Empty)
             {
-                return IsMappedPlayniteGameCompatible(manualGameId, platform, localOverrideSlug: null)
+                return IsMappedPlayniteGameCompatible(
+                        manualGameId,
+                        platform,
+                        null,
+                        currentUserGameFamilyById)
                     ? manualGameId
                     : null;
             }
@@ -586,15 +913,32 @@ namespace PlayniteAchievements.Providers.Exophase
                 .FirstOrDefault(pair => string.Equals(pair.Value, slug, StringComparison.OrdinalIgnoreCase));
             if (overrideMatch.Key != Guid.Empty)
             {
-                return IsMappedPlayniteGameCompatible(overrideMatch.Key, platform, slug)
+                return IsMappedPlayniteGameCompatible(
+                        overrideMatch.Key,
+                        platform,
+                        slug,
+                        currentUserGameFamilyById)
                     ? overrideMatch.Key
                     : null;
             }
 
-            return ResolveAutomaticPlayniteGameId(platform, title);
+            return ResolveAutomaticPlayniteGameId(platform, title, currentUserGameIdsByFamilyName);
         }
 
         private bool IsMappedPlayniteGameCompatible(Guid playniteGameId, string platform, string localOverrideSlug)
+        {
+            return IsMappedPlayniteGameCompatible(
+                playniteGameId,
+                platform,
+                localOverrideSlug,
+                _currentUserGameFamilyById);
+        }
+
+        private static bool IsMappedPlayniteGameCompatible(
+            Guid playniteGameId,
+            string platform,
+            string localOverrideSlug,
+            IReadOnlyDictionary<Guid, string> currentUserGameFamilyById)
         {
             if (playniteGameId == Guid.Empty)
             {
@@ -608,7 +952,8 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             // Prefer the servicing provider label the plugin stored for this game at scan time.
-            if (_currentUserGameFamilyById.TryGetValue(playniteGameId, out var gameProviderKey) &&
+            if (currentUserGameFamilyById != null &&
+                currentUserGameFamilyById.TryGetValue(playniteGameId, out var gameProviderKey) &&
                 !string.IsNullOrWhiteSpace(gameProviderKey))
             {
                 return string.Equals(gameProviderKey, friendProviderKey, StringComparison.OrdinalIgnoreCase);
@@ -621,6 +966,14 @@ namespace PlayniteAchievements.Providers.Exophase
         }
 
         private Guid? ResolveAutomaticPlayniteGameId(string platform, string title)
+        {
+            return ResolveAutomaticPlayniteGameId(platform, title, _currentUserGameIdsByFamilyName);
+        }
+
+        private static Guid? ResolveAutomaticPlayniteGameId(
+            string platform,
+            string title,
+            IReadOnlyDictionary<string, List<Guid>> currentUserGameIdsByFamilyName)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -645,7 +998,8 @@ namespace PlayniteAchievements.Providers.Exophase
             // suffixes stripped on both sides via the shared matcher, so "Titanfall 2 Deluxe Edition" ==
             // the friend's "Titanfall 2"). Ambiguous multi-matches are left to manual mapping
             // (FriendGameMappings / SlugOverrides).
-            return _currentUserGameIdsByFamilyName.TryGetValue(
+            return currentUserGameIdsByFamilyName != null &&
+                   currentUserGameIdsByFamilyName.TryGetValue(
                        BuildFamilyNameKey(friendProviderKey, normalizedTitle), out var ids) &&
                    ids.Count == 1
                 ? ids[0]
@@ -693,6 +1047,7 @@ namespace PlayniteAchievements.Providers.Exophase
             return (platforms ?? Enumerable.Empty<string>())
                 .Where(platform => !string.IsNullOrWhiteSpace(platform))
                 .Select(NormalizePlatformSlug)
+                .Where(platform => !string.Equals(platform, "steam", StringComparison.OrdinalIgnoreCase))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
@@ -702,12 +1057,22 @@ namespace PlayniteAchievements.Providers.Exophase
             return ExophaseFriendPlatformMatcher.NormalizePlatformSlug(platform);
         }
 
+        private sealed class KnownSteamOwnershipIndex
+        {
+            public HashSet<int> AppIds { get; } = new HashSet<int>();
+            public HashSet<string> NormalizedNames { get; } =
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            public HashSet<string> ExophaseSteamSlugs { get; } =
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        }
+
         private sealed class ExophaseFriendGame
         {
             public string Slug { get; set; }
             public string Title { get; set; }
             public string ImageUrl { get; set; }
             public string Platform { get; set; }
+            public int SteamAppId { get; set; }
 
             // Friend's per-game context id from the games-page achievement link fragment
             // (/game/{slug}/achievements/#{ContextId}); scopes the achievement page to this friend.
@@ -854,6 +1219,7 @@ namespace PlayniteAchievements.Providers.Exophase
                         Title = title,
                         ImageUrl = image,
                         Platform = platform,
+                        SteamAppId = ExophaseSteamAppIdParser.Extract(container?.OuterHtml),
                         ContextId = contextId,
                         PlaytimeMinutes = ParsePlaytimeMinutes(container?.InnerText),
                         RecentPlaytimeMinutes = ParseRecentPlaytimeMinutes(container?.InnerText, recentDateContext.HasValue),
@@ -903,11 +1269,18 @@ namespace PlayniteAchievements.Providers.Exophase
             private static HtmlNode FindGameContainer(HtmlNode link)
             {
                 var current = link;
-                for (var i = 0; i < 6 && current?.ParentNode != null; i++)
+                for (var i = 0; i < 8 && current?.ParentNode != null; i++)
                 {
                     current = current.ParentNode;
-                    if (current.SelectSingleNode(".//div[contains(@class, 'col-image')]") != null ||
-                        current.SelectSingleNode(".//i[contains(@class, 'exo-icon-service-')]") != null)
+                    if (!HasGameRowSignals(current))
+                    {
+                        continue;
+                    }
+
+                    // Do not let a broad list/container node classify this row from a sibling's
+                    // service icon, image, playtime, or progress block. Row containers can legitimately
+                    // contain multiple links to the same game (image + title), so count distinct slugs.
+                    if (CountDistinctGameSlugs(current) <= 1)
                     {
                         return current;
                     }
@@ -916,8 +1289,41 @@ namespace PlayniteAchievements.Providers.Exophase
                 return link.ParentNode;
             }
 
+            private static bool HasGameRowSignals(HtmlNode node)
+            {
+                return node != null &&
+                       (node.SelectSingleNode(".//div[contains(@class, 'col-image')]") != null ||
+                        node.SelectSingleNode(".//i[contains(@class, 'exo-icon-service-')]") != null ||
+                        node.SelectSingleNode(".//div[contains(@class, 'game-progress')]") != null ||
+                        node.SelectSingleNode(".//div[contains(@class, 'lastplayed')]") != null);
+            }
+
+            private static int CountDistinctGameSlugs(HtmlNode node)
+            {
+                var slugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var link in Nodes(node?.SelectNodes(".//a[contains(@href, '/game/')]")))
+                {
+                    var slug = ExophaseApiClient.ExtractSlugFromUrl(
+                        NormalizeUrl(link.GetAttributeValue("href", null)));
+                    if (!string.IsNullOrWhiteSpace(slug))
+                    {
+                        slugs.Add(slug);
+                    }
+                }
+
+                return slugs.Count;
+            }
+
             private static string DerivePlatform(HtmlNode container, string slug)
             {
+                // The slug is row-local and cannot be contaminated by sibling rows. Prefer it over
+                // service icons because broad profile containers may contain many platform icons.
+                var slugPlatform = ExophaseFriendPlatformMatcher.ExtractPlatformSlugFromGameSlug(slug);
+                if (!string.IsNullOrWhiteSpace(slugPlatform))
+                {
+                    return NormalizePlatformSlug(slugPlatform);
+                }
+
                 if (container != null)
                 {
                     // The service icon carries the platform: <i class="exo-icon-service-origin ...">.

@@ -14,6 +14,11 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             Projection = new FriendOverviewProjection(data, settings);
         }
 
+        public FriendRuntimeState(FriendOverviewProjection projection)
+        {
+            Projection = projection ?? new FriendOverviewProjection(null);
+        }
+
         public FriendOverviewProjection Projection { get; }
 
         public bool HasData => Projection?.HasData == true;

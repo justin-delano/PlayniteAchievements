@@ -618,6 +618,53 @@ namespace PlayniteAchievements.Services.Tests
             }
         }
 
+        [TestMethod]
+        public void ResolveProviderForGame_WithTargetSelectionCache_ReusesCapabilityResult()
+        {
+            var tempDir = CreateTempDirectory();
+            var gameId = Guid.NewGuid();
+            var previousPlugin = PlayniteAchievementsPlugin.Instance;
+
+            try
+            {
+                PlayniteAchievementsPlugin.Instance = new PlayniteAchievementsPlugin
+                {
+                    GameCustomDataStore = new GameCustomDataStore(tempDir)
+                };
+
+                var resolver = new TargetSelectionResolver(
+                    new FakePlayniteApi(),
+                    new PlayniteAchievementsSettings(),
+                    new FakeCacheManager(),
+                    logger: null,
+                    refreshOrder: new[] { "Steam" });
+                var game = new Game { Id = gameId, Name = "Test Game" };
+                var capabilityCalls = 0;
+                var providers = new List<IDataProvider>
+                {
+                    new FakeProvider("Steam", _ =>
+                    {
+                        capabilityCalls++;
+                        return true;
+                    })
+                };
+                var cache = new TargetSelectionCache();
+
+                var first = resolver.ResolveProviderForGame(game, providers, cache);
+                var second = resolver.ResolveProviderForGame(game, providers, cache);
+
+                Assert.IsNotNull(first);
+                Assert.AreSame(first, second);
+                Assert.AreEqual(1, capabilityCalls);
+                Assert.AreEqual(1, cache.CapabilityCheckCount);
+            }
+            finally
+            {
+                PlayniteAchievementsPlugin.Instance = previousPlugin;
+                DeleteDirectory(tempDir);
+            }
+        }
+
         private static string CreateTempDirectory()
         {
             var path = Path.Combine(

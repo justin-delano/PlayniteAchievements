@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.ViewModels
@@ -13,6 +14,7 @@ namespace PlayniteAchievements.ViewModels
         public GridControlBarViewModel()
         {
             Items = new ObservableCollection<GridControlBarItem>();
+            LeadingItems = new ObservableCollection<GridControlBarItem>();
         }
 
         public GridSearchControl Search
@@ -23,9 +25,18 @@ namespace PlayniteAchievements.ViewModels
 
         public ObservableCollection<GridControlBarItem> Items { get; }
 
+        // Items rendered to the left of the search box (e.g. the category-mode Back and toggle while
+        // in category mode). Empty on most surfaces, so the leading zone collapses to nothing.
+        public ObservableCollection<GridControlBarItem> LeadingItems { get; }
+
         public void Refresh()
         {
             Search?.Refresh();
+            foreach (var item in LeadingItems)
+            {
+                item?.Refresh();
+            }
+
             foreach (var item in Items)
             {
                 item?.Refresh();
@@ -49,6 +60,7 @@ namespace PlayniteAchievements.ViewModels
     public abstract class GridControlBarItem : PlayniteAchievements.Common.ObservableObject
     {
         private bool _isVisible = true;
+        private bool _autoHideWhenUnavailable = true;
         private double _width = double.NaN;
         private double _minWidth = 0d;
         private string _toolTip;
@@ -56,8 +68,28 @@ namespace PlayniteAchievements.ViewModels
         public bool IsVisible
         {
             get => _isVisible;
-            set => SetValue(ref _isVisible, value);
+            set
+            {
+                if (SetValueAndReturn(ref _isVisible, value))
+                {
+                    OnPropertyChanged(nameof(EffectiveIsVisible));
+                }
+            }
         }
+
+        public bool AutoHideWhenUnavailable
+        {
+            get => _autoHideWhenUnavailable;
+            set
+            {
+                if (SetValueAndReturn(ref _autoHideWhenUnavailable, value))
+                {
+                    OnPropertyChanged(nameof(EffectiveIsVisible));
+                }
+            }
+        }
+
+        public bool EffectiveIsVisible => IsVisible && (!AutoHideWhenUnavailable || HasAvailableAction);
 
         public double Width
         {
@@ -80,7 +112,10 @@ namespace PlayniteAchievements.ViewModels
         public virtual void Refresh()
         {
             OnPropertyChanged(string.Empty);
+            OnPropertyChanged(nameof(EffectiveIsVisible));
         }
+
+        protected virtual bool HasAvailableAction => true;
     }
 
     public sealed class GridSearchControl : PlayniteAchievements.Common.ObservableObject
@@ -219,9 +254,21 @@ namespace PlayniteAchievements.ViewModels
             Subscribe(source, sourcePropertyName);
         }
 
+        private bool _connectedLeft;
+
         public string DisplayText => _getDisplayText?.Invoke() ?? string.Empty;
 
         public IEnumerable<string> Options => _getOptions?.Invoke() ?? _options;
+
+        // When true, this dropdown renders as the right half of a segmented unit (flat left edge,
+        // no left border/margin) so an adjacent control on its left reads as one bordered group.
+        public bool ConnectedLeft
+        {
+            get => _connectedLeft;
+            set => SetValue(ref _connectedLeft, value);
+        }
+
+        protected override bool HasAvailableAction => CountUsableOptions() > 1 || HasSelectedOption();
 
         public bool IsSelected(string option)
         {
@@ -243,11 +290,29 @@ namespace PlayniteAchievements.ViewModels
         public override void Refresh()
         {
             OnPropertyChanged(nameof(DisplayText));
+            OnPropertyChanged(nameof(Options));
+            OnPropertyChanged(nameof(EffectiveIsVisible));
         }
 
         private void Subscribe(INotifyPropertyChanged source, string propertyName)
         {
             GridSearchControl.Subscribe(source, propertyName, Refresh);
+        }
+
+        private int CountUsableOptions()
+        {
+            return (Options ?? Array.Empty<string>())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(2)
+                .Count();
+        }
+
+        private bool HasSelectedOption()
+        {
+            return (Options ?? Array.Empty<string>())
+                .Any(option => !string.IsNullOrWhiteSpace(option) && IsSelected(option));
         }
     }
 
@@ -263,6 +328,7 @@ namespace PlayniteAchievements.ViewModels
     {
         private readonly Func<bool> _getIsChecked;
         private readonly Action<bool> _setIsChecked;
+        private readonly Func<bool> _getIsAvailable;
         private readonly string _content;
 
         public GridToggleFilter(
@@ -271,11 +337,13 @@ namespace PlayniteAchievements.ViewModels
             string content,
             Func<bool> getIsChecked,
             Action<bool> setIsChecked,
-            GridToggleFilterIcon icon = GridToggleFilterIcon.None)
+            GridToggleFilterIcon icon = GridToggleFilterIcon.None,
+            Func<bool> getIsAvailable = null)
         {
             _content = content;
             _getIsChecked = getIsChecked;
             _setIsChecked = setIsChecked;
+            _getIsAvailable = getIsAvailable;
             Icon = icon;
             GridSearchControl.Subscribe(source, sourcePropertyName, Refresh);
         }
@@ -286,6 +354,8 @@ namespace PlayniteAchievements.ViewModels
         // of the text Content; Content is surfaced as the tooltip. None keeps text rendering.
         public GridToggleFilterIcon Icon { get; }
 
+        protected override bool HasAvailableAction => (_getIsAvailable?.Invoke() ?? true) || !IsChecked;
+
         public bool IsChecked
         {
             get => _getIsChecked?.Invoke() == true;
@@ -304,6 +374,7 @@ namespace PlayniteAchievements.ViewModels
         public override void Refresh()
         {
             OnPropertyChanged(nameof(IsChecked));
+            OnPropertyChanged(nameof(EffectiveIsVisible));
         }
     }
 
@@ -313,6 +384,7 @@ namespace PlayniteAchievements.ViewModels
     {
         private readonly Func<bool> _getIsChecked;
         private readonly Action<bool> _setIsChecked;
+        private readonly Func<bool> _getIsAvailable;
 
         public GridModeToggle(
             INotifyPropertyChanged source,
@@ -320,16 +392,22 @@ namespace PlayniteAchievements.ViewModels
             string content,
             Func<bool> getIsChecked,
             Action<bool> setIsChecked,
-            string toolTip = null)
+            string toolTip = null,
+            Func<bool> getIsAvailable = null)
         {
             Content = content;
             _getIsChecked = getIsChecked;
             _setIsChecked = setIsChecked;
+            _getIsAvailable = getIsAvailable;
             ToolTip = toolTip;
             GridSearchControl.Subscribe(source, sourcePropertyName, Refresh);
         }
 
         public string Content { get; }
+
+        // Mirrors the category dropdowns' auto-hide: the toggle disappears when there is nothing to
+        // group by. Stays visible while active so the user can always switch back out of the mode.
+        protected override bool HasAvailableAction => (_getIsAvailable?.Invoke() ?? true) || IsChecked;
 
         public bool IsChecked
         {
@@ -349,6 +427,7 @@ namespace PlayniteAchievements.ViewModels
         public override void Refresh()
         {
             OnPropertyChanged(nameof(IsChecked));
+            OnPropertyChanged(nameof(EffectiveIsVisible));
         }
     }
 
@@ -409,6 +488,8 @@ namespace PlayniteAchievements.ViewModels
 
         public ObservableCollection<ProviderFilterGroup> Groups => _getGroups?.Invoke() ?? _groups;
 
+        protected override bool HasAvailableAction => CountSelectableOptions() > 1 || HasSelectedOption();
+
         public void OnClosed()
         {
             _closed?.Invoke();
@@ -417,6 +498,26 @@ namespace PlayniteAchievements.ViewModels
         public override void Refresh()
         {
             OnPropertyChanged(nameof(DisplayText));
+            OnPropertyChanged(nameof(Groups));
+            OnPropertyChanged(nameof(EffectiveIsVisible));
+        }
+
+        private int CountSelectableOptions()
+        {
+            return (Groups ?? new ObservableCollection<ProviderFilterGroup>())
+                .Where(group => group != null)
+                .SelectMany(group => (group.Platforms ?? new ObservableCollection<PlatformFilterOption>())
+                    .Where(option => !string.IsNullOrWhiteSpace(option?.PlatformName))
+                    .Select(option => $"{group.ProviderKey}|{option.PlatformName.Trim()}"))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(2)
+                .Count();
+        }
+
+        private bool HasSelectedOption()
+        {
+            return (Groups ?? new ObservableCollection<ProviderFilterGroup>())
+                .Any(group => group?.HasAnySelected == true);
         }
     }
 

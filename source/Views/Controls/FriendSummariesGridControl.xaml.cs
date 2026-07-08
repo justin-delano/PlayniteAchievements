@@ -128,6 +128,32 @@ namespace PlayniteAchievements.Views.Controls
             private set => SetValue(DateDisplayModeProperty, value);
         }
 
+        public static readonly DependencyProperty ControlBarProperty =
+            DependencyProperty.Register(
+                nameof(ControlBar),
+                typeof(GridControlBarViewModel),
+                typeof(FriendSummariesGridControl),
+                new PropertyMetadata(null));
+
+        public GridControlBarViewModel ControlBar
+        {
+            get => (GridControlBarViewModel)GetValue(ControlBarProperty);
+            set => SetValue(ControlBarProperty, value);
+        }
+
+        public static readonly DependencyProperty ShowControlBarProperty =
+            DependencyProperty.Register(
+                nameof(ShowControlBar),
+                typeof(bool),
+                typeof(FriendSummariesGridControl),
+                new PropertyMetadata(true));
+
+        public bool ShowControlBar
+        {
+            get => (bool)GetValue(ShowControlBarProperty);
+            set => SetValue(ShowControlBarProperty, value);
+        }
+
         public event SelectionChangedEventHandler SelectionChanged;
 
         public event EventHandler<DataGridSortingEventArgs> Sorting;
@@ -215,21 +241,63 @@ namespace PlayniteAchievements.Views.Controls
             _columnPersistence = new DataGridColumnLayoutService(
                 FriendSummariesGrid,
                 Logger,
-                () => settings.Persisted.FriendsOverviewFriendSummariesColumnWidths,
-                map => settings.Persisted.FriendsOverviewFriendSummariesColumnWidths = map,
+                () => GetColumnLayoutOptions(settings)?.Widths,
+                map =>
+                {
+                    var columns = GetColumnLayoutOptions(settings);
+                    if (columns != null)
+                    {
+                        columns.Widths = map;
+                    }
+                },
                 () => GetVisibility(settings),
-                map => settings.Persisted.FriendsOverviewFriendSummariesColumnVisibility = map,
+                map =>
+                {
+                    var columns = GetColumnLayoutOptions(settings);
+                    if (columns != null)
+                    {
+                        columns.Visibility = map;
+                    }
+                },
                 () => SavePluginSettings(settings),
-                getOrder: () => settings.Persisted.FriendsOverviewFriendSummariesColumnOrder,
-                setOrder: map => settings.Persisted.FriendsOverviewFriendSummariesColumnOrder = map,
+                getOrder: () => GetColumnLayoutOptions(settings)?.Order,
+                setOrder: map =>
+                {
+                    var columns = GetColumnLayoutOptions(settings);
+                    if (columns != null)
+                    {
+                        columns.Order = map;
+                    }
+                },
                 getCellAlignments: () => GetAlignments(settings),
-                setCellAlignments: map => settings.Persisted.FriendsOverviewFriendSummariesColumnAlignments = map,
+                setCellAlignments: map =>
+                {
+                    var columns = GetColumnLayoutOptions(settings);
+                    if (columns != null)
+                    {
+                        columns.CellAlignments = map;
+                    }
+                },
                 getDefaultCellAlignment: () => settings.Persisted?.GridCellAlignment ?? GridAlignment.Left,
                 getCellVerticalAlignments: () => GetVerticalAlignments(settings),
-                setCellVerticalAlignments: map => settings.Persisted.FriendsOverviewFriendSummariesColumnVerticalAlignments = map,
+                setCellVerticalAlignments: map =>
+                {
+                    var columns = GetColumnLayoutOptions(settings);
+                    if (columns != null)
+                    {
+                        columns.CellVerticalAlignments = map;
+                    }
+                },
                 getDefaultCellVerticalAlignment: () => settings.Persisted?.GridCellVerticalAlignment ?? GridVerticalAlignment.Center,
                 getHeaderHorizontalAlignments: () => GetHeaderAlignments(settings),
-                setHeaderHorizontalAlignments: map => settings.Persisted.FriendsOverviewFriendSummariesColumnHeaderAlignments = map,
+                setHeaderHorizontalAlignments: map =>
+                {
+                    var columns = GetColumnLayoutOptions(settings);
+                    if (columns != null)
+                    {
+                        columns.HeaderAlignments = map;
+                    }
+                },
                 getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(FriendSummariesGrid));
             _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
@@ -239,7 +307,8 @@ namespace PlayniteAchievements.Views.Controls
 
         private Dictionary<string, bool> GetVisibility(PlayniteAchievementsSettings settings)
         {
-            var map = settings?.Persisted?.FriendsOverviewFriendSummariesColumnVisibility;
+            var columns = GetColumnLayoutOptions(settings);
+            var map = columns?.Visibility;
             if (settings?.Persisted == null)
             {
                 return map;
@@ -248,7 +317,10 @@ namespace PlayniteAchievements.Views.Controls
             if (map == null)
             {
                 map = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                settings.Persisted.FriendsOverviewFriendSummariesColumnVisibility = map;
+                if (columns != null)
+                {
+                    columns.Visibility = map;
+                }
             }
 
             if (map.TryGetValue("FriendSummaryScores", out var legacyScoresVisible))
@@ -275,14 +347,22 @@ namespace PlayniteAchievements.Views.Controls
             return map;
         }
 
-        private static Dictionary<string, GridAlignment> GetAlignments(PlayniteAchievementsSettings settings) =>
-            settings?.Persisted?.FriendsOverviewFriendSummariesColumnAlignments;
+        private GridColumnLayoutOptions GetColumnLayoutOptions(PlayniteAchievementsSettings settings)
+        {
+            var id = GridOptionsCatalog.ResolveFriendSummariesId(ColumnSettingsKey);
+            return settings?.Persisted?.GridOptions
+                ?.GetFriendSummaries(id)
+                ?.Columns;
+        }
 
-        private static Dictionary<string, GridVerticalAlignment> GetVerticalAlignments(PlayniteAchievementsSettings settings) =>
-            settings?.Persisted?.FriendsOverviewFriendSummariesColumnVerticalAlignments;
+        private Dictionary<string, GridAlignment> GetAlignments(PlayniteAchievementsSettings settings) =>
+            GetColumnLayoutOptions(settings)?.CellAlignments;
 
-        private static Dictionary<string, GridAlignment> GetHeaderAlignments(PlayniteAchievementsSettings settings) =>
-            settings?.Persisted?.FriendsOverviewFriendSummariesColumnHeaderAlignments;
+        private Dictionary<string, GridVerticalAlignment> GetVerticalAlignments(PlayniteAchievementsSettings settings) =>
+            GetColumnLayoutOptions(settings)?.CellVerticalAlignments;
+
+        private Dictionary<string, GridAlignment> GetHeaderAlignments(PlayniteAchievementsSettings settings) =>
+            GetColumnLayoutOptions(settings)?.HeaderAlignments;
 
         private static void OnShowColumnHeadersChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
@@ -479,6 +559,21 @@ namespace PlayniteAchievements.Views.Controls
         public bool ActivateFocusedColumnHeaderForController()
         {
             return FullscreenControllerNavigationService.ActivateFocusedDataGridColumnHeader(FriendSummariesGrid);
+        }
+
+        public bool OpenFocusedControlBarMenuForController()
+        {
+            return ControlBarHost?.OpenFocusedSelectorForController() == true;
+        }
+
+        public bool IsControlBarFocusedForController()
+        {
+            return ControlBarHost?.IsKeyboardFocusWithin == true;
+        }
+
+        public IList<UIElement> GetControlBarControllerElements()
+        {
+            return ControlBarHost?.GetControllerElements() ?? new List<UIElement>();
         }
 
         private bool OpenColumnVisibilityMenu(DataGrid grid, FrameworkElement owner, bool useControllerPlacement)

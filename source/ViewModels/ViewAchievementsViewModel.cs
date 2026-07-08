@@ -43,20 +43,13 @@ namespace PlayniteAchievements.ViewModels
         private string _currentSortPath;
         private ListSortDirection _currentSortDirection;
 
-        // Search and filter state
+        // Search and filter state. The control bar (search box, Unlocked/Locked/Hidden
+        // toggles, Type/Category filters) and its filter predicate live in the shared adapter.
+        private readonly AchievementGridControlBarAdapter _controlBar = new AchievementGridControlBarAdapter();
         private List<AchievementDisplayItem> _allAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _orderedAchievements = new List<AchievementDisplayItem>();
         private List<AchievementDisplayItem> _filteredAchievements = new List<AchievementDisplayItem>();
-        private readonly SearchTextIndex<AchievementDisplayItem> _achievementSearchIndex =
-            new SearchTextIndex<AchievementDisplayItem>(item =>
-                SearchTextBuilder.ForAchievement(item?.DisplayName, item?.Description));
-        private string _searchText = string.Empty;
-        private bool _showUnlocked = true;
-        private bool _showLocked = true;
-        private bool _showHidden = true;
         private bool _hasCustomAchievementOrder;
-        private readonly HashSet<string> _selectedCategoryTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _selectedCategoryLabelFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // In-memory sort/filter state for the most recently viewed game. Restored when the
         // window reopens for the same game, overwritten on every close, and reset when a
@@ -66,12 +59,7 @@ namespace PlayniteAchievements.ViewModels
             public Guid GameId;
             public string SortPath;
             public ListSortDirection SortDirection;
-            public string SearchText;
-            public bool ShowUnlocked;
-            public bool ShowLocked;
-            public bool ShowHidden;
-            public List<string> CategoryTypeFilters;
-            public List<string> CategoryLabelFilters;
+            public GridControlBarFilterState Filters;
         }
 
         private static GridStateSnapshot _lastGridState;
@@ -97,8 +85,7 @@ namespace PlayniteAchievements.ViewModels
             Timeline.PropertyChanged += Timeline_PropertyChanged;
             OnPropertyChanged(nameof(Timeline));
 
-            CategoryTypeFilterOptions = new ObservableCollection<string>();
-            CategoryLabelFilterOptions = new ObservableCollection<string>();
+            _controlBar.FilterChanged += (_, __) => ApplySearchFilter();
 
             // Initialize commands
             RevealAchievementCommand = new RelayCommand(param => RevealAchievement(param as AchievementDisplayItem));
@@ -184,32 +171,11 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            // Assign the backing fields directly to avoid triggering ApplySearchFilter
-            // repeatedly; LoadGameData applies the combined state once.
+            // Restore silently to avoid triggering ApplySearchFilter repeatedly;
+            // LoadGameData applies the combined state once.
             _currentSortPath = snapshot.SortPath;
             _currentSortDirection = snapshot.SortDirection;
-            _searchText = snapshot.SearchText ?? string.Empty;
-            _showUnlocked = snapshot.ShowUnlocked;
-            _showLocked = snapshot.ShowLocked;
-            _showHidden = snapshot.ShowHidden;
-
-            _selectedCategoryTypeFilters.Clear();
-            if (snapshot.CategoryTypeFilters != null)
-            {
-                foreach (var value in snapshot.CategoryTypeFilters)
-                {
-                    _selectedCategoryTypeFilters.Add(value);
-                }
-            }
-
-            _selectedCategoryLabelFilters.Clear();
-            if (snapshot.CategoryLabelFilters != null)
-            {
-                foreach (var value in snapshot.CategoryLabelFilters)
-                {
-                    _selectedCategoryLabelFilters.Add(value);
-                }
-            }
+            _controlBar.RestoreState(snapshot.Filters, raiseChanged: false);
         }
 
         private void SaveGridState()
@@ -219,12 +185,7 @@ namespace PlayniteAchievements.ViewModels
                 GameId = _gameId,
                 SortPath = _currentSortPath,
                 SortDirection = _currentSortDirection,
-                SearchText = _searchText,
-                ShowUnlocked = _showUnlocked,
-                ShowLocked = _showLocked,
-                ShowHidden = _showHidden,
-                CategoryTypeFilters = _selectedCategoryTypeFilters.ToList(),
-                CategoryLabelFilters = _selectedCategoryLabelFilters.ToList(),
+                Filters = _controlBar.CaptureState(),
             };
         }
 
@@ -345,6 +306,10 @@ namespace PlayniteAchievements.ViewModels
                 ? (ListSortDirection?)null
                 : _currentSortDirection;
 
+        public GridControlBarViewModel AchievementsControlBar => _controlBar.ControlBar;
+
+        public bool ShowAchievementGridControlBar => _settings?.Persisted?.ShowViewAchievementsAchievementGridControlBar ?? true;
+
         public double? SingleGameGridRowHeight => _settings?.Persisted?.SingleGameGridRowHeight;
 
         // The Manage Achievements window follows the Overview "Selected Game Achievements" glow setting.
@@ -352,102 +317,6 @@ namespace PlayniteAchievements.ViewModels
 
         // The Manage Achievements window follows the Overview "Selected Game Achievements" name-color setting.
         public bool ColorNamesByRarity => _settings?.Persisted?.OverviewSelectedGameColorNamesByRarity ?? false;
-
-        public string SearchText
-        {
-            get => _searchText;
-            set
-            {
-                if (SetValueAndReturn(ref _searchText, value ?? string.Empty))
-                {
-                    ApplySearchFilter();
-                }
-            }
-        }
-
-        public bool ShowUnlocked
-        {
-            get => _showUnlocked;
-            set
-            {
-                if (SetValueAndReturn(ref _showUnlocked, value))
-                {
-                    ApplySearchFilter();
-                }
-            }
-        }
-
-        public bool ShowLocked
-        {
-            get => _showLocked;
-            set
-            {
-                if (SetValueAndReturn(ref _showLocked, value))
-                {
-                    ApplySearchFilter();
-                }
-            }
-        }
-
-        public bool ShowHidden
-        {
-            get => _showHidden;
-            set
-            {
-                if (SetValueAndReturn(ref _showHidden, value))
-                {
-                    ApplySearchFilter();
-                }
-            }
-        }
-
-        public ObservableCollection<string> CategoryTypeFilterOptions { get; }
-
-        public string SelectedCategoryTypeFilterText => GetSelectedFilterText(
-            _selectedCategoryTypeFilters,
-            CategoryTypeFilterOptions,
-            L("LOCPlayAch_Common_Label_Type", "Type"),
-            AchievementCategoryTypeHelper.ToCategoryTypeDisplayText);
-
-        public bool IsCategoryTypeFilterSelected(string value)
-        {
-            return IsFilterSelected(_selectedCategoryTypeFilters, value);
-        }
-
-        public void SetCategoryTypeFilterSelected(string value, bool isSelected)
-        {
-            if (!SetFilterSelection(_selectedCategoryTypeFilters, value, isSelected))
-            {
-                return;
-            }
-
-            OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
-            ApplySearchFilter();
-        }
-
-        public ObservableCollection<string> CategoryLabelFilterOptions { get; }
-
-        public string SelectedCategoryLabelFilterText => GetSelectedFilterText(
-            _selectedCategoryLabelFilters,
-            CategoryLabelFilterOptions,
-            L("LOCPlayAch_Common_Label_Category", "Category"),
-            AchievementCategoryTypeHelper.ToCategoryLabelDisplayText);
-
-        public bool IsCategoryLabelFilterSelected(string value)
-        {
-            return IsFilterSelected(_selectedCategoryLabelFilters, value);
-        }
-
-        public void SetCategoryLabelFilterSelected(string value, bool isSelected)
-        {
-            if (!SetFilterSelection(_selectedCategoryLabelFilters, value, isSelected))
-            {
-                return;
-            }
-
-            OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
-            ApplySearchFilter();
-        }
 
         #endregion
 
@@ -460,76 +329,6 @@ namespace PlayniteAchievements.ViewModels
         #endregion
 
         #region Private Methods
-
-        private static bool IsFilterSelected(HashSet<string> selectedValues, string value)
-        {
-            if (selectedValues == null || string.IsNullOrWhiteSpace(value))
-            {
-                return false;
-            }
-
-            return selectedValues.Contains(value.Trim());
-        }
-
-        private static bool SetFilterSelection(HashSet<string> selectedValues, string value, bool isSelected)
-        {
-            if (selectedValues == null || string.IsNullOrWhiteSpace(value))
-            {
-                return false;
-            }
-
-            var normalized = value.Trim();
-            return isSelected
-                ? selectedValues.Add(normalized)
-                : selectedValues.Remove(normalized);
-        }
-
-        private static bool PruneFilterSelections(HashSet<string> selectedValues, IEnumerable<string> options)
-        {
-            if (selectedValues == null)
-            {
-                return false;
-            }
-
-            var optionSet = new HashSet<string>(
-                (options ?? Enumerable.Empty<string>()).Where(value => !string.IsNullOrWhiteSpace(value)),
-                StringComparer.OrdinalIgnoreCase);
-            return selectedValues.RemoveWhere(value => !optionSet.Contains(value)) > 0;
-        }
-
-        private static string GetSelectedFilterText(
-            HashSet<string> selectedValues,
-            IEnumerable<string> options,
-            string placeholder,
-            Func<string, string> displayText = null)
-        {
-            if (selectedValues == null || selectedValues.Count == 0)
-            {
-                return placeholder;
-            }
-
-            var ordered = new List<string>();
-            foreach (var option in options ?? Enumerable.Empty<string>())
-            {
-                if (!string.IsNullOrWhiteSpace(option) && selectedValues.Contains(option))
-                {
-                    ordered.Add(option);
-                }
-            }
-
-            if (ordered.Count == 0)
-            {
-                ordered.AddRange(selectedValues.OrderBy(value => value, StringComparer.OrdinalIgnoreCase));
-            }
-
-            return string.Join(", ", ordered.Select(value => displayText?.Invoke(value) ?? value));
-        }
-
-        private static string L(string key, string fallback)
-        {
-            var value = ResourceProvider.GetString(key);
-            return string.IsNullOrWhiteSpace(value) ? fallback : value;
-        }
 
         private void Timeline_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
@@ -613,53 +412,6 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private void UpdateAchievementFilterOptions(IEnumerable<AchievementDisplayItem> source)
-        {
-            var typeValues = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            if (source != null)
-            {
-                foreach (var item in source)
-                {
-                    if (item == null)
-                    {
-                        continue;
-                    }
-
-                    var parsedTypes = AchievementCategoryTypeHelper.ParseValues(
-                        AchievementCategoryTypeHelper.NormalizeOrDefault(item.CategoryType));
-                    foreach (var parsedType in parsedTypes)
-                    {
-                        if (!string.IsNullOrWhiteSpace(parsedType))
-                        {
-                            typeValues.Add(parsedType);
-                        }
-                    }
-                }
-            }
-
-            var typeOptions = AchievementCategoryTypeHelper.AllowedCategoryTypes
-                .Where(typeValues.Contains)
-                .ToList();
-
-            var categoryOptions = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
-                source,
-                item => item?.CategoryLabel);
-
-            CollectionHelper.SynchronizeCollection(CategoryTypeFilterOptions, typeOptions);
-            CollectionHelper.SynchronizeCollection(CategoryLabelFilterOptions, categoryOptions);
-
-            if (PruneFilterSelections(_selectedCategoryTypeFilters, CategoryTypeFilterOptions))
-            {
-                OnPropertyChanged(nameof(SelectedCategoryTypeFilterText));
-            }
-
-            if (PruneFilterSelections(_selectedCategoryLabelFilters, CategoryLabelFilterOptions))
-            {
-                OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
-            }
-        }
-
         private void LoadGameData()
         {
             try
@@ -684,8 +436,7 @@ namespace PlayniteAchievements.ViewModels
                     _allAchievements = new List<AchievementDisplayItem>();
                     _orderedAchievements = new List<AchievementDisplayItem>();
                     _filteredAchievements = new List<AchievementDisplayItem>();
-                    _achievementSearchIndex.Clear();
-                    UpdateAchievementFilterOptions(null);
+                    _controlBar.Clear();
                     HasCustomAchievementOrder = false;
 
                     System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
@@ -737,10 +488,9 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 _allAchievements = displayItems;
-                _achievementSearchIndex.Rebuild(_allAchievements);
                 RefreshOrderedAchievements(skipDefaultSort: false);
 
-                UpdateAchievementFilterOptions(_allAchievements);
+                _controlBar.UpdateOptions(_allAchievements);
                 ApplySearchFilter();
 
                 Timeline.SetCounts(unlockCounts);
@@ -760,7 +510,6 @@ namespace PlayniteAchievements.ViewModels
             }
 
             item.ToggleReveal();
-            _achievementSearchIndex.Invalidate(item);
         }
 
         private void OpenGameInLibrary()
@@ -958,8 +707,8 @@ namespace PlayniteAchievements.ViewModels
                 }
 
                 ApplyAppearanceSettingsToAchievements();
-                RefreshSearchIndexes();
                 OnPropertyChanged(nameof(SingleGameGridRowHeight));
+                OnPropertyChanged(nameof(ShowAchievementGridControlBar));
                 RaiseSummaryAppearanceProperties();
                 ApplySavedTimelineState();
                 ApplySearchFilter(skipDefaultSort: CurrentSortDirection.HasValue, refreshOrder: true);
@@ -971,13 +720,18 @@ namespace PlayniteAchievements.ViewModels
             if (AchievementDisplayItem.IsAppearanceSettingPropertyName(e?.PropertyName))
             {
                 ApplyAppearanceSettingsToAchievements();
-                RefreshSearchIndexes();
                 return;
             }
 
             if (e?.PropertyName == nameof(PersistedSettings.SingleGameGridRowHeight))
             {
                 OnPropertyChanged(nameof(SingleGameGridRowHeight));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ShowViewAchievementsAchievementGridControlBar))
+            {
+                OnPropertyChanged(nameof(ShowAchievementGridControlBar));
                 return;
             }
 
@@ -1128,11 +882,6 @@ namespace PlayniteAchievements.ViewModels
             _orderedAchievements = items;
         }
 
-        private void RefreshSearchIndexes()
-        {
-            _achievementSearchIndex.Rebuild(_allAchievements);
-        }
-
         private void ReplaceAchievementsDisplay(IEnumerable<AchievementDisplayItem> displayItems)
         {
             if (Achievements is BulkObservableCollection<AchievementDisplayItem> bulk)
@@ -1152,45 +901,9 @@ namespace PlayniteAchievements.ViewModels
                 RefreshOrderedAchievements(skipDefaultSort);
             }
 
-            IEnumerable<AchievementDisplayItem> filtered = _orderedAchievements;
-            var searchQuery = SearchQuery.From(_searchText);
-
-            if (!ShowHidden)
-            {
-                filtered = filtered.Where(a => !(a.Hidden && !a.Unlocked));
-            }
-
-            filtered = filtered.Where(a => a.Unlocked ? ShowUnlocked : ShowLocked);
-
-            if (_selectedCategoryTypeFilters.Count > 0)
-            {
-                var selectedTypeSet = new HashSet<string>(
-                    _selectedCategoryTypeFilters
-                        .Select(AchievementCategoryTypeHelper.NormalizeOrDefault)
-                        .Where(value => !string.IsNullOrWhiteSpace(value)),
-                    StringComparer.OrdinalIgnoreCase);
-                filtered = filtered.Where(a =>
-                    AchievementCategoryTypeHelper.ParseValues(
-                            AchievementCategoryTypeHelper.NormalizeOrDefault(a.CategoryType))
-                        .Any(selectedTypeSet.Contains));
-            }
-
-            if (_selectedCategoryLabelFilters.Count > 0)
-            {
-                var selectedCategorySet = new HashSet<string>(
-                    _selectedCategoryLabelFilters
-                        .Select(AchievementCategoryTypeHelper.NormalizeCategoryOrDefault)
-                        .Where(value => !string.IsNullOrWhiteSpace(value)),
-                    StringComparer.OrdinalIgnoreCase);
-                filtered = filtered.Where(a =>
-                    selectedCategorySet.Contains(
-                        AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a.CategoryLabel)));
-            }
-
-            if (searchQuery.HasValue)
-            {
-                filtered = filtered.Where(a => _achievementSearchIndex.Matches(a, searchQuery));
-            }
+            // The shared control bar owns the filter predicate (search, Unlocked/Locked/Hidden,
+            // Type/Category). This VM keeps ordering, row limiting, and display sync.
+            var filtered = _controlBar.Apply(_orderedAchievements);
 
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
@@ -1214,11 +927,6 @@ namespace PlayniteAchievements.ViewModels
                 _filteredAchievements,
                 _settings?.Persisted?.SingleGameGridMaxRows);
             ReplaceAchievementsDisplay(displayItems);
-        }
-
-        public void ClearSearch()
-        {
-            SearchText = string.Empty;
         }
 
         #region IDisposable

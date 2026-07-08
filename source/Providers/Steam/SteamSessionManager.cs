@@ -1,6 +1,7 @@
 using PlayniteAchievements.Providers.Steam.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using Playnite.SDK.Data;
@@ -20,7 +21,7 @@ namespace PlayniteAchievements.Providers.Steam
     /// Steam session manager that probes authentication state from CEF cookies.
     /// Auth state is never cached in memory - always probed from the source of truth.
     /// </summary>
-    public sealed class SteamSessionManager : ISessionManager
+    public sealed class SteamSessionManager : ISessionManager, IRefreshAuthArtifactSource
     {
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
@@ -29,6 +30,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         // Temporary state for interactive login dialog coordination
         private SteamWebAuthSession _authResult;
+        private SteamWebAuthSession _lastProbeSession;
         private IWebView _interactiveLoginView;
         private Action _clearInMemoryAuthState;
 
@@ -83,6 +85,7 @@ namespace PlayniteAchievements.Providers.Steam
                     ct.ThrowIfCancellationRequested();
 
                     var session = await ResolveWebAuthSessionAsync(ct).ConfigureAwait(false);
+                    _lastProbeSession = session;
                     if (session?.IsComplete == true)
                     {
                         PersistSteamUserId(session.SteamId64);
@@ -110,6 +113,13 @@ namespace PlayniteAchievements.Providers.Steam
                     return AuthProbeResult.ProbeFailed();
                 }
             }
+        }
+
+        public object GetRefreshAuthArtifact(AuthProbeResult probeResult)
+        {
+            return probeResult?.IsSuccess == true
+                ? _lastProbeSession
+                : null;
         }
 
         /// <summary>

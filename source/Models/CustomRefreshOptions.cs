@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Models
 {
@@ -39,13 +40,13 @@ namespace PlayniteAchievements.Models
         public IReadOnlyCollection<Guid> ExcludeGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
+        public IReadOnlyCollection<FriendAccountRef> FriendAccounts { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public int? RecentLimitOverride { get; set; }
         public bool? IncludeUnplayedOverride { get; set; }
         public bool RespectUserExclusions { get; set; } = true;
         public bool ForceBypassExclusionsForExplicitIncludes { get; set; } = true;
         public bool ForceIconRefresh { get; set; }
-        public TimeSpan? DefinitionTtl { get; set; }
         public bool ForceDefinitionRefresh { get; set; }
         public bool? RunProvidersInParallelOverride { get; set; }
 
@@ -69,13 +70,13 @@ namespace PlayniteAchievements.Models
                     .Distinct()
                     .ToList(),
                 ProviderGameKeys = NormalizeStrings(ProviderGameKeys),
+                FriendAccounts = NormalizeFriendAccounts(FriendAccounts),
                 FriendExternalUserIds = NormalizeStrings(FriendExternalUserIds),
                 RecentLimitOverride = RecentLimitOverride,
                 IncludeUnplayedOverride = IncludeUnplayedOverride,
                 RespectUserExclusions = RespectUserExclusions,
                 ForceBypassExclusionsForExplicitIncludes = ForceBypassExclusionsForExplicitIncludes,
                 ForceIconRefresh = ForceIconRefresh,
-                DefinitionTtl = DefinitionTtl,
                 ForceDefinitionRefresh = ForceDefinitionRefresh,
                 RunProvidersInParallelOverride = RunProvidersInParallelOverride
             };
@@ -110,8 +111,8 @@ namespace PlayniteAchievements.Models
                 PlayniteGameIds = source.PlayniteGameIds,
                 ProviderAppIds = source.ProviderAppIds,
                 ProviderGameKeys = source.ProviderGameKeys,
+                FriendAccounts = source.FriendAccounts,
                 FriendExternalUserIds = source.FriendExternalUserIds,
-                DefinitionTtl = source.DefinitionTtl,
                 ForceDefinitionRefresh = source.ForceDefinitionRefresh
             }.Clone();
         }
@@ -139,6 +140,24 @@ namespace PlayniteAchievements.Models
                 .Select(value => value.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
+        }
+
+        private static List<FriendAccountRef> NormalizeFriendAccounts(IEnumerable<FriendAccountRef> accounts)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var normalized = new List<FriendAccountRef>();
+            foreach (var account in accounts ?? Enumerable.Empty<FriendAccountRef>())
+            {
+                var next = account?.Clone()?.Normalize();
+                if (string.IsNullOrWhiteSpace(next?.Key) || !seen.Add(next.Key))
+                {
+                    continue;
+                }
+
+                normalized.Add(next);
+            }
+
+            return normalized.Count == 0 ? null : normalized;
         }
 
         private static RefreshGameScope MapCustomScope(CustomGameScope scope)

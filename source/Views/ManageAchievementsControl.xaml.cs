@@ -811,6 +811,7 @@ namespace PlayniteAchievements.Views
                 _viewModel.GameId,
                 _achievementOverridesService,
                 _gameDataSnapshotProvider,
+                PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService,
                 _settings,
                 _logger);
             _categoryControl = new ManageAchievementsCategoryTab(_categoryViewModel);

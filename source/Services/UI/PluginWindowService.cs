@@ -16,6 +16,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Logging;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
@@ -28,6 +29,7 @@ namespace PlayniteAchievements.Services.UI
     internal class PluginWindowService : IDisposable
     {
         private const string ViewAchievementsWindowPlacementKey = "SingleGameAchievements";
+        private const string ViewFriendsAchievementsWindowPlacementKey = "SingleGameFriendsAchievements";
         private const string ManageAchievementsWindowPlacementKey = "ManageAchievements";
         private const string OverviewWindowPlacementKey = "Overview";
         private const string ColorPickerWindowPlacementKey = "ColorPicker";
@@ -36,6 +38,7 @@ namespace PlayniteAchievements.Services.UI
         private enum AchievementWindowKind
         {
             ViewAchievements,
+            ViewFriendsAchievements,
             ManageAchievements
         }
 
@@ -49,6 +52,8 @@ namespace PlayniteAchievements.Services.UI
         private readonly AchievementDataService _achievementDataService;
         private readonly LibraryProjectionService _libraryProjectionService;
         private readonly GameCustomDataStore _gameCustomDataStore;
+        private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
+        private readonly FriendGameAchievementsDataCoordinator _friendGameAchievementsDataCoordinator;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ManualSourceRegistry _manualSourceRegistry;
         private readonly Action _ensureAchievementResourcesLoaded;
@@ -72,7 +77,9 @@ namespace PlayniteAchievements.Services.UI
             PlayniteAchievementsSettings settings,
             ManualSourceRegistry manualSourceRegistry,
             Action ensureAchievementResourcesLoaded,
-            FullscreenControllerNavigationService fullscreenControllerNavigationService)
+            FullscreenControllerNavigationService fullscreenControllerNavigationService,
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null,
+            FriendGameAchievementsDataCoordinator friendGameAchievementsDataCoordinator = null)
         {
             _api = api;
             _logger = logger;
@@ -84,6 +91,8 @@ namespace PlayniteAchievements.Services.UI
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _libraryProjectionService = libraryProjectionService;
             _gameCustomDataStore = gameCustomDataStore;
+            _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator;
+            _friendGameAchievementsDataCoordinator = friendGameAchievementsDataCoordinator;
             _settings = settings;
             _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
             _ensureAchievementResourcesLoaded = ensureAchievementResourcesLoaded;
@@ -434,6 +443,7 @@ namespace PlayniteAchievements.Services.UI
 
             _api.Dialogs.ActivateGlobalProgress(async progress =>
             {
+                RefreshAuthContext authContext = null;
                 UpdateGlobalProgress(
                     progress,
                     text: initialText,
@@ -443,17 +453,17 @@ namespace PlayniteAchievements.Services.UI
 
                 if (validateAuthentication)
                 {
-                    var providers = await _refreshService
-                        .GetAuthenticatedProvidersOrShowDialogAsync(progress.CancelToken)
+                    authContext = await _refreshService
+                        .GetRefreshAuthContextOrShowDialogAsync(progress.CancelToken)
                         .ConfigureAwait(false);
-                    if (providers == null || providers.Count == 0)
+                    if (authContext == null || !authContext.HasAuthenticatedProviders)
                     {
                         _logger?.Info("RunRefreshWithGlobalProgressAsync: Authentication preflight found no authenticated providers.");
                         SafeInvokeRefreshCompleted(onCompleted, false);
                         return;
                     }
 
-                    _logger?.Info($"RunRefreshWithGlobalProgressAsync: Authentication preflight completed with {providers.Count} provider(s).");
+                    _logger?.Info($"RunRefreshWithGlobalProgressAsync: Authentication preflight completed with {authContext.AuthenticatedProviders.Count} provider(s).");
                     UpdateGlobalProgress(
                         progress,
                         text: ResourceProvider.GetString("LOCPlayAch_Status_Starting"),
@@ -510,6 +520,7 @@ namespace PlayniteAchievements.Services.UI
                             ValidateAuthentication = false,
                             SwallowExceptions = false,
                             ErrorLogMessage = errorLogMessage,
+                            AuthContext = authContext,
                             ExternalCancellationToken = progress.CancelToken
                         }), progress.CancelToken).ConfigureAwait(false);
                     success = true;
@@ -1074,7 +1085,8 @@ namespace PlayniteAchievements.Services.UI
                     _gameCustomDataStore,
                     _refreshCoordinator,
                     _settings,
-                    OverviewLaunchContext.Popout);
+                    OverviewLaunchContext.Popout,
+                    _friendsOverviewDataCoordinator);
 
                 var windowOptions = new WindowOptions
                 {
@@ -1186,6 +1198,78 @@ namespace PlayniteAchievements.Services.UI
                 _logger.Error(ex, $"Failed to open View Achievements window for gameId={gameId}");
                 _api?.Dialogs?.ShowErrorMessage(
                     $"Failed to open View Achievements: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
+        public void OpenViewFriendsAchievementsWindow(Guid gameId)
+        {
+            try
+            {
+                InvokeOnUiThread(() => OpenViewFriendsAchievementsWindowCore(gameId));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open View Friends Achievements window for gameId={gameId}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open View Friends Achievements: {ex.Message}",
+                    "Playnite Achievements");
+            }
+        }
+
+        private void OpenViewFriendsAchievementsWindowCore(Guid gameId)
+        {
+            if (TryActivateTrackedWindow(AchievementWindowKind.ViewFriendsAchievements, gameId))
+            {
+                return;
+            }
+
+            CloseTrackedWindows(AchievementWindowKind.ViewFriendsAchievements);
+
+            try
+            {
+                var isFullscreen = DetectFullscreenMode();
+                var view = new ViewFriendsAchievementsControl(
+                    gameId,
+                    _friendGameAchievementsDataCoordinator,
+                    _refreshService,
+                    _refreshCoordinator,
+                    _api,
+                    _logger,
+                    _settings);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = true,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 980,
+                    Height = 700
+                };
+
+                var window = CreateManagedPopoutWindow(
+                    view.WindowTitle,
+                    view,
+                    windowOptions,
+                    isFullscreen,
+                    ViewFriendsAchievementsWindowPlacementKey,
+                    configureWindow: createdWindow =>
+                    {
+                        createdWindow.MinWidth = 720;
+                        createdWindow.MinHeight = 500;
+                    },
+                    closed: view.Cleanup,
+                    fullscreenController: view);
+
+                TrackAchievementWindow(AchievementWindowKind.ViewFriendsAchievements, gameId, window);
+                ShowWindow(window, isFullscreen);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"Failed to open View Friends Achievements window for gameId={gameId}");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open View Friends Achievements: {ex.Message}",
                     "Playnite Achievements");
             }
         }

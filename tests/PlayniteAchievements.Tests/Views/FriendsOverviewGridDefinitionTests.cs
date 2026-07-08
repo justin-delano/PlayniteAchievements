@@ -36,12 +36,10 @@ namespace PlayniteAchievements.Tests.Views
                 "FriendSummaryTotalPlaytime");
             AssertContainsAll(
                 code,
-                "FriendsOverviewFriendSummariesColumnVisibility",
-                "FriendsOverviewFriendSummariesColumnWidths",
-                "FriendsOverviewFriendSummariesColumnOrder",
-                "FriendsOverviewFriendSummariesColumnAlignments",
-                "FriendsOverviewFriendSummariesColumnVerticalAlignments",
-                "FriendsOverviewFriendSummariesColumnHeaderAlignments");
+                "GridOptions",
+                "GridOptionsCatalog.ResolveFriendSummariesId(ColumnSettingsKey)",
+                "GetFriendSummaries(id)",
+                "FriendsOverviewFriendSummariesLastUnlockDateMode");
         }
 
         [TestMethod]
@@ -70,18 +68,10 @@ namespace PlayniteAchievements.Tests.Views
                 code,
                 "FriendsOverviewGameSummaries",
                 "FriendsOverviewSelectedFriendGameSummaries",
-                "FriendsOverviewGameSummariesColumnVisibility",
-                "FriendsOverviewGameSummariesColumnWidths",
-                "FriendsOverviewGameSummariesColumnOrder",
-                "FriendsOverviewGameSummariesColumnAlignments",
-                "FriendsOverviewGameSummariesColumnVerticalAlignments",
-                "FriendsOverviewGameSummariesColumnHeaderAlignments",
-                "FriendsOverviewSelectedFriendGameSummariesColumnVisibility",
-                "FriendsOverviewSelectedFriendGameSummariesColumnWidths",
-                "FriendsOverviewSelectedFriendGameSummariesColumnOrder",
-                "FriendsOverviewSelectedFriendGameSummariesColumnAlignments",
-                "FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments",
-                "FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments");
+                "GridSurface.FriendsOverview",
+                "GridSurface.FriendsOverviewSelectedFriend",
+                "GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverview)",
+                "GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend)");
         }
 
         [TestMethod]
@@ -128,10 +118,9 @@ namespace PlayniteAchievements.Tests.Views
                 "FriendsOverviewRecentAchievements",
                 "RowPreviewMouseLeftButtonDownEvent",
                 "friendAvatar: true",
-                "FriendsOverviewAchievementColumnVisibility",
-                "FriendsOverviewAchievementColumnWidths",
-                "FriendsOverviewAchievementColumnOrder",
-                "FriendsOverviewAchievementColumnAlignments",
+                "GridOptionsCatalog.ResolveAchievementId(ColumnSettingsKey)",
+                "GetAchievement(id).Columns",
+                "FriendsOverviewAchievementsUnlockDateMode",
                 "unlockDate: true");
         }
 
