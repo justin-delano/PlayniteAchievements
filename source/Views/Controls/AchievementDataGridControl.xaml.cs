@@ -492,6 +492,8 @@ namespace PlayniteAchievements.Views.Controls
         private GridSearchControl _categorySearch;
         private GridSearchControl _originalSearch;
         private string _categorySearchText = string.Empty;
+        private bool _startInCategoryModeApplied;
+        private DataGridRow _pendingCategoryRightClickRow;
 
         public static readonly DependencyProperty EnableCategoryModeProperty =
             DependencyProperty.Register(nameof(EnableCategoryMode), typeof(bool),
@@ -554,6 +556,40 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (IEnumerable<AchievementDisplayItem>)GetValue(EffectiveAchievementsProperty);
             set => SetValue(EffectiveAchievementsProperty, value);
+        }
+
+        public static readonly DependencyProperty CategorySummarySourceProperty =
+            DependencyProperty.Register(nameof(CategorySummarySource), typeof(IEnumerable<AchievementDisplayItem>),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, OnCategorySummarySourceChanged));
+
+        // Optional unfiltered achievement source for building category rollups. When set, the category
+        // list and drill-header summaries are computed from this full set so achievement filters
+        // (Unlocked/Locked/Hidden) applied while drilled never shift other categories' totals. Falls
+        // back to ItemsSource when unset.
+        public IEnumerable<AchievementDisplayItem> CategorySummarySource
+        {
+            get => (IEnumerable<AchievementDisplayItem>)GetValue(CategorySummarySourceProperty);
+            set => SetValue(CategorySummarySourceProperty, value);
+        }
+
+        private static void OnCategorySummarySourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control && control._isCategoryMode)
+            {
+                control.OnItemsSourceContentChanged();
+            }
+        }
+
+        public static readonly DependencyProperty DrilledCategoryProperty =
+            DependencyProperty.Register(nameof(DrilledCategory), typeof(string),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        // Reports the currently drilled-into category label (null when not drilled) so a host can
+        // scope its own header counts to the drilled category. Written by the control; bind OneWayToSource.
+        public string DrilledCategory
+        {
+            get => (string)GetValue(DrilledCategoryProperty);
+            set => SetValue(DrilledCategoryProperty, value);
         }
 
         public static readonly DependencyProperty AchievementGridVisibleProperty =
@@ -640,7 +676,7 @@ namespace PlayniteAchievements.Views.Controls
         // only meaningful when there is more than one category to group the achievements into.
         private bool HasMultipleCategories()
         {
-            var items = ItemsSource;
+            var items = CategorySummarySource ?? ItemsSource;
             if (items == null)
             {
                 return false;
@@ -662,6 +698,25 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return false;
+        }
+
+        private bool IsCategoryGroupingEffective()
+        {
+            return _isCategoryMode && HasMultipleCategories();
+        }
+
+        // Category summaries roll up the full achievement set, so the mode toggle is only offered when
+        // nothing is filtered out. Inspecting the bar's own toggle items keeps this decoupled from the
+        // adapter; IsChecked (not EffectiveIsVisible) is used so a toggle auto-hidden because the game
+        // has no items of that kind stays "on" and does not spuriously block category mode.
+        private bool CanEnterCategoryMode()
+        {
+            return HasMultipleCategories() && AllAchievementFiltersOn();
+        }
+
+        private bool AllAchievementFiltersOn()
+        {
+            return ControlBar?.Items.OfType<GridToggleFilter>().All(t => t.IsChecked) ?? true;
         }
 
         // Injects the category-mode toggle and Back button into the surface-owned control bar and
@@ -721,7 +776,7 @@ namespace PlayniteAchievements.Views.Controls
                     () => _isCategoryMode,
                     SetCategoryMode,
                     CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"),
-                    HasMultipleCategories);
+                    CanEnterCategoryMode);
             }
 
             if (_backButton == null)
@@ -751,7 +806,37 @@ namespace PlayniteAchievements.Views.Controls
 
             // Recompute the toggle's auto-hide; ApplyControlBarModeState positions Back/toggle.
             _modeToggle?.Refresh();
+            ApplyStartInCategoryModeIfNeeded();
             ApplyControlBarModeState();
+        }
+
+        private void ApplyStartInCategoryModeIfNeeded()
+        {
+            if (_startInCategoryModeApplied ||
+                !EnableCategoryMode ||
+                ControlBar == null ||
+                !IsCategorySourceSingleGame())
+            {
+                return;
+            }
+
+            _startInCategoryModeApplied = true;
+            if (GetStartInCategoryMode())
+            {
+                SetCategoryMode(true);
+            }
+        }
+
+        private bool GetStartInCategoryMode()
+        {
+            var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+            if (persisted == null)
+            {
+                return false;
+            }
+
+            var id = GridOptionsCatalog.ResolveAchievementId(ColumnSettingsKey);
+            return persisted.GridOptions.GetAchievement(id).StartInCategoryMode;
         }
 
         // Positions the category-mode Back and toggle controls for the current mode: in flat mode the
@@ -808,7 +893,9 @@ namespace PlayniteAchievements.Views.Controls
 
                 if (_connectedCategoryFilter != null)
                 {
-                    _connectedCategoryFilter.ConnectedLeft = true;
+                    // Only adopt the segmented style when the toggle is actually shown beside it;
+                    // otherwise the dropdown reverts to its standalone bordered style.
+                    _connectedCategoryFilter.ConnectedLeft = _modeToggle.EffectiveIsVisible;
                 }
             }
         }
@@ -832,6 +919,10 @@ namespace PlayniteAchievements.Views.Controls
                     filter.IsVisible = true;
                     filter.ConnectedLeft = false;
                 }
+                else if (item is GridToggleFilter toggle)
+                {
+                    toggle.IsVisible = true;
+                }
             }
 
             _connectedCategoryFilter = null;
@@ -853,8 +944,9 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            var drilled = _isCategoryMode && _drilledCategory != null;
-            var list = _isCategoryMode && !drilled;
+            var grouping = IsCategoryGroupingEffective();
+            var drilled = grouping && _drilledCategory != null;
+            var list = grouping && !drilled;
 
             // Reflow Back/toggle between the leading zone and the segmented unit for the current mode.
             UpdateModeControlPlacement();
@@ -864,6 +956,12 @@ namespace PlayniteAchievements.Views.Controls
                 if (item is GridMultiSelectFilter)
                 {
                     item.IsVisible = !_isCategoryMode;
+                }
+                else if (item is GridToggleFilter)
+                {
+                    // The Unlocked/Locked/Hidden toggles filter achievements, so hide them in the
+                    // category list (rows are categories) but restore them flat and when drilled in.
+                    item.IsVisible = !list;
                 }
             }
 
@@ -888,6 +986,7 @@ namespace PlayniteAchievements.Views.Controls
 
         private void SetCategoryMode(bool enabled)
         {
+            _startInCategoryModeApplied = true;
             if (_isCategoryMode == enabled)
             {
                 return;
@@ -918,11 +1017,19 @@ namespace PlayniteAchievements.Views.Controls
             ApplyCategoryViewState();
             ApplyControlBarModeState();
             _modeToggle?.Refresh();
+
+            if (!enabled)
+            {
+                // Leaving category mode returns to a clean, unfiltered flat grid.
+                ResetAchievementFilters();
+            }
         }
 
         private void RebuildCategorySummaries()
         {
-            var items = ItemsSource?.ToList();
+            // Build from the unfiltered source (when provided) so achievement filters applied while
+            // drilled never change the category rollups; fall back to ItemsSource otherwise.
+            var items = (CategorySummarySource ?? ItemsSource)?.ToList();
             _allCategorySummaries = items == null || items.Count == 0
                 ? null
                 : CategorySummaryBuilder.Build(items);
@@ -965,17 +1072,29 @@ namespace PlayniteAchievements.Views.Controls
 
         private void ApplyCategoryViewState()
         {
-            var drill = _isCategoryMode && _drilledCategory != null;
-            var list = _isCategoryMode && !drill;
+            var grouping = IsCategoryGroupingEffective();
+            if (!grouping && _drilledCategory != null)
+            {
+                _drilledCategory = null;
+                SelectedCategorySummaryItems = null;
+                if (CategoryListGrid != null)
+                {
+                    CategoryListGrid.SelectedItem = null;
+                }
+            }
+
+            var drill = grouping && _drilledCategory != null;
+            var list = grouping && !drill;
             CategoryListVisible = list;
             DrillHeaderVisible = drill;
             AchievementGridVisible = !list;
+            DrilledCategory = drill ? _drilledCategory : null;
             RecomputeEffectiveAchievements();
         }
 
         private void RecomputeEffectiveAchievements()
         {
-            if (_isCategoryMode && _drilledCategory != null)
+            if (IsCategoryGroupingEffective() && _drilledCategory != null)
             {
                 var filtered = (ItemsSource ?? Enumerable.Empty<AchievementDisplayItem>())
                     .Where(i => string.Equals(
@@ -1038,7 +1157,16 @@ namespace PlayniteAchievements.Views.Controls
 
             RebuildCategorySummaries();
 
-            if (_drilledCategory != null)
+            if (!HasMultipleCategories())
+            {
+                _drilledCategory = null;
+                SelectedCategorySummaryItems = null;
+                if (CategoryListGrid != null)
+                {
+                    CategoryListGrid.SelectedItem = null;
+                }
+            }
+            else if (_drilledCategory != null)
             {
                 var match = CategorySummaries?
                     .OfType<CategorySummaryItem>()
@@ -1065,7 +1193,7 @@ namespace PlayniteAchievements.Views.Controls
 
         private void CategoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (!_isCategoryMode || _drilledCategory != null)
+            if (!IsCategoryGroupingEffective() || _drilledCategory != null)
             {
                 return;
             }
@@ -1076,6 +1204,95 @@ namespace PlayniteAchievements.Views.Controls
             if (selected != null)
             {
                 DrillIntoCategory(selected);
+            }
+        }
+
+        private void CategoryList_RowPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveCategorySummaryRow(e, out var row))
+            {
+                _pendingCategoryRightClickRow = row;
+                e.Handled = true;
+            }
+        }
+
+        private void CategoryList_RowPreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveCategorySummaryRow(e, out var row))
+            {
+                var targetRow = _pendingCategoryRightClickRow ?? row;
+                _pendingCategoryRightClickRow = null;
+                OpenCategorySummaryContextMenu(targetRow);
+                e.Handled = true;
+            }
+        }
+
+        private static bool TryResolveCategorySummaryRow(MouseButtonEventArgs e, out DataGridRow row)
+        {
+            row = e?.Source as DataGridRow
+                  ?? VisualTreeHelpers.FindVisualParent<DataGridRow>(e?.OriginalSource as DependencyObject);
+            return row?.DataContext is CategorySummaryItem;
+        }
+
+        private bool OpenCategorySummaryContextMenu(DataGridRow row)
+        {
+            if (!(row?.DataContext is CategorySummaryItem summary) ||
+                !TryResolveCategoryGameId(summary, out var gameId))
+            {
+                return false;
+            }
+
+            var menu = new ContextMenu();
+            menu.Items.Add(GameRowContextMenuBuilder.CreateMenuItem(
+                this,
+                "LOCPlayAch_ManageAchievements_Category_Context_ManageCategories",
+                () => PlayniteAchievementsPlugin.Instance?.OpenManageAchievementsView(
+                    gameId,
+                    ManageAchievementsTab.Category,
+                    selectManageCategoriesSubTab: true)));
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
+            row.ContextMenu = menu;
+            menu.PlacementTarget = row;
+            menu.Placement = PlacementMode.MousePoint;
+            menu.IsOpen = true;
+            return true;
+        }
+
+        private bool TryResolveCategoryGameId(CategorySummaryItem summary, out Guid gameId)
+        {
+            if (summary?.PlayniteGameId.HasValue == true &&
+                summary.PlayniteGameId.Value != Guid.Empty)
+            {
+                gameId = summary.PlayniteGameId.Value;
+                return true;
+            }
+
+            var fallback = (ItemsSource ?? Enumerable.Empty<AchievementDisplayItem>())
+                .Select(item => item?.PlayniteGameId)
+                .Where(id => id.HasValue && id.Value != Guid.Empty)
+                .Select(id => id.Value)
+                .Distinct()
+                .Take(2)
+                .ToList();
+            if (fallback.Count == 1)
+            {
+                gameId = fallback[0];
+                return true;
+            }
+
+            gameId = Guid.Empty;
+            return false;
+        }
+
+        private void CategoryDrillHeader_RowPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (IsCategoryGroupingEffective() && _drilledCategory != null)
+            {
+                CategoryBackToList();
+                if (e != null)
+                {
+                    e.Handled = true;
+                }
             }
         }
 
@@ -1132,6 +1349,25 @@ namespace PlayniteAchievements.Views.Controls
 
             ApplyCategoryViewState();
             ApplyControlBarModeState();
+
+            // Returning to the list starts the next drill clean; summaries stay full regardless.
+            ResetAchievementFilters();
+        }
+
+        // Resets the Unlocked/Locked/Hidden toggles to their default (all on). Each IsChecked setter
+        // routes back through the control bar's adapter, so the achievement list re-filters.
+        private void ResetAchievementFilters()
+        {
+            var bar = ControlBar;
+            if (bar == null)
+            {
+                return;
+            }
+
+            foreach (var toggle in bar.Items.OfType<GridToggleFilter>())
+            {
+                toggle.IsChecked = true;
+            }
         }
 
         private static string CategoryModeText(string key, string fallback)
@@ -1902,7 +2138,7 @@ namespace PlayniteAchievements.Views.Controls
             // While drilled into a category the grid shows a self-contained filtered subset, so sort
             // it in-memory regardless of the surface's external-sorting setting (the external handler
             // sorts the full collection, which would not reorder the visible subset).
-            if (_isCategoryMode && _drilledCategory != null)
+            if (IsCategoryGroupingEffective() && _drilledCategory != null)
             {
                 SortDrilledAchievements(e);
                 return;

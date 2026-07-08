@@ -132,7 +132,7 @@
             <Setter.Value>
                 <ImageBrush Stretch="Uniform"
                             helpers:AsyncImage.Uri="{Binding GameLogo, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                            helpers:AsyncImage.DecodePixel="96"/>
+                            helpers:AsyncImage.DecodePixel="160"/>
             </Setter.Value>
         </Setter>
     </Style>
@@ -357,5 +357,30 @@
     </DataTemplate>
 
     <Style x:Key="OverviewChartColumnSeriesStyle" TargetType="lvc:ColumnSeries" BasedOn="{StaticResource PlayAch.ChartColumnSeriesStyle}"/>
+
+    <!-- Draggable center divider used to split the Overview/Friends columns. Draws its own themed
+         vertical line so a single element serves as both the visible seam and the resize handle. -->
+    <Style x:Key="CenterLineSplitterStyle" TargetType="GridSplitter">
+        <Setter Property="Width" Value="14"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="VerticalAlignment" Value="Stretch"/>
+        <Setter Property="ResizeDirection" Value="Columns"/>
+        <Setter Property="ResizeBehavior" Value="PreviousAndNext"/>
+        <Setter Property="ShowsPreview" Value="False"/>
+        <Setter Property="Cursor" Value="SizeWE"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="GridSplitter">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
+                            BorderThickness="1,0,0,0"
+                            SnapsToDevicePixels="True"
+                            UseLayoutRounding="True"/>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
 
 </ResourceDictionary>

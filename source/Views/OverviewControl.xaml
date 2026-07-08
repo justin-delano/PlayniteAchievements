@@ -337,28 +337,6 @@
                 </Style.Triggers>
             </Style>
 
-            <Style x:Key="CenterLineSplitterStyle" TargetType="GridSplitter">
-                <Setter Property="Width" Value="14"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                <Setter Property="VerticalAlignment" Value="Stretch"/>
-                <Setter Property="ResizeDirection" Value="Columns"/>
-                <Setter Property="ResizeBehavior" Value="PreviousAndNext"/>
-                <Setter Property="ShowsPreview" Value="False"/>
-                <Setter Property="Cursor" Value="SizeWE"/>
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="GridSplitter">
-                            <Border Background="{TemplateBinding Background}"
-                                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                                    BorderThickness="1,0,0,0"
-                                    SnapsToDevicePixels="True"
-                                    UseLayoutRounding="True"/>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -372,7 +350,7 @@
 
         <!-- ROW 0: Header with Title, Scores, and Refresh Buttons -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Transparent}"
+                Background="Transparent"
                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                 Padding="16,0,16,4"
                 WindowChrome.IsHitTestVisibleInChrome="True">
@@ -594,7 +572,7 @@
 
                 <!-- LEFT: Header (Row 0) -->
                     <Border Grid.Row="0" Grid.Column="0"
-                            Background="{DynamicResource Transparent}"
+                            Background="Transparent"
                             Height="{StaticResource PlayAch.Size.Header.Height}"
                             Padding="16,0"
                             BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
@@ -644,7 +622,7 @@
                     <!-- RIGHT: Header -->
                     <Grid Grid.Row="0" Grid.Column="2">
                         <!-- Header for when NO game is selected -->
-                        <Border Background="{DynamicResource Transparent}"
+                        <Border Background="Transparent"
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
                                 Height="{StaticResource PlayAch.Size.Header.Height}"
@@ -658,7 +636,7 @@
                         </Border>
 
                         <!-- Header for when a game IS selected -->
-                        <Border Background="{DynamicResource Transparent}"
+                        <Border Background="Transparent"
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
                                 Height="{StaticResource PlayAch.Size.Header.Height}"
@@ -758,6 +736,8 @@
                                                                  ColumnSettingsKey="OverviewSelectedGameAchievements"
                                                                  EnableCategoryMode="True"
                                                                  CategoryColumnSettingsKey="OverviewSelectedGameCategorySummaries"
+                                                                 CategorySummarySource="{Binding SelectedGameAllAchievements}"
+                                                                 DrilledCategory="{Binding SelectedGameDrilledCategory, Mode=OneWayToSource}"
                                                                  DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                                  ShowRarityGlow="{Binding ShowRarityGlowSelectedGame}"
                                                                  ColorNamesByRarity="{Binding ColorNamesByRaritySelectedGame}"
@@ -780,7 +760,7 @@
                             MinHeight="225"
                             Margin="0,0,0,-20"
                             Padding="0,8,0,20"
-                            Background="{DynamicResource Transparent}"
+                            Background="Transparent"
                             BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                             BorderThickness="0,1,0,0">
                         <Border.Resources>

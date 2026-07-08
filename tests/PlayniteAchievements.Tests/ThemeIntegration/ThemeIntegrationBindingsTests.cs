@@ -6,6 +6,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
@@ -82,6 +83,51 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             Assert.IsTrue(state.HasCustomAchievementOrder);
             AssertAchievementNames(state.AllAchievements, "Third", "First", "Second");
             AssertAchievementNames(state.AchievementDefaultOrder, "Third", "First", "Second");
+        }
+
+        [TestMethod]
+        public void SelectedGameBuilder_CarriesCategoryImagesIntoThemeDisplayItems()
+        {
+            var gameId = Guid.NewGuid();
+            var achievement = Achievement("DLC Achievement", 12.0, unlocked: true);
+            achievement.Category = "DLC";
+            var data = new GameAchievementData
+            {
+                PlayniteGameId = gameId,
+                Game = new Game { Id = gameId, Name = "Category Image Game" },
+                HasAchievements = true,
+                Achievements = new List<AchievementDetail> { achievement },
+                AchievementCategoryImageOverrides = new Dictionary<string, CategoryImageOverrideData>
+                {
+                    ["DLC"] = new CategoryImageOverrideData
+                    {
+                        Icon = "category-icon.png",
+                        Cover = "category-cover.png"
+                    }
+                }
+            };
+
+            var state = SelectedGameRuntimeStateBuilder.Build(gameId, data);
+            var detail = state.AllAchievements.Single();
+
+            Assert.AreEqual("category-icon.png", detail.CategoryIconPath);
+            Assert.AreEqual("category-cover.png", detail.CategoryCoverPath);
+
+            var displayItem = new AchievementDisplayItem();
+            displayItem.UpdateFrom(
+                detail,
+                "Category Image Game",
+                gameId,
+                showHiddenIcon: false,
+                showHiddenTitle: false,
+                showHiddenDescription: false,
+                showHiddenSuffix: true,
+                showLockedIcon: true,
+                useSeparateLockedIconsWhenAvailable: false,
+                showRarityBar: true);
+
+            Assert.AreEqual("category-icon.png", displayItem.CategoryIconPath);
+            Assert.AreEqual("category-cover.png", displayItem.CategoryCoverPath);
         }
 
         [TestMethod]

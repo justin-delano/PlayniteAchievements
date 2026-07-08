@@ -502,6 +502,7 @@ namespace PlayniteAchievements.Tests.StartPage
             options.SortMode = (CompactListSortMode)(seed % 3);
             options.SortDescending = seed % 2 == 0;
             options.MaxHeight = 500d + seed;
+            options.StartInCategoryMode = seed % 2 != 0;
         }
 
         private static void AssertAchievementGrid(AchievementGridOptions options, int seed)
@@ -514,6 +515,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreEqual((CompactListSortMode)(seed % 3), options.SortMode);
             Assert.AreEqual(seed % 2 == 0, options.SortDescending);
             Assert.AreEqual(500d + seed, options.MaxHeight);
+            Assert.AreEqual(seed % 2 != 0, options.StartInCategoryMode);
         }
 
         private static void ConfigureGameSummaryGrid(GameSummaryGridOptions options, int seed)

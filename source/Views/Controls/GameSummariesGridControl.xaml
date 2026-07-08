@@ -23,10 +23,36 @@
                             <Setter.Value>
                                 <ImageBrush Stretch="Uniform"
                                             helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
-                                            helpers:AsyncImage.DecodePixel="128"/>
+                                            helpers:AsyncImage.DecodePixel="320"/>
                             </Setter.Value>
                         </Setter>
                     </DataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding PreserveImageResolution, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
+                            <Condition Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="False"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <ImageBrush Stretch="Uniform"
+                                            helpers:AsyncImage.Uri="{Binding GameLogo, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
+                                            helpers:AsyncImage.DecodePixel="1024"/>
+                            </Setter.Value>
+                        </Setter>
+                    </MultiDataTrigger>
+                    <MultiDataTrigger>
+                        <MultiDataTrigger.Conditions>
+                            <Condition Binding="{Binding PreserveImageResolution, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
+                            <Condition Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
+                        </MultiDataTrigger.Conditions>
+                        <Setter Property="Background">
+                            <Setter.Value>
+                                <ImageBrush Stretch="Uniform"
+                                            helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
+                                            helpers:AsyncImage.DecodePixel="1024"/>
+                            </Setter.Value>
+                        </Setter>
+                    </MultiDataTrigger>
                 </Style.Triggers>
             </Style>
 

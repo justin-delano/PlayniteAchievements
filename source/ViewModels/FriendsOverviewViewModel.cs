@@ -462,7 +462,7 @@ namespace PlayniteAchievements.ViewModels
                     nameof(AchievementSearchText),
                     () => AchievementSearchText,
                     value => AchievementSearchText = value,
-                    GridControlBarText.Get("LOCPlayAch_Filter_Achievements", "Filter achievements"),
+                    GridControlBarText.Get("LOCPlayAch_Filter_Achievements", "Search Achievements"),
                     ClearAchievementSearch)
             };
             controlBar.Items.Add(new GridMultiSelectFilter(

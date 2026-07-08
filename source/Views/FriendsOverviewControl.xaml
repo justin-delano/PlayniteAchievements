@@ -144,7 +144,7 @@
                 </Style.Triggers>
             </Style>
         </Border.Style>
-    <Grid Background="{DynamicResource PlayAch.Brush.Panel}">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -153,7 +153,7 @@
 
         <!-- ROW 0: Header / Refresh -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Transparent}"
+                Background="Transparent"
                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                 Padding="16,0,16,4">
             <Border.Style>
@@ -366,25 +366,13 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                    BorderThickness="1,0,0,0"
-                    IsHitTestVisible="False"/>
             <GridSplitter Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
-                          Width="4"
-                          HorizontalAlignment="Stretch"
-                          Background="Transparent"
+                          Style="{StaticResource CenterLineSplitterStyle}"
                           Focusable="False"
                           IsTabStop="False"/>
 
-            <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
-                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                    BorderThickness="1,0,0,0"
-                    IsHitTestVisible="False"/>
             <GridSplitter Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
-                          Width="4"
-                          HorizontalAlignment="Stretch"
-                          Background="Transparent"
+                          Style="{StaticResource CenterLineSplitterStyle}"
                           Focusable="False"
                           IsTabStop="False"/>
 
@@ -471,7 +459,7 @@
                                                      DelayInitialRenderUntilNormalized="True"
                                                      RowPreviewMouseLeftButtonDown="AchievementRow_PreviewMouseLeftButtonDown"/>
 
-                <Border Background="{DynamicResource PlayAch.Brush.Panel}"
+                <Border Background="{DynamicResource PlayAch.Brush.Window.Background}"
                         Visibility="{Binding HasStatusText, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="{Binding StatusText}"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"

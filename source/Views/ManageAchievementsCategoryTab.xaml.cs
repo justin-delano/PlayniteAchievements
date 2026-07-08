@@ -72,6 +72,14 @@ namespace PlayniteAchievements.Views
 
         private ManageAchievementsCategoryViewModel ViewModel => DataContext as ManageAchievementsCategoryViewModel;
 
+        internal void SelectManageCategoriesSubTab()
+        {
+            if (CategorySubTabs != null)
+            {
+                CategorySubTabs.SelectedIndex = 1;
+            }
+        }
+
         private void ApplyBulkButton_Click(object sender, RoutedEventArgs e)
         {
             ApplyBulk();

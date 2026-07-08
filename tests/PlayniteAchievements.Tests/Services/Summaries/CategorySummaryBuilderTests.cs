@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -62,6 +63,25 @@ namespace PlayniteAchievements.Tests.Services.Summaries
         }
 
         [TestMethod]
+        public void Build_SetsSharedGameIdOnlyWhenCategoryBucketAgrees()
+        {
+            var gameId = Guid.NewGuid();
+            var shared = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
+            {
+                DisplayItem("DLC", unlocked: true, playniteGameId: gameId),
+                DisplayItem("DLC", unlocked: false, playniteGameId: gameId)
+            });
+            Assert.AreEqual(gameId, shared.Single().PlayniteGameId);
+
+            var mixed = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
+            {
+                DisplayItem("DLC", unlocked: true, playniteGameId: gameId),
+                DisplayItem("DLC", unlocked: false, playniteGameId: Guid.NewGuid())
+            });
+            Assert.IsNull(mixed.Single().PlayniteGameId);
+        }
+
+        [TestMethod]
         public void Build_UsesCategoryOrderIndexBeforeFirstSeenRemainder()
         {
             var result = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
@@ -101,11 +121,13 @@ namespace PlayniteAchievements.Tests.Services.Summaries
             bool unlocked,
             string categoryIcon = null,
             string categoryCover = null,
-            int categoryOrderIndex = int.MaxValue)
+            int categoryOrderIndex = int.MaxValue,
+            Guid? playniteGameId = null)
         {
             return new AchievementDisplayItem
             {
                 Rarity = RarityTier.Common,
+                PlayniteGameId = playniteGameId,
                 CategoryLabel = label,
                 Unlocked = unlocked,
                 CategoryIconPath = categoryIcon,

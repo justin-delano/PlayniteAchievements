@@ -7,14 +7,13 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using Playnite.SDK;
-using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Images;
 
 namespace PlayniteAchievements.Services.UI
 {
     /// <summary>
     /// Captures a screenshot of the monitor the running game is on and saves it under a
-    /// user-chosen base directory as &lt;base&gt;\Game [Provider]\NNN_AchievementName.png. Used by
+    /// user-chosen base directory as &lt;base&gt;\Game\NNN_AchievementName.png. Used by
     /// the unlock-toast pipeline to record one image per own-unlock wave. All failures are
     /// swallowed (logged at debug) so screenshotting never disrupts toasts.
     /// </summary>
@@ -178,7 +177,7 @@ namespace PlayniteAchievements.Services.UI
 
         /// <summary>
         /// Saves an already-captured bitmap to
-        /// &lt;baseDir&gt;\Game [Provider]\NNN_AchievementName.png. Creates directories as needed and
+        /// &lt;baseDir&gt;\Game\NNN_AchievementName.png. Creates directories as needed and
         /// avoids clobbering an existing file by appending " (2)", " (3)"...
         /// </summary>
         public void Save(
@@ -210,7 +209,7 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// Pure path builder: folder "Game [Provider]", file "NNN_AchievementName.png" where NNN
+        /// Pure path builder: folder "Game", file "NNN_AchievementName.png" where NNN
         /// is zero-padded to the width of the game's total achievement count (min 3). Every
         /// segment is sanitized for the filesystem.
         /// </summary>
@@ -221,15 +220,13 @@ namespace PlayniteAchievements.Services.UI
             int number,
             int total)
         {
-            var provider = AchievementIconCachePathBuilder.SanitizeSegment(
-                ProviderRegistry.GetLocalizedName(providerKey));
             var game = AchievementIconCachePathBuilder.SanitizeSegment(gameName);
             var name = AchievementIconCachePathBuilder.SanitizeSegment(achievementName);
 
             var width = Math.Max(3, Math.Max(1, total).ToString(CultureInfo.InvariantCulture).Length);
             var prefix = Math.Max(0, number).ToString(CultureInfo.InvariantCulture).PadLeft(width, '0');
 
-            return ($"{game} [{provider}]", $"{prefix}_{name}.png");
+            return (game, $"{prefix}_{name}.png");
         }
 
         /// <summary>

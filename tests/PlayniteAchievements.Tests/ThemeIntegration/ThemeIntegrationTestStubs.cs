@@ -115,6 +115,10 @@ namespace PlayniteAchievements.Models.Achievements
 
         public Game Game { get; set; }
 
+        public string CategoryIconPath { get; set; }
+
+        public string CategoryCoverPath { get; set; }
+
         public System.Windows.Input.ICommand SetDynamicAchievementsGameCommand { get; set; }
 
         public System.Windows.Input.ICommand FilterDynamicLibraryAchievementsByProviderCommand { get; set; }
@@ -180,6 +184,10 @@ namespace PlayniteAchievements.Models.Achievements
         public Game Game { get; set; }
 
         public List<string> AchievementOrder { get; set; }
+
+        public List<string> AchievementCategoryOrder { get; set; }
+
+        public Dictionary<string, PlayniteAchievements.Models.Settings.CategoryImageOverrideData> AchievementCategoryImageOverrides { get; set; }
 
         public List<AchievementDetail> Achievements { get; set; } = new List<AchievementDetail>();
 
@@ -540,8 +548,8 @@ namespace PlayniteAchievements.ViewModels
             GameIconPath = gameIconPath;
             GameCoverPath = gameCoverPath;
             CategoryOrderIndex = categoryOrderIndex;
-            CategoryIconPath = categoryIconPath;
-            CategoryCoverPath = categoryCoverPath;
+            CategoryIconPath = categoryIconPath ?? source?.CategoryIconPath ?? gameIconPath;
+            CategoryCoverPath = categoryCoverPath ?? source?.CategoryCoverPath ?? gameCoverPath;
         }
     }
 }

@@ -159,6 +159,7 @@ namespace PlayniteAchievements.ViewModels
             GameSummaries = new BulkObservableCollection<GameSummaryItem>();
             RecentAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
+            SelectedGameAllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             CompletenessFilterOptions = new ObservableCollection<string>();
 
             // Default the progress dropdown to the full completed + incomplete scope.
@@ -318,7 +319,7 @@ namespace PlayniteAchievements.ViewModels
                     nameof(RightSearchText),
                     () => RightSearchText,
                     value => RightSearchText = value,
-                    L("LOCPlayAch_Filter_Achievements", "Filter achievements"),
+                    L("LOCPlayAch_Filter_Achievements", "Search Achievements"),
                     ClearRightSearch)
             };
 
@@ -1148,6 +1149,25 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public ObservableCollection<AchievementDisplayItem> SelectedGameAchievements { get; }
+
+        // Full, unfiltered selected-game achievements feeding the category-summaries source so its
+        // rollups stay stable when the Unlocked/Locked/Hidden filters are applied within a drill.
+        public ObservableCollection<AchievementDisplayItem> SelectedGameAllAchievements { get; }
+
+        // The category the selected-game grid is currently drilled into (null when not drilled),
+        // pushed up from AchievementDataGridControl so the header count can scope to it.
+        private string _selectedGameDrilledCategory;
+        public string SelectedGameDrilledCategory
+        {
+            get => _selectedGameDrilledCategory;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedGameDrilledCategory, value))
+                {
+                    RefreshSelectedGameHeaderCounts();
+                }
+            }
+        }
 
         public ObservableCollection<ChartDataPoint> SelectedGameDailyUnlocks { get; } = new ObservableCollection<ChartDataPoint>();
 
@@ -2982,6 +3002,13 @@ namespace PlayniteAchievements.ViewModels
 
         private void SyncSelectedGameAchievementsDisplay()
         {
+            // Keep the unfiltered category-summary source current; the achievement filters do not
+            // touch it, so category rollups stay stable while drilled.
+            if (SelectedGameAllAchievements is BulkObservableCollection<AchievementDisplayItem> allBulk)
+            {
+                allBulk.ReplaceAll(_allSelectedGameAchievements ?? new List<AchievementDisplayItem>());
+            }
+
             var displayItems = DisplayGridRowLimitHelper.Limit(
                 _filteredSelectedGameAchievements,
                 _settings?.Persisted?.OverviewSelectedGameGridMaxRows);
@@ -3583,13 +3610,28 @@ namespace PlayniteAchievements.ViewModels
 
         private void RefreshSelectedGameHeaderCounts()
         {
-            var isFiltered = HasSelectedGameAchievementFiltersApplied();
+            var drilledCategory = SelectedGameDrilledCategory;
+            var isDrilled = !string.IsNullOrEmpty(drilledCategory);
+            // A drilled category is presented like a filtered view ("x/y Selected").
+            var isFiltered = isDrilled || HasSelectedGameAchievementFiltersApplied();
             var unlocked = 0;
             var total = 0;
 
             if (IsSelectedGameContentReady)
             {
-                if (isFiltered)
+                if (isDrilled)
+                {
+                    // Scope to the drilled category, respecting any active filter applied within it.
+                    var scoped = (_filteredSelectedGameAchievements ?? new List<AchievementDisplayItem>())
+                        .Where(item => string.Equals(
+                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item?.CategoryLabel),
+                            drilledCategory,
+                            StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    total = scoped.Count;
+                    unlocked = scoped.Count(item => item?.Unlocked == true);
+                }
+                else if (isFiltered)
                 {
                     var filtered = _filteredSelectedGameAchievements ?? new List<AchievementDisplayItem>();
                     total = filtered.Count;

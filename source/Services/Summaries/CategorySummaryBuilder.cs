@@ -58,6 +58,7 @@ namespace PlayniteAchievements.Services.Summaries
                 var item = new CategorySummaryItem
                 {
                     CategoryLabel = label,
+                    PlayniteGameId = ResolveSharedGameId(bucket),
                     GameName = display,
                     SortingName = display,
                     GameLogo = ResolveSharedImage(bucket, item => item.CategoryIconPath),
@@ -72,6 +73,30 @@ namespace PlayniteAchievements.Services.Summaries
             }
 
             return result;
+        }
+
+        private static System.Guid? ResolveSharedGameId(IReadOnlyList<AchievementDisplayItem> bucket)
+        {
+            System.Guid? gameId = null;
+            foreach (var item in bucket)
+            {
+                var candidate = item?.PlayniteGameId;
+                if (!candidate.HasValue || candidate.Value == System.Guid.Empty)
+                {
+                    continue;
+                }
+
+                if (!gameId.HasValue)
+                {
+                    gameId = candidate.Value;
+                }
+                else if (gameId.Value != candidate.Value)
+                {
+                    return null;
+                }
+            }
+
+            return gameId;
         }
 
         private static string ResolveSharedImage(

@@ -48,8 +48,13 @@
                                            ItemsSource="{Binding SelectedCategorySummaryItems, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                            ColumnSettingsKey="{Binding ResolvedCategoryColumnSettingsKey, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                            UseCoverImages="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                           PreserveImageResolution="True"
+                                           ShowMetadataPlatform="False"
+                                           ShowMetadataPlaytime="False"
+                                           ShowMetadataRegion="False"
                                            ShowColumnHeaders="True"
-                                           DisableRowSelection="True"/>
+                                           DisableRowSelection="True"
+                                           RowPreviewMouseLeftButtonDown="CategoryDrillHeader_RowPreviewMouseLeftButtonDown"/>
 
         <Grid Grid.Row="1">
             <!-- Category-summaries list (one row per category label). -->
@@ -58,7 +63,13 @@
                                                ItemsSource="{Binding CategorySummaries, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                                ColumnSettingsKey="{Binding ResolvedCategoryColumnSettingsKey, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                                UseCoverImages="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                               PreserveImageResolution="True"
+                                               ShowMetadataPlatform="False"
+                                               ShowMetadataPlaytime="False"
+                                               ShowMetadataRegion="False"
                                                ShowColumnHeaders="True"
+                                               RowPreviewMouseRightButtonDown="CategoryList_RowPreviewMouseRightButtonDown"
+                                               RowPreviewMouseRightButtonUp="CategoryList_RowPreviewMouseRightButtonUp"
                                                SelectionChanged="CategoryList_SelectionChanged"/>
 
     <DataGrid x:Name="AchievementsDataGrid"

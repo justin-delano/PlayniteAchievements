@@ -68,6 +68,7 @@ namespace PlayniteAchievements.Views
         private bool _filtersRefreshPending;
         private bool _notesRefreshPending;
         private bool _achievementIconsRefreshPending;
+        private bool _selectManageCategoriesSubTab;
         private bool _ensureTabContentQueued;
 
         internal ManageAchievementsControl(
@@ -81,7 +82,8 @@ namespace PlayniteAchievements.Views
             IPlayniteAPI playniteApi,
             ILogger logger,
             PlayniteAchievementsSettings settings,
-            ManualSourceRegistry manualSourceRegistry)
+            ManualSourceRegistry manualSourceRegistry,
+            bool selectManageCategoriesSubTab = false)
         {
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
@@ -93,6 +95,8 @@ namespace PlayniteAchievements.Views
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
             _gameDataSnapshotProvider = new ManageAchievementsDataSnapshotProvider(gameId, _achievementDataService);
+            _selectManageCategoriesSubTab =
+                initialTab == ManageAchievementsTab.Category && selectManageCategoriesSubTab;
 
             _viewModel = new ManageAchievementsViewModel(
                 gameId,
@@ -129,11 +133,16 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        internal void SelectTab(ManageAchievementsTab tab)
+        internal void SelectTab(ManageAchievementsTab tab, bool selectManageCategoriesSubTab = false)
         {
             if (_viewModel == null)
             {
                 return;
+            }
+
+            if (tab == ManageAchievementsTab.Category && selectManageCategoriesSubTab)
+            {
+                _selectManageCategoriesSubTab = true;
             }
 
             _viewModel.SelectedTab = tab;
@@ -266,6 +275,7 @@ namespace PlayniteAchievements.Views
             {
                 var hadCategoryControl = _categoryControl != null;
                 EnsureCategoryControl(forceRecreate: false);
+                ApplyPendingCategorySubTabSelection();
                 if (_categoryRefreshPending)
                 {
                     if (hadCategoryControl)
@@ -816,6 +826,17 @@ namespace PlayniteAchievements.Views
                 _logger);
             _categoryControl = new ManageAchievementsCategoryTab(_categoryViewModel);
             CategoryHost.Content = _categoryControl;
+        }
+
+        private void ApplyPendingCategorySubTabSelection()
+        {
+            if (!_selectManageCategoriesSubTab || _categoryControl == null)
+            {
+                return;
+            }
+
+            _selectManageCategoriesSubTab = false;
+            _categoryControl.SelectManageCategoriesSubTab();
         }
 
         private void EnsureFiltersControl(bool forceRecreate)

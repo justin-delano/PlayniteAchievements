@@ -758,11 +758,13 @@ namespace PlayniteAchievements.ViewModels
             PointsValue = source?.Points;
             CategoryType = source?.CategoryType;
             CategoryLabel = source?.Category;
-            GameIconPath = gameIconPath;
-            GameCoverPath = gameCoverPath;
+            var resolvedGameIconPath = gameIconPath ?? ResolveGameAssetPath(source?.Game?.Icon);
+            var resolvedGameCoverPath = gameCoverPath ?? ResolveGameAssetPath(source?.Game?.CoverImage);
+            GameIconPath = resolvedGameIconPath;
+            GameCoverPath = resolvedGameCoverPath;
             CategoryOrderIndex = categoryOrderIndex;
-            CategoryIconPath = categoryIconPath;
-            CategoryCoverPath = categoryCoverPath;
+            CategoryIconPath = categoryIconPath ?? source?.CategoryIconPath ?? resolvedGameIconPath;
+            CategoryCoverPath = categoryCoverPath ?? source?.CategoryCoverPath ?? resolvedGameCoverPath;
         }
 
         /// <summary>

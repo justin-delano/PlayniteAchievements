@@ -257,6 +257,7 @@ namespace PlayniteAchievements.Models.Settings
         private CompactListSortMode _sortMode = CompactListSortMode.UnlockTime;
         private bool _sortDescending = true;
         private double? _maxHeight;
+        private bool _startInCategoryMode;
 
         public bool UseCoverImages
         {
@@ -300,6 +301,12 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _maxHeight, value);
         }
 
+        public bool StartInCategoryMode
+        {
+            get => _startInCategoryMode;
+            set => SetValue(ref _startInCategoryMode, value);
+        }
+
         public AchievementGridOptions Clone()
         {
             var clone = new AchievementGridOptions();
@@ -311,6 +318,7 @@ namespace PlayniteAchievements.Models.Settings
             clone.SortMode = SortMode;
             clone.SortDescending = SortDescending;
             clone.MaxHeight = MaxHeight;
+            clone.StartInCategoryMode = StartInCategoryMode;
             return clone;
         }
     }

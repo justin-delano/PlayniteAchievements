@@ -369,6 +369,19 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(ShowControlBarProperty, value);
         }
 
+        public static readonly DependencyProperty PreserveImageResolutionProperty =
+            DependencyProperty.Register(
+                nameof(PreserveImageResolution),
+                typeof(bool),
+                typeof(GameSummariesGridControl),
+                new PropertyMetadata(false));
+
+        public bool PreserveImageResolution
+        {
+            get => (bool)GetValue(PreserveImageResolutionProperty);
+            set => SetValue(PreserveImageResolutionProperty, value);
+        }
+
         public event SelectionChangedEventHandler SelectionChanged;
 
         public event EventHandler<DataGridSortingEventArgs> Sorting;

@@ -292,7 +292,9 @@
                     <!-- Segmented with the mode toggle on its left: flat left edge, no gap. -->
                     <DataTrigger Binding="{Binding ConnectedLeft}" Value="True">
                         <Setter TargetName="FilterButton" Property="Style" Value="{StaticResource AchievementSelectorButtonConnectedLeftStyle}"/>
-                        <Setter TargetName="FilterButton" Property="Margin" Value="0"/>
+                        <!-- Overlap the toggle's right border by 1px so the restored left border reads
+                             as a single seam and recolors on the dropdown's own hover/focus. -->
+                        <Setter TargetName="FilterButton" Property="Margin" Value="-1,0,0,0"/>
                     </DataTrigger>
                 </DataTemplate.Triggers>
             </DataTemplate>

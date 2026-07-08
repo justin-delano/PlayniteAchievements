@@ -596,7 +596,7 @@
     <Style x:Key="AchievementSelectorButtonConnectedLeftStyle"
            TargetType="Button"
            BasedOn="{StaticResource AchievementSelectorButtonStyle}">
-        <Setter Property="BorderThickness" Value="0,1,1,1"/>
+        <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">

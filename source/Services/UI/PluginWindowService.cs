@@ -840,7 +840,10 @@ namespace PlayniteAchievements.Services.UI
             return true;
         }
 
-        private bool TryActivateManageAchievementsWindow(Guid gameId, ManageAchievementsTab tab)
+        private bool TryActivateManageAchievementsWindow(
+            Guid gameId,
+            ManageAchievementsTab tab,
+            bool selectManageCategoriesSubTab = false)
         {
             if (!TryGetTrackedWindow(AchievementWindowKind.ManageAchievements, gameId, out var window))
             {
@@ -849,7 +852,7 @@ namespace PlayniteAchievements.Services.UI
 
             if (TryGetWindowContent<ManageAchievementsControl>(window, out var control))
             {
-                control.SelectTab(tab);
+                control.SelectTab(tab, selectManageCategoriesSubTab);
             }
 
             ActivateTrackedWindow(window);
@@ -1387,11 +1390,17 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        public void OpenManageAchievementsView(Guid gameId, ManageAchievementsTab initialTab)
+        public void OpenManageAchievementsView(
+            Guid gameId,
+            ManageAchievementsTab initialTab,
+            bool selectManageCategoriesSubTab = false)
         {
             try
             {
-                InvokeOnUiThread(() => OpenManageAchievementsViewCore(gameId, initialTab));
+                InvokeOnUiThread(() => OpenManageAchievementsViewCore(
+                    gameId,
+                    initialTab,
+                    selectManageCategoriesSubTab));
             }
             catch (Exception ex)
             {
@@ -1402,9 +1411,15 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        private void OpenManageAchievementsViewCore(Guid gameId, ManageAchievementsTab initialTab)
+        private void OpenManageAchievementsViewCore(
+            Guid gameId,
+            ManageAchievementsTab initialTab,
+            bool selectManageCategoriesSubTab = false)
         {
-            if (TryActivateManageAchievementsWindow(gameId, initialTab))
+            if (TryActivateManageAchievementsWindow(
+                gameId,
+                initialTab,
+                selectManageCategoriesSubTab))
             {
                 return;
             }
@@ -1435,7 +1450,8 @@ namespace PlayniteAchievements.Services.UI
                     _api,
                     _logger,
                     _settings,
-                    _manualSourceRegistry);
+                    _manualSourceRegistry,
+                    selectManageCategoriesSubTab);
 
                 var windowOptions = new WindowOptions
                 {

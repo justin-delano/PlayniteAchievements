@@ -80,6 +80,12 @@ namespace PlayniteAchievements.ViewModels
             : string.Empty;
 
         /// <summary>
+        /// Parsed rarity tier for theme authors. Templates can bind to this directly for custom
+        /// badge styles/triggers instead of using the plugin-generated BadgeImage.
+        /// </summary>
+        public RarityTier Rarity => _rarity;
+
+        /// <summary>
         /// Rarity-colored brush for the left accent strip and countdown bar (completed color for
         /// capstones, otherwise the rarity color).
         /// </summary>

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.UI;
 
 namespace PlayniteAchievements.Services.Tests
 {
@@ -44,6 +45,22 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(2, numberByKey["a"]);
             Assert.AreEqual(3, numberByKey["b"]);
             Assert.AreEqual(4, numberByKey["d"]);
+        }
+
+        [TestMethod]
+        public void BuildRelativePath_UsesGameNameFolderWithoutProviderSuffix()
+        {
+            var relative = UnlockScreenshotService.BuildRelativePath(
+                providerKey: "Steam",
+                gameName: "Game: Name",
+                achievementName: "First Win",
+                number: 7,
+                total: 123);
+
+            Assert.AreEqual("Game_ Name", relative.Folder);
+            Assert.AreEqual("007_First Win.png", relative.FileName);
+            Assert.IsFalse(relative.Folder.Contains("["));
+            Assert.IsFalse(relative.Folder.Contains("Steam"));
         }
     }
 }

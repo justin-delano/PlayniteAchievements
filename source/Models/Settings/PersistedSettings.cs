@@ -930,7 +930,7 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// Base directory for unlock screenshots. Files are written to
-        /// &lt;dir&gt;\Game [Provider]\NNN_AchievementName.png.
+        /// &lt;dir&gt;\Game\NNN_AchievementName.png.
         /// </summary>
         public string UnlockScreenshotDirectory
         {
