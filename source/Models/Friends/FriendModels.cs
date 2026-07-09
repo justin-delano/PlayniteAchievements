@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Models.Friends
 {
@@ -43,14 +44,35 @@ namespace PlayniteAchievements.Models.Friends
         }
     }
 
+    internal static class FriendRefreshOptionNormalizer
+    {
+        public static List<FriendAccountRef> NormalizeFriendAccounts(IEnumerable<FriendAccountRef> accounts)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var normalized = new List<FriendAccountRef>();
+            foreach (var account in accounts ?? Enumerable.Empty<FriendAccountRef>())
+            {
+                var next = account?.Clone()?.Normalize();
+                if (string.IsNullOrWhiteSpace(next?.Key) || !seen.Add(next.Key))
+                {
+                    continue;
+                }
+
+                normalized.Add(next);
+            }
+
+            return normalized.Count == 0 ? null : normalized;
+        }
+    }
+
     public sealed class FriendRefreshOptions
     {
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
+        public IReadOnlyCollection<FriendAccountRef> FriendAccounts { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
-        public TimeSpan? DefinitionTtl { get; set; }
         public bool ForceDefinitionRefresh { get; set; }
 
         public FriendRefreshOptions Clone()
@@ -71,12 +93,12 @@ namespace PlayniteAchievements.Models.Friends
                     .Select(key => key.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
+                FriendAccounts = FriendRefreshOptionNormalizer.NormalizeFriendAccounts(FriendAccounts),
                 FriendExternalUserIds = FriendExternalUserIds?
                     .Where(id => !string.IsNullOrWhiteSpace(id))
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                DefinitionTtl = DefinitionTtl,
                 ForceDefinitionRefresh = ForceDefinitionRefresh
             };
         }
@@ -89,8 +111,8 @@ namespace PlayniteAchievements.Models.Friends
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
         public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
+        public IReadOnlyCollection<FriendAccountRef> FriendAccounts { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
-        public TimeSpan? DefinitionTtl { get; set; }
         public bool ForceDefinitionRefresh { get; set; }
 
         public FriendCustomRefreshOptions Clone()
@@ -116,15 +138,16 @@ namespace PlayniteAchievements.Models.Friends
                     .Select(key => key.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
+                FriendAccounts = FriendRefreshOptionNormalizer.NormalizeFriendAccounts(FriendAccounts),
                 FriendExternalUserIds = FriendExternalUserIds?
                     .Where(id => !string.IsNullOrWhiteSpace(id))
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                DefinitionTtl = DefinitionTtl,
                 ForceDefinitionRefresh = ForceDefinitionRefresh
             };
         }
+
     }
 
     public sealed class FriendsProviderResult<T>
@@ -213,6 +236,10 @@ namespace PlayniteAchievements.Models.Friends
         public bool StatsUnavailable { get; set; }
         public bool TransientFailure { get; set; }
         public SteamScrapeDetail DetailCode { get; set; }
+
+        // Game header banner scraped from the same achievement page, used as the provider-only friend
+        // game's icon and cover when definitions are seeded from this scrape (no separate definition fetch).
+        public string IconUrl { get; set; }
         public List<FriendAchievementRow> Rows { get; set; } = new List<FriendAchievementRow>();
     }
 
@@ -282,6 +309,8 @@ namespace PlayniteAchievements.Models.Friends
         public string GameName { get; set; }
         public string ProviderKey { get; set; }
         public string ProviderPlatformKey { get; set; }
+        public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
     }
 
     /// <summary>
@@ -292,5 +321,19 @@ namespace PlayniteAchievements.Models.Friends
     public interface ICurrentUserGameLabelReceiver
     {
         void SetCurrentUserGameLabels(IReadOnlyList<CurrentUserGameLabel> labels);
+    }
+
+    /// <summary>
+    /// Optional capability for a provider that can supplement Steam friend ownership with Steam-family
+    /// ownership data from another source. The refresh runtime still saves the translated rows under
+    /// Steam so definitions and achievement scrapes remain Steam-backed.
+    /// </summary>
+    public interface ISteamFriendOwnershipSupplementSource
+    {
+        Task<FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>> GetSteamOwnedGamesAsync(
+            string externalUserId,
+            IReadOnlyList<CurrentUserGameLabel> currentUserLabels,
+            IReadOnlyList<FriendGameOwnership> knownSteamOwnership,
+            CancellationToken cancel);
     }
 }

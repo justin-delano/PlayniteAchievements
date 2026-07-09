@@ -209,6 +209,43 @@ namespace PlayniteAchievements.Views.Helpers
             return window;
         }
 
+        public static Window CreateBorderlessTopmostWindow(IPlayniteAPI api, string title)
+        {
+            api = api ?? API.Instance;
+
+            var window = api?.Dialogs?.CreateWindow(new WindowCreationOptions
+            {
+                ShowMinimizeButton = false,
+                ShowMaximizeButton = false,
+                ShowCloseButton = false
+            }) ?? new Window();
+
+            window.Title = title ?? string.Empty;
+            window.ShowInTaskbar = false;
+            window.ShowActivated = false;
+            window.Focusable = false;
+            window.Topmost = true;
+            window.WindowStyle = WindowStyle.None;
+            window.ResizeMode = ResizeMode.NoResize;
+            window.SizeToContent = SizeToContent.WidthAndHeight;
+            window.WindowStartupLocation = WindowStartupLocation.Manual;
+            window.AllowsTransparency = true;
+            window.Background = Brushes.Transparent;
+            window.UseLayoutRounding = true;
+            window.SnapsToDevicePixels = true;
+
+            WindowChrome.SetWindowChrome(window, new WindowChrome
+            {
+                CaptionHeight = 0,
+                GlassFrameThickness = new Thickness(0),
+                ResizeBorderThickness = new Thickness(0),
+                UseAeroCaptionButtons = false
+            });
+
+            window.Template = CreateContentOnlyWindowTemplate();
+            return window;
+        }
+
         private static void ConfigureBorderlessFullscreenWindow(Window window)
         {
             if (window == null)
@@ -227,7 +264,6 @@ namespace PlayniteAchievements.Views.Helpers
             WindowChrome.SetWindowChrome(window, new WindowChrome
             {
                 CaptionHeight = 0,
-                CornerRadius = new CornerRadius(0),
                 GlassFrameThickness = new Thickness(0),
                 ResizeBorderThickness = new Thickness(0),
                 UseAeroCaptionButtons = false

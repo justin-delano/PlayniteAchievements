@@ -57,6 +57,102 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void FriendsOverviewDataCoordinator_InvalidatedDuringBuild_ReturnsFreshSnapshot()
+        {
+            var staleData = CreateData();
+            staleData.Games[0].GameLogo = null;
+            staleData.Games[0].GameCoverPath = null;
+
+            var freshData = CreateData();
+            freshData.Games[0].GameLogo = "icon.png";
+            freshData.Games[0].GameCoverPath = "cover.png";
+
+            using var firstLoadEntered = new ManualResetEventSlim(false);
+            using var releaseFirstLoad = new ManualResetEventSlim(false);
+            var cache = new StubFriendCache(staleData)
+            {
+                FirstLoadEntered = firstLoadEntered,
+                ReleaseFirstLoad = releaseFirstLoad,
+                DataAfterFirstLoad = freshData
+            };
+
+            using var coordinator = new FriendsOverviewDataCoordinator(
+                cache,
+                () => new PersistedSettings());
+            var task = coordinator.GetSnapshotAsync(CancellationToken.None);
+
+            Assert.IsTrue(firstLoadEntered.Wait(TimeSpan.FromSeconds(2)));
+            coordinator.Invalidate();
+            releaseFirstLoad.Set();
+
+            Assert.IsTrue(task.Wait(TimeSpan.FromSeconds(2)));
+            var snapshot = task.GetAwaiter().GetResult();
+
+            Assert.AreEqual(2, cache.LoadFriendsOverviewDataCalls);
+            Assert.AreEqual("icon.png", snapshot.Games[0].GameLogo);
+            Assert.AreEqual("cover.png", snapshot.Games[0].GameCoverPath);
+        }
+
+        [TestMethod]
+        public void FriendsOverviewDataCoordinator_Warm_InvalidatesAndBuildsSnapshot()
+        {
+            var cache = new StubFriendCache(CreateData());
+            using var coordinator = new FriendsOverviewDataCoordinator(
+                cache,
+                () => new PersistedSettings(),
+                warmDebounceInterval: TimeSpan.Zero);
+            var invalidated = false;
+            coordinator.SnapshotInvalidated += (_, __) => invalidated = true;
+
+            coordinator.Warm();
+
+            Assert.IsTrue(
+                SpinWait.SpinUntil(() => cache.LoadFriendsOverviewDataCalls > 0, TimeSpan.FromSeconds(2)));
+            Assert.IsTrue(invalidated);
+        }
+
+        [TestMethod]
+        public void LoadAsync_ReloadsWhenSharedCoordinatorInvalidates()
+        {
+            var staleData = CreateData();
+            staleData.Games[0].GameLogo = null;
+            staleData.Games[0].GameCoverPath = null;
+
+            var freshData = CreateData();
+            freshData.Games[0].GameLogo = "icon.png";
+            freshData.Games[0].GameCoverPath = "cover.png";
+
+            var cache = new StubFriendCache(staleData)
+            {
+                DataAfterFirstLoad = freshData
+            };
+            var settings = new PlayniteAchievementsSettings();
+            using var coordinator = new FriendsOverviewDataCoordinator(
+                cache,
+                () => settings.Persisted);
+            using var viewModel = new FriendsOverviewViewModel(
+                cache,
+                null,
+                null,
+                settings,
+                null,
+                cacheInvalidationDebounceInterval: TimeSpan.Zero,
+                activeRefreshInvalidationInterval: TimeSpan.Zero,
+                friendsOverviewDataCoordinator: coordinator);
+
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+            Assert.IsNull(viewModel.FilteredGames.First().GameLogo);
+
+            coordinator.Invalidate();
+
+            Assert.IsTrue(
+                SpinWait.SpinUntil(
+                    () => string.Equals(viewModel.FilteredGames.FirstOrDefault()?.GameLogo, "icon.png", StringComparison.Ordinal),
+                    TimeSpan.FromSeconds(2)));
+            Assert.AreEqual("cover.png", viewModel.FilteredGames.First().GameCoverPath);
+        }
+
+        [TestMethod]
         public void SelectedFriendFiltersGamesAndShowsAllUnlockedAchievementsForFriend()
         {
             var data = CreateData();
@@ -254,7 +350,7 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void CacheInvalidated_DuringFriendRefresh_ReloadsOverviewData()
+        public void FriendCacheInvalidated_DuringFriendRefresh_ReloadsOverviewData()
         {
             var initialData = CreateData();
             var updatedData = CreateData();
@@ -274,12 +370,13 @@ namespace PlayniteAchievements.Tests.ViewModels
             var viewModel = CreateViewModel(
                 cache,
                 refreshRuntime: refreshRuntime,
-                cacheInvalidationDebounceInterval: TimeSpan.Zero);
+                cacheInvalidationDebounceInterval: TimeSpan.Zero,
+                activeRefreshInvalidationInterval: TimeSpan.Zero);
             viewModel.LoadAsync().GetAwaiter().GetResult();
             Assert.AreEqual(3, viewModel.FilteredFriends.Count);
 
             cache.Data = updatedData;
-            refreshRuntime.RaiseCacheInvalidated();
+            refreshRuntime.RaiseFriendCacheInvalidated();
 
             Assert.IsTrue(
                 SpinWait.SpinUntil(
@@ -300,7 +397,163 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void CacheInvalidated_DuringFriendRefresh_PreservesSelectedFriendAndGame()
+        public void FriendCacheInvalidated_ReloadsGameSummariesAndAchievementsImmediately()
+        {
+            var initialData = CreateData();
+            var updatedData = CreateData();
+            var liveGameId = Guid.Parse("44444444-4444-4444-4444-444444444444");
+            updatedData.Games.Add(new FriendGameSummaryItem
+            {
+                ProviderKey = "Steam",
+                AppId = 40,
+                PlayniteGameId = liveGameId,
+                GameName = "Live Game",
+                FriendCount = 1,
+                FriendsWithUnlocksCount = 1,
+                FriendUnlockedAchievementsCount = 1,
+                UniqueFriendUnlockedAchievementsCount = 1,
+                TotalAchievements = 1,
+                LastFriendUnlockUtc = new DateTime(2026, 1, 9, 0, 0, 0, DateTimeKind.Utc)
+            });
+            var liveUnlock = CreateAchievement(
+                "Steam",
+                "alice",
+                "Alice",
+                "https://cdn.example/alice.png",
+                40,
+                liveGameId,
+                "Live Game",
+                "Live Unlock",
+                "Story",
+                "Main",
+                new DateTime(2026, 1, 9, 0, 0, 0, DateTimeKind.Utc));
+            updatedData.AllUnlockedAchievements.Add(liveUnlock);
+            updatedData.RecentUnlocks.Insert(0, liveUnlock);
+            updatedData.FriendGameLinks.Add(new FriendGameLinkItem
+            {
+                ProviderKey = "Steam",
+                ExternalUserId = "alice",
+                AppId = 40,
+                PlayniteGameId = liveGameId,
+                PlaytimeForeverMinutes = 45,
+                LastPlayedUtc = new DateTime(2026, 1, 9, 1, 0, 0, DateTimeKind.Utc)
+            });
+
+            var cache = new StubFriendCache(initialData);
+            var refreshRuntime = new RefreshRuntime();
+            refreshRuntime.BeginTestRefresh(new ProgressReport { Mode = RefreshModeType.Full });
+            var viewModel = CreateViewModel(
+                cache,
+                refreshRuntime: refreshRuntime,
+                cacheInvalidationDebounceInterval: TimeSpan.FromSeconds(10),
+                activeRefreshInvalidationInterval: TimeSpan.FromSeconds(10));
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+            var loadCountAfterInitialLoad = cache.LoadFriendsOverviewDataCalls;
+
+            cache.Data = updatedData;
+            refreshRuntime.RaiseFriendCacheInvalidated();
+
+            Assert.IsTrue(
+                SpinWait.SpinUntil(
+                    () => cache.LoadFriendsOverviewDataCalls > loadCountAfterInitialLoad &&
+                          viewModel.FilteredGames.ToList().Any(game => game.GameName == "Live Game") &&
+                          viewModel.DisplayedAchievements.ToList().Any(achievement => achievement.DisplayName == "Live Unlock"),
+                    TimeSpan.FromSeconds(2)));
+        }
+
+        [TestMethod]
+        public void FriendCacheInvalidated_DuringFriendRefresh_ReloadsCheckpointImmediately()
+        {
+            var initialData = CreateData();
+            var updatedData = CreateData();
+            updatedData.Friends.Add(new FriendSummaryItem
+            {
+                ProviderKey = "Steam",
+                ExternalUserId = "dana",
+                DisplayName = "Dana",
+                GamesWithUnlocksCount = 1,
+                UnlockedAchievementsCount = 1,
+                LastUnlockUtc = new DateTime(2026, 1, 8, 0, 0, 0, DateTimeKind.Utc)
+            });
+
+            var cache = new StubFriendCache(initialData);
+            var refreshRuntime = new RefreshRuntime();
+            refreshRuntime.BeginTestRefresh(new ProgressReport { Mode = RefreshModeType.FriendsFull });
+            var viewModel = CreateViewModel(
+                cache,
+                refreshRuntime: refreshRuntime,
+                cacheInvalidationDebounceInterval: TimeSpan.Zero,
+                activeRefreshInvalidationInterval: TimeSpan.FromSeconds(10));
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+            var loadCountAfterInitialLoad = cache.LoadFriendsOverviewDataCalls;
+
+            cache.Data = updatedData;
+            refreshRuntime.RaiseFriendCacheInvalidated();
+
+            Assert.IsTrue(
+                SpinWait.SpinUntil(
+                    () => cache.LoadFriendsOverviewDataCalls > loadCountAfterInitialLoad &&
+                          viewModel.FilteredFriends.ToList().Any(friend => friend.DisplayName == "Dana"),
+                    TimeSpan.FromSeconds(2)));
+        }
+
+        [TestMethod]
+        public void RebuildProgress_FinalFriendReport_ReloadsOverviewData()
+        {
+            var initialData = CreateData();
+            var updatedData = CreateData();
+            updatedData.Friends.Add(new FriendSummaryItem
+            {
+                ProviderKey = "Steam",
+                ExternalUserId = "dana",
+                DisplayName = "Dana",
+                GamesWithUnlocksCount = 1,
+                UnlockedAchievementsCount = 1,
+                LastUnlockUtc = new DateTime(2026, 1, 8, 0, 0, 0, DateTimeKind.Utc)
+            });
+
+            var cache = new StubFriendCache(initialData);
+            var refreshRuntime = new RefreshRuntime();
+            var viewModel = CreateViewModel(
+                cache,
+                refreshRuntime: refreshRuntime,
+                cacheInvalidationDebounceInterval: TimeSpan.Zero);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+            Assert.AreEqual(3, viewModel.FilteredFriends.Count);
+
+            cache.Data = updatedData;
+            refreshRuntime.RaiseRebuildProgress(new ProgressReport
+            {
+                Mode = RefreshModeType.FriendsFull,
+                CurrentStep = 1,
+                TotalSteps = 1,
+                Message = "Friends refresh complete."
+            });
+
+            Assert.IsTrue(
+                SpinWait.SpinUntil(
+                    () =>
+                    {
+                        try
+                        {
+                            return viewModel.FilteredFriends
+                                .ToList()
+                                .Any(friend => friend.DisplayName == "Dana");
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            return false;
+                        }
+                        catch (ArgumentException)
+                        {
+                            return false;
+                        }
+                    },
+                    TimeSpan.FromSeconds(2)));
+        }
+
+        [TestMethod]
+        public void FriendCacheInvalidated_DuringFriendRefresh_PreservesSelectedFriendAndGame()
         {
             var initialData = CreateData();
             var updatedData = CreateData();
@@ -313,13 +566,14 @@ namespace PlayniteAchievements.Tests.ViewModels
             var viewModel = CreateViewModel(
                 cache,
                 refreshRuntime: refreshRuntime,
-                cacheInvalidationDebounceInterval: TimeSpan.Zero);
+                cacheInvalidationDebounceInterval: TimeSpan.Zero,
+                activeRefreshInvalidationInterval: TimeSpan.Zero);
             viewModel.LoadAsync().GetAwaiter().GetResult();
             viewModel.SelectedFriend = initialData.Friends[0];
             viewModel.SelectedGame = initialData.Games[1];
 
             cache.Data = updatedData;
-            refreshRuntime.RaiseCacheInvalidated();
+            refreshRuntime.RaiseFriendCacheInvalidated();
 
             Assert.IsTrue(
                 SpinWait.SpinUntil(
@@ -457,8 +711,47 @@ namespace PlayniteAchievements.Tests.ViewModels
             CollectionAssert.AreEqual(
                 new[] { "alice" },
                 request.Options.FriendExternalUserIds.ToList());
+            Assert.AreEqual(1, request.Options.FriendAccounts.Count);
+            Assert.IsTrue(request.Options.FriendAccounts.Single().Matches("Steam", "alice"));
             Assert.IsNull(request.Options.PlayniteGameIds);
             Assert.IsNull(request.Options.ProviderAppIds);
+        }
+
+        [TestMethod]
+        public void SelectedRefreshRequest_MergedFriendUsesAllMemberAccounts()
+        {
+            var mergedFriend = new FriendSummaryItem
+            {
+                ProviderKey = FriendOverviewProjection.MergedProviderKey,
+                ExternalUserId = "merged-alice",
+                MergedFriendId = "merged-alice",
+                DisplayName = "Alice Unified",
+                MemberAccounts = new List<FriendAccountRef>
+                {
+                    FriendAccountRef.From("Steam", "alice"),
+                    FriendAccountRef.From("Exophase", "exo-alice")
+                },
+                MemberProviderKeys = new List<string> { "Steam", "Exophase" }
+            };
+
+            var success = FriendsOverviewViewModel.TryBuildSelectedFriendRefreshRequest(
+                mergedFriend,
+                selectedFriend: null,
+                selectedGame: null,
+                out var request);
+
+            Assert.IsTrue(success);
+            Assert.AreEqual(RefreshModeType.FriendsCustom, request.Mode);
+            CollectionAssert.AreEquivalent(
+                new[] { "Steam", "Exophase" },
+                request.Options.ProviderKeys.ToList());
+            CollectionAssert.AreEquivalent(
+                new[] { "alice", "exo-alice" },
+                request.Options.FriendExternalUserIds.ToList());
+            var accounts = request.Options.FriendAccounts.ToList();
+            Assert.AreEqual(2, accounts.Count);
+            Assert.IsTrue(accounts.Any(account => account.Matches("Steam", "alice")));
+            Assert.IsTrue(accounts.Any(account => account.Matches("Exophase", "exo-alice")));
         }
 
         [TestMethod]
@@ -482,6 +775,8 @@ namespace PlayniteAchievements.Tests.ViewModels
             CollectionAssert.AreEqual(
                 new[] { "alice" },
                 request.Options.FriendExternalUserIds.ToList());
+            Assert.AreEqual(1, request.Options.FriendAccounts.Count);
+            Assert.IsTrue(request.Options.FriendAccounts.Single().Matches("Steam", "alice"));
             CollectionAssert.AreEqual(
                 new[] { data.Games[1].PlayniteGameId.Value },
                 request.Options.PlayniteGameIds.ToList());
@@ -511,6 +806,8 @@ namespace PlayniteAchievements.Tests.ViewModels
             CollectionAssert.AreEqual(
                 new[] { "alice" },
                 request.Options.FriendExternalUserIds.ToList());
+            Assert.AreEqual(1, request.Options.FriendAccounts.Count);
+            Assert.IsTrue(request.Options.FriendAccounts.Single().Matches("Steam", "alice"));
             CollectionAssert.AreEqual(
                 new[] { 999 },
                 request.Options.ProviderAppIds.ToList());
@@ -527,7 +824,8 @@ namespace PlayniteAchievements.Tests.ViewModels
             StubFriendCache cache,
             Action<PersistedSettings> configure = null,
             RefreshRuntime refreshRuntime = null,
-            TimeSpan? cacheInvalidationDebounceInterval = null)
+            TimeSpan? cacheInvalidationDebounceInterval = null,
+            TimeSpan? activeRefreshInvalidationInterval = null)
         {
             var settings = new PlayniteAchievementsSettings();
             configure?.Invoke(settings.Persisted);
@@ -537,7 +835,8 @@ namespace PlayniteAchievements.Tests.ViewModels
                 refreshRuntime,
                 settings,
                 null,
-                cacheInvalidationDebounceInterval: cacheInvalidationDebounceInterval);
+                cacheInvalidationDebounceInterval: cacheInvalidationDebounceInterval,
+                activeRefreshInvalidationInterval: activeRefreshInvalidationInterval);
         }
 
         private static FriendsOverviewData CreateData()
@@ -761,7 +1060,25 @@ namespace PlayniteAchievements.Tests.ViewModels
                 Data = data;
             }
 
+            public event EventHandler FriendCacheInvalidated;
+
             public FriendsOverviewData Data { get; set; }
+
+            public FriendsOverviewData DataAfterFirstLoad { get; set; }
+
+            public ManualResetEventSlim FirstLoadEntered { get; set; }
+
+            public ManualResetEventSlim ReleaseFirstLoad { get; set; }
+
+            public int LoadFriendsOverviewDataCalls { get; private set; }
+
+            public void RaiseFriendCacheInvalidated()
+            {
+                FriendCacheInvalidated?.Invoke(this, EventArgs.Empty);
+            }
+
+            public IFriendCacheInvalidationBatch BeginFriendCacheInvalidationBatch() =>
+                NullFriendCacheInvalidationBatch.Instance;
 
             public FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends) =>
                 FriendCacheWriteResult.Ok();
@@ -821,6 +1138,13 @@ namespace PlayniteAchievements.Tests.ViewModels
                 FriendGameAchievements achievements) =>
                 FriendCacheWriteResult.Ok();
 
+            public List<FriendAchievementRow> LoadFriendGameAchievements(
+                string providerKey,
+                string externalUserId,
+                int appId,
+                string providerGameKey) =>
+                new List<FriendAchievementRow>();
+
             public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false) =>
                 FriendCacheWriteResult.Ok();
 
@@ -837,7 +1161,35 @@ namespace PlayniteAchievements.Tests.ViewModels
                 string externalUserId) =>
                 new Dictionary<string, FriendOwnershipRecency>();
 
-            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => Data;
+            public IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
+                string providerKey,
+                IReadOnlyCollection<string> externalUserIds) =>
+                (externalUserIds ?? Array.Empty<string>())
+                    .Where(id => !string.IsNullOrWhiteSpace(id))
+                    .Select(id => id.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToDictionary(id => id, _ => false, StringComparer.OrdinalIgnoreCase);
+
+            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
+            {
+                var data = Data;
+                LoadFriendsOverviewDataCalls++;
+                if (LoadFriendsOverviewDataCalls == 1 && FirstLoadEntered != null)
+                {
+                    FirstLoadEntered.Set();
+                    ReleaseFirstLoad?.Wait(TimeSpan.FromSeconds(5));
+                }
+
+                return LoadFriendsOverviewDataCalls > 1 && DataAfterFirstLoad != null
+                    ? DataAfterFirstLoad
+                    : data;
+            }
+
+            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers) =>
+                Data;
+
+            public FriendsOverviewData LoadFriendRecentUnlocksData(bool hideSpoilers, int recentLimit) =>
+                Data;
 
             public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() =>
                 new List<CurrentUserGameLabel>();

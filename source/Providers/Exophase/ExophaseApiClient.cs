@@ -323,6 +323,23 @@ namespace PlayniteAchievements.Providers.Exophase
             CancellationToken ct,
             bool waitForImages = false)
         {
+            var fetched = await FetchAchievementsWithHtmlAsync(achievementUrl, acceptLanguage, ct, waitForImages)
+                .ConfigureAwait(false);
+            return fetched?.Achievements;
+        }
+
+        /// <summary>
+        /// Same fetch+parse as <see cref="FetchAchievementsAsync"/>, but also returns the raw page HTML so
+        /// callers can extract page-level details (e.g. the game header banner) without a second request.
+        /// Returns null on hard failure (missing url, empty HTML, or exception); on success the result always
+        /// carries the HTML, while <see cref="AchievementFetchResult.Achievements"/> may be null if parsing failed.
+        /// </summary>
+        internal async Task<AchievementFetchResult> FetchAchievementsWithHtmlAsync(
+            string achievementUrl,
+            string acceptLanguage,
+            CancellationToken ct,
+            bool waitForImages = false)
+        {
             if (string.IsNullOrWhiteSpace(achievementUrl))
             {
                 _logger?.Warn("[Exophase] FetchAchievementsAsync: achievementUrl is null or empty");
@@ -346,7 +363,7 @@ namespace PlayniteAchievements.Providers.Exophase
                     _logger?.Warn($"[Exophase] ParseAchievementsHtml returned null for {achievementUrl}");
                 }
 
-                return result;
+                return new AchievementFetchResult { Achievements = result, Html = html };
             }
             catch (OperationCanceledException)
             {
@@ -357,6 +374,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 _logger?.Error(ex, $"[Exophase] Failed to fetch achievements from {achievementUrl}");
                 return null;
             }
+        }
+
+        internal sealed class AchievementFetchResult
+        {
+            public List<AchievementDetail> Achievements { get; set; }
+
+            public string Html { get; set; }
         }
 
         /// <summary>

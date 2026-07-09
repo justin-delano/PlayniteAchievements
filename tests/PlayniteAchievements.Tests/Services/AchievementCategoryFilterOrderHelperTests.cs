@@ -53,6 +53,27 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void BuildOrderedCategoryLabels_AppliesPreferredOrderBeforeFirstSeenRemainder()
+        {
+            var items = new[]
+            {
+                new AchievementDisplayItem { CategoryLabel = "Base Game" },
+                new AchievementDisplayItem { CategoryLabel = "DLC 2" },
+                new AchievementDisplayItem { CategoryLabel = "DLC 1" },
+                new AchievementDisplayItem { CategoryLabel = "Event" }
+            };
+
+            var ordered = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
+                items,
+                item => item?.CategoryLabel,
+                new[] { "dlc 1", "Missing", "base game", "DLC 1" });
+
+            CollectionAssert.AreEqual(
+                new[] { "DLC 1", "Base Game", "DLC 2", "Event" },
+                ordered);
+        }
+
+        [TestMethod]
         public void BuildSelectedGameFilterOptions_UsesCanonicalCategoryOrder_AndPrunesInvalidSelections()
         {
             var selectedCategoryFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase)

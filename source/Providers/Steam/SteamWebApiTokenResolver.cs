@@ -3,15 +3,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Providers.Steam
 {
-    internal sealed class SteamWebApiTokenResolver
+    internal sealed class SteamWebApiTokenResolver : IRefreshAuthContextReceiver
     {
         private readonly ISessionManager _sessionManager;
         private readonly Func<CancellationToken, Task<SteamWebAuthSession>> _resolveSessionAsync;
         private readonly ILogger _logger;
+        private RefreshAuthContext _authContext;
 
         public ISessionManager SessionManager => _sessionManager;
 
@@ -40,6 +42,12 @@ namespace PlayniteAchievements.Providers.Steam
 
         public async Task<SteamWebApiTokenResolution> ResolveAsync(CancellationToken ct)
         {
+            var scoped = TryResolveFromScopedAuthContext();
+            if (scoped != null)
+            {
+                return scoped;
+            }
+
             var session = await _resolveSessionAsync(ct).ConfigureAwait(false);
             if (session?.IsComplete == true)
             {
@@ -58,6 +66,35 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             return SteamWebApiTokenResolution.Fail(AuthProbeResult.NotAuthenticated());
+        }
+
+        public void BeginRefreshAuthContext(RefreshAuthContext context)
+        {
+            _authContext = context;
+        }
+
+        public void EndRefreshAuthContext(RefreshAuthContext context)
+        {
+            if (ReferenceEquals(_authContext, context))
+            {
+                _authContext = null;
+            }
+        }
+
+        private SteamWebApiTokenResolution TryResolveFromScopedAuthContext()
+        {
+            var context = _authContext;
+            if (context == null ||
+                !context.IsProviderAuthenticated("Steam") ||
+                !context.TryGetArtifact<SteamWebAuthSession>("Steam", out var session) ||
+                session?.IsComplete != true)
+            {
+                return null;
+            }
+
+            return SteamWebApiTokenResolution.Success(
+                context.GetProbeResult("Steam") ?? AuthProbeResult.AlreadyAuthenticated(session.SteamId64),
+                session.WebApiToken);
         }
     }
 

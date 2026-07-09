@@ -52,8 +52,7 @@ namespace PlayniteAchievements
 
             EnsureAchievementResourcesLoaded();
 
-            var coordinator = GetStartPageDataCoordinator();
-            var viewModel = CreateStartPageViewModel(definition.WidgetKind, coordinator);
+            var viewModel = CreateStartPageViewModel(definition.WidgetKind);
             if (viewModel == null)
             {
                 return null;
@@ -65,7 +64,10 @@ namespace PlayniteAchievements
             var key = GetStartPageInstanceKey(viewId, instanceId);
             DisposeStartPageViewModel(key);
             _startPageViewModels[key] = viewModel;
-            viewModel.OnStartPageOpened();
+            if (viewModel is IStartPageControl startPageControl)
+            {
+                startPageControl.OnStartPageOpened();
+            }
 
             return view;
         }
@@ -95,24 +97,29 @@ namespace PlayniteAchievements
             return menu.Items.Count > 0 ? menu : null;
         }
 
-        private StartPageWidgetViewModelBase CreateStartPageViewModel(
-            StartPageWidgetKind widgetKind,
-            StartPageDataCoordinator coordinator)
+        private IDisposable CreateStartPageViewModel(StartPageWidgetKind widgetKind)
         {
             switch (widgetKind)
             {
                 case StartPageWidgetKind.GameSummariesGrid:
-                    return new StartPageGameSummariesGridViewModel(coordinator, Settings, _logger);
+                    return new StartPageGameSummariesGridViewModel(GetStartPageDataCoordinator(), Settings, _logger);
                 case StartPageWidgetKind.RecentUnlocksGrid:
-                    return new StartPageRecentUnlocksGridViewModel(coordinator, Settings, _logger);
+                    return new StartPageRecentUnlocksGridViewModel(GetStartPageDataCoordinator(), Settings, _logger);
+                case StartPageWidgetKind.FriendsRecentUnlocksGrid:
+                    return _friendsRecentUnlocksDataCoordinator == null
+                        ? null
+                        : new StartPageFriendsRecentUnlocksGridViewModel(
+                            _friendsRecentUnlocksDataCoordinator,
+                            Settings,
+                            _logger);
                 case StartPageWidgetKind.CompletedGamesPie:
                 case StartPageWidgetKind.ProviderPie:
                 case StartPageWidgetKind.RarityPie:
                 case StartPageWidgetKind.TrophyPie:
-                    return new StartPagePieWidgetViewModel(widgetKind, coordinator, Settings, _logger);
+                    return new StartPagePieWidgetViewModel(widgetKind, GetStartPageDataCoordinator(), Settings, _logger);
                 case StartPageWidgetKind.CollectionScoreCard:
                 case StartPageWidgetKind.PrestigeScoreCard:
-                    return new StartPageScoreCardWidgetViewModel(widgetKind, coordinator, Settings, _logger);
+                    return new StartPageScoreCardWidgetViewModel(widgetKind, GetStartPageDataCoordinator(), Settings, _logger);
                 default:
                     return null;
             }
@@ -126,6 +133,8 @@ namespace PlayniteAchievements
                     return new StartPageGameSummariesGridView();
                 case StartPageWidgetKind.RecentUnlocksGrid:
                     return new StartPageRecentUnlocksGridView();
+                case StartPageWidgetKind.FriendsRecentUnlocksGrid:
+                    return new StartPageFriendsRecentUnlocksGridView();
                 case StartPageWidgetKind.CompletedGamesPie:
                 case StartPageWidgetKind.ProviderPie:
                 case StartPageWidgetKind.RarityPie:
@@ -163,6 +172,7 @@ namespace PlayniteAchievements
         internal void InvalidateStartPageDataForUi()
         {
             InvalidateStartPageData();
+            _friendsRecentUnlocksDataCoordinator?.Invalidate();
         }
 
         private void DisposeStartPageViews()
@@ -227,6 +237,17 @@ namespace PlayniteAchievements
             if (data is GameSummaryItem)
             {
                 AddStartPageGameRowMenuItems(menu, gameId, resourceOwner);
+                return menu;
+            }
+
+            if (data is FriendAchievementDisplayItem)
+            {
+                menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewFriendsAchievements",
+                    () => OpenViewFriendsAchievementsWindow(gameId)));
+                menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewAchievements",
+                    () => OpenViewAchievementsWindow(gameId)));
+                menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
+                    () => OpenStartPageGameInLibrary(gameId)));
                 return menu;
             }
 

@@ -33,6 +33,7 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamHttpClient _steamClient;
         private readonly SteamApiClient _steamApiClient;
         private readonly SteamWebApiTokenResolver _tokenResolver;
+        private readonly SteamHuntersCategoryEnricher _steamHuntersCategoryEnricher;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
 
@@ -41,6 +42,7 @@ namespace PlayniteAchievements.Providers.Steam
             SteamHttpClient steamClient,
             SteamApiClient steamApiClient,
             SteamWebApiTokenResolver tokenResolver,
+            SteamHuntersCategoryEnricher steamHuntersCategoryEnricher,
             IPlayniteAPI api,
             ILogger logger)
         {
@@ -48,6 +50,7 @@ namespace PlayniteAchievements.Providers.Steam
             _steamClient = steamClient ?? throw new ArgumentNullException(nameof(steamClient));
             _steamApiClient = steamApiClient ?? throw new ArgumentNullException(nameof(steamApiClient));
             _tokenResolver = tokenResolver ?? throw new ArgumentNullException(nameof(tokenResolver));
+            _steamHuntersCategoryEnricher = steamHuntersCategoryEnricher;
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger;
         }
@@ -59,6 +62,7 @@ namespace PlayniteAchievements.Providers.Steam
             CancellationToken cancel)
         {
             _steamClient.ResetSteamDatetimeParseFailuresForScan();
+            _steamHuntersCategoryEnricher?.ClearCache();
 
             try
             {
@@ -325,9 +329,31 @@ namespace PlayniteAchievements.Providers.Steam
 
                     gameData.Achievements.Add(detail);
                 }
+
+                await EnrichSteamHuntersCategoriesAsync(appId, gameData.GameName, gameData.Achievements, cancel).ConfigureAwait(false);
             }
 
             return gameData;
+        }
+
+        private Task EnrichSteamHuntersCategoriesAsync(
+            int appId,
+            string gameName,
+            IList<AchievementDetail> achievements,
+            CancellationToken cancel)
+        {
+            if (_steamHuntersCategoryEnricher == null ||
+                !ShouldUseSteamHuntersForCategories())
+            {
+                return Task.CompletedTask;
+            }
+
+            return _steamHuntersCategoryEnricher.EnrichAsync(appId, gameName, achievements, cancel);
+        }
+
+        private static bool ShouldUseSteamHuntersForCategories()
+        {
+            return ProviderRegistry.Settings<SteamSettings>()?.UseSteamHuntersForCategories == true;
         }
 
         internal Task<SchemaAndPercentages> FetchSchemaAsync(string accessToken, int appId, CancellationToken cancel)

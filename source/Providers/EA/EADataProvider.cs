@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.EA
 {
-    public sealed class EADataProvider : IDataProvider, IProviderOverride, IDisposable
+    public sealed class EADataProvider : IDataProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_EA",
@@ -79,6 +79,16 @@ namespace PlayniteAchievements.Providers.EA
         public void Dispose()
         {
             _httpClient?.Dispose();
+        }
+
+        public void BeginRefreshAuthContext(RefreshAuthContext context)
+        {
+            _scanner?.BeginRefreshAuthContext(context);
+        }
+
+        public void EndRefreshAuthContext(RefreshAuthContext context)
+        {
+            _scanner?.EndRefreshAuthContext(context);
         }
 
         public IProviderSettings GetSettings() => _providerSettings;

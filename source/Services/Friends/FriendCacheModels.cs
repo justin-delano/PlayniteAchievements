@@ -35,13 +35,37 @@ namespace PlayniteAchievements.Services.Friends
         public string GameName { get; set; }
         public int PlaytimeForeverMinutes { get; set; }
         public DateTime? LastPlayedUtc { get; set; }
+        public DateTime? LastOwnershipRefreshUtc { get; set; }
         public DateTime? LastScrapedUtc { get; set; }
         public string LastScrapeStatus { get; set; }
+    }
+
+    internal interface IFriendCacheInvalidationBatch : IDisposable
+    {
+        void Flush();
+    }
+
+    internal sealed class NullFriendCacheInvalidationBatch : IFriendCacheInvalidationBatch
+    {
+        public static NullFriendCacheInvalidationBatch Instance { get; } = new NullFriendCacheInvalidationBatch();
+
+        private NullFriendCacheInvalidationBatch()
+        {
+        }
+
+        public void Flush()
+        {
+        }
+
+        public void Dispose()
+        {
+        }
     }
 
     internal sealed class FriendOwnershipSaveOptions
     {
         public bool IncludeProviderOnlyGames { get; set; }
+        public bool PruneStaleShared { get; set; }
     }
 
     /// <summary>
@@ -123,6 +147,10 @@ namespace PlayniteAchievements.Services.Friends
 
     internal interface IFriendCacheManager
     {
+        event EventHandler FriendCacheInvalidated;
+
+        IFriendCacheInvalidationBatch BeginFriendCacheInvalidationBatch();
+
         FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends);
 
         FriendCacheWriteResult SaveFriendOwnership(
@@ -173,6 +201,12 @@ namespace PlayniteAchievements.Services.Friends
             int appId,
             FriendGameAchievements achievements);
 
+        List<FriendAchievementRow> LoadFriendGameAchievements(
+            string providerKey,
+            string externalUserId,
+            int appId,
+            string providerGameKey);
+
         // When preserveFriendRecord is true, cached achievement/game/ownership data is cleared but the
         // friend's Users record is kept so the friend stays registered (used by "Clear Friend").
         FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false);
@@ -189,7 +223,15 @@ namespace PlayniteAchievements.Services.Friends
             string providerKey,
             string externalUserId);
 
+        IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
+            string providerKey,
+            IReadOnlyCollection<string> externalUserIds);
+
         FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit);
+
+        FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers);
+
+        FriendsOverviewData LoadFriendRecentUnlocksData(bool hideSpoilers, int recentLimit);
 
         // Current-user games (with the servicing provider label stored at scan time) used to resolve a
         // friend's games against the local library without re-deriving platform from Source/Platform.

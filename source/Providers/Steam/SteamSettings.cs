@@ -12,6 +12,7 @@ namespace PlayniteAchievements.Providers.Steam
     public class SteamSettings : ProviderSettingsBase
     {
         private string _steamUserId;
+        private bool _useSteamHuntersForCategories;
         private ObservableCollection<SteamIgnoredFriend> _ignoredFriends =
             new ObservableCollection<SteamIgnoredFriend>();
 
@@ -26,6 +27,12 @@ namespace PlayniteAchievements.Providers.Steam
         {
             get => _steamUserId;
             set => SetValue(ref _steamUserId, value);
+        }
+
+        public bool UseSteamHuntersForCategories
+        {
+            get => _useSteamHuntersForCategories;
+            set => SetValue(ref _useSteamHuntersForCategories, value);
         }
 
         public ObservableCollection<SteamIgnoredFriend> IgnoredFriends

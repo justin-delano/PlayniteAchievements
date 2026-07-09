@@ -315,6 +315,116 @@ namespace PlayniteAchievements.Views
             _achievementVisibilityPreviewThemeData?.RefreshDisplayItems(
                 settings.ShowHiddenIcon, settings.ShowHiddenTitle, settings.ShowHiddenDescription,
                 settings.ShowHiddenSuffix, settings.ShowLockedIcon, settings.UseSeparateLockedIconsWhenAvailable, settings.ShowCompactListRarityBar);
+
+            UpdateToastMockup();
+        }
+
+        // -----------------------------
+        // Toast preview / mockup
+        // -----------------------------
+
+        /// <summary>
+        /// Rebuilds the inline toast mockup from the current persisted settings so the preview
+        /// reflects appearance toggles (glow, rarity color, shown fields, badge colors) live.
+        /// </summary>
+        private void UpdateToastMockup()
+        {
+            if (ToastMockupHost == null)
+            {
+                return;
+            }
+
+            var persisted = _settingsViewModel?.Settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            ToastMockupHost.ContentTemplate = _toastTemplateResolver.ResolveTemplate();
+            ToastMockupHost.Content = new AchievementToastViewModel(BuildToastPreviewArgs("mockup"), persisted);
+        }
+
+        private void ShowToastPreview(AchievementUnlockedEventArgs args)
+        {
+            if (args == null)
+            {
+                return;
+            }
+
+            PlayniteAchievementsPlugin.NotifyAchievementUnlocked(args);
+        }
+
+        private AchievementUnlockedEventArgs BuildToastPreviewArgs(string kind)
+        {
+            var sampleGame = L("LOCPlayAch_Settings_ToastPreviewSampleGame", "Sample Game");
+            var sampleCategory = L("LOCPlayAch_Settings_ToastPreviewSampleCategory", "Sample Category");
+            var sampleTitle = L("LOCPlayAch_Settings_ToastPreviewSampleTitle", "Example Achievement");
+            var sampleDescription = L("LOCPlayAch_Settings_ToastPreviewSampleDescription", "An example achievement description.");
+
+            switch (kind)
+            {
+                case "common":
+                    return SampleUnlock("Common", 61.4, false);
+                case "uncommon":
+                    return SampleUnlock("Uncommon", 28.7, false);
+                case "rare":
+                    return SampleUnlock("Rare", 9.3, false);
+                case "ultrarare":
+                    return SampleUnlock("UltraRare", 1.8, false);
+                case "capstone":
+                    var capstone = SampleUnlock("UltraRare", 1.2, true);
+                    capstone.GameCompleted = true;
+                    return capstone;
+                case "friend":
+                    var friend = SampleUnlock("Rare", 7.5, false);
+                    friend.IsFriendUnlock = true;
+                    friend.FriendDisplayName = L("LOCPlayAch_Settings_ToastPreviewSampleFriend", "Friend");
+                    friend.FriendAvatarUrl =
+                        "pack://application:,,,/PlayniteAchievements;component/Resources/UnlockedAchIcon.png";
+                    return friend;
+                case "mockup":
+                default:
+                    return SampleUnlock("Rare", 9.3, false);
+            }
+
+            AchievementUnlockedEventArgs SampleUnlock(string rarity, double percent, bool capstone)
+            {
+                return new AchievementUnlockedEventArgs
+                {
+                    IsPreview = true,
+                    GameName = sampleGame,
+                    Category = sampleCategory,
+                    DisplayName = sampleTitle,
+                    Description = sampleDescription,
+                    RarityTier = rarity,
+                    GlobalPercent = percent,
+                    IsCapstone = capstone,
+                    UnlockedCount = 27,
+                    TotalCount = 40
+                };
+            }
+        }
+
+        private void ToastPreviewCommonButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("common"));
+        private void ToastPreviewUncommonButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("uncommon"));
+        private void ToastPreviewRareButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("rare"));
+        private void ToastPreviewUltraRareButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("ultrarare"));
+        private void ToastPreviewCapstoneButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("capstone"));
+        private void ToastPreviewFriendButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("friend"));
+
+        private void ScreenshotDirectory_Browse_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = _settingsViewModel?.Settings?.Persisted;
+            if (settings == null)
+            {
+                return;
+            }
+
+            var selected = _plugin?.PlayniteApi?.Dialogs?.SelectFolder();
+            if (!string.IsNullOrWhiteSpace(selected))
+            {
+                settings.UnlockScreenshotDirectory = selected;
+            }
         }
 
         // Theme migration UI state properties
@@ -536,6 +646,7 @@ namespace PlayniteAchievements.Views
         private readonly ThemeMigrationService _themeMigration;
         private readonly ProviderRegistry _providerRegistry;
         private readonly Func<Window, string, string> _pickColor;
+        private readonly AchievementToastTemplateResolver _toastTemplateResolver;
         private ICollectionView _providerNavigationView;
         private bool _providerNavigationBuilt;
         private bool _themeMigrationLoaded;
@@ -613,6 +724,7 @@ namespace PlayniteAchievements.Views
                 _logger,
                 _settingsViewModel.Settings,
                 () => _plugin.SavePluginSettings(_settingsViewModel.Settings));
+            _toastTemplateResolver = new AchievementToastTemplateResolver(plugin.PlayniteApi, logger);
 
             InitializeComponent();
 
@@ -666,6 +778,8 @@ namespace PlayniteAchievements.Views
                     SettingsTabControl.SelectedItem = ProvidersTab;
                     NavigateToPendingProvider();
                 }
+
+                UpdateToastMockup();
             };
         }
 
@@ -2875,7 +2989,16 @@ namespace PlayniteAchievements.Views
                 nameof(Models.Settings.PersistedSettings.ShowLockedIcon),
                 nameof(Models.Settings.PersistedSettings.UseSeparateLockedIconsWhenAvailable),
                 nameof(Models.Settings.PersistedSettings.UseUniformRarityBadges),
-                nameof(Models.Settings.PersistedSettings.RarityColors)
+                nameof(Models.Settings.PersistedSettings.RarityColors),
+                nameof(Models.Settings.PersistedSettings.ToastShowHeader),
+                nameof(Models.Settings.PersistedSettings.ToastShowName),
+                nameof(Models.Settings.PersistedSettings.ToastShowRarityBadge),
+                nameof(Models.Settings.PersistedSettings.ToastShowRarityGlow),
+                nameof(Models.Settings.PersistedSettings.ToastRarityColoredName),
+                nameof(Models.Settings.PersistedSettings.ToastShowRarityPercent),
+                nameof(Models.Settings.PersistedSettings.ToastShowDescription),
+                nameof(Models.Settings.PersistedSettings.ToastShowCategory),
+                nameof(Models.Settings.PersistedSettings.ToastShowGameName)
             };
 
             if (RarityAppearanceHelper.IsAppearanceSettingPropertyName(e.PropertyName))

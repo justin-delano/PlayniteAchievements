@@ -45,12 +45,20 @@ namespace PlayniteAchievements.Services
             _targetSelectionResolver = targetSelectionResolver ?? throw new ArgumentNullException(nameof(targetSelectionResolver));
         }
 
-        public ResolvedRequest Resolve(RefreshRequest request, IReadOnlyList<IDataProvider> authenticatedProviders)
+        public ResolvedRequest Resolve(
+            RefreshRequest request,
+            IReadOnlyList<IDataProvider> authenticatedProviders,
+            TargetSelectionCache targetSelectionCache = null)
         {
             request ??= new RefreshRequest();
             var mode = ResolveMode(request);
             var options = ResolveOptionsForRequest(request, mode);
-            var resolved = ResolveUnified(mode, request.SingleGameId, options, authenticatedProviders);
+            var resolved = ResolveUnified(
+                mode,
+                request.SingleGameId,
+                options,
+                authenticatedProviders,
+                targetSelectionCache);
             resolved.ErrorLogMessage = resolved.ErrorLogMessage ?? ResolveErrorLogMessage(mode, options);
             return resolved;
         }
@@ -155,7 +163,8 @@ namespace PlayniteAchievements.Services
             RefreshModeType mode,
             Guid? singleGameId,
             RefreshOptions options,
-            IReadOnlyList<IDataProvider> authenticatedProviders)
+            IReadOnlyList<IDataProvider> authenticatedProviders,
+            TargetSelectionCache targetSelectionCache)
         {
             options = (options ?? new RefreshOptions()).Clone();
             var providers = ResolveProviders(options, authenticatedProviders);
@@ -172,7 +181,11 @@ namespace PlayniteAchievements.Services
             if (wantsCurrent)
             {
                 currentProviders = providers;
-                var currentResult = ResolveCurrentOptions(mode, options, currentProviders);
+                var currentResult = ResolveCurrentOptions(
+                    mode,
+                    options,
+                    currentProviders,
+                    targetSelectionCache);
                 if (currentResult.ShouldExecute)
                 {
                     currentOptions = currentResult.Options;
@@ -256,7 +269,8 @@ namespace PlayniteAchievements.Services
         private CurrentOptionResult ResolveCurrentOptions(
             RefreshModeType mode,
             RefreshOptions options,
-            IReadOnlyList<IDataProvider> providers)
+            IReadOnlyList<IDataProvider> providers,
+            TargetSelectionCache targetSelectionCache)
         {
             if (providers == null || providers.Count == 0)
             {
@@ -288,7 +302,7 @@ namespace PlayniteAchievements.Services
                 custom.Scope = CustomGameScope.Explicit;
             }
 
-            var scopedGames = ResolveCustomScopeGames(custom, providers);
+            var scopedGames = ResolveCustomScopeGames(custom, providers, targetSelectionCache);
             var includeIds = custom.IncludeGameIds?
                 .Where(gameId => gameId != Guid.Empty)
                 .Distinct()
@@ -340,7 +354,8 @@ namespace PlayniteAchievements.Services
 
             var targetGameIds = mergedIds
                 .Select(gameId => _api.Database.Games.Get(gameId))
-                .Where(game => game != null && _targetSelectionResolver.ResolveProviderForGame(game, providers) != null)
+                .Where(game => game != null &&
+                               _targetSelectionResolver.ResolveProviderForGame(game, providers, targetSelectionCache) != null)
                 .Select(game => game.Id)
                 .ToList();
 
@@ -477,10 +492,11 @@ namespace PlayniteAchievements.Services
                     PlayniteGameIds = playniteGameIds,
                     ProviderAppIds = providerAppIds,
                     ProviderGameKeys = providerGameKeys,
+                    FriendAccounts = options.FriendAccounts,
                     FriendExternalUserIds = options.FriendExternalUserIds,
-                    DefinitionTtl = options.DefinitionTtl,
                     ForceDefinitionRefresh = options.ForceDefinitionRefresh ||
-                                             friendScope == FriendRefreshScope.SelectedGame
+                                             friendScope == FriendRefreshScope.SelectedGame ||
+                                             friendScope == FriendRefreshScope.Full
                 }
             };
         }
@@ -500,7 +516,10 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        private List<Game> ResolveCustomScopeGames(CustomRefreshOptions options, IReadOnlyList<IDataProvider> providers)
+        private List<Game> ResolveCustomScopeGames(
+            CustomRefreshOptions options,
+            IReadOnlyList<IDataProvider> providers,
+            TargetSelectionCache targetSelectionCache)
         {
             options ??= new CustomRefreshOptions();
             var includeUnplayed = options.IncludeUnplayedOverride ??
@@ -548,7 +567,7 @@ namespace PlayniteAchievements.Services
                                   Enumerable.Empty<Game>();
                     break;
                 case CustomGameScope.Missing:
-                    scopedGames = GetMissingGameIds(providers)
+                    scopedGames = GetMissingGameIds(providers, targetSelectionCache)
                         .Select(gameId => _api.Database.Games.Get(gameId))
                         .Where(game => game != null);
                     break;
@@ -606,9 +625,13 @@ namespace PlayniteAchievements.Services
                    (game.IsInstalled || GameCustomDataLookup.TryGetProviderOverride(game.Id, out _));
         }
 
-        private List<Guid> GetMissingGameIds(IReadOnlyList<IDataProvider> authenticatedProviders)
+        private List<Guid> GetMissingGameIds(
+            IReadOnlyList<IDataProvider> authenticatedProviders,
+            TargetSelectionCache targetSelectionCache)
         {
-            var missingIds = _targetSelectionResolver.GetMissingGameIds(authenticatedProviders);
+            var missingIds = _targetSelectionResolver.GetMissingGameIds(
+                authenticatedProviders,
+                targetSelectionCache);
             if (ShouldIncludeUnplayedGames())
             {
                 return missingIds;

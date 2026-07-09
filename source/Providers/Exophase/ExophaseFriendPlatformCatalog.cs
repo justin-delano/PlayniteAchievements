@@ -24,7 +24,6 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public static IReadOnlyList<Entry> Entries { get; } = new List<Entry>
         {
-            new Entry("steam", "LOCPlayAch_Provider_Steam"),
             new Entry("psn", "LOCPlayAch_Provider_PSN"),
             new Entry("xbox", "LOCPlayAch_Provider_Xbox"),
             new Entry("gog", "LOCPlayAch_Provider_GOG"),

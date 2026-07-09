@@ -19,6 +19,16 @@ namespace PlayniteAchievements.Services
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         private static readonly Dictionary<string, string> EmptyStringMap =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> OverviewProjectionAffectingSettings =
+            new HashSet<string>(StringComparer.Ordinal)
+            {
+                nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable),
+                nameof(PersistedSettings.SeparateLockedIconEnabledGameIds),
+                nameof(PersistedSettings.ExcludedFromSummariesGameIds),
+                nameof(PersistedSettings.ManualCapstones),
+                nameof(PersistedSettings.AchievementCategoryOverrides),
+                nameof(PersistedSettings.AchievementCategoryTypeOverrides)
+            };
 
         private sealed class SummaryCustomizationData
         {
@@ -288,6 +298,7 @@ namespace PlayniteAchievements.Services
         {
             if (HasAchievementFiltersConfigured())
             {
+                _logger?.Debug("[OverviewPerf] Cached summary fast path skipped because achievement filters are configured.");
                 return null;
             }
 
@@ -303,6 +314,7 @@ namespace PlayniteAchievements.Services
             var summaryData = GetCachedSummaryData(normalizedLimit);
             if (summaryData == null)
             {
+                _logger?.Debug("[OverviewPerf] Cached summary fast path unavailable because cached summary data could not be loaded.");
                 return null;
             }
 
@@ -518,6 +530,12 @@ namespace PlayniteAchievements.Services
                 AchievementCategoryTypeOverrides = hasCustomData
                     ? CloneStringMap(customData.AchievementCategoryTypeOverrides)
                     : ResolveFallbackOverrides(_persistedSettings?.AchievementCategoryTypeOverrides, gameId),
+                AchievementCategoryOrder = hasCustomData
+                    ? CloneCategoryOrder(customData.AchievementCategoryOrder)
+                    : new List<string>(),
+                AchievementCategoryImageOverrides = hasCustomData
+                    ? CloneCategoryImageOverrideMap(customData.AchievementCategoryImageOverrides)
+                    : new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase),
                 AchievementNotes = hasCustomData
                     ? CloneNoteMap(customData.AchievementNotes)
                     : EmptyStringMap
@@ -575,6 +593,52 @@ namespace PlayniteAchievements.Services
             }
 
             return map.Count == 0 ? EmptyStringMap : map;
+        }
+
+        private static List<string> CloneCategoryOrder(IEnumerable<string> source)
+        {
+            var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var value in source ?? Enumerable.Empty<string>())
+            {
+                var normalized = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(value);
+                if (!string.IsNullOrWhiteSpace(normalized) && seen.Add(normalized))
+                {
+                    result.Add(normalized);
+                }
+            }
+
+            return result;
+        }
+
+        private static Dictionary<string, CategoryImageOverrideData> CloneCategoryImageOverrideMap(
+            IReadOnlyDictionary<string, CategoryImageOverrideData> source)
+        {
+            var map = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+            if (source == null || source.Count == 0)
+            {
+                return map;
+            }
+
+            foreach (var pair in source)
+            {
+                var key = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                var icon = NormalizeText(pair.Value?.Icon);
+                var cover = NormalizeText(pair.Value?.Cover);
+                if (string.IsNullOrWhiteSpace(key) ||
+                    (string.IsNullOrWhiteSpace(icon) && string.IsNullOrWhiteSpace(cover)))
+                {
+                    continue;
+                }
+
+                map[key] = new CategoryImageOverrideData
+                {
+                    Icon = icon,
+                    Cover = cover
+                };
+            }
+
+            return map;
         }
 
         private static Dictionary<string, string> CloneNoteMap(IReadOnlyDictionary<string, string> source)
@@ -659,6 +723,10 @@ namespace PlayniteAchievements.Services
                 AchievementOrder = source.AchievementOrder != null
                     ? new List<string>(source.AchievementOrder)
                     : null,
+                AchievementCategoryOrder = source.AchievementCategoryOrder != null
+                    ? new List<string>(source.AchievementCategoryOrder)
+                    : null,
+                AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(source.AchievementCategoryImageOverrides),
                 ExcludedFromSummaries = source.ExcludedFromSummaries,
                 UseSeparateLockedIconsWhenAvailable = source.UseSeparateLockedIconsWhenAvailable,
                 Achievements = visibleAchievements
@@ -931,7 +999,10 @@ namespace PlayniteAchievements.Services
 
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
-            InvalidateOverviewProjectionCaches();
+            if (ShouldInvalidateOverviewProjectionCaches(e?.PropertyName))
+            {
+                InvalidateOverviewProjectionCaches();
+            }
         }
 
         private void OnOverviewProjectionSourceChanged(object sender, EventArgs e)
@@ -947,6 +1018,12 @@ namespace PlayniteAchievements.Services
                 _overviewHasAchievementFilters = null;
                 _overviewVisibleGameData = null;
             }
+        }
+
+        private static bool ShouldInvalidateOverviewProjectionCaches(string propertyName)
+        {
+            return string.IsNullOrWhiteSpace(propertyName) ||
+                   OverviewProjectionAffectingSettings.Contains(propertyName);
         }
 
         private List<GameAchievementData> LoadAllCachedGameData()

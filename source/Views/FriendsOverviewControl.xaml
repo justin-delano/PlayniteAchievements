@@ -144,7 +144,7 @@
                 </Style.Triggers>
             </Style>
         </Border.Style>
-    <Grid Background="{DynamicResource PlayAch.Brush.Panel}">
+    <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -153,7 +153,7 @@
 
         <!-- ROW 0: Header / Refresh -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Transparent}"
+                Background="Transparent"
                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                 Padding="16,0,16,4">
             <Border.Style>
@@ -278,7 +278,6 @@
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
@@ -309,45 +308,6 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="1" Grid.Column="0"
-                    Background="Transparent"
-                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                    BorderThickness="0,0,0,1"
-                    Padding="16,10">
-                <Grid>
-                    <Grid>
-                        <TextBox x:Name="FriendSearchTextBox"
-                                 Text="{Binding FriendSearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
-                                 Style="{StaticResource ClearableSearchTextBoxStyle}"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_SearchFriends}"
-                                   VerticalAlignment="Center"
-                                   Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                                   FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
-                                   Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
-                                   IsHitTestVisible="False">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=FriendSearchTextBox}" Value="">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Text, ElementName=FriendSearchTextBox}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <Button Tag="{Binding Text, ElementName=FriendSearchTextBox}"
-                                Click="ClearFriendSearch_Click"
-                                Style="{StaticResource ClearSearchButtonStyle}"/>
-                    </Grid>
-                </Grid>
-            </Border>
-
             <!-- Game header/filter -->
             <Border Grid.Row="0" Grid.Column="2"
                     Background="Transparent"
@@ -372,43 +332,6 @@
                             Click="ClearGameSelection_Click"
                             Style="{StaticResource FriendsOverviewClearSelectionButtonStyle}"
                             Visibility="{Binding HasGameSelection, Converter={StaticResource BoolToVis}}"/>
-                </Grid>
-            </Border>
-
-            <Border Grid.Row="1" Grid.Column="2"
-                    Background="Transparent"
-                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                    BorderThickness="0,0,0,1"
-                    Padding="16,10">
-                <Grid>
-                    <TextBox x:Name="GameSearchTextBox"
-                             Text="{Binding GameSearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
-                             Style="{StaticResource ClearableSearchTextBoxStyle}"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
-                               VerticalAlignment="Center"
-                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                               Foreground="{DynamicResource PlayAch.Brush.Text}"
-                               FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                               FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
-                               Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
-                               IsHitTestVisible="False">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding Text, ElementName=GameSearchTextBox}" Value="">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding Text, ElementName=GameSearchTextBox}" Value="{x:Null}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                    <Button Tag="{Binding Text, ElementName=GameSearchTextBox}"
-                            Click="ClearGameSearch_Click"
-                            Style="{StaticResource ClearSearchButtonStyle}"/>
                 </Grid>
             </Border>
 
@@ -443,110 +366,23 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="1" Grid.Column="4"
-                    Background="Transparent"
-                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                    BorderThickness="0,0,0,1"
-                    Padding="16,10">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" MinWidth="160"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <Grid Grid.Column="0">
-                        <TextBox x:Name="AchievementSearchTextBox"
-                                 Text="{Binding AchievementSearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
-                                 Style="{StaticResource ClearableSearchTextBoxStyle}"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
-                                   VerticalAlignment="Center"
-                                   Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                                   FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
-                                   Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
-                                   IsHitTestVisible="False">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Text, ElementName=AchievementSearchTextBox}" Value="">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding Text, ElementName=AchievementSearchTextBox}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                        <Button Tag="{Binding Text, ElementName=AchievementSearchTextBox}"
-                                Click="ClearAchievementSearch_Click"
-                                Style="{StaticResource ClearSearchButtonStyle}"/>
-                    </Grid>
-
-                    <Button x:Name="TypeFilterSelectionButton"
-                            Grid.Column="1"
-                            Style="{StaticResource AchievementSelectorButtonStyle}"
-                            Content="{Binding SelectedTypeFilterText}"
-                            Click="TypeFilterSelectionButton_Click"
-                            Width="118"
-                            Height="{StaticResource PlayAch.Size.Control.Height}"
-                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                            VerticalAlignment="Center">
-                        <Button.ContextMenu>
-                            <ContextMenu x:Name="TypeFilterSelectionContextMenu"
-                                         Style="{StaticResource AchievementSelectorContextMenuStyle}"
-                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
-                        </Button.ContextMenu>
-                    </Button>
-
-                    <Button x:Name="CategoryFilterSelectionButton"
-                            Grid.Column="2"
-                            Style="{StaticResource AchievementSelectorButtonStyle}"
-                            Content="{Binding SelectedCategoryFilterText}"
-                            Click="CategoryFilterSelectionButton_Click"
-                            Width="132"
-                            Height="{StaticResource PlayAch.Size.Control.Height}"
-                            Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                            VerticalAlignment="Center">
-                        <Button.ContextMenu>
-                            <ContextMenu x:Name="CategoryFilterSelectionContextMenu"
-                                         Style="{StaticResource AchievementSelectorContextMenuStyle}"
-                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
-                        </Button.ContextMenu>
-                    </Button>
-                </Grid>
-            </Border>
-
-            <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
-                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                    BorderThickness="1,0,0,0"
-                    IsHitTestVisible="False"/>
-            <GridSplitter Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
-                          Width="4"
-                          HorizontalAlignment="Stretch"
-                          Background="Transparent"
+            <GridSplitter Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                          Style="{StaticResource CenterLineSplitterStyle}"
                           Focusable="False"
                           IsTabStop="False"/>
 
-            <Border Grid.Row="0" Grid.RowSpan="3" Grid.Column="3"
-                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                    BorderThickness="1,0,0,0"
-                    IsHitTestVisible="False"/>
-            <GridSplitter Grid.Row="0" Grid.RowSpan="3" Grid.Column="3"
-                          Width="4"
-                          HorizontalAlignment="Stretch"
-                          Background="Transparent"
+            <GridSplitter Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
+                          Style="{StaticResource CenterLineSplitterStyle}"
                           Focusable="False"
                           IsTabStop="False"/>
 
             <!-- Friend summaries -->
             <controls:FriendSummariesGridControl x:Name="FriendSummariesGridControl"
-                                                 Grid.Row="2"
+                                                 Grid.Row="1"
                                                  Grid.Column="0"
                                                  Margin="16,0,16,0"
+                                                 ControlBar="{Binding FriendSummariesControlBar}"
+                                                 ShowControlBar="{Binding Settings.Persisted.ShowFriendsOverviewFriendSummariesGridControlBar}"
                                                  ItemsSource="{Binding FilteredFriends}"
                                                  SelectedItem="{Binding SelectedFriend, Mode=TwoWay}"
                                                  ShowColumnHeaders="{Binding Settings.Persisted.ShowFriendsOverviewFriendSummariesGridColumnHeaders}"
@@ -558,9 +394,11 @@
 
             <!-- Game summaries -->
             <controls:GameSummariesGridControl x:Name="FriendGameSummariesGridControl"
-                                               Grid.Row="2"
+                                               Grid.Row="1"
                                                Grid.Column="2"
                                                Margin="16,0,16,0"
+                                               ControlBar="{Binding GameSummariesControlBar}"
+                                               ShowControlBar="{Binding Settings.Persisted.ShowFriendsOverviewGameSummariesGridControlBar}"
                                                Visibility="{Binding HasFriendSelection, Converter={StaticResource InverseBoolToVis}}"
                                                ItemsSource="{Binding FilteredGames}"
                                                SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
@@ -578,9 +416,11 @@
                                                RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
 
             <controls:GameSummariesGridControl x:Name="SelectedFriendGameSummariesGridControl"
-                                               Grid.Row="2"
+                                               Grid.Row="1"
                                                Grid.Column="2"
                                                Margin="16,0,16,0"
+                                               ControlBar="{Binding GameSummariesControlBar}"
+                                               ShowControlBar="{Binding Settings.Persisted.ShowFriendsOverviewGameSummariesGridControlBar}"
                                                Visibility="{Binding HasFriendSelection, Converter={StaticResource BoolToVis}}"
                                                ItemsSource="{Binding FilteredGames}"
                                                SelectedItem="{Binding SelectedGame, Mode=TwoWay}"
@@ -598,11 +438,15 @@
                                                RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
 
             <!-- Achievements -->
-            <Grid Grid.Row="2" Grid.Column="4">
+            <Grid Grid.Row="1" Grid.Column="4">
                 <controls:AchievementDataGridControl x:Name="FriendsAchievementsGrid"
                                                      Margin="16,0,16,0"
+                                                     ControlBar="{Binding AchievementsControlBar}"
+                                                     ShowControlBar="{Binding Settings.Persisted.ShowFriendsOverviewAchievementsGridControlBar}"
                                                      ItemsSource="{Binding DisplayedAchievements}"
                                                      ColumnSettingsKey="FriendsOverviewRecentAchievements"
+                                                     EnableCategoryMode="True"
+                                                     CategoryColumnSettingsKey="FriendsOverviewCategorySummaries"
                                                      ShowGameColumn="True"
                                                      ShowFriendColumn="True"
                                                      HideStatusColumn="True"
@@ -615,7 +459,7 @@
                                                      DelayInitialRenderUntilNormalized="True"
                                                      RowPreviewMouseLeftButtonDown="AchievementRow_PreviewMouseLeftButtonDown"/>
 
-                <Border Background="{DynamicResource PlayAch.Brush.Panel}"
+                <Border Background="{DynamicResource PlayAch.Brush.Window.Background}"
                         Visibility="{Binding HasStatusText, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="{Binding StatusText}"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"

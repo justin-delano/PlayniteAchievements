@@ -1,0 +1,241 @@
+using Playnite.SDK;
+using Playnite.SDK.Events;
+using PlayniteAchievements.Models;
+using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Views.Helpers;
+using System;
+using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+
+namespace PlayniteAchievements.Views
+{
+    public partial class ViewFriendsAchievementsControl : UserControl, IFullscreenControllerNavigable
+    {
+        private DataGridRow _pendingFriendRightClickRow;
+
+        public ViewFriendsAchievementsControl()
+        {
+            InitializeComponent();
+        }
+
+        internal ViewFriendsAchievementsControl(
+            Guid gameId,
+            FriendGameAchievementsDataCoordinator dataCoordinator,
+            RefreshRuntime refreshRuntime,
+            RefreshEntryPoint refreshEntryPoint,
+            IPlayniteAPI playniteApi,
+            ILogger logger,
+            PlayniteAchievementsSettings settings)
+        {
+            InitializeComponent();
+            DataContext = new ViewFriendsAchievementsViewModel(
+                gameId,
+                dataCoordinator,
+                refreshRuntime,
+                refreshEntryPoint,
+                playniteApi,
+                logger,
+                settings);
+            if (ViewModel != null)
+            {
+                ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+            }
+
+            PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
+        }
+
+        private ViewFriendsAchievementsViewModel ViewModel => DataContext as ViewFriendsAchievementsViewModel;
+
+        public string WindowTitle => !string.IsNullOrWhiteSpace(ViewModel?.GameName)
+            ? string.Format(
+                ResourceProvider.GetString("LOCPlayAch_ViewFriendsAchievements_WindowTitle") ?? "{0} - Friends Achievements",
+                ViewModel.GameName)
+            : ResourceProvider.GetString("LOCPlayAch_ViewFriendsAchievements_TitleFallback") ?? "Friends Achievements";
+
+        public void RefreshView()
+        {
+            ViewModel?.RefreshView();
+            FriendSummariesGridControl?.Refresh();
+            FriendsAchievementsGrid?.Refresh();
+        }
+
+        public void TriggerHotkeyRefresh()
+        {
+            var command = ViewModel?.RefreshCommand;
+            if (command?.CanExecute(null) == true)
+            {
+                command.Execute(null);
+            }
+        }
+
+        public void Cleanup()
+        {
+            PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
+            if (ViewModel != null)
+            {
+                ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            }
+
+            ViewModel?.Dispose();
+        }
+
+        private void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            FriendSummariesGridControl?.Refresh();
+            FriendsAchievementsGrid?.Refresh();
+        }
+
+        private void Plugin_SettingsSaved(object sender, EventArgs e)
+        {
+            RefreshView();
+        }
+
+        private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e?.PropertyName == nameof(ViewFriendsAchievementsViewModel.GameName))
+            {
+                var window = Window.GetWindow(this);
+                if (window != null)
+                {
+                    window.Title = WindowTitle;
+                }
+            }
+        }
+
+        public bool HandleFullscreenControllerInput(ControllerInput input)
+        {
+            if (FullscreenControllerNavigationService.IsBackInput(input))
+            {
+                Window.GetWindow(this)?.Close();
+                return true;
+            }
+
+            if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
+            {
+                return TryOpenFocusedSelectorContextMenu() ||
+                       (FriendSummariesGridControl?.OpenColumnVisibilityMenuForController() == true) ||
+                       (FriendsAchievementsGrid?.IsColumnHeaderFocusedForController() == true &&
+                        FriendsAchievementsGrid.OpenColumnVisibilityMenuForController());
+            }
+
+            if (FullscreenControllerNavigationService.IsAcceptInput(input))
+            {
+                if (FriendsAchievementsGrid?.IsColumnHeaderFocusedForController() == true)
+                {
+                    return FriendsAchievementsGrid.ActivateFocusedColumnHeaderForController();
+                }
+
+                if (FriendsAchievementsGrid?.IsKeyboardFocusWithin == true)
+                {
+                    return FriendsAchievementsGrid.ActivateSelectedItem();
+                }
+
+                return FullscreenControllerNavigationService.ActivateFocusedElement();
+            }
+
+            return false;
+        }
+
+        private bool TryOpenFocusedSelectorContextMenu()
+        {
+            if (FriendSummariesGridControl?.OpenFocusedControlBarMenuForController() == true)
+            {
+                return true;
+            }
+
+            return FriendsAchievementsGrid?.OpenFocusedControlBarMenuForController() == true;
+        }
+
+        private void FriendRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                _pendingFriendRightClickRow = row;
+            }
+        }
+
+        private void FriendRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (!TryResolveContextMenuRow(sender, e, out var row))
+            {
+                _pendingFriendRightClickRow = null;
+                return;
+            }
+
+            e.Handled = true;
+            var targetRow = _pendingFriendRightClickRow ?? row;
+            _pendingFriendRightClickRow = null;
+            if (!(targetRow.DataContext is FriendSummaryItem friend))
+            {
+                return;
+            }
+
+            var menu = BuildFriendContextMenu(friend);
+            if (menu == null || menu.Items.Count == 0)
+            {
+                return;
+            }
+
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
+            menu.PlacementTarget = targetRow;
+            menu.IsOpen = true;
+        }
+
+        private ContextMenu BuildFriendContextMenu(FriendSummaryItem friend)
+        {
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateMenuItem(
+                "LOCPlayAch_ViewFriendsAchievements_RefreshSelectedFriend",
+                "Refresh Friend for This Game",
+                () =>
+                {
+                    var command = ViewModel?.RefreshSelectedFriendCommand;
+                    if (command?.CanExecute(friend) == true)
+                    {
+                        command.Execute(friend);
+                    }
+                }));
+
+            menu.Items.Add(CreateMenuItem(
+                "LOCPlayAch_Menu_OpenGameInLibrary",
+                "Open Game in Library",
+                () =>
+                {
+                    var command = ViewModel?.OpenGameInLibraryCommand;
+                    if (command?.CanExecute(null) == true)
+                    {
+                        command.Execute(null);
+                    }
+                }));
+
+            return menu;
+        }
+
+        private static MenuItem CreateMenuItem(string resourceKey, string fallback, Action execute)
+        {
+            var header = ResourceProvider.GetString(resourceKey);
+            return new MenuItem
+            {
+                Header = string.IsNullOrWhiteSpace(header) ? fallback : header,
+                Command = new PlayniteAchievements.Common.RelayCommand(_ => execute?.Invoke())
+            };
+        }
+
+        private static bool TryResolveContextMenuRow(
+            object sender,
+            MouseButtonEventArgs e,
+            out DataGridRow row)
+        {
+            row = sender as DataGridRow
+                  ?? e?.Source as DataGridRow
+                  ?? VisualTreeHelpers.FindVisualParent<DataGridRow>(e?.OriginalSource as DependencyObject);
+            return row != null;
+        }
+    }
+}

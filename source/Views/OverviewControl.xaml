@@ -9,7 +9,6 @@
              xmlns:models="clr-namespace:PlayniteAchievements.Models.Achievements"
              xmlns:rootModels="clr-namespace:PlayniteAchievements.Models"
              xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
-             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d"
@@ -52,195 +51,6 @@
                                VerticalAlignment="Center"/>
                 </StackPanel>
             </DataTemplate>
-
-            <!-- Clickable filter row styled like the multi-select dropdown menu items: an outlined
-                 check box (with a dash for the tri-state "some selected" parent), a label, and a
-                 full-row hover highlight. Supports tri-state via IsThreeState on the instance. -->
-            <Style x:Key="ProviderFilterRowToggleStyle" TargetType="ToggleButton">
-                <Setter Property="OverridesDefaultStyle" Value="True"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
-                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
-                <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
-                <Setter Property="HorizontalContentAlignment" Value="Left"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Focusable" Value="False"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ToggleButton">
-                            <Border x:Name="RowBorder"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="Transparent"
-                                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                    CornerRadius="3"
-                                    SnapsToDevicePixels="True">
-                                <Grid Margin="4,5,10,5">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="6"/>
-                                        <ColumnDefinition Width="*"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Grid Grid.Column="0" Width="16" Height="16" SnapsToDevicePixels="True">
-                                        <Border x:Name="CheckBorder"
-                                                Background="{DynamicResource PlayAch.Brush.Control.Background}"
-                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                                BorderThickness="1"
-                                                CornerRadius="3"/>
-                                        <Path x:Name="CheckMark"
-                                              Data="M 3.5 8 L 6.5 11 L 12.5 5"
-                                              Stroke="{DynamicResource PlayAch.Brush.Accent}"
-                                              StrokeThickness="2"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round"
-                                              Visibility="Collapsed"/>
-                                        <Path x:Name="DashMark"
-                                              Data="M 3.5 8 L 12.5 8"
-                                              Stroke="{DynamicResource PlayAch.Brush.Accent}"
-                                              StrokeThickness="2"
-                                              StrokeStartLineCap="Round"
-                                              StrokeEndLineCap="Round"
-                                              Visibility="Collapsed"/>
-                                    </Grid>
-                                    <ContentPresenter Grid.Column="2"
-                                                      VerticalAlignment="Center"
-                                                      HorizontalAlignment="Left"
-                                                      RecognizesAccessKey="True"
-                                                      TextElement.Foreground="{TemplateBinding Foreground}"/>
-                                </Grid>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                    <Setter TargetName="CheckBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Control.Background.Hover}"/>
-                                    <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
-                                </Trigger>
-                                <Trigger Property="IsChecked" Value="{x:Null}">
-                                    <Setter TargetName="CheckBorder" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                    <Setter TargetName="CheckBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Control.Background.Hover}"/>
-                                    <Setter TargetName="DashMark" Property="Visibility" Value="Visible"/>
-                                </Trigger>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="RowBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
-                                    <Setter TargetName="RowBorder" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <!-- Chevron toggle that fills its square so the whole area is clickable. Points right
-                 when collapsed and down when expanded. -->
-            <Style x:Key="ProviderFilterChevronToggleStyle" TargetType="ToggleButton">
-                <Setter Property="OverridesDefaultStyle" Value="True"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Width" Value="30"/>
-                <Setter Property="VerticalAlignment" Value="Stretch"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="Focusable" Value="False"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ToggleButton">
-                            <Border x:Name="ChevronBorder"
-                                    Background="Transparent"
-                                    CornerRadius="3"
-                                    SnapsToDevicePixels="True">
-                                <Path x:Name="Arrow"
-                                      Width="8" Height="5"
-                                      Data="M 0,0 L 8,0 L 4,5 Z"
-                                      Fill="{DynamicResource PlayAch.Brush.Text}"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      RenderTransformOrigin="0.5,0.5">
-                                    <Path.RenderTransform>
-                                        <RotateTransform Angle="-90"/>
-                                    </Path.RenderTransform>
-                                </Path>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsChecked" Value="True">
-                                    <Setter TargetName="Arrow" Property="RenderTransform">
-                                        <Setter.Value>
-                                            <RotateTransform Angle="0"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                </Trigger>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="ChevronBorder" Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
-                                    <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
-            <!-- One selectable platform (console) under a provider. -->
-            <DataTemplate x:Key="PlatformFilterOptionTemplate" DataType="{x:Type vm:PlatformFilterOption}">
-                <ToggleButton Style="{StaticResource ProviderFilterRowToggleStyle}"
-                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                              Content="{Binding PlatformName}"/>
-            </DataTemplate>
-
-            <!-- A provider row: tri-state parent toggle (selects/clears all platforms), name, an
-                 optional expander, and the indented platform sub-list shown when expanded. -->
-            <DataTemplate x:Key="ProviderFilterGroupTemplate" DataType="{x:Type vm:ProviderFilterGroup}">
-                <StackPanel>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <ToggleButton Grid.Column="0"
-                                      Style="{StaticResource ProviderFilterRowToggleStyle}"
-                                      IsThreeState="True"
-                                      IsChecked="{Binding SelectionState, Mode=OneWay}"
-                                      Command="{Binding ToggleAllCommand}"
-                                      Content="{Binding DisplayName}"/>
-                        <ToggleButton Grid.Column="1"
-                                      IsChecked="{Binding IsExpanded, Mode=TwoWay}"
-                                      Style="{StaticResource ProviderFilterChevronToggleStyle}"
-                                      Visibility="{Binding HasMultiplePlatforms, Converter={StaticResource BoolToVis}}"/>
-                    </Grid>
-                    <ItemsControl ItemsSource="{Binding Platforms}"
-                                  ItemTemplate="{StaticResource PlatformFilterOptionTemplate}"
-                                  Margin="18,0,0,0"
-                                  Visibility="{Binding IsExpanded, Converter={StaticResource BoolToVis}}"/>
-                </StackPanel>
-            </DataTemplate>
-
-            <!-- Hosts the provider/platform groups in a ContextMenu so it opens and dismisses with
-                 the same behavior as the other Overview filter dropdowns. The template replaces the
-                 menu's ItemsPresenter with a plain ItemsControl, so the rows are not wrapped in
-                 MenuItem chrome and the interactive toggles behave normally. -->
-            <Style x:Key="ProviderFilterContextMenuStyle" TargetType="ContextMenu">
-                <Setter Property="OverridesDefaultStyle" Value="True"/>
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.PopupSurface}"/>
-                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.PopupBorder}"/>
-                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
-                <Setter Property="MinWidth" Value="180"/>
-                <Setter Property="MaxWidth" Value="280"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="ContextMenu">
-                            <Border Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="5"
-                                    Padding="4"
-                                    SnapsToDevicePixels="True">
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
-                                    <ItemsControl ItemsSource="{TemplateBinding ItemsSource}"
-                                                  ItemTemplate="{StaticResource ProviderFilterGroupTemplate}"/>
-                                </ScrollViewer>
-                            </Border>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
 
             <Style x:Key="NavigationButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
@@ -527,28 +337,6 @@
                 </Style.Triggers>
             </Style>
 
-            <Style x:Key="CenterLineSplitterStyle" TargetType="GridSplitter">
-                <Setter Property="Width" Value="14"/>
-                <Setter Property="Background" Value="Transparent"/>
-                <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                <Setter Property="VerticalAlignment" Value="Stretch"/>
-                <Setter Property="ResizeDirection" Value="Columns"/>
-                <Setter Property="ResizeBehavior" Value="PreviousAndNext"/>
-                <Setter Property="ShowsPreview" Value="False"/>
-                <Setter Property="Cursor" Value="SizeWE"/>
-                <Setter Property="SnapsToDevicePixels" Value="True"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="GridSplitter">
-                            <Border Background="{TemplateBinding Background}"
-                                    BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                                    BorderThickness="1,0,0,0"
-                                    SnapsToDevicePixels="True"
-                                    UseLayoutRounding="True"/>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -562,7 +350,7 @@
 
         <!-- ROW 0: Header with Title, Scores, and Refresh Buttons -->
         <Border Grid.Row="0"
-                Background="{DynamicResource Transparent}"
+                Background="Transparent"
                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                 Padding="16,0,16,4"
                 WindowChrome.IsHitTestVisibleInChrome="True">
@@ -778,212 +566,13 @@
 
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- LEFT: Filters Row -->
-                <Border Grid.Row="1" Grid.Column="0"
-                        Background="{DynamicResource Transparent}"
-                        BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                        BorderThickness="0,0,0,1"
-                        Padding="16,10"
-                        KeyboardNavigation.DirectionalNavigation="Continue">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" MinWidth="100"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Grid Grid.Column="0">
-                            <TextBox x:Name="LeftSearchTextBox"
-                                     Text="{Binding LeftSearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
-                                     Style="{StaticResource ClearableSearchTextBoxStyle}"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Games}"
-                                       VerticalAlignment="Center"
-                                       Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                                       FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
-                                       Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
-                                       IsHitTestVisible="False">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Text, ElementName=LeftSearchTextBox}" Value="">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Text, ElementName=LeftSearchTextBox}" Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <Button x:Name="ClearLeftSearchButton"
-                                    Tag="{Binding Text, ElementName=LeftSearchTextBox}"
-                                    Click="ClearLeftSearch_Click"
-                                    Style="{StaticResource ClearSearchButtonStyle}"/>
-                        </Grid>
-
-                        <Button x:Name="ProviderFilterSelectionButton"
-                                Style="{StaticResource AchievementSelectorButtonStyle}"
-                                Grid.Column="1"
-                                Content="{Binding SelectedProviderFilterText}"
-                                Click="ProviderFilterSelectionButton_Click"
-                                Width="170"
-                                Height="{StaticResource PlayAch.Size.Control.Height}"
-                                Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                                VerticalAlignment="Center">
-                            <Button.ContextMenu>
-                                <ContextMenu x:Name="ProviderFilterSelectionContextMenu"
-                                             Style="{StaticResource ProviderFilterContextMenuStyle}"
-                                             Closed="ProviderFilterSelectionContextMenu_Closed"/>
-                            </Button.ContextMenu>
-                        </Button>
-
-                        <Button x:Name="CompletenessFilterSelectionButton"
-                                Style="{StaticResource AchievementSelectorButtonStyle}"
-                                Grid.Column="2"
-                                Content="{Binding SelectedCompletenessFilterText}"
-                                Click="CompletenessFilterSelectionButton_Click"
-                                Width="170"
-                                Height="{StaticResource PlayAch.Size.Control.Height}"
-                                Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                                VerticalAlignment="Center">
-                        <Button.ContextMenu>
-                            <ContextMenu x:Name="CompletenessFilterSelectionContextMenu"
-                                         Style="{StaticResource AchievementSelectorContextMenuStyle}"
-                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
-                        </Button.ContextMenu>
-                    </Button>
-
-                        <Button x:Name="PlayStatusFilterSelectionButton"
-                                Style="{StaticResource AchievementSelectorButtonStyle}"
-                                Grid.Column="3"
-                                Content="{Binding SelectedPlayStatusFilterText}"
-                                Click="PlayStatusFilterSelectionButton_Click"
-                                Width="170"
-                                Height="{StaticResource PlayAch.Size.Control.Height}"
-                                Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
-                                VerticalAlignment="Center">
-                        <Button.ContextMenu>
-                            <ContextMenu x:Name="PlayStatusFilterSelectionContextMenu"
-                                         Style="{StaticResource AchievementSelectorContextMenuStyle}"
-                                         ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
-                        </Button.ContextMenu>
-                    </Button>
-
-                    </Grid>
-                </Border>
-
-                <!-- RIGHT: Filters Row -->
-                <Border Grid.Row="1" Grid.Column="2"
-                        Background="{DynamicResource Transparent}"
-                        BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                        BorderThickness="0,0,0,1"
-                        Padding="16,10"
-                        KeyboardNavigation.DirectionalNavigation="Continue">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" MinWidth="180"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Grid Grid.Column="0">
-                            <TextBox x:Name="RightSearchTextBox"
-                                     Text="{Binding RightSearchText, UpdateSourceTrigger=PropertyChanged, Delay=100}"
-                                     Style="{StaticResource ClearableSearchTextBoxStyle}"/>
-                            <TextBlock Text="{DynamicResource LOCPlayAch_Filter_Achievements}"
-                                       VerticalAlignment="Center"
-                                       Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                                       FontFamily="{DynamicResource PlayAch.FontFamily.Body}"
-                                       Opacity="{StaticResource PlayAch.Opacity.Placeholder}"
-                                       IsHitTestVisible="False">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Text, ElementName=RightSearchTextBox}" Value="">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Text, ElementName=RightSearchTextBox}" Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            <Button x:Name="ClearRightSearchButton"
-                                    Tag="{Binding Text, ElementName=RightSearchTextBox}"
-                                    Click="ClearRightSearch_Click"
-                                    Style="{StaticResource ClearSearchButtonStyle}"/>
-                        </Grid>
-
-                        <StackPanel Grid.Column="1"
-                                Orientation="Horizontal"
-                                VerticalAlignment="Center"
-                                Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                                Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
-                            <Button x:Name="SelectedGameTypeFilterSelectionButton"
-                                    Style="{StaticResource AchievementSelectorButtonStyle}"
-                                    Content="{Binding SelectedGameTypeFilterText}"
-                                    Click="SelectedGameTypeFilterSelectionButton_Click"
-                                    Width="120"
-                                    Height="{StaticResource PlayAch.Size.Control.Height}"
-                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
-                                    VerticalAlignment="Center"
-                                    ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Type}">
-                                <Button.ContextMenu>
-                                    <ContextMenu x:Name="SelectedGameTypeFilterSelectionContextMenu"
-                                                 Style="{StaticResource AchievementSelectorContextMenuStyle}"
-                                                 ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
-                                </Button.ContextMenu>
-                            </Button>
-                            <Button x:Name="SelectedGameCategoryFilterSelectionButton"
-                                    Style="{StaticResource AchievementSelectorButtonStyle}"
-                                    Content="{Binding SelectedGameCategoryFilterText}"
-                                    Click="SelectedGameCategoryFilterSelectionButton_Click"
-                                    Width="140"
-                                    Height="{StaticResource PlayAch.Size.Control.Height}"
-                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
-                                    VerticalAlignment="Center"
-                                    ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_Filter_Label}">
-                                <Button.ContextMenu>
-                                    <ContextMenu x:Name="SelectedGameCategoryFilterSelectionContextMenu"
-                                                 Style="{StaticResource AchievementSelectorContextMenuStyle}"
-                                                 ItemContainerStyle="{StaticResource AchievementMultiSelectMenuItemStyle}"/>
-                                </Button.ContextMenu>
-                            </Button>
-                            <CheckBox x:Name="SelectedGameUnlockedFilterCheckBox"
-                                  Content="{DynamicResource LOCPlayAch_Common_Unlocked}"
-                                  IsChecked="{Binding ShowSelectedGameUnlocked}"
-                                  VerticalAlignment="Center"
-                                  Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-                            <CheckBox x:Name="SelectedGameLockedFilterCheckBox"
-                                  Content="{DynamicResource LOCPlayAch_Common_Locked}"
-                                  IsChecked="{Binding ShowSelectedGameLocked}"
-                                  VerticalAlignment="Center"
-                                  Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-                            <CheckBox x:Name="SelectedGameHiddenFilterCheckBox"
-                                  Content="{DynamicResource LOCPlayAch_Filter_Hidden}"
-                                  IsChecked="{Binding ShowSelectedGameHidden}"
-                                  VerticalAlignment="Center"/>
-                        </StackPanel>
-
-                    </Grid>
-                </Border>
-
                 <!-- LEFT: Header (Row 0) -->
                     <Border Grid.Row="0" Grid.Column="0"
-                            Background="{DynamicResource Transparent}"
+                            Background="Transparent"
                             Height="{StaticResource PlayAch.Size.Header.Height}"
                             Padding="16,0"
                             BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
@@ -999,7 +588,7 @@
                     </Border>
 
                     <!-- LEFT: Games List -->
-                    <Border Grid.Row="2" Grid.Column="0">
+                    <Border Grid.Row="1" Grid.Column="0">
                         <Grid x:Name="OverviewBottomChartsGrid">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
@@ -1019,6 +608,8 @@
                                                                 ShowColumnHeaders="{Binding ShowOverviewGameSummariesGridColumnHeaders}"
                                                                 FixedRowHeight="{Binding OverviewGameSummariesGridRowHeight}"
                                                                 DelayInitialRenderUntilNormalized="True"
+                                                                ControlBar="{Binding GameSummariesControlBar}"
+                                                                ShowControlBar="{Binding ShowOverviewGameSummariesGridControlBar}"
                                                                 ColumnSettingsKey="OverviewGameSummaries"
                                                                 SelectionChanged="GameSummaries_SelectionChanged"
                                                                 RowPreviewMouseLeftButtonDown="GameSummaries_PreviewMouseLeftButtonDown"
@@ -1031,7 +622,7 @@
                     <!-- RIGHT: Header -->
                     <Grid Grid.Row="0" Grid.Column="2">
                         <!-- Header for when NO game is selected -->
-                        <Border Background="{DynamicResource Transparent}"
+                        <Border Background="Transparent"
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
                                 Height="{StaticResource PlayAch.Size.Header.Height}"
@@ -1045,7 +636,7 @@
                         </Border>
 
                         <!-- Header for when a game IS selected -->
-                        <Border Background="{DynamicResource Transparent}"
+                        <Border Background="Transparent"
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
                                 Height="{StaticResource PlayAch.Size.Header.Height}"
@@ -1092,7 +683,7 @@
                             IsHitTestVisible="False"/>
                     
                     <!-- RIGHT: Content (Recent List OR Game Details) -->
-                    <Grid Grid.Row="2" Grid.Column="2">
+                    <Grid Grid.Row="1" Grid.Column="2">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
@@ -1121,6 +712,8 @@
                                                                  FixedRowHeight="{Binding OverviewRecentAchievementsGridRowHeight}"
                                                                  DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                                  DelayInitialRenderUntilNormalized="True"
+                                                                 ControlBar="{Binding RecentAchievementsControlBar}"
+                                                                 ShowControlBar="{Binding ShowOverviewRecentAchievementsGridControlBar}"
                                                                  UseExternalSorting="True"
                                                                  Sorting="AchievementDataGrid_Sorting"
                                                                  RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
@@ -1141,12 +734,18 @@
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
                                                                  ColumnSettingsKey="OverviewSelectedGameAchievements"
+                                                                 EnableCategoryMode="True"
+                                                                 CategoryColumnSettingsKey="OverviewSelectedGameCategorySummaries"
+                                                                 CategorySummarySource="{Binding SelectedGameAllAchievements}"
+                                                                 DrilledCategory="{Binding SelectedGameDrilledCategory, Mode=OneWayToSource}"
                                                                  DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                                  ShowRarityGlow="{Binding ShowRarityGlowSelectedGame}"
                                                                  ColorNamesByRarity="{Binding ColorNamesByRaritySelectedGame}"
                                                                  ShowColumnHeaders="{Binding ShowOverviewSelectedGameGridColumnHeaders}"
                                                                  FixedRowHeight="{Binding OverviewSelectedGameGridRowHeight}"
                                                                  DelayInitialRenderUntilNormalized="True"
+                                                                 ControlBar="{Binding SelectedGameAchievementsControlBar}"
+                                                                 ShowControlBar="{Binding ShowOverviewSelectedGameGridControlBar}"
                                                                  RevealCommand="{Binding DataContext.RevealAchievementCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                  UseExternalSorting="True"
                                                                  Sorting="GameAchievementsGrid_Sorting"
@@ -1156,12 +755,12 @@
                         </Grid>
                     </Grid>
 
-                    <Border Grid.Row="3"
+                    <Border Grid.Row="2"
                             Grid.ColumnSpan="3"
                             MinHeight="225"
                             Margin="0,0,0,-20"
                             Padding="0,8,0,20"
-                            Background="{DynamicResource Transparent}"
+                            Background="Transparent"
                             BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                             BorderThickness="0,1,0,0">
                         <Border.Resources>

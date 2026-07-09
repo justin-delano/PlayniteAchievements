@@ -119,6 +119,23 @@ namespace PlayniteAchievements.Services
             });
         }
 
+        public void SetAchievementCategoryMetadata(
+            Guid gameId,
+            IReadOnlyList<string> categoryOrder,
+            IReadOnlyDictionary<string, CategoryImageOverrideData> categoryImageOverrides)
+        {
+            if (gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            _gameCustomDataStore.Update(gameId, customData =>
+            {
+                customData.AchievementCategoryOrder = CopyCategoryOrder(categoryOrder);
+                customData.AchievementCategoryImageOverrides = CopyCategoryImageOverrides(categoryImageOverrides);
+            });
+        }
+
         public void SetAchievementFilters(
             Guid gameId,
             IEnumerable<string> filteredAchievementApiNames,
@@ -342,6 +359,65 @@ namespace PlayniteAchievements.Services
             }
 
             return result.Count > 0 ? result : null;
+        }
+
+        private static List<string> CopyCategoryOrder(IEnumerable<string> values)
+        {
+            if (values == null)
+            {
+                return null;
+            }
+
+            var result = new List<string>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var value in values)
+            {
+                var normalized = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(value);
+                if (string.IsNullOrWhiteSpace(normalized) || !seen.Add(normalized))
+                {
+                    continue;
+                }
+
+                result.Add(normalized);
+            }
+
+            return result.Count > 0 ? result : null;
+        }
+
+        private static Dictionary<string, CategoryImageOverrideData> CopyCategoryImageOverrides(
+            IReadOnlyDictionary<string, CategoryImageOverrideData> values)
+        {
+            if (values == null)
+            {
+                return null;
+            }
+
+            var copy = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in values)
+            {
+                var key = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                var icon = NormalizeText(pair.Value?.Icon);
+                var cover = NormalizeText(pair.Value?.Cover);
+                if (string.IsNullOrWhiteSpace(key) ||
+                    (string.IsNullOrWhiteSpace(icon) && string.IsNullOrWhiteSpace(cover)))
+                {
+                    continue;
+                }
+
+                copy[key] = new CategoryImageOverrideData
+                {
+                    Icon = icon,
+                    Cover = cover
+                };
+            }
+
+            return copy.Count > 0 ? copy : null;
+        }
+
+        private static string NormalizeText(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
         }
     }
 }

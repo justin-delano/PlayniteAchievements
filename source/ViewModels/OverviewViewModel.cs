@@ -90,14 +90,12 @@ namespace PlayniteAchievements.ViewModels
         private readonly SearchTextIndex<AchievementDisplayItem> _recentAchievementSearchIndex =
             new SearchTextIndex<AchievementDisplayItem>(item =>
                 SearchTextBuilder.ForRecentAchievement(item?.GameName, item?.Name));
-        private readonly SearchTextIndex<AchievementDisplayItem> _selectedGameAchievementSearchIndex =
-            new SearchTextIndex<AchievementDisplayItem>(item =>
-                SearchTextBuilder.ForAchievement(item?.DisplayName, item?.Description));
+        // Selected-game achievements grid: search box, Unlocked/Locked/Hidden toggles,
+        // Type/Category filters, and the filter predicate all live in the shared adapter.
+        private readonly AchievementGridControlBarAdapter _selectedGameControlBar = new AchievementGridControlBarAdapter();
         private List<string> _availableProviders = new List<string>();
         private readonly HashSet<string> _selectedCompletenessFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedPlayStatusFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _selectedGameTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        private readonly HashSet<string> _selectedGameCategoryFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // Sort state tracking for quick reverse
         private string _overviewSortPath;
@@ -161,8 +159,7 @@ namespace PlayniteAchievements.ViewModels
             GameSummaries = new BulkObservableCollection<GameSummaryItem>();
             RecentAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             SelectedGameAchievements = new BulkObservableCollection<AchievementDisplayItem>();
-            SelectedGameTypeFilterOptions = new ObservableCollection<string>();
-            SelectedGameCategoryFilterOptions = new ObservableCollection<string>();
+            SelectedGameAllAchievements = new BulkObservableCollection<AchievementDisplayItem>();
             CompletenessFilterOptions = new ObservableCollection<string>();
 
             // Default the progress dropdown to the full completed + incomplete scope.
@@ -202,6 +199,8 @@ namespace PlayniteAchievements.ViewModels
             // Set defaults: Unlocked Only, sorted by Unlock Date
             _showUnlockedOnly = true;
             _sortIndex = 2; // Unlock Date
+            InitializeGridControlBars();
+            _selectedGameControlBar.FilterChanged += OnSelectedGameControlBarFilterChanged;
 
             // Initialize commands
             RefreshViewCommand = new AsyncCommand(_ => RefreshViewAsync());
@@ -269,6 +268,62 @@ namespace PlayniteAchievements.ViewModels
             {
                 SelectedGameTimeline.PropertyChanged += Timeline_PropertyChanged;
             }
+        }
+
+        private void InitializeGridControlBars()
+        {
+            GameSummariesControlBar = new GridControlBarViewModel
+            {
+                Search = new GridSearchControl(
+                    this,
+                    nameof(LeftSearchText),
+                    () => LeftSearchText,
+                    value => LeftSearchText = value,
+                    L("LOCPlayAch_Filter_Games", "Search Games"),
+                    ClearLeftSearch)
+            };
+            GameSummariesControlBar.Items.Add(new GridProviderPlatformFilter(
+                this,
+                nameof(SelectedProviderFilterText),
+                () => SelectedProviderFilterText,
+                () => ProviderFilterGroups,
+                CollapseUnselectedProviderFilters)
+            {
+                Width = 170
+            });
+            GameSummariesControlBar.Items.Add(new GridMultiSelectFilter(
+                this,
+                nameof(SelectedCompletenessFilterText),
+                () => SelectedCompletenessFilterText,
+                () => CompletenessFilterOptions,
+                IsCompletenessFilterSelected,
+                SetCompletenessFilterSelected)
+            {
+                Width = 170
+            });
+            GameSummariesControlBar.Items.Add(new GridMultiSelectFilter(
+                this,
+                nameof(SelectedPlayStatusFilterText),
+                () => SelectedPlayStatusFilterText,
+                () => PlayStatusFilterOptions,
+                IsPlayStatusFilterSelected,
+                SetPlayStatusFilterSelected)
+            {
+                Width = 170
+            });
+
+            RecentAchievementsControlBar = new GridControlBarViewModel
+            {
+                Search = new GridSearchControl(
+                    this,
+                    nameof(RightSearchText),
+                    () => RightSearchText,
+                    value => RightSearchText = value,
+                    L("LOCPlayAch_Filter_Achievements", "Search Achievements"),
+                    ClearRightSearch)
+            };
+
+            // The selected-game control bar is built and owned by _selectedGameControlBar.
         }
 
         private void Timeline_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -501,6 +556,9 @@ namespace PlayniteAchievements.ViewModels
         // Overview tab collections
         public ObservableCollection<GameSummaryItem> GameSummaries { get; }
         public ObservableCollection<AchievementDisplayItem> RecentAchievements { get; }
+        public GridControlBarViewModel GameSummariesControlBar { get; private set; }
+        public GridControlBarViewModel RecentAchievementsControlBar { get; private set; }
+        public GridControlBarViewModel SelectedGameAchievementsControlBar => _selectedGameControlBar.ControlBar;
 
         private List<GameSummaryItem> _allGameSummaries = new List<GameSummaryItem>();
         private List<GameSummaryItem> _filteredGameSummaries = new List<GameSummaryItem>();
@@ -525,112 +583,19 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private string _rightSearchText = string.Empty;
+        // Shared by the selected-game and recent grids. The value lives in the adapter so the
+        // selected-game control bar's search box and this property stay in sync.
         public string RightSearchText
         {
-            get => _rightSearchText;
-            set
-            {
-                if (SetValueAndReturn(ref _rightSearchText, value ?? string.Empty))
-                {
-                    ApplyRightFilters();
-                }
-            }
+            get => _selectedGameControlBar.SearchText;
+            set => _selectedGameControlBar.SearchText = value;
         }
 
-        private ObservableCollection<string> _selectedGameTypeFilterOptions;
-        public ObservableCollection<string> SelectedGameTypeFilterOptions
+        private void OnSelectedGameControlBarFilterChanged(object sender, EventArgs e)
         {
-            get => _selectedGameTypeFilterOptions;
-            private set => SetValue(ref _selectedGameTypeFilterOptions, value);
-        }
-
-        public string SelectedGameTypeFilterText => GetSelectedFilterText(
-            _selectedGameTypeFilters,
-            SelectedGameTypeFilterOptions,
-            L("LOCPlayAch_Common_Label_Type", "Type"));
-
-        public bool IsSelectedGameTypeFilterSelected(string value)
-        {
-            return IsFilterSelected(_selectedGameTypeFilters, value);
-        }
-
-        public void SetSelectedGameTypeFilterSelected(string value, bool isSelected)
-        {
-            if (!SetFilterSelection(_selectedGameTypeFilters, value, isSelected))
-            {
-                return;
-            }
-
-            OnPropertyChanged(nameof(SelectedGameTypeFilterText));
+            // Keep the shared Recent search box in sync, then re-run the right-panel filters.
+            OnPropertyChanged(nameof(RightSearchText));
             ApplyRightFilters();
-        }
-
-        private ObservableCollection<string> _selectedGameCategoryFilterOptions;
-        public ObservableCollection<string> SelectedGameCategoryFilterOptions
-        {
-            get => _selectedGameCategoryFilterOptions;
-            private set => SetValue(ref _selectedGameCategoryFilterOptions, value);
-        }
-
-        public string SelectedGameCategoryFilterText => GetSelectedFilterText(
-            _selectedGameCategoryFilters,
-            SelectedGameCategoryFilterOptions,
-            L("LOCPlayAch_Common_Label_Category", "Category"));
-
-        public bool IsSelectedGameCategoryFilterSelected(string value)
-        {
-            return IsFilterSelected(_selectedGameCategoryFilters, value);
-        }
-
-        public void SetSelectedGameCategoryFilterSelected(string value, bool isSelected)
-        {
-            if (!SetFilterSelection(_selectedGameCategoryFilters, value, isSelected))
-            {
-                return;
-            }
-
-            OnPropertyChanged(nameof(SelectedGameCategoryFilterText));
-            ApplyRightFilters();
-        }
-
-        private bool _showSelectedGameUnlocked = true;
-        public bool ShowSelectedGameUnlocked
-        {
-            get => _showSelectedGameUnlocked;
-            set
-            {
-                if (SetValueAndReturn(ref _showSelectedGameUnlocked, value))
-                {
-                    ApplyRightFilters();
-                }
-            }
-        }
-
-        private bool _showSelectedGameLocked = true;
-        public bool ShowSelectedGameLocked
-        {
-            get => _showSelectedGameLocked;
-            set
-            {
-                if (SetValueAndReturn(ref _showSelectedGameLocked, value))
-                {
-                    ApplyRightFilters();
-                }
-            }
-        }
-
-        private bool _showSelectedGameHidden = true;
-        public bool ShowSelectedGameHidden
-        {
-            get => _showSelectedGameHidden;
-            set
-            {
-                if (SetValueAndReturn(ref _showSelectedGameHidden, value))
-                {
-                    ApplyRightFilters();
-                }
-            }
         }
 
         private bool _selectedGameHasCustomAchievementOrder;
@@ -961,6 +926,12 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewSelectedGameGridColumnHeaders => _settings?.Persisted?.ShowOverviewSelectedGameGridColumnHeaders ?? true;
 
+        public bool ShowOverviewGameSummariesGridControlBar => _settings?.Persisted?.ShowOverviewGameSummariesGridControlBar ?? true;
+
+        public bool ShowOverviewRecentAchievementsGridControlBar => _settings?.Persisted?.ShowOverviewRecentAchievementsGridControlBar ?? true;
+
+        public bool ShowOverviewSelectedGameGridControlBar => _settings?.Persisted?.ShowOverviewSelectedGameGridControlBar ?? true;
+
         public double? OverviewGameSummariesGridRowHeight => _settings?.Persisted?.OverviewGameSummariesGridRowHeight;
 
         public double? OverviewRecentAchievementsGridRowHeight => _settings?.Persisted?.OverviewRecentAchievementsGridRowHeight;
@@ -1116,7 +1087,7 @@ namespace PlayniteAchievements.ViewModels
                         ResetSelectedGameSortToDefault();
                     }
 
-                    ResetSelectedGameAchievementVisibilityFilters();
+                    _selectedGameControlBar.ResetFilters();
                     RefreshSelectedGameHeaderCounts();
                     (RefreshCommand as AsyncCommand)?.RaiseCanExecuteChanged();
                     (RefreshOrCancelCommand as RelayCommand)?.RaiseCanExecuteChanged();
@@ -1178,6 +1149,25 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public ObservableCollection<AchievementDisplayItem> SelectedGameAchievements { get; }
+
+        // Full, unfiltered selected-game achievements feeding the category-summaries source so its
+        // rollups stay stable when the Unlocked/Locked/Hidden filters are applied within a drill.
+        public ObservableCollection<AchievementDisplayItem> SelectedGameAllAchievements { get; }
+
+        // The category the selected-game grid is currently drilled into (null when not drilled),
+        // pushed up from AchievementDataGridControl so the header count can scope to it.
+        private string _selectedGameDrilledCategory;
+        public string SelectedGameDrilledCategory
+        {
+            get => _selectedGameDrilledCategory;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedGameDrilledCategory, value))
+                {
+                    RefreshSelectedGameHeaderCounts();
+                }
+            }
+        }
 
         public ObservableCollection<ChartDataPoint> SelectedGameDailyUnlocks { get; } = new ObservableCollection<ChartDataPoint>();
 
@@ -2356,6 +2346,9 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowOverviewGameSummariesGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowOverviewSelectedGameGridColumnHeaders));
+                OnPropertyChanged(nameof(ShowOverviewGameSummariesGridControlBar));
+                OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridControlBar));
+                OnPropertyChanged(nameof(ShowOverviewSelectedGameGridControlBar));
                 OnPropertyChanged(nameof(OverviewGameSummariesGridRowHeight));
                 OnPropertyChanged(nameof(OverviewRecentAchievementsGridRowHeight));
                 OnPropertyChanged(nameof(OverviewSelectedGameGridRowHeight));
@@ -2444,6 +2437,18 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.ShowOverviewSelectedGameGridColumnHeaders))
             {
                 OnPropertyChanged(nameof(ShowOverviewSelectedGameGridColumnHeaders));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewGameSummariesGridControlBar))
+            {
+                OnPropertyChanged(nameof(ShowOverviewGameSummariesGridControlBar));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewRecentAchievementsGridControlBar))
+            {
+                OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridControlBar));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewSelectedGameGridControlBar))
+            {
+                OnPropertyChanged(nameof(ShowOverviewSelectedGameGridControlBar));
             }
             else if (propertyName == nameof(PersistedSettings.OverviewGameSummariesGridRowHeight))
             {
@@ -2537,7 +2542,6 @@ namespace PlayniteAchievements.ViewModels
             item.ToggleReveal();
             _globalAchievementSearchIndex.Invalidate(item);
             _recentAchievementSearchIndex.Invalidate(item);
-            _selectedGameAchievementSearchIndex.Invalidate(item);
 
             lock (_revealedKeys)
             {
@@ -2766,7 +2770,6 @@ namespace PlayniteAchievements.ViewModels
             _globalAchievementSearchIndex.Rebuild(_allAchievements);
             _gameSummarySearchIndex.Rebuild(_allGameSummaries);
             _recentAchievementSearchIndex.Rebuild(_allRecentAchievements);
-            _selectedGameAchievementSearchIndex.Rebuild(_allSelectedGameAchievements);
         }
 
         private async void OnRefreshDebounceTimerTick(object sender, EventArgs e)
@@ -2999,6 +3002,13 @@ namespace PlayniteAchievements.ViewModels
 
         private void SyncSelectedGameAchievementsDisplay()
         {
+            // Keep the unfiltered category-summary source current; the achievement filters do not
+            // touch it, so category rollups stay stable while drilled.
+            if (SelectedGameAllAchievements is BulkObservableCollection<AchievementDisplayItem> allBulk)
+            {
+                allBulk.ReplaceAll(_allSelectedGameAchievements ?? new List<AchievementDisplayItem>());
+            }
+
             var displayItems = DisplayGridRowLimitHelper.Limit(
                 _filteredSelectedGameAchievements,
                 _settings?.Persisted?.OverviewSelectedGameGridMaxRows);
@@ -3461,38 +3471,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void UpdateSelectedGameAchievementFilterOptions(IEnumerable<AchievementDisplayItem> source)
         {
-            var options = OverviewAchievementFilters.BuildSelectedGameFilterOptions(
-                source,
-                _selectedGameTypeFilters,
-                _selectedGameCategoryFilters);
-
-            if (SelectedGameTypeFilterOptions == null)
-            {
-                SelectedGameTypeFilterOptions = new ObservableCollection<string>(options.TypeOptions);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(SelectedGameTypeFilterOptions, options.TypeOptions);
-            }
-
-            if (SelectedGameCategoryFilterOptions == null)
-            {
-                SelectedGameCategoryFilterOptions = new ObservableCollection<string>(options.CategoryOptions);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(SelectedGameCategoryFilterOptions, options.CategoryOptions);
-            }
-
-            if (options.TypeSelectionPruned)
-            {
-                OnPropertyChanged(nameof(SelectedGameTypeFilterText));
-            }
-
-            if (options.CategorySelectionPruned)
-            {
-                OnPropertyChanged(nameof(SelectedGameCategoryFilterText));
-            }
+            _selectedGameControlBar.UpdateOptions(source);
         }
 
         private static bool IsFilterSelected(HashSet<string> selectedValues, string value)
@@ -3572,21 +3551,11 @@ namespace PlayniteAchievements.ViewModels
             // Contextually filter based on IsGameSelected
             if (IsGameSelected)
             {
-                _filteredSelectedGameAchievements = OverviewAchievementFilters.FilterSelectedGameAchievements(
-                    _allSelectedGameAchievements,
-                    ShowSelectedGameHidden,
-                    ShowSelectedGameUnlocked,
-                    ShowSelectedGameLocked,
-                    _selectedGameTypeFilters,
-                    _selectedGameCategoryFilters,
-                    string.Empty);
-
-                if (searchQuery.HasValue)
-                {
-                    _filteredSelectedGameAchievements = _filteredSelectedGameAchievements
-                        .Where(item => _selectedGameAchievementSearchIndex.Matches(item, searchQuery))
-                        .ToList();
-                }
+                // The shared control bar owns the filter predicate (search + Unlocked/Locked/
+                // Hidden + Type/Category); this VM keeps sorting, row limiting, and header counts.
+                _filteredSelectedGameAchievements = _selectedGameControlBar
+                    .Apply(_allSelectedGameAchievements)
+                    .ToList();
 
                 if (!string.IsNullOrEmpty(_selectedGameSortPath))
                 {
@@ -3636,28 +3605,33 @@ namespace PlayniteAchievements.ViewModels
 
         private bool HasSelectedGameAchievementFiltersApplied()
         {
-            if (!IsGameSelected)
-            {
-                return false;
-            }
-
-            return !string.IsNullOrWhiteSpace(RightSearchText)
-                || _selectedGameTypeFilters.Count > 0
-                || _selectedGameCategoryFilters.Count > 0
-                || !ShowSelectedGameUnlocked
-                || !ShowSelectedGameLocked
-                || !ShowSelectedGameHidden;
+            return IsGameSelected && _selectedGameControlBar.HasActiveFilters;
         }
 
         private void RefreshSelectedGameHeaderCounts()
         {
-            var isFiltered = HasSelectedGameAchievementFiltersApplied();
+            var drilledCategory = SelectedGameDrilledCategory;
+            var isDrilled = !string.IsNullOrEmpty(drilledCategory);
+            // A drilled category is presented like a filtered view ("x/y Selected").
+            var isFiltered = isDrilled || HasSelectedGameAchievementFiltersApplied();
             var unlocked = 0;
             var total = 0;
 
             if (IsSelectedGameContentReady)
             {
-                if (isFiltered)
+                if (isDrilled)
+                {
+                    // Scope to the drilled category, respecting any active filter applied within it.
+                    var scoped = (_filteredSelectedGameAchievements ?? new List<AchievementDisplayItem>())
+                        .Where(item => string.Equals(
+                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item?.CategoryLabel),
+                            drilledCategory,
+                            StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    total = scoped.Count;
+                    unlocked = scoped.Count(item => item?.Unlocked == true);
+                }
+                else if (isFiltered)
                 {
                     var filtered = _filteredSelectedGameAchievements ?? new List<AchievementDisplayItem>();
                     total = filtered.Count;
@@ -3671,33 +3645,6 @@ namespace PlayniteAchievements.ViewModels
             }
 
             SelectedGameHeaderText = $"({unlocked}/{total} {(isFiltered ? L("LOCPlayAch_RefreshModeShort_Selected", "Selected") : L("LOCPlayAch_Achievements", "Achievements"))})";
-        }
-
-        private void ResetSelectedGameAchievementVisibilityFilters()
-        {
-            ShowSelectedGameUnlocked = true;
-            ShowSelectedGameLocked = true;
-            ShowSelectedGameHidden = true;
-            ResetSelectedGameAchievementCategoryFilters();
-        }
-
-        private void ResetSelectedGameAchievementCategoryFilters()
-        {
-            var typeChanged = _selectedGameTypeFilters.Count > 0;
-            var categoryChanged = _selectedGameCategoryFilters.Count > 0;
-
-            _selectedGameTypeFilters.Clear();
-            _selectedGameCategoryFilters.Clear();
-
-            if (typeChanged)
-            {
-                OnPropertyChanged(nameof(SelectedGameTypeFilterText));
-            }
-
-            if (categoryChanged)
-            {
-                OnPropertyChanged(nameof(SelectedGameCategoryFilterText));
-            }
         }
 
         private void ResetSelectedGameSortToDefault()
@@ -3815,7 +3762,6 @@ namespace PlayniteAchievements.ViewModels
                 _allSelectedGameAchievements = new List<AchievementDisplayItem>();
                 _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>();
                 _filteredSelectedGameAchievements = new List<AchievementDisplayItem>();
-                _selectedGameAchievementSearchIndex.Clear();
                 UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
                 SyncSelectedGameAchievementsDisplay();
@@ -3851,7 +3797,6 @@ namespace PlayniteAchievements.ViewModels
 
                 _allSelectedGameAchievements = items;
                 _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>(items);
-                _selectedGameAchievementSearchIndex.Rebuild(_allSelectedGameAchievements);
                 UpdateSelectedGameAchievementFilterOptions(_allSelectedGameAchievements);
                 ApplyRightFilters();
 
@@ -3874,7 +3819,6 @@ namespace PlayniteAchievements.ViewModels
                 UpdateSelectedGameAchievementFilterOptions(null);
                 SelectedGameHasCustomAchievementOrder = false;
                 _selectedGameDefaultOrderedAchievements = new List<AchievementDisplayItem>();
-                _selectedGameAchievementSearchIndex.Clear();
                 _logger?.Warn(ex, $"Failed to load achievements for game {SelectedGame?.AppId}");
                 RefreshSelectedGameHeaderCounts();
                 return false;

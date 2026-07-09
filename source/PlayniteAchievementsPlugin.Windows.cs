@@ -29,6 +29,11 @@ namespace PlayniteAchievements
             _windowService.OpenViewAchievementsWindow(gameId);
         }
 
+        public void OpenViewFriendsAchievementsWindow(Guid gameId)
+        {
+            _windowService.OpenViewFriendsAchievementsWindow(gameId);
+        }
+
         /// <summary>
         /// Opens the modern parity test view window for testing theme integration controls.
         /// </summary>
@@ -45,9 +50,12 @@ namespace PlayniteAchievements
             _windowService.OpenDynamicThemeCommandTestView(gameId);
         }
 
-        public void OpenManageAchievementsView(Guid gameId, ManageAchievementsTab initialTab = ManageAchievementsTab.Overview)
+        public void OpenManageAchievementsView(
+            Guid gameId,
+            ManageAchievementsTab initialTab = ManageAchievementsTab.Overview,
+            bool selectManageCategoriesSubTab = false)
         {
-            _windowService.OpenManageAchievementsView(gameId, initialTab);
+            _windowService.OpenManageAchievementsView(gameId, initialTab, selectManageCategoriesSubTab);
         }
 
         public void OpenCapstoneView(Guid gameId)

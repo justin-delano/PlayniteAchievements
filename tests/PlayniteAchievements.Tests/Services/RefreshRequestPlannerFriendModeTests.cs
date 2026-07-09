@@ -6,6 +6,7 @@ using Playnite.SDK.Plugins;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
 using System;
@@ -146,6 +147,26 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [DataTestMethod]
+        [DataRow(RefreshModeType.FriendsFull, true)]
+        [DataRow(RefreshModeType.FriendsShared, false)]
+        [DataRow(RefreshModeType.FriendsRecent, false)]
+        public void Resolve_FullFriendMode_ForcesDefinitionRefresh(
+            RefreshModeType mode,
+            bool expectedForce)
+        {
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest { Mode = mode },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.IsNotNull(resolved.FriendOptions);
+            Assert.AreEqual(expectedForce, resolved.FriendOptions.ForceDefinitionRefresh);
+        }
+
+        [DataTestMethod]
         [DataRow(FriendRefreshScope.Full, true)]
         [DataRow(FriendRefreshScope.Recent, false)]
         [DataRow(FriendRefreshScope.Shared, false)]
@@ -202,6 +223,43 @@ namespace PlayniteAchievements.Services.Tests
             CollectionAssert.AreEqual(
                 new[] { gameId },
                 resolved.FriendOptions.PlayniteGameIds.ToList());
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsCustom_CarriesProviderScopedFriendAccounts()
+        {
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var steamProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+            var exophaseProvider = new FakeProvider("Exophase", new FakeFriendsProvider("Exophase"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    Options = RefreshOptions.FromFriend(new FriendCustomRefreshOptions
+                    {
+                        ProviderKeys = new[] { "Steam", "Exophase" },
+                        Scope = FriendRefreshScope.Full,
+                        FriendAccounts = new[]
+                        {
+                            FriendAccountRef.From(" Steam ", " alice "),
+                            FriendAccountRef.From("Steam", "alice"),
+                            FriendAccountRef.From("Exophase", "exo-alice")
+                        },
+                        FriendExternalUserIds = new[] { "alice", "exo-alice" }
+                    })
+                },
+                new IDataProvider[] { steamProvider, exophaseProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.IsNotNull(resolved.FriendOptions);
+            var accounts = resolved.FriendOptions.FriendAccounts.ToList();
+            Assert.AreEqual(2, accounts.Count);
+            Assert.IsTrue(accounts.Any(account => account.Matches("Steam", "alice")));
+            Assert.IsTrue(accounts.Any(account => account.Matches("Exophase", "exo-alice")));
+            CollectionAssert.AreEquivalent(
+                new[] { "alice", "exo-alice" },
+                resolved.FriendOptions.FriendExternalUserIds.ToList());
         }
 
         [TestMethod]
@@ -344,6 +402,7 @@ namespace PlayniteAchievements.Services.Tests
             Assert.IsNull(resolved.CurrentUserOptions);
             Assert.IsNotNull(resolved.FriendOptions);
             Assert.AreEqual(FriendRefreshScope.Full, resolved.FriendOptions.Scope);
+            Assert.IsTrue(resolved.FriendOptions.ForceDefinitionRefresh);
             CollectionAssert.AreEqual(
                 new IDataProvider[] { provider },
                 resolved.FriendProviderScope.ToList());

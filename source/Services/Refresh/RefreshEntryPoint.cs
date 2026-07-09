@@ -25,6 +25,8 @@ namespace PlayniteAchievements.Services
         /// </summary>
         public CancellationToken ExternalCancellationToken { get; set; } = CancellationToken.None;
 
+        internal RefreshAuthContext AuthContext { get; set; }
+
         public static RefreshExecutionPolicy Default() => new RefreshExecutionPolicy();
 
         public static RefreshExecutionPolicy ProgressWindow(Guid? singleGameId = null)
@@ -37,6 +39,163 @@ namespace PlayniteAchievements.Services
                 ProgressSingleGameId = singleGameId
             };
         }
+    }
+
+    public sealed class RefreshAuthContext
+    {
+        private readonly object _sync = new object();
+        private readonly Dictionary<string, AuthProbeResult> _probeResults =
+            new Dictionary<string, AuthProbeResult>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, long> _probeDurationsMs =
+            new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, object> _artifacts =
+            new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+        private IReadOnlyList<IDataProvider> _authenticatedProviders = Array.Empty<IDataProvider>();
+
+        public RefreshAuthContext(Guid operationId)
+        {
+            OperationId = operationId == Guid.Empty ? Guid.NewGuid() : operationId;
+            CreatedUtc = DateTime.UtcNow;
+        }
+
+        public Guid OperationId { get; }
+
+        public DateTime CreatedUtc { get; }
+
+        public IReadOnlyList<IDataProvider> AuthenticatedProviders
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return _authenticatedProviders.ToList();
+                }
+            }
+        }
+
+        public IReadOnlyDictionary<string, AuthProbeResult> ProbeResults
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return new Dictionary<string, AuthProbeResult>(_probeResults, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        public IReadOnlyDictionary<string, long> ProbeDurationsMs
+        {
+            get
+            {
+                lock (_sync)
+                {
+                    return new Dictionary<string, long>(_probeDurationsMs, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+        }
+
+        public bool HasAuthenticatedProviders => AuthenticatedProviders.Count > 0;
+
+        public void SetProbeResult(
+            string providerKey,
+            AuthProbeResult result,
+            long elapsedMs,
+            object artifact = null)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var key = providerKey.Trim();
+            lock (_sync)
+            {
+                _probeResults[key] = result ?? AuthProbeResult.NotAuthenticated();
+                _probeDurationsMs[key] = Math.Max(0, elapsedMs);
+                if (artifact != null)
+                {
+                    _artifacts[key] = artifact;
+                }
+            }
+        }
+
+        public void SetAuthenticatedProviders(IEnumerable<IDataProvider> providers)
+        {
+            lock (_sync)
+            {
+                _authenticatedProviders = providers?
+                    .Where(provider => provider != null)
+                    .ToList() ?? new List<IDataProvider>();
+            }
+        }
+
+        public AuthProbeResult GetProbeResult(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return null;
+            }
+
+            lock (_sync)
+            {
+                _probeResults.TryGetValue(providerKey.Trim(), out var result);
+                return result;
+            }
+        }
+
+        public bool IsProviderAuthenticated(string providerKey)
+        {
+            return GetProbeResult(providerKey)?.IsSuccess == true;
+        }
+
+        public bool TryGetArtifact<T>(string providerKey, out T artifact) where T : class
+        {
+            artifact = null;
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return false;
+            }
+
+            lock (_sync)
+            {
+                if (_artifacts.TryGetValue(providerKey.Trim(), out var value) && value is T typed)
+                {
+                    artifact = typed;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static RefreshAuthContext FromAuthenticatedProviders(IEnumerable<IDataProvider> providers)
+        {
+            var context = new RefreshAuthContext(Guid.NewGuid());
+            var materialized = providers?
+                .Where(provider => provider != null)
+                .ToList() ?? new List<IDataProvider>();
+
+            foreach (var provider in materialized)
+            {
+                context.SetProbeResult(provider.ProviderKey, AuthProbeResult.AlreadyAuthenticated(), 0);
+            }
+
+            context.SetAuthenticatedProviders(materialized);
+            return context;
+        }
+    }
+
+    public interface IRefreshAuthContextReceiver
+    {
+        void BeginRefreshAuthContext(RefreshAuthContext context);
+
+        void EndRefreshAuthContext(RefreshAuthContext context);
+    }
+
+    public interface IRefreshAuthArtifactSource
+    {
+        object GetRefreshAuthArtifact(AuthProbeResult probeResult);
     }
 
     /// <summary>
@@ -85,31 +244,35 @@ namespace PlayniteAchievements.Services
             RefreshRequest request,
             RefreshExecutionPolicy policy)
         {
-            IReadOnlyList<IDataProvider> authenticatedProviders = null;
+            var authContext = policy.AuthContext;
 
             if (policy.ValidateAuthentication)
             {
-                authenticatedProviders = await _refreshService
-                    .GetAuthenticatedProvidersOrShowDialogAsync(policy.ExternalCancellationToken)
-                    .ConfigureAwait(false);
-                if (authenticatedProviders.Count == 0)
+                if (authContext == null)
+                {
+                    authContext = await _refreshService
+                        .GetRefreshAuthContextOrShowDialogAsync(policy.ExternalCancellationToken)
+                        .ConfigureAwait(false);
+                }
+
+                if (authContext == null || !authContext.HasAuthenticatedProviders)
                 {
                     return;
                 }
             }
 
-            await ExecuteWithCallbackAsync(request, policy, authenticatedProviders).ConfigureAwait(false);
+            await ExecuteWithCallbackAsync(request, policy, authContext).ConfigureAwait(false);
         }
 
         private async Task ExecuteWithCallbackAsync(
             RefreshRequest request,
             RefreshExecutionPolicy policy,
-            IReadOnlyList<IDataProvider> authenticatedProviders = null)
+            RefreshAuthContext authContext = null)
         {
             bool success = false;
             try
             {
-                await ExecuteCoreAsync(request, policy, authenticatedProviders).ConfigureAwait(false);
+                await ExecuteCoreAsync(request, policy, authContext).ConfigureAwait(false);
                 success = true;
             }
             finally
@@ -133,13 +296,13 @@ namespace PlayniteAchievements.Services
         private async Task ExecuteCoreAsync(
             RefreshRequest request,
             RefreshExecutionPolicy policy,
-            IReadOnlyList<IDataProvider> authenticatedProviders = null)
+            RefreshAuthContext authContext = null)
         {
             try
             {
                 await _refreshService.ExecuteRefreshAsync(
                     request,
-                    authenticatedProviders,
+                    authContext,
                     policy?.ExternalCancellationToken ?? CancellationToken.None);
             }
             catch (Exception ex)

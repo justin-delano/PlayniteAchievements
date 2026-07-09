@@ -29,6 +29,8 @@ namespace PlayniteAchievements.ViewModels
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
         private readonly Func<Guid?, string, FriendCustomRefreshOptions> _showCustomRefreshDialog;
+        private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
+        private readonly bool _ownsFriendsOverviewDataCoordinator;
         private readonly SearchTextIndex<FriendSummaryItem> _friendSearchIndex =
             new SearchTextIndex<FriendSummaryItem>(item => SearchTextBuilder.FromValues(
                 new[] { item?.DisplayName, item?.ProviderKey }.Concat(item?.MemberProviderKeys ?? Enumerable.Empty<string>())));
@@ -58,6 +60,10 @@ namespace PlayniteAchievements.ViewModels
         private bool _isRefreshing;
         private bool _disposed;
         private int _loadVersion;
+        private int _suppressCoordinatorInvalidationReload;
+        private readonly object _loadQueueSync = new object();
+        private Task _loadQueueTask;
+        private bool _loadAgainRequested;
         private string _statusText;
         private string _friendSearchText;
         private string _gameSearchText;
@@ -67,6 +73,8 @@ namespace PlayniteAchievements.ViewModels
         private double _progressPercent;
         private string _progressMessage;
         private readonly TimeSpan _cacheInvalidationDebounceInterval;
+        private readonly TimeSpan _activeRefreshInvalidationInterval;
+        private DateTime _lastCacheReloadUtc = DateTime.MinValue;
         private System.Windows.Threading.DispatcherTimer _cacheInvalidationDebounceTimer;
 
         public FriendsOverviewViewModel(
@@ -77,7 +85,9 @@ namespace PlayniteAchievements.ViewModels
             ILogger logger,
             IPlayniteAPI playniteApi = null,
             Func<Guid?, string, FriendCustomRefreshOptions> showCustomRefreshDialog = null,
-            TimeSpan? cacheInvalidationDebounceInterval = null)
+            TimeSpan? cacheInvalidationDebounceInterval = null,
+            TimeSpan? activeRefreshInvalidationInterval = null,
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null)
         {
             _friendCache = friendCache;
             _refreshCoordinator = refreshCoordinator;
@@ -86,13 +96,21 @@ namespace PlayniteAchievements.ViewModels
             _logger = logger;
             _playniteApi = playniteApi;
             _showCustomRefreshDialog = showCustomRefreshDialog;
+            _ownsFriendsOverviewDataCoordinator = friendsOverviewDataCoordinator == null;
+            _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator ??
+                new FriendsOverviewDataCoordinator(friendCache, () => _settings?.Persisted, logger);
+            _friendsOverviewDataCoordinator.SnapshotInvalidated += OnFriendsOverviewSnapshotInvalidated;
             _cacheInvalidationDebounceInterval = cacheInvalidationDebounceInterval ?? TimeSpan.FromMilliseconds(300);
+            _activeRefreshInvalidationInterval = activeRefreshInvalidationInterval ?? TimeSpan.FromMilliseconds(2500);
 
-            if (_cacheInvalidationDebounceInterval > TimeSpan.Zero)
+            if (_cacheInvalidationDebounceInterval > TimeSpan.Zero ||
+                _activeRefreshInvalidationInterval > TimeSpan.Zero)
             {
                 _cacheInvalidationDebounceTimer = new System.Windows.Threading.DispatcherTimer
                 {
-                    Interval = _cacheInvalidationDebounceInterval
+                    Interval = _cacheInvalidationDebounceInterval > TimeSpan.Zero
+                        ? _cacheInvalidationDebounceInterval
+                        : _activeRefreshInvalidationInterval
                 };
                 _cacheInvalidationDebounceTimer.Tick += OnCacheInvalidationDebounceTimerTick;
             }
@@ -103,6 +121,9 @@ namespace PlayniteAchievements.ViewModels
             ProviderFilterOptions = new ObservableCollection<string>();
             TypeFilterOptions = new ObservableCollection<string>();
             CategoryFilterOptions = new ObservableCollection<string>();
+            FriendSummariesControlBar = CreateFriendSummariesControlBar();
+            GameSummariesControlBar = CreateGameSummariesControlBar();
+            AchievementsControlBar = CreateAchievementsControlBar();
             FriendRefreshModes = new ObservableCollection<RefreshMode>(CreateFriendRefreshModes());
 
             RefreshCommand = new AsyncCommand(async _ => await RefreshSelectedModeAsync().ConfigureAwait(true), _ => CanRefresh());
@@ -121,6 +142,11 @@ namespace PlayniteAchievements.ViewModels
             {
                 _refreshRuntime.RebuildProgress += OnRebuildProgress;
                 _refreshRuntime.CacheInvalidated += OnCacheInvalidated;
+                _refreshRuntime.FriendCacheInvalidated += OnFriendCacheInvalidated;
+            }
+            else if (_friendCache != null)
+            {
+                _friendCache.FriendCacheInvalidated += OnFriendCacheInvalidated;
             }
 
             if (_settings?.Persisted != null)
@@ -138,6 +164,9 @@ namespace PlayniteAchievements.ViewModels
         public BulkObservableCollection<FriendSummaryItem> Friends => FilteredFriends;
         public BulkObservableCollection<FriendGameSummaryItem> Games => FilteredGames;
         public BulkObservableCollection<FriendAchievementDisplayItem> RecentUnlocks => DisplayedAchievements;
+        public GridControlBarViewModel FriendSummariesControlBar { get; }
+        public GridControlBarViewModel GameSummariesControlBar { get; }
+        public GridControlBarViewModel AchievementsControlBar { get; }
 
         public PlayniteAchievementsSettings Settings => _settings;
 
@@ -394,6 +423,69 @@ namespace PlayniteAchievements.ViewModels
                     total,
                     ResourceProvider.GetString("LOCPlayAch_Achievements") ?? "Achievements");
             }
+        }
+
+        private GridControlBarViewModel CreateFriendSummariesControlBar()
+        {
+            return new GridControlBarViewModel
+            {
+                Search = new GridSearchControl(
+                    this,
+                    nameof(FriendSearchText),
+                    () => FriendSearchText,
+                    value => FriendSearchText = value,
+                    GridControlBarText.Get("LOCPlayAch_FriendsOverview_SearchFriends", "Search Friends"),
+                    ClearFriendSearch)
+            };
+        }
+
+        private GridControlBarViewModel CreateGameSummariesControlBar()
+        {
+            return new GridControlBarViewModel
+            {
+                Search = new GridSearchControl(
+                    this,
+                    nameof(GameSearchText),
+                    () => GameSearchText,
+                    value => GameSearchText = value,
+                    GridControlBarText.Get("LOCPlayAch_Filter_Games", "Search Games"),
+                    ClearGameSearch)
+            };
+        }
+
+        private GridControlBarViewModel CreateAchievementsControlBar()
+        {
+            var controlBar = new GridControlBarViewModel
+            {
+                Search = new GridSearchControl(
+                    this,
+                    nameof(AchievementSearchText),
+                    () => AchievementSearchText,
+                    value => AchievementSearchText = value,
+                    GridControlBarText.Get("LOCPlayAch_Filter_Achievements", "Search Achievements"),
+                    ClearAchievementSearch)
+            };
+            controlBar.Items.Add(new GridMultiSelectFilter(
+                this,
+                nameof(SelectedTypeFilterText),
+                () => SelectedTypeFilterText,
+                () => TypeFilterOptions,
+                IsTypeFilterSelected,
+                SetTypeFilterSelected)
+            {
+                Width = 118
+            });
+            controlBar.Items.Add(new GridMultiSelectFilter(
+                this,
+                nameof(SelectedCategoryFilterText),
+                () => SelectedCategoryFilterText,
+                () => CategoryFilterOptions,
+                IsCategoryFilterSelected,
+                SetCategoryFilterSelected)
+            {
+                Width = 132
+            });
+            return controlBar;
         }
 
         public Task LoadAsync()
@@ -700,6 +792,7 @@ namespace PlayniteAchievements.ViewModels
                             .Distinct(StringComparer.OrdinalIgnoreCase)
                             .ToArray(),
                         Scope = FriendRefreshScope.Full,
+                        FriendAccounts = friendAccounts.ToArray(),
                         FriendExternalUserIds = friendAccounts
                             .Select(account => account.ExternalUserId)
                             .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -754,6 +847,7 @@ namespace PlayniteAchievements.ViewModels
                             .ToArray(),
                         Scope = FriendRefreshScope.SelectedGame,
                         PlayniteGameIds = new[] { gameId },
+                        FriendAccounts = friendAccounts.ToArray(),
                         FriendExternalUserIds = friendAccounts
                             .Select(account => account.ExternalUserId)
                             .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -784,6 +878,7 @@ namespace PlayniteAchievements.ViewModels
                         Scope = FriendRefreshScope.SelectedGame,
                         ProviderAppIds = appId > 0 ? new[] { appId } : null,
                         ProviderGameKeys = !string.IsNullOrWhiteSpace(providerGameKey) ? new[] { providerGameKey } : null,
+                        FriendAccounts = friendAccounts.ToArray(),
                         FriendExternalUserIds = friendAccounts
                             .Select(account => account.ExternalUserId)
                             .Where(id => !string.IsNullOrWhiteSpace(id))
@@ -904,7 +999,7 @@ namespace PlayniteAchievements.ViewModels
 
             if (_refreshRuntime?.IsFinalProgressReport(report) == true)
             {
-                _ = LoadFromCacheAsync();
+                InvalidateFriendsOverviewSnapshot(forceImmediate: true);
             }
         }
 
@@ -915,14 +1010,59 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
+            InvalidateFriendsOverviewSnapshot(forceImmediate: false);
+        }
+
+        private void OnFriendCacheInvalidated(object sender, EventArgs e)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            InvalidateFriendsOverviewSnapshot(forceImmediate: true);
+        }
+
+        private void OnFriendsOverviewSnapshotInvalidated(object sender, EventArgs e)
+        {
+            if (_disposed || Volatile.Read(ref _suppressCoordinatorInvalidationReload) > 0)
+            {
+                return;
+            }
+
+            ScheduleCacheInvalidationReloadOnDispatcher(forceImmediate: false);
+        }
+
+        private void InvalidateFriendsOverviewSnapshot(bool forceImmediate)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            Interlocked.Increment(ref _suppressCoordinatorInvalidationReload);
+            try
+            {
+                _friendsOverviewDataCoordinator?.Invalidate();
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _suppressCoordinatorInvalidationReload);
+            }
+
+            ScheduleCacheInvalidationReloadOnDispatcher(forceImmediate);
+        }
+
+        private void ScheduleCacheInvalidationReloadOnDispatcher(bool forceImmediate)
+        {
             var dispatcher = System.Windows.Application.Current?.Dispatcher;
             if (dispatcher != null)
             {
-                dispatcher.InvokeIfNeeded(ScheduleCacheInvalidationReload);
+                dispatcher.InvokeIfNeeded(() => ScheduleCacheInvalidationReload(forceImmediate));
             }
             else
             {
-                ScheduleCacheInvalidationReload();
+                ScheduleCacheInvalidationReload(forceImmediate);
             }
         }
 
@@ -941,22 +1081,52 @@ namespace PlayniteAchievements.ViewModels
             return true;
         }
 
-        private void ScheduleCacheInvalidationReload()
+        private void ScheduleCacheInvalidationReload(bool forceImmediate)
         {
             if (_disposed)
             {
                 return;
             }
 
-            if (_cacheInvalidationDebounceInterval <= TimeSpan.Zero ||
+            var delay = forceImmediate
+                ? TimeSpan.Zero
+                : GetCacheInvalidationReloadDelay();
+
+            if (delay <= TimeSpan.Zero ||
                 _cacheInvalidationDebounceTimer == null)
             {
+                _cacheInvalidationDebounceTimer?.Stop();
                 _ = LoadFromCacheAsync();
                 return;
             }
 
             _cacheInvalidationDebounceTimer.Stop();
+            _cacheInvalidationDebounceTimer.Interval = delay;
             _cacheInvalidationDebounceTimer.Start();
+        }
+
+        private TimeSpan GetCacheInvalidationReloadDelay()
+        {
+            if (IsActiveFriendRefresh())
+            {
+                if (_activeRefreshInvalidationInterval <= TimeSpan.Zero)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                var elapsed = DateTime.UtcNow - _lastCacheReloadUtc;
+                return elapsed >= _activeRefreshInvalidationInterval
+                    ? TimeSpan.Zero
+                    : _activeRefreshInvalidationInterval - elapsed;
+            }
+
+            return _cacheInvalidationDebounceInterval;
+        }
+
+        private bool IsActiveFriendRefresh()
+        {
+            return _refreshRuntime?.IsRebuilding == true &&
+                   _refreshRuntime.GetLastRebuildProgress()?.Mode?.IsFriendRefreshMode() == true;
         }
 
         private async void OnCacheInvalidationDebounceTimerTick(object sender, EventArgs e)
@@ -972,51 +1142,93 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private async Task LoadFromCacheAsync()
+        private Task LoadFromCacheAsync()
+        {
+            lock (_loadQueueSync)
+            {
+                if (_disposed)
+                {
+                    return Task.CompletedTask;
+                }
+
+                if (_loadQueueTask == null || _loadQueueTask.IsCompleted)
+                {
+                    _loadAgainRequested = false;
+                    _loadQueueTask = RunLoadFromCacheQueueAsync();
+                }
+                else
+                {
+                    _loadAgainRequested = true;
+                }
+
+                return _loadQueueTask;
+            }
+        }
+
+        private async Task RunLoadFromCacheQueueAsync()
+        {
+            while (true)
+            {
+                lock (_loadQueueSync)
+                {
+                    _loadAgainRequested = false;
+                }
+
+                await LoadFromCacheOnceAsync().ConfigureAwait(false);
+
+                lock (_loadQueueSync)
+                {
+                    if (!_loadAgainRequested || _disposed)
+                    {
+                        _loadQueueTask = null;
+                        return;
+                    }
+                }
+            }
+        }
+
+        private async Task LoadFromCacheOnceAsync()
         {
             // Latest-wins guard: a newer load supersedes any in-flight one so its
             // (possibly stale) results are discarded when they arrive on the UI thread.
             var version = Interlocked.Increment(ref _loadVersion);
-            var hideSpoilers = _settings?.Persisted?.FriendsOverviewHideSpoilers ?? true;
+            _lastCacheReloadUtc = DateTime.UtcNow;
 
             FriendsOverviewLoadResult result;
             try
             {
-                // Heavy work (summary SQL + per-game presentation resolution) runs off
-                // the UI thread; the window stays responsive while data loads.
-                result = await Task
-                    .Run(() =>
-                    {
-                        using (PerfScope.Start(_logger, "FriendsOverview.LoadCache", thresholdMs: 25))
-                        {
-                            var data = _friendCache?.LoadFriendsOverviewData(hideSpoilers, 0);
-                            if (data == null)
-                            {
-                                return null;
-                            }
-
-                            var projection = new FriendOverviewProjection(data, _settings?.Persisted);
-                            var friends = projection.Friends.ToList();
-                            var games = projection.AggregateGames.ToList();
-                            var recentUnlocks = projection.RecentUnlocks.ToList();
-                            var allAchievements = projection.AllAchievements.ToList();
-                            var allUnlockedAchievements = projection.AllUnlockedAchievements.ToList();
-
-                            return new FriendsOverviewLoadResult
-                            {
-                                Projection = projection,
-                                Friends = friends,
-                                Games = games,
-                                RecentUnlocks = recentUnlocks,
-                                AllAchievements = allAchievements,
-                                AllUnlockedAchievements = allUnlockedAchievements,
-                                FriendSearchEntries = _friendSearchIndex.BuildEntries(friends),
-                                GameSearchEntries = _gameSearchIndex.BuildEntries(games),
-                                AchievementSearchEntries = _achievementSearchIndex.BuildEntries(recentUnlocks.Concat(allAchievements))
-                            };
-                        }
-                    })
+                var snapshot = await _friendsOverviewDataCoordinator
+                    .GetSnapshotAsync(CancellationToken.None)
                     .ConfigureAwait(false);
+
+                if (snapshot == null)
+                {
+                    result = null;
+                }
+                else
+                {
+                    result = await Task
+                        .Run(() =>
+                        {
+                            using (PerfScope.Start(_logger, "FriendsOverview.PrepareSnapshot", thresholdMs: 25))
+                            {
+                                return new FriendsOverviewLoadResult
+                                {
+                                    Projection = snapshot.Projection,
+                                    Friends = snapshot.Friends,
+                                    Games = snapshot.Games,
+                                    RecentUnlocks = snapshot.RecentUnlocks,
+                                    AllAchievements = snapshot.AllAchievements,
+                                    AllUnlockedAchievements = snapshot.AllUnlockedAchievements,
+                                    FriendSearchEntries = _friendSearchIndex.BuildEntries(snapshot.Friends),
+                                    GameSearchEntries = _gameSearchIndex.BuildEntries(snapshot.Games),
+                                    AchievementSearchEntries = _achievementSearchIndex.BuildEntries(
+                                        snapshot.RecentUnlocks.Concat(snapshot.AllAchievements))
+                                };
+                            }
+                        })
+                        .ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
@@ -1193,6 +1405,9 @@ namespace PlayniteAchievements.ViewModels
                     ApplyFilters();
                     return;
                 }
+
+                // Rescope the type/category dropdowns to the now-resolved friend/game selection.
+                UpdateScopedFilterOptions();
 
                 var achievementSource = HasAnySelection
                     ? _allAchievements
@@ -1403,18 +1618,6 @@ namespace PlayniteAchievements.ViewModels
                     .Concat(_allGames.Select(game => game?.ProviderKey))
                     .Concat(_allAchievements.Select(achievement => achievement?.ProviderKey)));
 
-            ReplaceOptions(
-                TypeFilterOptions,
-                _allAchievements.Select(achievement => achievement?.CategoryType)
-                    .Concat(_allRecentUnlocks.Select(achievement => achievement?.CategoryType)));
-
-            ReplaceOptions(
-                CategoryFilterOptions,
-                _allAchievements.Select(achievement => achievement?.CategoryLabel)
-                    .Concat(_allRecentUnlocks.Select(achievement => achievement?.CategoryLabel)));
-
-            PruneFilterSelections(_selectedTypeFilters, TypeFilterOptions);
-            PruneFilterSelections(_selectedCategoryFilters, CategoryFilterOptions);
             if (!string.IsNullOrWhiteSpace(SelectedProviderKey) &&
                 !ProviderFilterOptions.Any(provider => string.Equals(provider, SelectedProviderKey, StringComparison.OrdinalIgnoreCase)))
             {
@@ -1423,8 +1626,37 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(SelectedProviderFilterText));
             }
 
+            UpdateScopedFilterOptions();
+        }
+
+        // Type and category options reflect only the achievements currently in scope (selected
+        // friend/game and provider), so a single selected game lists just that game's types and
+        // categories rather than every game's. Recomputed from ApplyFilters as the selection changes.
+        private void UpdateScopedFilterOptions()
+        {
+            var scoped = (HasAnySelection ? _allAchievements : _allRecentUnlocks)
+                .Where(achievement => MatchesProvider(achievement?.ProviderKey));
+            if (SelectedFriend != null)
+            {
+                scoped = scoped.Where(achievement => IsSameFriend(achievement, SelectedFriend));
+            }
+
+            if (SelectedGame != null)
+            {
+                scoped = scoped.Where(achievement => IsSameGame(achievement, SelectedGame));
+            }
+
+            var scopedList = scoped.ToList();
+
+            ReplaceOptions(TypeFilterOptions, scopedList.Select(achievement => achievement?.CategoryType));
+            ReplaceOptions(CategoryFilterOptions, scopedList.Select(achievement => achievement?.CategoryLabel));
+
+            PruneFilterSelections(_selectedTypeFilters, TypeFilterOptions);
+            PruneFilterSelections(_selectedCategoryFilters, CategoryFilterOptions);
+
             OnPropertyChanged(nameof(SelectedTypeFilterText));
             OnPropertyChanged(nameof(SelectedCategoryFilterText));
+            AchievementsControlBar?.Refresh();
         }
 
         private static void ReplaceOptions(ObservableCollection<string> target, IEnumerable<string> values)
@@ -1531,6 +1763,12 @@ namespace PlayniteAchievements.ViewModels
         {
             var propertyName = e?.PropertyName;
             if (string.IsNullOrWhiteSpace(propertyName) ||
+                propertyName == nameof(PersistedSettings.FriendsOverviewHideSpoilers))
+            {
+                _friendsOverviewDataCoordinator?.Invalidate();
+            }
+
+            if (string.IsNullOrWhiteSpace(propertyName) ||
                 propertyName == nameof(PersistedSettings.FriendsOverviewFriendSummariesGridMaxRows) ||
                 propertyName == nameof(PersistedSettings.FriendsOverviewGameSummariesGridMaxRows) ||
                 propertyName == nameof(PersistedSettings.FriendsOverviewAchievementsGridMaxRows))
@@ -1599,6 +1837,11 @@ namespace PlayniteAchievements.ViewModels
             {
                 _refreshRuntime.RebuildProgress -= OnRebuildProgress;
                 _refreshRuntime.CacheInvalidated -= OnCacheInvalidated;
+                _refreshRuntime.FriendCacheInvalidated -= OnFriendCacheInvalidated;
+            }
+            else if (_friendCache != null)
+            {
+                _friendCache.FriendCacheInvalidated -= OnFriendCacheInvalidated;
             }
 
             if (_cacheInvalidationDebounceTimer != null)
@@ -1614,6 +1857,12 @@ namespace PlayniteAchievements.ViewModels
             }
 
             PlayniteAchievementsPlugin.SettingsSaved -= OnPluginSettingsSaved;
+            _friendsOverviewDataCoordinator.SnapshotInvalidated -= OnFriendsOverviewSnapshotInvalidated;
+
+            if (_ownsFriendsOverviewDataCoordinator)
+            {
+                _friendsOverviewDataCoordinator?.Dispose();
+            }
         }
 
         private void OnPluginSettingsSaved(object sender, EventArgs e)
@@ -1623,7 +1872,7 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            _ = LoadFromCacheAsync();
+            InvalidateFriendsOverviewSnapshot(forceImmediate: true);
         }
 
         private sealed class FriendsOverviewLoadResult

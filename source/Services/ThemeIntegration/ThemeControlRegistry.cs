@@ -37,6 +37,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 { "AchievementFriendSummariesGrid", () => new Views.ThemeIntegration.Modern.AchievementFriendSummariesGridControl() },
                 { "AchievementFriendGameSummariesGrid", () => new Views.ThemeIntegration.Modern.AchievementFriendGameSummariesGridControl() },
                 { "AchievementFriendAchievementsGrid", () => new Views.ThemeIntegration.Modern.AchievementFriendAchievementsGridControl() },
+                { "AchievementToast", () => new Views.ThemeIntegration.Modern.AchievementToastControl() },
                 { "AchievementViewItem", () => new Views.ThemeIntegration.Modern.AchievementViewItemControl() }
             };
 
@@ -66,6 +67,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             "AchievementFriendSummariesGrid",
             "AchievementFriendGameSummariesGrid",
             "AchievementFriendAchievementsGrid",
+            "AchievementToast",
             "AchievementViewItem"
         };
 

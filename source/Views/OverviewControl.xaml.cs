@@ -58,6 +58,7 @@ namespace PlayniteAchievements.Views
         private readonly LibraryProjectionService _libraryProjectionService;
         private readonly IPlayniteAPI _playniteApi;
         private readonly RefreshEntryPoint _refreshEntryPoint;
+        private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
         private readonly OverviewLaunchContext _launchContext;
         private const double OverviewColumnRatioChangeThreshold = 0.001d;
         private bool _isActive;
@@ -84,7 +85,8 @@ namespace PlayniteAchievements.Views
             GameCustomDataStore gameCustomDataStore,
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
-            OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar)
+            OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar,
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null)
         {
             InitializeComponent();
 
@@ -99,6 +101,7 @@ namespace PlayniteAchievements.Views
             _libraryProjectionService = libraryProjectionService;
             _playniteApi = api ?? throw new ArgumentNullException(nameof(api));
             _refreshEntryPoint = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
+            _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator;
             _launchContext = launchContext;
 
             _viewModel = new OverviewViewModel(
@@ -181,7 +184,8 @@ namespace PlayniteAchievements.Views
                 _launchContext,
                 _playniteApi,
                 _cacheManager,
-                _achievementOverridesService)
+                _achievementOverridesService,
+                _friendsOverviewDataCoordinator)
             {
                 IsEmbedded = true
             };
@@ -371,9 +375,6 @@ namespace PlayniteAchievements.Views
             }), DispatcherPriority.Render);
         }
 
-        private void ClearLeftSearch_Click(object sender, RoutedEventArgs e) => _viewModel?.ClearLeftSearch();
-        private void ClearRightSearch_Click(object sender, RoutedEventArgs e) => _viewModel?.ClearRightSearch();
-
         private void OverviewSubViewButton_Click(object sender, RoutedEventArgs e)
         {
             ActiveSubView = OverviewSubView.Overview;
@@ -445,144 +446,6 @@ namespace PlayniteAchievements.Views
                     item.Style = itemStyle;
                 }
                 item.Click += (_, __) => setSelection(modeKey);
-                menu.Items.Add(item);
-            }
-
-            if (menu.Items.Count == 0)
-            {
-                return;
-            }
-
-            OpenSelectorContextMenu(button, menu);
-        }
-
-        private void ProviderFilterSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            var menu = ProviderFilterSelectionButton.ContextMenu;
-            if (menu == null)
-            {
-                return;
-            }
-
-            if (menu.ItemsSource == null)
-            {
-                menu.ItemsSource = _viewModel.ProviderFilterGroups;
-            }
-
-            OpenSelectorContextMenu(ProviderFilterSelectionButton, menu);
-        }
-
-        private void ProviderFilterSelectionContextMenu_Closed(object sender, RoutedEventArgs e)
-        {
-            _viewModel?.CollapseUnselectedProviderFilters();
-        }
-
-        private void CompletenessFilterSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            OpenMultiSelectFilterContextMenu(
-                CompletenessFilterSelectionButton,
-                _viewModel.CompletenessFilterOptions,
-                option => _viewModel.IsCompletenessFilterSelected(option),
-                (option, isSelected) => _viewModel.SetCompletenessFilterSelected(option, isSelected));
-        }
-
-        private void PlayStatusFilterSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            OpenMultiSelectFilterContextMenu(
-                PlayStatusFilterSelectionButton,
-                _viewModel.PlayStatusFilterOptions,
-                option => _viewModel.IsPlayStatusFilterSelected(option),
-                (option, isSelected) => _viewModel.SetPlayStatusFilterSelected(option, isSelected));
-        }
-
-        private void SelectedGameTypeFilterSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            OpenMultiSelectFilterContextMenu(
-                SelectedGameTypeFilterSelectionButton,
-                _viewModel.SelectedGameTypeFilterOptions,
-                option => _viewModel.IsSelectedGameTypeFilterSelected(option),
-                (option, isSelected) => _viewModel.SetSelectedGameTypeFilterSelected(option, isSelected));
-        }
-
-        private void SelectedGameCategoryFilterSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            OpenMultiSelectFilterContextMenu(
-                SelectedGameCategoryFilterSelectionButton,
-                _viewModel.SelectedGameCategoryFilterOptions,
-                option => _viewModel.IsSelectedGameCategoryFilterSelected(option),
-                (option, isSelected) => _viewModel.SetSelectedGameCategoryFilterSelected(option, isSelected));
-        }
-
-        private void OpenMultiSelectFilterContextMenu(
-            Button button,
-            IEnumerable<string> options,
-            Func<string, bool> isSelected,
-            Action<string, bool> setSelection,
-            Func<string, string> getDisplayLabel = null)
-        {
-            if (button == null || isSelected == null || setSelection == null)
-            {
-                return;
-            }
-
-            var menu = button.ContextMenu;
-            if (menu == null)
-            {
-                return;
-            }
-
-            menu.Items.Clear();
-            if (options == null)
-            {
-                return;
-            }
-
-            var itemStyle = button.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
-            foreach (var option in options.Where(value => !string.IsNullOrWhiteSpace(value)))
-            {
-                var displayLabel = getDisplayLabel?.Invoke(option);
-                if (string.IsNullOrWhiteSpace(displayLabel))
-                {
-                    displayLabel = option;
-                }
-
-                var item = new MenuItem
-                {
-                    Header = displayLabel,
-                    IsCheckable = true,
-                    StaysOpenOnClick = true,
-                    IsChecked = isSelected(option)
-                };
-                if (itemStyle != null)
-                {
-                    item.Style = itemStyle;
-                }
-                item.Click += (_, __) => setSelection(option, item.IsChecked);
                 menu.Items.Add(item);
             }
 
@@ -688,7 +551,8 @@ namespace PlayniteAchievements.Views
 
             if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
             {
-                return TryOpenFocusedSelectorContextMenu();
+                return _friendsOverview?.OpenFocusedControlBarMenuForController() == true ||
+                       TryOpenFocusedSelectorContextMenu();
             }
 
             if (FullscreenControllerNavigationService.IsAcceptInput(input))
@@ -989,6 +853,13 @@ namespace PlayniteAchievements.Views
 
         private bool TryOpenFocusedSelectorContextMenu()
         {
+            if (GameSummariesGridControl?.OpenFocusedControlBarMenuForController() == true ||
+                RecentAchievementsDataGrid?.OpenFocusedControlBarMenuForController() == true ||
+                GameAchievementsGrid?.OpenFocusedControlBarMenuForController() == true)
+            {
+                return true;
+            }
+
             var focusedButton = VisualTreeHelpers.FindVisualParent<Button>(
                                     Keyboard.FocusedElement as DependencyObject)
                                 ?? Keyboard.FocusedElement as Button;
@@ -1001,36 +872,6 @@ namespace PlayniteAchievements.Views
             {
                 RefreshModeSelectionButton_Click(focusedButton, new RoutedEventArgs());
                 return RefreshModeSelectionButton.ContextMenu?.IsOpen == true;
-            }
-
-            if (ReferenceEquals(focusedButton, ProviderFilterSelectionButton))
-            {
-                ProviderFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
-                return ProviderFilterSelectionButton.ContextMenu?.IsOpen == true;
-            }
-
-            if (ReferenceEquals(focusedButton, CompletenessFilterSelectionButton))
-            {
-                CompletenessFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
-                return CompletenessFilterSelectionButton.ContextMenu?.IsOpen == true;
-            }
-
-            if (ReferenceEquals(focusedButton, PlayStatusFilterSelectionButton))
-            {
-                PlayStatusFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
-                return PlayStatusFilterSelectionButton.ContextMenu?.IsOpen == true;
-            }
-
-            if (ReferenceEquals(focusedButton, SelectedGameTypeFilterSelectionButton))
-            {
-                SelectedGameTypeFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
-                return SelectedGameTypeFilterSelectionButton.ContextMenu?.IsOpen == true;
-            }
-
-            if (ReferenceEquals(focusedButton, SelectedGameCategoryFilterSelectionButton))
-            {
-                SelectedGameCategoryFilterSelectionButton_Click(focusedButton, new RoutedEventArgs());
-                return SelectedGameCategoryFilterSelectionButton.ContextMenu?.IsOpen == true;
             }
 
             return false;
@@ -1106,22 +947,13 @@ namespace PlayniteAchievements.Views
 
         private bool IsKeyboardFocusWithinLeftFilterArea()
         {
-            return LeftSearchTextBox?.IsKeyboardFocusWithin == true ||
-                   ClearLeftSearchButton?.IsKeyboardFocusWithin == true ||
-                   ProviderFilterSelectionButton?.IsKeyboardFocusWithin == true ||
-                   CompletenessFilterSelectionButton?.IsKeyboardFocusWithin == true ||
-                   PlayStatusFilterSelectionButton?.IsKeyboardFocusWithin == true;
+            return GameSummariesGridControl?.IsControlBarFocusedForController() == true;
         }
 
         private bool IsKeyboardFocusWithinRightFilterArea()
         {
-            return RightSearchTextBox?.IsKeyboardFocusWithin == true ||
-                   ClearRightSearchButton?.IsKeyboardFocusWithin == true ||
-                   SelectedGameTypeFilterSelectionButton?.IsKeyboardFocusWithin == true ||
-                   SelectedGameCategoryFilterSelectionButton?.IsKeyboardFocusWithin == true ||
-                   SelectedGameUnlockedFilterCheckBox?.IsKeyboardFocusWithin == true ||
-                   SelectedGameLockedFilterCheckBox?.IsKeyboardFocusWithin == true ||
-                   SelectedGameHiddenFilterCheckBox?.IsKeyboardFocusWithin == true ||
+            return RecentAchievementsDataGrid?.IsControlBarFocusedForController() == true ||
+                   GameAchievementsGrid?.IsControlBarFocusedForController() == true ||
                    ClearGameSelectionButton?.IsKeyboardFocusWithin == true;
         }
 
@@ -1213,25 +1045,37 @@ namespace PlayniteAchievements.Views
 
         private IList<UIElement> GetLeftFilterControllerElements()
         {
-            return GetVisibleControllerElements(
-                LeftSearchTextBox,
-                ClearLeftSearchButton,
-                ProviderFilterSelectionButton,
-                CompletenessFilterSelectionButton,
-                PlayStatusFilterSelectionButton);
+            var controlBarElements = GameSummariesGridControl?.GetControlBarControllerElements();
+            if (controlBarElements != null && controlBarElements.Count > 0)
+            {
+                return controlBarElements;
+            }
+
+            return new List<UIElement>();
         }
 
         private IList<UIElement> GetRightFilterControllerElements()
         {
-            return GetVisibleControllerElements(
-                RightSearchTextBox,
-                ClearRightSearchButton,
-                SelectedGameTypeFilterSelectionButton,
-                SelectedGameCategoryFilterSelectionButton,
-                SelectedGameUnlockedFilterCheckBox,
-                SelectedGameLockedFilterCheckBox,
-                SelectedGameHiddenFilterCheckBox,
-                ClearGameSelectionButton);
+            var elements = new List<UIElement>();
+            var recentElements = RecentAchievementsDataGrid?.GetControlBarControllerElements();
+            if (recentElements != null)
+            {
+                elements.AddRange(recentElements);
+            }
+
+            var selectedGameElements = GameAchievementsGrid?.GetControlBarControllerElements();
+            if (selectedGameElements != null)
+            {
+                elements.AddRange(selectedGameElements);
+            }
+
+            elements.AddRange(GetVisibleControllerElements(ClearGameSelectionButton));
+            if (elements.Count > 0)
+            {
+                return elements;
+            }
+
+            return GetVisibleControllerElements(ClearGameSelectionButton);
         }
 
         private static IList<UIElement> GetVisibleControllerElements(params UIElement[] elements)

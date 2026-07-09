@@ -54,6 +54,20 @@ namespace PlayniteAchievements.Services.Tests
                 },
                 new GameCustomDataFile
                 {
+                    AchievementCategoryOrder = new List<string> { "DLC" }
+                },
+                new GameCustomDataFile
+                {
+                    AchievementCategoryImageOverrides = new Dictionary<string, CategoryImageOverrideData>
+                    {
+                        ["DLC"] = new CategoryImageOverrideData
+                        {
+                            Icon = "https://example.com/icon.png"
+                        }
+                    }
+                },
+                new GameCustomDataFile
+                {
                     FilteredAchievementApiNames = new List<string> { "ach_one" }
                 },
                 new GameCustomDataFile
@@ -131,7 +145,7 @@ namespace PlayniteAchievements.Services.Tests
                 },
                 gameId);
 
-            Assert.AreEqual(4, normalized.SchemaVersion);
+            Assert.AreEqual(5, normalized.SchemaVersion);
             AssertProviderOverride(normalized, "Steam", "480");
             AssertLegacyProviderFieldsCleared(normalized);
         }
@@ -160,6 +174,96 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual("second note\nline", normalized.AchievementNotes["ach_one"]);
             Assert.AreEqual(AchievementNoteHelper.MaxNoteLength, normalized.AchievementNotes["ach_long"].Length);
             Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(normalized));
+        }
+
+        [TestMethod]
+        public void NormalizeInternal_CategoryMetadata_NormalizesOrderAndImages()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    AchievementCategoryOrder = new List<string>
+                    {
+                        " DLC ",
+                        "Base",
+                        "dlc"
+                    },
+                    AchievementCategoryImageOverrides = new Dictionary<string, CategoryImageOverrideData>
+                    {
+                        [" DLC "] = new CategoryImageOverrideData
+                        {
+                            Icon = " https://example.com/icon.png ",
+                            Cover = " "
+                        },
+                        ["Base"] = new CategoryImageOverrideData
+                        {
+                            Icon = " ",
+                            Cover = "managed://cover.png"
+                        },
+                        ["Empty"] = new CategoryImageOverrideData
+                        {
+                            Icon = " ",
+                            Cover = null
+                        }
+                    }
+                },
+                gameId);
+
+            CollectionAssert.AreEqual(
+                new[] { "DLC", "Base" },
+                normalized.AchievementCategoryOrder);
+            Assert.AreEqual(2, normalized.AchievementCategoryImageOverrides.Count);
+            Assert.AreEqual("https://example.com/icon.png", normalized.AchievementCategoryImageOverrides["DLC"].Icon);
+            Assert.IsNull(normalized.AchievementCategoryImageOverrides["DLC"].Cover);
+            Assert.IsNull(normalized.AchievementCategoryImageOverrides["Base"].Icon);
+            Assert.AreEqual("managed://cover.png", normalized.AchievementCategoryImageOverrides["Base"].Cover);
+            Assert.IsFalse(normalized.AchievementCategoryImageOverrides.ContainsKey("Empty"));
+            Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(normalized));
+        }
+
+        [TestMethod]
+        public void GameCustomDataFiles_CloneAndPortableRoundTrip_DeepCopyCategoryMetadata()
+        {
+            var gameId = Guid.NewGuid();
+            var internalData = new GameCustomDataFile
+            {
+                PlayniteGameId = gameId,
+                AchievementCategoryOrder = new List<string> { "DLC" },
+                AchievementCategoryImageOverrides = new Dictionary<string, CategoryImageOverrideData>
+                {
+                    ["DLC"] = new CategoryImageOverrideData
+                    {
+                        Icon = "icon.png",
+                        Cover = "cover.png"
+                    }
+                }
+            };
+
+            var internalClone = internalData.Clone();
+            internalClone.AchievementCategoryOrder[0] = "Base";
+            internalClone.AchievementCategoryImageOverrides["DLC"].Icon = "changed.png";
+            Assert.AreEqual("DLC", internalData.AchievementCategoryOrder[0]);
+            Assert.AreEqual("icon.png", internalData.AchievementCategoryImageOverrides["DLC"].Icon);
+
+            var portable = internalData.ToPortable();
+            portable.AchievementCategoryOrder[0] = "Portable";
+            portable.AchievementCategoryImageOverrides["DLC"].Cover = "portable.png";
+            Assert.AreEqual("DLC", internalData.AchievementCategoryOrder[0]);
+            Assert.AreEqual("cover.png", internalData.AchievementCategoryImageOverrides["DLC"].Cover);
+
+            var portableClone = portable.Clone();
+            portableClone.AchievementCategoryOrder[0] = "Clone";
+            portableClone.AchievementCategoryImageOverrides["DLC"].Icon = "clone.png";
+            Assert.AreEqual("Portable", portable.AchievementCategoryOrder[0]);
+            Assert.AreEqual("icon.png", portable.AchievementCategoryImageOverrides["DLC"].Icon);
+
+            var imported = GameCustomDataFile.FromPortable(portable, Guid.NewGuid(), false, false);
+            imported.AchievementCategoryOrder[0] = "Import";
+            imported.AchievementCategoryImageOverrides["DLC"].Cover = "import.png";
+            Assert.AreEqual("Portable", portable.AchievementCategoryOrder[0]);
+            Assert.AreEqual("portable.png", portable.AchievementCategoryImageOverrides["DLC"].Cover);
         }
 
         [TestMethod]

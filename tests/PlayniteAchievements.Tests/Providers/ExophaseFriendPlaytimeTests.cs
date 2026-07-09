@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Providers.Exophase;
 
 namespace PlayniteAchievements.Tests.Providers
 {
@@ -26,6 +27,44 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public void GetFriendGameAchievements_ParsesHeaderBannerFromScrapedPage()
+        {
+            var provider = File.ReadAllText(
+                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
+
+            // The friend achievement scrape now returns the page HTML too, and the game header banner is parsed
+            // from that same HTML (no second request) and attached to the result so provider-only friend games
+            // get a full-size icon/cover.
+            StringAssert.Contains(provider, "FetchAchievementsWithHtmlAsync");
+            StringAssert.Contains(provider, "ExophaseFriendPageParser.ParseGameHeaderImageUrl(fetched.Html)");
+            StringAssert.Contains(provider, "IconUrl = headerImageUrl");
+        }
+
+        [TestMethod]
+        public void ProviderOnlyProbe_PersistsHeaderBannerInsteadOfProfileThumbnail()
+        {
+            var runtime = File.ReadAllText(
+                FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
+
+            // The provider-only probe persists the scraped header banner as the game's icon and cover.
+            StringAssert.Contains(runtime, "!string.IsNullOrWhiteSpace(achievements.IconUrl)");
+            StringAssert.Contains(runtime, "achievements.IconUrl,");
+
+            // For seed-from-scrape providers the profile-thumbnail download is skipped so it cannot overwrite
+            // the higher-quality banner via COALESCE.
+            StringAssert.Contains(runtime, "!ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey)");
+        }
+
+        [TestMethod]
+        public void ExtractSteamStoreAppId_ReadsGameInfoSteamStoreLink()
+        {
+            var html =
+                @"<dl class=""details""><dt>Links:</dt><dd><a rel=""nofollow"" target=""_blank"" href=""https://store.steampowered.com/app/3768760"">Steam Store</a></dd></dl>";
+
+            Assert.AreEqual(3768760, ExophaseSteamAppIdParser.Extract(html));
+        }
+
+        [TestMethod]
         public void ParsePlaytimeMinutes_AcceptsCommaDecimalAndNormalizesToDot()
         {
             var provider = File.ReadAllText(
@@ -35,6 +74,52 @@ namespace PlayniteAchievements.Tests.Providers
             // before invariant parsing so French values like "12,5 h" parse correctly.
             StringAssert.Contains(provider, @"(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?)?");
             StringAssert.Contains(provider, "match.Groups[1].Value.Replace(',', '.')");
+        }
+
+        [TestMethod]
+        public void ParseGames_DoesNotDerivePlatformFromSiblingRows()
+        {
+            var provider = File.ReadAllText(
+                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
+
+            StringAssert.Contains(provider, "CountDistinctGameSlugs(current) <= 1");
+            StringAssert.Contains(provider, "ExtractPlatformSlugFromGameSlug(slug)");
+            StringAssert.Contains(provider, "broad profile containers may contain many platform icons");
+        }
+
+        [TestMethod]
+        public void SteamOwnershipSupplement_SkipsKnownSteamRowsBeforePageFetch()
+        {
+            var provider = File.ReadAllText(
+                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
+
+            StringAssert.Contains(provider, "BuildKnownSteamOwnershipIndex(knownSteamOwnership)");
+            StringAssert.Contains(provider, "IsKnownSteamOwnership(game, knownSteamGames)");
+            StringAssert.Contains(provider, "HasPositiveAchievementUnlock(game)");
+            StringAssert.Contains(provider, "ResolveSteamAppIdForSupplementAsync(game, cancel)");
+        }
+
+        [TestMethod]
+        public void ExophaseFriendOwnership_SkipsRowsWithoutProfileAchievementProgress()
+        {
+            var provider = File.ReadAllText(
+                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
+
+            StringAssert.Contains(provider, "HasAchievementProgressSignal(game)");
+            StringAssert.Contains(provider, "skippedNoAchievementSignal");
+            StringAssert.Contains(provider, "AchievementsTotal.GetValueOrDefault() > 0");
+        }
+
+        [TestMethod]
+        public void ExophaseFriendPlatformSelection_DoesNotOfferSteam()
+        {
+            var catalog = File.ReadAllText(
+                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendPlatformCatalog.cs"));
+            var settings = File.ReadAllText(
+                FindRepoFile("source", "Providers", "Exophase", "ExophaseSettings.cs"));
+
+            Assert.IsFalse(catalog.Contains("new Entry(\"steam\""));
+            StringAssert.Contains(settings, "!string.Equals(platform, \"steam\", StringComparison.OrdinalIgnoreCase)");
         }
 
         private static string FindRepoFile(params string[] parts)

@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Epic
 {
-    public sealed class EpicDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
+    public sealed class EpicDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Epic",
@@ -151,6 +151,16 @@ namespace PlayniteAchievements.Providers.Epic
         public void Dispose()
         {
             _httpClient?.Dispose();
+        }
+
+        public void BeginRefreshAuthContext(RefreshAuthContext context)
+        {
+            _scanner?.BeginRefreshAuthContext(context);
+        }
+
+        public void EndRefreshAuthContext(RefreshAuthContext context)
+        {
+            _scanner?.EndRefreshAuthContext(context);
         }
 
         /// <inheritdoc />

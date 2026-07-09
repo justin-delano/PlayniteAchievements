@@ -18,12 +18,16 @@ namespace PlayniteAchievements.Providers.Manual
     /// Data provider for manually linked achievements.
     /// Implements IDataProvider to integrate with the achievement refresh system.
     /// </summary>
-    public sealed class ManualAchievementsProvider : IDataProvider
+    public sealed class ManualAchievementsProvider : IDataProvider, IRefreshAuthContextReceiver
     {
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly IPlayniteAPI _playniteApi;
         private readonly ManualSourceRegistry _manualSourceRegistry;
+        private readonly Dictionary<string, AuthProbeResult> _sourceAuthProbeCache =
+            new Dictionary<string, AuthProbeResult>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<IRefreshAuthContextReceiver> _sourceAuthContextReceivers =
+            new List<IRefreshAuthContextReceiver>();
         private ManualSettings _providerSettings;
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Manual");
@@ -141,9 +145,7 @@ namespace PlayniteAchievements.Providers.Manual
                 return null;
             }
 
-            await ManualSourceAuthentication
-                .EnsureAuthenticatedIfRequiredAsync(source, _providerSettings.RequireExophaseAuthentication, link, cancel)
-                .ConfigureAwait(false);
+            await EnsureManualSourceAuthenticatedAsync(source, link, cancel).ConfigureAwait(false);
 
             // Fetch achievements directly as AchievementDetail list
             var achievements = await source.GetAchievementsAsync(link.SourceGameId, language, cancel);
@@ -225,6 +227,96 @@ namespace PlayniteAchievements.Providers.Manual
 
         /// <inheritdoc />
         public ProviderSettingsViewBase CreateSettingsView() => new ManualSettingsView(_playniteApi, _logger, _settings);
+
+        public void BeginRefreshAuthContext(RefreshAuthContext context)
+        {
+            _sourceAuthProbeCache.Clear();
+            _sourceAuthContextReceivers.Clear();
+
+            foreach (var receiver in _manualSourceRegistry
+                .GetAllSources()
+                .OfType<IRefreshAuthContextReceiver>())
+            {
+                receiver.BeginRefreshAuthContext(context);
+                _sourceAuthContextReceivers.Add(receiver);
+            }
+        }
+
+        public void EndRefreshAuthContext(RefreshAuthContext context)
+        {
+            for (var i = _sourceAuthContextReceivers.Count - 1; i >= 0; i--)
+            {
+                try
+                {
+                    _sourceAuthContextReceivers[i]?.EndRefreshAuthContext(context);
+                }
+                catch
+                {
+                }
+            }
+
+            _sourceAuthContextReceivers.Clear();
+            _sourceAuthProbeCache.Clear();
+        }
+
+        private async Task EnsureManualSourceAuthenticatedAsync(
+            IManualSource source,
+            ManualAchievementLink link,
+            CancellationToken ct)
+        {
+            if (!ManualSourceAuthentication.ShouldRequireAuthentication(
+                    source,
+                    _providerSettings.RequireExophaseAuthentication,
+                    link))
+            {
+                return;
+            }
+
+            var sourceKey = string.IsNullOrWhiteSpace(source.SourceKey)
+                ? source.GetType().FullName
+                : source.SourceKey.Trim();
+
+            if (_sourceAuthProbeCache.TryGetValue(sourceKey, out var cachedProbe))
+            {
+                if (cachedProbe?.IsSuccess == true)
+                {
+                    return;
+                }
+
+                throw ManualSourceAuthentication.CreateException(source, cachedProbe);
+            }
+
+            AuthProbeResult probeResult;
+            if (source.AuthSession != null)
+            {
+                probeResult = await source.AuthSession.ProbeAuthStateAsync(ct).ConfigureAwait(false);
+                _sourceAuthProbeCache[sourceKey] = probeResult;
+
+                if (ct.IsCancellationRequested && probeResult?.Outcome == AuthOutcome.Cancelled)
+                {
+                    ct.ThrowIfCancellationRequested();
+                }
+
+                if (probeResult?.IsSuccess == true)
+                {
+                    return;
+                }
+
+                throw ManualSourceAuthentication.CreateException(source, probeResult);
+            }
+
+            probeResult = source.IsAuthenticated
+                ? AuthProbeResult.AlreadyAuthenticated()
+                : AuthProbeResult.NotAuthenticated();
+            _sourceAuthProbeCache[sourceKey] = probeResult;
+
+            if (probeResult.IsSuccess)
+            {
+                return;
+            }
+
+            throw ManualSourceAuthentication.CreateException(source, probeResult);
+        }
 
         internal static bool IsTrackingOverrideEnabled()
         {

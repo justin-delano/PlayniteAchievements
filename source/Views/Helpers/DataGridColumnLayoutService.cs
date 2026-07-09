@@ -1846,6 +1846,19 @@ namespace PlayniteAchievements.Views.Helpers
             }
 
             var visibilityItems = new List<MenuItem>();
+
+            // Guarantee at least one visible column: keep the sole checked item disabled so it cannot
+            // be unchecked. Recomputed on build and after each toggle (the menu stays open across
+            // clicks via StaysOpenOnClick).
+            Action refreshLastColumnGuard = () =>
+            {
+                var lockLastColumn = visibilityItems.Count(i => i.IsChecked) <= 1;
+                foreach (var visibilityItem in visibilityItems)
+                {
+                    visibilityItem.IsEnabled = !(lockLastColumn && visibilityItem.IsChecked);
+                }
+            };
+
             foreach (var column in _grid.Columns
                          .Where(c => c != null)
                          .OrderBy(c => c.DisplayIndex))
@@ -1876,6 +1889,7 @@ namespace PlayniteAchievements.Views.Helpers
                     var isVisible = item.IsChecked;
                     targetColumn.Visibility = isVisible ? Visibility.Visible : Visibility.Collapsed;
                     OnColumnVisibilityChanged(targetColumn, isVisible);
+                    refreshLastColumnGuard();
                 };
 
                 visibilityItems.Add(item);
@@ -1886,7 +1900,9 @@ namespace PlayniteAchievements.Views.Helpers
                 return false;
             }
 
-            menu.Items.Add(CreateSectionHeader("Columns"));
+            refreshLastColumnGuard();
+
+            menu.Items.Add(CreateSectionHeader(ResourceProvider.GetString("LOCColumns")));
             foreach (var item in visibilityItems)
             {
                 menu.Items.Add(item);

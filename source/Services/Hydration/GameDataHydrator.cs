@@ -59,6 +59,14 @@ namespace PlayniteAchievements.Services.Hydration
                 data.AchievementOrder = configuredOrder;
             }
 
+            data.AchievementCategoryOrder = customData.AchievementCategoryOrder != null && customData.AchievementCategoryOrder.Count > 0
+                ? new List<string>(customData.AchievementCategoryOrder)
+                : null;
+            data.AchievementCategoryImageOverrides = customData.AchievementCategoryImageOverrides != null &&
+                                                     customData.AchievementCategoryImageOverrides.Count > 0
+                ? CloneCategoryImageOverrideMap(customData.AchievementCategoryImageOverrides, gameId)
+                : null;
+
             // Hydrate achievements with settings overlays (capstone + category/category-type overrides).
             if (data.Achievements != null && data.Achievements.Count > 0)
             {
@@ -89,6 +97,13 @@ namespace PlayniteAchievements.Services.Hydration
             data.ExcludedFromSummaries = customData.ExcludedFromSummaries;
             data.UseSeparateLockedIconsWhenAvailable = customData.UseSeparateLockedIcons;
             data.Game = GetGame(gameId);
+            data.AchievementCategoryOrder = customData.AchievementCategoryOrder != null && customData.AchievementCategoryOrder.Count > 0
+                ? new List<string>(customData.AchievementCategoryOrder)
+                : null;
+            data.AchievementCategoryImageOverrides = customData.AchievementCategoryImageOverrides != null &&
+                                                     customData.AchievementCategoryImageOverrides.Count > 0
+                ? CloneCategoryImageOverrideMap(customData.AchievementCategoryImageOverrides, gameId)
+                : null;
 
             if (data.Achievements != null && data.Achievements.Count > 0)
             {
@@ -204,6 +219,36 @@ namespace PlayniteAchievements.Services.Hydration
             }
 
             return managedCustomIconService?.ResolveManagedDisplayPath(normalized, gameIdText) ?? normalized;
+        }
+
+        private static Dictionary<string, CategoryImageOverrideData> CloneCategoryImageOverrideMap(
+            IReadOnlyDictionary<string, CategoryImageOverrideData> source,
+            Guid gameId)
+        {
+            var result = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+            if (source == null)
+            {
+                return result;
+            }
+
+            var managedCustomIconService = PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService;
+            var gameIdText = gameId.ToString("D");
+            foreach (var pair in source)
+            {
+                var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                if (string.IsNullOrWhiteSpace(category) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                result[category] = new CategoryImageOverrideData
+                {
+                    Icon = ResolveIconOverridePath(pair.Value.Icon, gameIdText, managedCustomIconService),
+                    Cover = ResolveIconOverridePath(pair.Value.Cover, gameIdText, managedCustomIconService)
+                };
+            }
+
+            return result;
         }
 
         private static string NormalizeText(string value)

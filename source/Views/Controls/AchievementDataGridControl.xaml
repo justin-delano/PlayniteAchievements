@@ -17,11 +17,64 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="CategoryModeBoolToVis"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <Grid>
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <controls:GridControlBarControl x:Name="ControlBarHost"
+                                    Grid.Row="0"
+                                    Margin="0,0,0,8"
+                                    ControlBar="{Binding ControlBar, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                    ShowControlBar="{Binding ShowControlBar, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"/>
+
+    <Grid Grid.Row="1">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Drill-down header: header-less summary row for the selected category. The Back button
+             is injected into the control bar so it sits with the other toolbar affordances. -->
+        <controls:GameSummariesGridControl x:Name="CategoryDrillHeaderGrid"
+                                           Grid.Row="0"
+                                           Margin="0,0,0,8"
+                                           Visibility="{Binding DrillHeaderVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, Converter={StaticResource CategoryModeBoolToVis}}"
+                                           ItemsSource="{Binding SelectedCategorySummaryItems, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                           ColumnSettingsKey="{Binding ResolvedCategoryColumnSettingsKey, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                           UseCoverImages="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                           PreserveImageResolution="True"
+                                           ShowMetadataPlatform="False"
+                                           ShowMetadataPlaytime="False"
+                                           ShowMetadataRegion="False"
+                                           ShowColumnHeaders="True"
+                                           DisableRowSelection="True"
+                                           RowPreviewMouseLeftButtonDown="CategoryDrillHeader_RowPreviewMouseLeftButtonDown"/>
+
+        <Grid Grid.Row="1">
+            <!-- Category-summaries list (one row per category label). -->
+            <controls:GameSummariesGridControl x:Name="CategoryListGrid"
+                                               Visibility="{Binding CategoryListVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, Converter={StaticResource CategoryModeBoolToVis}}"
+                                               ItemsSource="{Binding CategorySummaries, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                               ColumnSettingsKey="{Binding ResolvedCategoryColumnSettingsKey, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                               UseCoverImages="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                               PreserveImageResolution="True"
+                                               ShowMetadataPlatform="False"
+                                               ShowMetadataPlaytime="False"
+                                               ShowMetadataRegion="False"
+                                               ShowColumnHeaders="True"
+                                               RowPreviewMouseRightButtonDown="CategoryList_RowPreviewMouseRightButtonDown"
+                                               RowPreviewMouseRightButtonUp="CategoryList_RowPreviewMouseRightButtonUp"
+                                               SelectionChanged="CategoryList_SelectionChanged"/>
+
     <DataGrid x:Name="AchievementsDataGrid"
-              ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
+              Visibility="{Binding AchievementGridVisible, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, Converter={StaticResource CategoryModeBoolToVis}}"
+              ItemsSource="{Binding EffectiveAchievements, RelativeSource={RelativeSource AncestorType=UserControl}, Mode=OneWay}"
               MaxHeight="{Binding DataGridMaxHeight, RelativeSource={RelativeSource AncestorType=UserControl}}"
               Sorting="DataGrid_Sorting"
               LoadingRow="AchievementsDataGrid_LoadingRow"
@@ -361,6 +414,9 @@
                                     CellTemplate="{StaticResource AchievementPointsTemplate}"/>
         </DataGrid.Columns>
     </DataGrid>
+        </Grid>
+    </Grid>
+    </Grid>
 </UserControl>
 
 

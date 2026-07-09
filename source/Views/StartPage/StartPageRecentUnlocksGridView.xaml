@@ -13,6 +13,8 @@
                                              ShowRarityGlow="{Binding ShowRarityGlow}"
                                              ColorNamesByRarity="{Binding ColorNamesByRarity}"
                                              ShowColumnHeaders="{Binding ShowColumnHeaders}"
+                                             ControlBar="{Binding ControlBar}"
+                                             ShowControlBar="{Binding ShowControlBar}"
                                              FixedRowHeight="{Binding RowHeight}"
                                              SortScope="{x:Static services:AchievementSortScope.RecentAchievements}"
                                              DelayInitialRenderUntilNormalized="True"

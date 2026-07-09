@@ -6,6 +6,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Summaries;
@@ -595,6 +596,7 @@ namespace PlayniteAchievements.Services.Overview
                         UseSeparateLockedIconsWhenAvailable = recent.UseSeparateLockedIconsWhenAvailable,
                         Achievements = new List<AchievementDetail>()
                     };
+                    AttachCategoryMetadata(gameData, settings);
                     recentGameDataByKey[gameKey] = gameData;
 
                     appearanceByGameKey[gameKey] = AchievementDisplayItem.CreateAppearanceSettingsSnapshot(
@@ -757,6 +759,47 @@ namespace PlayniteAchievements.Services.Overview
             }
 
             return $"{recent?.ProviderKey ?? "Unknown"}::{recent?.GameName ?? "Unknown"}";
+        }
+
+        private static void AttachCategoryMetadata(
+            GameAchievementData gameData,
+            PlayniteAchievementsSettings settings)
+        {
+            if (gameData?.PlayniteGameId == null)
+            {
+                return;
+            }
+
+            var resolved = GameCustomDataLookup.ResolveGameCustomData(
+                gameData.PlayniteGameId.Value,
+                settings?.Persisted);
+            gameData.AchievementCategoryOrder = resolved.AchievementCategoryOrder != null && resolved.AchievementCategoryOrder.Count > 0
+                ? new List<string>(resolved.AchievementCategoryOrder)
+                : null;
+            gameData.AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(resolved.AchievementCategoryImageOverrides);
+        }
+
+        private static Dictionary<string, CategoryImageOverrideData> CloneCategoryImageOverrideMap(
+            IReadOnlyDictionary<string, CategoryImageOverrideData> source)
+        {
+            if (source == null || source.Count == 0)
+            {
+                return null;
+            }
+
+            var result = new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in source)
+            {
+                var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
+                if (string.IsNullOrWhiteSpace(category) || pair.Value == null)
+                {
+                    continue;
+                }
+
+                result[category] = pair.Value.Clone();
+            }
+
+            return result.Count > 0 ? result : null;
         }
 
         private string ResolveGameAssetPath(string path)

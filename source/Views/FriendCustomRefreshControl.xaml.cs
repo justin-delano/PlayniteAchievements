@@ -3,6 +3,7 @@ using Playnite.SDK.Plugins;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
@@ -129,6 +130,13 @@ namespace PlayniteAchievements.Views
             public string Id { get; set; }
             public string DisplayName { get; set; }
             public string ProviderKey { get; set; }
+            public List<string> ProviderKeys { get; set; } = new List<string>();
+            public List<FriendAccountRef> FriendAccounts { get; set; } = new List<FriendAccountRef>();
+            public string ProviderDisplayText { get; set; }
+
+            public string DisplayText => string.IsNullOrWhiteSpace(ProviderDisplayText)
+                ? DisplayName
+                : $"{DisplayName} ({ProviderDisplayText})";
 
             public bool IsSelected
             {
@@ -144,6 +152,8 @@ namespace PlayniteAchievements.Views
         private readonly IPlayniteAPI _api;
         private readonly RefreshRuntime _refreshRuntime;
         private readonly IFriendCacheManager _friendCache;
+        private readonly PlayniteAchievementsSettings _settings;
+        private readonly FriendsOverviewDataCoordinator _friendsOverviewDataCoordinator;
         private readonly Guid? _selectedGameId;
         private readonly string _selectedGameName;
         private FriendRefreshScope _selectedScope = FriendRefreshScope.Recent;
@@ -257,12 +267,16 @@ namespace PlayniteAchievements.Views
             IPlayniteAPI api,
             RefreshRuntime refreshRuntime,
             IFriendCacheManager friendCache,
+            PlayniteAchievementsSettings settings,
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator,
             Guid? selectedGameId,
             string selectedGameName)
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshRuntime = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _friendCache = friendCache;
+            _settings = settings;
+            _friendsOverviewDataCoordinator = friendsOverviewDataCoordinator;
             _selectedGameId = selectedGameId.HasValue && selectedGameId.Value != Guid.Empty ? selectedGameId : null;
             _selectedGameName = selectedGameName;
 
@@ -290,10 +304,18 @@ namespace PlayniteAchievements.Views
             ILogger logger,
             Guid? selectedGameId,
             string selectedGameName,
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator,
             out FriendCustomRefreshOptions options)
         {
             options = null;
-            var control = new FriendCustomRefreshControl(api, refreshRuntime, friendCache, selectedGameId, selectedGameName);
+            var control = new FriendCustomRefreshControl(
+                api,
+                refreshRuntime,
+                friendCache,
+                settings,
+                friendsOverviewDataCoordinator,
+                selectedGameId,
+                selectedGameName);
             var window = PlayniteUiProvider.CreateExtensionWindow(
                 ResourceProvider.GetString("LOCPlayAch_RefreshMode_FriendsCustom") ?? "Friends Custom Refresh",
                 control,
@@ -428,26 +450,22 @@ namespace PlayniteAchievements.Views
         {
             try
             {
-                var data = _friendCache?.LoadFriendsOverviewData(false, 0);
-                if (data != null)
+                var snapshot = LoadSelectionSnapshot();
+                if (snapshot != null)
                 {
-                    foreach (var friend in data.Friends ?? Enumerable.Empty<FriendSummaryItem>())
+                    foreach (var friend in snapshot.Friends ?? Enumerable.Empty<FriendSummaryItem>())
                     {
-                        if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
+                        var selection = CreateFriendSelectionItem(friend);
+                        if (selection == null)
                         {
                             continue;
                         }
 
-                        _allFriendItems.Add(new SelectionItem
-                        {
-                            Id = friend.ExternalUserId,
-                            DisplayName = string.IsNullOrWhiteSpace(friend.DisplayName) ? friend.ExternalUserId : friend.DisplayName,
-                            ProviderKey = friend.ProviderKey
-                        });
+                        _allFriendItems.Add(selection);
                     }
 
                     var seenGames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var game in data.Games ?? Enumerable.Empty<FriendGameSummaryItem>())
+                    foreach (var game in snapshot.Games ?? Enumerable.Empty<FriendGameSummaryItem>())
                     {
                         if (game?.PlayniteGameId == null || game.PlayniteGameId == Guid.Empty)
                         {
@@ -464,7 +482,8 @@ namespace PlayniteAchievements.Views
                         {
                             Id = id,
                             DisplayName = string.IsNullOrWhiteSpace(game.GameName) ? id : game.GameName,
-                            ProviderKey = game.ProviderKey
+                            ProviderKey = game.ProviderKey,
+                            ProviderKeys = NormalizeProviderKeys(new[] { game.ProviderKey })
                         });
                     }
                 }
@@ -476,6 +495,107 @@ namespace PlayniteAchievements.Views
             {
                 Logger?.Warn(ex, "Failed to load friend custom refresh selection data.");
             }
+        }
+
+        private FriendsOverviewSnapshot LoadSelectionSnapshot()
+        {
+            if (_friendsOverviewDataCoordinator?.TryGetCurrentSnapshot(out var snapshot) == true)
+            {
+                return snapshot;
+            }
+
+            var data = _friendCache?.LoadFriendsOverviewData(false, 0);
+            return FriendsOverviewDataCoordinator.CreateSnapshot(data, _settings?.Persisted);
+        }
+
+        internal static SelectionItem CreateFriendSelectionItem(FriendSummaryItem friend)
+        {
+            if (friend == null)
+            {
+                return null;
+            }
+
+            var accounts = NormalizeFriendAccounts(friend.MemberAccounts);
+            if (accounts.Count == 0 &&
+                !string.Equals(friend.ProviderKey, FriendOverviewProjection.MergedProviderKey, StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(friend.ProviderKey) &&
+                !string.IsNullOrWhiteSpace(friend.ExternalUserId))
+            {
+                accounts.Add(FriendAccountRef.From(friend.ProviderKey, friend.ExternalUserId));
+            }
+
+            var providerKeys = accounts.Count > 0
+                ? NormalizeProviderKeys(accounts.Select(account => account.ProviderKey))
+                : NormalizeProviderKeys((friend.MemberProviderKeys ?? new List<string>())
+                    .Concat(new[] { friend.ProviderKey }));
+            if (providerKeys.Count == 0 || accounts.Count == 0)
+            {
+                return null;
+            }
+
+            var id = !string.IsNullOrWhiteSpace(friend.MergedFriendId)
+                ? friend.MergedFriendId
+                : friend.ExternalUserId;
+            var displayName = string.IsNullOrWhiteSpace(friend.DisplayName)
+                ? id
+                : friend.DisplayName;
+
+            return new SelectionItem
+            {
+                Id = id,
+                DisplayName = displayName,
+                ProviderKey = providerKeys.FirstOrDefault(),
+                ProviderKeys = providerKeys,
+                FriendAccounts = accounts,
+                ProviderDisplayText = ResolveProviderDisplayText(friend, providerKeys)
+            };
+        }
+
+        private static List<FriendAccountRef> NormalizeFriendAccounts(IEnumerable<FriendAccountRef> accounts)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var normalized = new List<FriendAccountRef>();
+            foreach (var account in accounts ?? Enumerable.Empty<FriendAccountRef>())
+            {
+                var next = account?.Clone()?.Normalize();
+                if (string.IsNullOrWhiteSpace(next?.Key) || !seen.Add(next.Key))
+                {
+                    continue;
+                }
+
+                normalized.Add(next);
+            }
+
+            return normalized;
+        }
+
+        private static List<string> NormalizeProviderKeys(IEnumerable<string> providerKeys)
+        {
+            return (providerKeys ?? Enumerable.Empty<string>())
+                .Where(provider => !string.IsNullOrWhiteSpace(provider))
+                .Select(provider => provider.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(provider => provider, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+        }
+
+        private static string ResolveProviderDisplayText(FriendSummaryItem friend, IReadOnlyList<string> providerKeys)
+        {
+            if (!string.IsNullOrWhiteSpace(friend?.MemberProviderDisplayText))
+            {
+                return friend.MemberProviderDisplayText;
+            }
+
+            var providers = (providerKeys ?? Array.Empty<string>())
+                .Where(provider => !string.IsNullOrWhiteSpace(provider))
+                .Select(provider =>
+                {
+                    var localized = ProviderRegistry.GetLocalizedName(provider);
+                    return string.IsNullOrWhiteSpace(localized) ? provider : localized;
+                })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            return providers.Count == 0 ? null : string.Join(" + ", providers);
         }
 
         private HashSet<string> GetSelectedProviderKeys()
@@ -496,7 +616,9 @@ namespace PlayniteAchievements.Views
             }
 
             var providers = GetSelectedProviderKeys();
-            if (providers.Count > 0 && !providers.Contains(selection.ProviderKey ?? string.Empty))
+            if (providers.Count > 0 &&
+                !(selection.ProviderKeys ?? new List<string>())
+                .Any(provider => providers.Contains(provider)))
             {
                 return false;
             }
@@ -512,7 +634,9 @@ namespace PlayniteAchievements.Views
             }
 
             var providers = GetSelectedProviderKeys();
-            if (providers.Count > 0 && !providers.Contains(selection.ProviderKey ?? string.Empty))
+            if (providers.Count > 0 &&
+                !(selection.ProviderKeys ?? new List<string>())
+                .Any(provider => providers.Contains(provider)))
             {
                 return false;
             }
@@ -536,10 +660,22 @@ namespace PlayniteAchievements.Views
                 .Where(option => option.IsSelectable && option.IsSelected)
                 .Select(option => option.ProviderKey)
                 .ToList();
+            var selectedProviderSet = new HashSet<string>(providerKeys, StringComparer.OrdinalIgnoreCase);
 
-            var friendIds = _allFriendItems
+            var friendAccounts = _allFriendItems
                 .Where(item => item.IsSelected)
-                .Select(item => item.Id)
+                .SelectMany(item => item.FriendAccounts ?? new List<FriendAccountRef>())
+                .Where(account =>
+                    account != null &&
+                    !string.IsNullOrWhiteSpace(account.ProviderKey) &&
+                    !string.IsNullOrWhiteSpace(account.ExternalUserId) &&
+                    selectedProviderSet.Contains(account.ProviderKey))
+                .GroupBy(account => account.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToList();
+            var friendIds = friendAccounts
+                .Select(account => account.ExternalUserId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -561,6 +697,7 @@ namespace PlayniteAchievements.Views
                 ProviderKeys = providerKeys,
                 Scope = SelectedScope,
                 PlayniteGameIds = gameIds.Count > 0 ? gameIds : null,
+                FriendAccounts = friendAccounts.Count > 0 ? friendAccounts : null,
                 FriendExternalUserIds = friendIds.Count > 0 ? friendIds : null
             };
             DialogResult = true;

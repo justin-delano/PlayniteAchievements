@@ -279,7 +279,8 @@ namespace PlayniteAchievements.ViewModels
 
                 _canonicalCategoryLabelFilterOptions = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
                     orderedAchievements,
-                    achievement => ResolveEffectiveCategoryLabel(achievement, categoryOverrides));
+                    achievement => ResolveEffectiveCategoryLabel(achievement, categoryOverrides),
+                    hydratedGameData?.AchievementCategoryOrder);
 
                 _allRows = orderedAchievements.Select(a =>
                 {

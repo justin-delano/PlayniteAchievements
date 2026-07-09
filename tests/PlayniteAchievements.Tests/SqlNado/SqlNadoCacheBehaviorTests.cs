@@ -382,13 +382,28 @@ namespace PlayniteAchievements.SqlNado.Tests
         [TestMethod]
         public void CacheStore_NormalFriendOwnershipCleanupPreservesProviderOnlyRows()
         {
+            var models = File.ReadAllText(FindRepoFile("source", "Services", "Friends", "FriendCacheModels.cs"));
             var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
 
-            StringAssert.Contains(store, "if (options?.IncludeProviderOnlyGames != true)");
+            StringAssert.Contains(models, "public bool PruneStaleShared { get; set; }");
+            StringAssert.Contains(store, "options?.IncludeProviderOnlyGames != true");
+            StringAssert.Contains(store, "options?.PruneStaleShared == true");
+            StringAssert.Contains(store, "seenSharedGameIds.Count > 0");
             StringAssert.Contains(store, "DeleteStaleSharedFriendOwnership(db, user.Id, seenSharedGameIds);");
             StringAssert.Contains(store, "private static void DeleteStaleSharedFriendOwnership");
+            StringAssert.Contains(store, "Empty ownership is not authoritative");
             StringAssert.Contains(store, "g.PlayniteGameId IS NOT NULL");
             StringAssert.Contains(store, "TRIM(g.PlayniteGameId) <> ''");
+        }
+
+        [TestMethod]
+        public void CacheStore_EmptyFriendRosterDoesNotDeactivateFriends()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "if (seenExternalUserIds == null || seenExternalUserIds.Count == 0)");
+            StringAssert.Contains(store, "An empty roster may be a soft-empty/transient provider result.");
+            StringAssert.Contains(store, "MarkMissingFriendsInactive(db, providerKey, friendSource, seen, nowIso);");
         }
 
         [TestMethod]
@@ -428,20 +443,22 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [TestMethod]
-        public void CacheStore_RecentFriendCandidatesUsePlaytimeDeltaOnly()
+        public void CacheStore_RecentFriendCandidatesUseOwnershipRefreshDelta()
         {
             var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
             var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
 
-            // Recent-scope recency is decided in the runtime from provider signals, not by a SQL
-            // 2-week-playtime filter or a wall-clock last-scrape TTL.
+            // Recent-scope candidates are gated by explicit scrape state and ownership-refresh deltas,
+            // not by a 2-week-playtime filter or a wall-clock last-scrape TTL.
             Assert.IsFalse(store.Contains(@"AND COALESCE(fo.Playtime2WeeksMinutes, 0) > 0"),
                 "Recent scope must no longer filter on 2-week playtime in SQL.");
-            Assert.IsFalse(store.Contains("fo.LastScrapedUtc IS NULL"));
             Assert.IsFalse(store.Contains("fo.LastScrapedUtc < ?"));
+            StringAssert.Contains(store, "fo.LastScrapedUtc IS NULL");
+            StringAssert.Contains(store, "fo.LastOwnershipRefreshUtc > fo.LastScrapedUtc");
             Assert.IsFalse(runtime.Contains("RefreshTtl"), "The wall-clock friend refresh TTL must be gone.");
 
-            // Steam recency is the playtime delta since the last successful scrape.
+            // When ownership is freshly fetched, Steam recency is still the playtime delta since the last
+            // successful scrape.
             StringAssert.Contains(runtime, "fresh.PlaytimeForeverMinutes > prev.PlaytimeForeverMinutes");
         }
 
@@ -491,6 +508,21 @@ namespace PlayniteAchievements.SqlNado.Tests
             StringAssert.Contains(store, "AND (ProviderGameKey = ? OR ProviderGameId = ?)");
             // The source URL is not persisted into the definition state.
             StringAssert.Contains(store, "// Image source URLs are not persisted; the header banner is downloaded to");
+        }
+
+        [TestMethod]
+        public void CacheStore_ProviderOnlyPromotionMergesDefinitionsWithoutDuplicateApiNames()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "MergeProviderOnlyDefinitionsIntoTarget(db, source.Id, target.Id, nowIso);");
+            StringAssert.Contains(store, "private static void MergeProviderOnlyDefinitionsIntoTarget");
+            StringAssert.Contains(store, "AND NOT EXISTS");
+            StringAssert.Contains(store, "target.GameId = ?");
+            StringAssert.Contains(store, "target.ApiName = AchievementDefinitions.ApiName");
+            Assert.IsFalse(
+                store.Contains("MoveProviderOnlyDefinitionsIfTargetIsEmpty"),
+                "Promotion must merge missing definitions instead of skipping or failing when the target already has definitions.");
         }
 
         [TestMethod]

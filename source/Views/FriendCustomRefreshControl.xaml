@@ -102,7 +102,7 @@
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                                  Content="{Binding DisplayName}"
+                                                  Content="{Binding DisplayText}"
                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"/>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>

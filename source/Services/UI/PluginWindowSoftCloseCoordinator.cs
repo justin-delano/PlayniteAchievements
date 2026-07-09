@@ -15,6 +15,7 @@ namespace PlayniteAchievements.Services.UI
         private const int WmLButtonDown = 0x0201;
         private const int WmLButtonUp = 0x0202;
         private const uint GwOwner = 4;
+        private const uint GaRoot = 2;
 
         private readonly ILogger _logger;
         private readonly Dictionary<Window, Registration> _registrations =
@@ -36,15 +37,12 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            var windowHandle = GetWindowHandle(window);
-            var ownerHandle = GetWindowHandle(owner);
-            if (windowHandle == IntPtr.Zero || ownerHandle == IntPtr.Zero)
-            {
-                return;
-            }
-
+            // Handles are resolved live at click time (GetLiveHandle), not captured here:
+            // Register runs before the window is shown, and a handle cached now can go stale
+            // if WPF recreates the HWND or the owner window is recreated (desktop/fullscreen
+            // switch). Storing the Window references keeps the hit test matched to reality.
             Unregister(window);
-            _registrations[window] = new Registration(window, ownerHandle, windowHandle);
+            _registrations[window] = new Registration(window, owner);
             window.Closed += Window_Closed;
             EnsureHook();
         }
@@ -164,13 +162,27 @@ namespace PlayniteAchievements.Services.UI
 
             var mouse = Marshal.PtrToStructure<MSLLHOOKSTRUCT>(lParam);
             target = _registrations.Values
-                .FirstOrDefault(registration =>
-                    registration.Window?.IsVisible == true &&
-                    registration.Window.IsActive &&
-                    IsPointInsideWindow(registration.OwnerHandle, mouse.pt) &&
-                    !IsPointInsidePopupOrOwnedWindow(registration.WindowHandle, mouse.pt));
+                .FirstOrDefault(registration => IsSoftCloseTarget(registration, mouse.pt));
 
             return target != null;
+        }
+
+        private static bool IsSoftCloseTarget(Registration registration, NativePoint point)
+        {
+            if (registration.Window?.IsVisible != true || !registration.Window.IsActive)
+            {
+                return false;
+            }
+
+            var popoutHandle = GetLiveHandle(registration.Window);
+            var ownerHandle = GetLiveHandle(registration.Owner);
+            if (popoutHandle == IntPtr.Zero || ownerHandle == IntPtr.Zero)
+            {
+                return false;
+            }
+
+            return IsPointInsideWindow(ownerHandle, point) &&
+                   !IsPointInsidePopupOrOwnedWindow(popoutHandle, point);
         }
 
         private static bool IsLeftButtonMessage(IntPtr message)
@@ -179,7 +191,7 @@ namespace PlayniteAchievements.Services.UI
                    message == new IntPtr(WmLButtonUp);
         }
 
-        private static IntPtr GetWindowHandle(Window window)
+        private static IntPtr GetLiveHandle(Window window)
         {
             if (window == null)
             {
@@ -188,8 +200,9 @@ namespace PlayniteAchievements.Services.UI
 
             try
             {
-                var helper = new WindowInteropHelper(window);
-                return helper.Handle != IntPtr.Zero ? helper.Handle : helper.EnsureHandle();
+                // Read the current handle only; never EnsureHandle() here, which would force a
+                // handle on a window that may be unshown or mid-teardown at click time.
+                return new WindowInteropHelper(window).Handle;
             }
             catch
             {
@@ -213,15 +226,21 @@ namespace PlayniteAchievements.Services.UI
 
         private static bool IsPointInsidePopupOrOwnedWindow(IntPtr windowHandle, NativePoint point)
         {
+            if (windowHandle == IntPtr.Zero)
+            {
+                return false;
+            }
+
             if (IsPointInsideWindow(windowHandle, point))
             {
                 return true;
             }
 
-            // WPF Popup content (ComboBox dropdowns, context menus, etc.) renders in a separate
-            // top-level window owned by the plugin window and can extend beyond its rectangle.
-            // Walk the owner chain of the window under the cursor to recognize these as "inside".
-            var current = WindowFromPoint(point);
+            // WPF Popup content (ComboBox dropdowns, context menus, tooltips) and child-hosted
+            // content (HwndHost/airspace) render in separate HWNDs that can extend beyond the
+            // plugin window's rectangle. Resolve the top-level window under the cursor, then walk
+            // its owner chain, recognizing the plugin window as "inside".
+            var current = GetAncestor(WindowFromPoint(point), GaRoot);
             var guard = 0;
             while (current != IntPtr.Zero && guard++ < 32)
             {
@@ -238,18 +257,15 @@ namespace PlayniteAchievements.Services.UI
 
         private sealed class Registration
         {
-            public Registration(Window window, IntPtr ownerHandle, IntPtr windowHandle)
+            public Registration(Window window, Window owner)
             {
                 Window = window;
-                OwnerHandle = ownerHandle;
-                WindowHandle = windowHandle;
+                Owner = owner;
             }
 
             public Window Window { get; }
 
-            public IntPtr OwnerHandle { get; }
-
-            public IntPtr WindowHandle { get; }
+            public Window Owner { get; }
 
             public bool IsClosing { get; set; }
         }
@@ -299,6 +315,9 @@ namespace PlayniteAchievements.Services.UI
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
         private static extern IntPtr GetModuleHandle(string lpModuleName);

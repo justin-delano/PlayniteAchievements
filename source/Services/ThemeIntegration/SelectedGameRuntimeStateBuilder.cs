@@ -1,4 +1,5 @@
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
@@ -52,10 +53,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             {
                 if (achievements[i] != null)
                 {
-                    // Modern compact lists resolve tooltip game name from AchievementDetail.Game.
-                    // Ensure selected-game snapshots always carry this context.
-                    achievements[i].Game = game;
-                    achievements[i].ProviderKey = data.EffectiveProviderKey;
+                    ApplyAchievementPresentation(achievements[i], data);
                 }
             }
 
@@ -116,6 +114,49 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 rare,
                 ultra,
                 rareAndUltra);
+        }
+
+        private static void ApplyAchievementPresentation(
+            AchievementDetail achievement,
+            GameAchievementData data)
+        {
+            if (achievement == null)
+            {
+                return;
+            }
+
+            // Modern compact lists resolve tooltip game name from AchievementDetail.Game.
+            // Ensure selected-game snapshots always carry this context.
+            achievement.Game = data?.Game;
+            achievement.ProviderKey = data?.EffectiveProviderKey;
+            ApplyCategoryImagePresentation(achievement, data);
+        }
+
+        private static void ApplyCategoryImagePresentation(
+            AchievementDetail achievement,
+            GameAchievementData data)
+        {
+            if (achievement == null)
+            {
+                return;
+            }
+
+            CategoryImageOverrideData imageOverride = null;
+            var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category);
+            if (!string.IsNullOrWhiteSpace(category) &&
+                data?.AchievementCategoryImageOverrides != null)
+            {
+                data.AchievementCategoryImageOverrides.TryGetValue(category, out imageOverride);
+            }
+
+            achievement.CategoryIconPath = NormalizeImageOverridePath(imageOverride?.Icon);
+            achievement.CategoryCoverPath = NormalizeImageOverridePath(imageOverride?.Cover);
+        }
+
+        private static string NormalizeImageOverridePath(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
         }
 
     }

@@ -68,7 +68,8 @@ namespace PlayniteAchievements.Views
             OverviewLaunchContext launchContext = OverviewLaunchContext.Sidebar,
             IPlayniteAPI playniteApi = null,
             ICacheManager cacheManager = null,
-            AchievementOverridesService achievementOverridesService = null)
+            AchievementOverridesService achievementOverridesService = null,
+            FriendsOverviewDataCoordinator friendsOverviewDataCoordinator = null)
         {
             InitializeComponent();
             _logger = logger;
@@ -101,10 +102,12 @@ namespace PlayniteAchievements.Views
                         logger,
                         gameId,
                         gameName,
+                        friendsOverviewDataCoordinator,
                         out var options)
                         ? options
                         : null;
-                });
+                },
+                friendsOverviewDataCoordinator: friendsOverviewDataCoordinator);
             DataContext = _viewModel;
         }
 
@@ -137,19 +140,12 @@ namespace PlayniteAchievements.Views
             ClearSelection();
         }
 
-        private void ClearFriendSearch_Click(object sender, RoutedEventArgs e)
+        internal bool OpenFocusedControlBarMenuForController()
         {
-            _viewModel?.ClearFriendSearch();
-        }
-
-        private void ClearGameSearch_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel?.ClearGameSearch();
-        }
-
-        private void ClearAchievementSearch_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel?.ClearAchievementSearch();
+            return FriendSummariesGridControl?.OpenFocusedControlBarMenuForController() == true ||
+                   FriendGameSummariesGridControl?.OpenFocusedControlBarMenuForController() == true ||
+                   SelectedFriendGameSummariesGridControl?.OpenFocusedControlBarMenuForController() == true ||
+                   FriendsAchievementsGrid?.OpenFocusedControlBarMenuForController() == true;
         }
 
         private void CloseViewButton_Click(object sender, RoutedEventArgs e)
@@ -211,34 +207,6 @@ namespace PlayniteAchievements.Views
                 selectedKey => _viewModel.SelectedRefreshMode = selectedKey);
         }
 
-        private void TypeFilterSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            OpenMultiSelectFilterContextMenu(
-                TypeFilterSelectionButton,
-                _viewModel.TypeFilterOptions,
-                option => _viewModel.IsTypeFilterSelected(option),
-                (option, isSelected) => _viewModel.SetTypeFilterSelected(option, isSelected));
-        }
-
-        private void CategoryFilterSelectionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (_viewModel == null)
-            {
-                return;
-            }
-
-            OpenMultiSelectFilterContextMenu(
-                CategoryFilterSelectionButton,
-                _viewModel.CategoryFilterOptions,
-                option => _viewModel.IsCategoryFilterSelected(option),
-                (option, isSelected) => _viewModel.SetCategoryFilterSelected(option, isSelected));
-        }
-
         private static void OpenSingleSelectRefreshModeContextMenu(
             Button button,
             IEnumerable<RefreshMode> modes,
@@ -275,47 +243,6 @@ namespace PlayniteAchievements.Views
                 }
 
                 item.Click += (_, __) => setSelection(modeKey);
-                menu.Items.Add(item);
-            }
-
-            OpenSelectorContextMenu(button, menu);
-        }
-
-        private void OpenMultiSelectFilterContextMenu(
-            Button button,
-            IEnumerable<string> options,
-            Func<string, bool> isSelected,
-            Action<string, bool> setSelection)
-        {
-            if (button == null || isSelected == null || setSelection == null)
-            {
-                return;
-            }
-
-            var menu = button.ContextMenu;
-            if (menu == null)
-            {
-                return;
-            }
-
-            menu.Items.Clear();
-            var itemStyle = button.TryFindResource("AchievementMultiSelectMenuItemStyle") as Style;
-            foreach (var option in options?.Where(value => !string.IsNullOrWhiteSpace(value)) ?? Enumerable.Empty<string>())
-            {
-                var value = option;
-                var item = new MenuItem
-                {
-                    Header = value,
-                    IsCheckable = true,
-                    StaysOpenOnClick = true,
-                    IsChecked = isSelected(value)
-                };
-                if (itemStyle != null)
-                {
-                    item.Style = itemStyle;
-                }
-
-                item.Click += (_, __) => setSelection(value, item.IsChecked);
                 menu.Items.Add(item);
             }
 

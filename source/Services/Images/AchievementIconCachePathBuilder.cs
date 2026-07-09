@@ -13,6 +13,12 @@ namespace PlayniteAchievements.Services.Images
         Locked = 1
     }
 
+    public enum CategoryImageKind
+    {
+        Icon = 0,
+        Cover = 1
+    }
+
     internal static class AchievementIconCachePathBuilder
     {
         private const string FallbackStem = "achievement";
@@ -137,6 +143,27 @@ namespace PlayniteAchievements.Services.Images
             var fileName = variant == AchievementIconVariant.Locked
                 ? stem + ".locked.png"
                 : stem + ".png";
+
+            return Path.Combine(
+                "icon_cache",
+                gameId.Trim(),
+                CustomFolderName,
+                fileName);
+        }
+
+        public static string BuildCustomCategoryRelativePath(
+            string gameId,
+            string fileStem,
+            CategoryImageKind kind)
+        {
+            if (string.IsNullOrWhiteSpace(gameId))
+            {
+                gameId = Guid.Empty.ToString("D");
+            }
+
+            var stem = string.IsNullOrWhiteSpace(fileStem) ? FallbackStem : fileStem.Trim();
+            var suffix = kind == CategoryImageKind.Cover ? ".cover.png" : ".icon.png";
+            var fileName = "category_" + stem + suffix;
 
             return Path.Combine(
                 "icon_cache",

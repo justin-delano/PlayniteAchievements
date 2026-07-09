@@ -1,6 +1,7 @@
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Providers;
 using Playnite.SDK.Models;
@@ -373,8 +374,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                             continue;
                         }
 
-                        achievement.Game = data.Game;
-                        achievement.ProviderKey = ResolveEffectiveProviderKey(data.ProviderKey, data.ProviderPlatformKey);
+                        ApplyAchievementPresentation(achievement, data);
                         allAchievements.Add(achievement);
                     }
                 }
@@ -426,13 +426,57 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         continue;
                     }
 
-                    achievement.Game = data.Game;
-                    achievement.ProviderKey = ResolveEffectiveProviderKey(data.ProviderKey, data.ProviderPlatformKey);
+                    ApplyAchievementPresentation(achievement, data);
                     unlockedRecent.Add(achievement);
                 }
             }
 
             PopulateRecentLists(state, unlockedRecent, includeFullLists: false);
+        }
+
+        private static void ApplyAchievementPresentation(AchievementDetail achievement, GameAchievementData data)
+        {
+            if (achievement == null)
+            {
+                return;
+            }
+
+            achievement.Game = data?.Game;
+            achievement.ProviderKey = ResolveEffectiveProviderKey(data?.ProviderKey, data?.ProviderPlatformKey);
+            ApplyCategoryImagePresentation(achievement, data);
+        }
+
+        private static void ApplyCategoryImagePresentation(AchievementDetail achievement, GameAchievementData data)
+        {
+            if (achievement == null)
+            {
+                return;
+            }
+
+            var gameId = data?.PlayniteGameId;
+            if (!gameId.HasValue || gameId.Value == Guid.Empty)
+            {
+                achievement.CategoryIconPath = null;
+                achievement.CategoryCoverPath = null;
+                return;
+            }
+
+            CategoryImageOverrideData imageOverride = null;
+            var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(achievement.Category);
+            if (!string.IsNullOrWhiteSpace(category) &&
+                data?.AchievementCategoryImageOverrides != null)
+            {
+                data.AchievementCategoryImageOverrides.TryGetValue(category, out imageOverride);
+            }
+
+            achievement.CategoryIconPath = NormalizeImageOverridePath(imageOverride?.Icon);
+            achievement.CategoryCoverPath = NormalizeImageOverridePath(imageOverride?.Cover);
+        }
+
+        private static string NormalizeImageOverridePath(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
         }
 
         private static void PopulateRecentLists(

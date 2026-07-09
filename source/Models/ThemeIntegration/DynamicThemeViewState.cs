@@ -221,6 +221,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
     internal sealed class LibraryAchievementViewState : DynamicThemeListViewState
     {
+        private string _gameKey = DynamicThemeViewKeys.All;
+        private string _gameLabel = DynamicThemeViewKeys.All;
+
         public LibraryAchievementViewState()
             : base(
                 DynamicThemeViewKeys.All,
@@ -229,10 +232,31 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 DynamicThemeViewKeys.Descending)
         {
         }
+
+        public string GameKey
+        {
+            get => _gameKey;
+            set => _gameKey = string.IsNullOrWhiteSpace(value) ? DynamicThemeViewKeys.All : value;
+        }
+
+        public string GameLabel
+        {
+            get => _gameLabel;
+            set => _gameLabel = string.IsNullOrWhiteSpace(value) ? DynamicThemeViewKeys.All : value;
+        }
+
+        public void ResetGameScope()
+        {
+            GameKey = DynamicThemeViewKeys.All;
+            GameLabel = DynamicThemeViewKeys.All;
+        }
     }
 
     internal sealed class GameSummaryViewState : DynamicThemeListViewState
     {
+        private string _gameKey = DynamicThemeViewKeys.All;
+        private string _gameLabel = DynamicThemeViewKeys.All;
+
         public GameSummaryViewState()
             : base(
                 DynamicThemeViewKeys.All,
@@ -240,6 +264,24 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 DynamicThemeViewKeys.LastUnlock,
                 DynamicThemeViewKeys.Descending)
         {
+        }
+
+        public string GameKey
+        {
+            get => _gameKey;
+            set => _gameKey = string.IsNullOrWhiteSpace(value) ? DynamicThemeViewKeys.All : value;
+        }
+
+        public string GameLabel
+        {
+            get => _gameLabel;
+            set => _gameLabel = string.IsNullOrWhiteSpace(value) ? DynamicThemeViewKeys.All : value;
+        }
+
+        public void ResetGameScope()
+        {
+            GameKey = DynamicThemeViewKeys.All;
+            GameLabel = DynamicThemeViewKeys.All;
         }
     }
 
