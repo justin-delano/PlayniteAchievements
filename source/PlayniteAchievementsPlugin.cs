@@ -611,7 +611,7 @@ namespace PlayniteAchievements
 
             try
             {
-                await (_inGamePoller?.StopAsync(finalPass: true) ?? Task.CompletedTask).ConfigureAwait(false);
+                _inGamePoller?.Stop();
             }
             catch (Exception ex)
             {

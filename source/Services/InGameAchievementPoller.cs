@@ -123,43 +123,6 @@ namespace PlayniteAchievements.Services
             oldCts?.Dispose();
         }
 
-        public Task StopAsync(bool finalPass)
-        {
-            Game game;
-            CancellationTokenSource cts;
-            lock (_stateLock)
-            {
-                game = _currentGame;
-                cts = _cts;
-                ClearStateLocked();
-            }
-
-            cts?.Cancel();
-            cts?.Dispose();
-
-            if (!finalPass || game == null || game.Id == Guid.Empty)
-            {
-                return Task.CompletedTask;
-            }
-
-            return Task.Run(async () =>
-            {
-                await _tickSemaphore.WaitAsync().ConfigureAwait(false);
-                try
-                {
-                    await RunUserTickAsync(game, CancellationToken.None, finalPass: true).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, $"[InGamePolling] Final poll failed for {game.Name}.");
-                }
-                finally
-                {
-                    _tickSemaphore.Release();
-                }
-            });
-        }
-
         public void Stop()
         {
             CancellationTokenSource cts;
@@ -252,7 +215,7 @@ namespace PlayniteAchievements.Services
 
             _tickCount++;
             var tick = _tickCount;
-            await RunUserTickAsync(game, token, finalPass: false).ConfigureAwait(false);
+            await RunUserTickAsync(game, token).ConfigureAwait(false);
 
             if (ShouldRunFriendTick(tick))
             {
@@ -260,11 +223,11 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        private async Task RunUserTickAsync(Game game, CancellationToken token, bool finalPass)
+        private async Task RunUserTickAsync(Game game, CancellationToken token)
         {
             if (_refreshRuntime?.IsRebuilding == true)
             {
-                _logger?.Debug($"[InGamePolling] User tick skipped: refresh already running. final={finalPass}");
+                _logger?.Debug("[InGamePolling] User tick skipped: refresh already running.");
                 return;
             }
 
@@ -293,7 +256,7 @@ namespace PlayniteAchievements.Services
                 .Where(a => a?.IsFiltered != true)
                 .ToList();
             _logger?.Debug(
-                $"[InGamePolling] User tick complete: game={game.Name}, interval={interval.TotalSeconds:F0}s, elapsedMs={timer.ElapsedMilliseconds}, unlocks={unlocks.Count}, final={finalPass}.");
+                $"[InGamePolling] User tick complete: game={game.Name}, interval={interval.TotalSeconds:F0}s, elapsedMs={timer.ElapsedMilliseconds}, unlocks={unlocks.Count}.");
 
             var numberByApiName = BuildAchievementNumberMap(after);
             foreach (var achievement in unlocks)
