@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 13;
+        public const int SchemaVersion = 14;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -253,6 +253,17 @@ namespace PlayniteAchievements.Services.Database
 
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_LastUpdatedUtc
                 ON Games (LastUpdatedUtc);");
+
+            // Covering indexes for the friends-overview summary aggregates (schema v14): the
+            // friend-user set is filtered by (IsActiveFriend, IsCurrentUser) in every friend
+            // CTE, and the unlocked-achievement joins probe UserAchievements by
+            // (UserGameProgressId, Unlocked).
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Users_ActiveFriend
+                ON Users (IsActiveFriend, IsCurrentUser)
+                WHERE IsActiveFriend = 1 AND IsCurrentUser = 0;");
+
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_UserAchievements_Progress_Unlocked
+                ON UserAchievements (UserGameProgressId, Unlocked);");
 
             EnsureFriendOwnershipTable(db);
             EnsureFriendOwnershipIndexes(db);

@@ -5,4 +5,10 @@ namespace PlayniteAchievements.Models
         Sidebar,
         Popout
     }
+
+    public enum OverviewSubView
+    {
+        Overview,
+        Friends
+    }
 }

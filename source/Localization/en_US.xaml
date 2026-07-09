@@ -198,7 +198,6 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">Include in Refreshes and Refresh Selected Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Open Game in Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">Achievements Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_OpenFriendsOverview">Friends Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">Open Game in Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">Ignore Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnignoreFriend">Unignore Friend</sys:String>
@@ -624,7 +623,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsOverview">Enable Friends Overview (Steam)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendsOverviewHideSpoilers">Hide friend spoilers until I unlock the achievement</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Preserve full-resolution achievement icons</sys:String>
@@ -827,6 +825,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Achievements by Platform</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Achievements by Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Achievements by Trophy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_SubView_Overview">Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_Overview_SubView_Friends">Friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">Friends Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Friends">Friends</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsOverview_Games">Games</sys:String>

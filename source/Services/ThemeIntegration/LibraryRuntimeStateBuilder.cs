@@ -10,6 +10,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Threading;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Services.Summaries;
 
 namespace PlayniteAchievements.Services.ThemeIntegration
 {
@@ -50,7 +51,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             };
 
             var allGames = new List<GameAchievementSummary>();
-            var scoreableData = new List<GameAchievementData>();
+            var collectorScore = 0;
+            var prestigeScore = 0;
 
             foreach (var data in allData)
             {
@@ -67,41 +69,11 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     continue;
                 }
 
-                scoreableData.Add(data);
-
-                var unlocked = 0;
-                var latestUnlockUtc = DateTime.MinValue;
-                for (int i = 0; i < data.Achievements.Count; i++)
-                {
-                    var achievement = data.Achievements[i];
-                    if (achievement?.Unlocked != true)
-                    {
-                        continue;
-                    }
-
-                    unlocked++;
-                    if (!achievement.UnlockTimeUtc.HasValue)
-                    {
-                        continue;
-                    }
-
-                    var utc = NormalizeUtc(achievement.UnlockTimeUtc.Value);
-                    if (utc > latestUnlockUtc)
-                    {
-                        latestUnlockUtc = utc;
-                    }
-                }
-
-                var common = new AchievementRarityStats();
-                var uncommon = new AchievementRarityStats();
-                var rare = new AchievementRarityStats();
-                var ultraRare = new AchievementRarityStats();
-                AccumulateGameRarityStats(
-                    data,
-                    common,
-                    uncommon,
-                    rare,
-                    ultraRare);
+                var stats = AchievementStatsAccumulator.FromAchievements(data.Achievements);
+                var common = stats.CommonStats;
+                var uncommon = stats.UncommonStats;
+                var rare = stats.RareStats;
+                var ultraRare = stats.UltraRareStats;
                 AddRarityStats(state.TotalCommon, common);
                 AddRarityStats(state.TotalUncommon, uncommon);
                 AddRarityStats(state.TotalRare, rare);
@@ -109,23 +81,25 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                 var rareAndUltraRare = AchievementRarityStatsCombiner.Combine(rare, ultraRare);
                 var overall = AchievementRarityStatsCombiner.Combine(common, uncommon, rare, ultraRare);
-                var gold = rare.Unlocked + ultraRare.Unlocked;
-                var silver = uncommon.Unlocked;
-                var bronze = common.Unlocked;
+                var gold = stats.RareCount + stats.UltraRareCount;
+                var silver = stats.UncommonCount;
+                var bronze = stats.CommonCount;
                 var providerKey = ResolveEffectiveProviderKey(data.ProviderKey, data.ProviderPlatformKey);
                 var providerName = ProviderRegistry.GetLocalizedName(providerKey);
+                collectorScore = AddScore(collectorScore, stats.CollectionScore);
+                prestigeScore = AddScore(prestigeScore, stats.PrestigeScore);
 
                 var summary = new GameAchievementSummary(
                     data.PlayniteGameId.Value,
                     data.Game?.Name ?? data.GameName ?? string.Empty,
                     data.Game?.Source?.Name ?? "Unknown",
                     ResolveCoverImagePath(data.Game, api),
-                    AchievementCompletionPercentCalculator.ComputeRoundedPercent(unlocked, total),
+                    stats.ProgressPercent,
                     gold,
                     silver,
                     bronze,
                     data.IsCompleted,
-                    latestUnlockUtc == DateTime.MinValue ? DateTime.MinValue : latestUnlockUtc.ToLocalTime(),
+                    stats.LastUnlockUtc.HasValue ? stats.LastUnlockUtc.Value.ToLocalTime() : DateTime.MinValue,
                     null,
                     common,
                     uncommon,
@@ -136,8 +110,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     providerKey,
                     providerName,
                     data.Game?.LastActivity,
-                    unlocked,
-                    total);
+                    stats.UnlockedAchievements,
+                    stats.TotalAchievements);
 
                 allGames.Add(summary);
             }
@@ -145,12 +119,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             ApplySummaryListsAndTotals(state, allGames);
             PopulateProviderLists(state, allGames);
 
-            var scoreSnapshot = AchievementScoreCalculator.CalculateLibraryScores(
-                scoreableData,
+            var scoreSnapshot = AchievementScoreCalculator.CreateModernScoreSnapshot(collectorScore, prestigeScore);
+            scoreSnapshot.LegacyScore = AchievementScoreCalculator.CalculateLegacyScore(
                 state.PlatinumTrophies,
                 state.GoldTrophies,
                 state.SilverTrophies,
                 state.BronzeTrophies);
+            scoreSnapshot.LegacyLevel = AchievementLevelCalculator.CalculateLegacy(scoreSnapshot.LegacyScore);
             ApplyScores(state, scoreSnapshot);
 
             PopulateAchievementLists(state, allData, token, includeHeavyAchievementLists);

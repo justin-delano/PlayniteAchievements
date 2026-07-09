@@ -17,6 +17,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Views;
@@ -28,7 +29,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 namespace PlayniteAchievements.ViewModels
 {
-    public class OverviewViewModel : ObservableObject, IDisposable
+    public class OverviewViewModel : ObservableObject, IDisposable, IOverviewRefreshHeaderViewModel
     {
         /// <summary>
         /// Returns true if unplayed games are included during refreshes.
@@ -38,6 +39,7 @@ namespace PlayniteAchievements.ViewModels
         private readonly RefreshRuntime _refreshService;
         private readonly Action _persistSettingsForUi;
         private readonly AchievementDataService _achievementDataService;
+        private readonly LibraryProjectionService _libraryProjectionService;
         private readonly GameCustomDataStore _gameCustomDataStore;
         private readonly AchievementSelectionPipeline _selectedGamePipeline;
         private readonly RefreshEntryPoint _refreshCoordinator;
@@ -106,10 +108,11 @@ namespace PlayniteAchievements.ViewModels
         private ListSortDirection _selectedGameSortDirection;
 
 
-        public OverviewViewModel(
+        internal OverviewViewModel(
             RefreshRuntime refreshRuntime,
             Action persistSettingsForUi,
             AchievementDataService achievementDataService,
+            LibraryProjectionService libraryProjectionService,
             GameCustomDataStore gameCustomDataStore,
             RefreshEntryPoint refreshEntryPoint,
             IPlayniteAPI playniteApi,
@@ -120,6 +123,7 @@ namespace PlayniteAchievements.ViewModels
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _persistSettingsForUi = persistSettingsForUi ?? throw new ArgumentNullException(nameof(persistSettingsForUi));
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
+            _libraryProjectionService = libraryProjectionService;
             _gameCustomDataStore = gameCustomDataStore;
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _playniteApi = playniteApi;
@@ -1415,8 +1419,22 @@ namespace PlayniteAchievements.ViewModels
                     }
                     OverviewDataSnapshot snapshot;
                     snapshot = await Task.Run(
-                        () => _dataBuilder.Build(_settings, revealedCopy, cancel),
+                        () => _libraryProjectionService != null
+                            ? _libraryProjectionService.GetOverviewSnapshot(_settings, revealedCopy, cancel)
+                            : _dataBuilder.Build(_settings, revealedCopy, cancel),
                         cancel).ConfigureAwait(false);
+
+                    // Still off the UI thread: precompute the search-text maps so ApplySnapshot
+                    // only performs a cheap swap instead of tokenizing every item on the UI thread.
+                    Dictionary<AchievementDisplayItem, string> globalEntries;
+                    Dictionary<GameSummaryItem, string> gameEntries;
+                    Dictionary<AchievementDisplayItem, string> recentEntries;
+                    using (PerfScope.Start(_logger, "Overview.BuildSearchEntries", thresholdMs: 15))
+                    {
+                        globalEntries = _globalAchievementSearchIndex.BuildEntries(snapshot?.Achievements);
+                        gameEntries = _gameSummarySearchIndex.BuildEntries(snapshot?.GameSummaries);
+                        recentEntries = _recentAchievementSearchIndex.BuildEntries(snapshot?.RecentAchievements);
+                    }
 
                     System.Windows.Application.Current?.Dispatcher?.InvokeIfNeeded(() =>
                     {
@@ -1430,7 +1448,10 @@ namespace PlayniteAchievements.ViewModels
                             return;
                         }
 
-                        ApplySnapshot(snapshot);
+                        using (PerfScope.Start(_logger, "Overview.ApplySnapshot", thresholdMs: 15))
+                        {
+                            ApplySnapshot(snapshot, globalEntries, gameEntries, recentEntries);
+                        }
                     });
                 }
                 finally
@@ -1708,7 +1729,11 @@ namespace PlayniteAchievements.ViewModels
             try { cts?.Dispose(); } catch { }
         }
 
-        private void ApplySnapshot(OverviewDataSnapshot snapshot)
+        private void ApplySnapshot(
+            OverviewDataSnapshot snapshot,
+            Dictionary<AchievementDisplayItem, string> globalSearchEntries = null,
+            Dictionary<GameSummaryItem, string> gameSummarySearchEntries = null,
+            Dictionary<AchievementDisplayItem, string> recentSearchEntries = null)
         {
             if (_disposed)
             {
@@ -1724,7 +1749,14 @@ namespace PlayniteAchievements.ViewModels
 
             _latestSnapshot = snapshot;
             _allAchievements = snapshot.Achievements ?? new List<AchievementDisplayItem>();
-            _globalAchievementSearchIndex.Rebuild(_allAchievements);
+            if (globalSearchEntries != null)
+            {
+                _globalAchievementSearchIndex.LoadEntries(globalSearchEntries);
+            }
+            else
+            {
+                _globalAchievementSearchIndex.Rebuild(_allAchievements);
+            }
 
             if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulkAll)
             {
@@ -1736,9 +1768,18 @@ namespace PlayniteAchievements.ViewModels
             }
 
             _allGameSummaries = snapshot.GameSummaries ?? new List<GameSummaryItem>();
-            _gameSummarySearchIndex.Rebuild(_allGameSummaries);
+            if (gameSummarySearchEntries != null)
+            {
+                _gameSummarySearchIndex.LoadEntries(gameSummarySearchEntries);
+            }
+            else
+            {
+                _gameSummarySearchIndex.Rebuild(_allGameSummaries);
+            }
+
             SetRecentAchievementsSource(
-                snapshot.RecentAchievements);
+                snapshot.RecentAchievements,
+                recentSearchEntries);
 
             UpdateProviderFilterOptions(_allGameSummaries);
             UpdateCompletenessFilterOptions();
@@ -1751,7 +1792,10 @@ namespace PlayniteAchievements.ViewModels
 
             RefreshFilter();
             ApplyLeftFilters();
-            UpdateAggregatePieCharts();
+            using (PerfScope.Start(_logger, "Overview.UpdateAggregatePieCharts", thresholdMs: 15))
+            {
+                UpdateAggregatePieCharts();
+            }
 
             SyncRecentAchievementsDisplay();
 
@@ -1771,11 +1815,19 @@ namespace PlayniteAchievements.ViewModels
         }
 
         private void SetRecentAchievementsSource(
-            List<AchievementDisplayItem> recentAchievements)
+            List<AchievementDisplayItem> recentAchievements,
+            Dictionary<AchievementDisplayItem, string> recentSearchEntries = null)
         {
             _allRecentAchievements = recentAchievements ?? new List<AchievementDisplayItem>();
             _filteredRecentAchievements = new List<AchievementDisplayItem>(_allRecentAchievements);
-            _recentAchievementSearchIndex.Rebuild(_allRecentAchievements);
+            if (recentSearchEntries != null)
+            {
+                _recentAchievementSearchIndex.LoadEntries(recentSearchEntries);
+            }
+            else
+            {
+                _recentAchievementSearchIndex.Rebuild(_allRecentAchievements);
+            }
         }
 
         private bool ApplyFragmentDelta(string key, OverviewGameFragment fragment)

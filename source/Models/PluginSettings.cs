@@ -880,7 +880,7 @@ namespace PlayniteAchievements.Models
         }
 
         [DontSerialize]
-        public ObservableCollection<FriendGameSummaryItem> DynamicFriendGameSummaries
+        public ObservableCollection<FriendGameAchievementSummary> DynamicFriendGameSummaries
         {
             get => ModernTheme.DynamicFriendGameSummaries;
             set => ModernTheme.DynamicFriendGameSummaries = value;

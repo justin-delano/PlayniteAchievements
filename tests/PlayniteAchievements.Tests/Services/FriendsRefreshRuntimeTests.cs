@@ -450,7 +450,6 @@ namespace PlayniteAchievements.Services.Tests
             IEnumerable<string> fullLibraryFriendIds = null)
         {
             var settings = new PlayniteAchievementsSettings();
-            settings.Persisted.EnableFriendsOverview = true;
             settings.Persisted.EnableParallelProviderRefresh = enableParallelProviderRefresh;
             settings.Persisted.FriendsOverviewRefreshTtlHours = 24;
             settings.Persisted.ScanDelayMs = 0;

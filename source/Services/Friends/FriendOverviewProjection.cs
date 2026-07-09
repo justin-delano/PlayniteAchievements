@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.Services.Summaries;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -426,14 +427,20 @@ namespace PlayniteAchievements.Services.Friends
                 LastFriendPlayedUtc = link?.LastPlayedUtc
             };
 
-            foreach (var achievement in unlocked)
-            {
-                item.CollectionScore += achievement.CollectionScore;
-                item.PrestigeScore += achievement.PrestigeScore;
-                item.Points += achievement.Points;
-                AccumulateRarity(achievement.Rarity, item);
-                AccumulateTrophy(achievement.TrophyType, item);
-            }
+            var stats = AchievementStatsAccumulator.FromDisplayItems(
+                unlocked,
+                treatItemsAsUnlocked: true);
+            item.CollectionScore = stats.CollectionScore;
+            item.PrestigeScore = stats.PrestigeScore;
+            item.Points = stats.Points;
+            item.CommonCount = stats.CommonCount;
+            item.UncommonCount = stats.UncommonCount;
+            item.RareCount = stats.RareCount;
+            item.UltraRareCount = stats.UltraRareCount;
+            item.TrophyPlatinumCount = stats.TrophyPlatinumCount;
+            item.TrophyGoldCount = stats.TrophyGoldCount;
+            item.TrophySilverCount = stats.TrophySilverCount;
+            item.TrophyBronzeCount = stats.TrophyBronzeCount;
 
             item.IsCompleted = item.TotalAchievements > 0 &&
                                item.UnlockedAchievements >= item.TotalAchievements;

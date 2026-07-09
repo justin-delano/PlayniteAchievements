@@ -42,6 +42,11 @@ namespace PlayniteAchievements.Services
             new Dictionary<int, CachedSummaryData>();
         private bool? _overviewHasAchievementFilters;
 
+        // Hydrated visible game data for the overview. Used only when achievement filters are
+        // configured (which disables the summary fast path), where each open would otherwise
+        // repeat the full load + hydrate.
+        private List<GameAchievementData> _overviewVisibleGameData;
+
         public AchievementDataService(
             ICacheManager cacheService,
             IPlayniteAPI api,
@@ -209,11 +214,27 @@ namespace PlayniteAchievements.Services
 
         public List<GameAchievementData> GetAllVisibleGameAchievementDataForOverview()
         {
+            lock (_overviewProjectionCacheSync)
+            {
+                if (_overviewVisibleGameData != null)
+                {
+                    return _overviewVisibleGameData;
+                }
+            }
+
             try
             {
                 var result = LoadAllCachedGameData();
                 HydrateAll(result, includeAchievementOverlays: false);
-                return ProjectVisibleGameAchievementData(result, excludeSummaryFiltered: true);
+                var visible = ProjectVisibleGameAchievementData(result, excludeSummaryFiltered: true);
+
+                lock (_overviewProjectionCacheSync)
+                {
+                    // Shared read-only snapshot; consumers (the overview builder) only enumerate it.
+                    _overviewVisibleGameData = visible;
+                }
+
+                return visible;
             }
             catch (Exception ex)
             {
@@ -923,6 +944,7 @@ namespace PlayniteAchievements.Services
             {
                 _overviewSummaryCacheByLimit.Clear();
                 _overviewHasAchievementFilters = null;
+                _overviewVisibleGameData = null;
             }
         }
 

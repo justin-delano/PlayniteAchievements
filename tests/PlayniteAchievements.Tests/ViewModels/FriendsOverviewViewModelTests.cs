@@ -28,22 +28,6 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void LoadAsync_IgnoresLegacyEnableFriendsOverviewFlag()
-        {
-            var viewModel = CreateViewModel(
-                CreateData(),
-                settings => settings.EnableFriendsOverview = false);
-
-            viewModel.LoadAsync().GetAwaiter().GetResult();
-
-            Assert.AreEqual(3, viewModel.FilteredFriends.Count);
-            Assert.AreEqual(3, viewModel.FilteredGames.Count);
-            CollectionAssert.AreEqual(
-                new[] { "Recent Only" },
-                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
-        }
-
-        [TestMethod]
         public void LoadAsync_AppliesConfiguredRowLimitsToAllThreeGrids()
         {
             var data = CreateData();

@@ -149,7 +149,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private readonly BulkObservableCollection<FriendSummaryItem> _dynamicFriendSummaries = new BulkObservableCollection<FriendSummaryItem>();
         [DontSerialize]
-        private readonly BulkObservableCollection<FriendGameSummaryItem> _dynamicFriendGameSummaries = new BulkObservableCollection<FriendGameSummaryItem>();
+        private readonly BulkObservableCollection<FriendGameAchievementSummary> _dynamicFriendGameSummaries = new BulkObservableCollection<FriendGameAchievementSummary>();
+        [DontSerialize]
+        private readonly BulkObservableCollection<FriendGameSummaryItem> _dynamicFriendGameSummaryRows = new BulkObservableCollection<FriendGameSummaryItem>();
         [DontSerialize]
         private readonly BulkObservableCollection<FriendAchievementDisplayItem> _dynamicFriendAchievements = new BulkObservableCollection<FriendAchievementDisplayItem>();
         [DontSerialize]
@@ -897,10 +899,22 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         }
 
         [DontSerialize]
-        public ObservableCollection<FriendGameSummaryItem> DynamicFriendGameSummaries
+        public ObservableCollection<FriendGameAchievementSummary> DynamicFriendGameSummaries
         {
             get => _dynamicFriendGameSummaries;
             set => ReplaceCollection(_dynamicFriendGameSummaries, value, nameof(DynamicFriendGameSummaries));
+        }
+
+        /// <summary>
+        /// Internal <see cref="FriendGameSummaryItem"/> feed for the shipped friend summaries grid.
+        /// Mirrors <see cref="DynamicFriendGameSummaries"/> but preserves the view-model row type
+        /// the shared grid control binds against; not part of the external theme contract.
+        /// </summary>
+        [DontSerialize]
+        public ObservableCollection<FriendGameSummaryItem> DynamicFriendGameSummaryRows
+        {
+            get => _dynamicFriendGameSummaryRows;
+            set => ReplaceCollection(_dynamicFriendGameSummaryRows, value, nameof(DynamicFriendGameSummaryRows));
         }
 
         [DontSerialize]

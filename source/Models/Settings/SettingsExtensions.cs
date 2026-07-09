@@ -100,7 +100,6 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowOverviewGameMetadataPlaytime = source.ShowOverviewGameMetadataPlaytime;
             target.ShowOverviewGameMetadataRegion = source.ShowOverviewGameMetadataRegion;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
-            target.EnableFriendsOverview = source.EnableFriendsOverview;
             target.FriendsOverviewHideSpoilers = source.FriendsOverviewHideSpoilers;
             target.FriendsOverviewRefreshTtlHours = source.FriendsOverviewRefreshTtlHours;
             target.FriendsOverviewRecentUnlockLimit = source.FriendsOverviewRecentUnlockLimit;

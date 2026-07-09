@@ -6,6 +6,10 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Summaries;
+#if !TEST
+using PlayniteAchievements.Services.Library;
+#endif
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -38,6 +42,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private readonly IPlayniteAPI _api;
         private readonly RefreshRuntime _refreshService;
         private readonly AchievementDataService _achievementDataService;
+#if !TEST
+        private readonly LibraryProjectionService _libraryProjectionService;
+#endif
         private readonly RefreshEntryPoint _refreshCoordinator;
         private readonly IFriendCacheManager _friendCache;
         private readonly Func<RefreshRequest, string, bool, Action<bool>, Task> _runRefreshWithGlobalProgressAsync;
@@ -73,6 +80,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             IPlayniteAPI api,
             RefreshRuntime refreshRuntime,
             AchievementDataService achievementDataService,
+#if !TEST
+            LibraryProjectionService libraryProjectionService,
+#endif
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
             FullscreenWindowService windowService,
@@ -84,6 +94,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
+#if !TEST
+            _libraryProjectionService = libraryProjectionService;
+#endif
             _refreshCoordinator = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
             _friendCache = friendCache;
             _runRefreshWithGlobalProgressAsync = runRefreshWithGlobalProgressAsync ?? RunRefreshWithoutGlobalProgressAsync;
@@ -1223,6 +1236,23 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             usedCachedSummary = false;
             hydratedCount = null;
 
+#if !TEST
+            if (_libraryProjectionService != null)
+            {
+                if (!includeHeavyAchievementLists)
+                {
+                    return _libraryProjectionService.GetThemeLightState(
+                        ThemeRecentUnlockSummaryLimit,
+                        token,
+                        out usedCachedSummary,
+                        out hydratedCount);
+                }
+
+                usedCachedSummary = false;
+                return _libraryProjectionService.GetThemeFullState(token, out hydratedCount);
+            }
+#endif
+
             if (!includeHeavyAchievementLists)
             {
                 var summaryData = _achievementDataService.GetCachedSummaryDataForTheme(ThemeRecentUnlockSummaryLimit);
@@ -1484,6 +1514,63 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 .ToList();
 
             return new ObservableCollection<GameAchievementSummary>(projected);
+        }
+
+        private ObservableCollection<FriendGameAchievementSummary> ProjectFriendGameSummaries(
+            IEnumerable<FriendGameSummaryItem> items)
+        {
+            var projected = (items ?? Enumerable.Empty<FriendGameSummaryItem>())
+                .Where(item => item != null)
+                .Select(item =>
+                {
+                    var gameId = item.PlayniteGameId ?? Guid.Empty;
+                    var hasLocalGame = gameId != Guid.Empty;
+                    var common = AchievementGameStats.CreateRarityStats(item.CommonCount, item.TotalCommonPossible);
+                    var uncommon = AchievementGameStats.CreateRarityStats(item.UncommonCount, item.TotalUncommonPossible);
+                    var rare = AchievementGameStats.CreateRarityStats(item.RareCount, item.TotalRarePossible);
+                    var ultraRare = AchievementGameStats.CreateRarityStats(item.UltraRareCount, item.TotalUltraRarePossible);
+
+                    return new FriendGameAchievementSummary(
+                        gameId,
+                        item.GameName,
+                        item.Provider,
+                        item.GameCoverPath,
+                        item.FriendCompletionPercent,
+                        item.RareCount + item.UltraRareCount,
+                        item.UncommonCount,
+                        item.CommonCount,
+                        item.IsCompleted,
+                        item.LastFriendUnlockUtc?.ToLocalTime() ?? DateTime.MinValue,
+                        hasLocalGame ? GetOpenViewAchievementsCommand(gameId) : null,
+                        common,
+                        uncommon,
+                        rare,
+                        ultraRare,
+                        null,
+                        null,
+                        item.ProviderKey,
+                        item.Provider,
+                        item.LastFriendPlayedUtc,
+                        item.UniqueFriendUnlockedAchievementsCount,
+                        item.TotalAchievements,
+                        openManageAchievementsWindow: hasLocalGame ? GetOpenManageAchievementsCommand(gameId) : null)
+                    {
+                        AppId = item.AppId,
+                        FriendCount = item.FriendCount,
+                        FriendsWithUnlocksCount = item.FriendsWithUnlocksCount,
+                        FriendUnlockedAchievementsCount = item.FriendUnlockedAchievementsCount,
+                        UniqueFriendUnlockedAchievementsCount = item.UniqueFriendUnlockedAchievementsCount,
+                        LastFriendUnlockUtc = item.LastFriendUnlockUtc,
+                        TotalFriendPlaytimeMinutes = item.TotalFriendPlaytimeMinutes,
+                        AverageFriendPlaytimeMinutes = item.AverageFriendPlaytimeMinutes,
+                        LastFriendPlayedUtc = item.LastFriendPlayedUtc,
+                        LastFriendScrapedUtc = item.LastFriendScrapedUtc,
+                        LastFriendScrapeStatus = item.LastFriendScrapeStatus
+                    };
+                })
+                .ToList();
+
+            return new ObservableCollection<FriendGameAchievementSummary>(projected);
         }
 
         private RelayCommand GetOpenViewAchievementsCommand(Guid gameId)
@@ -2164,7 +2251,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var achievementItems = BuildDynamicFriendAchievements(state, _runtimeState.FriendAchievements);
 
             _settings.ModernTheme.DynamicFriendSummaries = new ObservableCollection<FriendSummaryItem>(friendItems);
-            _settings.ModernTheme.DynamicFriendGameSummaries = new ObservableCollection<FriendGameSummaryItem>(gameItems);
+            _settings.ModernTheme.DynamicFriendGameSummaryRows = new ObservableCollection<FriendGameSummaryItem>(gameItems);
+            _settings.ModernTheme.DynamicFriendGameSummaries = ProjectFriendGameSummaries(gameItems);
             _settings.ModernTheme.DynamicFriendAchievements = new ObservableCollection<FriendAchievementDisplayItem>(achievementItems);
 
             _settings.ModernTheme.DynamicFriendScopeProviderKey = scope.ProviderKey;

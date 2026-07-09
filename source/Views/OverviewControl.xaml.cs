@@ -13,6 +13,8 @@ using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
@@ -21,20 +23,48 @@ namespace PlayniteAchievements.Views
 {
     public partial class OverviewControl : UserControl, IDisposable, IFullscreenControllerNavigable
     {
+        public static readonly DependencyProperty ActiveSubViewProperty =
+            DependencyProperty.Register(
+                nameof(ActiveSubView),
+                typeof(OverviewSubView),
+                typeof(OverviewControl),
+                new PropertyMetadata(OverviewSubView.Overview, OnActiveSubViewChanged));
+
+        public static readonly DependencyProperty ActiveRefreshHeaderProperty =
+            DependencyProperty.Register(
+                nameof(ActiveRefreshHeader),
+                typeof(IOverviewRefreshHeaderViewModel),
+                typeof(OverviewControl),
+                new PropertyMetadata(null));
+
+        public static readonly DependencyProperty ShowFriendsClearSelectionProperty =
+            DependencyProperty.Register(
+                nameof(ShowFriendsClearSelection),
+                typeof(bool),
+                typeof(OverviewControl),
+                new PropertyMetadata(false));
+
+        private static OverviewSubView _lastSelectedSubView = OverviewSubView.Overview;
+
         private readonly OverviewViewModel _viewModel;
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly RefreshRuntime _refreshService;
         private readonly ICacheManager _cacheManager;
+        private readonly IFriendCacheManager _friendCache;
         private readonly Action _persistSettingsForUi;
         private readonly AchievementOverridesService _achievementOverridesService;
         private readonly AchievementDataService _achievementDataService;
+        private readonly LibraryProjectionService _libraryProjectionService;
         private readonly IPlayniteAPI _playniteApi;
+        private readonly RefreshEntryPoint _refreshEntryPoint;
+        private readonly OverviewLaunchContext _launchContext;
         private const double OverviewColumnRatioChangeThreshold = 0.001d;
         private bool _isActive;
         private Guid? _lastSelectedOverviewGameId;
         private DataGridRow _pendingRightClickRow;
         private bool _committingOverviewSelection;
+        private FriendsOverviewControl _friendsOverview;
         private DataGrid GameSummariesGrid => GameSummariesGridControl?.InternalDataGrid;
 
         public OverviewControl()
@@ -42,7 +72,7 @@ namespace PlayniteAchievements.Views
             InitializeComponent();
         }
 
-        public OverviewControl(
+        internal OverviewControl(
             IPlayniteAPI api,
             ILogger logger,
             RefreshRuntime refreshRuntime,
@@ -50,6 +80,7 @@ namespace PlayniteAchievements.Views
             Action persistSettingsForUi,
             AchievementOverridesService achievementOverridesService,
             AchievementDataService achievementDataService,
+            LibraryProjectionService libraryProjectionService,
             GameCustomDataStore gameCustomDataStore,
             RefreshEntryPoint refreshEntryPoint,
             PlayniteAchievementsSettings settings,
@@ -61,17 +92,22 @@ namespace PlayniteAchievements.Views
             _settings = settings;
             _refreshService = refreshRuntime ?? throw new ArgumentNullException(nameof(refreshRuntime));
             _cacheManager = cacheManager ?? throw new ArgumentNullException(nameof(cacheManager));
+            _friendCache = cacheManager as IFriendCacheManager;
             _persistSettingsForUi = persistSettingsForUi ?? throw new ArgumentNullException(nameof(persistSettingsForUi));
             _achievementOverridesService = achievementOverridesService ?? throw new ArgumentNullException(nameof(achievementOverridesService));
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
+            _libraryProjectionService = libraryProjectionService;
             _playniteApi = api ?? throw new ArgumentNullException(nameof(api));
+            _refreshEntryPoint = refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint));
+            _launchContext = launchContext;
 
             _viewModel = new OverviewViewModel(
                 refreshRuntime,
                 _persistSettingsForUi,
                 _achievementDataService,
+                _libraryProjectionService,
                 gameCustomDataStore,
-                refreshEntryPoint ?? throw new ArgumentNullException(nameof(refreshEntryPoint)),
+                _refreshEntryPoint,
                 api,
                 logger,
                 settings,
@@ -79,14 +115,107 @@ namespace PlayniteAchievements.Views
             DataContext = _viewModel;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
             _viewModel.SetActive(false);
+            ActiveRefreshHeader = _viewModel;
+            ActiveSubView = _lastSelectedSubView;
+            ApplyActiveSubView();
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
+        }
+
+        public OverviewSubView ActiveSubView
+        {
+            get => (OverviewSubView)GetValue(ActiveSubViewProperty);
+            set => SetValue(ActiveSubViewProperty, value);
+        }
+
+        public IOverviewRefreshHeaderViewModel ActiveRefreshHeader
+        {
+            get => (IOverviewRefreshHeaderViewModel)GetValue(ActiveRefreshHeaderProperty);
+            set => SetValue(ActiveRefreshHeaderProperty, value);
+        }
+
+        public bool ShowFriendsClearSelection
+        {
+            get => (bool)GetValue(ShowFriendsClearSelectionProperty);
+            set => SetValue(ShowFriendsClearSelectionProperty, value);
+        }
+
+        private static void OnActiveSubViewChanged(DependencyObject sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (sender is OverviewControl control)
+            {
+                control.ApplyActiveSubView();
+            }
+        }
+
+        private void ApplyActiveSubView()
+        {
+            _lastSelectedSubView = ActiveSubView;
+
+            if (ActiveSubView == OverviewSubView.Friends)
+            {
+                EnsureFriendsOverviewCreated();
+                ActiveRefreshHeader = _friendsOverview?.RefreshHeader ?? _viewModel;
+            }
+            else
+            {
+                ActiveRefreshHeader = _viewModel;
+            }
+
+            UpdateFriendsClearSelectionState();
+        }
+
+        private void EnsureFriendsOverviewCreated()
+        {
+            if (_friendsOverview != null)
+            {
+                return;
+            }
+
+            _friendsOverview = new FriendsOverviewControl(
+                _logger,
+                _friendCache,
+                _refreshEntryPoint,
+                _refreshService,
+                _settings,
+                _persistSettingsForUi,
+                _launchContext,
+                _playniteApi,
+                _cacheManager,
+                _achievementOverridesService)
+            {
+                IsEmbedded = true
+            };
+
+            if (_friendsOverview.ViewModel != null)
+            {
+                _friendsOverview.ViewModel.PropertyChanged += FriendsViewModel_PropertyChanged;
+            }
+
+            FriendsOverviewContentHost.Content = _friendsOverview;
+        }
+
+        private void FriendsViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e == null ||
+                string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName == nameof(FriendsOverviewViewModel.HasAnySelection))
+            {
+                UpdateFriendsClearSelectionState();
+            }
+        }
+
+        private void UpdateFriendsClearSelectionState()
+        {
+            ShowFriendsClearSelection =
+                ActiveSubView == OverviewSubView.Friends &&
+                _friendsOverview?.HasAnySelection == true;
         }
 
         // Invoked by AchievementHotkeyService when F5 is pressed while focus is within this view.
         // Runs the main refresh, honoring the refresh-mode selector.
         public void TriggerHotkeyRefresh()
         {
-            var command = _viewModel?.RefreshCommand;
+            var command = ActiveRefreshHeader?.RefreshCommand;
             if (command != null && command.CanExecute(null))
             {
                 command.Execute(null);
@@ -120,6 +249,12 @@ namespace PlayniteAchievements.Views
                 {
                     if (!_isActive || !IsVisible)
                     {
+                        return;
+                    }
+
+                    if (ActiveSubView == OverviewSubView.Friends)
+                    {
+                        FriendsSubViewButton?.Focus();
                         return;
                     }
 
@@ -157,9 +292,14 @@ namespace PlayniteAchievements.Views
                     _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
                 }
                 PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
+                if (_friendsOverview?.ViewModel != null)
+                {
+                    _friendsOverview.ViewModel.PropertyChanged -= FriendsViewModel_PropertyChanged;
+                }
                 GameSummariesGridControl?.Dispose();
                 RecentAchievementsDataGrid?.Dispose();
                 GameAchievementsGrid?.Dispose();
+                _friendsOverview?.Dispose();
                 _viewModel?.Dispose();
             }
             catch (Exception ex)
@@ -234,18 +374,35 @@ namespace PlayniteAchievements.Views
         private void ClearLeftSearch_Click(object sender, RoutedEventArgs e) => _viewModel?.ClearLeftSearch();
         private void ClearRightSearch_Click(object sender, RoutedEventArgs e) => _viewModel?.ClearRightSearch();
 
+        private void OverviewSubViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveSubView = OverviewSubView.Overview;
+        }
+
+        private void FriendsSubViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ActiveSubView = OverviewSubView.Friends;
+        }
+
+        private void FriendsClearSelectionButton_Click(object sender, RoutedEventArgs e)
+        {
+            _friendsOverview?.ClearSelectionFromHost();
+            UpdateFriendsClearSelectionState();
+        }
+
         private void RefreshModeSelectionButton_Click(object sender, RoutedEventArgs e)
         {
-            if (_viewModel == null)
+            var header = ActiveRefreshHeader;
+            if (header == null)
             {
                 return;
             }
 
             OpenSingleSelectRefreshModeContextMenu(
                 RefreshModeSelectionButton,
-                _viewModel.RefreshModes,
-                _viewModel.SelectedRefreshMode,
-                selectedKey => _viewModel.SelectedRefreshMode = selectedKey);
+                header.RefreshModes,
+                header.SelectedRefreshMode,
+                selectedKey => header.SelectedRefreshMode = selectedKey);
         }
 
         private static void OpenSingleSelectRefreshModeContextMenu(
@@ -479,6 +636,11 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
+            if (ActiveSubView == OverviewSubView.Friends)
+            {
+                return HandleFriendsControllerInput(input);
+            }
+
             if (FullscreenControllerNavigationService.IsBackInput(input))
             {
                 return TryHandleControllerBack();
@@ -512,6 +674,26 @@ namespace PlayniteAchievements.Views
             if (input == ControllerInput.DPadRight || input == ControllerInput.LeftStickRight)
             {
                 return TryHandleControllerRight();
+            }
+
+            return false;
+        }
+
+        private bool HandleFriendsControllerInput(ControllerInput input)
+        {
+            if (FullscreenControllerNavigationService.IsBackInput(input))
+            {
+                return TryHandleControllerBack();
+            }
+
+            if (FullscreenControllerNavigationService.IsSecondaryClickInput(input))
+            {
+                return TryOpenFocusedSelectorContextMenu();
+            }
+
+            if (FullscreenControllerNavigationService.IsAcceptInput(input))
+            {
+                return FullscreenControllerNavigationService.ActivateFocusedElement();
             }
 
             return false;
@@ -946,8 +1128,11 @@ namespace PlayniteAchievements.Views
         private bool IsKeyboardFocusWithinHeaderArea()
         {
             return CloseViewButton?.IsKeyboardFocusWithin == true ||
+                   OverviewSubViewButton?.IsKeyboardFocusWithin == true ||
+                   FriendsSubViewButton?.IsKeyboardFocusWithin == true ||
                    RefreshModeSelectionButton?.IsKeyboardFocusWithin == true ||
-                   RefreshActionButton?.IsKeyboardFocusWithin == true;
+                   RefreshActionButton?.IsKeyboardFocusWithin == true ||
+                   FriendsClearSelectionButton?.IsKeyboardFocusWithin == true;
         }
 
         private bool TrySelectFocusedOverviewGame()

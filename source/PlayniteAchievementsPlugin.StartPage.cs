@@ -145,6 +145,7 @@ namespace PlayniteAchievements
             {
                 _startPageDataCoordinator = new StartPageDataCoordinator(
                     _achievementDataService,
+                    _libraryProjectionService,
                     Providers,
                     PlayniteApi,
                     _logger,
