@@ -40,16 +40,20 @@ namespace PlayniteAchievements.Views.Controls
                 ["GameSummaryPlatform"] = 36
             };
 
-        // Bind to FriendGameSummaryItem-only properties; valid only on the Friends Overview surface.
-        private static readonly string[] FriendOnlyColumnKeys =
-        {
-            "FriendGameFriendsWithUnlocks",
-            "FriendGameLastUnlock"
-        };
-
         private static readonly string[] SelectedFriendOnlyColumnKeys =
         {
             "GameSummaryLastUnlock"
+        };
+
+        // Columns kept in the codebase for other surfaces but not wanted on the aggregate
+        // (no friend selected) Friends Overview grid; collapsed and dropped from its toggle menu.
+        private static readonly string[] AggregateFriendExcludedColumnKeys =
+        {
+            "GameSummaryProgression",
+            "TotalAchievements",
+            "GameSummaryCollectionScore",
+            "GameSummaryPrestigeScore",
+            "GameSummaryPoints"
         };
 
         // Columns with no per-category meaning; dropped entirely from category-summaries grids.
@@ -95,25 +99,15 @@ namespace PlayniteAchievements.Views.Controls
                     prestigeScore: false),
                 // Single-game summary: Cover, Game, Progress, Total visible; the rest hidden.
                 ["ViewAchievementsGameSummaries"] = CreateGameSummaryVisibility(),
+                // No friend selected: Cover, Game, Platform only.
                 ["FriendsOverviewGameSummaries"] = CreateGameSummaryVisibility(
                     platform: true,
-                    lastPlayed: false,
-                    playtime: false,
                     progress: false,
-                    total: false,
-                    collectionScore: false,
-                    prestigeScore: false,
-                    friendsWithUnlocks: true,
-                    lastFriendUnlock: true),
+                    total: false),
+                // Friend selected: Cover, Game, Platform, Progress.
                 ["FriendsOverviewSelectedFriendGameSummaries"] = CreateGameSummaryVisibility(
                     platform: true,
-                    lastPlayed: true,
-                    lastUnlock: true,
-                    playtime: true,
-                    progress: true,
-                    total: true,
-                    collectionScore: false,
-                    prestigeScore: false),
+                    total: false),
                 // Category-summaries surfaces: full game-summary set, Cover kept, platform/playtime/
                 // last-played dropped (no per-category meaning). Friend-only columns are excluded at
                 // attach time since category rows are plain GameSummaryItem.
@@ -150,8 +144,6 @@ namespace PlayniteAchievements.Views.Controls
             bool total = true,
             bool collectionScore = false,
             bool prestigeScore = false,
-            bool friendsWithUnlocks = false,
-            bool lastFriendUnlock = false,
             bool points = false)
         {
             return new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase)
@@ -166,8 +158,6 @@ namespace PlayniteAchievements.Views.Controls
                 ["TotalAchievements"] = total,
                 ["GameSummaryCollectionScore"] = collectionScore,
                 ["GameSummaryPrestigeScore"] = prestigeScore,
-                ["FriendGameFriendsWithUnlocks"] = friendsWithUnlocks,
-                ["FriendGameLastUnlock"] = lastFriendUnlock,
                 ["GameSummaryPoints"] = points
             };
         }
@@ -942,9 +932,9 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             var surface = ResolveSurface();
-            if (surface != GridSurface.FriendsOverview)
+            if (surface == GridSurface.FriendsOverview)
             {
-                foreach (var key in FriendOnlyColumnKeys)
+                foreach (var key in AggregateFriendExcludedColumnKeys)
                 {
                     _columnPersistence.ForcedCollapsedKeys.Add(key);
                     _columnPersistence.ExcludedVisibilityKeys.Add(key);
