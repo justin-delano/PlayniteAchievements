@@ -8,6 +8,11 @@
         <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
     </ResourceDictionary.MergedDictionaries>
 
+    <!--
+        Cell content wrapper providing consistent per-cell padding. The completion border is no
+        longer drawn here; it is a single overlay border at the DataGridRow level (see
+        GameSummariesGridRowBaseStyle) so it adapts automatically to column show/hide/reorder.
+    -->
     <Style x:Key="OverviewCompletedCellFrameStyle" TargetType="ContentControl">
         <Setter Property="Focusable" Value="False"/>
         <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -20,31 +25,6 @@
                 <ControlTemplate TargetType="ContentControl">
                     <Grid UseLayoutRounding="{TemplateBinding UseLayoutRounding}"
                           SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
-                        <Border BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
-                                IsHitTestVisible="False"
-                                SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
-                            <Border.BorderThickness>
-                                <MultiBinding Converter="{StaticResource OverviewCompletedBorderThickness}">
-                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}"/>
-                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="Column.DisplayIndex"/>
-                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGrid}"/>
-                                </MultiBinding>
-                            </Border.BorderThickness>
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <MultiDataTrigger>
-                                            <MultiDataTrigger.Conditions>
-                                                <Condition Binding="{Binding IsCompleted}" Value="True"/>
-                                                <Condition Binding="{Binding ShowCompletionBorder, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
-                                            </MultiDataTrigger.Conditions>
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </MultiDataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
-                        </Border>
                         <ContentPresenter Content="{TemplateBinding Content}"
                                           ContentTemplate="{TemplateBinding ContentTemplate}"
                                           ContentStringFormat="{TemplateBinding ContentStringFormat}"
@@ -121,6 +101,67 @@
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="MinHeight" Value="112"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type DataGridRow}">
+                    <Border x:Name="DGR_Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            SnapsToDevicePixels="True">
+                        <SelectiveScrollingGrid>
+                            <SelectiveScrollingGrid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </SelectiveScrollingGrid.ColumnDefinitions>
+                            <SelectiveScrollingGrid.RowDefinitions>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </SelectiveScrollingGrid.RowDefinitions>
+
+                            <DataGridCellsPresenter Grid.Column="1"
+                                                    ItemsPanel="{TemplateBinding ItemsPanel}"
+                                                    SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+
+                            <DataGridDetailsPresenter Grid.Column="1"
+                                                      Grid.Row="1"
+                                                      SelectiveScrollingGrid.SelectiveScrollingOrientation="{Binding AreRowDetailsFrozen, ConverterParameter={x:Static SelectiveScrollingOrientation.Vertical}, Converter={x:Static DataGrid.RowDetailsScrollingConverter}, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"
+                                                      Visibility="{TemplateBinding DetailsVisibility}"/>
+
+                            <DataGridRowHeader Grid.RowSpan="2"
+                                               SelectiveScrollingGrid.SelectiveScrollingOrientation="Vertical"
+                                               Visibility="{Binding HeadersVisibility, ConverterParameter={x:Static DataGridHeadersVisibility.Row}, Converter={x:Static DataGrid.HeadersVisibilityConverter}, RelativeSource={RelativeSource AncestorType={x:Type DataGrid}}}"/>
+
+                            <!--
+                                Single completion border overlaid on the cells region. Because it sits
+                                in the same star column as the cells presenter, its edges always bound
+                                exactly the visible cells regardless of which columns are shown/reordered.
+                            -->
+                            <Border x:Name="CompletionBorder"
+                                    Grid.Column="1"
+                                    IsHitTestVisible="False"
+                                    BorderBrush="{DynamicResource PlayAch.Brush.CompletedGame}"
+                                    SnapsToDevicePixels="True">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                    <Condition Binding="{Binding ShowCompletionBorder, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="BorderThickness" Value="2"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                            </Border>
+                        </SelectiveScrollingGrid>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="GameImageBorderBaseStyle" TargetType="Border">

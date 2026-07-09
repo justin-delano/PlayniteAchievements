@@ -28,7 +28,6 @@
     <converters:LockedIconSelectorConverter x:Key="LockedIconSelectorConverter"/>
     <converters:ImageFitDimensionConverter x:Key="ImageFitDimension"/>
     <converters:GameMetadataTextConverter x:Key="GameMetadataText"/>
-    <converters:DataGridCompletedBorderThicknessConverter x:Key="OverviewCompletedBorderThickness"/>
     <converters:LocalDateTimeConverter x:Key="LocalDateTimeConverter"/>
     <converters:DateDisplayModeConverter x:Key="DateDisplayMode"/>
     <converters:HeightToFontSizeConverter x:Key="HeightToFontSizeConverter"/>
