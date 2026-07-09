@@ -65,6 +65,8 @@ namespace PlayniteAchievements.Providers.Exophase
 
         public ISessionManager AuthSession => _sessionManager;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool CanResolveAchievementPageUrl(AchievementPageLinkContext context)
         {
             return TryBuildKnownAchievementPageUrl(context, out _) ||

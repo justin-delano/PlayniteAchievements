@@ -32,31 +32,36 @@ namespace PlayniteAchievements.Views.Helpers
             ILogger logger)
         {
             var menu = new ContextMenu();
+            var hasPlayniteGameId = TryGetGameId(data, out _);
             menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_RefreshGame",
                 () => ExecuteCommand(refreshGameCommand, data)));
-            menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
-                () => ExecuteCommand(openGameInLibraryCommand, data)));
 
-            if (openManageAchievements != null)
+            if (hasPlayniteGameId)
             {
-                menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_ManageAchievements", () =>
-                {
-                    if (TryGetGameId(data, out var gameId))
-                    {
-                        openManageAchievements(gameId);
-                    }
-                }));
-            }
+                menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
+                    () => ExecuteCommand(openGameInLibraryCommand, data)));
 
-            menu.Items.Add(new Separator());
-            menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_ClearData",
-                () => ClearGameData(data, playniteApi, overridesService, cacheManager, logger)));
-            menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Common_Action_ExcludeFromSummaries",
-                () => ExcludeGameFromSummaries(data, overridesService)));
-            menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_ExcludeFromRefreshes",
-                () => ExcludeGameFromRefreshes(data, playniteApi, overridesService, clearDataWhenExcluding: false)));
-            menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData",
-                () => ExcludeGameFromRefreshes(data, playniteApi, overridesService, clearDataWhenExcluding: true)));
+                if (openManageAchievements != null)
+                {
+                    menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_ManageAchievements", () =>
+                    {
+                        if (TryGetGameId(data, out var gameId))
+                        {
+                            openManageAchievements(gameId);
+                        }
+                    }));
+                }
+
+                menu.Items.Add(new Separator());
+                menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_ClearData",
+                    () => ClearGameData(data, playniteApi, overridesService, cacheManager, logger)));
+                menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Common_Action_ExcludeFromSummaries",
+                    () => ExcludeGameFromSummaries(data, overridesService)));
+                menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_ExcludeFromRefreshes",
+                    () => ExcludeGameFromRefreshes(data, playniteApi, overridesService, clearDataWhenExcluding: false)));
+                menu.Items.Add(CreateMenuItem(resourceOwner, "LOCPlayAch_Menu_ExcludeFromRefreshesAndClearData",
+                    () => ExcludeGameFromRefreshes(data, playniteApi, overridesService, clearDataWhenExcluding: true)));
+            }
 
             return menu;
         }

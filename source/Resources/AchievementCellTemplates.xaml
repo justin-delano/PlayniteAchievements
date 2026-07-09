@@ -517,7 +517,7 @@
                     Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                     TextWrapping="Wrap"
                     TextAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"
-                    Visibility="{Binding Unlocked, Converter={StaticResource BoolToVis}}">
+                    Visibility="{Binding ShowUnlockDate, Converter={StaticResource BoolToVis}}">
                 <TextBlock.Text>
                     <MultiBinding Converter="{StaticResource DateDisplayMode}">
                         <Binding Path="UnlockTimeLocal"/>
@@ -526,7 +526,7 @@
                 </TextBlock.Text>
             </TextBlock>
 
-            <Grid Visibility="{Binding Unlocked, Converter={StaticResource InverseBoolToVis}}"
+            <Grid Visibility="{Binding ShowLockedProgress, Converter={StaticResource BoolToVis}}"
                 Margin="4,0"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">

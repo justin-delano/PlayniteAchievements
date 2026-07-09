@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
@@ -36,6 +37,7 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamHttpClient _steamClient;
         private readonly SteamScanner _scanner;
         private readonly SteamSessionManager _sessionManager;
+        private readonly IFriendsProvider _friendsProvider;
         private SteamSettings _providerSettings;
 
         public SteamDataProvider(
@@ -55,10 +57,11 @@ namespace PlayniteAchievements.Providers.Steam
 
             // Create Steam-specific dependencies
             _steamClient = new SteamHttpClient(api, logger, _sessionManager, pluginUserDataPath);
-            _sessionManager.SetClearInMemoryAuthState(_steamClient.ClearInMemoryAuthState);
             var steamApiClient = new SteamApiClient(_steamClient.ApiHttpClient, logger);
             var tokenResolver = new SteamWebApiTokenResolver(_sessionManager, logger);
+            _sessionManager.SetClearInMemoryAuthState(_steamClient.ClearInMemoryAuthState);
             _scanner = new SteamScanner(settings, _steamClient, steamApiClient, tokenResolver, api, logger);
+            _friendsProvider = new SteamFriendsProvider(_steamClient, steamApiClient, _scanner, tokenResolver, logger);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Steam");
@@ -74,6 +77,8 @@ namespace PlayniteAchievements.Providers.Steam
             !string.IsNullOrWhiteSpace(_providerSettings.SteamUserId);
 
         public ISessionManager AuthSession => _sessionManager;
+
+        public IFriendsProvider Friends => _friendsProvider;
 
         public bool IsCapable(Game game) =>
             IsSteamCapable(game);

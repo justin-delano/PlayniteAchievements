@@ -77,6 +77,8 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         public ISessionManager AuthSession => null;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool IsAuthenticated
         {
             get

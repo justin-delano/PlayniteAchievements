@@ -47,6 +47,7 @@
               VirtualizingStackPanel.ScrollUnit="Pixel"
               ScrollViewer.CanContentScroll="True"
               ScrollViewer.IsDeferredScrollingEnabled="False"
+              ScrollViewer.VerticalScrollBarVisibility="Visible"
               ScrollViewer.HorizontalScrollBarVisibility="Disabled"
               Padding="{StaticResource PlayAch.Thickness.None}"
               UseLayoutRounding="True"
@@ -210,6 +211,71 @@
                         <Setter Property="Padding" Value="0"/>
                     </Style>
                 </DataGridTemplateColumn.CellStyle>
+            </DataGridTemplateColumn>
+
+            <DataGridTemplateColumn x:Name="FriendAvatarColumn"
+                                    Width="44"
+                                    MinWidth="32"
+                                    MaxWidth="96"
+                                    CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_Avatar}"
+                                    CanUserSort="False"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="Avatar"
+                                    Visibility="Collapsed">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
+                                ClipToBounds="True"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Background="{DynamicResource PlayAch.Brush.Control.Background}">
+                            <Border.Width>
+                                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,width,12,8,12">
+                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                </MultiBinding>
+                            </Border.Width>
+                            <Border.Height>
+                                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,height,12,8,12">
+                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                </MultiBinding>
+                            </Border.Height>
+                            <Image Stretch="UniformToFill"
+                                   ToolTip="{Binding FriendName}"
+                                   helpers:AsyncImage.Uri="{Binding FriendAvatarPath}"
+                                   helpers:AsyncImage.DecodePixel="56"/>
+                        </Border>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
+            <DataGridTemplateColumn x:Name="FriendColumn"
+                                    Width="140"
+                                    MinWidth="64"
+                                    MaxWidth="280"
+                                    CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_Friend}"
+                                    SortMemberPath="FriendName"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="Friend"
+                                    Visibility="Collapsed">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding FriendName}"
+                                   TextWrapping="Wrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   Style="{StaticResource WrappedCenteredDataGridTextStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                   HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
             <!-- Unlock Date / Progress -->

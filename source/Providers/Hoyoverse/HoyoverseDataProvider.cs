@@ -77,6 +77,8 @@ namespace PlayniteAchievements.Providers.Hoyoverse
 
         public ISessionManager AuthSession => null;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool IsCapable(Game game)
         {
             return HoyoverseGameCatalog.TryResolve(game, _providerSettings, out _);

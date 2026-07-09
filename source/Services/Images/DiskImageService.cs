@@ -264,21 +264,25 @@ namespace PlayniteAchievements.Services.Images
         public string GetIconCachePathFromUri(string uri, int decodeSize, string gameId = null)
         {
             var useDecodeSizeSuffix = decodeSize > 0;
+            var hashHex = ComputeUriHashPrefix(uri);
 
-            // Create hash-based filename from the URI
+            // Use per-game subfolder if gameId is provided
+            var cacheDir = string.IsNullOrEmpty(gameId)
+                ? IconCacheDirectory
+                : Path.Combine(IconCacheDirectory, gameId);
+
+            var sizeSuffix = useDecodeSizeSuffix ? $"_{decodeSize}" : string.Empty;
+            var extension = ResolvePreferredExtensionForSource(uri, decodeSize);
+            return Path.Combine(cacheDir, $"{hashHex}{sizeSuffix}{extension}");
+        }
+
+        // The 16-char hash prefix that identifies all cached variants of a source URI.
+        private static string ComputeUriHashPrefix(string uri)
+        {
             using (var sha = SHA256.Create())
             {
                 var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(uri));
-                var hashHex = BitConverter.ToString(hashBytes).Replace("-", "").Substring(0, 16);
-
-                // Use per-game subfolder if gameId is provided
-                var cacheDir = string.IsNullOrEmpty(gameId)
-                    ? IconCacheDirectory
-                    : Path.Combine(IconCacheDirectory, gameId);
-
-                var sizeSuffix = useDecodeSizeSuffix ? $"_{decodeSize}" : string.Empty;
-                var extension = ResolvePreferredExtensionForSource(uri, decodeSize);
-                return Path.Combine(cacheDir, $"{hashHex}{sizeSuffix}{extension}");
+                return BitConverter.ToString(hashBytes).Replace("-", "").Substring(0, 16);
             }
         }
 

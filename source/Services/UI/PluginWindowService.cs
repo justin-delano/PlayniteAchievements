@@ -14,6 +14,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views;
@@ -29,6 +30,7 @@ namespace PlayniteAchievements.Services.UI
         private const string ViewAchievementsWindowPlacementKey = "SingleGameAchievements";
         private const string ManageAchievementsWindowPlacementKey = "ManageAchievements";
         private const string OverviewWindowPlacementKey = "Overview";
+        private const string FriendsOverviewWindowPlacementKey = "FriendsOverview";
         private const string ColorPickerWindowPlacementKey = "ColorPicker";
         private const int ShowWindowRestore = 9;
 
@@ -55,6 +57,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly System.Collections.Generic.Dictionary<Tuple<AchievementWindowKind, Guid>, Window> _achievementWindows =
             new System.Collections.Generic.Dictionary<Tuple<AchievementWindowKind, Guid>, Window>();
         private Window _overviewWindow;
+        private Window _friendsOverviewWindow;
 
         public PluginWindowService(
             IPlayniteAPI api,
@@ -791,6 +794,102 @@ namespace PlayniteAchievements.Services.UI
             };
         }
 
+        public void OpenFriendsOverviewWindow()
+        {
+            try
+            {
+                InvokeOnUiThread(() =>
+                {
+                    if (TryActivateFriendsOverviewWindow())
+                    {
+                        return;
+                    }
+
+                    OpenFriendsOverviewWindowCore();
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to open Friends Overview window");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open friends overview: {ex.Message}",
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+            }
+        }
+
+        private bool TryActivateFriendsOverviewWindow()
+        {
+            var window = FindOpenFriendsOverviewWindow();
+            if (window == null)
+            {
+                return false;
+            }
+
+            ActivateTrackedWindow(window);
+            return true;
+        }
+
+        private Window FindOpenFriendsOverviewWindow()
+        {
+            if (_friendsOverviewWindow?.IsVisible == true)
+            {
+                return _friendsOverviewWindow;
+            }
+
+            var application = Application.Current;
+            return application?.Windows?
+                .OfType<Window>()
+                .Where(window => window != null && window.IsVisible && !ReferenceEquals(window, application.MainWindow))
+                .FirstOrDefault(IsFriendsOverviewWindow);
+        }
+
+        private static bool IsFriendsOverviewWindow(Window window)
+        {
+            return ContainsFriendsOverviewControl(window?.Content);
+        }
+
+        private static bool ContainsFriendsOverviewControl(object content)
+        {
+            if (content == null)
+            {
+                return false;
+            }
+
+            if (content is FriendsOverviewControl)
+            {
+                return true;
+            }
+
+            if (content is FullscreenOverlayContainer overlay)
+            {
+                return ContainsFriendsOverviewControl(overlay.HostedContent);
+            }
+
+            if (content is ContentControl contentControl)
+            {
+                return ContainsFriendsOverviewControl(contentControl.Content);
+            }
+
+            return false;
+        }
+
+        private void TrackFriendsOverviewWindow(Window window)
+        {
+            if (window == null)
+            {
+                return;
+            }
+
+            _friendsOverviewWindow = window;
+            window.Closed += (s, e) =>
+            {
+                if (ReferenceEquals(_friendsOverviewWindow, window))
+                {
+                    _friendsOverviewWindow = null;
+                }
+            };
+        }
+
         private void ToggleAchievementWindow(AchievementWindowKind kind, Guid gameId, Action openWindow)
         {
             if (gameId == Guid.Empty || openWindow == null)
@@ -1106,6 +1205,56 @@ namespace PlayniteAchievements.Services.UI
                 _logger.Error(ex, "Failed to open Achievements Overview window");
                 _api?.Dialogs?.ShowErrorMessage(
                     $"Failed to open achievements overview: {ex.Message}",
+                    ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+            }
+        }
+
+        private void OpenFriendsOverviewWindowCore()
+        {
+            try
+            {
+                var isFullscreen = DetectFullscreenMode();
+                var friendCache = _cacheManager as IFriendCacheManager;
+
+                var view = new FriendsOverviewControl(
+                    _logger,
+                    friendCache,
+                    _refreshCoordinator,
+                    _refreshService,
+                    _settings,
+                    _persistSettingsForUi,
+                    OverviewLaunchContext.Popout,
+                    _api,
+                    _cacheManager,
+                    _achievementOverridesService);
+
+                var windowOptions = new WindowOptions
+                {
+                    ShowMinimizeButton = false,
+                    ShowMaximizeButton = true,
+                    ShowCloseButton = true,
+                    CanBeResizable = true,
+                    Width = 1180,
+                    Height = 760
+                };
+
+                var window = CreateManagedPopoutWindow(
+                    ResourceProvider.GetString("LOCPlayAch_Menu_OpenFriendsOverview") ??
+                    "Friends Overview",
+                    view,
+                    windowOptions,
+                    isFullscreen,
+                    FriendsOverviewWindowPlacementKey,
+                    closed: view.Dispose);
+
+                TrackFriendsOverviewWindow(window);
+                ShowWindow(window, isFullscreen);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to open Friends Overview window");
+                _api?.Dialogs?.ShowErrorMessage(
+                    $"Failed to open friends overview: {ex.Message}",
                     ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
             }
         }

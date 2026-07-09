@@ -36,6 +36,19 @@
                 <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
             </Style>
 
+            <Style x:Key="GameSummaryGridTextStyle"
+                   TargetType="TextBlock"
+                   BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+                <Setter Property="TextAlignment"
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                <Setter Property="HorizontalAlignment"
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"/>
+                <Setter Property="VerticalAlignment"
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
+            </Style>
+
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -231,6 +244,25 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
+            <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_LastUnlock}" SortMemberPath="LastUnlockUtc" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryLastUnlock">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
+                            <Grid>
+                                <TextBlock Style="{StaticResource GameSummaryGridTextStyle}">
+                                    <TextBlock.Text>
+                                        <MultiBinding Converter="{StaticResource DateDisplayMode}">
+                                            <Binding Path="LastUnlockLocal"/>
+                                            <Binding Path="LastPlayedDateMode" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Grid>
+                        </ContentControl>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Playtime}" SortMemberPath="PlaytimeSeconds" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryPlaytime">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
@@ -306,6 +338,33 @@
                                     <TextBlock.Inlines><Run Text="{Binding UnlockedAchievements, Mode=OneWay}" FontWeight="Bold"/><Run Text="/" Foreground="{DynamicResource PlayAch.Brush.Text}"/><Run Text="{Binding TotalAchievements, Mode=OneWay}" Foreground="{DynamicResource PlayAch.Brush.Text}"/></TextBlock.Inlines>
                                 </TextBlock>
                             </Grid>
+                        </ContentControl>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
+            <DataGridTextColumn Width="*" MinWidth="72" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_FriendsWithUnlocks}"
+                                Binding="{Binding FriendsWithUnlocksCount, StringFormat={}{0:N0}}"
+                                SortMemberPath="FriendsWithUnlocksCount"
+                                ElementStyle="{StaticResource GameSummaryGridTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendGameFriendsWithUnlocks"/>
+
+            <DataGridTemplateColumn Width="*" MinWidth="72" CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_LastFriendUnlock}"
+                                    SortMemberPath="LastFriendUnlockUtc"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendGameLastUnlock">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
+                            <TextBlock Style="{StaticResource GameSummaryGridTextStyle}">
+                                <TextBlock.Text>
+                                    <MultiBinding Converter="{StaticResource DateDisplayMode}">
+                                        <Binding Path="LastFriendUnlockLocal"/>
+                                        <Binding Path="LastPlayedDateMode" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
                         </ContentControl>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>

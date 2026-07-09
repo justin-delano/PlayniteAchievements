@@ -1,13 +1,59 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services.Database;
+using SqlNado;
 
 namespace PlayniteAchievements.SqlNado.Tests
 {
     [TestClass]
     public class SqlNadoCacheBehaviorTests
     {
+        [TestMethod]
+        public void ExecuteScalar_WithNumericSqlParameters_UsesObjectArray()
+        {
+            var path = Path.Combine(Path.GetTempPath(), "playach-sqlnado-" + Guid.NewGuid().ToString("N") + ".db");
+            try
+            {
+                using (var db = new SQLiteDatabase(
+                    path,
+                    SQLiteOpenOptions.SQLITE_OPEN_READWRITE |
+                    SQLiteOpenOptions.SQLITE_OPEN_CREATE |
+                    SQLiteOpenOptions.SQLITE_OPEN_FULLMUTEX))
+                {
+                    db.ExecuteNonQuery(
+                        @"CREATE TABLE Probe (
+                            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            UserId INTEGER NOT NULL,
+                            GameId INTEGER NOT NULL
+                          );");
+                    db.ExecuteNonQuery(
+                        "INSERT INTO Probe (UserId, GameId) VALUES (?, ?);",
+                        10L,
+                        20L);
+
+                    var count = db.ExecuteScalar<long>(
+                        "SELECT COUNT(*) FROM Probe WHERE UserId = ? AND GameId = ?;",
+                        new object[] { 10L, 20L });
+                    var id = db.ExecuteScalar<long>(
+                        "SELECT Id FROM Probe WHERE UserId = ? AND GameId = ? LIMIT 1;",
+                        new object[] { 10L, 20L });
+
+                    Assert.AreEqual(1L, count);
+                    Assert.AreEqual(1L, id);
+                }
+            }
+            finally
+            {
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+        }
+
         [TestMethod]
         public void ComputeStaleDefinitionIds_ReturnsMissingOnly_CaseInsensitive()
         {
@@ -236,6 +282,62 @@ namespace PlayniteAchievements.SqlNado.Tests
                 markerUnlocked);
 
             Assert.AreEqual(expected, actual);
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendGameLinksLoadOwnershipPlaytimeAndLastPlayed()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+            var models = File.ReadAllText(FindRepoFile("source", "Services", "Friends", "FriendCacheModels.cs"));
+
+            StringAssert.Contains(models, "public long PlaytimeForeverMinutes { get; set; }");
+            StringAssert.Contains(models, "public DateTime? LastPlayedUtc { get; set; }");
+            StringAssert.Contains(store, "public long PlaytimeForeverMinutes { get; set; }");
+            StringAssert.Contains(store, "public string LastPlayedUtc { get; set; }");
+            StringAssert.Contains(store, "fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes");
+            StringAssert.Contains(store, "fo.LastPlayedUtc AS LastPlayedUtc");
+            StringAssert.Contains(store, "PlaytimeForeverMinutes = Math.Max(0, row.PlaytimeForeverMinutes)");
+            StringAssert.Contains(store, "LastPlayedUtc = ParseUtc(row.LastPlayedUtc)");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendIdentitiesExposeAbsoluteAvatarPath()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "AvatarPath = !string.IsNullOrWhiteSpace(row.AvatarPath)");
+            StringAssert.Contains(store, "? MakeAbsolutePath(row.AvatarPath)");
+            StringAssert.Contains(store, ": row.AvatarUrl");
+        }
+
+        [TestMethod]
+        public void CacheStore_NormalFriendOwnershipCleanupPreservesProviderOnlyRows()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "if (options?.IncludeProviderOnlyGames != true)");
+            StringAssert.Contains(store, "DeleteStaleSharedFriendOwnership(db, user.Id, seenSharedGameIds);");
+            StringAssert.Contains(store, "private static void DeleteStaleSharedFriendOwnership");
+            StringAssert.Contains(store, "g.PlayniteGameId IS NOT NULL");
+            StringAssert.Contains(store, "TRIM(g.PlayniteGameId) <> ''");
+        }
+
+        private static string FindRepoFile(params string[] parts)
+        {
+            var directory = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory);
+            while (directory != null)
+            {
+                var path = Path.Combine(new[] { directory.FullName }.Concat(parts).ToArray());
+                if (File.Exists(path))
+                {
+                    return path;
+                }
+
+                directory = directory.Parent;
+            }
+
+            Assert.Fail("Could not find " + Path.Combine(parts));
+            return null;
         }
     }
 }

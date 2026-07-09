@@ -62,6 +62,8 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         public ISessionManager AuthSession => null;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool IsCapable(Game game) =>
             BattleNetGameSupport.IsSupported(game, _providerSettings);
 

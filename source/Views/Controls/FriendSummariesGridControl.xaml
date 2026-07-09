@@ -1,0 +1,224 @@
+<UserControl x:Class="PlayniteAchievements.Views.Controls.FriendSummariesGridControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
+             Loaded="OnLoaded"
+             Unloaded="OnUnloaded">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/OverviewStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="FriendSummariesGridRowStyle"
+                   TargetType="DataGridRow"
+                   BasedOn="{StaticResource GameSummariesGridRowBaseStyle}">
+                <Setter Property="MinHeight" Value="56"/>
+                <EventSetter Event="PreviewMouseLeftButtonDown" Handler="DataGridRow_PreviewMouseLeftButtonDown"/>
+                <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_PreviewMouseRightButtonDown"/>
+                <EventSetter Event="PreviewMouseRightButtonUp" Handler="DataGridRow_PreviewMouseRightButtonUp"/>
+            </Style>
+
+            <Style x:Key="FriendSummaryTextStyle"
+                   TargetType="TextBlock"
+                   BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
+                <Setter Property="TextWrapping" Value="Wrap"/>
+                <Setter Property="TextAlignment"
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellTextAlignment)}"/>
+                <Setter Property="HorizontalAlignment"
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"/>
+                <Setter Property="VerticalAlignment"
+                        Value="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"/>
+            </Style>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <DataGrid x:Name="FriendSummariesGrid"
+              KeyboardNavigation.DirectionalNavigation="Contained"
+              ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=controls:FriendSummariesGridControl}}"
+              SelectedItem="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=controls:FriendSummariesGridControl}, Mode=TwoWay}"
+              SelectionChanged="DataGrid_SelectionChanged"
+              Sorting="DataGrid_Sorting"
+              LoadingRow="FriendSummariesGrid_LoadingRow"
+              AutoGenerateColumns="False"
+              IsReadOnly="True"
+              SelectionMode="Single"
+              GridLinesVisibility="None"
+              HeadersVisibility="Column"
+              BorderThickness="0"
+              CanUserResizeColumns="True"
+              CanUserResizeRows="False"
+              CanUserReorderColumns="True"
+              Background="{DynamicResource PlayAch.Brush.Grid.Background}"
+              RowBackground="{DynamicResource PlayAch.Brush.Grid.RowBackground}"
+              CanUserSortColumns="True"
+              EnableRowVirtualization="True"
+              VirtualizingStackPanel.IsVirtualizing="True"
+              VirtualizingStackPanel.VirtualizationMode="Recycling"
+              ColumnHeaderStyle="{StaticResource AchievementColumnHeaderWithMenuStyle}"
+              VirtualizingStackPanel.ScrollUnit="Pixel"
+              ScrollViewer.CanContentScroll="True"
+              ScrollViewer.VerticalScrollBarVisibility="Visible"
+              ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+              ScrollViewer.IsDeferredScrollingEnabled="False"
+              UseLayoutRounding="True"
+              SnapsToDevicePixels="True"
+              Tag="ControllerCellFocus"
+              helpers:DataGridHoverScrollBarBehavior.IsEnabled="True"
+              helpers:DataGridAlignmentBehavior.IsEnabled="True"
+              PreviewMouseRightButtonUp="DataGridColumnMenu_PreviewMouseRightButtonUp">
+        <DataGrid.CellStyle>
+            <Style TargetType="DataGridCell"
+                   BasedOn="{StaticResource GameSummariesGridCellStyle}"/>
+        </DataGrid.CellStyle>
+        <DataGrid.RowStyle>
+            <Style TargetType="DataGridRow"
+                   BasedOn="{StaticResource FriendSummariesGridRowStyle}"/>
+        </DataGrid.RowStyle>
+        <DataGrid.Columns>
+            <DataGridTemplateColumn Width="44" MinWidth="32" MaxWidth="96" CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_Avatar}"
+                                    CanUserSort="False"
+                                    CellStyle="{StaticResource GameSummariesImageCellStyle}"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="Avatar">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
+                                        Padding="0,6">
+                            <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
+                                    ClipToBounds="True"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Background="{DynamicResource PlayAch.Brush.Control.Background}">
+                                <Border.Width>
+                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,width,12,8,12">
+                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                    </MultiBinding>
+                                </Border.Width>
+                                <Border.Height>
+                                    <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,height,12,8,12">
+                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                        <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                    </MultiBinding>
+                                </Border.Height>
+                                <Image Stretch="UniformToFill"
+                                       ToolTip="{Binding DisplayName}"
+                                       helpers:AsyncImage.Uri="{Binding AvatarPath}"
+                                       helpers:AsyncImage.DecodePixel="64"/>
+                            </Border>
+                        </ContentControl>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
+            <DataGridTextColumn Width="1.4*" MinWidth="88" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_Friend}"
+                                Binding="{Binding DisplayName}"
+                                SortMemberPath="DisplayName"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryFriend"/>
+
+            <DataGridTemplateColumn Width="44" MinWidth="28" MaxWidth="96" CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_Provider}"
+                                    CanUserSort="False"
+                                    CellStyle="{StaticResource GameSummariesImageCellStyle}"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryProvider">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
+                                        Padding="0,6">
+                            <Grid>
+                                <Image ToolTip="{Binding ProviderDisplayName}"
+                                       Style="{StaticResource GameSummaryProviderIconStyle}">
+                                    <Image.Width>
+                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,width,8,16,14">
+                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                        </MultiBinding>
+                                    </Image.Width>
+                                    <Image.Height>
+                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,height,8,16,14">
+                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                        </MultiBinding>
+                                    </Image.Height>
+                                    <Image.Source>
+                                        <MultiBinding Converter="{StaticResource ProviderIconConverter}">
+                                            <Binding Path="ProviderIconKey"/>
+                                            <Binding Path="ProviderColorHex"/>
+                                        </MultiBinding>
+                                    </Image.Source>
+                                </Image>
+                            </Grid>
+                        </ContentControl>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
+            <DataGridTextColumn Width="*" MinWidth="56" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_SharedGames}"
+                                Binding="{Binding SharedGamesCount, StringFormat={}{0:N0}}"
+                                SortMemberPath="SharedGamesCount"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummarySharedGames"/>
+            <DataGridTextColumn Width="*" MinWidth="56" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_GamesWithUnlocks}"
+                                Binding="{Binding GamesWithUnlocksCount, StringFormat={}{0:N0}}"
+                                SortMemberPath="GamesWithUnlocksCount"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryGamesWithUnlocks"/>
+            <DataGridTextColumn Width="*" MinWidth="56" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_Unlocks}"
+                                Binding="{Binding UnlockedAchievementsCount, StringFormat={}{0:N0}}"
+                                SortMemberPath="UnlockedAchievementsCount"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryUnlocks"/>
+            <DataGridTextColumn Width="*" MinWidth="72" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_PrestigeScore}"
+                                Binding="{Binding PrestigeScore, StringFormat={}{0:N0}}"
+                                SortMemberPath="PrestigeScore"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryPrestigeScore"/>
+            <DataGridTextColumn Width="*" MinWidth="72" CanUserResize="True"
+                                Header="{DynamicResource LOCPlayAch_Column_CollectionScore}"
+                                Binding="{Binding CollectionScore, StringFormat={}{0:N0}}"
+                                SortMemberPath="CollectionScore"
+                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
+                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryCollectionScore"/>
+
+            <DataGridTemplateColumn Width="*" MinWidth="72" CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_LastUnlock}"
+                                    SortMemberPath="LastUnlockUtc"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryLastUnlock">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <TextBlock Style="{StaticResource FriendSummaryTextStyle}"
+                                   Margin="10,6">
+                            <TextBlock.Text>
+                                <MultiBinding Converter="{StaticResource DateDisplayMode}">
+                                    <Binding Path="LastUnlockLocal"/>
+                                    <Binding Path="DateDisplayMode" RelativeSource="{RelativeSource AncestorType=controls:FriendSummariesGridControl}"/>
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+        </DataGrid.Columns>
+    </DataGrid>
+</UserControl>

@@ -61,6 +61,8 @@ namespace PlayniteAchievements.Providers.EA
 
         public ISessionManager AuthSession => _sessionManager;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool IsCapable(Game game) =>
             EAProviderSupport.IsEaCapable(game, EaPluginId) ||
             (game != null && GameCustomDataLookup.TryGetProviderOverrideValue(game.Id, "EA", out _));

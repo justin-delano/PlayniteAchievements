@@ -56,6 +56,29 @@ namespace PlayniteAchievements.Steam.Tests
             Assert.IsTrue(string.IsNullOrWhiteSpace(result.Token));
         }
 
+        [TestMethod]
+        public async Task ResolveAsync_DoesNotCacheSuccessfulResolution()
+        {
+            var resolveCalls = 0;
+            var resolver = new SteamWebApiTokenResolver(
+                new FakeSessionManager(),
+                _ =>
+                {
+                    resolveCalls++;
+                    return Task.FromResult(new SteamWebAuthSession("76561198000000000", "token-" + resolveCalls, true));
+                },
+                logger: null);
+
+            var first = await resolver.ResolveAsync(CancellationToken.None).ConfigureAwait(false);
+            var second = await resolver.ResolveAsync(CancellationToken.None).ConfigureAwait(false);
+
+            Assert.IsTrue(first.IsSuccess);
+            Assert.IsTrue(second.IsSuccess);
+            Assert.AreEqual("token-1", first.Token);
+            Assert.AreEqual("token-2", second.Token);
+            Assert.AreEqual(2, resolveCalls);
+        }
+
         private sealed class FakeSessionManager : ISessionManager
         {
             public string ProviderKey => "Steam";

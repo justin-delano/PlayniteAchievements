@@ -7,5 +7,10 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public SelectedGameAchievementViewState SelectedGameAchievements { get; } = new SelectedGameAchievementViewState();
         public LibraryAchievementViewState LibraryAchievements { get; } = new LibraryAchievementViewState();
         public GameSummaryViewState GameSummaries { get; } = new GameSummaryViewState();
+        public FriendRuntimeState Friends { get; set; } = FriendRuntimeState.Empty;
+        public FriendScopeViewState FriendScope { get; } = new FriendScopeViewState();
+        public FriendSummaryViewState FriendSummaries { get; } = new FriendSummaryViewState();
+        public FriendGameSummaryViewState FriendGameSummaries { get; } = new FriendGameSummaryViewState();
+        public FriendAchievementViewState FriendAchievements { get; } = new FriendAchievementViewState();
     }
 }

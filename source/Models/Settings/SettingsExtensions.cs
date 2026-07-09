@@ -100,9 +100,23 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowOverviewGameMetadataPlaytime = source.ShowOverviewGameMetadataPlaytime;
             target.ShowOverviewGameMetadataRegion = source.ShowOverviewGameMetadataRegion;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
+            target.EnableFriendsOverview = source.EnableFriendsOverview;
+            target.FriendsOverviewHideSpoilers = source.FriendsOverviewHideSpoilers;
+            target.FriendsOverviewRefreshTtlHours = source.FriendsOverviewRefreshTtlHours;
+            target.FriendsOverviewRecentUnlockLimit = source.FriendsOverviewRecentUnlockLimit;
+            target.FriendsOverviewGameSummariesUseCoverImages = source.FriendsOverviewGameSummariesUseCoverImages;
+            target.FriendsOverviewGameSummariesShowMetadataPlatform = source.FriendsOverviewGameSummariesShowMetadataPlatform;
+            target.FriendsOverviewGameSummariesShowMetadataPlaytime = source.FriendsOverviewGameSummariesShowMetadataPlaytime;
+            target.FriendsOverviewGameSummariesShowMetadataRegion = source.FriendsOverviewGameSummariesShowMetadataRegion;
+            target.FriendsOverviewAchievementsUseCoverImages = source.FriendsOverviewAchievementsUseCoverImages;
+            target.FriendsOverviewAchievementsShowRarityGlow = source.FriendsOverviewAchievementsShowRarityGlow;
+            target.FriendsOverviewAchievementsColorNamesByRarity = source.FriendsOverviewAchievementsColorNamesByRarity;
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
             target.ShowCompletionBorder = source.ShowCompletionBorder;
             target.ShowOverviewGameSummariesGridColumnHeaders = source.ShowOverviewGameSummariesGridColumnHeaders;
+            target.ShowFriendsOverviewFriendSummariesGridColumnHeaders = source.ShowFriendsOverviewFriendSummariesGridColumnHeaders;
+            target.ShowFriendsOverviewGameSummariesGridColumnHeaders = source.ShowFriendsOverviewGameSummariesGridColumnHeaders;
+            target.ShowFriendsOverviewAchievementsGridColumnHeaders = source.ShowFriendsOverviewAchievementsGridColumnHeaders;
             target.ProgressColumnAlignmentDefaulted = source.ProgressColumnAlignmentDefaulted;
             target.InlineSurfaceTransparencySeeded = source.InlineSurfaceTransparencySeeded;
             target.ViewAchievementsGameSummariesUseCoverImages = source.ViewAchievementsGameSummariesUseCoverImages;
@@ -120,7 +134,10 @@ namespace PlayniteAchievements.Models.Settings
             target.OverviewGameSummariesLastPlayedDateMode = source.OverviewGameSummariesLastPlayedDateMode;
             target.ViewAchievementsGameSummariesLastPlayedDateMode = source.ViewAchievementsGameSummariesLastPlayedDateMode;
             target.StartPageGameSummariesLastPlayedDateMode = source.StartPageGameSummariesLastPlayedDateMode;
+            target.FriendsOverviewFriendSummariesLastUnlockDateMode = source.FriendsOverviewFriendSummariesLastUnlockDateMode;
+            target.FriendsOverviewGameSummariesLastPlayedDateMode = source.FriendsOverviewGameSummariesLastPlayedDateMode;
             target.OverviewRecentAchievementsUnlockDateMode = source.OverviewRecentAchievementsUnlockDateMode;
+            target.FriendsOverviewAchievementsUnlockDateMode = source.FriendsOverviewAchievementsUnlockDateMode;
             target.OverviewSelectedGameAchievementsUnlockDateMode = source.OverviewSelectedGameAchievementsUnlockDateMode;
             target.ViewAchievementsAchievementsUnlockDateMode = source.ViewAchievementsAchievementsUnlockDateMode;
             target.StartPageAchievementsUnlockDateMode = source.StartPageAchievementsUnlockDateMode;
@@ -157,6 +174,9 @@ namespace PlayniteAchievements.Models.Settings
             target.OverviewSelectedGameGridRowHeight = source.OverviewSelectedGameGridRowHeight;
             target.StartPageGameSummariesGridRowHeight = source.StartPageGameSummariesGridRowHeight;
             target.StartPageRecentAchievementsGridRowHeight = source.StartPageRecentAchievementsGridRowHeight;
+            target.FriendsOverviewFriendSummariesGridRowHeight = source.FriendsOverviewFriendSummariesGridRowHeight;
+            target.FriendsOverviewGameSummariesGridRowHeight = source.FriendsOverviewGameSummariesGridRowHeight;
+            target.FriendsOverviewAchievementsGridRowHeight = source.FriendsOverviewAchievementsGridRowHeight;
             target.DesktopThemeAchievementGridRowHeight = source.DesktopThemeAchievementGridRowHeight;
             target.SingleGameGridMaxRows = source.SingleGameGridMaxRows;
             target.OverviewGameSummariesGridMaxRows = source.OverviewGameSummariesGridMaxRows;
@@ -164,6 +184,9 @@ namespace PlayniteAchievements.Models.Settings
             target.OverviewSelectedGameGridMaxRows = source.OverviewSelectedGameGridMaxRows;
             target.StartPageGameSummariesGridMaxRows = source.StartPageGameSummariesGridMaxRows;
             target.StartPageRecentAchievementsGridMaxRows = source.StartPageRecentAchievementsGridMaxRows;
+            target.FriendsOverviewFriendSummariesGridMaxRows = source.FriendsOverviewFriendSummariesGridMaxRows;
+            target.FriendsOverviewGameSummariesGridMaxRows = source.FriendsOverviewGameSummariesGridMaxRows;
+            target.FriendsOverviewAchievementsGridMaxRows = source.FriendsOverviewAchievementsGridMaxRows;
             target.DesktopThemeAchievementGridMaxRows = source.DesktopThemeAchievementGridMaxRows;
             target.StartPageGameSummariesGrid = source.StartPageGameSummariesGrid?.Clone() ??
                 new StartPageGameSummariesGridSettings();
@@ -210,6 +233,78 @@ namespace PlayniteAchievements.Models.Settings
                 : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
             target.OverviewRecentAchievementColumnHeaderAlignments = source.OverviewRecentAchievementColumnHeaderAlignments != null
                 ? new Dictionary<string, GridAlignment>(source.OverviewRecentAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnVisibility = source.FriendsOverviewAchievementColumnVisibility != null
+                ? new Dictionary<string, bool>(source.FriendsOverviewAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnWidths = source.FriendsOverviewAchievementColumnWidths != null
+                ? new Dictionary<string, double>(source.FriendsOverviewAchievementColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnOrder = source.FriendsOverviewAchievementColumnOrder != null
+                ? new Dictionary<string, int>(source.FriendsOverviewAchievementColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnAlignments = source.FriendsOverviewAchievementColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewAchievementColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnVerticalAlignments = source.FriendsOverviewAchievementColumnVerticalAlignments != null
+                ? new Dictionary<string, GridVerticalAlignment>(source.FriendsOverviewAchievementColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewAchievementColumnHeaderAlignments = source.FriendsOverviewAchievementColumnHeaderAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewAchievementColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewFriendSummariesColumnVisibility = source.FriendsOverviewFriendSummariesColumnVisibility != null
+                ? new Dictionary<string, bool>(source.FriendsOverviewFriendSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewFriendSummariesColumnWidths = source.FriendsOverviewFriendSummariesColumnWidths != null
+                ? new Dictionary<string, double>(source.FriendsOverviewFriendSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewFriendSummariesColumnOrder = source.FriendsOverviewFriendSummariesColumnOrder != null
+                ? new Dictionary<string, int>(source.FriendsOverviewFriendSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewFriendSummariesColumnAlignments = source.FriendsOverviewFriendSummariesColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewFriendSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewFriendSummariesColumnVerticalAlignments = source.FriendsOverviewFriendSummariesColumnVerticalAlignments != null
+                ? new Dictionary<string, GridVerticalAlignment>(source.FriendsOverviewFriendSummariesColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewFriendSummariesColumnHeaderAlignments = source.FriendsOverviewFriendSummariesColumnHeaderAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewFriendSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewGameSummariesColumnVisibility = source.FriendsOverviewGameSummariesColumnVisibility != null
+                ? new Dictionary<string, bool>(source.FriendsOverviewGameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewGameSummariesColumnWidths = source.FriendsOverviewGameSummariesColumnWidths != null
+                ? new Dictionary<string, double>(source.FriendsOverviewGameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewGameSummariesColumnOrder = source.FriendsOverviewGameSummariesColumnOrder != null
+                ? new Dictionary<string, int>(source.FriendsOverviewGameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewGameSummariesColumnAlignments = source.FriendsOverviewGameSummariesColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewGameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewGameSummariesColumnVerticalAlignments = source.FriendsOverviewGameSummariesColumnVerticalAlignments != null
+                ? new Dictionary<string, GridVerticalAlignment>(source.FriendsOverviewGameSummariesColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewGameSummariesColumnHeaderAlignments = source.FriendsOverviewGameSummariesColumnHeaderAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewGameSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewSelectedFriendGameSummariesColumnVisibility = source.FriendsOverviewSelectedFriendGameSummariesColumnVisibility != null
+                ? new Dictionary<string, bool>(source.FriendsOverviewSelectedFriendGameSummariesColumnVisibility, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewSelectedFriendGameSummariesColumnWidths = source.FriendsOverviewSelectedFriendGameSummariesColumnWidths != null
+                ? new Dictionary<string, double>(source.FriendsOverviewSelectedFriendGameSummariesColumnWidths, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewSelectedFriendGameSummariesColumnOrder = source.FriendsOverviewSelectedFriendGameSummariesColumnOrder != null
+                ? new Dictionary<string, int>(source.FriendsOverviewSelectedFriendGameSummariesColumnOrder, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewSelectedFriendGameSummariesColumnAlignments = source.FriendsOverviewSelectedFriendGameSummariesColumnAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewSelectedFriendGameSummariesColumnAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments = source.FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments != null
+                ? new Dictionary<string, GridVerticalAlignment>(source.FriendsOverviewSelectedFriendGameSummariesColumnVerticalAlignments, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, GridVerticalAlignment>(StringComparer.OrdinalIgnoreCase);
+            target.FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments = source.FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments != null
+                ? new Dictionary<string, GridAlignment>(source.FriendsOverviewSelectedFriendGameSummariesColumnHeaderAlignments, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, GridAlignment>(StringComparer.OrdinalIgnoreCase);
             target.OverviewSelectedGameAchievementColumnVisibility = source.OverviewSelectedGameAchievementColumnVisibility != null
                 ? new Dictionary<string, bool>(source.OverviewSelectedGameAchievementColumnVisibility, StringComparer.OrdinalIgnoreCase)

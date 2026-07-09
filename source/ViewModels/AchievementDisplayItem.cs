@@ -39,6 +39,9 @@ namespace PlayniteAchievements.ViewModels
         private string _sortingName;
         private Guid? _playniteGameId;
         private string _providerKey;
+        private string _friendName;
+        private string _friendExternalUserId;
+        private string _friendAvatarPath;
         private int? _pointsValue;
         private string _categoryType;
         private string _categoryLabel;
@@ -57,6 +60,24 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _providerKey;
             set => SetValue(ref _providerKey, value);
+        }
+
+        public string FriendName
+        {
+            get => _friendName;
+            set => SetValue(ref _friendName, value);
+        }
+
+        public string FriendExternalUserId
+        {
+            get => _friendExternalUserId;
+            set => SetValue(ref _friendExternalUserId, value);
+        }
+
+        public string FriendAvatarPath
+        {
+            get => _friendAvatarPath;
+            set => SetValue(ref _friendAvatarPath, value);
         }
 
         public string DisplayName
@@ -145,6 +166,8 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(UnlockTimeLocal));
                     OnPropertyChanged(nameof(DateUnlocked));
                     OnPropertyChanged(nameof(UnlockTime));
+                    OnPropertyChanged(nameof(ShowUnlockDate));
+                    OnPropertyChanged(nameof(ShowLockedProgress));
                 }
             }
         }
@@ -222,10 +245,16 @@ namespace PlayniteAchievements.ViewModels
                     NotifyIconDisplayChanged();
                     NotifyTitleDisplayChanged();
                     NotifyDescriptionDisplayChanged();
+                    OnPropertyChanged(nameof(ShowUnlockDate));
+                    OnPropertyChanged(nameof(ShowLockedProgress));
                     OnPropertyChanged(nameof(IsUnlock));
                 }
             }
         }
+
+        public virtual bool ShowUnlockDate => Unlocked;
+
+        public virtual bool ShowLockedProgress => !ShowUnlockDate;
 
         public bool IsCapstone
         {
@@ -913,6 +942,9 @@ namespace PlayniteAchievements.ViewModels
             var clone = new AchievementDisplayItem();
             clone.SetSource(_source, notifyChanges: false);
             clone.ProviderKey = _providerKey;
+            clone.FriendName = _friendName;
+            clone.FriendExternalUserId = _friendExternalUserId;
+            clone.FriendAvatarPath = _friendAvatarPath;
             clone.GameName = _gameName;
             clone.SortingName = _sortingName;
             clone.PlayniteGameId = _playniteGameId;
@@ -1109,6 +1141,8 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(UnlockTimeText));
             OnPropertyChanged(nameof(DateUnlocked));
             OnPropertyChanged(nameof(UnlockTime));
+            OnPropertyChanged(nameof(ShowUnlockDate));
+            OnPropertyChanged(nameof(ShowLockedProgress));
             OnPropertyChanged(nameof(GlobalPercentUnlocked));
             OnPropertyChanged(nameof(HasRarityPercent));
             OnPropertyChanged(nameof(GlobalPercentText));
@@ -1122,6 +1156,8 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(Rarity));
             OnPropertyChanged(nameof(GamerScore));
             OnPropertyChanged(nameof(Unlocked));
+            OnPropertyChanged(nameof(ShowUnlockDate));
+            OnPropertyChanged(nameof(ShowLockedProgress));
             OnPropertyChanged(nameof(IsCapstone));
             OnPropertyChanged(nameof(RarityNameBrush));
             OnPropertyChanged(nameof(Hidden));

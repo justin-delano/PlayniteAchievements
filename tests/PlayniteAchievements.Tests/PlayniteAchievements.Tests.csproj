@@ -52,6 +52,10 @@
     <Compile Include="..\..\source\Services\Database\SqlNadoCacheBehavior.cs" Link="Source\Services\Database\SqlNadoCacheBehavior.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamTimeParser.cs" Link="Source\Providers\Steam\SteamTimeParser.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamStatsPageClassifier.cs" Link="Source\Providers\Steam\SteamStatsPageClassifier.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamImageUrls.cs" Link="Source\Providers\Steam\SteamImageUrls.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamSettings.cs" Link="Source\Providers\Steam\SteamSettings.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamFriendListItem.cs" Link="Source\Providers\Steam\SteamFriendListItem.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamFriendListBuilder.cs" Link="Source\Providers\Steam\SteamFriendListBuilder.cs" />
     <Compile Include="..\..\source\Models\RefreshMode.cs" Link="Source\Models\RefreshMode.cs" />
     <Compile Include="..\..\source\Models\CustomRefreshOptions.cs" Link="Source\Models\CustomRefreshOptions.cs" />
     <Compile Include="..\..\source\Models\RefreshRequest.cs" Link="Source\Models\RefreshRequest.cs" />
@@ -167,6 +171,7 @@
     <Compile Include="..\..\source\Providers\Manual\SteamManualSource.cs" Link="Source\Providers\Manual\SteamManualSource.cs" />
     <Compile Include="..\..\source\Providers\Manual\ExophaseManualSource.cs" Link="Source\Providers\Manual\ExophaseManualSource.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamAPIClient.cs" Link="Source\Providers\Steam\SteamAPIClient.cs" />
+    <Compile Include="..\..\source\Providers\Steam\SteamCommunityPageParser.cs" Link="Source\Providers\Steam\SteamCommunityPageParser.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamWebAuthSession.cs" Link="Source\Providers\Steam\SteamWebAuthSession.cs" />
     <Compile Include="..\..\source\Providers\Steam\SteamWebApiTokenResolver.cs" Link="Source\Providers\Steam\SteamWebApiTokenResolver.cs" />
     <Compile Include="..\..\source\Providers\Exophase\ExophaseApiClient.cs" Link="Source\Providers\Exophase\ExophaseApiClient.cs" />
@@ -175,15 +180,22 @@
     <Compile Include="..\..\source\Providers\PSN\PsnSessionManager.cs" Link="Source\Providers\PSN\PsnSessionManager.cs" />
     <Compile Include="..\..\source\Providers\PSN\PsnSettings.cs" Link="Source\Providers\PSN\PsnSettings.cs" />
     <Compile Include="..\..\source\Providers\Steam\Models\SteamApiResponseModels.cs" Link="Source\Providers\Steam\Models\SteamApiResponseModels.cs" />
+    <Compile Include="..\..\source\Providers\Steam\Models\SteamResponseModels.cs" Link="Source\Providers\Steam\Models\SteamResponseModels.cs" />
     <Compile Include="..\..\source\Common\ObservableObject.cs" Link="Source\Common\ObservableObject.cs" />
     <Compile Include="..\..\source\Common\BulkObservableCollection.cs" Link="Source\Common\BulkObservableCollection.cs" />
+    <Compile Include="..\..\source\Common\AsyncCommand.cs" Link="Source\Common\AsyncCommand.cs" />
     <Compile Include="..\..\source\Common\CommandBase.cs" Link="Source\Common\CommandBase.cs" />
+    <Compile Include="..\..\source\Common\DateTimeUtilities.cs" Link="Source\Common\DateTimeUtilities.cs" />
     <Compile Include="..\..\source\Common\DispatcherExtensions.cs" Link="Source\Common\DispatcherExtensions.cs" />
     <Compile Include="..\..\source\Common\PathExpansion.cs" Link="Source\Common\PathExpansion.cs" />
     <Compile Include="..\..\source\Common\PerfScope.cs" Link="Source\Common\PerfScope.cs" />
     <Compile Include="..\..\source\Common\RelativeDateFormatter.cs" Link="Source\Common\RelativeDateFormatter.cs" />
     <Compile Include="..\..\source\Common\RelayCommand.cs" Link="Source\Common\RelayCommand.cs" />
     <Compile Include="..\..\source\Common\WebViewExtensions.cs" Link="Source\Common\WebViewExtensions.cs" />
+    <Compile Include="..\..\source\ViewModels\FriendAchievementDisplayItem.cs" Link="Source\ViewModels\FriendAchievementDisplayItem.cs" />
+    <Compile Include="..\..\source\ViewModels\FriendGameSummaryItem.cs" Link="Source\ViewModels\FriendGameSummaryItem.cs" />
+    <Compile Include="..\..\source\ViewModels\FriendSummaryItem.cs" Link="Source\ViewModels\FriendSummaryItem.cs" />
+    <Compile Include="..\..\source\ViewModels\FriendsOverviewViewModel.cs" Link="Source\ViewModels\FriendsOverviewViewModel.cs" />
     <Compile Include="..\..\source\ViewModels\GameSummaryItem.cs" Link="Source\ViewModels\GameSummaryItem.cs" />
     <Compile Include="..\..\source\ViewModels\ProviderPlatformFilter.cs" Link="Source\ViewModels\ProviderPlatformFilter.cs" />
     <Compile Include="..\..\source\ViewModels\ScoreCardViewModel.cs" Link="Source\ViewModels\ScoreCardViewModel.cs" />
@@ -199,6 +211,7 @@
     <Compile Include="..\..\source\Models\PluginSettings.cs" Link="Source\Models\PluginSettings.cs" />
     <Compile Include="..\..\source\Models\RefreshStatusSnapshot.cs" Link="Source\Models\RefreshStatusSnapshot.cs" />
     <Compile Include="..\..\source\Models\SelectedGameBindingContext.cs" Link="Source\Models\SelectedGameBindingContext.cs" />
+    <Compile Include="..\..\source\Models\Friends\FriendModels.cs" Link="Source\Models\Friends\FriendModels.cs" />
     <Compile Include="..\..\source\Models\Settings\AchievementHotkeyGesture.cs" Link="Source\Models\Settings\AchievementHotkeyGesture.cs" />
     <Compile Include="..\..\source\Models\Settings\PersistedSettings.cs" Link="Source\Models\Settings\PersistedSettings.cs" />
     <Compile Include="..\..\source\Models\Settings\RarityColorSettings.cs" Link="Source\Models\Settings\RarityColorSettings.cs" />
@@ -251,6 +264,7 @@
     <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeViewState.cs" Link="Source\Models\ThemeIntegration\DynamicThemeViewState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\LegacyThemeBindings.cs" Link="Source\Models\ThemeIntegration\LegacyThemeBindings.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\LibraryRuntimeState.cs" Link="Source\Models\ThemeIntegration\LibraryRuntimeState.cs" />
+    <Compile Include="..\..\source\Models\ThemeIntegration\FriendRuntimeState.cs" Link="Source\Models\ThemeIntegration\FriendRuntimeState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\ModernThemeBindings.cs" Link="Source\Models\ThemeIntegration\ModernThemeBindings.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\SelectedGameRuntimeState.cs" Link="Source\Models\ThemeIntegration\SelectedGameRuntimeState.cs" />
     <Compile Include="..\..\source\Models\ThemeIntegration\ThemeRuntimeState.cs" Link="Source\Models\ThemeIntegration\ThemeRuntimeState.cs" />
@@ -274,7 +288,12 @@
     <Compile Include="..\..\source\Services\Cache\CachedSummaryData.cs" Link="Source\Services\Cache\CachedSummaryData.cs" />
     <Compile Include="..\..\source\Services\Refresh\BulkRefreshGameFilter.cs" Link="Source\Services\Refresh\BulkRefreshGameFilter.cs" />
     <Compile Include="..\..\source\Services\Refresh\ProviderRefreshExecutor.cs" Link="Source\Services\Refresh\ProviderRefreshExecutor.cs" />
+    <Compile Include="..\..\source\Services\Refresh\RefreshRequestPlanner.cs" Link="Source\Services\Refresh\RefreshRequestPlanner.cs" />
     <Compile Include="..\..\source\Services\Refresh\TargetSelectionResolver.cs" Link="Source\Services\Refresh\TargetSelectionResolver.cs" />
+    <Compile Include="..\..\source\Services\Friends\FriendCacheModels.cs" Link="Source\Services\Friends\FriendCacheModels.cs" />
+    <Compile Include="..\..\source\Services\Friends\FriendOverviewProjection.cs" Link="Source\Services\Friends\FriendOverviewProjection.cs" />
+    <Compile Include="..\..\source\Services\Friends\FriendsRefreshRuntime.cs" Link="Source\Services\Friends\FriendsRefreshRuntime.cs" />
+    <Compile Include="..\..\source\Services\Friends\FriendImageCacheKeys.cs" Link="Source\Services\Friends\FriendImageCacheKeys.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\ControlMappings.cs" Link="Source\Services\ThemeMigration\ControlMappings.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\CustomMigrationSelection.cs" Link="Source\Services\ThemeMigration\CustomMigrationSelection.cs" />
     <Compile Include="..\..\source\Services\ThemeMigration\MigrationMode.cs" Link="Source\Services\ThemeMigration\MigrationMode.cs" />

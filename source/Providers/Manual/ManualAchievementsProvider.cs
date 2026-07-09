@@ -38,6 +38,8 @@ namespace PlayniteAchievements.Providers.Manual
 
         public ISessionManager AuthSession => null;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public ManualAchievementsProvider(
             ILogger logger,
             PlayniteAchievementsSettings settings,

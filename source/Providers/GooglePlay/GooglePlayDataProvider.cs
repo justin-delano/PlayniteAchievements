@@ -30,6 +30,8 @@ namespace PlayniteAchievements.Providers.GooglePlay
         public bool IsAuthenticated => false;
         public ISessionManager AuthSession => null;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool IsCapable(Game game) => false;
 
         public Task<RebuildPayload> RefreshAsync(

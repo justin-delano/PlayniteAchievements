@@ -215,8 +215,16 @@ namespace PlayniteAchievements.ViewModels
         public DateTime? LastUnlockUtc
         {
             get => _lastUnlockUtc;
-            set => SetValue(ref _lastUnlockUtc, value);
+            set
+            {
+                if (SetValueAndReturn(ref _lastUnlockUtc, value))
+                {
+                    OnPropertyChanged(nameof(LastUnlockLocal));
+                }
+            }
         }
+
+        public DateTime? LastUnlockLocal => LastUnlockUtc?.ToLocalTime();
 
         private bool _isCompleted;
         public bool IsCompleted { get => _isCompleted; set => SetValue(ref _isCompleted, value); }

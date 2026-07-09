@@ -46,6 +46,7 @@
     <sys:String x:Key="LOCPlayAch_NoAchievementsTitle">No Achievements Found</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_NotAuthenticated">Not authenticated</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_RenameLabelEllipsis">Rename Label...</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Remove">Remove</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_ResetSelected">Reset Selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_RevertChanges">Revert Changes</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_SelectAll">Select All</sys:String>
@@ -100,12 +101,23 @@
     <!-- 03 Columns -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Icon">Icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Avatar">Avatar</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_CollectionScore">Collection Score</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Friend">Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_FullLibrary">Full Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Provider">Provider</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Scores">Scores</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_SharedGames">Shared Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_GamesWithUnlocks">Games With Unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Unlocks">Unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_LastUnlock">Last Unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_FriendsWithUnlocks">Friends With Unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_LastFriendUnlock">Last Friend Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">Name</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Playtime">Playtime</sys:String>
@@ -133,6 +145,7 @@
     <sys:String x:Key="LOCPlayAch_Button_Refresh">Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Reset">Reset</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_ResetAll">Reset all</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Run">Run</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Save">Save</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Search">Search</sys:String>
 
@@ -185,7 +198,14 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_IncludeInRefreshesAndRefresh">Include in Refreshes and Refresh Selected Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">Open Game in Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">Achievements Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_OpenFriendsOverview">Friends Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">Open Game in Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">Ignore Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UnignoreFriend">Unignore Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend_Confirm">Ignore {0}? Their cached friend achievement data will be deleted and they will be skipped during friend refreshes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UseFullLibrary">Use Full Library</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_UseSharedLibrary">Use Shared Library</sys:String>
+    <sys:String x:Key="LOCPlayAch_CloseView">Close View</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RaGameId_InvalidId">Please enter a valid positive integer game ID.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XeniaTitleId_InvalidId">Please enter a valid 8-character hexadecimal Xenia TitleID.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ShadPS4MatchId_InvalidId">Please enter a valid ShadPS4 match ID such as CUSA00432 or NPWR12345_00.</sys:String>
@@ -194,6 +214,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">Please enter a valid PSN NP Communication ID such as NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">Please enter a valid Xbox Title ID (8-character hex or decimal).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Refresh Single Game</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Refresh Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Refresh in Progress]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Refresh Selected Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Set Capstone</sys:String>
@@ -401,6 +422,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_RefreshMode_Custom">Custom Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Favorites">Refresh Favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Full">Full Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsFull">Friends Full Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsCustom">Friends Custom Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsInstalled">Friends Installed Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsRecent">Friends Recent Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsSelectedGame">Friends Selected Game Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshMode_FriendsShared">Friends Shared Refresh</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Installed">Refresh Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Missing">Refresh Missing</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshMode_Recent">Recent Refresh</sys:String>
@@ -409,6 +436,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Custom">Custom</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Favorites">Favorites</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Full">Full</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsFull">Full</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsCustom">Custom</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsInstalled">Installed</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsRecent">Recent</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsSelectedGame">Selected</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsShared">Shared</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">Installed</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Missing</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Recent">Recent</sys:String>
@@ -422,6 +455,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Status_NoAchievementsCached">No achievements cached. Click 'Refresh All' to refresh your games.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Refresh complete!</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix">Some platforms require authentication.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Status_FriendsRefreshCompleteWithModeAndCount">{0} friends refresh complete: {1} friend game checks refreshed</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteWithModeAndCount">{0} refresh complete: {1} games refreshed</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Refreshing">Refreshing...</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Starting">Starting...</sys:String>
@@ -446,6 +480,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ButtonPreview">Button</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Cache_ProgressClearing">Clearing cached achievement data...</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_ClearDescription">Remove cached achievement data. Refresh again to rebuild it from providers.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ClearUnownedFriendData_Description">Remove discovered unowned friend games and their cached images. Owned and shared friend data is kept.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Description">Clear cached achievement records without touching icon files.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CachedAchievementData_Title">Cached Achievement Data</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CompactListPreview">Compact List</sys:String>
@@ -453,6 +488,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_CompactUnlockedListPreview">Compact Unlocked List</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSection">Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Display_FriendsOverviewSection">Friends Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
@@ -582,11 +618,14 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateAndTime">Date and time</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_DateOnly">Date only</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplayMode_Relative">Relative</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_DateDisplay">Date format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LastPlayedDateDisplay">Last played format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UnlockDateDisplay">Unlock date format</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsOverview">Enable Friends Overview (Steam)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendsOverviewHideSpoilers">Hide friend spoilers until I unlock the achievement</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Preserve full-resolution achievement icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Saves cached icons at their original resolution instead of the optimized 128px cache mode. This uses more disk space.</sys:String>
@@ -606,6 +645,10 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_ManualAggregators">Manual &amp; Aggregators</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderGroup_Other">Other</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ProviderServicedByFormat">Uses {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Friends">Friends</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Toggle Full Library to include a friend's games outside your library, or ignore friends to skip them.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">Refresh Friends List</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_SteamId">Steam ID</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill missing metadata. Requires Exophase authentication.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity">Use Data for Azeroth for WoW Rarity</sys:String>
@@ -784,6 +827,44 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Overview_ProviderDistribution">Achievements by Platform</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_RarityPieChart">Achievements by Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_TrophyPieChart">Achievements by Trophy</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_Title">Friends Overview</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_Friends">Friends</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_Games">Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_FriendSummaries">Friend Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_GameSummaries">Game Summaries</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SearchFriends">Search Friends</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_AllProviders">All Providers</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_TypeFilter">Type</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_CategoryFilter">Category</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearSelection">Clear Selection</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedFriendAchievements">{0} Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievements">{0} Achievements</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedFriendGameAchievements">{0} - {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_AchievementCount">{0:N0} shown</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectedGameAchievementCount">({0}/{1} {2})</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_Refresh">Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_Refreshing">Refreshing friends...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshingShort">Refreshing...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendLibrary_FullWarning">Using the full library discovers this friend's Steam games outside your Playnite library and may cache a large amount of provider-only achievement data.&#10;&#10;Enable this?</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_None">No unowned friend game data is cached.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Confirm">Clear unowned friend game data?&#10;&#10;This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:N0} friend ownership rows, {3:N0} friend progress rows, {4:N0} achievement rows, and {5:N0} definition-state rows. Owned/shared friend data and your current-user cache will be kept.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_ClearUnowned_Done">Cleared {0:N0} provider-only games and {1:N0} friend progress rows.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_NoData">No friend achievement data yet.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_LoadFailed">Failed to load friend achievement data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_RefreshFailed">Friend refresh failed.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_NotAvailable">Friends Overview is not available.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectGameForRefresh">Select a game before refreshing this friend game.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsOverview_SelectTargetForRefresh">Select a friend or game before refreshing selected friend data.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_Header">Custom Friends Refresh</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectedGameScope">Selected game: {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SummaryFormat">Platforms: {0} | Scope: {1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectionHint">Leave unselected to include all. Selections narrow the chosen scope.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_ShowLibraryGames">Show my full library instead of shared games</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders">No authenticated friend-capable platforms are available.</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Achievements">Refreshing friend achievements {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Friends">Refreshing {0} friends...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Ownership">Refreshing friend libraries {0}/{1}...</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Definitions">Checking friend game definitions {0}/{1}...</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->

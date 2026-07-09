@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
 using Playnite.SDK;
@@ -21,6 +22,7 @@ namespace PlayniteAchievements.Providers
         bool IsCapable(Game game);
         bool IsAuthenticated { get; }
         ISessionManager AuthSession { get; }
+        IFriendsProvider Friends { get; }
         Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
             Action<Game> onGameStarting,

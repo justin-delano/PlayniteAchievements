@@ -36,6 +36,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public const string Provider = "Provider";
         public const string Progress = "Progress";
         public const string AchievementCount = "AchievementCount";
+        public const string SharedGamesCount = "SharedGamesCount";
         public const string Status = "Status";
         public const string RarityPercent = "RarityPercent";
         public const string Points = "Points";
@@ -237,6 +238,74 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 DynamicThemeViewKeys.All,
                 DynamicThemeViewKeys.All,
                 DynamicThemeViewKeys.LastUnlock,
+                DynamicThemeViewKeys.Descending)
+        {
+        }
+    }
+
+    internal sealed class FriendScopeViewState
+    {
+        private string _providerKey = DynamicThemeViewKeys.All;
+        private string _userKey = DynamicThemeViewKeys.All;
+        private string _gameKey = DynamicThemeViewKeys.All;
+
+        public string ProviderKey
+        {
+            get => _providerKey;
+            set => _providerKey = string.IsNullOrWhiteSpace(value) ? DynamicThemeViewKeys.All : value;
+        }
+
+        public string UserKey
+        {
+            get => _userKey;
+            set => _userKey = string.IsNullOrWhiteSpace(value) ? DynamicThemeViewKeys.All : value;
+        }
+
+        public string GameKey
+        {
+            get => _gameKey;
+            set => _gameKey = string.IsNullOrWhiteSpace(value) ? DynamicThemeViewKeys.All : value;
+        }
+
+        public void Reset()
+        {
+            ProviderKey = DynamicThemeViewKeys.All;
+            UserKey = DynamicThemeViewKeys.All;
+            GameKey = DynamicThemeViewKeys.All;
+        }
+    }
+
+    internal sealed class FriendSummaryViewState : DynamicThemeListViewState
+    {
+        public FriendSummaryViewState()
+            : base(
+                DynamicThemeViewKeys.All,
+                DynamicThemeViewKeys.All,
+                DynamicThemeViewKeys.LastUnlock,
+                DynamicThemeViewKeys.Descending)
+        {
+        }
+    }
+
+    internal sealed class FriendGameSummaryViewState : DynamicThemeListViewState
+    {
+        public FriendGameSummaryViewState()
+            : base(
+                DynamicThemeViewKeys.All,
+                DynamicThemeViewKeys.All,
+                DynamicThemeViewKeys.LastUnlock,
+                DynamicThemeViewKeys.Descending)
+        {
+        }
+    }
+
+    internal sealed class FriendAchievementViewState : DynamicThemeListViewState
+    {
+        public FriendAchievementViewState()
+            : base(
+                DynamicThemeViewKeys.All,
+                DynamicThemeViewKeys.All,
+                DynamicThemeViewKeys.UnlockTime,
                 DynamicThemeViewKeys.Descending)
         {
         }

@@ -11,6 +11,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Base
 {
@@ -574,6 +575,45 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.DynamicGameSummariesSortDirectionOptions)] = nameof(DynamicGameSummariesSortDirectionOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicGameProgressFilterOptions)] = nameof(DynamicGameProgressFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicGameActivityFilterOptions)] = nameof(DynamicGameActivityFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummaries)] = nameof(DynamicFriendSummaries),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummaries)] = nameof(DynamicFriendGameSummaries),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievements)] = nameof(DynamicFriendAchievements),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeProviderKey)] = nameof(DynamicFriendScopeProviderKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeProviderLabel)] = nameof(DynamicFriendScopeProviderLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeUserKey)] = nameof(DynamicFriendScopeUserKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeUserLabel)] = nameof(DynamicFriendScopeUserLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameKey)] = nameof(DynamicFriendScopeGameKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameLabel)] = nameof(DynamicFriendScopeGameLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterKey)] = nameof(DynamicFriendSummariesFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterLabel)] = nameof(DynamicFriendSummariesFilterLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortKey)] = nameof(DynamicFriendSummariesSortKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortLabel)] = nameof(DynamicFriendSummariesSortLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionKey)] = nameof(DynamicFriendSummariesSortDirectionKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionLabel)] = nameof(DynamicFriendSummariesSortDirectionLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterKey)] = nameof(DynamicFriendGameSummariesFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterLabel)] = nameof(DynamicFriendGameSummariesFilterLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortKey)] = nameof(DynamicFriendGameSummariesSortKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortLabel)] = nameof(DynamicFriendGameSummariesSortLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionKey)] = nameof(DynamicFriendGameSummariesSortDirectionKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionLabel)] = nameof(DynamicFriendGameSummariesSortDirectionLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterKey)] = nameof(DynamicFriendAchievementsFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterLabel)] = nameof(DynamicFriendAchievementsFilterLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortKey)] = nameof(DynamicFriendAchievementsSortKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortLabel)] = nameof(DynamicFriendAchievementsSortLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortDirectionKey)] = nameof(DynamicFriendAchievementsSortDirectionKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortDirectionLabel)] = nameof(DynamicFriendAchievementsSortDirectionLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeProviderOptions)] = nameof(DynamicFriendScopeProviderOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeUserOptions)] = nameof(DynamicFriendScopeUserOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameOptions)] = nameof(DynamicFriendScopeGameOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterOptions)] = nameof(DynamicFriendSummariesFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortOptions)] = nameof(DynamicFriendSummariesSortOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionOptions)] = nameof(DynamicFriendSummariesSortDirectionOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterOptions)] = nameof(DynamicFriendGameSummariesFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortOptions)] = nameof(DynamicFriendGameSummariesSortOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionOptions)] = nameof(DynamicFriendGameSummariesSortDirectionOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterOptions)] = nameof(DynamicFriendAchievementsFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortOptions)] = nameof(DynamicFriendAchievementsSortOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortDirectionOptions)] = nameof(DynamicFriendAchievementsSortDirectionOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievements)] = nameof(DynamicLibraryAchievements),
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsProviderKey)] = nameof(DynamicLibraryAchievementsProviderKey),
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsProviderLabel)] = nameof(DynamicLibraryAchievementsProviderLabel),
@@ -610,6 +650,19 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesFilterCommand)] = nameof(SetDynamicGameSummariesFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SortDynamicGameSummariesCommand)] = nameof(SortDynamicGameSummariesCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesSortDirectionCommand)] = nameof(SetDynamicGameSummariesSortDirectionCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeProviderCommand)] = nameof(SetDynamicFriendScopeProviderCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeUserCommand)] = nameof(SetDynamicFriendScopeUserCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeGameCommand)] = nameof(SetDynamicFriendScopeGameCommand),
+                [nameof(PlayniteAchievementsSettings.ResetDynamicFriendScopeCommand)] = nameof(ResetDynamicFriendScopeCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendSummariesFilterCommand)] = nameof(SetDynamicFriendSummariesFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SortDynamicFriendSummariesCommand)] = nameof(SortDynamicFriendSummariesCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendSummariesSortDirectionCommand)] = nameof(SetDynamicFriendSummariesSortDirectionCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesFilterCommand)] = nameof(SetDynamicFriendGameSummariesFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SortDynamicFriendGameSummariesCommand)] = nameof(SortDynamicFriendGameSummariesCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesSortDirectionCommand)] = nameof(SetDynamicFriendGameSummariesSortDirectionCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsFilterCommand)] = nameof(SetDynamicFriendAchievementsFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SortDynamicFriendAchievementsCommand)] = nameof(SortDynamicFriendAchievementsCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsSortDirectionCommand)] = nameof(SetDynamicFriendAchievementsSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.ResetDynamicAchievementsCommand)] = nameof(ResetDynamicAchievementsCommand),
                 [nameof(PlayniteAchievementsSettings.ResetDynamicLibraryAchievementsCommand)] = nameof(ResetDynamicLibraryAchievementsCommand),
                 [nameof(PlayniteAchievementsSettings.ResetDynamicGameSummariesCommand)] = nameof(ResetDynamicGameSummariesCommand)
@@ -670,6 +723,45 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(ModernThemeBindings.DynamicGameSummariesSortDirectionOptions)] = nameof(DynamicGameSummariesSortDirectionOptions),
                 [nameof(ModernThemeBindings.DynamicGameProgressFilterOptions)] = nameof(DynamicGameProgressFilterOptions),
                 [nameof(ModernThemeBindings.DynamicGameActivityFilterOptions)] = nameof(DynamicGameActivityFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendSummaries)] = nameof(DynamicFriendSummaries),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummaries)] = nameof(DynamicFriendGameSummaries),
+                [nameof(ModernThemeBindings.DynamicFriendAchievements)] = nameof(DynamicFriendAchievements),
+                [nameof(ModernThemeBindings.DynamicFriendScopeProviderKey)] = nameof(DynamicFriendScopeProviderKey),
+                [nameof(ModernThemeBindings.DynamicFriendScopeProviderLabel)] = nameof(DynamicFriendScopeProviderLabel),
+                [nameof(ModernThemeBindings.DynamicFriendScopeUserKey)] = nameof(DynamicFriendScopeUserKey),
+                [nameof(ModernThemeBindings.DynamicFriendScopeUserLabel)] = nameof(DynamicFriendScopeUserLabel),
+                [nameof(ModernThemeBindings.DynamicFriendScopeGameKey)] = nameof(DynamicFriendScopeGameKey),
+                [nameof(ModernThemeBindings.DynamicFriendScopeGameLabel)] = nameof(DynamicFriendScopeGameLabel),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesFilterKey)] = nameof(DynamicFriendSummariesFilterKey),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesFilterLabel)] = nameof(DynamicFriendSummariesFilterLabel),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesSortKey)] = nameof(DynamicFriendSummariesSortKey),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesSortLabel)] = nameof(DynamicFriendSummariesSortLabel),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesSortDirectionKey)] = nameof(DynamicFriendSummariesSortDirectionKey),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesSortDirectionLabel)] = nameof(DynamicFriendSummariesSortDirectionLabel),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesFilterKey)] = nameof(DynamicFriendGameSummariesFilterKey),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesFilterLabel)] = nameof(DynamicFriendGameSummariesFilterLabel),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesSortKey)] = nameof(DynamicFriendGameSummariesSortKey),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesSortLabel)] = nameof(DynamicFriendGameSummariesSortLabel),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesSortDirectionKey)] = nameof(DynamicFriendGameSummariesSortDirectionKey),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesSortDirectionLabel)] = nameof(DynamicFriendGameSummariesSortDirectionLabel),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsFilterKey)] = nameof(DynamicFriendAchievementsFilterKey),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsFilterLabel)] = nameof(DynamicFriendAchievementsFilterLabel),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsSortKey)] = nameof(DynamicFriendAchievementsSortKey),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsSortLabel)] = nameof(DynamicFriendAchievementsSortLabel),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsSortDirectionKey)] = nameof(DynamicFriendAchievementsSortDirectionKey),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsSortDirectionLabel)] = nameof(DynamicFriendAchievementsSortDirectionLabel),
+                [nameof(ModernThemeBindings.DynamicFriendScopeProviderOptions)] = nameof(DynamicFriendScopeProviderOptions),
+                [nameof(ModernThemeBindings.DynamicFriendScopeUserOptions)] = nameof(DynamicFriendScopeUserOptions),
+                [nameof(ModernThemeBindings.DynamicFriendScopeGameOptions)] = nameof(DynamicFriendScopeGameOptions),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesFilterOptions)] = nameof(DynamicFriendSummariesFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesSortOptions)] = nameof(DynamicFriendSummariesSortOptions),
+                [nameof(ModernThemeBindings.DynamicFriendSummariesSortDirectionOptions)] = nameof(DynamicFriendSummariesSortDirectionOptions),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesFilterOptions)] = nameof(DynamicFriendGameSummariesFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesSortOptions)] = nameof(DynamicFriendGameSummariesSortOptions),
+                [nameof(ModernThemeBindings.DynamicFriendGameSummariesSortDirectionOptions)] = nameof(DynamicFriendGameSummariesSortDirectionOptions),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsFilterOptions)] = nameof(DynamicFriendAchievementsFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsSortOptions)] = nameof(DynamicFriendAchievementsSortOptions),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementsSortDirectionOptions)] = nameof(DynamicFriendAchievementsSortDirectionOptions),
                 [nameof(ModernThemeBindings.DynamicLibraryAchievements)] = nameof(DynamicLibraryAchievements),
                 [nameof(ModernThemeBindings.DynamicLibraryAchievementsProviderKey)] = nameof(DynamicLibraryAchievementsProviderKey),
                 [nameof(ModernThemeBindings.DynamicLibraryAchievementsProviderLabel)] = nameof(DynamicLibraryAchievementsProviderLabel),
@@ -755,6 +847,45 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             nameof(DynamicGameSummariesSortDirectionOptions),
             nameof(DynamicGameProgressFilterOptions),
             nameof(DynamicGameActivityFilterOptions),
+            nameof(DynamicFriendSummaries),
+            nameof(DynamicFriendGameSummaries),
+            nameof(DynamicFriendAchievements),
+            nameof(DynamicFriendScopeProviderKey),
+            nameof(DynamicFriendScopeProviderLabel),
+            nameof(DynamicFriendScopeUserKey),
+            nameof(DynamicFriendScopeUserLabel),
+            nameof(DynamicFriendScopeGameKey),
+            nameof(DynamicFriendScopeGameLabel),
+            nameof(DynamicFriendSummariesFilterKey),
+            nameof(DynamicFriendSummariesFilterLabel),
+            nameof(DynamicFriendSummariesSortKey),
+            nameof(DynamicFriendSummariesSortLabel),
+            nameof(DynamicFriendSummariesSortDirectionKey),
+            nameof(DynamicFriendSummariesSortDirectionLabel),
+            nameof(DynamicFriendGameSummariesFilterKey),
+            nameof(DynamicFriendGameSummariesFilterLabel),
+            nameof(DynamicFriendGameSummariesSortKey),
+            nameof(DynamicFriendGameSummariesSortLabel),
+            nameof(DynamicFriendGameSummariesSortDirectionKey),
+            nameof(DynamicFriendGameSummariesSortDirectionLabel),
+            nameof(DynamicFriendAchievementsFilterKey),
+            nameof(DynamicFriendAchievementsFilterLabel),
+            nameof(DynamicFriendAchievementsSortKey),
+            nameof(DynamicFriendAchievementsSortLabel),
+            nameof(DynamicFriendAchievementsSortDirectionKey),
+            nameof(DynamicFriendAchievementsSortDirectionLabel),
+            nameof(DynamicFriendScopeProviderOptions),
+            nameof(DynamicFriendScopeUserOptions),
+            nameof(DynamicFriendScopeGameOptions),
+            nameof(DynamicFriendSummariesFilterOptions),
+            nameof(DynamicFriendSummariesSortOptions),
+            nameof(DynamicFriendSummariesSortDirectionOptions),
+            nameof(DynamicFriendGameSummariesFilterOptions),
+            nameof(DynamicFriendGameSummariesSortOptions),
+            nameof(DynamicFriendGameSummariesSortDirectionOptions),
+            nameof(DynamicFriendAchievementsFilterOptions),
+            nameof(DynamicFriendAchievementsSortOptions),
+            nameof(DynamicFriendAchievementsSortDirectionOptions),
             nameof(DynamicLibraryAchievements),
             nameof(DynamicLibraryAchievementsProviderKey),
             nameof(DynamicLibraryAchievementsProviderLabel),
@@ -1140,6 +1271,180 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public ObservableCollection<DynamicThemeOption> DynamicGameActivityFilterOptions => _modernThemeOverride?.DynamicGameActivityFilterOptions ?? _settings?.DynamicGameActivityFilterOptions;
 
+        public ObservableCollection<FriendSummaryItem> DynamicFriendSummaries => _modernThemeOverride?.DynamicFriendSummaries ?? _settings?.DynamicFriendSummaries;
+
+        public ObservableCollection<FriendGameSummaryItem> DynamicFriendGameSummaries => _modernThemeOverride?.DynamicFriendGameSummaries ?? _settings?.DynamicFriendGameSummaries;
+
+        public ObservableCollection<FriendAchievementDisplayItem> DynamicFriendAchievements => _modernThemeOverride?.DynamicFriendAchievements ?? _settings?.DynamicFriendAchievements;
+
+        public string DynamicFriendScopeProviderKey
+        {
+            get => _modernThemeOverride?.DynamicFriendScopeProviderKey ?? _settings?.DynamicFriendScopeProviderKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendScopeProviderKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendScopeProviderKey = value;
+            }
+        }
+
+        public string DynamicFriendScopeProviderLabel => _modernThemeOverride?.DynamicFriendScopeProviderLabel ?? _settings?.DynamicFriendScopeProviderLabel ?? DynamicThemeViewKeys.All;
+
+        public string DynamicFriendScopeUserKey
+        {
+            get => _modernThemeOverride?.DynamicFriendScopeUserKey ?? _settings?.DynamicFriendScopeUserKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendScopeUserKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendScopeUserKey = value;
+            }
+        }
+
+        public string DynamicFriendScopeUserLabel => _modernThemeOverride?.DynamicFriendScopeUserLabel ?? _settings?.DynamicFriendScopeUserLabel ?? DynamicThemeViewKeys.All;
+
+        public string DynamicFriendScopeGameKey
+        {
+            get => _modernThemeOverride?.DynamicFriendScopeGameKey ?? _settings?.DynamicFriendScopeGameKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendScopeGameKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendScopeGameKey = value;
+            }
+        }
+
+        public string DynamicFriendScopeGameLabel => _modernThemeOverride?.DynamicFriendScopeGameLabel ?? _settings?.DynamicFriendScopeGameLabel ?? DynamicThemeViewKeys.All;
+
+        public string DynamicFriendSummariesFilterKey
+        {
+            get => _modernThemeOverride?.DynamicFriendSummariesFilterKey ?? _settings?.DynamicFriendSummariesFilterKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendSummariesFilterKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendSummariesFilterKey = value;
+            }
+        }
+
+        public string DynamicFriendSummariesFilterLabel => _modernThemeOverride?.DynamicFriendSummariesFilterLabel ?? _settings?.DynamicFriendSummariesFilterLabel ?? DynamicThemeViewKeys.All;
+
+        public string DynamicFriendSummariesSortKey
+        {
+            get => _modernThemeOverride?.DynamicFriendSummariesSortKey ?? _settings?.DynamicFriendSummariesSortKey ?? DynamicThemeViewKeys.LastUnlock;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendSummariesSortKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendSummariesSortKey = value;
+            }
+        }
+
+        public string DynamicFriendSummariesSortLabel => _modernThemeOverride?.DynamicFriendSummariesSortLabel ?? _settings?.DynamicFriendSummariesSortLabel ?? DynamicThemeViewKeys.LastUnlock;
+
+        public string DynamicFriendSummariesSortDirectionKey
+        {
+            get => _modernThemeOverride?.DynamicFriendSummariesSortDirectionKey ?? _settings?.DynamicFriendSummariesSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendSummariesSortDirectionKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendSummariesSortDirectionKey = value;
+            }
+        }
+
+        public string DynamicFriendSummariesSortDirectionLabel => _modernThemeOverride?.DynamicFriendSummariesSortDirectionLabel ?? _settings?.DynamicFriendSummariesSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        public string DynamicFriendGameSummariesFilterKey
+        {
+            get => _modernThemeOverride?.DynamicFriendGameSummariesFilterKey ?? _settings?.DynamicFriendGameSummariesFilterKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendGameSummariesFilterKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendGameSummariesFilterKey = value;
+            }
+        }
+
+        public string DynamicFriendGameSummariesFilterLabel => _modernThemeOverride?.DynamicFriendGameSummariesFilterLabel ?? _settings?.DynamicFriendGameSummariesFilterLabel ?? DynamicThemeViewKeys.All;
+
+        public string DynamicFriendGameSummariesSortKey
+        {
+            get => _modernThemeOverride?.DynamicFriendGameSummariesSortKey ?? _settings?.DynamicFriendGameSummariesSortKey ?? DynamicThemeViewKeys.LastUnlock;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendGameSummariesSortKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendGameSummariesSortKey = value;
+            }
+        }
+
+        public string DynamicFriendGameSummariesSortLabel => _modernThemeOverride?.DynamicFriendGameSummariesSortLabel ?? _settings?.DynamicFriendGameSummariesSortLabel ?? DynamicThemeViewKeys.LastUnlock;
+
+        public string DynamicFriendGameSummariesSortDirectionKey
+        {
+            get => _modernThemeOverride?.DynamicFriendGameSummariesSortDirectionKey ?? _settings?.DynamicFriendGameSummariesSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendGameSummariesSortDirectionKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendGameSummariesSortDirectionKey = value;
+            }
+        }
+
+        public string DynamicFriendGameSummariesSortDirectionLabel => _modernThemeOverride?.DynamicFriendGameSummariesSortDirectionLabel ?? _settings?.DynamicFriendGameSummariesSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        public string DynamicFriendAchievementsFilterKey
+        {
+            get => _modernThemeOverride?.DynamicFriendAchievementsFilterKey ?? _settings?.DynamicFriendAchievementsFilterKey ?? DynamicThemeViewKeys.All;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendAchievementsFilterKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendAchievementsFilterKey = value;
+            }
+        }
+
+        public string DynamicFriendAchievementsFilterLabel => _modernThemeOverride?.DynamicFriendAchievementsFilterLabel ?? _settings?.DynamicFriendAchievementsFilterLabel ?? DynamicThemeViewKeys.All;
+
+        public string DynamicFriendAchievementsSortKey
+        {
+            get => _modernThemeOverride?.DynamicFriendAchievementsSortKey ?? _settings?.DynamicFriendAchievementsSortKey ?? DynamicThemeViewKeys.UnlockTime;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendAchievementsSortKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendAchievementsSortKey = value;
+            }
+        }
+
+        public string DynamicFriendAchievementsSortLabel => _modernThemeOverride?.DynamicFriendAchievementsSortLabel ?? _settings?.DynamicFriendAchievementsSortLabel ?? DynamicThemeViewKeys.UnlockTime;
+
+        public string DynamicFriendAchievementsSortDirectionKey
+        {
+            get => _modernThemeOverride?.DynamicFriendAchievementsSortDirectionKey ?? _settings?.DynamicFriendAchievementsSortDirectionKey ?? DynamicThemeViewKeys.Descending;
+            set
+            {
+                if (_settings != null) _settings.DynamicFriendAchievementsSortDirectionKey = value;
+                else if (_modernThemeOverride != null) _modernThemeOverride.DynamicFriendAchievementsSortDirectionKey = value;
+            }
+        }
+
+        public string DynamicFriendAchievementsSortDirectionLabel => _modernThemeOverride?.DynamicFriendAchievementsSortDirectionLabel ?? _settings?.DynamicFriendAchievementsSortDirectionLabel ?? DynamicThemeViewKeys.Descending;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeProviderOptions => _modernThemeOverride?.DynamicFriendScopeProviderOptions ?? _settings?.DynamicFriendScopeProviderOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeUserOptions => _modernThemeOverride?.DynamicFriendScopeUserOptions ?? _settings?.DynamicFriendScopeUserOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendScopeGameOptions => _modernThemeOverride?.DynamicFriendScopeGameOptions ?? _settings?.DynamicFriendScopeGameOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesFilterOptions => _modernThemeOverride?.DynamicFriendSummariesFilterOptions ?? _settings?.DynamicFriendSummariesFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesSortOptions => _modernThemeOverride?.DynamicFriendSummariesSortOptions ?? _settings?.DynamicFriendSummariesSortOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesSortDirectionOptions => _modernThemeOverride?.DynamicFriendSummariesSortDirectionOptions ?? _settings?.DynamicFriendSummariesSortDirectionOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesFilterOptions => _modernThemeOverride?.DynamicFriendGameSummariesFilterOptions ?? _settings?.DynamicFriendGameSummariesFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesSortOptions => _modernThemeOverride?.DynamicFriendGameSummariesSortOptions ?? _settings?.DynamicFriendGameSummariesSortOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesSortDirectionOptions => _modernThemeOverride?.DynamicFriendGameSummariesSortDirectionOptions ?? _settings?.DynamicFriendGameSummariesSortDirectionOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsFilterOptions => _modernThemeOverride?.DynamicFriendAchievementsFilterOptions ?? _settings?.DynamicFriendAchievementsFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsSortOptions => _modernThemeOverride?.DynamicFriendAchievementsSortOptions ?? _settings?.DynamicFriendAchievementsSortOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsSortDirectionOptions => _modernThemeOverride?.DynamicFriendAchievementsSortDirectionOptions ?? _settings?.DynamicFriendAchievementsSortDirectionOptions;
+
         public List<AchievementDetail> DynamicLibraryAchievements => _modernThemeOverride?.DynamicLibraryAchievements ?? _settings?.DynamicLibraryAchievements ?? EmptyAchievementList;
 
         public string DynamicLibraryAchievementsProviderKey
@@ -1305,6 +1610,32 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         public System.Windows.Input.ICommand SortDynamicGameSummariesCommand => _settings?.SortDynamicGameSummariesCommand;
 
         public System.Windows.Input.ICommand SetDynamicGameSummariesSortDirectionCommand => _settings?.SetDynamicGameSummariesSortDirectionCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendScopeProviderCommand => _settings?.SetDynamicFriendScopeProviderCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendScopeUserCommand => _settings?.SetDynamicFriendScopeUserCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendScopeGameCommand => _settings?.SetDynamicFriendScopeGameCommand;
+
+        public System.Windows.Input.ICommand ResetDynamicFriendScopeCommand => _settings?.ResetDynamicFriendScopeCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendSummariesFilterCommand => _settings?.SetDynamicFriendSummariesFilterCommand;
+
+        public System.Windows.Input.ICommand SortDynamicFriendSummariesCommand => _settings?.SortDynamicFriendSummariesCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendSummariesSortDirectionCommand => _settings?.SetDynamicFriendSummariesSortDirectionCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendGameSummariesFilterCommand => _settings?.SetDynamicFriendGameSummariesFilterCommand;
+
+        public System.Windows.Input.ICommand SortDynamicFriendGameSummariesCommand => _settings?.SortDynamicFriendGameSummariesCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendGameSummariesSortDirectionCommand => _settings?.SetDynamicFriendGameSummariesSortDirectionCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendAchievementsFilterCommand => _settings?.SetDynamicFriendAchievementsFilterCommand;
+
+        public System.Windows.Input.ICommand SortDynamicFriendAchievementsCommand => _settings?.SortDynamicFriendAchievementsCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendAchievementsSortDirectionCommand => _settings?.SetDynamicFriendAchievementsSortDirectionCommand;
 
         public System.Windows.Input.ICommand ResetDynamicAchievementsCommand => _settings?.ResetDynamicAchievementsCommand;
 

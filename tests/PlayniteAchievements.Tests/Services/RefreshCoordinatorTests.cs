@@ -246,6 +246,7 @@ namespace PlayniteAchievements.Services.Tests
             public bool IsAuthenticated => true;
 
             public ISessionManager AuthSession => null;
+            public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
 
             public Task<RebuildPayload> RefreshAsync(
                 IReadOnlyList<Playnite.SDK.Models.Game> gamesToRefresh,

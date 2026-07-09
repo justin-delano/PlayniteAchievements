@@ -66,6 +66,8 @@ namespace PlayniteAchievements.Providers.GOG
 
         public ISessionManager AuthSession => _sessionManager;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         public bool IsCapable(Game game) =>
             IsGogCapable(game);
 

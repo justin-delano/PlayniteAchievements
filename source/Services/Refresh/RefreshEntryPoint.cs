@@ -168,7 +168,8 @@ namespace PlayniteAchievements.Services
                     GameIds = normalizedGameIds,
                     SingleGameId = request.SingleGameId,
                     ForceIconRefresh = request.ForceIconRefresh,
-                    CustomOptions = request.CustomOptions
+                    CustomOptions = request.CustomOptions,
+                    CustomFriendOptions = request.CustomFriendOptions
                 };
             }
 
@@ -179,7 +180,8 @@ namespace PlayniteAchievements.Services
                     Mode = request.Mode.Value,
                     SingleGameId = request.SingleGameId,
                     ForceIconRefresh = request.ForceIconRefresh,
-                    CustomOptions = request.CustomOptions
+                    CustomOptions = request.CustomOptions,
+                    CustomFriendOptions = request.CustomFriendOptions
                 };
             }
 
@@ -190,7 +192,8 @@ namespace PlayniteAchievements.Services
                     ModeKey = request.ModeKey.Trim(),
                     SingleGameId = request.SingleGameId,
                     ForceIconRefresh = request.ForceIconRefresh,
-                    CustomOptions = request.CustomOptions
+                    CustomOptions = request.CustomOptions,
+                    CustomFriendOptions = request.CustomFriendOptions
                 };
             }
 
@@ -199,7 +202,8 @@ namespace PlayniteAchievements.Services
                 Mode = RefreshModeType.Recent,
                 SingleGameId = request.SingleGameId,
                 ForceIconRefresh = request.ForceIconRefresh,
-                CustomOptions = request.CustomOptions
+                CustomOptions = request.CustomOptions,
+                CustomFriendOptions = request.CustomFriendOptions
             };
         }
     }

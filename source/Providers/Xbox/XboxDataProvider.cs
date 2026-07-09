@@ -65,6 +65,8 @@ namespace PlayniteAchievements.Providers.Xbox
 
         public ISessionManager AuthSession => _sessionManager;
 
+        public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
+
         /// <summary>
         /// Determines if this provider can handle the specified game.
         /// </summary>

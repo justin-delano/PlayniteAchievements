@@ -21,6 +21,7 @@ namespace PlayniteAchievements.Views
     {
         private readonly CapstoneViewModel _viewModel;
         private readonly PlayniteAchievementsSettings _settings;
+        private List<CapstoneOptionItem> _preSortAchievementOptions;
 
         public event EventHandler<CapstoneChangedEventArgs> CapstoneChanged;
 
@@ -181,9 +182,15 @@ namespace PlayniteAchievements.Views
 
         private void DataGrid_Sorting(object sender, DataGridSortingEventArgs e)
         {
-            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e);
-            if (sortDirection == null)
+            if (e.Column?.SortDirection == null && _preSortAchievementOptions == null)
             {
+                _preSortAchievementOptions = _viewModel.AchievementOptions.ToList();
+            }
+
+            var sortDirection = DataGridSortingHelper.HandleSorting(sender, e);
+            if (!sortDirection.HasValue)
+            {
+                RestorePreSortOrder();
                 return;
             }
 
@@ -206,6 +213,20 @@ namespace PlayniteAchievements.Views
             PlayniteAchievements.Common.CollectionHelper.SynchronizeCollection(
                 _viewModel.AchievementOptions,
                 items);
+        }
+
+        private void RestorePreSortOrder()
+        {
+            if (_preSortAchievementOptions == null || _preSortAchievementOptions.Count == 0)
+            {
+                _preSortAchievementOptions = null;
+                return;
+            }
+
+            PlayniteAchievements.Common.CollectionHelper.SynchronizeCollection(
+                _viewModel.AchievementOptions,
+                _preSortAchievementOptions);
+            _preSortAchievementOptions = null;
         }
     }
 }
