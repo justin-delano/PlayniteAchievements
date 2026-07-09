@@ -494,8 +494,7 @@
 
         <ItemsControl Grid.Column="0"
                       ItemsSource="{Binding ControlBar.LeadingItems, ElementName=Root}"
-                      VerticalAlignment="Center"
-                      Margin="0,0,6,0">
+                      VerticalAlignment="Center">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <StackPanel Orientation="Horizontal"/>
