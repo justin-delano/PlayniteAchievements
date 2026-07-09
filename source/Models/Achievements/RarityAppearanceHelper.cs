@@ -244,7 +244,8 @@ namespace PlayniteAchievements.Models.Achievements
         public static bool IsAppearanceSettingPropertyName(string propertyName)
         {
             return string.Equals(propertyName, nameof(PersistedSettings.RarityColors), StringComparison.Ordinal) ||
-                   string.Equals(propertyName, nameof(PersistedSettings.UseUniformRarityBadges), StringComparison.Ordinal);
+                   string.Equals(propertyName, nameof(PersistedSettings.UseUniformRarityBadges), StringComparison.Ordinal) ||
+                   string.Equals(propertyName, nameof(PersistedSettings.UseTrophiesForRarity), StringComparison.Ordinal);
         }
 
         private static void ApplyGeneratedBadgeResources(ResourceDictionary resources, PersistedSettings settings)
@@ -333,7 +334,9 @@ namespace PlayniteAchievements.Models.Achievements
 
         private static DrawingImage CreateBadgeImage(RarityTier tier, string geometryKey, PersistedSettings settings)
         {
-            var geometry = TryGetDefaultGeometry(geometryKey);
+            var geometry = settings?.UseTrophiesForRarity == true
+                ? (TryGetDefaultTrophyGeometry("GeoTrophy") ?? TryGetDefaultGeometry(geometryKey))
+                : TryGetDefaultGeometry(geometryKey);
             if (geometry == null)
             {
                 return TryGetDefaultImage(GetIconKey(tier, settings?.UseUniformRarityBadges ?? false)) as DrawingImage;
