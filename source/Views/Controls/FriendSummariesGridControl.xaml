@@ -143,12 +143,6 @@
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"
                                 helpers:ColumnVisibilityHelper.ColumnKey="FriendSummarySharedGames"/>
             <DataGridTextColumn Width="*" MinWidth="56" CanUserResize="True"
-                                Header="{DynamicResource LOCPlayAch_Column_GamesWithUnlocks}"
-                                Binding="{Binding GamesWithUnlocksCount, StringFormat={}{0:N0}}"
-                                SortMemberPath="GamesWithUnlocksCount"
-                                ElementStyle="{StaticResource FriendSummaryTextStyle}"
-                                helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryGamesWithUnlocks"/>
-            <DataGridTextColumn Width="*" MinWidth="56" CanUserResize="True"
                                 Header="{DynamicResource LOCPlayAch_Column_Unlocks}"
                                 Binding="{Binding UnlockedAchievementsCount, StringFormat={}{0:N0}}"
                                 SortMemberPath="UnlockedAchievementsCount"
@@ -178,25 +172,6 @@
                                 SortMemberPath="CollectionLevel"
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"
                                 helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryCollectionLevel"/>
-
-            <DataGridTemplateColumn Width="*" MinWidth="72" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_LastUnlock}"
-                                    SortMemberPath="LastUnlockUtc"
-                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryLastUnlock">
-                <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                        <TextBlock Style="{StaticResource FriendSummaryTextStyle}"
-                                   Margin="10,6">
-                            <TextBlock.Text>
-                                <MultiBinding Converter="{StaticResource DateDisplayMode}">
-                                    <Binding Path="LastUnlockLocal"/>
-                                    <Binding Path="DateDisplayMode" RelativeSource="{RelativeSource AncestorType=controls:FriendSummariesGridControl}"/>
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
-                    </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
         </DataGrid.Columns>
     </DataGrid>
     </Grid>

@@ -44,7 +44,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 (DynamicThemeViewKeys.Provider, "LOCPlayAch_ManageAchievements_Overview_Provider", DynamicThemeViewKeys.Provider),
                 (DynamicThemeViewKeys.Progress, "LOCPlayAch_Progress", DynamicThemeViewKeys.Progress),
                 (DynamicThemeViewKeys.AchievementCount, "LOCPlayAch_Column_Total", "Achievement Count"),
-                (DynamicThemeViewKeys.SharedGamesCount, "LOCPlayAch_Column_SharedGames", "Shared Games"),
+                (DynamicThemeViewKeys.SharedGamesCount, "LOCPlayAch_Column_SharedGames", "Games"),
                 (DynamicThemeViewKeys.Status, "LOCPlayAch_Column_Status", DynamicThemeViewKeys.Status),
                 (DynamicThemeViewKeys.RarityPercent, "LOCPlayAch_Column_RarityPercent", "Rarity Percent"),
                 (DynamicThemeViewKeys.Points, "LOCPlayAch_Column_Points", DynamicThemeViewKeys.Points),

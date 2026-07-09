@@ -117,14 +117,11 @@
     <sys:String x:Key="LOCPlayAch_Column_Game">Game</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Provider">Provider</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Scores">Scores</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_SharedGames">Shared Games</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_GamesWithUnlocks">Games With Unlocks</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_SharedGames">Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Unlocks">Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastUnlock">Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastError">Last Error</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Ignore">Ignore</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_FriendsWithUnlocks">Friends With Unlocks</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_LastFriendUnlock">Last Friend Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Last Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">Name</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Playtime">Playtime</sys:String>

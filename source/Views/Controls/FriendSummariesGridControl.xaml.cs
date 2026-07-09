@@ -28,13 +28,11 @@ namespace PlayniteAchievements.Views.Controls
                 ["Avatar"] = true,
                 ["FriendSummaryFriend"] = true,
                 ["FriendSummarySharedGames"] = true,
-                ["FriendSummaryGamesWithUnlocks"] = true,
                 ["FriendSummaryUnlocks"] = true,
                 ["FriendSummaryPrestigeScore"] = true,
                 ["FriendSummaryCollectionScore"] = true,
                 ["FriendSummaryPrestigeLevel"] = false,
-                ["FriendSummaryCollectionLevel"] = false,
-                ["FriendSummaryLastUnlock"] = true
+                ["FriendSummaryCollectionLevel"] = false
             };
 
         public static readonly DependencyProperty ItemsSourceProperty =

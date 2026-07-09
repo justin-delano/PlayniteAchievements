@@ -386,40 +386,4 @@ namespace PlayniteAchievements.Views.Converters
         }
     }
 
-    public class DataGridCompletedBorderThicknessConverter : IMultiValueConverter
-    {
-        private static readonly Thickness MiddleColumnThickness = new Thickness(0, 2, 0, 2);
-
-        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
-        {
-            var cell = values != null && values.Length > 0 ? values[0] as DataGridCell : null;
-            var grid = values != null
-                ? values.OfType<DataGrid>().FirstOrDefault()
-                : null;
-            var column = cell?.Column;
-            if (column == null || grid?.Columns == null)
-            {
-                return MiddleColumnThickness;
-            }
-
-            var visibleColumns = grid.Columns
-                .Where(item => item?.Visibility == Visibility.Visible)
-                .OrderBy(item => item.DisplayIndex)
-                .ToList();
-            if (visibleColumns.Count == 0)
-            {
-                return MiddleColumnThickness;
-            }
-
-            var left = ReferenceEquals(column, visibleColumns[0]) ? 2d : 0d;
-            var right = ReferenceEquals(column, visibleColumns[visibleColumns.Count - 1]) ? 2d : 0d;
-            return new Thickness(left, 2, right, 2);
-        }
-
-        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
 }
