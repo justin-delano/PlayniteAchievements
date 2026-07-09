@@ -29,6 +29,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [IgnoreDataMember]
         public string FriendGameScopeKey => FriendOverviewProjection.BuildGameUnlockKey(
             ProviderKey,
+            ProviderGameKey,
             AppId,
             GameId != Guid.Empty ? GameId : (Guid?)null) ?? FriendOverviewProjection.AllScopeKey;
 
@@ -113,6 +114,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         /// identified by its Playnite game id.
         /// </summary>
         public int AppId { get; set; }
+
+        public string ProviderGameKey { get; set; }
 
         public int CollectionScore { get; set; }
 

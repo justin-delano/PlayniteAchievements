@@ -20,7 +20,6 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             var ignoredIds = settings.GetIgnoredSteamIds();
-            var fullLibraryIds = settings.GetFullLibrarySteamIds();
             var itemsById = new Dictionary<string, SteamFriendListItem>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var friend in activeFriends ?? Enumerable.Empty<FriendIdentity>())
@@ -36,8 +35,7 @@ namespace PlayniteAchievements.Providers.Steam
                     SteamId = id,
                     DisplayName = string.IsNullOrWhiteSpace(friend.DisplayName) ? id : friend.DisplayName,
                     AvatarUrl = ResolveAvatarSource(friend.AvatarPath, friend.AvatarUrl),
-                    IsIgnored = false,
-                    UseFullLibrary = fullLibraryIds.Contains(id)
+                    IsIgnored = false
                 };
             }
 
@@ -54,26 +52,7 @@ namespace PlayniteAchievements.Providers.Steam
                     SteamId = id,
                     DisplayName = string.IsNullOrWhiteSpace(ignored.DisplayName) ? id : ignored.DisplayName,
                     AvatarUrl = ignored.AvatarUrl,
-                    IsIgnored = true,
-                    UseFullLibrary = fullLibraryIds.Contains(id)
-                };
-            }
-
-            foreach (var fullLibrary in settings.FullLibraryFriends ?? Enumerable.Empty<SteamFullLibraryFriend>())
-            {
-                var id = fullLibrary?.SteamId?.Trim();
-                if (string.IsNullOrWhiteSpace(id) || itemsById.ContainsKey(id))
-                {
-                    continue;
-                }
-
-                itemsById[id] = new SteamFriendListItem
-                {
-                    SteamId = id,
-                    DisplayName = string.IsNullOrWhiteSpace(fullLibrary.DisplayName) ? id : fullLibrary.DisplayName,
-                    AvatarUrl = fullLibrary.AvatarUrl,
-                    IsIgnored = false,
-                    UseFullLibrary = true
+                    IsIgnored = true
                 };
             }
 

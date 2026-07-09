@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -93,8 +95,6 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewTrophyPieChart = true;
         private bool _showOverviewPiePercentages = true;
         private bool _friendsOverviewHideSpoilers = true;
-        private bool _fullLibraryWarningAccepted = false;
-        private int _friendsOverviewRefreshTtlHours = 24;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private bool _friendsOverviewGameSummariesUseCoverImages = true;
         private bool _friendsOverviewGameSummariesShowMetadataPlatform = true;
@@ -298,6 +298,9 @@ namespace PlayniteAchievements.Models.Settings
         private bool _achievementDataGridSortDescending = true;
         private TaggingSettings _taggingSettings;
         private Dictionary<string, JObject> _providerSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
+        private HashSet<string> _autoDiscoverFriendProviderKeys = CreateDefaultAutoDiscoverFriendProviderKeys();
+        private ObservableCollection<FriendSettingsEntry> _friends = new ObservableCollection<FriendSettingsEntry>();
+        private ObservableCollection<FriendMergeGroup> _friendMergeGroups = new ObservableCollection<FriendMergeGroup>();
 
         #endregion
 
@@ -311,6 +314,454 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _providerSettings;
             set => SetValue(ref _providerSettings, value ?? new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase));
+        }
+
+        #endregion
+
+        #region Friend Settings
+
+        public HashSet<string> AutoDiscoverFriendProviderKeys
+        {
+            get => _autoDiscoverFriendProviderKeys ?? (_autoDiscoverFriendProviderKeys = CreateDefaultAutoDiscoverFriendProviderKeys());
+            set => SetValue(ref _autoDiscoverFriendProviderKeys, NormalizeProviderKeySet(value));
+        }
+
+        public ObservableCollection<FriendSettingsEntry> Friends
+        {
+            get => _friends ?? (_friends = new ObservableCollection<FriendSettingsEntry>());
+            set
+            {
+                if (SetValueAndReturn(ref _friends, NormalizeFriendEntries(value)))
+                {
+                    FriendMergeGroups = FriendMergeGroups;
+                }
+            }
+        }
+
+        public ObservableCollection<FriendMergeGroup> FriendMergeGroups
+        {
+            get => _friendMergeGroups ?? (_friendMergeGroups = new ObservableCollection<FriendMergeGroup>());
+            set => SetValue(ref _friendMergeGroups, NormalizeFriendMergeGroups(value, Friends));
+        }
+
+        public static HashSet<string> CreateDefaultAutoDiscoverFriendProviderKeys()
+        {
+            return new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "Steam",
+                "RetroAchievements"
+            };
+        }
+
+        public bool IsFriendAutoDiscoverEnabled(string providerKey)
+        {
+            return !string.IsNullOrWhiteSpace(providerKey) &&
+                   AutoDiscoverFriendProviderKeys.Contains(providerKey.Trim());
+        }
+
+        public void SetFriendAutoDiscoverEnabled(string providerKey, bool enabled)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var keys = NormalizeProviderKeySet(AutoDiscoverFriendProviderKeys);
+            var changed = enabled ? keys.Add(providerKey) : keys.Remove(providerKey);
+            if (changed)
+            {
+                AutoDiscoverFriendProviderKeys = keys;
+            }
+        }
+
+        public FriendSettingsEntry AddOrUpdateFriend(
+            FriendIdentity identity,
+            FriendSettingsSource source = FriendSettingsSource.AutoDiscovered)
+        {
+            if (identity == null)
+            {
+                return null;
+            }
+
+            return AddOrUpdateFriend(
+                identity.ProviderKey,
+                identity.ExternalUserId,
+                identity.DisplayName,
+                identity.AvatarUrl,
+                identity.AvatarPath,
+                source,
+                null,
+                identity.LastRefreshedUtc,
+                null,
+                null);
+        }
+
+        public FriendSettingsEntry AddOrUpdateFriend(
+            string providerKey,
+            string externalUserId,
+            string displayName,
+            string avatarUrl,
+            string avatarPath,
+            FriendSettingsSource source,
+            IEnumerable<string> selectedPlatforms = null,
+            DateTime? lastRefreshedUtc = null,
+            DateTime? lastProbedUtc = null,
+            string lastError = null)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            externalUserId = NormalizeProviderKeyToken(externalUserId);
+            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return null;
+            }
+
+            var entries = NormalizeFriendEntries(Friends);
+            var existing = entries.FirstOrDefault(entry =>
+                string.Equals(entry.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(entry.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase));
+            if (existing == null)
+            {
+                existing = new FriendSettingsEntry
+                {
+                    ProviderKey = providerKey,
+                    ExternalUserId = externalUserId,
+                    DisplayName = string.IsNullOrWhiteSpace(displayName) ? externalUserId : displayName.Trim(),
+                    Source = source,
+                    SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(selectedPlatforms),
+                    AddedUtc = DateTime.UtcNow
+                };
+                entries.Add(existing);
+            }
+            else
+            {
+                if (source == FriendSettingsSource.Manual)
+                {
+                    existing.Source = FriendSettingsSource.Manual;
+                }
+
+                if (selectedPlatforms != null)
+                {
+                    existing.SelectedPlatforms = FriendSettingsEntry.NormalizePlatformList(selectedPlatforms);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                existing.DisplayName = displayName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                existing.AvatarUrl = avatarUrl.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarPath))
+            {
+                existing.AvatarPath = avatarPath.Trim();
+            }
+
+            if (lastRefreshedUtc.HasValue)
+            {
+                existing.LastRefreshedUtc = lastRefreshedUtc;
+            }
+
+            if (lastProbedUtc.HasValue)
+            {
+                existing.LastProbedUtc = lastProbedUtc;
+            }
+
+            if (lastError != null)
+            {
+                existing.LastError = string.IsNullOrWhiteSpace(lastError) ? null : lastError.Trim();
+            }
+
+            Friends = entries;
+            return GetFriendSetting(providerKey, externalUserId);
+        }
+
+        public bool SetFriendNickname(string providerKey, string externalUserId, string nickname)
+        {
+            var entry = GetFriendSetting(providerKey, externalUserId);
+            if (entry == null)
+            {
+                return false;
+            }
+
+            var normalized = string.IsNullOrWhiteSpace(nickname) ? null : nickname.Trim();
+            if (string.Equals(entry.Nickname, normalized, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            entry.Nickname = normalized;
+            Friends = Friends;
+            return true;
+        }
+
+        public FriendSettingsEntry GetFriendSetting(string providerKey, string externalUserId)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            externalUserId = NormalizeProviderKeyToken(externalUserId);
+            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return null;
+            }
+
+            return Friends.FirstOrDefault(entry =>
+                string.Equals(entry?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(entry?.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        public List<FriendSettingsEntry> GetFriendSettings(string providerKey = null, bool includeIgnored = true)
+        {
+            var normalizedProvider = NormalizeProviderKeyToken(providerKey);
+            return Friends
+                .Where(entry => entry != null &&
+                                (string.IsNullOrWhiteSpace(normalizedProvider) ||
+                                 string.Equals(entry.ProviderKey, normalizedProvider, StringComparison.OrdinalIgnoreCase)) &&
+                                (includeIgnored || !entry.IsIgnored))
+                .Select(entry => entry.Clone().Normalize())
+                .ToList();
+        }
+
+        public List<FriendIdentity> GetActiveFriendIdentities(string providerKey = null)
+        {
+            return GetFriendSettings(providerKey, includeIgnored: false)
+                .Select(entry => new FriendIdentity
+                {
+                    ProviderKey = entry.ProviderKey,
+                    ExternalUserId = entry.ExternalUserId,
+                    DisplayName = entry.DisplayName,
+                    AvatarUrl = entry.AvatarUrl,
+                    AvatarPath = entry.AvatarPath,
+                    LastRefreshedUtc = entry.LastRefreshedUtc
+                })
+                .ToList();
+        }
+
+        public HashSet<string> GetIgnoredFriendIds(string providerKey)
+        {
+            return new HashSet<string>(
+                GetFriendSettings(providerKey)
+                    .Where(entry => entry.IsIgnored)
+                    .Select(entry => entry.ExternalUserId)
+                    .Where(id => !string.IsNullOrWhiteSpace(id)),
+                StringComparer.OrdinalIgnoreCase);
+        }
+
+        public bool SetFriendIgnored(string providerKey, string externalUserId, bool ignored)
+        {
+            var entry = GetFriendSetting(providerKey, externalUserId);
+            if (entry == null || entry.IsIgnored == ignored)
+            {
+                return false;
+            }
+
+            entry.IsIgnored = ignored;
+            Friends = Friends;
+            return true;
+        }
+
+        public bool RemoveFriendSetting(string providerKey, string externalUserId)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            externalUserId = NormalizeProviderKeyToken(externalUserId);
+            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return false;
+            }
+
+            var entries = NormalizeFriendEntries(Friends);
+            var removed = false;
+            for (var i = entries.Count - 1; i >= 0; i--)
+            {
+                var entry = entries[i];
+                if (string.Equals(entry?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(entry?.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase))
+                {
+                    entries.RemoveAt(i);
+                    removed = true;
+                }
+            }
+
+            if (!removed)
+            {
+                return false;
+            }
+
+            Friends = entries;
+            PruneFriendMergeGroupsForRemovedAccount(providerKey, externalUserId);
+            return true;
+        }
+
+        public List<FriendMergeGroup> GetFriendMergeGroups()
+        {
+            return FriendMergeGroups
+                .Where(group => group?.IsValid == true)
+                .Select(group => group.Clone().Normalize())
+                .ToList();
+        }
+
+        public FriendMergeGroup GetFriendMergeGroup(string groupId)
+        {
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                return null;
+            }
+
+            return FriendMergeGroups
+                .FirstOrDefault(group => string.Equals(group?.Id, groupId.Trim(), StringComparison.OrdinalIgnoreCase))
+                ?.Clone()
+                ?.Normalize();
+        }
+
+        public FriendMergeGroup GetFriendMergeGroupForAccount(string providerKey, string externalUserId)
+        {
+            return FriendMergeGroups
+                .FirstOrDefault(group => group?.Contains(providerKey, externalUserId) == true)
+                ?.Clone()
+                ?.Normalize();
+        }
+
+        public FriendMergeGroup AddOrUpdateFriendMergeGroup(
+            IEnumerable<FriendAccountRef> members,
+            string nickname = null,
+            FriendAccountRef avatarAccount = null,
+            string existingGroupId = null)
+        {
+            var normalizedMembers = NormalizeFriendMergeMembers(members, Friends);
+            if (normalizedMembers.Count < 2)
+            {
+                return null;
+            }
+
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            var target = !string.IsNullOrWhiteSpace(existingGroupId)
+                ? groups.FirstOrDefault(group => string.Equals(group.Id, existingGroupId.Trim(), StringComparison.OrdinalIgnoreCase))
+                : null;
+            if (target == null)
+            {
+                target = new FriendMergeGroup
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    CreatedUtc = DateTime.UtcNow
+                };
+                groups.Add(target);
+            }
+
+            var memberKeys = new HashSet<string>(
+                normalizedMembers.Select(member => member.Key),
+                StringComparer.OrdinalIgnoreCase);
+            for (var i = groups.Count - 1; i >= 0; i--)
+            {
+                var group = groups[i];
+                if (ReferenceEquals(group, target))
+                {
+                    continue;
+                }
+
+                group.Members = (group.Members ?? new List<FriendAccountRef>())
+                    .Where(member => member != null && !memberKeys.Contains(member.Key))
+                    .ToList();
+                if (group.Members.Count < 2)
+                {
+                    groups.RemoveAt(i);
+                }
+            }
+
+            target.Members = normalizedMembers;
+            target.Nickname = string.IsNullOrWhiteSpace(nickname) ? target.Nickname : nickname.Trim();
+            target.AvatarAccount = avatarAccount?.Clone()?.Normalize();
+            target.Normalize();
+            FriendMergeGroups = groups;
+            return GetFriendMergeGroup(target.Id);
+        }
+
+        public bool RemoveFriendMergeGroup(string groupId)
+        {
+            if (string.IsNullOrWhiteSpace(groupId))
+            {
+                return false;
+            }
+
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            var removed = false;
+            for (var i = groups.Count - 1; i >= 0; i--)
+            {
+                if (string.Equals(groups[i]?.Id, groupId.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    groups.RemoveAt(i);
+                    removed = true;
+                }
+            }
+
+            if (!removed)
+            {
+                return false;
+            }
+
+            FriendMergeGroups = new ObservableCollection<FriendMergeGroup>(groups);
+            return true;
+        }
+
+        public bool SetFriendMergeGroupNickname(string groupId, string nickname)
+        {
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            var group = groups.FirstOrDefault(item => string.Equals(item?.Id, groupId?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (group == null)
+            {
+                return false;
+            }
+
+            var normalized = string.IsNullOrWhiteSpace(nickname) ? null : nickname.Trim();
+            if (string.Equals(group.Nickname, normalized, StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            group.Nickname = normalized;
+            FriendMergeGroups = new ObservableCollection<FriendMergeGroup>(groups);
+            return true;
+        }
+
+        public bool SetFriendMergeGroupAvatar(string groupId, FriendAccountRef avatarAccount)
+        {
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            var group = groups.FirstOrDefault(item => string.Equals(item?.Id, groupId?.Trim(), StringComparison.OrdinalIgnoreCase));
+            if (group == null)
+            {
+                return false;
+            }
+
+            var normalized = avatarAccount?.Clone()?.Normalize();
+            if (normalized == null || !group.Contains(normalized.ProviderKey, normalized.ExternalUserId))
+            {
+                normalized = group.Members.FirstOrDefault()?.Clone();
+            }
+
+            if (string.Equals(group.AvatarAccount?.Key, normalized?.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            group.AvatarAccount = normalized;
+            FriendMergeGroups = new ObservableCollection<FriendMergeGroup>(groups);
+            return true;
+        }
+
+        public bool MigrateLegacyProviderFriends()
+        {
+            var changed = false;
+            var entries = NormalizeFriendEntries(Friends);
+            changed |= MigrateLegacySteamFriends(entries);
+            changed |= MigrateLegacyExophaseFriends(entries);
+            if (changed)
+            {
+                Friends = entries;
+            }
+
+            return changed;
         }
 
         #endregion
@@ -856,26 +1307,6 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _friendsOverviewHideSpoilers;
             set => SetValue(ref _friendsOverviewHideSpoilers, value);
-        }
-
-        /// <summary>
-        /// Tracks whether the user has acknowledged the one-time warning shown the first time they
-        /// enable the full library scope for a friend (which discovers games outside the Playnite
-        /// library and may cache a large amount of provider-only achievement data).
-        /// </summary>
-        public bool FullLibraryWarningAccepted
-        {
-            get => _fullLibraryWarningAccepted;
-            set => SetValue(ref _fullLibraryWarningAccepted, value);
-        }
-
-        /// <summary>
-        /// Minimum age in hours before an automatic friend achievement scrape is retried.
-        /// </summary>
-        public int FriendsOverviewRefreshTtlHours
-        {
-            get => _friendsOverviewRefreshTtlHours;
-            set => SetValue(ref _friendsOverviewRefreshTtlHours, Math.Max(1, value));
         }
 
         /// <summary>
@@ -3064,6 +3495,17 @@ namespace PlayniteAchievements.Models.Settings
             {
                 // Provider Settings Dictionary (contains all provider-specific settings)
                 ProviderSettings = clonedProviderSettings,
+                AutoDiscoverFriendProviderKeys = this.AutoDiscoverFriendProviderKeys != null
+                    ? new HashSet<string>(this.AutoDiscoverFriendProviderKeys, StringComparer.OrdinalIgnoreCase)
+                    : CreateDefaultAutoDiscoverFriendProviderKeys(),
+                Friends = new ObservableCollection<FriendSettingsEntry>(
+                    (this.Friends ?? new ObservableCollection<FriendSettingsEntry>())
+                    .Where(friend => friend != null)
+                    .Select(friend => friend.Clone())),
+                FriendMergeGroups = new ObservableCollection<FriendMergeGroup>(
+                    (this.FriendMergeGroups ?? new ObservableCollection<FriendMergeGroup>())
+                    .Where(group => group != null)
+                    .Select(group => group.Clone())),
 
                 // Global Settings
                 GlobalLanguage = this.GlobalLanguage,
@@ -3126,8 +3568,6 @@ namespace PlayniteAchievements.Models.Settings
                 ShowOverviewGameMetadataRegion = this.ShowOverviewGameMetadataRegion,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
                 FriendsOverviewHideSpoilers = this.FriendsOverviewHideSpoilers,
-                FullLibraryWarningAccepted = this.FullLibraryWarningAccepted,
-                FriendsOverviewRefreshTtlHours = this.FriendsOverviewRefreshTtlHours,
                 FriendsOverviewRecentUnlockLimit = this.FriendsOverviewRecentUnlockLimit,
                 FriendsOverviewGameSummariesUseCoverImages = this.FriendsOverviewGameSummariesUseCoverImages,
                 FriendsOverviewGameSummariesShowMetadataPlatform = this.FriendsOverviewGameSummariesShowMetadataPlatform,
@@ -3862,6 +4302,375 @@ namespace PlayniteAchievements.Models.Settings
 
             return normalized;
         }
+
+        private static HashSet<string> NormalizeProviderKeySet(IEnumerable<string> value)
+        {
+            if (value == null)
+            {
+                return CreateDefaultAutoDiscoverFriendProviderKeys();
+            }
+
+            var normalized = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var key in value)
+            {
+                var token = NormalizeProviderKeyToken(key);
+                if (!string.IsNullOrWhiteSpace(token))
+                {
+                    normalized.Add(token);
+                }
+            }
+
+            return normalized;
+        }
+
+        private static ObservableCollection<FriendSettingsEntry> NormalizeFriendEntries(
+            IEnumerable<FriendSettingsEntry> value)
+        {
+            var normalized = new ObservableCollection<FriendSettingsEntry>();
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var friend in value ?? Enumerable.Empty<FriendSettingsEntry>())
+            {
+                var entry = friend?.Clone()?.Normalize();
+                var key = FriendSettingsEntry.BuildKey(entry?.ProviderKey, entry?.ExternalUserId);
+                if (string.IsNullOrWhiteSpace(key) || !seen.Add(key))
+                {
+                    continue;
+                }
+
+                normalized.Add(entry);
+            }
+
+            return normalized;
+        }
+
+        private static ObservableCollection<FriendMergeGroup> NormalizeFriendMergeGroups(
+            IEnumerable<FriendMergeGroup> value,
+            IEnumerable<FriendSettingsEntry> friends)
+        {
+            var normalized = new ObservableCollection<FriendMergeGroup>();
+            var friendKeys = new HashSet<string>(
+                (friends ?? Enumerable.Empty<FriendSettingsEntry>())
+                    .Select(friend => FriendAccountRef.BuildKey(friend?.ProviderKey, friend?.ExternalUserId))
+                    .Where(key => !string.IsNullOrWhiteSpace(key)),
+                StringComparer.OrdinalIgnoreCase);
+            var claimedAccounts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenGroupIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var source in value ?? Enumerable.Empty<FriendMergeGroup>())
+            {
+                var group = source?.Clone()?.Normalize();
+                if (group == null || string.IsNullOrWhiteSpace(group.Id) || !seenGroupIds.Add(group.Id))
+                {
+                    continue;
+                }
+
+                group.Members = NormalizeFriendMergeMembers(group.Members, friends)
+                    .Where(member => !claimedAccounts.Contains(member.Key))
+                    .ToList();
+                if (friendKeys.Count > 0)
+                {
+                    group.Members = group.Members
+                        .Where(member => friendKeys.Contains(member.Key))
+                        .ToList();
+                }
+
+                if (group.Members.Count < 2)
+                {
+                    continue;
+                }
+
+                foreach (var member in group.Members)
+                {
+                    claimedAccounts.Add(member.Key);
+                }
+
+                if (group.AvatarAccount == null ||
+                    !group.Members.Any(member => member.Matches(group.AvatarAccount.ProviderKey, group.AvatarAccount.ExternalUserId)))
+                {
+                    group.AvatarAccount = group.Members.FirstOrDefault()?.Clone();
+                }
+
+                normalized.Add(group.Normalize());
+            }
+
+            return normalized;
+        }
+
+        private static List<FriendAccountRef> NormalizeFriendMergeMembers(
+            IEnumerable<FriendAccountRef> members,
+            IEnumerable<FriendSettingsEntry> friends)
+        {
+            var friendKeys = new HashSet<string>(
+                (friends ?? Enumerable.Empty<FriendSettingsEntry>())
+                    .Select(friend => FriendAccountRef.BuildKey(friend?.ProviderKey, friend?.ExternalUserId))
+                    .Where(key => !string.IsNullOrWhiteSpace(key)),
+                StringComparer.OrdinalIgnoreCase);
+            var seenAccounts = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var seenProviders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var normalized = new List<FriendAccountRef>();
+
+            foreach (var member in members ?? Enumerable.Empty<FriendAccountRef>())
+            {
+                var account = member?.Clone()?.Normalize();
+                var key = account?.Key;
+                if (string.IsNullOrWhiteSpace(key) ||
+                    !seenAccounts.Add(key) ||
+                    !seenProviders.Add(account.ProviderKey) ||
+                    (friendKeys.Count > 0 && !friendKeys.Contains(key)))
+                {
+                    continue;
+                }
+
+                normalized.Add(account);
+            }
+
+            return normalized
+                .OrderBy(member => member.ProviderKey, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(member => member.ExternalUserId, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private void PruneFriendMergeGroupsForRemovedAccount(string providerKey, string externalUserId)
+        {
+            var removedKey = FriendAccountRef.BuildKey(providerKey, externalUserId);
+            if (string.IsNullOrWhiteSpace(removedKey) || FriendMergeGroups.Count == 0)
+            {
+                return;
+            }
+
+            var groups = NormalizeFriendMergeGroups(FriendMergeGroups, Friends);
+            foreach (var group in groups)
+            {
+                group.Members = (group.Members ?? new List<FriendAccountRef>())
+                    .Where(member => !string.Equals(member?.Key, removedKey, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            FriendMergeGroups = groups;
+        }
+
+        private bool MigrateLegacySteamFriends(ObservableCollection<FriendSettingsEntry> entries)
+        {
+            var steam = GetProviderSettingsObject("Steam");
+            if (steam == null)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var item in steam["IgnoredFriends"] as JArray ?? new JArray())
+            {
+                if (!(item is JObject row))
+                {
+                    continue;
+                }
+
+                var steamId = NormalizeProviderKeyToken(row["SteamId"]?.ToString());
+                if (string.IsNullOrWhiteSpace(steamId))
+                {
+                    continue;
+                }
+
+                var existed = ContainsFriendEntry(entries, "Steam", steamId);
+                var entry = EnsureFriendEntry(
+                    entries,
+                    "Steam",
+                    steamId,
+                    row["DisplayName"]?.ToString(),
+                    row["AvatarUrl"]?.ToString(),
+                    null,
+                    FriendSettingsSource.AutoDiscovered);
+                changed |= !existed;
+                if (!entry.IsIgnored)
+                {
+                    entry.IsIgnored = true;
+                    changed = true;
+                }
+            }
+
+            foreach (var item in steam["FullLibraryFriends"] as JArray ?? new JArray())
+            {
+                if (!(item is JObject row))
+                {
+                    continue;
+                }
+
+                var steamId = NormalizeProviderKeyToken(row["SteamId"]?.ToString());
+                if (string.IsNullOrWhiteSpace(steamId))
+                {
+                    continue;
+                }
+
+                var existed = ContainsFriendEntry(entries, "Steam", steamId);
+                EnsureFriendEntry(
+                    entries,
+                    "Steam",
+                    steamId,
+                    row["DisplayName"]?.ToString(),
+                    row["AvatarUrl"]?.ToString(),
+                    null,
+                    FriendSettingsSource.AutoDiscovered);
+                changed |= !existed;
+            }
+
+            return changed;
+        }
+
+        private bool MigrateLegacyExophaseFriends(ObservableCollection<FriendSettingsEntry> entries)
+        {
+            var exophase = GetProviderSettingsObject("Exophase");
+            var friends = exophase?["Friends"] as JArray;
+            if (friends == null || friends.Count == 0)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var item in friends)
+            {
+                if (!(item is JObject row))
+                {
+                    continue;
+                }
+
+                var username = NormalizeProviderKeyToken(row["Username"]?.ToString());
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                    continue;
+                }
+
+                var existed = ContainsFriendEntry(entries, "Exophase", username);
+                var entry = EnsureFriendEntry(
+                    entries,
+                    "Exophase",
+                    username,
+                    row["DisplayName"]?.ToString(),
+                    row["AvatarUrl"]?.ToString(),
+                    row["AvatarPath"]?.ToString(),
+                    FriendSettingsSource.Manual);
+                changed |= !existed;
+
+                var nextPlatforms = FriendSettingsEntry.NormalizePlatformList(
+                    (row["SelectedPlatforms"] as JArray)?.Select(token => token?.ToString()));
+
+                var previousPlatformText = string.Join("\u001f", entry.SelectedPlatforms ?? new List<string>());
+                var nextPlatformText = string.Join("\u001f", nextPlatforms);
+                if (entry.Source != FriendSettingsSource.Manual)
+                {
+                    entry.Source = FriendSettingsSource.Manual;
+                    changed = true;
+                }
+
+                if (!string.Equals(previousPlatformText, nextPlatformText, StringComparison.OrdinalIgnoreCase))
+                {
+                    entry.SelectedPlatforms = nextPlatforms;
+                    changed = true;
+                }
+
+                entry.LastRefreshedUtc = ParseNullableUtc(row["LastRefreshedUtc"]) ?? entry.LastRefreshedUtc;
+                entry.LastProbedUtc = ParseNullableUtc(row["LastProbedUtc"]) ?? entry.LastProbedUtc;
+                entry.LastProbeStatus = NormalizeNullableString(row["LastProbeStatus"]?.ToString()) ?? entry.LastProbeStatus;
+                entry.LastError = NormalizeNullableString(row["LastError"]?.ToString()) ?? entry.LastError;
+            }
+
+            return changed;
+        }
+
+        private JObject GetProviderSettingsObject(string providerKey)
+        {
+            if (string.IsNullOrWhiteSpace(providerKey) ||
+                ProviderSettings == null ||
+                !ProviderSettings.TryGetValue(providerKey, out var settings))
+            {
+                return null;
+            }
+
+            return settings;
+        }
+
+        private static bool ContainsFriendEntry(
+            IEnumerable<FriendSettingsEntry> entries,
+            string providerKey,
+            string externalUserId)
+        {
+            return (entries ?? Enumerable.Empty<FriendSettingsEntry>()).Any(entry =>
+                string.Equals(entry?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(entry?.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static FriendSettingsEntry EnsureFriendEntry(
+            ObservableCollection<FriendSettingsEntry> entries,
+            string providerKey,
+            string externalUserId,
+            string displayName,
+            string avatarUrl,
+            string avatarPath,
+            FriendSettingsSource source)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            externalUserId = NormalizeProviderKeyToken(externalUserId);
+            if (string.IsNullOrWhiteSpace(providerKey) || string.IsNullOrWhiteSpace(externalUserId))
+            {
+                return null;
+            }
+
+            var entry = entries.FirstOrDefault(item =>
+                string.Equals(item?.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(item?.ExternalUserId, externalUserId, StringComparison.OrdinalIgnoreCase));
+            if (entry == null)
+            {
+                entry = new FriendSettingsEntry
+                {
+                    ProviderKey = providerKey,
+                    ExternalUserId = externalUserId,
+                    DisplayName = string.IsNullOrWhiteSpace(displayName) ? externalUserId : displayName.Trim(),
+                    AvatarUrl = NormalizeNullableString(avatarUrl),
+                    AvatarPath = NormalizeNullableString(avatarPath),
+                    Source = source,
+                    AddedUtc = DateTime.UtcNow
+                };
+                entries.Add(entry);
+                return entry;
+            }
+
+            if (!string.IsNullOrWhiteSpace(displayName))
+            {
+                entry.DisplayName = displayName.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                entry.AvatarUrl = avatarUrl.Trim();
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarPath))
+            {
+                entry.AvatarPath = avatarPath.Trim();
+            }
+
+            return entry;
+        }
+
+        private static DateTime? ParseNullableUtc(JToken token)
+        {
+            if (token == null || string.IsNullOrWhiteSpace(token.ToString()))
+            {
+                return null;
+            }
+
+            if (!DateTime.TryParse(token.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var parsed))
+            {
+                return null;
+            }
+
+            return parsed.Kind == DateTimeKind.Local ? parsed.ToUniversalTime() : DateTime.SpecifyKind(parsed, DateTimeKind.Utc);
+        }
+
+        private static string NormalizeProviderKeyToken(string value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+        private static string NormalizeNullableString(string value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
         private static Dictionary<string, int> NormalizeColumnOrder(Dictionary<string, int> value)
         {

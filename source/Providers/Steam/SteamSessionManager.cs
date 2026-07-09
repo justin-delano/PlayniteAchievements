@@ -227,7 +227,10 @@ namespace PlayniteAchievements.Providers.Steam
         // ---------------------------------------------------------------------
 
         /// <summary>
-        /// Gets a Steam page using CEF WebView.
+        /// Gets a Steam page using an offscreen CEF WebView. The modern community pages server-render
+        /// their full data (owned games, achievement progress) into inline window.SSR scripts that are
+        /// present as soon as navigation completes, so a single page-source read after a short settle
+        /// delay captures everything - no scrolling or content-count polling is required.
         /// </summary>
         public async Task<(string FinalUrl, string Html)> GetSteamPageAsyncCef(string url, CancellationToken ct)
         {
@@ -242,11 +245,8 @@ namespace PlayniteAchievements.Providers.Steam
                     {
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
-
-                        // Wait for JavaScript to render dynamic content
-                        await Task.Delay(2000, ct);
-
-                        html = await view.GetPageSourceAsync();
+                        await Task.Delay(2000, ct).ConfigureAwait(true);
+                        html = await view.GetPageSourceAsync().ConfigureAwait(true);
                     }
                 }
                 catch (TimeoutException ex)

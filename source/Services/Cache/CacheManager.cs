@@ -802,6 +802,7 @@ namespace PlayniteAchievements.Services
 
         FriendCacheWriteResult IFriendCacheManager.SaveProviderGameImagePaths(
             string providerKey,
+            string providerGameKey,
             int appId,
             string iconAbsolutePath,
             string coverAbsolutePath)
@@ -809,7 +810,7 @@ namespace PlayniteAchievements.Services
             lock (_sync)
             {
                 EnsureReady_Locked("SaveProviderGameImagePaths");
-                var result = _store.SaveProviderGameImagePaths(providerKey, appId, iconAbsolutePath, coverAbsolutePath);
+                var result = _store.SaveProviderGameImagePaths(providerKey, providerGameKey, appId, iconAbsolutePath, coverAbsolutePath);
                 if (result?.Success == true)
                 {
                     RaiseCacheInvalidatedEvent();
@@ -819,15 +820,15 @@ namespace PlayniteAchievements.Services
             }
         }
 
-        Dictionary<int, FriendGameDefinitionState> IFriendCacheManager.LoadFriendGameDefinitionStates(
+        Dictionary<string, FriendGameDefinitionState> IFriendCacheManager.LoadFriendGameDefinitionStates(
             string providerKey,
-            IReadOnlyCollection<int> appIds)
+            IReadOnlyCollection<string> providerGameKeys)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("LoadFriendGameDefinitionStates");
-                return _store.LoadFriendGameDefinitionStates(providerKey, appIds) ??
-                       new Dictionary<int, FriendGameDefinitionState>();
+                return _store.LoadFriendGameDefinitionStates(providerKey, providerGameKeys) ??
+                       new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
             }
         }
 
@@ -855,16 +856,72 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        FriendCacheWriteResult IFriendCacheManager.ClearUnownedFriendGame(
+            string providerKey,
+            int appId,
+            string providerGameKey)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("ClearUnownedFriendGame");
+                var result = _store.ClearUnownedFriendGame(providerKey, appId, providerGameKey);
+                if (result?.Success == true)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
+        bool IFriendCacheManager.IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("IsProviderGameMappedToPlayniteLibrary");
+                return _store.IsProviderGameMappedToPlayniteLibrary(providerKey, appId, providerGameKey);
+            }
+        }
+
+        IReadOnlyList<FriendGameMapping> IFriendCacheManager.LoadFriendGameMappings(string providerKey)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadFriendGameMappings");
+                return _store.LoadFriendGameMappings(providerKey) ?? new List<FriendGameMapping>();
+            }
+        }
+
+        FriendCacheWriteResult IFriendCacheManager.PromoteProviderOnlyGameToPlayniteBacked(
+            string providerKey,
+            int appId,
+            string providerGameKey,
+            Guid playniteGameId)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("PromoteProviderOnlyGameToPlayniteBacked");
+                var result = _store.PromoteProviderOnlyGameToPlayniteBacked(providerKey, appId, providerGameKey, playniteGameId);
+                if (result?.Success == true && result.WrittenCount > 0)
+                {
+                    RaiseCacheInvalidatedEvent();
+                }
+
+                return result;
+            }
+        }
+
         FriendCacheWriteResult IFriendCacheManager.SaveFriendGameAchievements(
             string providerKey,
             string externalUserId,
+            string providerGameKey,
             int appId,
             FriendGameAchievements achievements)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("SaveFriendGameAchievements");
-                var result = _store.SaveFriendGameAchievements(providerKey, externalUserId, appId, achievements);
+                var result = _store.SaveFriendGameAchievements(providerKey, externalUserId, providerGameKey, appId, achievements);
                 if (result?.Success == true)
                 {
                     RaiseCacheInvalidatedEvent();
@@ -876,12 +933,13 @@ namespace PlayniteAchievements.Services
 
         FriendCacheWriteResult IFriendCacheManager.DeleteFriendData(
             string providerKey,
-            string externalUserId)
+            string externalUserId,
+            bool preserveFriendRecord)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("DeleteFriendData");
-                var result = _store.DeleteFriendData(providerKey, externalUserId);
+                var result = _store.DeleteFriendData(providerKey, externalUserId, preserveFriendRecord);
                 if (result?.Success == true)
                 {
                     RaiseCacheInvalidatedEvent();
@@ -912,6 +970,18 @@ namespace PlayniteAchievements.Services
             }
         }
 
+        IReadOnlyDictionary<string, FriendOwnershipRecency> IFriendCacheManager.LoadFriendOwnershipRecency(
+            string providerKey,
+            string externalUserId)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadFriendOwnershipRecency");
+                return _store.LoadFriendOwnershipRecency(providerKey, externalUserId) ??
+                       new Dictionary<string, FriendOwnershipRecency>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
         FriendsOverviewData IFriendCacheManager.LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
         {
             lock (_sync)
@@ -920,6 +990,37 @@ namespace PlayniteAchievements.Services
                 return _store.LoadFriendsOverviewData(hideSpoilers, recentLimit) ??
                        new FriendsOverviewData();
             }
+        }
+
+        IReadOnlyList<CurrentUserGameLabel> IFriendCacheManager.LoadCurrentUserGameLabels()
+        {
+            List<KeyValuePair<string, GameAchievementData>> records;
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadCurrentUserGameLabels");
+                records = _store.LoadAllCurrentUserGameDataByCacheKey() ??
+                          new List<KeyValuePair<string, GameAchievementData>>();
+            }
+
+            var labels = new List<CurrentUserGameLabel>(records.Count);
+            for (var i = 0; i < records.Count; i++)
+            {
+                var data = records[i].Value;
+                if (data?.PlayniteGameId == null || data.PlayniteGameId == Guid.Empty)
+                {
+                    continue;
+                }
+
+                labels.Add(new CurrentUserGameLabel
+                {
+                    PlayniteGameId = data.PlayniteGameId.Value,
+                    GameName = data.GameName,
+                    ProviderKey = data.ProviderKey,
+                    ProviderPlatformKey = data.ProviderPlatformKey
+                });
+            }
+
+            return labels;
         }
 
         public void Dispose()

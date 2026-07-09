@@ -1,11 +1,15 @@
-using PlayniteAchievements.Common;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
+using Playnite.SDK;
 using Playnite.SDK.Data;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Windows.Input;
+using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.ViewModels
 {
@@ -26,12 +30,15 @@ namespace PlayniteAchievements.ViewModels
         private int _unlockedAchievementsCount;
         private int _collectionScore;
         private int _prestigeScore;
+        private int _collectionLevel;
+        private int _prestigeLevel;
         private int _recentUnlockCount;
         private DateTime? _lastUnlockUtc;
         private DateTime? _lastRefreshedUtc;
         private long _totalPlaytimeMinutes;
         private string _providerKey;
         private string _externalUserId;
+        private string _mergedFriendId;
 
         public string ProviderKey
         {
@@ -59,6 +66,31 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public string MergedFriendId
+        {
+            get => _mergedFriendId;
+            set
+            {
+                if (SetValueAndReturn(ref _mergedFriendId, value))
+                {
+                    OnPropertyChanged(nameof(IsMergedFriend));
+                    OnPropertyChanged(nameof(FriendScopeKey));
+                    OnPropertyChanged(nameof(Key));
+                    OnPropertyChanged(nameof(ProviderDisplayName));
+                    OnPropertyChanged(nameof(ProviderIconKey));
+                    OnPropertyChanged(nameof(ProviderColorHex));
+                }
+            }
+        }
+
+        public List<FriendAccountRef> MemberAccounts { get; set; } = new List<FriendAccountRef>();
+
+        public List<string> MemberProviderKeys { get; set; } = new List<string>();
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public bool IsMergedFriend => !string.IsNullOrWhiteSpace(MergedFriendId);
+
         [DontSerialize]
         [IgnoreDataMember]
         public string FriendScopeKey => FriendOverviewProjection.GetFriendScopeKey(this);
@@ -79,13 +111,44 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
+                if (IsMergedFriend)
+                {
+                    return MemberProviderDisplayText ??
+                           ResourceProvider.GetString("LOCPlayAch_FriendsSettings_Merged") ??
+                           "Merged";
+                }
+
                 var localized = PlayniteAchievements.Providers.ProviderRegistry.GetLocalizedName(ProviderKey);
                 return string.IsNullOrWhiteSpace(localized) ? ProviderKey : localized;
             }
         }
 
-        public string ProviderIconKey => string.IsNullOrWhiteSpace(ProviderKey) ? null : "ProviderIcon" + ProviderKey;
-        public string ProviderColorHex => "#888888";
+        public string MemberProviderDisplayText
+        {
+            get
+            {
+                var providers = (MemberProviderKeys ?? new List<string>())
+                    .Where(provider => !string.IsNullOrWhiteSpace(provider))
+                    .Select(provider =>
+                    {
+                        var localized = PlayniteAchievements.Providers.ProviderRegistry.GetLocalizedName(provider);
+                        return string.IsNullOrWhiteSpace(localized) ? provider : localized;
+                    })
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (providers.Count == 0)
+                {
+                    return null;
+                }
+
+                return string.Join(" + ", providers);
+            }
+        }
+
+        public string ProviderIconKey => IsMergedFriend || string.IsNullOrWhiteSpace(ProviderKey) ? null : "ProviderIcon" + ProviderKey;
+        public string ProviderColorHex =>
+            IsMergedFriend ? null : PlayniteAchievements.Providers.ProviderRegistry.GetProviderColorHex(ProviderKey);
 
         public string DisplayName
         {
@@ -146,6 +209,18 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _prestigeScore;
             set => SetValue(ref _prestigeScore, Math.Max(0, value));
+        }
+
+        public int CollectionLevel
+        {
+            get => _collectionLevel;
+            set => SetValue(ref _collectionLevel, Math.Max(0, value));
+        }
+
+        public int PrestigeLevel
+        {
+            get => _prestigeLevel;
+            set => SetValue(ref _prestigeLevel, Math.Max(0, value));
         }
 
         public int RecentUnlockCount

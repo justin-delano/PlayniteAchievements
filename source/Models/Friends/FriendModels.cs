@@ -18,52 +18,46 @@ namespace PlayniteAchievements.Models.Friends
         Custom
     }
 
-    public enum FriendLibraryScope
-    {
-        Shared,
-        Full
-    }
-
     public static class FriendRefreshPolicy
     {
-        public static FriendLibraryScope GetDefaultLibraryScope(FriendRefreshScope scope)
+        /// <summary>
+        /// True when the refresh scope discovers games the friend owns that are not present in the
+        /// current user's Playnite library (provider-only games). Only the Full scope does this.
+        /// </summary>
+        public static bool DiscoversProviderOnlyGames(FriendRefreshScope scope)
         {
-            return ScopePermitsProviderOnlyGames(scope)
-                ? FriendLibraryScope.Full
-                : FriendLibraryScope.Shared;
+            return scope == FriendRefreshScope.Full;
         }
 
-        public static bool ScopePermitsProviderOnlyGames(FriendRefreshScope scope)
-        {
-            return scope == FriendRefreshScope.Recent ||
-                   scope == FriendRefreshScope.Full;
-        }
-
-        public static bool IncludesProviderOnlyGames(this FriendRefreshOptions options)
+        /// <summary>
+        /// True when the refresh options discover provider-only games: either the scope does so
+        /// (Full), or the request explicitly targets provider game ids/keys (a selected-game refresh
+        /// of a friend-owned game that is not in the current user's library).
+        /// </summary>
+        public static bool DiscoversProviderOnlyGames(this FriendRefreshOptions options)
         {
             return options != null &&
-                   options.LibraryScope == FriendLibraryScope.Full &&
-                   (ScopePermitsProviderOnlyGames(options.Scope) ||
-                    options.ProviderAppIds?.Any(id => id > 0) == true);
+                   (DiscoversProviderOnlyGames(options.Scope) ||
+                    options.ProviderAppIds?.Any(id => id > 0) == true ||
+                    options.ProviderGameKeys?.Any(key => !string.IsNullOrWhiteSpace(key)) == true);
         }
     }
 
     public sealed class FriendRefreshOptions
     {
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
-        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Shared;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
+        public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
-        public TimeSpan? RefreshTtl { get; set; }
         public TimeSpan? DefinitionTtl { get; set; }
+        public bool ForceDefinitionRefresh { get; set; }
 
         public FriendRefreshOptions Clone()
         {
             return new FriendRefreshOptions
             {
                 Scope = Scope,
-                LibraryScope = LibraryScope,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
                     .Distinct()
@@ -72,13 +66,18 @@ namespace PlayniteAchievements.Models.Friends
                     .Where(id => id > 0)
                     .Distinct()
                     .ToList(),
+                ProviderGameKeys = ProviderGameKeys?
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
                 FriendExternalUserIds = FriendExternalUserIds?
                     .Where(id => !string.IsNullOrWhiteSpace(id))
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                RefreshTtl = RefreshTtl,
-                DefinitionTtl = DefinitionTtl
+                DefinitionTtl = DefinitionTtl,
+                ForceDefinitionRefresh = ForceDefinitionRefresh
             };
         }
     }
@@ -87,12 +86,12 @@ namespace PlayniteAchievements.Models.Friends
     {
         public IReadOnlyCollection<string> ProviderKeys { get; set; }
         public FriendRefreshScope Scope { get; set; } = FriendRefreshScope.Recent;
-        public FriendLibraryScope LibraryScope { get; set; } = FriendLibraryScope.Full;
         public IReadOnlyCollection<Guid> PlayniteGameIds { get; set; }
         public IReadOnlyCollection<int> ProviderAppIds { get; set; }
+        public IReadOnlyCollection<string> ProviderGameKeys { get; set; }
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
-        public TimeSpan? RefreshTtl { get; set; }
         public TimeSpan? DefinitionTtl { get; set; }
+        public bool ForceDefinitionRefresh { get; set; }
 
         public FriendCustomRefreshOptions Clone()
         {
@@ -104,7 +103,6 @@ namespace PlayniteAchievements.Models.Friends
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
                 Scope = Scope,
-                LibraryScope = LibraryScope,
                 PlayniteGameIds = PlayniteGameIds?
                     .Where(id => id != Guid.Empty)
                     .Distinct()
@@ -113,13 +111,18 @@ namespace PlayniteAchievements.Models.Friends
                     .Where(id => id > 0)
                     .Distinct()
                     .ToList(),
+                ProviderGameKeys = ProviderGameKeys?
+                    .Where(key => !string.IsNullOrWhiteSpace(key))
+                    .Select(key => key.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList(),
                 FriendExternalUserIds = FriendExternalUserIds?
                     .Where(id => !string.IsNullOrWhiteSpace(id))
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                RefreshTtl = RefreshTtl,
-                DefinitionTtl = DefinitionTtl
+                DefinitionTtl = DefinitionTtl,
+                ForceDefinitionRefresh = ForceDefinitionRefresh
             };
         }
     }
@@ -160,19 +163,41 @@ namespace PlayniteAchievements.Models.Friends
         public string ProviderKey { get; set; }
         public string ExternalUserId { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
+        public string ProviderPlatformKey { get; set; }
+        public Guid? PlayniteGameId { get; set; }
         public string GameName { get; set; }
         public string IconUrl { get; set; }
         public string CoverUrl { get; set; }
         public int PlaytimeForeverMinutes { get; set; }
         public int? Playtime2WeeksMinutes { get; set; }
         public DateTime? LastPlayedUtc { get; set; }
+        public int? AchievementUnlocksHint { get; set; }
+        public int? AchievementTotalHint { get; set; }
     }
 
     public sealed class FriendAchievementRow
     {
+        /// <summary>
+        /// Stable, language-independent achievement identifier (e.g. the Steam api name) when the
+        /// provider can resolve one. Preferred over display text when matching to canonical
+        /// achievement definitions. Null for providers that expose no stable key.
+        /// </summary>
+        public string ApiName { get; set; }
         public string DisplayName { get; set; }
         public string Description { get; set; }
         public string IconUrl { get; set; }
+        public string UnlockedIconUrl { get; set; }
+        public string LockedIconUrl { get; set; }
+        public int? Points { get; set; }
+        public int? ScaledPoints { get; set; }
+        public string Category { get; set; }
+        public string CategoryType { get; set; }
+        public string TrophyType { get; set; }
+        public bool Hidden { get; set; }
+        public bool IsCapstone { get; set; }
+        public double? GlobalPercentUnlocked { get; set; }
+        public RarityTier? Rarity { get; set; }
         public bool Unlocked { get; set; }
         public DateTime? UnlockTimeUtc { get; set; }
         public int? ProgressNum { get; set; }
@@ -183,6 +208,7 @@ namespace PlayniteAchievements.Models.Friends
     {
         public FriendIdentity Friend { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
         public DateTime LastUpdatedUtc { get; set; } = DateTime.UtcNow;
         public bool StatsUnavailable { get; set; }
         public bool TransientFailure { get; set; }
@@ -202,6 +228,8 @@ namespace PlayniteAchievements.Models.Friends
     {
         public string ProviderKey { get; set; }
         public int AppId { get; set; }
+        public string ProviderGameKey { get; set; }
+        public string ProviderPlatformKey { get; set; }
         public string GameName { get; set; }
         public string IconUrl { get; set; }
         public FriendGameDefinitionStatus Status { get; set; } = FriendGameDefinitionStatus.Unavailable;
@@ -230,13 +258,39 @@ namespace PlayniteAchievements.Models.Friends
 
         Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
             FriendIdentity friend,
+            string providerGameKey,
             int appId,
             string gameName,
             CancellationToken cancel);
 
         Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
+            string providerGameKey,
             int appId,
             string gameName,
             CancellationToken cancel);
+    }
+
+    /// <summary>
+    /// A current-user game as recorded in the plugin cache: the Playnite game id plus the servicing
+    /// provider label the plugin stored at scan time. Supplied to friend providers that map a friend's
+    /// games to the local library by name, so they match on the stored platform label rather than
+    /// re-deriving platform from Playnite Source/Platform strings.
+    /// </summary>
+    public sealed class CurrentUserGameLabel
+    {
+        public Guid PlayniteGameId { get; set; }
+        public string GameName { get; set; }
+        public string ProviderKey { get; set; }
+        public string ProviderPlatformKey { get; set; }
+    }
+
+    /// <summary>
+    /// Optional capability for a friend provider that resolves friend games against the current user's
+    /// local library. The refresh runtime supplies the current user's cached game labels once per
+    /// refresh; the provider owns how it indexes and matches them.
+    /// </summary>
+    public interface ICurrentUserGameLabelReceiver
+    {
+        void SetCurrentUserGameLabels(IReadOnlyList<CurrentUserGameLabel> labels);
     }
 }

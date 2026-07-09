@@ -115,10 +115,6 @@
                               BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                               Margin="0,0,0,10">
                         <StackPanel>
-                            <CheckBox IsChecked="{Binding ShowLibraryGames, Mode=TwoWay}"
-                                      Content="{DynamicResource LOCPlayAch_FriendCustomRefresh_ShowLibraryGames}"
-                                      Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
                             <TextBox Text="{Binding GameListSearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, Delay=100}"
                                      Style="{DynamicResource SearchTextBoxStyle}"
                                      Foreground="{DynamicResource PlayAch.Brush.Text}"

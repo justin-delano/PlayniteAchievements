@@ -1,8 +1,10 @@
 using Playnite.SDK;
+using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
-using PlayniteAchievements.Providers.Steam;
+using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
@@ -15,6 +17,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 
 namespace PlayniteAchievements.Views
 {
@@ -348,27 +351,41 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            if (!TryResolveSelectedRow(sender, e, out var row, out var grid))
+            var row = ResolveDataGridRow(sender, e);
+            var grid = FindParentDataGrid(row);
+            if (row == null || grid == null)
             {
                 return;
             }
 
             if (row.DataContext is FriendSummaryItem)
             {
-                _viewModel.ClearFriendSelection();
+                if (IsSelectedRow(row, grid))
+                {
+                    _viewModel.ClearFriendSelection();
+                    ClearGridSelection(grid);
+                    QueueScrollAfterSummarySelection(row.DataContext);
+                    e.Handled = true;
+                }
+                else
+                {
+                    QueueScrollAfterSummarySelection(row.DataContext);
+                }
             }
             else if (row.DataContext is FriendGameSummaryItem)
             {
-                _viewModel.ClearGameSelection();
+                if (IsSelectedRow(row, grid))
+                {
+                    _viewModel.ClearGameSelection();
+                    ClearGridSelection(grid);
+                    QueueScrollAfterSummarySelection(row.DataContext);
+                    e.Handled = true;
+                }
+                else
+                {
+                    QueueScrollAfterSummarySelection(row.DataContext);
+                }
             }
-            else
-            {
-                return;
-            }
-
-            ClearGridSelection(grid);
-
-            e.Handled = true;
         }
 
         private void AchievementRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -416,9 +433,16 @@ namespace PlayniteAchievements.Views
                 return false;
             }
 
-            return row.IsSelected ||
+            return IsSelectedRow(row, grid);
+        }
+
+        private static bool IsSelectedRow(DataGridRow row, DataGrid grid)
+        {
+            return row != null &&
+                   grid != null &&
+                   (row.IsSelected ||
                    ReferenceEquals(grid.SelectedItem, row.DataContext) ||
-                   ReferenceEquals(grid.CurrentItem, row.DataContext);
+                   ReferenceEquals(grid.CurrentItem, row.DataContext));
         }
 
         private static DataGridRow ResolveDataGridRow(object sender, MouseButtonEventArgs e)
@@ -480,7 +504,7 @@ namespace PlayniteAchievements.Views
 
         private ContextMenu BuildGameMenu(object data)
         {
-            return GameRowContextMenuBuilder.BuildGameMenu(
+            var menu = GameRowContextMenuBuilder.BuildGameMenu(
                 data,
                 this,
                 _viewModel?.RefreshFriendSelectedGameCommand,
@@ -490,6 +514,255 @@ namespace PlayniteAchievements.Views
                 _achievementOverridesService,
                 _cacheManager,
                 _logger);
+
+            // Unowned (provider-only) friend games have no Playnite Guid, so the shared builder
+            // offers them only Refresh. Add a Clear Data item that removes the game's cached
+            // friend data across all friends, mirroring the owned-game Clear Data action.
+            var addedMaintenanceSeparator = false;
+            void EnsureMaintenanceSeparator()
+            {
+                if (!addedMaintenanceSeparator)
+                {
+                    menu.Items.Add(new Separator());
+                    addedMaintenanceSeparator = true;
+                }
+            }
+
+            if (menu != null && IsMappableExophaseFriendGame(data, out var exophaseGame))
+            {
+                EnsureMaintenanceSeparator();
+                menu.Items.Add(CreateTextMenuItem(
+                    exophaseGame.PlayniteGameId.HasValue
+                        ? GetText("LOCPlayAch_Menu_ChangePlayniteMapping", "Change Playnite Mapping")
+                        : GetText("LOCPlayAch_Menu_MapToPlayniteGame", "Map to Playnite Game"),
+                    () => EditExophaseFriendGameMapping(exophaseGame)));
+
+                if (HasManualExophaseFriendGameMapping(exophaseGame))
+                {
+                    menu.Items.Add(CreateTextMenuItem(
+                        GetText("LOCPlayAch_Menu_ClearPlayniteMapping", "Clear Playnite Mapping"),
+                        () => ClearExophaseFriendGameMapping(exophaseGame)));
+                }
+            }
+
+            if (menu != null && IsClearableUnownedGame(data, out var unownedGame))
+            {
+                EnsureMaintenanceSeparator();
+                menu.Items.Add(GameRowContextMenuBuilder.CreateMenuItem(
+                    this,
+                    "LOCPlayAch_Menu_ClearData",
+                    () => ClearUnownedGame(unownedGame)));
+            }
+
+            return menu;
+        }
+
+        private static bool IsClearableUnownedGame(object data, out FriendGameSummaryItem game)
+        {
+            game = data as FriendGameSummaryItem;
+            return game != null
+                   && !game.PlayniteGameId.HasValue
+                   && !string.IsNullOrWhiteSpace(game.ProviderKey)
+                   && (game.AppId > 0 || !string.IsNullOrWhiteSpace(game.ProviderGameKey));
+        }
+
+        private static bool IsMappableExophaseFriendGame(object data, out FriendGameSummaryItem game)
+        {
+            game = data as FriendGameSummaryItem;
+            return game != null &&
+                   string.Equals(game.ProviderKey, "Exophase", StringComparison.OrdinalIgnoreCase) &&
+                   !string.IsNullOrWhiteSpace(game.ProviderGameKey);
+        }
+
+        private static bool HasManualExophaseFriendGameMapping(FriendGameSummaryItem game)
+        {
+            var key = ExophaseSettings.NormalizeFriendGameMappingKey(game?.ProviderGameKey);
+            return !string.IsNullOrWhiteSpace(key) &&
+                   ProviderRegistry.Settings<ExophaseSettings>().FriendGameMappings?.ContainsKey(key) == true;
+        }
+
+        private MenuItem CreateTextMenuItem(string header, Action onClick)
+        {
+            var item = new MenuItem { Header = header };
+            item.Click += (_, __) => onClick?.Invoke();
+            return item;
+        }
+
+        private void EditExophaseFriendGameMapping(FriendGameSummaryItem game)
+        {
+            if (!IsMappableExophaseFriendGame(game, out game))
+            {
+                return;
+            }
+
+            try
+            {
+                var selected = PlayniteGamePickerDialog.Pick(
+                    Window.GetWindow(this),
+                    _playniteApi?.Database?.Games,
+                    GetText("LOCPlayAch_Menu_MapToPlayniteGame", "Map to Playnite Game"),
+                    game.GameName);
+                if (selected == null)
+                {
+                    return;
+                }
+
+                var friendPlatform = ExophaseFriendPlatformMatcher.ExtractPlatformSlugFromFriendGameKey(game.ProviderGameKey);
+                if (!ExophaseFriendPlatformMatcher.IsSameProviderPlatform(selected, friendPlatform))
+                {
+                    _playniteApi?.Dialogs?.ShowMessage(
+                        string.Format(
+                            GetText(
+                                "LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch",
+                                "The selected Playnite game is not on the same platform as the Exophase friend game ({0})."),
+                            string.IsNullOrWhiteSpace(friendPlatform) ? "unknown" : friendPlatform),
+                        GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                SaveExophaseFriendGameMapping(game, selected);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to edit Exophase friend game mapping for {game.ProviderGameKey}.");
+                _playniteApi?.Dialogs?.ShowErrorMessage(
+                    string.Format(GetText("LOCPlayAch_Status_Failed", "Failed: {0}"), ex.Message),
+                    GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"));
+            }
+        }
+
+        private void SaveExophaseFriendGameMapping(FriendGameSummaryItem game, Game playniteGame)
+        {
+            if (game == null || playniteGame == null || playniteGame.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            var key = ExophaseSettings.NormalizeFriendGameMappingKey(game.ProviderGameKey);
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return;
+            }
+
+            var settings = ProviderRegistry.Settings<ExophaseSettings>();
+            var mappings = new Dictionary<string, Guid>(
+                settings.FriendGameMappings ?? new Dictionary<string, Guid>(),
+                StringComparer.OrdinalIgnoreCase)
+            {
+                [key] = playniteGame.Id
+            };
+            settings.FriendGameMappings = mappings;
+            ProviderRegistry.Write(settings, persistToDisk: true);
+            PlayniteAchievementsPlugin.NotifySettingsSaved();
+
+            if (!game.PlayniteGameId.HasValue)
+            {
+                var clearResult = _friendCache?.ClearUnownedFriendGame(game.ProviderKey, game.AppId, game.ProviderGameKey);
+                if (clearResult != null && !clearResult.Success)
+                {
+                    _logger?.Warn($"Failed to clear provider-only Exophase row after mapping {game.ProviderGameKey}: {clearResult.ErrorMessage}");
+                }
+            }
+
+            RefreshExophaseProviderGame(game);
+            _ = _viewModel?.LoadAsync();
+        }
+
+        private void ClearExophaseFriendGameMapping(FriendGameSummaryItem game)
+        {
+            if (!IsMappableExophaseFriendGame(game, out game))
+            {
+                return;
+            }
+
+            try
+            {
+                var key = ExophaseSettings.NormalizeFriendGameMappingKey(game.ProviderGameKey);
+                var settings = ProviderRegistry.Settings<ExophaseSettings>();
+                var mappings = new Dictionary<string, Guid>(
+                    settings.FriendGameMappings ?? new Dictionary<string, Guid>(),
+                    StringComparer.OrdinalIgnoreCase);
+                if (!string.IsNullOrWhiteSpace(key))
+                {
+                    mappings.Remove(key);
+                }
+
+                settings.FriendGameMappings = mappings;
+                ProviderRegistry.Write(settings, persistToDisk: true);
+                PlayniteAchievementsPlugin.NotifySettingsSaved();
+                RefreshExophaseProviderGame(game);
+                _ = _viewModel?.LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to clear Exophase friend game mapping for {game.ProviderGameKey}.");
+            }
+        }
+
+        private void RefreshExophaseProviderGame(FriendGameSummaryItem game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            var refreshTarget = new FriendGameSummaryItem
+            {
+                ProviderKey = game.ProviderKey,
+                Provider = game.Provider,
+                AppId = game.AppId,
+                ProviderGameKey = game.ProviderGameKey,
+                GameName = game.GameName
+            };
+            GameRowContextMenuBuilder.ExecuteCommand(_viewModel?.RefreshFriendSelectedGameCommand, refreshTarget);
+        }
+
+        private void ClearUnownedGame(FriendGameSummaryItem game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            var name = string.IsNullOrWhiteSpace(game.GameName) ? game.ProviderGameKey : game.GameName;
+            var message = string.Format(
+                GetText("LOCPlayAch_Menu_ClearData_ConfirmSingle", "Clear cached data for {0}?"),
+                name);
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                message,
+                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return;
+            }
+
+            try
+            {
+                var clearResult = _friendCache?.ClearUnownedFriendGame(game.ProviderKey, game.AppId, game.ProviderGameKey);
+                if (clearResult != null && !clearResult.Success)
+                {
+                    _logger?.Warn($"Failed to clear unowned friend game data for {game.ProviderKey}/{game.AppId}/{game.ProviderGameKey}: {clearResult.ErrorMessage}");
+                }
+
+                _viewModel?.ClearGameSelection();
+                _ = _viewModel?.LoadAsync();
+
+                _playniteApi?.Dialogs?.ShowMessage(
+                    GetText("LOCPlayAch_Status_Succeeded", "Succeeded"),
+                    GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to clear unowned friend game {game.ProviderKey}/{game.AppId}/{game.ProviderGameKey}.");
+            }
         }
 
         private ContextMenu BuildFriendMenu(FriendSummaryItem friend)
@@ -505,56 +778,84 @@ namespace PlayniteAchievements.Views
             menu.Items.Add(refreshItem);
             menu.Items.Add(new Separator());
 
-            if (FriendLibraryScopeHelper.IsSteamFriend(friend?.ProviderKey) &&
-                !string.IsNullOrWhiteSpace(friend?.ExternalUserId))
+            var clearItem = new MenuItem
             {
-                var usesFull = FriendLibraryScopeHelper.IsFullLibrary(friend.ProviderKey, friend.ExternalUserId);
-                var libraryItem = new MenuItem
-                {
-                    // Label shows the action that toggling will perform, given the current scope.
-                    Header = usesFull
-                        ? GetText("LOCPlayAch_Menu_UseSharedLibrary", "Use Shared Library")
-                        : GetText("LOCPlayAch_Menu_UseFullLibrary", "Use Full Library")
-                };
-                libraryItem.Click += (_, __) => ToggleFriendLibraryScope(friend, !usesFull);
-                menu.Items.Add(libraryItem);
-            }
+                Header = GetText("LOCPlayAch_Menu_ClearFriend", "Clear Friend"),
+                IsEnabled = IsClearableFriend(friend)
+            };
+            clearItem.Click += (_, __) => ClearFriend(friend);
+            menu.Items.Add(clearItem);
 
             var ignoreItem = new MenuItem
             {
                 Header = GetText("LOCPlayAch_Menu_IgnoreFriend", "Ignore Friend"),
-                IsEnabled = IsIgnorableSteamFriend(friend)
+                IsEnabled = IsConfigurableFriend(friend)
             };
             ignoreItem.Click += (_, __) => IgnoreFriend(friend);
             menu.Items.Add(ignoreItem);
             return menu;
         }
 
-        private void ToggleFriendLibraryScope(FriendSummaryItem friend, bool enableFull)
+        private void ClearFriend(FriendSummaryItem friend)
         {
-            if (friend == null)
+            if (!IsClearableFriend(friend))
+            {
+                return;
+            }
+
+            var name = string.IsNullOrWhiteSpace(friend.DisplayName)
+                ? friend.ExternalUserId
+                : friend.DisplayName;
+            var message = string.Format(
+                GetText(
+                    "LOCPlayAch_Menu_ClearFriend_Confirm",
+                    "Clear cached achievement data for {0}? It will be re-fetched on the next friend refresh."),
+                name);
+
+            var result = _playniteApi?.Dialogs?.ShowMessage(
+                message,
+                GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Warning) ?? MessageBoxResult.None;
+
+            if (result != MessageBoxResult.Yes)
             {
                 return;
             }
 
             try
             {
-                FriendLibraryScopeHelper.SetFullLibrary(
-                    friend.ProviderKey,
-                    friend.ExternalUserId,
-                    friend.DisplayName,
-                    friend.AvatarPath,
-                    enableFull);
+                // Clear only cached achievement/game data; keep the friend record so they stay
+                // registered and re-populate on the next friend refresh.
+                foreach (var account in GetConfigurableFriendAccounts(friend))
+                {
+                    var deleteResult = _friendCache?.DeleteFriendData(account.ProviderKey, account.ExternalUserId, preserveFriendRecord: true);
+                    if (deleteResult != null && !deleteResult.Success)
+                    {
+                        _logger?.Warn($"Failed to clear friend data for {account.ProviderKey}/{account.ExternalUserId}: {deleteResult.ErrorMessage}");
+                    }
+                }
+
+                _viewModel?.ClearFriendSelection();
+                _ = _viewModel?.LoadAsync();
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Failed to toggle library scope for friend {friend.ProviderKey}/{friend.ExternalUserId}.");
+                _logger?.Error(ex, $"Failed to clear friend {friend.ProviderKey}/{friend.ExternalUserId}.");
+                _playniteApi?.Dialogs?.ShowErrorMessage(
+                    string.Format(GetText("LOCPlayAch_Status_Failed", "Failed: {0}"), ex.Message),
+                    GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"));
             }
+        }
+
+        private static bool IsClearableFriend(FriendSummaryItem friend)
+        {
+            return GetConfigurableFriendAccounts(friend).Any();
         }
 
         private void IgnoreFriend(FriendSummaryItem friend)
         {
-            if (!IsIgnorableSteamFriend(friend))
+            if (!IsConfigurableFriend(friend))
             {
                 return;
             }
@@ -585,16 +886,37 @@ namespace PlayniteAchievements.Views
 
             try
             {
-                var settings = ProviderRegistry.Settings<SteamSettings>();
-                settings.AddIgnoredFriend(friend.ExternalUserId, friend.DisplayName, friend.AvatarPath);
-                ProviderRegistry.Write(settings, persistToDisk: true);
-
-                var deleteResult = _friendCache?.DeleteFriendData(friend.ProviderKey, friend.ExternalUserId);
-                if (deleteResult != null && !deleteResult.Success)
+                var plugin = PlayniteAchievementsPlugin.Instance;
+                var persisted = plugin?.Settings?.Persisted;
+                if (plugin == null || persisted == null)
                 {
-                    _logger?.Warn($"Failed to delete ignored friend data for {friend.ProviderKey}/{friend.ExternalUserId}: {deleteResult.ErrorMessage}");
+                    return;
                 }
 
+                foreach (var account in GetConfigurableFriendAccounts(friend))
+                {
+                    var entry = persisted.AddOrUpdateFriend(
+                        account.ProviderKey,
+                        account.ExternalUserId,
+                        friend.DisplayName,
+                        friend.AvatarPath,
+                        null,
+                        FriendSettingsSource.AutoDiscovered);
+                    if (entry != null)
+                    {
+                        entry.IsIgnored = true;
+                    }
+
+                    var deleteResult = _friendCache?.DeleteFriendData(account.ProviderKey, account.ExternalUserId);
+                    if (deleteResult != null && !deleteResult.Success)
+                    {
+                        _logger?.Warn($"Failed to delete ignored friend data for {account.ProviderKey}/{account.ExternalUserId}: {deleteResult.ErrorMessage}");
+                    }
+                }
+
+                FriendSettingsSyncService.SyncConfiguredFriendsToCache(persisted, _friendCache, _logger);
+                plugin.PersistSettingsForUi();
+                plugin.ThemeIntegrationService?.RequestUpdate(null, forceRefresh: true);
                 _viewModel?.ClearFriendSelection();
                 _ = _viewModel?.LoadAsync();
             }
@@ -607,11 +929,37 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private static bool IsIgnorableSteamFriend(FriendSummaryItem friend)
+        private static bool IsConfigurableFriend(FriendSummaryItem friend)
         {
-            return friend != null &&
-                   string.Equals(friend.ProviderKey, "Steam", StringComparison.OrdinalIgnoreCase) &&
-                   !string.IsNullOrWhiteSpace(friend.ExternalUserId);
+            return GetConfigurableFriendAccounts(friend).Any();
+        }
+
+        private static IEnumerable<FriendAccountRef> GetConfigurableFriendAccounts(FriendSummaryItem friend)
+        {
+            if (friend == null)
+            {
+                yield break;
+            }
+
+            if (friend.IsMergedFriend)
+            {
+                foreach (var account in friend.MemberAccounts ?? new List<FriendAccountRef>())
+                {
+                    if (!string.IsNullOrWhiteSpace(account?.ProviderKey) &&
+                        !string.IsNullOrWhiteSpace(account.ExternalUserId))
+                    {
+                        yield return account;
+                    }
+                }
+
+                yield break;
+            }
+
+            if (!string.IsNullOrWhiteSpace(friend.ProviderKey) &&
+                !string.IsNullOrWhiteSpace(friend.ExternalUserId))
+            {
+                yield return FriendAccountRef.From(friend.ProviderKey, friend.ExternalUserId);
+            }
         }
 
         private string GetText(string resourceKey, string fallback)
@@ -620,6 +968,54 @@ namespace PlayniteAchievements.Views
                    ?? ResourceProvider.GetString(resourceKey)
                    ?? fallback
                    ?? resourceKey;
+        }
+
+        private void QueueScrollAfterSummarySelection(object dataContext)
+        {
+            var action = new Action(() =>
+            {
+                if (dataContext is FriendSummaryItem)
+                {
+                    ScrollDataGridToTop(FriendGameSummariesGridControl?.InternalDataGrid);
+                    ScrollDataGridToTop(SelectedFriendGameSummariesGridControl?.InternalDataGrid);
+                    ScrollDataGridToTop(FriendsAchievementsGrid?.InternalDataGrid);
+                }
+                else if (dataContext is FriendGameSummaryItem)
+                {
+                    ScrollDataGridToTop(FriendSummariesGridControl?.InternalDataGrid);
+                    ScrollDataGridToTop(FriendsAchievementsGrid?.InternalDataGrid);
+                }
+            });
+
+            if (Dispatcher == null)
+            {
+                action();
+                return;
+            }
+
+            Dispatcher.BeginInvoke(action, DispatcherPriority.Background);
+        }
+
+        private static void ScrollDataGridToTop(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return;
+            }
+
+            try
+            {
+                if (grid.Items.Count > 0)
+                {
+                    grid.ScrollIntoView(grid.Items[0]);
+                }
+
+                VisualTreeHelpers.FindVisualChild<ScrollViewer>(grid)?.ScrollToTop();
+            }
+            catch
+            {
+                // Best effort; scrolling should not interfere with row selection.
+            }
         }
 
         private static void ClearGridSelection(DataGrid grid)

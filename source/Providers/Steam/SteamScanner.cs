@@ -226,6 +226,32 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             var schema = await FetchSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
+            var hasAchievements = schema?.Achievements?.Count > 0;
+            if (!hasAchievements && schema == null)
+            {
+                var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage)
+                    ? "english"
+                    : _settings.Persisted.GlobalLanguage.Trim();
+                var apiHasAchievements = await _steamApiClient
+                    .GetGameHasAchievementsAsync(accessToken, appId, language, cancel)
+                    .ConfigureAwait(false);
+                if (apiHasAchievements == false)
+                {
+                    _logger?.Debug($"[SteamAch] Skipping stats scrape for appId={appId}; Steam API reports no achievements.");
+                    return new GameAchievementData
+                    {
+                        AppId = appId,
+                        GameName = game.Name,
+                        ProviderKey = "Steam",
+                        LibrarySourceName = game?.Source?.Name,
+                        LastUpdatedUtc = DateTime.UtcNow,
+                        HasAchievements = false,
+                        PlayniteGameId = game.Id,
+                        Achievements = new List<AchievementDetail>()
+                    };
+                }
+            }
+
             var unlocked = await FetchUnlockedAsync(appId, game?.Name, steamUserId, accessToken, schema, cancel).ConfigureAwait(false);
 
             var gameData = new GameAchievementData
@@ -235,7 +261,7 @@ namespace PlayniteAchievements.Providers.Steam
                 ProviderKey = "Steam",
                 LibrarySourceName = game?.Source?.Name,
                 LastUpdatedUtc = DateTime.UtcNow,
-                HasAchievements = schema?.Achievements != null && schema.Achievements.Count > 0,
+                HasAchievements = hasAchievements,
                 PlayniteGameId = game.Id,
                 Achievements = new List<AchievementDetail>()
             };
@@ -304,7 +330,7 @@ namespace PlayniteAchievements.Providers.Steam
             return gameData;
         }
 
-        private Task<SchemaAndPercentages> FetchSchemaAsync(string accessToken, int appId, CancellationToken cancel)
+        internal Task<SchemaAndPercentages> FetchSchemaAsync(string accessToken, int appId, CancellationToken cancel)
         {
             var language = string.IsNullOrWhiteSpace(_settings.Persisted.GlobalLanguage) ? "english" : _settings.Persisted.GlobalLanguage.Trim();
             return _steamApiClient.GetSchemaForGameDetailedAsync(
@@ -365,42 +391,6 @@ namespace PlayniteAchievements.Providers.Steam
                 throw new SteamTransientException($"[SteamAch] Transient scrape result for appId={appId}. detail={detail}, status={status}");
             }
 
-            var iconFileToAchievements = new Dictionary<string, List<SchemaAchievement>>(StringComparer.OrdinalIgnoreCase);
-
-            if (schema?.Achievements != null)
-            {
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Schema has {schema.Achievements.Count} achievements for appId={appId}");
-
-                foreach (var ach in schema.Achievements)
-                {
-                    if (string.IsNullOrWhiteSpace(ach.Name))
-                        continue;
-
-                    var iconFile = ExtractIconFilename(ach.Icon);
-                    if (!string.IsNullOrWhiteSpace(iconFile))
-                    {
-                        if (!iconFileToAchievements.ContainsKey(iconFile))
-                            iconFileToAchievements[iconFile] = new List<SchemaAchievement>();
-                        iconFileToAchievements[iconFile].Add(ach);
-                    }
-
-                    var iconGrayFile = ExtractIconFilename(ach.IconGray);
-                    if (!string.IsNullOrWhiteSpace(iconGrayFile) &&
-                        !string.Equals(iconGrayFile, iconFile, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (!iconFileToAchievements.ContainsKey(iconGrayFile))
-                            iconFileToAchievements[iconGrayFile] = new List<SchemaAchievement>();
-                        iconFileToAchievements[iconGrayFile].Add(ach);
-                    }
-                }
-
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Built iconFileToAchievements with {iconFileToAchievements.Count} icon entries");
-            }
-            else
-            {
-                // _logger?.Warn($"[SteamAch] FetchUnlockedAsync: Schema is null or has no achievements for appId={appId}");
-            }
-
             var data = new UserUnlockedAchievements
             {
                 LastUpdatedUtc = DateTime.UtcNow,
@@ -413,97 +403,32 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (scraped.Rows != null)
             {
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Scraped {scraped.Rows.Count} rows for appId={appId}");
-                int withTime = 0, withoutTime = 0, matched = 0, fallbackMatches = 0;
+                var apiNamesByRow = SteamAchievementApiNameResolver.Resolve(schema, scraped.Rows);
 
                 foreach (var row in scraped.Rows)
                 {
-                    var iconFile = ExtractIconFilename(row.IconUrl);
-                    if (!string.IsNullOrWhiteSpace(iconFile) && iconFileToAchievements.TryGetValue(iconFile, out var achievements))
+                    if (row == null ||
+                        !apiNamesByRow.TryGetValue(row, out var apiName) ||
+                        string.IsNullOrWhiteSpace(apiName))
                     {
-                        string apiName = null;
+                        continue;
+                    }
 
-                        if (achievements.Count == 1)
+                    data.ProgressNum[apiName] = row.ProgressNum;
+                    data.ProgressDenom[apiName] = row.ProgressDenom;
+
+                    if (row.IsUnlocked)
+                    {
+                        data.UnlockedApiNames.Add(apiName);
+                        if (row.UnlockTimeUtc.HasValue)
                         {
-                            // Icon maps to exactly one achievement - use it directly
-                            apiName = achievements[0].Name;
-                        }
-                        else
-                        {
-                            var rowDescription = NormalizeMatchText(row.Description);
-                            var rowDisplayName = NormalizeMatchText(row.DisplayName);
-
-                            // Multiple achievements share this icon - prioritize: Description, then DisplayName
-                            var descMatches = achievements.Where(a =>
-                                string.Equals(
-                                    NormalizeMatchText(a.Description),
-                                    rowDescription,
-                                    StringComparison.OrdinalIgnoreCase)).ToList();
-
-                            if (descMatches.Count == 1)
-                            {
-                                apiName = descMatches[0].Name;
-                            }
-                            else
-                            {
-                                // Description matched zero or multiple - fall back to DisplayName
-                                apiName = achievements.FirstOrDefault(a =>
-                                    string.Equals(
-                                        NormalizeMatchText(a.DisplayName),
-                                        rowDisplayName,
-                                        StringComparison.OrdinalIgnoreCase))?.Name;
-                            }
-
-                            if (apiName != null)
-                                fallbackMatches++;
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(apiName))
-                        {
-                            data.ProgressNum[apiName] = row.ProgressNum;
-                            data.ProgressDenom[apiName] = row.ProgressDenom;
-
-                            if (row.IsUnlocked)
-                            {
-                                data.UnlockedApiNames.Add(apiName);
-                                if (row.UnlockTimeUtc.HasValue)
-                                {
-                                    data.UnlockTimesUtc[apiName] = row.UnlockTimeUtc.Value;
-                                }
-
-                                matched++;
-                                if (row.UnlockTimeUtc.HasValue) withTime++; else withoutTime++;
-                            }
+                            data.UnlockTimesUtc[apiName] = row.UnlockTimeUtc.Value;
                         }
                     }
                 }
-                // _logger?.Info($"[SteamAch] FetchUnlockedAsync: Processed rows - withTime={withTime}, withoutTime={withoutTime}, matched={matched}, fallbackMatches={fallbackMatches}");
             }
 
             return data;
-        }
-
-        private static string ExtractIconFilename(string iconUrl)
-        {
-            if (string.IsNullOrWhiteSpace(iconUrl))
-                return null;
-
-            var queryIndex = iconUrl.IndexOf('?');
-            if (queryIndex > 0)
-                iconUrl = iconUrl.Substring(0, queryIndex);
-
-            var lastSlash = iconUrl.LastIndexOf('/');
-            if (lastSlash < 0 || lastSlash >= iconUrl.Length - 1)
-                return null;
-
-            return iconUrl.Substring(lastSlash + 1);
-        }
-
-        private static string NormalizeMatchText(string value)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? string.Empty
-                : value.Trim();
         }
 
         // ---------------------------------------------------------------------

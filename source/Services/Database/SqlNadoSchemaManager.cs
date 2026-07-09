@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 14;
+        public const int SchemaVersion = 15;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -61,6 +61,7 @@ namespace PlayniteAchievements.Services.Database
                 ProviderKey TEXT NOT NULL COLLATE NOCASE,
                 ProviderPlatformKey TEXT NULL,
                 ProviderGameId INTEGER NULL,
+                ProviderGameKey TEXT NULL COLLATE NOCASE,
                 PlayniteGameId TEXT NULL,
                 GameName TEXT NULL,
                 LibrarySourceName TEXT NULL,
@@ -248,6 +249,10 @@ namespace PlayniteAchievements.Services.Database
                 ON Games (ProviderKey, ProviderGameId)
                 WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
 
+            ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_Provider_GameKey
+                ON Games (ProviderKey, ProviderGameKey)
+                WHERE ProviderGameKey IS NOT NULL AND TRIM(ProviderGameKey) <> '';");
+
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_Games_PlayniteGameId
                 ON Games (PlayniteGameId);");
 
@@ -309,19 +314,27 @@ namespace PlayniteAchievements.Services.Database
             ExecuteSafe(db, @"CREATE TABLE IF NOT EXISTS ProviderGameDefinitionState (
                 Id INTEGER PRIMARY KEY AUTOINCREMENT,
                 ProviderKey TEXT NOT NULL COLLATE NOCASE,
-                ProviderGameId INTEGER NOT NULL,
+                ProviderGameId INTEGER NULL,
+                ProviderGameKey TEXT NULL COLLATE NOCASE,
                 GameName TEXT NULL,
                 IconUrl TEXT NULL,
                 Status TEXT NOT NULL,
                 LastCheckedUtc TEXT NOT NULL,
                 CreatedUtc TEXT NOT NULL,
-                UpdatedUtc TEXT NOT NULL,
-                UNIQUE (ProviderKey, ProviderGameId)
+                UpdatedUtc TEXT NOT NULL
             );");
         }
 
         private void EnsureProviderGameDefinitionStateIndexes(SQLiteDatabase db)
         {
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_ProviderGameDefinitionState_GameId
+                ON ProviderGameDefinitionState (ProviderKey, ProviderGameId)
+                WHERE ProviderGameId IS NOT NULL AND ProviderGameId > 0;");
+
+            ExecuteSafe(db, @"CREATE UNIQUE INDEX IF NOT EXISTS UX_ProviderGameDefinitionState_GameKey
+                ON ProviderGameDefinitionState (ProviderKey, ProviderGameKey)
+                WHERE ProviderGameKey IS NOT NULL AND TRIM(ProviderGameKey) <> '';");
+
             ExecuteSafe(db, @"CREATE INDEX IF NOT EXISTS IX_ProviderGameDefinitionState_Status_Checked
                 ON ProviderGameDefinitionState (Status, LastCheckedUtc);");
         }
@@ -443,6 +456,7 @@ namespace PlayniteAchievements.Services.Database
                                 ProviderKey TEXT NOT NULL COLLATE NOCASE,
                                 ProviderPlatformKey TEXT NULL,
                                 ProviderGameId INTEGER NULL,
+                                ProviderGameKey TEXT NULL COLLATE NOCASE,
                                 PlayniteGameId TEXT NULL,
                                 GameName TEXT NULL,
                                 LibrarySourceName TEXT NULL,
@@ -453,7 +467,7 @@ namespace PlayniteAchievements.Services.Database
 
                         // Migrate data with value transformation (INSERT OR IGNORE to handle duplicates)
                         ExecuteSafe(db,
-                                                        @"INSERT OR IGNORE INTO Games_New (Id, ProviderKey, ProviderPlatformKey, ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
+                                                        @"INSERT OR IGNORE INTO Games_New (Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
                               SELECT
                                 Id,
                                 CASE
@@ -476,7 +490,7 @@ namespace PlayniteAchievements.Services.Database
                                     ELSE 'Unmapped'
                                 END,
                                                                 NULL,
-                                ProviderGameId, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                                ProviderGameId, NULL, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
                               FROM Games;");
                         _logger?.Info("[Schema] Migrated Games data to ProviderKey");
 
@@ -588,6 +602,7 @@ namespace PlayniteAchievements.Services.Database
 
             gamesColumns = GetColumnNames(db, "Games");
             EnsureColumn(db, "Games", "ProviderPlatformKey", "TEXT NULL", gamesColumns, ref backupPath);
+            EnsureColumn(db, "Games", "ProviderGameKey", "TEXT NULL COLLATE NOCASE", gamesColumns, ref backupPath);
             EnsureColumn(db, "Games", "IconPath", "TEXT NULL", gamesColumns, ref backupPath);
             EnsureColumn(db, "Games", "CoverPath", "TEXT NULL", gamesColumns, ref backupPath);
 
@@ -599,10 +614,29 @@ namespace PlayniteAchievements.Services.Database
 
             EnsureFriendOwnershipTable(db);
             ReconcileFriendOwnershipColumns(db, ref backupPath);
+            ReconcileProviderGameDefinitionStateTable(db, ref backupPath);
             EnsureProviderGameDefinitionStateTable(db);
             EnsureProviderGameDefinitionStateIndexes(db);
 
             return backupPath;
+        }
+
+        private void ReconcileProviderGameDefinitionStateTable(SQLiteDatabase db, ref string backupPath)
+        {
+            var columns = GetColumnNames(db, "ProviderGameDefinitionState");
+            if (columns.Count == 0)
+            {
+                return;
+            }
+
+            if (!columns.Contains("providergamekey"))
+            {
+                ExecuteSchemaChangeWithBackup(
+                    db,
+                    "DROP TABLE IF EXISTS ProviderGameDefinitionState;",
+                    ref backupPath,
+                    "Recreated ProviderGameDefinitionState for string provider game keys.");
+            }
         }
 
         private void ReconcileFriendOwnershipColumns(SQLiteDatabase db, ref string backupPath)
@@ -804,6 +838,7 @@ namespace PlayniteAchievements.Services.Database
             var gamesColumns = GetColumnNames(db, "Games");
             EnsureRequiredColumn(gamesColumns, "ProviderKey", "Games", missing);
             EnsureRequiredColumn(gamesColumns, "ProviderPlatformKey", "Games", missing);
+            EnsureRequiredColumn(gamesColumns, "ProviderGameKey", "Games", missing);
             EnsureRequiredColumn(gamesColumns, "IconPath", "Games", missing);
             EnsureRequiredColumn(gamesColumns, "CoverPath", "Games", missing);
 
@@ -830,6 +865,7 @@ namespace PlayniteAchievements.Services.Database
             var providerGameDefinitionStateColumns = GetColumnNames(db, "ProviderGameDefinitionState");
             EnsureRequiredColumn(providerGameDefinitionStateColumns, "ProviderKey", "ProviderGameDefinitionState", missing);
             EnsureRequiredColumn(providerGameDefinitionStateColumns, "ProviderGameId", "ProviderGameDefinitionState", missing);
+            EnsureRequiredColumn(providerGameDefinitionStateColumns, "ProviderGameKey", "ProviderGameDefinitionState", missing);
             EnsureRequiredColumn(providerGameDefinitionStateColumns, "GameName", "ProviderGameDefinitionState", missing);
             EnsureRequiredColumn(providerGameDefinitionStateColumns, "IconUrl", "ProviderGameDefinitionState", missing);
             EnsureRequiredColumn(providerGameDefinitionStateColumns, "Status", "ProviderGameDefinitionState", missing);

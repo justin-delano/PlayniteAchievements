@@ -241,6 +241,25 @@ namespace PlayniteAchievements.Providers
             return false;
         }
 
+        // Static convenience wrappers so view models and cache projections can resolve provider
+        // visuals off the shared instance without threading a registry reference, mirroring
+        // GetLocalizedName.
+        public static bool TryResolveProviderVisuals(string providerKey, out string iconKey, out string colorHex)
+        {
+            iconKey = null;
+            colorHex = null;
+            var instance = Instance;
+            return instance != null && instance.TryGetProviderVisuals(providerKey, out iconKey, out colorHex);
+        }
+
+        public static string GetProviderColorHex(string providerKey, string fallback = "#888888")
+        {
+            return TryResolveProviderVisuals(providerKey, out _, out var colorHex) &&
+                   !string.IsNullOrWhiteSpace(colorHex)
+                ? colorHex
+                : fallback;
+        }
+
         // ===================== ENABLED STATE =====================
 
         public event EventHandler<ProviderEnabledChangedEventArgs> ProviderEnabledChanged;

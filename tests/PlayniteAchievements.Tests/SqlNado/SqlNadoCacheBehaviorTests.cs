@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Services.Database;
 using SqlNado;
 
@@ -177,6 +179,73 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [TestMethod]
+        public void BuildDefinitionsFromFriendRows_SeedsFromRowsWithApiNameAndDisplayName()
+        {
+            var rows = new[]
+            {
+                new FriendAchievementRow
+                {
+                    ApiName = "plat",
+                    DisplayName = "Platinum",
+                    Description = "All trophies",
+                    UnlockedIconUrl = "unlocked.png",
+                    LockedIconUrl = "locked.png",
+                    Points = 90,
+                    Category = "Finale Pack",
+                    CategoryType = "DLC",
+                    TrophyType = "platinum",
+                    Hidden = true,
+                    GlobalPercentUnlocked = 1.2,
+                    Rarity = RarityTier.UltraRare,
+                    Unlocked = true
+                },
+                new FriendAchievementRow { ApiName = "story", DisplayName = "Story done", Description = "Finish", Unlocked = false }
+            };
+
+            var defs = SqlNadoCacheBehavior.BuildDefinitionsFromFriendRows(rows);
+
+            Assert.AreEqual(2, defs.Count);
+            Assert.AreEqual("plat", defs[0].ApiName);
+            Assert.AreEqual("Platinum", defs[0].DisplayName);
+            Assert.AreEqual("All trophies", defs[0].Description);
+            Assert.AreEqual("unlocked.png", defs[0].UnlockedIconPath);
+            Assert.AreEqual("locked.png", defs[0].LockedIconPath);
+            Assert.AreEqual(90, defs[0].Points);
+            Assert.AreEqual("Finale Pack", defs[0].Category);
+            Assert.AreEqual("DLC", defs[0].CategoryType);
+            Assert.AreEqual("platinum", defs[0].TrophyType);
+            Assert.IsTrue(defs[0].Hidden);
+            Assert.IsTrue(defs[0].IsCapstone);
+            Assert.AreEqual(1.2, defs[0].GlobalPercentUnlocked);
+            Assert.AreEqual(RarityTier.UltraRare, defs[0].Rarity);
+        }
+
+        [TestMethod]
+        public void BuildDefinitionsFromFriendRows_SkipsRowsMissingKeyOrName_AndDedupesByApiName()
+        {
+            var rows = new[]
+            {
+                new FriendAchievementRow { ApiName = "", DisplayName = "No key" },
+                new FriendAchievementRow { ApiName = "only-key", DisplayName = "  " },
+                new FriendAchievementRow { ApiName = "dup", DisplayName = "First" },
+                new FriendAchievementRow { ApiName = " DUP ", DisplayName = "Second (dupe key)" },
+                null
+            };
+
+            var defs = SqlNadoCacheBehavior.BuildDefinitionsFromFriendRows(rows);
+
+            Assert.AreEqual(1, defs.Count);
+            Assert.AreEqual("dup", defs[0].ApiName);
+            Assert.AreEqual("First", defs[0].DisplayName);
+        }
+
+        [TestMethod]
+        public void BuildDefinitionsFromFriendRows_NullInput_ReturnsEmpty()
+        {
+            Assert.AreEqual(0, SqlNadoCacheBehavior.BuildDefinitionsFromFriendRows(null).Count);
+        }
+
+        [TestMethod]
         public void ShouldFallbackToProviderGameIdLookup_RetroAchievementsWithPlayniteId_ReturnsFalse()
         {
             var shouldFallback = SqlNadoCacheBehavior.ShouldFallbackToProviderGameIdLookup(
@@ -320,6 +389,172 @@ namespace PlayniteAchievements.SqlNado.Tests
             StringAssert.Contains(store, "private static void DeleteStaleSharedFriendOwnership");
             StringAssert.Contains(store, "g.PlayniteGameId IS NOT NULL");
             StringAssert.Contains(store, "TRIM(g.PlayniteGameId) <> ''");
+        }
+
+        [TestMethod]
+        public void CacheStore_ExophaseStringKeysDoNotFallbackToStaleSharedMappings()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "ShouldUseSharedFriendGameFallback(providerKey, providerGameKey, playniteGameId)");
+            StringAssert.Contains(store, "return !IsExophaseProvider(providerKey) || string.IsNullOrWhiteSpace(providerGameKey);");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendGameAndAchievementRowsShareImageResolution()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "GameLogo = ResolveFriendGameIconPath(presentation, row.IconPath)");
+            StringAssert.Contains(store, "GameCoverPath = ResolveFriendGameCoverPath(presentation, row.CoverPath)");
+            StringAssert.Contains(store, "GameIconPath = ResolveFriendGameIconPath(presentation, row.IconPath)");
+            StringAssert.Contains(store, "GameCoverPath = ResolveFriendGameCoverPath(presentation, row.CoverPath)");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendAchievementRowsRequireCurrentOwnership()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "INNER JOIN FriendOwnership fo ON fo.UserId = u.Id AND fo.GameId = g.Id");
+        }
+
+        [TestMethod]
+        public void CacheStore_SelectedGameFriendCandidatesSkipCurrentUserNoAchievementGames()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "AND ugp.HasAchievements != 0");
+        }
+
+        [TestMethod]
+        public void CacheStore_RecentFriendCandidatesUsePlaytimeDeltaOnly()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
+
+            // Recent-scope recency is decided in the runtime from provider signals, not by a SQL
+            // 2-week-playtime filter or a wall-clock last-scrape TTL.
+            Assert.IsFalse(store.Contains(@"AND COALESCE(fo.Playtime2WeeksMinutes, 0) > 0"),
+                "Recent scope must no longer filter on 2-week playtime in SQL.");
+            Assert.IsFalse(store.Contains("fo.LastScrapedUtc IS NULL"));
+            Assert.IsFalse(store.Contains("fo.LastScrapedUtc < ?"));
+            Assert.IsFalse(runtime.Contains("RefreshTtl"), "The wall-clock friend refresh TTL must be gone.");
+
+            // Steam recency is the playtime delta since the last successful scrape.
+            StringAssert.Contains(runtime, "fresh.PlaytimeForeverMinutes > prev.PlaytimeForeverMinutes");
+        }
+
+        [TestMethod]
+        public void CacheStore_DeleteFriendData_PreserveFriendRecord_SkipsUsersDelete()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            // Clear keeps the friend registered; only Remove/Ignore hard-delete the Users row.
+            StringAssert.Contains(store, "public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false)");
+            StringAssert.Contains(store, "if (!preserveFriendRecord)");
+            StringAssert.Contains(store, "DELETE FROM Users WHERE Id = ? AND IsCurrentUser = 0;");
+        }
+
+        [TestMethod]
+        public void ClearFriend_PreservesFriendRecord_WhileRemoveAndIgnoreDoNot()
+        {
+            var overview = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml.cs"));
+
+            StringAssert.Contains(overview, "foreach (var account in GetConfigurableFriendAccounts(friend))");
+            StringAssert.Contains(overview, "DeleteFriendData(account.ProviderKey, account.ExternalUserId, preserveFriendRecord: true)");
+            // Ignore keeps the full delete (no preserve flag).
+            StringAssert.Contains(overview, "DeleteFriendData(account.ProviderKey, account.ExternalUserId);");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendGameSummary_UsesDisplayProviderKey()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "g.ProviderPlatformKey AS ProviderPlatformKey");
+            StringAssert.Contains(store, "ResolveDisplayProviderKey(row.ProviderKey, row.ProviderPlatformKey)");
+            StringAssert.Contains(store, "ProviderRegistry.TryResolveProviderVisuals(displayProviderKey");
+        }
+
+        [TestMethod]
+        public void FriendGameImages_DownloadedToPaths_NotPersistedAsUrl()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
+
+            // Header banner is downloaded with the normalized cache key and stored as local icon+cover paths.
+            StringAssert.Contains(runtime, "var cacheKey = GetProviderGameCacheKey(appId, providerGameKey);");
+            StringAssert.Contains(runtime, "DownloadDefinitionGameImageAsync(providerKey, providerGameKey, appId, definition.IconUrl, definition.GameName, cancel, progress)");
+            StringAssert.Contains(runtime, "SaveProviderGameImagePaths(providerKey, cacheKey, appId, localPath, localPath);");
+            StringAssert.Contains(runtime, "var gameKey = GetProviderGameCacheKey(source.AppId, source.ProviderGameKey)");
+            StringAssert.Contains(store, "AND (ProviderGameKey = ? OR ProviderGameId = ?)");
+            // The source URL is not persisted into the definition state.
+            StringAssert.Contains(store, "// Image source URLs are not persisted; the header banner is downloaded to");
+        }
+
+        [TestMethod]
+        public void ResolveFriendDefinition_PrefersStableApiName_OverLocalizedDisplayText()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            // The stable api name is tried before the display-name/description/icon fallbacks so a
+            // friend's localized achievement text still matches the canonical definition.
+            StringAssert.Contains(store, "var rowApiName = NormalizeMatchText(row.ApiName);");
+            StringAssert.Contains(store, "string.Equals(NormalizeMatchText(def.ApiName), rowApiName, StringComparison.OrdinalIgnoreCase)");
+            var apiNameIndex = store.IndexOf("var byApiName = definitions", StringComparison.Ordinal);
+            var displayNameIndex = store.IndexOf("var exact = definitions", StringComparison.Ordinal);
+            Assert.IsTrue(apiNameIndex > 0 && apiNameIndex < displayNameIndex,
+                "ApiName match must precede the display-name match.");
+        }
+
+        [TestMethod]
+        public void CacheStore_ExophaseMappedFriendAchievementsReuseCurrentUserDefinitions()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "TryRefreshMappedCurrentUserDefinitionsForProxyGame(");
+            StringAssert.Contains(store, "LoadMappedCurrentUserDefinitionsForProxyGame(db, game)");
+            StringAssert.Contains(store, "ExophaseFriendPlatformMatcher.ResolveStoredGameFamilyKey");
+            StringAssert.Contains(store, "CreateAchievementDetailFromDefinitionRow");
+            StringAssert.Contains(store, "ShouldRefreshDefinitionsFromFriendRows(definitions, seededDefinitions)");
+            Assert.IsFalse(store.Contains("UpdateAchievementDefinitionMetadataFromFriendRows"),
+                "Exophase friend metadata must not overwrite mapped/native current-user definitions.");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendAchievementRowsResolveMyUnlocksByPlayniteGameAndApiName()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "WITH CurrentUnlocks AS");
+            StringAssert.Contains(store, "GROUP BY cg.PlayniteGameId, cad.ApiName");
+            StringAssert.Contains(store, "LEFT JOIN CurrentUnlocks cu ON cu.PlayniteGameId = g.PlayniteGameId");
+            StringAssert.Contains(store, "AND cu.ApiName = ad.ApiName");
+        }
+
+        [TestMethod]
+        public void CacheStore_FriendAchievementRowsApplyCustomDataForAllProviders()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "var customDataByGameId = new Dictionary<Guid, ResolvedGameCustomData>();");
+            StringAssert.Contains(store, "ApplyCustomDataToFriendAchievement(item, customData);");
+            StringAssert.Contains(store, "GameCustomDataLookup.ResolveGameCustomData(");
+            StringAssert.Contains(store, "_plugin?.GameCustomDataStore");
+            StringAssert.Contains(store, "customData.AchievementCategoryOverrides");
+            StringAssert.Contains(store, "customData.AchievementCategoryTypeOverrides");
+            StringAssert.Contains(store, "AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryOverride)");
+            StringAssert.Contains(store, "AchievementCategoryTypeHelper.NormalizeOrDefault(categoryTypeOverride)");
+        }
+
+        [TestMethod]
+        public void NormalizeMatchText_FoldsDiacritics()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            StringAssert.Contains(store, "NormalizationForm.FormD");
+            StringAssert.Contains(store, "UnicodeCategory.NonSpacingMark");
         }
 
         private static string FindRepoFile(params string[] parts)

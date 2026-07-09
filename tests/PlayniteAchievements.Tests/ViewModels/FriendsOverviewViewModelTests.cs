@@ -2,11 +2,13 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace PlayniteAchievements.Tests.ViewModels
 {
@@ -69,6 +71,40 @@ namespace PlayniteAchievements.Tests.ViewModels
             CollectionAssert.AreEquivalent(
                 new[] { "Recent Only", "Alice Game Two" },
                 viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void ScopedFriendAchievementsUseFullRowsButRecentStaysUnlockedOnly()
+        {
+            var data = CreateData();
+            var locked = CreateAchievement(
+                "Steam",
+                "alice",
+                "Alice",
+                "https://cdn.example/alice.png",
+                10,
+                data.Games[0].PlayniteGameId.Value,
+                "Game One",
+                "Alice Locked",
+                "Story",
+                "Main",
+                new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            locked.Unlocked = false;
+            locked.UnlockTimeUtc = null;
+            data.AllAchievements = data.AllUnlockedAchievements.Concat(new[] { locked }).ToList();
+
+            var viewModel = CreateViewModel(data);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            CollectionAssert.AreEqual(
+                new[] { "Recent Only" },
+                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
+
+            viewModel.SelectedFriend = data.Friends[0];
+
+            Assert.IsTrue(viewModel.DisplayedAchievements.Any(item =>
+                item.DisplayName == "Alice Locked" &&
+                !item.Unlocked));
         }
 
         [TestMethod]
@@ -161,6 +197,21 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void SelectedFriendGameHeaderUsesFriendUnlockFraction_NotVisibleRows()
+        {
+            var data = CreateData();
+            var viewModel = CreateViewModel(data);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            viewModel.SelectedFriend = data.Friends[0];
+            viewModel.SelectedGame = data.Games[1];
+            viewModel.AchievementSearchText = "does not match";
+
+            Assert.AreEqual(0, viewModel.DisplayedAchievements.Count);
+            StringAssert.Contains(viewModel.AchievementCountText, "1/2");
+        }
+
+        [TestMethod]
         public void FriendGameFiltersIgnoreOwnershipOnlyLinks()
         {
             var data = CreateData();
@@ -200,6 +251,81 @@ namespace PlayniteAchievements.Tests.ViewModels
             CollectionAssert.AreEquivalent(
                 new[] { "Recent Only", "Alice Game Two" },
                 viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
+        }
+
+        [TestMethod]
+        public void CacheInvalidated_DuringFriendRefresh_ReloadsOverviewData()
+        {
+            var initialData = CreateData();
+            var updatedData = CreateData();
+            updatedData.Friends.Add(new FriendSummaryItem
+            {
+                ProviderKey = "Steam",
+                ExternalUserId = "dana",
+                DisplayName = "Dana",
+                GamesWithUnlocksCount = 1,
+                UnlockedAchievementsCount = 1,
+                LastUnlockUtc = new DateTime(2026, 1, 8, 0, 0, 0, DateTimeKind.Utc)
+            });
+
+            var cache = new StubFriendCache(initialData);
+            var refreshRuntime = new RefreshRuntime();
+            refreshRuntime.BeginTestRefresh(new ProgressReport { Mode = RefreshModeType.FriendsFull });
+            var viewModel = CreateViewModel(
+                cache,
+                refreshRuntime: refreshRuntime,
+                cacheInvalidationDebounceInterval: TimeSpan.Zero);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+            Assert.AreEqual(3, viewModel.FilteredFriends.Count);
+
+            cache.Data = updatedData;
+            refreshRuntime.RaiseCacheInvalidated();
+
+            Assert.IsTrue(
+                SpinWait.SpinUntil(
+                    () =>
+                    {
+                        try
+                        {
+                            return viewModel.FilteredFriends
+                                .ToList()
+                                .Any(friend => friend.DisplayName == "Dana");
+                        }
+                        catch (InvalidOperationException)
+                        {
+                            return false;
+                        }
+                    },
+                    TimeSpan.FromSeconds(2)));
+        }
+
+        [TestMethod]
+        public void CacheInvalidated_DuringFriendRefresh_PreservesSelectedFriendAndGame()
+        {
+            var initialData = CreateData();
+            var updatedData = CreateData();
+            updatedData.Friends[0].DisplayName = "Alice Reloaded";
+            updatedData.Games[1].GameName = "Game Two Reloaded";
+
+            var cache = new StubFriendCache(initialData);
+            var refreshRuntime = new RefreshRuntime();
+            refreshRuntime.BeginTestRefresh(new ProgressReport { Mode = RefreshModeType.FriendsFull });
+            var viewModel = CreateViewModel(
+                cache,
+                refreshRuntime: refreshRuntime,
+                cacheInvalidationDebounceInterval: TimeSpan.Zero);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+            viewModel.SelectedFriend = initialData.Friends[0];
+            viewModel.SelectedGame = initialData.Games[1];
+
+            cache.Data = updatedData;
+            refreshRuntime.RaiseCacheInvalidated();
+
+            Assert.IsTrue(
+                SpinWait.SpinUntil(
+                    () => string.Equals(viewModel.SelectedFriend?.DisplayName, "Alice Reloaded", StringComparison.Ordinal) &&
+                          string.Equals(viewModel.SelectedGame?.GameName, "Game Two Reloaded", StringComparison.Ordinal),
+                    TimeSpan.FromSeconds(2)));
         }
 
         [TestMethod]
@@ -323,16 +449,16 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.IsTrue(success);
             Assert.AreEqual(RefreshModeType.FriendsCustom, request.Mode);
-            Assert.AreEqual(FriendRefreshScope.Full, request.CustomFriendOptions.Scope);
-            Assert.AreEqual(FriendLibraryScope.Full, request.CustomFriendOptions.LibraryScope);
+            Assert.AreEqual(RefreshSubjects.Friends, request.Options.Subjects);
+            Assert.AreEqual(RefreshGameScope.All, request.Options.Scope);
             CollectionAssert.AreEqual(
                 new[] { "Steam" },
-                request.CustomFriendOptions.ProviderKeys.ToList());
+                request.Options.ProviderKeys.ToList());
             CollectionAssert.AreEqual(
                 new[] { "alice" },
-                request.CustomFriendOptions.FriendExternalUserIds.ToList());
-            Assert.IsNull(request.CustomFriendOptions.PlayniteGameIds);
-            Assert.IsNull(request.CustomFriendOptions.ProviderAppIds);
+                request.Options.FriendExternalUserIds.ToList());
+            Assert.IsNull(request.Options.PlayniteGameIds);
+            Assert.IsNull(request.Options.ProviderAppIds);
         }
 
         [TestMethod]
@@ -348,17 +474,17 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.IsTrue(success);
             Assert.AreEqual(RefreshModeType.FriendsCustom, request.Mode);
-            Assert.AreEqual(FriendRefreshScope.SelectedGame, request.CustomFriendOptions.Scope);
-            Assert.AreEqual(FriendLibraryScope.Shared, request.CustomFriendOptions.LibraryScope);
+            Assert.AreEqual(RefreshSubjects.Friends, request.Options.Subjects);
+            Assert.AreEqual(RefreshGameScope.SelectedGame, request.Options.Scope);
             CollectionAssert.AreEqual(
                 new[] { "Steam" },
-                request.CustomFriendOptions.ProviderKeys.ToList());
+                request.Options.ProviderKeys.ToList());
             CollectionAssert.AreEqual(
                 new[] { "alice" },
-                request.CustomFriendOptions.FriendExternalUserIds.ToList());
+                request.Options.FriendExternalUserIds.ToList());
             CollectionAssert.AreEqual(
                 new[] { data.Games[1].PlayniteGameId.Value },
-                request.CustomFriendOptions.PlayniteGameIds.ToList());
+                request.Options.PlayniteGameIds.ToList());
         }
 
         [TestMethod]
@@ -380,28 +506,38 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             Assert.IsTrue(success);
             Assert.AreEqual(RefreshModeType.FriendsCustom, request.Mode);
-            Assert.AreEqual(FriendRefreshScope.SelectedGame, request.CustomFriendOptions.Scope);
-            Assert.AreEqual(FriendLibraryScope.Full, request.CustomFriendOptions.LibraryScope);
+            Assert.AreEqual(RefreshSubjects.Friends, request.Options.Subjects);
+            Assert.AreEqual(RefreshGameScope.SelectedGame, request.Options.Scope);
             CollectionAssert.AreEqual(
                 new[] { "alice" },
-                request.CustomFriendOptions.FriendExternalUserIds.ToList());
+                request.Options.FriendExternalUserIds.ToList());
             CollectionAssert.AreEqual(
                 new[] { 999 },
-                request.CustomFriendOptions.ProviderAppIds.ToList());
+                request.Options.ProviderAppIds.ToList());
         }
 
         private static FriendsOverviewViewModel CreateViewModel(
             FriendsOverviewData data,
             Action<PersistedSettings> configure = null)
         {
+            return CreateViewModel(new StubFriendCache(data), configure);
+        }
+
+        private static FriendsOverviewViewModel CreateViewModel(
+            StubFriendCache cache,
+            Action<PersistedSettings> configure = null,
+            RefreshRuntime refreshRuntime = null,
+            TimeSpan? cacheInvalidationDebounceInterval = null)
+        {
             var settings = new PlayniteAchievementsSettings();
             configure?.Invoke(settings.Persisted);
             return new FriendsOverviewViewModel(
-                new StubFriendCache(data),
+                cache,
                 null,
-                null,
+                refreshRuntime,
                 settings,
-                null);
+                null,
+                cacheInvalidationDebounceInterval: cacheInvalidationDebounceInterval);
         }
 
         private static FriendsOverviewData CreateData()
@@ -620,12 +756,12 @@ namespace PlayniteAchievements.Tests.ViewModels
 
         private sealed class StubFriendCache : IFriendCacheManager
         {
-            private readonly FriendsOverviewData _data;
-
             public StubFriendCache(FriendsOverviewData data)
             {
-                _data = data;
+                Data = data;
             }
+
+            public FriendsOverviewData Data { get; set; }
 
             public FriendCacheWriteResult SaveFriendList(string providerKey, IReadOnlyList<FriendIdentity> friends) =>
                 FriendCacheWriteResult.Ok();
@@ -644,15 +780,16 @@ namespace PlayniteAchievements.Tests.ViewModels
 
             public FriendCacheWriteResult SaveProviderGameImagePaths(
                 string providerKey,
+                string providerGameKey,
                 int appId,
                 string iconAbsolutePath,
                 string coverAbsolutePath) =>
                 FriendCacheWriteResult.Ok();
 
-            public Dictionary<int, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
+            public Dictionary<string, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
                 string providerKey,
-                IReadOnlyCollection<int> appIds) =>
-                new Dictionary<int, FriendGameDefinitionState>();
+                IReadOnlyCollection<string> providerGameKeys) =>
+                new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
 
             public FriendUnownedCacheStats GetUnownedFriendGameCacheStats() =>
                 new FriendUnownedCacheStats();
@@ -660,14 +797,31 @@ namespace PlayniteAchievements.Tests.ViewModels
             public FriendUnownedCacheClearResult ClearUnownedFriendGameData() =>
                 new FriendUnownedCacheClearResult { Success = true };
 
+            public FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey) =>
+                FriendCacheWriteResult.Ok();
+
+            public bool IsProviderGameMappedToPlayniteLibrary(string providerKey, int appId, string providerGameKey) =>
+                true;
+
+            public System.Collections.Generic.IReadOnlyList<FriendGameMapping> LoadFriendGameMappings(string providerKey) =>
+                new System.Collections.Generic.List<FriendGameMapping>();
+
+            public FriendCacheWriteResult PromoteProviderOnlyGameToPlayniteBacked(
+                string providerKey,
+                int appId,
+                string providerGameKey,
+                Guid playniteGameId) =>
+                FriendCacheWriteResult.Ok();
+
             public FriendCacheWriteResult SaveFriendGameAchievements(
                 string providerKey,
                 string externalUserId,
+                string providerGameKey,
                 int appId,
                 FriendGameAchievements achievements) =>
                 FriendCacheWriteResult.Ok();
 
-            public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId) =>
+            public FriendCacheWriteResult DeleteFriendData(string providerKey, string externalUserId, bool preserveFriendRecord = false) =>
                 FriendCacheWriteResult.Ok();
 
             public List<FriendIdentity> LoadFriendIdentities(string providerKey) =>
@@ -678,7 +832,15 @@ namespace PlayniteAchievements.Tests.ViewModels
                 FriendRefreshOptions options) =>
                 new List<FriendRefreshCandidate>();
 
-            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => _data;
+            public IReadOnlyDictionary<string, FriendOwnershipRecency> LoadFriendOwnershipRecency(
+                string providerKey,
+                string externalUserId) =>
+                new Dictionary<string, FriendOwnershipRecency>();
+
+            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => Data;
+
+            public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() =>
+                new List<CurrentUserGameLabel>();
         }
     }
 }

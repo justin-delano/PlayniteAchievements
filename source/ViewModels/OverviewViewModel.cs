@@ -1575,7 +1575,7 @@ namespace PlayniteAchievements.ViewModels
                 return new RefreshRequest
                 {
                     Mode = RefreshModeType.Custom,
-                    CustomOptions = customOptions?.Clone()
+                    Options = RefreshOptions.FromCustom(customOptions)
                 };
             }
 

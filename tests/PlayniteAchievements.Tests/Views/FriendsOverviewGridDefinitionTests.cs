@@ -19,16 +19,18 @@ namespace PlayniteAchievements.Tests.Views
                 xaml,
                 "ColumnKey=\"Avatar\"",
                 "FriendSummaryFriend",
-                "FriendSummaryProvider",
                 "FriendSummarySharedGames",
                 "FriendSummaryGamesWithUnlocks",
                 "FriendSummaryUnlocks",
                 "FriendSummaryPrestigeScore",
                 "FriendSummaryCollectionScore",
-                "FriendSummaryLastUnlock",
-                "GameSummaryProviderIconStyle");
+                "FriendSummaryPrestigeLevel",
+                "FriendSummaryCollectionLevel",
+                "FriendSummaryLastUnlock");
             AssertContainsNone(
                 xaml,
+                "FriendSummaryProvider",
+                "GameSummaryProviderIconStyle",
                 "FriendSummaryRecentUnlocks",
                 "FriendSummaryLastRefreshed",
                 "FriendSummaryTotalPlaytime");
@@ -165,6 +167,20 @@ namespace PlayniteAchievements.Tests.Views
             AssertContainsAll(
                 localization,
                 "LOCPlayAch_Menu_RefreshFriend");
+        }
+
+        [TestMethod]
+        public void FriendsOverview_ExophaseFriendGameContextMenuCanEditMappings()
+        {
+            var code = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml.cs"));
+
+            AssertContainsAll(
+                code,
+                "IsMappableExophaseFriendGame",
+                "PlayniteGamePickerDialog.Pick",
+                "settings.FriendGameMappings = mappings",
+                "ExophaseFriendPlatformMatcher.IsSameProviderPlatform",
+                "RefreshExophaseProviderGame(game)");
         }
 
         [TestMethod]

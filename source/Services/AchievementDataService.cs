@@ -653,6 +653,7 @@ namespace PlayniteAchievements.Services
                 IsAppIdOverridden = source.IsAppIdOverridden,
                 GameName = source.GameName,
                 AppId = source.AppId,
+                ProviderGameKey = source.ProviderGameKey,
                 PlayniteGameId = source.PlayniteGameId,
                 Game = source.Game,
                 AchievementOrder = source.AchievementOrder != null

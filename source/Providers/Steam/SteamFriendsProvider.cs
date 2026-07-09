@@ -90,15 +90,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.Failed("Steam friend id is missing.");
             }
 
-            var gamesResult = await GetOwnedGamesFromWebApiAsync(friend.ExternalUserId, cancel).ConfigureAwait(false);
-            if (gamesResult?.Success != true)
-            {
-                _logger?.Debug(
-                    $"Steam owned games API unavailable for friend {friend.ExternalUserId}; falling back to community page. " +
-                    $"{gamesResult?.ErrorMessage}");
-                gamesResult = await GetOwnedGamesFromCommunityPageAsync(friend.ExternalUserId, cancel).ConfigureAwait(false);
-            }
-
+            var gamesResult = await GetOwnedGamesFromCommunityPageAsync(friend.ExternalUserId, cancel).ConfigureAwait(false);
             if (gamesResult?.Success != true)
             {
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.Failed(
@@ -108,8 +100,20 @@ namespace PlayniteAchievements.Providers.Steam
                     transientFailure: gamesResult?.TransientFailure == true);
             }
 
-            var result = gamesResult.Games
-                .Where(game => game != null && game.AppId > 0)
+            // Steam friend refresh relies on the rendered community games page's
+            // "ACHIEVEMENTS X/Y" marker. If that count is missing, treat the game as not
+            // supporting achievements and do not let it enter definition or unlock refresh work.
+            var achievementGames = (gamesResult.Games ?? Array.Empty<SteamOwnedGame>())
+                .Where(HasSteamAchievementProgressSignal)
+                .ToList();
+            var skipped = (gamesResult.Games?.Count ?? 0) - achievementGames.Count;
+            if (skipped > 0)
+            {
+                _logger?.Debug(
+                    $"Skipped {skipped} Steam friend owned game(s) without an achievement progress signal for friend {friend.ExternalUserId}.");
+            }
+
+            var result = achievementGames
                 .Select(game => new FriendGameOwnership
                 {
                     ProviderKey = ProviderKey,
@@ -120,53 +124,25 @@ namespace PlayniteAchievements.Providers.Steam
                     CoverUrl = SteamImageUrls.Cover(game.AppId),
                     PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeForever),
                     Playtime2WeeksMinutes = game.Playtime2Weeks.HasValue ? Math.Max(0, game.Playtime2Weeks.Value) : (int?)null,
-                    LastPlayedUtc = ToUtc(game.LastPlayedUnixSeconds)
+                    LastPlayedUtc = ToUtc(game.LastPlayedUnixSeconds),
+                    AchievementUnlocksHint = game.AchievementsEarned,
+                    AchievementTotalHint = game.AchievementsTotal
                 })
                 .ToList();
 
             return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(result);
         }
 
-        private async Task<OwnedGamesPageResult> GetOwnedGamesFromWebApiAsync(
-            string steamId64,
-            CancellationToken cancel)
+        private static bool HasSteamAchievementProgressSignal(SteamOwnedGame game)
         {
-            var session = await ResolveSteamSessionAsync(cancel).ConfigureAwait(false);
-            if (!session.IsSuccess)
+            if (game?.AppId <= 0)
             {
-                return OwnedGamesPageResult.Failed(
-                    session.ErrorMessage ?? "Steam web session could not be resolved.",
-                    authRequired: session.AuthRequired);
+                return false;
             }
 
-            if (string.IsNullOrWhiteSpace(session.WebApiToken))
-            {
-                return OwnedGamesPageResult.Failed("Steam web API token could not be resolved.");
-            }
-
-            IReadOnlyList<SteamOwnedGame> games;
-            try
-            {
-                games = await _steamApiClient
-                    .GetOwnedGamesAsync(session.WebApiToken, steamId64, cancel)
-                    .ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) { throw; }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"Steam owned games API request failed for friend {steamId64}.");
-                return OwnedGamesPageResult.Failed(
-                    $"Steam owned games API request failed for friend {steamId64}.",
-                    transientFailure: true);
-            }
-
-            if (games == null)
-            {
-                return OwnedGamesPageResult.Failed(
-                    $"Steam owned games API returned no usable response for friend {steamId64}.");
-            }
-
-            return OwnedGamesPageResult.FromGames(games);
+            return game.AchievementsEarned.HasValue &&
+                   game.AchievementsTotal.HasValue &&
+                   game.AchievementsTotal.Value > 0;
         }
 
         private async Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsFromCommunityPageAsync(
@@ -271,6 +247,9 @@ namespace PlayniteAchievements.Providers.Steam
             var games = SteamCommunityPageParser.ParseOwnedGames(page.Html);
             if (games.Count > 0)
             {
+                _logger?.Debug(
+                    $"Steam community owned games parsed for friend {steamId64}: " +
+                    $"renderedGamesPage={games.Count}.");
                 return OwnedGamesPageResult.FromGames(games);
             }
 
@@ -323,6 +302,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         public async Task<FriendsProviderResult<FriendGameAchievements>> GetFriendGameAchievementsAsync(
             FriendIdentity friend,
+            string providerGameKey,
             int appId,
             string gameName,
             CancellationToken cancel)
@@ -360,6 +340,13 @@ namespace PlayniteAchievements.Providers.Steam
                     transientFailure: true);
             }
 
+            // Reconstruct stable api names from the schema's icon hashes so friend rows match the
+            // canonical definitions by language-independent key rather than localized display text.
+            // A schema failure degrades gracefully: rows keep a null ApiName and the merge falls
+            // back to display-name/icon matching.
+            var apiNamesByRow = await ResolveScrapedApiNamesAsync(token.WebApiToken, appId, scrape?.Rows, cancel)
+                .ConfigureAwait(false);
+
             var data = new FriendGameAchievements
             {
                 Friend = friend,
@@ -368,7 +355,7 @@ namespace PlayniteAchievements.Providers.Steam
                 StatsUnavailable = scrape?.StatsUnavailable == true,
                 TransientFailure = scrape?.TransientFailure == true,
                 DetailCode = scrape?.DetailCode ?? SteamScrapeDetail.None,
-                Rows = MapRows(scrape?.Rows)
+                Rows = MapRows(scrape?.Rows, apiNamesByRow)
             };
 
             if (data.TransientFailure)
@@ -384,6 +371,7 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         public async Task<FriendsProviderResult<FriendGameDefinition>> GetFriendGameDefinitionAsync(
+            string providerGameKey,
             int appId,
             string gameName,
             CancellationToken cancel)
@@ -566,12 +554,41 @@ namespace PlayniteAchievements.Providers.Steam
             };
         }
 
-        private static List<FriendAchievementRow> MapRows(IEnumerable<ScrapedAchievement> rows)
+        private async Task<IReadOnlyDictionary<ScrapedAchievement, string>> ResolveScrapedApiNamesAsync(
+            string accessToken,
+            int appId,
+            IReadOnlyCollection<ScrapedAchievement> rows,
+            CancellationToken cancel)
+        {
+            if (rows == null || rows.Count == 0 || string.IsNullOrWhiteSpace(accessToken))
+            {
+                return new Dictionary<ScrapedAchievement, string>();
+            }
+
+            try
+            {
+                var schema = await _scanner.FetchSchemaAsync(accessToken, appId, cancel).ConfigureAwait(false);
+                return SteamAchievementApiNameResolver.Resolve(schema, rows);
+            }
+            catch (OperationCanceledException) { throw; }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Steam friend achievement api-name reconstruction failed for appId={appId}.");
+                return new Dictionary<ScrapedAchievement, string>();
+            }
+        }
+
+        private static List<FriendAchievementRow> MapRows(
+            IEnumerable<ScrapedAchievement> rows,
+            IReadOnlyDictionary<ScrapedAchievement, string> apiNamesByRow)
         {
             return rows?
                 .Where(row => row != null)
                 .Select(row => new FriendAchievementRow
                 {
+                    ApiName = apiNamesByRow != null && apiNamesByRow.TryGetValue(row, out var apiName)
+                        ? apiName
+                        : null,
                     DisplayName = row.DisplayName,
                     Description = row.Description,
                     IconUrl = row.IconUrl,

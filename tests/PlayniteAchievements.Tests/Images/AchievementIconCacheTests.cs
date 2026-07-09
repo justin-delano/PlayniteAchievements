@@ -1,6 +1,8 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Images;
 using System;
 using System.Collections.Generic;
@@ -816,6 +818,220 @@ namespace PlayniteAchievements.Services.Images.Tests
 
                 Assert.IsFalse(File.Exists(cachedPath));
                 Assert.IsTrue(File.Exists(customPath));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task PopulateFriendAchievementIconCacheAsync_NeverDownloadsSeparateLockedIcon()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                // Separate locked icons are enabled globally to prove friends still ignore them.
+                var settings = new PersistedSettings
+                {
+                    PreserveAchievementIconResolution = false,
+                    UseSeparateLockedIconsWhenAvailable = true
+                };
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var iconService = new AchievementIconService(
+                    diskImageService,
+                    new ManagedCustomIconService(diskImageService, logger: null),
+                    settings,
+                    logger: null);
+
+                const string providerKey = "Steam";
+                const string providerGameKey = "440";
+                const string apiName = "friend_ach";
+                var stem = AchievementIconCachePathBuilder.BuildFileStems(new[] { apiName })[apiName];
+
+                var unlockedTarget = diskImageService.ResolveCacheRelativePath(
+                    FriendImageCachePathBuilder.BuildGameImageRelativePath(
+                        providerKey,
+                        providerGameKey,
+                        FriendImageCachePathBuilder.GetAchievementFileName(stem, AchievementIconVariant.Unlocked)));
+                var lockedTarget = diskImageService.ResolveCacheRelativePath(
+                    FriendImageCachePathBuilder.BuildGameImageRelativePath(
+                        providerKey,
+                        providerGameKey,
+                        FriendImageCachePathBuilder.GetAchievementFileName(stem, AchievementIconVariant.Locked)));
+
+                // Pre-seed only the unlocked target so no network download is required.
+                WritePlaceholderFile(unlockedTarget);
+
+                var achievement = new AchievementDetail
+                {
+                    ApiName = apiName,
+                    UnlockedIconPath = "https://cdn.example.com/icons/unlocked.png",
+                    LockedIconPath = "https://cdn.example.com/icons/locked.png"
+                };
+                var definition = new FriendGameDefinition
+                {
+                    ProviderKey = providerKey,
+                    ProviderGameKey = providerGameKey,
+                    Achievements = { achievement }
+                };
+
+                await iconService.PopulateFriendAchievementIconCacheAsync(definition, CancellationToken.None);
+
+                Assert.AreEqual(unlockedTarget, achievement.UnlockedIconPath);
+                // Locked mirrors unlocked; the distinct locked source is never downloaded.
+                Assert.AreEqual(achievement.UnlockedIconPath, achievement.LockedIconPath);
+                Assert.IsFalse(File.Exists(lockedTarget));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task PopulateFriendGameImageCacheAsync_CachesDistinctIconAndCoverPaths()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var sourceRoot = Path.Combine(tempDir, "sources");
+                Directory.CreateDirectory(sourceRoot);
+                var iconSource = Path.Combine(sourceRoot, "icon.jpg");
+                var coverSource = Path.Combine(sourceRoot, "cover.jpg");
+                WritePlaceholderFile(iconSource);
+                WritePlaceholderFile(coverSource);
+
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var iconService = new AchievementIconService(
+                    diskImageService,
+                    new ManagedCustomIconService(diskImageService, logger: null),
+                    new PersistedSettings(),
+                    logger: null);
+
+                var result = await iconService.PopulateFriendGameImageCacheAsync(
+                        "Steam",
+                        "100",
+                        iconSource,
+                        coverSource,
+                        CancellationToken.None)
+                    .ConfigureAwait(false);
+
+                var expectedIconPath = Path.ChangeExtension(
+                    diskImageService.ResolveCacheRelativePath(
+                        FriendImageCachePathBuilder.BuildGameImageRelativePath(
+                            "Steam",
+                            "100",
+                            FriendImageCachePathBuilder.GameIconFileName)),
+                    ".jpg");
+                var expectedCoverPath = Path.ChangeExtension(
+                    diskImageService.ResolveCacheRelativePath(
+                        FriendImageCachePathBuilder.BuildGameImageRelativePath(
+                            "Steam",
+                            "100",
+                            FriendImageCachePathBuilder.GameCoverFileName)),
+                    ".jpg");
+
+                Assert.AreEqual(expectedIconPath, result.IconPath);
+                Assert.AreEqual(expectedCoverPath, result.CoverPath);
+                Assert.IsTrue(File.Exists(expectedIconPath));
+                Assert.IsTrue(File.Exists(expectedCoverPath));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task PopulateFriendGameImageCacheAsync_PrefersResolvedOriginalFormatOverLegacyPngTarget()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var sourceRoot = Path.Combine(tempDir, "sources");
+                Directory.CreateDirectory(sourceRoot);
+                var iconSource = Path.Combine(sourceRoot, "icon.jpg");
+                WritePlaceholderFile(iconSource);
+
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var legacyPngTarget = diskImageService.ResolveCacheRelativePath(
+                    FriendImageCachePathBuilder.BuildGameImageRelativePath(
+                        "Steam",
+                        "100",
+                        FriendImageCachePathBuilder.GameIconFileName));
+                WritePlaceholderFile(legacyPngTarget);
+
+                var iconService = new AchievementIconService(
+                    diskImageService,
+                    new ManagedCustomIconService(diskImageService, logger: null),
+                    new PersistedSettings(),
+                    logger: null);
+
+                var result = await iconService.PopulateFriendGameImageCacheAsync(
+                        "Steam",
+                        "100",
+                        iconSource,
+                        coverSourcePath: null,
+                        CancellationToken.None)
+                    .ConfigureAwait(false);
+
+                var expectedIconPath = Path.ChangeExtension(legacyPngTarget, ".jpg");
+                Assert.AreEqual(expectedIconPath, result.IconPath);
+                Assert.IsTrue(File.Exists(expectedIconPath));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public void DeleteFriendGameIconCache_RemovesOnlyTargetGameFolder()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var iconService = new AchievementIconService(
+                    diskImageService,
+                    new ManagedCustomIconService(diskImageService, logger: null),
+                    new PersistedSettings(),
+                    logger: null);
+
+                var stem = AchievementIconCachePathBuilder.BuildFileStems(new[] { "ach" })["ach"];
+
+                string FriendIconPath(string provider, string gameKey) =>
+                    diskImageService.ResolveCacheRelativePath(
+                        FriendImageCachePathBuilder.BuildGameImageRelativePath(
+                            provider,
+                            gameKey,
+                            FriendImageCachePathBuilder.GetAchievementFileName(stem, AchievementIconVariant.Unlocked)));
+
+                var targetGameIcon = FriendIconPath("Steam", "440");
+                var otherGameIcon = FriendIconPath("Steam", "570");
+                var ownedIcon = diskImageService.GetAchievementIconCachePath(
+                    Guid.NewGuid().ToString("D"),
+                    preserveOriginalResolution: false,
+                    stem,
+                    AchievementIconVariant.Unlocked);
+
+                WritePlaceholderFile(targetGameIcon);
+                WritePlaceholderFile(otherGameIcon);
+                WritePlaceholderFile(ownedIcon);
+
+                iconService.DeleteFriendGameIconCache("Steam", "440");
+
+                Assert.IsFalse(File.Exists(targetGameIcon), "Target friend game icons should be deleted.");
+                Assert.IsFalse(
+                    Directory.Exists(Path.GetDirectoryName(targetGameIcon)),
+                    "Target friend game folder should be removed.");
+                Assert.IsTrue(File.Exists(otherGameIcon), "Other friend game icons must be untouched.");
+                Assert.IsTrue(File.Exists(ownedIcon), "Owned game icons must be untouched.");
             }
             finally
             {

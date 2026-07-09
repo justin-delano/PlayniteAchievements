@@ -40,6 +40,16 @@ namespace PlayniteAchievements.Services.Images
             "images-eds-ssl.xboxlive.com"
         };
 
+        // Domains that generate thumbnails lazily on first request: the initial request for a
+        // not-yet-materialized image returns 404 (which itself triggers generation), and a later
+        // request returns 200. Those 404s are retryable, so downloads to these domains use a longer,
+        // capped retry window to let generation complete within a single refresh. Exophase award and
+        // game thumbnails behave this way.
+        private static readonly string[] LazyThumbnailDomains = new[]
+        {
+            "exophase.com"
+        };
+
         private static readonly string[] SupportedImageExtensions =
         {
             ".png",
@@ -286,6 +296,15 @@ namespace PlayniteAchievements.Services.Images
             }
         }
 
+        // Resolves an icon_cache-rooted relative path (e.g. "icon_cache/friendgames/...") to an
+        // absolute path under the cache root, for callers that build their own stable target paths.
+        internal string ResolveCacheRelativePath(string relativePath)
+        {
+            return string.IsNullOrWhiteSpace(relativePath)
+                ? null
+                : Path.Combine(_cacheRoot, relativePath);
+        }
+
         internal string GetAchievementIconCachePath(
             string gameId,
             bool preserveOriginalResolution,
@@ -380,6 +399,33 @@ namespace PlayniteAchievements.Services.Images
             return false;
         }
 
+        private static bool IsLazyThumbnailDomain(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return false;
+            }
+
+            try
+            {
+                var host = new Uri(url).Host;
+                foreach (var domain in LazyThumbnailDomains)
+                {
+                    if (host.EndsWith(domain, StringComparison.OrdinalIgnoreCase) ||
+                        host.Equals(domain, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch
+            {
+                // Invalid URL, treat as normal
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// Get or download an icon by URI, caching to disk by URI hash.
         /// If gameId is provided, stores in per-game subfolder.
@@ -413,7 +459,7 @@ namespace PlayniteAchievements.Services.Images
             }
 
             var preserveOriginalFormat = ShouldPreserveOriginalFormat(decodeSize);
-            var resolvedTargetPath = ResolveTargetPathForSource(targetPath, uri, preserveOriginalFormat);
+            var resolvedTargetPath = ResolveTargetPathForSource(targetPath, uri, decodeSize);
             EnsureTargetDirectory(resolvedTargetPath);
 
             var pathLock = await AcquirePathWriteLockAsync(targetPath, cancel).ConfigureAwait(false);
@@ -421,16 +467,16 @@ namespace PlayniteAchievements.Services.Images
             {
                 try
                 {
-                    if (!overwriteExistingTarget && File.Exists(targetPath))
+                    if (!overwriteExistingTarget && File.Exists(resolvedTargetPath))
                     {
-                        return targetPath;
+                        return resolvedTargetPath;
                     }
 
                     if (!overwriteExistingTarget &&
-                        !string.Equals(resolvedTargetPath, targetPath, StringComparison.OrdinalIgnoreCase) &&
-                        File.Exists(resolvedTargetPath))
+                        string.Equals(resolvedTargetPath, targetPath, StringComparison.OrdinalIgnoreCase) &&
+                        File.Exists(targetPath))
                     {
-                        return resolvedTargetPath;
+                        return targetPath;
                     }
 
                     var downloadGate = IsRateLimitedDomain(uri) ? _rateLimitedDownloadGate : _downloadGate;
@@ -439,9 +485,9 @@ namespace PlayniteAchievements.Services.Images
                     await downloadGate.WaitAsync(cancel).ConfigureAwait(false);
                     try
                     {
-                        if (!overwriteExistingTarget && File.Exists(targetPath))
+                        if (!overwriteExistingTarget && File.Exists(resolvedTargetPath))
                         {
-                            return targetPath;
+                            return resolvedTargetPath;
                         }
 
                         bytes = await DownloadBytesAsync(uri, cancel).ConfigureAwait(false);
@@ -570,9 +616,27 @@ namespace PlayniteAchievements.Services.Images
             return cropped;
         }
 
+        // A 4xx client error means the resource will not appear on retry (missing image), except
+        // 408 Request Timeout and 429 Too Many Requests which are worth retrying. 5xx and network
+        // faults fall through to the transient retry path.
+        private static bool IsPermanentImageHttpFailure(int statusCode)
+        {
+            if (statusCode < 400 || statusCode >= 500)
+            {
+                return false;
+            }
+
+            return statusCode != 408 && statusCode != 429;
+        }
+
         private async Task<byte[]> DownloadBytesAsync(string url, CancellationToken cancel)
         {
-            const int maxAttempts = 3;
+            // Lazily-generated thumbnails (e.g. Exophase) return 404 until the image is materialized;
+            // the request itself triggers generation, so retry those over a longer, capped window so
+            // the thumbnail exists by a later attempt. Other hosts keep the short 3-attempt window.
+            var lazyThumbnail = IsLazyThumbnailDomain(url);
+            var maxAttempts = lazyThumbnail ? 8 : 3;
+            const double maxBackoffSeconds = 3.0;
             var backoff = TimeSpan.FromSeconds(1);
 
             for (int attempt = 1; attempt <= maxAttempts; attempt++)
@@ -589,7 +653,22 @@ namespace PlayniteAchievements.Services.Images
                     {
                         using (var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false))
                         {
-                            resp.EnsureSuccessStatusCode();
+                            if (!resp.IsSuccessStatusCode)
+                            {
+                                // A permanent client error (e.g. 404 for a Steam app that has no
+                                // library_600x900 vertical capsule) will not change on retry, so bail
+                                // immediately instead of burning the retry budget and its backoff — that
+                                // both spams the log and stalls the image phase (each game waits for its
+                                // whole icon+cover group). Lazily-generated thumbnails (Exophase) legitimately
+                                // 404 until first materialized, so they keep retrying.
+                                if (!lazyThumbnail && IsPermanentImageHttpFailure((int)resp.StatusCode))
+                                {
+                                    _logger?.Debug($"Image unavailable (HTTP {(int)resp.StatusCode}) for {url}; not retrying.");
+                                    return null;
+                                }
+
+                                resp.EnsureSuccessStatusCode();
+                            }
 
                             using (var stream = await resp.Content.ReadAsStreamAsync().ConfigureAwait(false))
                             using (var ms = new MemoryStream())
@@ -624,7 +703,7 @@ namespace PlayniteAchievements.Services.Images
                         {
                             _logger?.Debug($"Download timeout for {url}, attempt {attempt}/{maxAttempts}, retrying in {backoff.TotalSeconds}s");
                             await Task.Delay(backoff, cancel).ConfigureAwait(false);
-                            backoff = TimeSpan.FromSeconds(backoff.TotalSeconds * 2);
+                            backoff = TimeSpan.FromSeconds(Math.Min(backoff.TotalSeconds * 2, maxBackoffSeconds));
                             continue;
                         }
                         return null;
@@ -636,7 +715,7 @@ namespace PlayniteAchievements.Services.Images
                         {
                             _logger?.Debug($"HTTP error for {url}, attempt {attempt}/{maxAttempts}: {ex.Message}, retrying in {backoff.TotalSeconds}s");
                             await Task.Delay(backoff, cancel).ConfigureAwait(false);
-                            backoff = TimeSpan.FromSeconds(backoff.TotalSeconds * 2);
+                            backoff = TimeSpan.FromSeconds(Math.Min(backoff.TotalSeconds * 2, maxBackoffSeconds));
                             continue;
                         }
                         return null;
@@ -752,6 +831,63 @@ namespace PlayniteAchievements.Services.Images
         public void RemoveGameIconCache(string gameId)
         {
             ClearGameCache(gameId);
+        }
+
+        // Deletes a single icon_cache-rooted subdirectory (recursively) and prunes parent
+        // directories left empty, up to but not including the icon_cache root. Guarded so only
+        // paths resolving under icon_cache can be removed. Used to drop a specific game's cached
+        // images (e.g. an orphaned friend/provider-only game folder).
+        public void DeleteCacheRelativeDirectory(string relativeDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(relativeDirectory))
+            {
+                return;
+            }
+
+            try
+            {
+                var iconCacheRoot = Path.GetFullPath(IconCacheDirectory);
+                var target = Path.GetFullPath(Path.Combine(_cacheRoot, relativeDirectory));
+
+                // Refuse to touch anything outside icon_cache, or icon_cache itself.
+                if (!IsPathWithinDirectory(target, iconCacheRoot) || IsSameDirectory(target, iconCacheRoot))
+                {
+                    return;
+                }
+
+                if (Directory.Exists(target))
+                {
+                    Directory.Delete(target, recursive: true);
+                }
+
+                var parent = Path.GetDirectoryName(target);
+                while (!string.IsNullOrEmpty(parent) &&
+                       IsPathWithinDirectory(parent, iconCacheRoot) &&
+                       !IsSameDirectory(parent, iconCacheRoot))
+                {
+                    if (!Directory.Exists(parent) ||
+                        Directory.GetDirectories(parent).Length != 0 ||
+                        Directory.GetFiles(parent).Length != 0)
+                    {
+                        break;
+                    }
+
+                    Directory.Delete(parent, recursive: false);
+                    parent = Path.GetDirectoryName(parent);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Failed to delete cache directory '{relativeDirectory}'.");
+            }
+        }
+
+        private static bool IsSameDirectory(string left, string right)
+        {
+            return string.Equals(
+                (left ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                (right ?? string.Empty).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+                StringComparison.OrdinalIgnoreCase);
         }
 
         private int ClearEntireIconCache(Action<int, int> reportDeleteProgress)
@@ -1032,6 +1168,16 @@ namespace PlayniteAchievements.Services.Images
             !string.IsNullOrWhiteSpace(path) && File.Exists(path);
 
         /// <summary>
+        /// Whether a source can actually be cached: an http(s) URL or an existing local file.
+        /// Single source of truth for "is there something here worth downloading/copying".
+        /// </summary>
+        public static bool IsCacheableImageSource(string path) =>
+            !string.IsNullOrWhiteSpace(path) &&
+            (path.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+             path.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
+             IsLocalIconPath(path));
+
+        /// <summary>
         /// Get or copy a local icon file to the cache.
         /// If gameId is provided, stores in per-game subfolder.
         /// Returns the cached file path, or null on failure.
@@ -1066,7 +1212,7 @@ namespace PlayniteAchievements.Services.Images
             }
 
             var preserveOriginalFormat = ShouldPreserveOriginalFormat(decodeSize);
-            var resolvedTargetPath = ResolveTargetPathForSource(targetPath, localPath, preserveOriginalFormat);
+            var resolvedTargetPath = ResolveTargetPathForSource(targetPath, localPath, decodeSize);
             EnsureTargetDirectory(resolvedTargetPath);
 
             var pathLock = await AcquirePathWriteLockAsync(targetPath, cancel).ConfigureAwait(false);
@@ -1074,16 +1220,16 @@ namespace PlayniteAchievements.Services.Images
             {
                 try
                 {
-                    if (!overwriteExistingTarget && File.Exists(targetPath))
+                    if (!overwriteExistingTarget && File.Exists(resolvedTargetPath))
                     {
-                        return targetPath;
+                        return resolvedTargetPath;
                     }
 
                     if (!overwriteExistingTarget &&
-                        !string.Equals(resolvedTargetPath, targetPath, StringComparison.OrdinalIgnoreCase) &&
-                        File.Exists(resolvedTargetPath))
+                        string.Equals(resolvedTargetPath, targetPath, StringComparison.OrdinalIgnoreCase) &&
+                        File.Exists(targetPath))
                     {
-                        return resolvedTargetPath;
+                        return targetPath;
                     }
 
                     cancel.ThrowIfCancellationRequested();
@@ -1220,6 +1366,11 @@ namespace PlayniteAchievements.Services.Images
             return string.IsNullOrWhiteSpace(extension)
                 ? ".png"
                 : extension;
+        }
+
+        internal static string ResolveTargetPathForSource(string targetPath, string source, int decodeSize)
+        {
+            return ResolveTargetPathForSource(targetPath, source, ShouldPreserveOriginalFormat(decodeSize));
         }
 
         private static string ResolveTargetPathForSource(string targetPath, string source, bool preserveOriginalFormat)

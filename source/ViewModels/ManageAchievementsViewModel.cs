@@ -1124,7 +1124,15 @@ namespace PlayniteAchievements.ViewModels
                 {
                     Mode = RefreshModeType.Single,
                     SingleGameId = _gameId,
-                    ForceIconRefresh = forceIconRefresh
+                    Options = new RefreshOptions
+                    {
+                        Subjects = RefreshSubjects.CurrentUser,
+                        Scope = RefreshGameScope.SelectedGame,
+                        PlayniteGameIds = new[] { _gameId },
+                        RespectUserExclusions = false,
+                        ForceBypassExclusionsForExplicitIncludes = true,
+                        ForceIconRefresh = forceIconRefresh
+                    }
                 },
                 RefreshExecutionPolicy.ProgressWindow(_gameId));
         }

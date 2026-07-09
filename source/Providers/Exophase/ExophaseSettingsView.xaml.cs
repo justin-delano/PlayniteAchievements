@@ -242,6 +242,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
             _exophaseSettings.ManagedProviders = managedProviders;
         }
+
     }
 }
 

@@ -90,6 +90,13 @@ namespace PlayniteAchievements.Providers.Steam.Models
 
         [DataMember(Name = "rtime_last_played")]
         public long? LastPlayedUnixSeconds { get; set; }
+
+        // Earned/total achievement counts parsed from the community games page ("11/17").
+        // Not part of the Web API payload; feeds FriendGameOwnership.AchievementUnlocksHint so
+        // the refresh gate can skip provider-only games the friend has not unlocked anything in.
+        public int? AchievementsEarned { get; set; }
+
+        public int? AchievementsTotal { get; set; }
     }
 
     [DataContract]

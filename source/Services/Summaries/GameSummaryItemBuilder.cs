@@ -89,6 +89,7 @@ namespace PlayniteAchievements.Services.Summaries
                 RegionText = presentation.RegionText,
                 PlaytimeSeconds = presentation.PlaytimeSeconds,
                 AppId = gameData.AppId,
+                ProviderGameKey = gameData.ProviderGameKey,
                 PlayniteGameId = gameData.PlayniteGameId,
                 LastPlayed = presentation.LastPlayed,
                 IsCompleted = gameData.IsCompleted,

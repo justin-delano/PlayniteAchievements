@@ -31,11 +31,93 @@ namespace PlayniteAchievements.Providers.Exophase
         private readonly ILogger _logger;
         private readonly ExophaseCookieSnapshotStore _cookieSnapshotStore;
 
+        // Per-refresh cookie cache: when a session is active, the encrypted snapshot is loaded and
+        // validated once (in BeginCookieSession) and every fetch reuses it instead of decrypting the
+        // file per call. Mirrors SteamFriendsProvider's prepared-state pattern.
+        private readonly object _cookieSessionLock = new object();
+        private List<HttpCookie> _preparedCookies;
+        private bool _cookieSessionActive;
+
         internal ExophaseApiClient(IPlayniteAPI playniteApi, ILogger logger, ExophaseCookieSnapshotStore cookieSnapshotStore)
         {
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
             _logger = logger;
             _cookieSnapshotStore = cookieSnapshotStore;
+        }
+
+        /// <summary>
+        /// Opens a per-refresh cookie session: loads and validates the encrypted cookie snapshot once
+        /// so subsequent fetches reuse it instead of decrypting the file per call. Returns whether the
+        /// loaded snapshot contains all critical authentication cookies.
+        /// </summary>
+        internal bool BeginCookieSession()
+        {
+            List<HttpCookie> cookies = null;
+            var loaded = _cookieSnapshotStore?.TryLoad(out cookies) ?? false;
+
+            lock (_cookieSessionLock)
+            {
+                _preparedCookies = loaded ? cookies : null;
+                _cookieSessionActive = true;
+            }
+
+            if (loaded && cookies != null && cookies.Count > 0)
+            {
+                WarnIfMissingCriticalCookies(cookies);
+                return ExophaseCookieSnapshotStore.HasCriticalCookies(cookies);
+            }
+
+            _logger?.Warn("[Exophase] No snapshot cookies available for this refresh - fetches may not show unlocked achievements.");
+            return false;
+        }
+
+        /// <summary>
+        /// Closes the per-refresh cookie session and drops the cached cookies. After this, fetches fall
+        /// back to loading the snapshot per call.
+        /// </summary>
+        internal void EndCookieSession()
+        {
+            lock (_cookieSessionLock)
+            {
+                _preparedCookies = null;
+                _cookieSessionActive = false;
+            }
+        }
+
+        /// <summary>
+        /// Returns the cookies to restore before a fetch. When a cookie session is active the cached
+        /// snapshot is reused (no disk I/O, validation already logged once); otherwise the snapshot is
+        /// loaded for this call only, preserving behavior for callers that do not open a session.
+        /// </summary>
+        private (bool Loaded, List<HttpCookie> Cookies) AcquireFetchCookies()
+        {
+            lock (_cookieSessionLock)
+            {
+                if (_cookieSessionActive)
+                {
+                    var cookies = _preparedCookies;
+                    return (cookies != null && cookies.Count > 0, cookies);
+                }
+            }
+
+            List<HttpCookie> snapshotCookies = null;
+            var snapshotLoaded = _cookieSnapshotStore?.TryLoad(out snapshotCookies) ?? false;
+            if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
+            {
+                WarnIfMissingCriticalCookies(snapshotCookies);
+            }
+
+            return (snapshotLoaded, snapshotCookies);
+        }
+
+        private void WarnIfMissingCriticalCookies(IReadOnlyList<HttpCookie> cookies)
+        {
+            var missingCritical = ExophaseCookieSnapshotStore.GetMissingCriticalCookies(cookies);
+            if (missingCritical.Count > 0)
+            {
+                _logger?.Warn($"[Exophase] Missing critical auth cookies: {string.Join(", ", missingCritical)}. " +
+                    $"Achievement unlock status may not be accurate. User may need to re-authenticate.");
+            }
         }
 
         /// <summary>
@@ -52,6 +134,15 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
+            // Drop any fragment or query string first: profile links look like
+            // /game/{slug}/achievements/#4768201, and the trailing "#..." would otherwise
+            // prevent the end-anchored pattern below from matching (yielding a null slug).
+            var separatorIndex = url.IndexOfAny(new[] { '#', '?' });
+            if (separatorIndex >= 0)
+            {
+                url = url.Substring(0, separatorIndex);
+            }
+
             // Match pattern: /game/{slug}/ followed by achievements, trophies, challenges, or end of URL
             var match = System.Text.RegularExpressions.Regex.Match(url, @"/game/([^/]+)(?:/(?:achievements|trophies|challenges))?/?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             if (match.Success && match.Groups.Count > 1)
@@ -65,9 +156,12 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Builds the achievement page URL from a game slug or full URL.
         /// Supports both new format (slug only) and legacy format (full URL) for backward compatibility.
-        /// PlayStation games use /trophies/, Ubisoft/Uplay uses /challenges/, others use /achievements/
+        /// PlayStation games use /trophies/, Ubisoft/Uplay uses /challenges/, others use /achievements/.
+        /// When the caller already knows the platform, pass <paramref name="platformHint"/> (an
+        /// Exophase platform slug or provider platform key) so the endpoint is driven by the known
+        /// platform rather than inferred from the slug's suffix; otherwise the suffix is used.
         /// </summary>
-        public static string BuildUrlFromSlug(string slugOrUrl)
+        public static string BuildUrlFromSlug(string slugOrUrl, string platformHint = null)
         {
             if (string.IsNullOrWhiteSpace(slugOrUrl))
             {
@@ -90,16 +184,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 return slugOrUrl;
             }
 
-            // Detect if this is a PlayStation game from the slug
-            var isPlayStation = slugOrUrl.IndexOf("-psn", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               slugOrUrl.IndexOf("-ps4", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               slugOrUrl.IndexOf("-ps5", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               slugOrUrl.IndexOf("-vita", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                               slugOrUrl.IndexOf("-ps3", StringComparison.OrdinalIgnoreCase) >= 0;
-            var isUbisoft = slugOrUrl.IndexOf("-uplay", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            slugOrUrl.IndexOf("-ubisoft", StringComparison.OrdinalIgnoreCase) >= 0;
-
-            var endpointType = isPlayStation ? "trophies" : (isUbisoft ? "challenges" : "achievements");
+            // Resolve the endpoint from the known platform when a hint is supplied, otherwise infer
+            // it from the slug's own platform suffix. Both paths route through the one canonical
+            // family map so PSN -> trophies and Ubisoft -> challenges regardless of the token variant.
+            var platformSlug = !string.IsNullOrWhiteSpace(platformHint)
+                ? platformHint
+                : ExophaseFriendPlatformMatcher.ExtractPlatformSlugFromGameSlug(slugOrUrl);
+            var endpointType = ExophaseFriendPlatformMatcher.ResolveExophaseEndpoint(platformSlug);
             return $"https://www.exophase.com/game/{slugOrUrl}/{endpointType}/";
         }
 
@@ -229,7 +320,8 @@ namespace PlayniteAchievements.Providers.Exophase
         public async Task<List<AchievementDetail>> FetchAchievementsAsync(
             string achievementUrl,
             string acceptLanguage,
-            CancellationToken ct)
+            CancellationToken ct,
+            bool waitForImages = false)
         {
             if (string.IsNullOrWhiteSpace(achievementUrl))
             {
@@ -239,7 +331,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
             try
             {
-                var html = await FetchHtmlViaWebViewAsync(achievementUrl, ct).ConfigureAwait(false);
+                var html = await FetchHtmlViaWebViewAsync(achievementUrl, ct, waitForImages).ConfigureAwait(false);
 
                 if (string.IsNullOrWhiteSpace(html))
                 {
@@ -271,22 +363,11 @@ namespace PlayniteAchievements.Providers.Exophase
         /// Fetches HTML from a URL using offscreen WebView to bypass Cloudflare.
         /// Restores cookies from snapshot before fetching to ensure authenticated session.
         /// </summary>
-        private async Task<string> FetchHtmlViaWebViewAsync(string url, CancellationToken ct)
+        private async Task<string> FetchHtmlViaWebViewAsync(string url, CancellationToken ct, bool waitForImages = false)
         {
-            // Load cookies from snapshot before creating WebView
-            List<HttpCookie> snapshotCookies = null;
-            var snapshotLoaded = _cookieSnapshotStore?.TryLoad(out snapshotCookies) ?? false;
-
-            // Check for critical cookies
-            if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
-            {
-                var missingCritical = ExophaseCookieSnapshotStore.GetMissingCriticalCookies(snapshotCookies);
-                if (missingCritical.Count > 0)
-                {
-                    _logger?.Warn($"[Exophase] Missing critical auth cookies: {string.Join(", ", missingCritical)}. " +
-                        $"Achievement unlock status may not be accurate. User may need to re-authenticate.");
-                }
-            }
+            // Load cookies before creating the WebView. Reuses the per-refresh cache when a cookie
+            // session is active; otherwise loads the snapshot for this call.
+            var (snapshotLoaded, snapshotCookies) = AcquireFetchCookies();
 
             var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
             {
@@ -330,6 +411,18 @@ namespace PlayniteAchievements.Providers.Exophase
                             return null;
                         }
 
+                        // Warm Exophase's CDN before callers download award thumbnails over HTTP.
+                        // Award images carry the real CDN URL only in data-normal (src is empty or a
+                        // placeholder) and the offscreen page never scrolls, so the browser would never
+                        // request data-normal on its own. Force each image's real URL to load, then wait
+                        // for those requests to finish. The CDN generates the (lazily-created) thumbnail
+                        // on this first request, so the subsequent HTTP download hits 200 instead of 404.
+                        if (waitForImages)
+                        {
+                            await ForceLazyImagesToLoadAsync(view, ct);
+                            await WaitForImagesLoadedAsync(view, ct);
+                        }
+
                         return html;
                     }
                     catch (OperationCanceledException)
@@ -346,6 +439,120 @@ namespace PlayniteAchievements.Providers.Exophase
 
             var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
             return await responseTask.ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Fetches a rendered public Exophase page through the same WebView path used by achievement pages.
+        /// </summary>
+        internal async Task<string> FetchRenderedHtmlAsync(string url, CancellationToken ct, int postLoadDelayMs = 1000, bool scrollToLoad = false)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return null;
+            }
+
+            var (snapshotLoaded, snapshotCookies) = AcquireFetchCookies();
+
+            var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
+            {
+                using (var view = _playniteApi.WebViews.CreateOffscreenView())
+                {
+                    try
+                    {
+                        if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
+                        {
+                            await RestoreCookiesAsync(view, snapshotCookies, ct).ConfigureAwait(false);
+                        }
+
+                        await view.NavigateAndWaitAsync(url, timeoutMs: 20000).ConfigureAwait(false);
+                        if (postLoadDelayMs > 0)
+                        {
+                            await Task.Delay(postLoadDelayMs, ct).ConfigureAwait(false);
+                        }
+
+                        if (scrollToLoad)
+                        {
+                            await AutoScrollToLoadAsync(view, ct).ConfigureAwait(false);
+                        }
+
+                        var html = await view.GetPageSourceAsync().ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(html))
+                        {
+                            return null;
+                        }
+
+                        if (html.Contains("Just a moment") ||
+                            html.Contains("Cloudflare") ||
+                            html.Contains("Verifying you are human"))
+                        {
+                            _logger?.Warn("[Exophase] Cloudflare challenge detected on rendered page");
+                            return null;
+                        }
+
+                        return html;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Error(ex, "[Exophase] Failed to fetch rendered HTML via WebView");
+                        return null;
+                    }
+                }
+            });
+
+            var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
+            return await responseTask.ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Repeatedly scrolls an offscreen view to the bottom to trigger lazy-loaded content (such as a
+        /// user's full games list, which appends on scroll rather than paginating) until the page height
+        /// stops growing across two consecutive passes or a hard cap is reached.
+        /// </summary>
+        private static async Task AutoScrollToLoadAsync(IWebView view, CancellationToken ct)
+        {
+            double lastHeight = 0;
+            var stableCount = 0;
+            for (var pass = 0; pass < 40 && stableCount < 2; pass++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var eval = await view
+                    .EvaluateScriptAsync("window.scrollTo(0, document.body.scrollHeight); document.body.scrollHeight;")
+                    .ConfigureAwait(false);
+
+                double height = 0;
+                if (eval?.Success == true && eval.Result != null)
+                {
+                    try
+                    {
+                        height = Convert.ToDouble(eval.Result);
+                    }
+                    catch
+                    {
+                        height = 0;
+                    }
+                }
+
+                if (height > 0 && height <= lastHeight)
+                {
+                    stableCount++;
+                }
+                else
+                {
+                    stableCount = 0;
+                }
+
+                if (height > lastHeight)
+                {
+                    lastHeight = height;
+                }
+
+                await Task.Delay(700, ct).ConfigureAwait(false);
+            }
         }
 
         /// <summary>
@@ -430,6 +637,103 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             return await valueFactory(ct);
+        }
+
+        /// <summary>
+        /// Forces lazily-loaded award images to fetch their real CDN URL. Exophase award <c>img</c>
+        /// tags keep the real URL in <c>data-normal</c> (with an empty or placeholder <c>src</c>) and
+        /// the offscreen page is never scrolled, so the browser never requests those URLs on its own.
+        /// Assigning the real URL to <c>src</c> (and forcing eager loading) makes the browser fetch it,
+        /// which is what actually warms the CDN so a later HTTP download hits 200 instead of 404.
+        /// </summary>
+        private static async Task ForceLazyImagesToLoadAsync(IWebView view, CancellationToken ct)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            // For each image, promote the first available lazy-load attribute (mirrors ResolveImageUrl)
+            // to src and mark it eager so an offscreen image still loads.
+            const string script =
+                "(function(){try{" +
+                "var imgs=Array.prototype.slice.call(document.querySelectorAll('img'));var n=0;" +
+                "imgs.forEach(function(img){" +
+                "var url=img.getAttribute('data-normal')||img.getAttribute('data-src')||" +
+                "img.getAttribute('data-lazy-src')||img.getAttribute('data-original');" +
+                "if(!url){return;}" +
+                "try{img.loading='eager';}catch(e){}" +
+                "if(img.src!==url){img.src=url;}n++;});" +
+                "return n;}catch(e){return -1;}})()";
+
+            try
+            {
+                await view.EvaluateScriptAsync(script).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch
+            {
+                // Best-effort warming; fall through to WaitForImagesLoadedAsync regardless.
+            }
+        }
+
+        /// <summary>
+        /// Best-effort wait until the page's images have finished loading in the WebView, so the CDN has
+        /// generated the (lazily-created) award thumbnails before callers download them over HTTP.
+        /// Bounded and self-cancelling: if the offscreen view is not actually fetching images (the pending
+        /// count stops decreasing), it stops early rather than burning the full timeout.
+        /// </summary>
+        private static async Task WaitForImagesLoadedAsync(IWebView view, CancellationToken ct)
+        {
+            const int maxAttempts = 24;   // ~6s cap at 250ms
+            const int delayMs = 250;
+            const int maxStall = 4;       // give up if pending doesn't move for ~1s
+
+            var lastPending = -1;
+            var stallCount = 0;
+
+            for (var attempt = 0; attempt < maxAttempts; attempt++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var eval = await view.EvaluateScriptAsync(
+                    "(function(){var i=Array.prototype.slice.call(document.images);" +
+                    "return i.length + '|' + i.filter(function(x){return !x.complete;}).length;})()")
+                    .ConfigureAwait(false);
+
+                var total = -1;
+                var pending = -1;
+                if (eval?.Success == true && eval.Result != null)
+                {
+                    var parts = eval.Result.ToString().Split('|');
+                    if (parts.Length == 2)
+                    {
+                        int.TryParse(parts[0], out total);
+                        int.TryParse(parts[1], out pending);
+                    }
+                }
+
+                // No images to wait for (or the view does not expose them) - nothing to warm.
+                if (total <= 0 || pending == 0)
+                {
+                    return;
+                }
+
+                if (pending == lastPending)
+                {
+                    if (++stallCount >= maxStall)
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    stallCount = 0;
+                    lastPending = pending;
+                }
+
+                await Task.Delay(delayMs, ct).ConfigureAwait(false);
+            }
         }
 
         private static bool ContainsAchievementMarkup(string html)
@@ -698,6 +1002,47 @@ namespace PlayniteAchievements.Providers.Exophase
             return NormalizeIconUrlCandidate(imgNode.GetAttributeValue("src", string.Empty));
         }
 
+        internal static string ResolveImageUrl(HtmlNode node)
+        {
+            var imgNode = string.Equals(node?.Name, "img", StringComparison.OrdinalIgnoreCase)
+                ? node
+                : node?.SelectSingleNode(".//img[@data-normal or @data-src or @data-lazy-src or @data-original or @srcset or @src]");
+            if (imgNode == null)
+            {
+                return string.Empty;
+            }
+
+            return FirstNonEmpty(
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("data-normal", string.Empty)),
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("data-src", string.Empty)),
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("data-lazy-src", string.Empty)),
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("data-original", string.Empty)),
+                NormalizeIconUrlCandidate(SelectSrcSetCandidate(imgNode.GetAttributeValue("srcset", string.Empty))),
+                NormalizeIconUrlCandidate(imgNode.GetAttributeValue("src", string.Empty)));
+        }
+
+        private static string SelectSrcSetCandidate(string srcset)
+        {
+            if (string.IsNullOrWhiteSpace(srcset))
+            {
+                return string.Empty;
+            }
+
+            var candidates = srcset
+                .Split(',')
+                .Select(candidate => candidate.Trim())
+                .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+                .Select(candidate => candidate.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
+                .Where(candidate => !string.IsNullOrWhiteSpace(candidate))
+                .ToList();
+            return candidates.Count == 0 ? string.Empty : candidates[candidates.Count - 1];
+        }
+
+        private static string FirstNonEmpty(params string[] values)
+        {
+            return values?.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? string.Empty;
+        }
+
         private static string NormalizeIconUrlCandidate(string url)
         {
             if (string.IsNullOrWhiteSpace(url))
@@ -715,6 +1060,19 @@ namespace PlayniteAchievements.Providers.Exophase
             if (normalized.StartsWith("//", StringComparison.Ordinal))
             {
                 return "https:" + normalized;
+            }
+
+            if (normalized.StartsWith("/", StringComparison.Ordinal))
+            {
+                var host = Regex.IsMatch(normalized, @"^/(?:[a-z0-9-]+)/(?:games|awards)/", RegexOptions.IgnoreCase)
+                    ? "https://m.exophase.com"
+                    : "https://www.exophase.com";
+                return host + normalized;
+            }
+
+            if (Regex.IsMatch(normalized, @"^(?:m\.|www\.)?exophase\.com/", RegexOptions.IgnoreCase))
+            {
+                return "https://" + normalized;
             }
 
             return normalized;

@@ -124,9 +124,28 @@ namespace PlayniteAchievements
         public static event EventHandler SettingsSaved;
 
         /// <summary>
-        /// Raises the SettingsSaved event to notify listeners that settings have changed.
+        /// Raises the SettingsSaved event to notify listeners that settings have changed. Every
+        /// subscriber is a UI control, so when this is invoked from a background thread (e.g. a friend
+        /// roster merge during refresh) the event is marshaled onto the UI dispatcher to avoid
+        /// cross-thread access exceptions. On the UI thread it is raised inline as before.
         /// </summary>
-        public static void NotifySettingsSaved() => SettingsSaved?.Invoke(null, EventArgs.Empty);
+        public static void NotifySettingsSaved()
+        {
+            var handler = SettingsSaved;
+            if (handler == null)
+            {
+                return;
+            }
+
+            var dispatcher = Instance?.PlayniteApi?.MainView?.UIDispatcher;
+            if (dispatcher != null && !dispatcher.CheckAccess())
+            {
+                dispatcher.BeginInvoke(new Action(() => handler.Invoke(null, EventArgs.Empty)));
+                return;
+            }
+
+            handler.Invoke(null, EventArgs.Empty);
+        }
 
         private void TryWarmCustomDataCache()
         {
@@ -248,6 +267,7 @@ namespace PlayniteAchievements
                 // Create provider registry
                 _providerRegistry = new ProviderRegistry(settings, ProviderDisplayOrder, _logger, _manualSourceRegistry);
                 _providerRegistry.SyncFromSettings(settings.Persisted);
+                settings.Persisted?.MigrateLegacyProviderFriends();
                 _gameCustomDataStore = _settingsViewModel.GameCustomDataStore;
                 _gameCustomDataStore.AttachRuntimeSettings(settings);
                 TryWarmCustomDataCache();

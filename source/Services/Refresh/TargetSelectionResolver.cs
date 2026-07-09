@@ -108,9 +108,11 @@ namespace PlayniteAchievements.Services
             options ??= new CacheRefreshOptions();
 
             HashSet<Guid> excludedGameIds = null;
+            var skipCachedNoAchievements = false;
             if (options.SkipNoAchievementsGames && !options.BypassExclusions)
             {
                 excludedGameIds = GameCustomDataLookup.GetExcludedRefreshGameIds(_settings?.Persisted);
+                skipCachedNoAchievements = true;
             }
 
             IEnumerable<Game> candidates;
@@ -160,7 +162,8 @@ namespace PlayniteAchievements.Services
                     continue;
                 }
 
-                if (excludedGameIds != null && excludedGameIds.Contains(game.Id))
+                if ((excludedGameIds != null && excludedGameIds.Contains(game.Id)) ||
+                    (skipCachedNoAchievements && IsCachedNoAchievements(game)))
                 {
                     skippedNoAchievements++;
                     continue;
@@ -197,6 +200,25 @@ namespace PlayniteAchievements.Services
             }
 
             return targets;
+        }
+
+        private bool IsCachedNoAchievements(Game game)
+        {
+            if (game == null || game.Id == Guid.Empty)
+            {
+                return false;
+            }
+
+            try
+            {
+                var cached = _cacheService.LoadGameData(game.Id.ToString("D"));
+                return cached?.HasAchievements == false;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Failed to read cached achievement state for game '{game.Name}'.");
+                return false;
+            }
         }
 
         public List<Guid> GetMissingGameIds(IReadOnlyList<IDataProvider> authenticatedProviders)

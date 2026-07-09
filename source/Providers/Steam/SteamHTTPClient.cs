@@ -198,7 +198,11 @@ namespace PlayniteAchievements.Providers.Steam
                 return Task.FromResult(new SteamPageResult());
             }
 
-            return GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64.Trim()}/games?tab=all&xml=1", true, ct);
+            // Fetch the standard (React) games page rather than the &xml=1 feed: the React page
+            // embeds per-game achievement progress ("11/17") in the server-delivered HTML, which
+            // feeds the friend refresh unlock hint. The XML profile page remains a fallback (no
+            // counts) via GetProfileXmlPageAsync when this page yields no owned-games payload.
+            return GetSteamPageAsync($"https://steamcommunity.com/profiles/{steamId64.Trim()}/games?tab=all", true, ct);
         }
 
         public Task<SteamPageResult> GetProfileXmlPageAsync(string steamId64, CancellationToken ct)
@@ -630,7 +634,9 @@ namespace PlayniteAchievements.Providers.Steam
         {
             try
             {
-                var (cefFinalUrl, cefHtml) = await _sessionManager.GetSteamPageAsyncCef(url, ct).ConfigureAwait(false);
+                var (cefFinalUrl, cefHtml) = await _sessionManager
+                    .GetSteamPageAsyncCef(url, ct)
+                    .ConfigureAwait(false);
                 if (string.IsNullOrWhiteSpace(cefHtml))
                 {
                     _logger.Warn($"[SteamAch] CEF fallback returned empty HTML for {url}");

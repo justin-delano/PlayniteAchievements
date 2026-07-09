@@ -9,10 +9,9 @@ namespace PlayniteAchievements.Tests.Steam
     public class SteamSettingsViewTests
     {
         [TestMethod]
-        public void BuildFriendListItems_IncludesPersistedFullLibraryFriendsMissingFromActiveCache()
+        public void BuildFriendListItems_UsesAvatarPathForActiveFriends()
         {
             var settings = new SteamSettings();
-            settings.SetFullLibraryFriend("333", "Full Library", "full-avatar", enabled: true);
 
             var rows = SteamFriendListBuilder.BuildItems(
                 settings,
@@ -27,16 +26,9 @@ namespace PlayniteAchievements.Tests.Steam
                     }
                 });
 
-            Assert.AreEqual(2, rows.Count);
-
             var activeRow = rows.Single(row => row.SteamId == "111");
             Assert.AreEqual("active-avatar-path", activeRow.AvatarUrl);
-
-            var staleFullLibraryRow = rows.Single(row => row.SteamId == "333");
-            Assert.AreEqual("Full Library", staleFullLibraryRow.DisplayName);
-            Assert.AreEqual("full-avatar", staleFullLibraryRow.AvatarUrl);
-            Assert.IsFalse(staleFullLibraryRow.IsIgnored);
-            Assert.IsTrue(staleFullLibraryRow.UseFullLibrary);
+            Assert.IsFalse(activeRow.IsIgnored);
         }
 
         [TestMethod]
@@ -44,7 +36,6 @@ namespace PlayniteAchievements.Tests.Steam
         {
             var settings = new SteamSettings();
             settings.AddIgnoredFriend("111", "Ignored Friend", "ignored-avatar");
-            settings.SetFullLibraryFriend("111", "Ignored Friend", "ignored-avatar", enabled: true);
 
             var rows = SteamFriendListBuilder.BuildItems(
                 settings,
@@ -63,7 +54,6 @@ namespace PlayniteAchievements.Tests.Steam
             Assert.AreEqual("Ignored Friend", row.DisplayName);
             Assert.AreEqual("ignored-avatar", row.AvatarUrl);
             Assert.IsTrue(row.IsIgnored);
-            Assert.IsTrue(row.UseFullLibrary);
         }
     }
 }

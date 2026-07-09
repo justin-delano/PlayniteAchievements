@@ -120,8 +120,11 @@ namespace PlayniteAchievements.Providers.Exophase
                 foreach (var slug in slugs)
                 {
                     var achievementUrl = ExophaseApiClient.BuildUrlFromSlug(slug);
+
+                    // Warm the CDN for award thumbnails so the subsequent icon downloads hit 200 rather
+                    // than the initial cold-CDN 404 (paid once per game via the stable icon cache).
                     var fetchedAchievements = await _apiClient
-                        .FetchAchievementsAsync(achievementUrl, acceptLanguage, ct)
+                        .FetchAchievementsAsync(achievementUrl, acceptLanguage, ct, waitForImages: true)
                         .ConfigureAwait(false);
 
                     if (fetchedAchievements == null || fetchedAchievements.Count == 0)
@@ -173,7 +176,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 return new List<string> { cachedSlug };
             }
 
-            var normalizedName = NormalizeGameName(game.Name);
+            var normalizedName = ExophaseGameNameMatcher.NormalizeGameName(game.Name);
             if (!string.IsNullOrWhiteSpace(normalizedName))
             {
                 foreach (var candidatePlatformSlug in platformSlugs)
@@ -239,7 +242,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            var normalizedSearch = NormalizeGameName(gameName);
+            var normalizedSearch = ExophaseGameNameMatcher.NormalizeGameName(gameName);
             var scored = games
                 .Where(game => game != null && !string.IsNullOrWhiteSpace(game.EndpointAwards))
                 .Select(game =>
@@ -266,38 +269,13 @@ namespace PlayniteAchievements.Providers.Exophase
 
         private static int ScoreSearchMatch(string normalizedSearch, ExophaseGame game, string platformSlug)
         {
-            var title = NormalizeGameName(game?.Title);
+            var title = ExophaseGameNameMatcher.NormalizeGameName(game?.Title);
             if (string.IsNullOrWhiteSpace(title))
             {
                 return 0;
             }
 
-            var score = 0;
-            if (string.Equals(title, normalizedSearch, StringComparison.OrdinalIgnoreCase))
-            {
-                score = 100;
-            }
-            else if (title.StartsWith(normalizedSearch, StringComparison.OrdinalIgnoreCase))
-            {
-                score = 80;
-            }
-            else if (title.IndexOf(normalizedSearch, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                     normalizedSearch.IndexOf(title, StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                score = 60;
-            }
-            else
-            {
-                var similarity = StringSimilarity.JaroWinklerSimilarityIgnoreCase(normalizedSearch, title);
-                if (similarity >= 0.94)
-                {
-                    score = 70;
-                }
-                else if (similarity >= 0.88)
-                {
-                    score = 40;
-                }
-            }
+            var score = ExophaseGameNameMatcher.ComputeMatchScore(normalizedSearch, title);
 
             if (score > 0 &&
                 !string.IsNullOrWhiteSpace(platformSlug) &&
@@ -586,93 +564,10 @@ namespace PlayniteAchievements.Providers.Exophase
                 return null;
             }
 
-            var normalizedName = NormalizeGameNameForSlug(game.Name);
+            var normalizedName = ExophaseGameNameMatcher.NormalizeGameNameForSlug(game.Name);
             return string.IsNullOrWhiteSpace(normalizedName)
                 ? null
                 : $"{normalizedName}-{platformSlug}";
-        }
-
-        private static string NormalizeGameNameForSlug(string name)
-        {
-            var normalized = NormalizeGameName(name);
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return null;
-            }
-
-            normalized = normalized.ToLowerInvariant();
-            var chars = new char[normalized.Length];
-            var index = 0;
-            var lastWasHyphen = false;
-
-            foreach (var c in normalized)
-            {
-                if (char.IsLetterOrDigit(c))
-                {
-                    chars[index++] = c;
-                    lastWasHyphen = false;
-                }
-                else if (!lastWasHyphen)
-                {
-                    chars[index++] = '-';
-                    lastWasHyphen = true;
-                }
-            }
-
-            if (index > 0 && chars[index - 1] == '-')
-            {
-                index--;
-            }
-
-            return new string(chars, 0, index);
-        }
-
-        private static string NormalizeGameName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return null;
-            }
-
-            var normalized = name.Trim();
-            var suffixes = new[]
-            {
-                " - Definitive Edition",
-                " - Game of the Year Edition",
-                " - Complete Edition",
-                " - Collector's Edition",
-                " - Deluxe Edition",
-                " - Standard Edition",
-                " - Ultimate Edition",
-                " - Premium Edition",
-                " Definitive Edition",
-                " Game of the Year Edition",
-                " Complete Edition",
-                " Collector's Edition",
-                " Deluxe Edition",
-                " Standard Edition",
-                " Ultimate Edition",
-                " Premium Edition",
-                " (Definitive Edition)",
-                " (Game of the Year Edition)",
-                " (Complete Edition)",
-                " (Collector's Edition)",
-                " (Deluxe Edition)",
-                " (Standard Edition)",
-                " (Ultimate Edition)",
-                " (Premium Edition)"
-            };
-
-            foreach (var suffix in suffixes)
-            {
-                if (normalized.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                {
-                    normalized = normalized.Substring(0, normalized.Length - suffix.Length);
-                    break;
-                }
-            }
-
-            return normalized.Trim();
         }
 
         private static string NormalizeAchievementTitle(string value)

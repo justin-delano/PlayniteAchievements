@@ -1,3 +1,4 @@
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
 using System.Collections.Generic;
@@ -8,9 +9,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
     {
         public static FriendRuntimeState Empty { get; } = new FriendRuntimeState(null);
 
-        public FriendRuntimeState(FriendsOverviewData data)
+        public FriendRuntimeState(FriendsOverviewData data, PersistedSettings settings = null)
         {
-            Projection = new FriendOverviewProjection(data);
+            Projection = new FriendOverviewProjection(data, settings);
         }
 
         public FriendOverviewProjection Projection { get; }
@@ -25,6 +26,9 @@ namespace PlayniteAchievements.Models.ThemeIntegration
 
         public IReadOnlyList<FriendAchievementDisplayItem> RecentUnlocks =>
             Projection?.RecentUnlocks ?? new List<FriendAchievementDisplayItem>();
+
+        public IReadOnlyList<FriendAchievementDisplayItem> AllAchievements =>
+            Projection?.AllAchievements ?? new List<FriendAchievementDisplayItem>();
 
         public IReadOnlyList<FriendAchievementDisplayItem> AllUnlockedAchievements =>
             Projection?.AllUnlockedAchievements ?? new List<FriendAchievementDisplayItem>();

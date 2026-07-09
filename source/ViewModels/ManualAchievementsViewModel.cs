@@ -723,7 +723,7 @@ namespace PlayniteAchievements.ViewModels
             return new RefreshRequest
             {
                 Mode = RefreshModeType.Custom,
-                CustomOptions = new CustomRefreshOptions
+                Options = RefreshOptions.FromCustom(new CustomRefreshOptions
                 {
                     ProviderKeys = new[] { "Manual" },
                     Scope = CustomGameScope.Explicit,
@@ -732,7 +732,7 @@ namespace PlayniteAchievements.ViewModels
                     RespectUserExclusions = false,
                     ForceBypassExclusionsForExplicitIncludes = true,
                     RunProvidersInParallelOverride = false
-                }
+                })
             };
         }
 

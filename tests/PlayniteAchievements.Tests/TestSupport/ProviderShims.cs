@@ -86,6 +86,11 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             return new List<string>();
         }
+
+        public static bool HasCriticalCookies(IReadOnlyCollection<HttpCookie> cookies)
+        {
+            return GetMissingCriticalCookies(cookies).Count == 0;
+        }
     }
 
     public class ExophaseSessionManager : ISessionManager

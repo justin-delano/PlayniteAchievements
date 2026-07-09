@@ -91,11 +91,19 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private static FriendGameSummaryItem ProjectDisplayItem(FriendGameAchievementSummary summary)
         {
             var gameId = summary.GameId != Guid.Empty ? summary.GameId : (Guid?)null;
+            // summary.ProviderKey already carries the resolved display-provider key (e.g. Steam), so
+            // resolve the brand icon/color from it rather than defaulting to gray.
+            if (!PlayniteAchievements.Providers.ProviderRegistry.TryResolveProviderVisuals(summary.ProviderKey, out var providerIconKey, out var providerColorHex))
+            {
+                providerIconKey = string.IsNullOrWhiteSpace(summary.ProviderKey) ? null : "ProviderIcon" + summary.ProviderKey;
+                providerColorHex = "#888888";
+            }
             return new FriendGameSummaryItem
             {
                 ProviderKey = summary.ProviderKey,
                 Provider = !string.IsNullOrWhiteSpace(summary.ProviderName) ? summary.ProviderName : summary.Platform,
-                ProviderIconKey = string.IsNullOrWhiteSpace(summary.ProviderKey) ? null : "ProviderIcon" + summary.ProviderKey,
+                ProviderIconKey = providerIconKey,
+                ProviderColorHex = providerColorHex,
                 AppId = summary.AppId,
                 PlayniteGameId = gameId,
                 GameName = summary.GameName,

@@ -1,18 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
-using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers.Settings;
-using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Models;
-using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Providers.Steam
 {
@@ -81,29 +75,9 @@ namespace PlayniteAchievements.Providers.Steam
             set => SetValue(WebAuthStatusProperty, value);
         }
 
-        public static readonly DependencyProperty FriendsBusyProperty =
-            DependencyProperty.Register(
-                nameof(FriendsBusy),
-                typeof(bool),
-                typeof(SteamSettingsView),
-                new PropertyMetadata(false));
-
-        public bool FriendsBusy
-        {
-            get => (bool)GetValue(FriendsBusyProperty);
-            set => SetValue(FriendsBusyProperty, value);
-        }
-
         #endregion
 
         public new SteamSettings Settings => _steamSettings;
-
-        /// <summary>
-        /// Full friends roster shown in settings: active friends from the cache plus ignored friends
-        /// tracked in provider settings. Each row carries the ignore and full-library toggles.
-        /// </summary>
-        public ObservableCollection<SteamFriendListItem> Friends { get; } =
-            new ObservableCollection<SteamFriendListItem>();
 
         public SteamSettingsView(SteamSessionManager sessionManager)
         {
@@ -122,37 +96,6 @@ namespace PlayniteAchievements.Providers.Steam
             WebAuthenticated = false;
             FullyConfigured = false;
             WebAuthStatus = ResourceProvider.GetString("LOCPlayAch_Auth_NotChecked");
-            LoadFriends();
-        }
-
-        /// <summary>
-        /// Rebuilds the <see cref="Friends"/> collection from cached active friends plus persisted
-        /// ignored/full-library rows, annotating each with its current toggles.
-        /// </summary>
-        private void LoadFriends()
-        {
-            Friends.Clear();
-            if (_steamSettings == null)
-            {
-                return;
-            }
-
-            List<FriendIdentity> active = null;
-
-            try
-            {
-                var cache = PlayniteAchievementsPlugin.Instance?.RefreshRuntime?.Cache as IFriendCacheManager;
-                active = cache?.LoadFriendIdentities("Steam") ?? new List<FriendIdentity>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Debug(ex, "Failed to load active Steam friends for settings table.");
-            }
-
-            foreach (var item in SteamFriendListBuilder.BuildItems(_steamSettings, active))
-            {
-                Friends.Add(item);
-            }
         }
 
         public async Task RefreshAuthStatusAsync()
@@ -259,83 +202,6 @@ namespace PlayniteAchievements.Providers.Steam
             finally
             {
                 SetAuthBusy(false);
-            }
-        }
-
-        private void ToggleIgnoreFriend_Click(object sender, RoutedEventArgs e)
-        {
-            if (!(sender is FrameworkElement element) ||
-                !(element.DataContext is SteamFriendListItem item) ||
-                _steamSettings == null)
-            {
-                return;
-            }
-
-            if (item.IsIgnored)
-            {
-                _steamSettings.RemoveIgnoredFriend(item.SteamId);
-            }
-            else
-            {
-                _steamSettings.AddIgnoredFriend(item.SteamId, item.DisplayName, item.AvatarUrl);
-                try
-                {
-                    var cache = PlayniteAchievementsPlugin.Instance?.RefreshRuntime?.Cache as IFriendCacheManager;
-                    cache?.DeleteFriendData("Steam", item.SteamId);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Warn(ex, $"Failed to delete cached data for ignored friend {item.SteamId}.");
-                }
-            }
-
-            PlayniteAchievementsPlugin.NotifySettingsSaved();
-            LoadFriends();
-        }
-
-        private void FullLibraryToggle_Click(object sender, RoutedEventArgs e)
-        {
-            if (!(sender is CheckBox checkBox) ||
-                !(checkBox.DataContext is SteamFriendListItem item) ||
-                _steamSettings == null)
-            {
-                return;
-            }
-
-            var enable = checkBox.IsChecked == true;
-            if (enable && !FriendLibraryScopeHelper.ConfirmFullLibraryEnable())
-            {
-                checkBox.IsChecked = false;
-                item.UseFullLibrary = false;
-                return;
-            }
-
-            _steamSettings.SetFullLibraryFriend(item.SteamId, item.DisplayName, item.AvatarUrl, enable);
-            item.UseFullLibrary = enable;
-            PlayniteAchievementsPlugin.NotifySettingsSaved();
-        }
-
-        private async void RefreshFriendsList_Click(object sender, RoutedEventArgs e)
-        {
-            var runtime = PlayniteAchievementsPlugin.Instance?.RefreshRuntime;
-            if (runtime == null || FriendsBusy)
-            {
-                return;
-            }
-
-            try
-            {
-                FriendsBusy = true;
-                await runtime.RefreshFriendRosterAsync(CancellationToken.None).ConfigureAwait(true);
-            }
-            catch (Exception ex)
-            {
-                Logger.Error(ex, "Steam friend roster refresh failed.");
-            }
-            finally
-            {
-                FriendsBusy = false;
-                LoadFriends();
             }
         }
 
