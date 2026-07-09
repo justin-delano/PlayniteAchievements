@@ -1,5 +1,7 @@
 using System;
+using System.Runtime.Serialization;
 using System.Windows.Input;
+using Playnite.SDK.Data;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 
@@ -154,20 +156,34 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         /// </summary>
         public int AchievementCount { get; }
 
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand SetDynamicAchievementsGameCommand { get; set; }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand FilterDynamicGameSummariesByProviderCommand { get; set; }
+
         /// <summary>
         /// Command to open the View Achievements window for this game.
         /// Prefer OpenViewAchievementsWindow in new themes.
         /// </summary>
+        [DontSerialize]
+        [IgnoreDataMember]
         public ICommand OpenAchievementWindow { get; }
 
         /// <summary>
         /// Command to open the View Achievements window for this game.
         /// </summary>
+        [DontSerialize]
+        [IgnoreDataMember]
         public ICommand OpenViewAchievementsWindow { get; }
 
         /// <summary>
         /// Command to open the Manage Achievements window for this game.
         /// </summary>
+        [DontSerialize]
+        [IgnoreDataMember]
         public ICommand OpenManageAchievementsWindow { get; }
 
         #region Legacy Aliases for Aniki ReMake/Helper Compatibility

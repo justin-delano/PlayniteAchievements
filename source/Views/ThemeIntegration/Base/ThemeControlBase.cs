@@ -586,18 +586,26 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameLabel)] = nameof(DynamicFriendScopeGameLabel),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterKey)] = nameof(DynamicFriendSummariesFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterLabel)] = nameof(DynamicFriendSummariesFilterLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesLastUnlockFilterKey)] = nameof(DynamicFriendSummariesLastUnlockFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortKey)] = nameof(DynamicFriendSummariesSortKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortLabel)] = nameof(DynamicFriendSummariesSortLabel),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionKey)] = nameof(DynamicFriendSummariesSortDirectionKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionLabel)] = nameof(DynamicFriendSummariesSortDirectionLabel),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterKey)] = nameof(DynamicFriendGameSummariesFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterLabel)] = nameof(DynamicFriendGameSummariesFilterLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesProgressFilterKey)] = nameof(DynamicFriendGameSummariesProgressFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesActivityFilterKey)] = nameof(DynamicFriendGameSummariesActivityFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortKey)] = nameof(DynamicFriendGameSummariesSortKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortLabel)] = nameof(DynamicFriendGameSummariesSortLabel),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionKey)] = nameof(DynamicFriendGameSummariesSortDirectionKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionLabel)] = nameof(DynamicFriendGameSummariesSortDirectionLabel),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterKey)] = nameof(DynamicFriendAchievementsFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterLabel)] = nameof(DynamicFriendAchievementsFilterLabel),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsStatusFilterKey)] = nameof(DynamicFriendAchievementsStatusFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsProgressFilterKey)] = nameof(DynamicFriendAchievementsProgressFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsRarityFilterKey)] = nameof(DynamicFriendAchievementsRarityFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsTrophyFilterKey)] = nameof(DynamicFriendAchievementsTrophyFilterKey),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsCustomizationFilterKey)] = nameof(DynamicFriendAchievementsCustomizationFilterKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortKey)] = nameof(DynamicFriendAchievementsSortKey),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortLabel)] = nameof(DynamicFriendAchievementsSortLabel),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortDirectionKey)] = nameof(DynamicFriendAchievementsSortDirectionKey),
@@ -608,12 +616,20 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterOptions)] = nameof(DynamicFriendSummariesFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortOptions)] = nameof(DynamicFriendSummariesSortOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendSummariesSortDirectionOptions)] = nameof(DynamicFriendSummariesSortDirectionOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendSummaryLastUnlockFilterOptions)] = nameof(DynamicFriendSummaryLastUnlockFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterOptions)] = nameof(DynamicFriendGameSummariesFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortOptions)] = nameof(DynamicFriendGameSummariesSortOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesSortDirectionOptions)] = nameof(DynamicFriendGameSummariesSortDirectionOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameProgressFilterOptions)] = nameof(DynamicFriendGameProgressFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendGameActivityFilterOptions)] = nameof(DynamicFriendGameActivityFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterOptions)] = nameof(DynamicFriendAchievementsFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortOptions)] = nameof(DynamicFriendAchievementsSortOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsSortDirectionOptions)] = nameof(DynamicFriendAchievementsSortDirectionOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementStatusFilterOptions)] = nameof(DynamicFriendAchievementStatusFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementProgressFilterOptions)] = nameof(DynamicFriendAchievementProgressFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementRarityFilterOptions)] = nameof(DynamicFriendAchievementRarityFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementTrophyFilterOptions)] = nameof(DynamicFriendAchievementTrophyFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicFriendAchievementCustomizationFilterOptions)] = nameof(DynamicFriendAchievementCustomizationFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievements)] = nameof(DynamicLibraryAchievements),
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsProviderKey)] = nameof(DynamicLibraryAchievementsProviderKey),
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsProviderLabel)] = nameof(DynamicLibraryAchievementsProviderLabel),
@@ -636,18 +652,35 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsFilterOptions)] = nameof(DynamicLibraryAchievementsFilterOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsSortOptions)] = nameof(DynamicLibraryAchievementsSortOptions),
                 [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementsSortDirectionOptions)] = nameof(DynamicLibraryAchievementsSortDirectionOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementStatusFilterOptions)] = nameof(DynamicLibraryAchievementStatusFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementProgressFilterOptions)] = nameof(DynamicLibraryAchievementProgressFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementRarityFilterOptions)] = nameof(DynamicLibraryAchievementRarityFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementTrophyFilterOptions)] = nameof(DynamicLibraryAchievementTrophyFilterOptions),
+                [nameof(PlayniteAchievementsSettings.DynamicLibraryAchievementCustomizationFilterOptions)] = nameof(DynamicLibraryAchievementCustomizationFilterOptions),
                 [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsGameCommand)] = nameof(SetDynamicAchievementsGameCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsFilterCommand)] = nameof(SetDynamicAchievementsFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsStatusFilterCommand)] = nameof(SetDynamicAchievementsStatusFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsProgressFilterCommand)] = nameof(SetDynamicAchievementsProgressFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsRarityFilterCommand)] = nameof(SetDynamicAchievementsRarityFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsTrophyFilterCommand)] = nameof(SetDynamicAchievementsTrophyFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsCustomizationFilterCommand)] = nameof(SetDynamicAchievementsCustomizationFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SortDynamicAchievementsCommand)] = nameof(SortDynamicAchievementsCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicAchievementsSortDirectionCommand)] = nameof(SetDynamicAchievementsSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.OpenViewAchievementsWindow)] = nameof(OpenViewAchievementsWindow),
                 [nameof(PlayniteAchievementsSettings.OpenManageAchievementsWindow)] = nameof(OpenManageAchievementsWindow),
                 [nameof(PlayniteAchievementsSettings.FilterDynamicLibraryAchievementsByProviderCommand)] = nameof(FilterDynamicLibraryAchievementsByProviderCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicLibraryAchievementsFilterCommand)] = nameof(SetDynamicLibraryAchievementsFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicLibraryAchievementsStatusFilterCommand)] = nameof(SetDynamicLibraryAchievementsStatusFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicLibraryAchievementsProgressFilterCommand)] = nameof(SetDynamicLibraryAchievementsProgressFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicLibraryAchievementsRarityFilterCommand)] = nameof(SetDynamicLibraryAchievementsRarityFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicLibraryAchievementsTrophyFilterCommand)] = nameof(SetDynamicLibraryAchievementsTrophyFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicLibraryAchievementsCustomizationFilterCommand)] = nameof(SetDynamicLibraryAchievementsCustomizationFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SortDynamicLibraryAchievementsCommand)] = nameof(SortDynamicLibraryAchievementsCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicLibraryAchievementsSortDirectionCommand)] = nameof(SetDynamicLibraryAchievementsSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.FilterDynamicGameSummariesByProviderCommand)] = nameof(FilterDynamicGameSummariesByProviderCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesFilterCommand)] = nameof(SetDynamicGameSummariesFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesProgressFilterCommand)] = nameof(SetDynamicGameSummariesProgressFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesActivityFilterCommand)] = nameof(SetDynamicGameSummariesActivityFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SortDynamicGameSummariesCommand)] = nameof(SortDynamicGameSummariesCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicGameSummariesSortDirectionCommand)] = nameof(SetDynamicGameSummariesSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeProviderCommand)] = nameof(SetDynamicFriendScopeProviderCommand),
@@ -655,12 +688,20 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendScopeGameCommand)] = nameof(SetDynamicFriendScopeGameCommand),
                 [nameof(PlayniteAchievementsSettings.ResetDynamicFriendScopeCommand)] = nameof(ResetDynamicFriendScopeCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendSummariesFilterCommand)] = nameof(SetDynamicFriendSummariesFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendSummariesLastUnlockFilterCommand)] = nameof(SetDynamicFriendSummariesLastUnlockFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SortDynamicFriendSummariesCommand)] = nameof(SortDynamicFriendSummariesCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendSummariesSortDirectionCommand)] = nameof(SetDynamicFriendSummariesSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesFilterCommand)] = nameof(SetDynamicFriendGameSummariesFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesProgressFilterCommand)] = nameof(SetDynamicFriendGameSummariesProgressFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesActivityFilterCommand)] = nameof(SetDynamicFriendGameSummariesActivityFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SortDynamicFriendGameSummariesCommand)] = nameof(SortDynamicFriendGameSummariesCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendGameSummariesSortDirectionCommand)] = nameof(SetDynamicFriendGameSummariesSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsFilterCommand)] = nameof(SetDynamicFriendAchievementsFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsStatusFilterCommand)] = nameof(SetDynamicFriendAchievementsStatusFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsProgressFilterCommand)] = nameof(SetDynamicFriendAchievementsProgressFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsRarityFilterCommand)] = nameof(SetDynamicFriendAchievementsRarityFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsTrophyFilterCommand)] = nameof(SetDynamicFriendAchievementsTrophyFilterCommand),
+                [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsCustomizationFilterCommand)] = nameof(SetDynamicFriendAchievementsCustomizationFilterCommand),
                 [nameof(PlayniteAchievementsSettings.SortDynamicFriendAchievementsCommand)] = nameof(SortDynamicFriendAchievementsCommand),
                 [nameof(PlayniteAchievementsSettings.SetDynamicFriendAchievementsSortDirectionCommand)] = nameof(SetDynamicFriendAchievementsSortDirectionCommand),
                 [nameof(PlayniteAchievementsSettings.ResetDynamicAchievementsCommand)] = nameof(ResetDynamicAchievementsCommand),
@@ -756,12 +797,20 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(ModernThemeBindings.DynamicFriendSummariesFilterOptions)] = nameof(DynamicFriendSummariesFilterOptions),
                 [nameof(ModernThemeBindings.DynamicFriendSummariesSortOptions)] = nameof(DynamicFriendSummariesSortOptions),
                 [nameof(ModernThemeBindings.DynamicFriendSummariesSortDirectionOptions)] = nameof(DynamicFriendSummariesSortDirectionOptions),
+                [nameof(ModernThemeBindings.DynamicFriendSummaryLastUnlockFilterOptions)] = nameof(DynamicFriendSummaryLastUnlockFilterOptions),
                 [nameof(ModernThemeBindings.DynamicFriendGameSummariesFilterOptions)] = nameof(DynamicFriendGameSummariesFilterOptions),
                 [nameof(ModernThemeBindings.DynamicFriendGameSummariesSortOptions)] = nameof(DynamicFriendGameSummariesSortOptions),
                 [nameof(ModernThemeBindings.DynamicFriendGameSummariesSortDirectionOptions)] = nameof(DynamicFriendGameSummariesSortDirectionOptions),
+                [nameof(ModernThemeBindings.DynamicFriendGameProgressFilterOptions)] = nameof(DynamicFriendGameProgressFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendGameActivityFilterOptions)] = nameof(DynamicFriendGameActivityFilterOptions),
                 [nameof(ModernThemeBindings.DynamicFriendAchievementsFilterOptions)] = nameof(DynamicFriendAchievementsFilterOptions),
                 [nameof(ModernThemeBindings.DynamicFriendAchievementsSortOptions)] = nameof(DynamicFriendAchievementsSortOptions),
                 [nameof(ModernThemeBindings.DynamicFriendAchievementsSortDirectionOptions)] = nameof(DynamicFriendAchievementsSortDirectionOptions),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementStatusFilterOptions)] = nameof(DynamicFriendAchievementStatusFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementProgressFilterOptions)] = nameof(DynamicFriendAchievementProgressFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementRarityFilterOptions)] = nameof(DynamicFriendAchievementRarityFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementTrophyFilterOptions)] = nameof(DynamicFriendAchievementTrophyFilterOptions),
+                [nameof(ModernThemeBindings.DynamicFriendAchievementCustomizationFilterOptions)] = nameof(DynamicFriendAchievementCustomizationFilterOptions),
                 [nameof(ModernThemeBindings.DynamicLibraryAchievements)] = nameof(DynamicLibraryAchievements),
                 [nameof(ModernThemeBindings.DynamicLibraryAchievementsProviderKey)] = nameof(DynamicLibraryAchievementsProviderKey),
                 [nameof(ModernThemeBindings.DynamicLibraryAchievementsProviderLabel)] = nameof(DynamicLibraryAchievementsProviderLabel),
@@ -779,6 +828,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 [nameof(ModernThemeBindings.DynamicLibraryAchievementsFilterOptions)] = nameof(DynamicLibraryAchievementsFilterOptions),
                 [nameof(ModernThemeBindings.DynamicLibraryAchievementsSortOptions)] = nameof(DynamicLibraryAchievementsSortOptions),
                 [nameof(ModernThemeBindings.DynamicLibraryAchievementsSortDirectionOptions)] = nameof(DynamicLibraryAchievementsSortDirectionOptions),
+                [nameof(ModernThemeBindings.DynamicLibraryAchievementStatusFilterOptions)] = nameof(DynamicLibraryAchievementStatusFilterOptions),
+                [nameof(ModernThemeBindings.DynamicLibraryAchievementProgressFilterOptions)] = nameof(DynamicLibraryAchievementProgressFilterOptions),
+                [nameof(ModernThemeBindings.DynamicLibraryAchievementRarityFilterOptions)] = nameof(DynamicLibraryAchievementRarityFilterOptions),
+                [nameof(ModernThemeBindings.DynamicLibraryAchievementTrophyFilterOptions)] = nameof(DynamicLibraryAchievementTrophyFilterOptions),
+                [nameof(ModernThemeBindings.DynamicLibraryAchievementCustomizationFilterOptions)] = nameof(DynamicLibraryAchievementCustomizationFilterOptions),
                 [nameof(ModernThemeBindings.Common)] = nameof(Common),
                 [nameof(ModernThemeBindings.Uncommon)] = nameof(Uncommon),
                 [nameof(ModernThemeBindings.Rare)] = nameof(Rare),
@@ -826,6 +880,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             nameof(DynamicAchievementRarityFilterOptions),
             nameof(DynamicAchievementTrophyFilterOptions),
             nameof(DynamicAchievementCustomizationFilterOptions),
+            nameof(DynamicLibraryAchievementStatusFilterOptions),
+            nameof(DynamicLibraryAchievementProgressFilterOptions),
+            nameof(DynamicLibraryAchievementRarityFilterOptions),
+            nameof(DynamicLibraryAchievementTrophyFilterOptions),
+            nameof(DynamicLibraryAchievementCustomizationFilterOptions),
             nameof(DynamicGameSummaries),
             nameof(DynamicGameSummariesProviderKey),
             nameof(DynamicGameSummariesProviderLabel),
@@ -858,18 +917,26 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             nameof(DynamicFriendScopeGameLabel),
             nameof(DynamicFriendSummariesFilterKey),
             nameof(DynamicFriendSummariesFilterLabel),
+            nameof(DynamicFriendSummariesLastUnlockFilterKey),
             nameof(DynamicFriendSummariesSortKey),
             nameof(DynamicFriendSummariesSortLabel),
             nameof(DynamicFriendSummariesSortDirectionKey),
             nameof(DynamicFriendSummariesSortDirectionLabel),
             nameof(DynamicFriendGameSummariesFilterKey),
             nameof(DynamicFriendGameSummariesFilterLabel),
+            nameof(DynamicFriendGameSummariesProgressFilterKey),
+            nameof(DynamicFriendGameSummariesActivityFilterKey),
             nameof(DynamicFriendGameSummariesSortKey),
             nameof(DynamicFriendGameSummariesSortLabel),
             nameof(DynamicFriendGameSummariesSortDirectionKey),
             nameof(DynamicFriendGameSummariesSortDirectionLabel),
             nameof(DynamicFriendAchievementsFilterKey),
             nameof(DynamicFriendAchievementsFilterLabel),
+            nameof(DynamicFriendAchievementsStatusFilterKey),
+            nameof(DynamicFriendAchievementsProgressFilterKey),
+            nameof(DynamicFriendAchievementsRarityFilterKey),
+            nameof(DynamicFriendAchievementsTrophyFilterKey),
+            nameof(DynamicFriendAchievementsCustomizationFilterKey),
             nameof(DynamicFriendAchievementsSortKey),
             nameof(DynamicFriendAchievementsSortLabel),
             nameof(DynamicFriendAchievementsSortDirectionKey),
@@ -880,12 +947,20 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             nameof(DynamicFriendSummariesFilterOptions),
             nameof(DynamicFriendSummariesSortOptions),
             nameof(DynamicFriendSummariesSortDirectionOptions),
+            nameof(DynamicFriendSummaryLastUnlockFilterOptions),
             nameof(DynamicFriendGameSummariesFilterOptions),
             nameof(DynamicFriendGameSummariesSortOptions),
             nameof(DynamicFriendGameSummariesSortDirectionOptions),
+            nameof(DynamicFriendGameProgressFilterOptions),
+            nameof(DynamicFriendGameActivityFilterOptions),
             nameof(DynamicFriendAchievementsFilterOptions),
             nameof(DynamicFriendAchievementsSortOptions),
             nameof(DynamicFriendAchievementsSortDirectionOptions),
+            nameof(DynamicFriendAchievementStatusFilterOptions),
+            nameof(DynamicFriendAchievementProgressFilterOptions),
+            nameof(DynamicFriendAchievementRarityFilterOptions),
+            nameof(DynamicFriendAchievementTrophyFilterOptions),
+            nameof(DynamicFriendAchievementCustomizationFilterOptions),
             nameof(DynamicLibraryAchievements),
             nameof(DynamicLibraryAchievementsProviderKey),
             nameof(DynamicLibraryAchievementsProviderLabel),
@@ -908,6 +983,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             nameof(DynamicLibraryAchievementsFilterOptions),
             nameof(DynamicLibraryAchievementsSortOptions),
             nameof(DynamicLibraryAchievementsSortDirectionOptions),
+            nameof(DynamicLibraryAchievementStatusFilterOptions),
+            nameof(DynamicLibraryAchievementProgressFilterOptions),
+            nameof(DynamicLibraryAchievementRarityFilterOptions),
+            nameof(DynamicLibraryAchievementTrophyFilterOptions),
+            nameof(DynamicLibraryAchievementCustomizationFilterOptions),
             nameof(Common),
             nameof(Uncommon),
             nameof(Rare),
@@ -975,6 +1055,14 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 DynamicThemeOptionGroups.GameSummaryFilterGroupMap);
         }
 
+        private static string GetFriendSummaryGroupFilter(string filterKey, string groupKey)
+        {
+            return DynamicThemeOptionGroups.GetGroupSelection(
+                filterKey,
+                new[] { groupKey },
+                DynamicThemeOptionGroups.FriendSummaryFilterGroupMap);
+        }
+
         private void SetDynamicAchievementsGroupFilter(IEnumerable<string> groupKeys, object value)
         {
             DynamicAchievementsFilterKey = DynamicThemeOptionGroups.SetGroupSelection(
@@ -1003,6 +1091,36 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 value is DynamicThemeOption option ? option.Key : value?.ToString(),
                 DynamicThemeOptionGroups.GameSummaryFilterKeyMap,
                 DynamicThemeOptionGroups.GameSummaryFilterGroupMap);
+        }
+
+        private void SetDynamicFriendAchievementsGroupFilter(IEnumerable<string> groupKeys, object value)
+        {
+            DynamicFriendAchievementsFilterKey = DynamicThemeOptionGroups.SetGroupSelection(
+                DynamicFriendAchievementsFilterKey,
+                groupKeys,
+                value is DynamicThemeOption option ? option.Key : value?.ToString(),
+                DynamicThemeOptionGroups.AchievementFilterKeyMap,
+                DynamicThemeOptionGroups.AchievementFilterGroupMap);
+        }
+
+        private void SetDynamicFriendGameSummariesGroupFilter(IEnumerable<string> groupKeys, object value)
+        {
+            DynamicFriendGameSummariesFilterKey = DynamicThemeOptionGroups.SetGroupSelection(
+                DynamicFriendGameSummariesFilterKey,
+                groupKeys,
+                value is DynamicThemeOption option ? option.Key : value?.ToString(),
+                DynamicThemeOptionGroups.GameSummaryFilterKeyMap,
+                DynamicThemeOptionGroups.GameSummaryFilterGroupMap);
+        }
+
+        private void SetDynamicFriendSummariesGroupFilter(string groupKey, object value)
+        {
+            DynamicFriendSummariesFilterKey = DynamicThemeOptionGroups.SetGroupSelection(
+                DynamicFriendSummariesFilterKey,
+                groupKey,
+                value is DynamicThemeOption option ? option.Key : value?.ToString(),
+                DynamicThemeOptionGroups.FriendSummaryFilterKeyMap,
+                DynamicThemeOptionGroups.FriendSummaryFilterGroupMap);
         }
 
         public bool HasAchievements => _modernThemeOverride?.HasAchievements ?? _settings?.HasAchievements ?? false;
@@ -1325,6 +1443,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public string DynamicFriendSummariesFilterLabel => _modernThemeOverride?.DynamicFriendSummariesFilterLabel ?? _settings?.DynamicFriendSummariesFilterLabel ?? DynamicThemeViewKeys.All;
 
+        public string DynamicFriendSummariesLastUnlockFilterKey
+        {
+            get => GetFriendSummaryGroupFilter(DynamicFriendSummariesFilterKey, DynamicThemeOptionGroups.FriendLastUnlockGroup);
+            set => SetDynamicFriendSummariesGroupFilter(DynamicThemeOptionGroups.FriendLastUnlockGroup, value);
+        }
+
         public string DynamicFriendSummariesSortKey
         {
             get => _modernThemeOverride?.DynamicFriendSummariesSortKey ?? _settings?.DynamicFriendSummariesSortKey ?? DynamicThemeViewKeys.LastUnlock;
@@ -1360,6 +1484,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         }
 
         public string DynamicFriendGameSummariesFilterLabel => _modernThemeOverride?.DynamicFriendGameSummariesFilterLabel ?? _settings?.DynamicFriendGameSummariesFilterLabel ?? DynamicThemeViewKeys.All;
+
+        public string DynamicFriendGameSummariesProgressFilterKey
+        {
+            get => GetGameSummaryGroupFilter(DynamicFriendGameSummariesFilterKey, DynamicThemeOptionGroups.GameProgressGroups);
+            set => SetDynamicFriendGameSummariesGroupFilter(DynamicThemeOptionGroups.GameProgressGroups, value);
+        }
+
+        public string DynamicFriendGameSummariesActivityFilterKey
+        {
+            get => GetGameSummaryGroupFilter(DynamicFriendGameSummariesFilterKey, DynamicThemeOptionGroups.GameActivityGroups);
+            set => SetDynamicFriendGameSummariesGroupFilter(DynamicThemeOptionGroups.GameActivityGroups, value);
+        }
 
         public string DynamicFriendGameSummariesSortKey
         {
@@ -1397,6 +1533,36 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public string DynamicFriendAchievementsFilterLabel => _modernThemeOverride?.DynamicFriendAchievementsFilterLabel ?? _settings?.DynamicFriendAchievementsFilterLabel ?? DynamicThemeViewKeys.All;
 
+        public string DynamicFriendAchievementsStatusFilterKey
+        {
+            get => GetAchievementGroupFilter(DynamicFriendAchievementsFilterKey, DynamicThemeOptionGroups.AchievementStatusGroup);
+            set => SetDynamicFriendAchievementsGroupFilter(new[] { DynamicThemeOptionGroups.AchievementStatusGroup }, value);
+        }
+
+        public string DynamicFriendAchievementsProgressFilterKey
+        {
+            get => GetAchievementGroupFilter(DynamicFriendAchievementsFilterKey, DynamicThemeOptionGroups.AchievementProgressGroup);
+            set => SetDynamicFriendAchievementsGroupFilter(new[] { DynamicThemeOptionGroups.AchievementProgressGroup }, value);
+        }
+
+        public string DynamicFriendAchievementsRarityFilterKey
+        {
+            get => GetAchievementGroupFilter(DynamicFriendAchievementsFilterKey, DynamicThemeOptionGroups.AchievementRarityGroup);
+            set => SetDynamicFriendAchievementsGroupFilter(new[] { DynamicThemeOptionGroups.AchievementRarityGroup }, value);
+        }
+
+        public string DynamicFriendAchievementsTrophyFilterKey
+        {
+            get => GetAchievementGroupFilter(DynamicFriendAchievementsFilterKey, DynamicThemeOptionGroups.AchievementTrophyGroup);
+            set => SetDynamicFriendAchievementsGroupFilter(new[] { DynamicThemeOptionGroups.AchievementTrophyGroup }, value);
+        }
+
+        public string DynamicFriendAchievementsCustomizationFilterKey
+        {
+            get => GetAchievementGroupFilter(DynamicFriendAchievementsFilterKey, DynamicThemeOptionGroups.AchievementCustomizationGroups);
+            set => SetDynamicFriendAchievementsGroupFilter(DynamicThemeOptionGroups.AchievementCustomizationGroups, value);
+        }
+
         public string DynamicFriendAchievementsSortKey
         {
             get => _modernThemeOverride?.DynamicFriendAchievementsSortKey ?? _settings?.DynamicFriendAchievementsSortKey ?? DynamicThemeViewKeys.UnlockTime;
@@ -1433,17 +1599,33 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public ObservableCollection<DynamicThemeOption> DynamicFriendSummariesSortDirectionOptions => _modernThemeOverride?.DynamicFriendSummariesSortDirectionOptions ?? _settings?.DynamicFriendSummariesSortDirectionOptions;
 
+        public ObservableCollection<DynamicThemeOption> DynamicFriendSummaryLastUnlockFilterOptions => _modernThemeOverride?.DynamicFriendSummaryLastUnlockFilterOptions ?? _settings?.DynamicFriendSummaryLastUnlockFilterOptions;
+
         public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesFilterOptions => _modernThemeOverride?.DynamicFriendGameSummariesFilterOptions ?? _settings?.DynamicFriendGameSummariesFilterOptions;
 
         public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesSortOptions => _modernThemeOverride?.DynamicFriendGameSummariesSortOptions ?? _settings?.DynamicFriendGameSummariesSortOptions;
 
         public ObservableCollection<DynamicThemeOption> DynamicFriendGameSummariesSortDirectionOptions => _modernThemeOverride?.DynamicFriendGameSummariesSortDirectionOptions ?? _settings?.DynamicFriendGameSummariesSortDirectionOptions;
 
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameProgressFilterOptions => _modernThemeOverride?.DynamicFriendGameProgressFilterOptions ?? _settings?.DynamicFriendGameProgressFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendGameActivityFilterOptions => _modernThemeOverride?.DynamicFriendGameActivityFilterOptions ?? _settings?.DynamicFriendGameActivityFilterOptions;
+
         public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsFilterOptions => _modernThemeOverride?.DynamicFriendAchievementsFilterOptions ?? _settings?.DynamicFriendAchievementsFilterOptions;
 
         public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsSortOptions => _modernThemeOverride?.DynamicFriendAchievementsSortOptions ?? _settings?.DynamicFriendAchievementsSortOptions;
 
         public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementsSortDirectionOptions => _modernThemeOverride?.DynamicFriendAchievementsSortDirectionOptions ?? _settings?.DynamicFriendAchievementsSortDirectionOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementStatusFilterOptions => _modernThemeOverride?.DynamicFriendAchievementStatusFilterOptions ?? _settings?.DynamicFriendAchievementStatusFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementProgressFilterOptions => _modernThemeOverride?.DynamicFriendAchievementProgressFilterOptions ?? _settings?.DynamicFriendAchievementProgressFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementRarityFilterOptions => _modernThemeOverride?.DynamicFriendAchievementRarityFilterOptions ?? _settings?.DynamicFriendAchievementRarityFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementTrophyFilterOptions => _modernThemeOverride?.DynamicFriendAchievementTrophyFilterOptions ?? _settings?.DynamicFriendAchievementTrophyFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicFriendAchievementCustomizationFilterOptions => _modernThemeOverride?.DynamicFriendAchievementCustomizationFilterOptions ?? _settings?.DynamicFriendAchievementCustomizationFilterOptions;
 
         public List<AchievementDetail> DynamicLibraryAchievements => _modernThemeOverride?.DynamicLibraryAchievements ?? _settings?.DynamicLibraryAchievements ?? EmptyAchievementList;
 
@@ -1573,6 +1755,16 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementsSortDirectionOptions => _modernThemeOverride?.DynamicLibraryAchievementsSortDirectionOptions ?? _settings?.DynamicLibraryAchievementsSortDirectionOptions;
 
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementStatusFilterOptions => _modernThemeOverride?.DynamicLibraryAchievementStatusFilterOptions ?? _settings?.DynamicLibraryAchievementStatusFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementProgressFilterOptions => _modernThemeOverride?.DynamicLibraryAchievementProgressFilterOptions ?? _settings?.DynamicLibraryAchievementProgressFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementRarityFilterOptions => _modernThemeOverride?.DynamicLibraryAchievementRarityFilterOptions ?? _settings?.DynamicLibraryAchievementRarityFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementTrophyFilterOptions => _modernThemeOverride?.DynamicLibraryAchievementTrophyFilterOptions ?? _settings?.DynamicLibraryAchievementTrophyFilterOptions;
+
+        public ObservableCollection<DynamicThemeOption> DynamicLibraryAchievementCustomizationFilterOptions => _modernThemeOverride?.DynamicLibraryAchievementCustomizationFilterOptions ?? _settings?.DynamicLibraryAchievementCustomizationFilterOptions;
+
         public AchievementRarityStats Common => _modernThemeOverride?.Common ?? _settings?.Common ?? EmptyRarityStats;
 
         public AchievementRarityStats Uncommon => _modernThemeOverride?.Uncommon ?? _settings?.Uncommon ?? EmptyRarityStats;
@@ -1587,6 +1779,16 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public System.Windows.Input.ICommand SetDynamicAchievementsFilterCommand => _settings?.SetDynamicAchievementsFilterCommand;
 
+        public System.Windows.Input.ICommand SetDynamicAchievementsStatusFilterCommand => _settings?.SetDynamicAchievementsStatusFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicAchievementsProgressFilterCommand => _settings?.SetDynamicAchievementsProgressFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicAchievementsRarityFilterCommand => _settings?.SetDynamicAchievementsRarityFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicAchievementsTrophyFilterCommand => _settings?.SetDynamicAchievementsTrophyFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicAchievementsCustomizationFilterCommand => _settings?.SetDynamicAchievementsCustomizationFilterCommand;
+
         public System.Windows.Input.ICommand SortDynamicAchievementsCommand => _settings?.SortDynamicAchievementsCommand;
 
         public System.Windows.Input.ICommand SetDynamicAchievementsSortDirectionCommand => _settings?.SetDynamicAchievementsSortDirectionCommand;
@@ -1599,6 +1801,16 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public System.Windows.Input.ICommand SetDynamicLibraryAchievementsFilterCommand => _settings?.SetDynamicLibraryAchievementsFilterCommand;
 
+        public System.Windows.Input.ICommand SetDynamicLibraryAchievementsStatusFilterCommand => _settings?.SetDynamicLibraryAchievementsStatusFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicLibraryAchievementsProgressFilterCommand => _settings?.SetDynamicLibraryAchievementsProgressFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicLibraryAchievementsRarityFilterCommand => _settings?.SetDynamicLibraryAchievementsRarityFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicLibraryAchievementsTrophyFilterCommand => _settings?.SetDynamicLibraryAchievementsTrophyFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicLibraryAchievementsCustomizationFilterCommand => _settings?.SetDynamicLibraryAchievementsCustomizationFilterCommand;
+
         public System.Windows.Input.ICommand SortDynamicLibraryAchievementsCommand => _settings?.SortDynamicLibraryAchievementsCommand;
 
         public System.Windows.Input.ICommand SetDynamicLibraryAchievementsSortDirectionCommand => _settings?.SetDynamicLibraryAchievementsSortDirectionCommand;
@@ -1606,6 +1818,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
         public System.Windows.Input.ICommand FilterDynamicGameSummariesByProviderCommand => _settings?.FilterDynamicGameSummariesByProviderCommand;
 
         public System.Windows.Input.ICommand SetDynamicGameSummariesFilterCommand => _settings?.SetDynamicGameSummariesFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicGameSummariesProgressFilterCommand => _settings?.SetDynamicGameSummariesProgressFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicGameSummariesActivityFilterCommand => _settings?.SetDynamicGameSummariesActivityFilterCommand;
 
         public System.Windows.Input.ICommand SortDynamicGameSummariesCommand => _settings?.SortDynamicGameSummariesCommand;
 
@@ -1621,17 +1837,33 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
 
         public System.Windows.Input.ICommand SetDynamicFriendSummariesFilterCommand => _settings?.SetDynamicFriendSummariesFilterCommand;
 
+        public System.Windows.Input.ICommand SetDynamicFriendSummariesLastUnlockFilterCommand => _settings?.SetDynamicFriendSummariesLastUnlockFilterCommand;
+
         public System.Windows.Input.ICommand SortDynamicFriendSummariesCommand => _settings?.SortDynamicFriendSummariesCommand;
 
         public System.Windows.Input.ICommand SetDynamicFriendSummariesSortDirectionCommand => _settings?.SetDynamicFriendSummariesSortDirectionCommand;
 
         public System.Windows.Input.ICommand SetDynamicFriendGameSummariesFilterCommand => _settings?.SetDynamicFriendGameSummariesFilterCommand;
 
+        public System.Windows.Input.ICommand SetDynamicFriendGameSummariesProgressFilterCommand => _settings?.SetDynamicFriendGameSummariesProgressFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendGameSummariesActivityFilterCommand => _settings?.SetDynamicFriendGameSummariesActivityFilterCommand;
+
         public System.Windows.Input.ICommand SortDynamicFriendGameSummariesCommand => _settings?.SortDynamicFriendGameSummariesCommand;
 
         public System.Windows.Input.ICommand SetDynamicFriendGameSummariesSortDirectionCommand => _settings?.SetDynamicFriendGameSummariesSortDirectionCommand;
 
         public System.Windows.Input.ICommand SetDynamicFriendAchievementsFilterCommand => _settings?.SetDynamicFriendAchievementsFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendAchievementsStatusFilterCommand => _settings?.SetDynamicFriendAchievementsStatusFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendAchievementsProgressFilterCommand => _settings?.SetDynamicFriendAchievementsProgressFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendAchievementsRarityFilterCommand => _settings?.SetDynamicFriendAchievementsRarityFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendAchievementsTrophyFilterCommand => _settings?.SetDynamicFriendAchievementsTrophyFilterCommand;
+
+        public System.Windows.Input.ICommand SetDynamicFriendAchievementsCustomizationFilterCommand => _settings?.SetDynamicFriendAchievementsCustomizationFilterCommand;
 
         public System.Windows.Input.ICommand SortDynamicFriendAchievementsCommand => _settings?.SortDynamicFriendAchievementsCommand;
 
@@ -1721,6 +1953,29 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             {
                 OnPropertyChanged(nameof(DynamicGameSummariesProgressFilterKey));
                 OnPropertyChanged(nameof(DynamicGameSummariesActivityFilterKey));
+            }
+
+            if (propertyName == nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterKey) ||
+                propertyName == nameof(ModernThemeBindings.DynamicFriendSummariesFilterKey))
+            {
+                OnPropertyChanged(nameof(DynamicFriendSummariesLastUnlockFilterKey));
+            }
+
+            if (propertyName == nameof(PlayniteAchievementsSettings.DynamicFriendGameSummariesFilterKey) ||
+                propertyName == nameof(ModernThemeBindings.DynamicFriendGameSummariesFilterKey))
+            {
+                OnPropertyChanged(nameof(DynamicFriendGameSummariesProgressFilterKey));
+                OnPropertyChanged(nameof(DynamicFriendGameSummariesActivityFilterKey));
+            }
+
+            if (propertyName == nameof(PlayniteAchievementsSettings.DynamicFriendAchievementsFilterKey) ||
+                propertyName == nameof(ModernThemeBindings.DynamicFriendAchievementsFilterKey))
+            {
+                OnPropertyChanged(nameof(DynamicFriendAchievementsStatusFilterKey));
+                OnPropertyChanged(nameof(DynamicFriendAchievementsProgressFilterKey));
+                OnPropertyChanged(nameof(DynamicFriendAchievementsRarityFilterKey));
+                OnPropertyChanged(nameof(DynamicFriendAchievementsTrophyFilterKey));
+                OnPropertyChanged(nameof(DynamicFriendAchievementsCustomizationFilterKey));
             }
         }
     }

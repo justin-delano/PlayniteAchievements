@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows.Input;
 
 namespace PlayniteAchievements.Services.ThemeIntegration
 {
@@ -10,7 +11,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
     {
         public static ObservableCollection<DynamicThemeOption> CreateOptions(
             IEnumerable<string> keys,
-            string selectedKey)
+            string selectedKey,
+            ICommand applyCommand = null,
+            Func<string, object> commandParameterFactory = null)
         {
             var orderedKeys = new List<string>();
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -29,13 +32,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             }
 
             return new ObservableCollection<DynamicThemeOption>(orderedKeys
-                .Select(key => new DynamicThemeOption(key, DynamicThemeLabels.GetLabel(key, key)))
+                .Select(key => new DynamicThemeOption(
+                    key,
+                    DynamicThemeLabels.GetLabel(key, key),
+                    isSelected: IsSelected(key, selectedKey),
+                    applyCommand: applyCommand,
+                    commandParameter: commandParameterFactory?.Invoke(key)))
                 .ToList());
         }
 
         public static ObservableCollection<DynamicThemeOption> CreateProviderOptions(
             IEnumerable<string> providerKeys,
-            string selectedKey)
+            string selectedKey,
+            ICommand applyCommand = null,
+            Func<string, object> commandParameterFactory = null)
         {
             var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             foreach (var key in providerKeys ?? Enumerable.Empty<string>())
@@ -62,19 +72,30 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 new DynamicThemeOption(
                     DynamicThemeViewKeys.All,
                     DynamicThemeLabels.GetProviderLabel(DynamicThemeViewKeys.All),
-                    counts.Values.Sum())
+                    counts.Values.Sum(),
+                    IsSelected(DynamicThemeViewKeys.All, selectedKey),
+                    applyCommand,
+                    commandParameterFactory?.Invoke(DynamicThemeViewKeys.All))
             };
 
             options.AddRange(counts.Keys
                 .OrderBy(DynamicThemeLabels.GetProviderLabel, StringComparer.CurrentCultureIgnoreCase)
-                .Select(key => new DynamicThemeOption(key, DynamicThemeLabels.GetProviderLabel(key), counts[key])));
+                .Select(key => new DynamicThemeOption(
+                    key,
+                    DynamicThemeLabels.GetProviderLabel(key),
+                    counts[key],
+                    IsSelected(key, selectedKey),
+                    applyCommand,
+                    commandParameterFactory?.Invoke(key))));
 
             return new ObservableCollection<DynamicThemeOption>(options);
         }
 
         public static ObservableCollection<DynamicThemeOption> CreateGameOptions(
             IEnumerable<GameAchievementSummary> games,
-            string selectedKey)
+            string selectedKey,
+            ICommand applyCommand = null,
+            Func<string, object> commandParameterFactory = null)
         {
             var options = (games ?? Enumerable.Empty<GameAchievementSummary>())
                 .Where(game => game != null && game.GameId != Guid.Empty)
@@ -85,7 +106,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     return new DynamicThemeOption(
                         game.GameId.ToString("D"),
                         !string.IsNullOrWhiteSpace(game.Name) ? game.Name : game.GameId.ToString("D"),
-                        game.AchievementCount);
+                        game.AchievementCount,
+                        IsSelected(game.GameId.ToString("D"), selectedKey),
+                        applyCommand,
+                        commandParameterFactory?.Invoke(game.GameId.ToString("D")));
                 })
                 .OrderBy(option => option.Label, StringComparer.CurrentCultureIgnoreCase)
                 .ToList();
@@ -93,10 +117,20 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             if (!string.IsNullOrWhiteSpace(selectedKey) &&
                 options.All(option => !string.Equals(option.Key, selectedKey, StringComparison.OrdinalIgnoreCase)))
             {
-                options.Add(new DynamicThemeOption(selectedKey, selectedKey));
+                options.Add(new DynamicThemeOption(
+                    selectedKey,
+                    selectedKey,
+                    isSelected: true,
+                    applyCommand: applyCommand,
+                    commandParameter: commandParameterFactory?.Invoke(selectedKey)));
             }
 
             return new ObservableCollection<DynamicThemeOption>(options);
+        }
+
+        private static bool IsSelected(string key, string selectedKey)
+        {
+            return string.Equals(key ?? string.Empty, selectedKey ?? string.Empty, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
+using System.Windows.Input;
+using Playnite.SDK.Data;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
@@ -9,6 +12,22 @@ namespace PlayniteAchievements.ViewModels
 {
     public class GameSummaryItem : ObservableObject
     {
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand SetDynamicAchievementsGameCommand { get; set; }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand FilterDynamicGameSummariesByProviderCommand { get; set; }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand OpenViewAchievementsWindow { get; set; }
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public ICommand OpenManageAchievementsWindow { get; set; }
+
         private string _gameName;
         public string GameName { get => _gameName; set => SetValue(ref _gameName, value); }
 
