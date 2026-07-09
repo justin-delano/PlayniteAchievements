@@ -78,6 +78,22 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void CloneAndCopyFrom_PreserveUseTrophiesForRarity()
+        {
+            var source = new PersistedSettings
+            {
+                UseTrophiesForRarity = true
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsTrue(clone.UseTrophiesForRarity);
+            Assert.IsTrue(target.UseTrophiesForRarity);
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveProgressColumnAlignmentDefaultedFlag()
         {
             var source = new PersistedSettings { ProgressColumnAlignmentDefaulted = false };
@@ -1045,6 +1061,7 @@ namespace PlayniteAchievements.Models.Tests
                 ModernCompactListShowRarityGlow = false,
                 ModernUnlockedListShowRarityGlow = false,
                 UseUniformRarityBadges = true,
+                UseTrophiesForRarity = true,
                 OverviewGameSummariesUseCoverImages = false,
                 OverviewRecentAchievementsUseCoverImages = false,
                 ShowOverviewCollectionScoreCard = false,
@@ -1143,6 +1160,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.ModernCompactListShowRarityGlow, settings.ModernCompactListShowRarityGlow);
             Assert.AreEqual(defaults.ModernUnlockedListShowRarityGlow, settings.ModernUnlockedListShowRarityGlow);
             Assert.AreEqual(defaults.UseUniformRarityBadges, settings.UseUniformRarityBadges);
+            Assert.AreEqual(defaults.UseTrophiesForRarity, settings.UseTrophiesForRarity);
             Assert.AreEqual(defaults.OverviewGameSummariesUseCoverImages, settings.OverviewGameSummariesUseCoverImages);
             Assert.AreEqual(defaults.OverviewRecentAchievementsUseCoverImages, settings.OverviewRecentAchievementsUseCoverImages);
             Assert.AreEqual(defaults.ShowOverviewCollectionScoreCard, settings.ShowOverviewCollectionScoreCard);

@@ -244,7 +244,8 @@ namespace PlayniteAchievements.Models.Achievements
         public static bool IsAppearanceSettingPropertyName(string propertyName)
         {
             return string.Equals(propertyName, nameof(PersistedSettings.RarityColors), StringComparison.Ordinal) ||
-                   string.Equals(propertyName, nameof(PersistedSettings.UseUniformRarityBadges), StringComparison.Ordinal);
+                   string.Equals(propertyName, nameof(PersistedSettings.UseUniformRarityBadges), StringComparison.Ordinal) ||
+                   string.Equals(propertyName, nameof(PersistedSettings.UseTrophiesForRarity), StringComparison.Ordinal);
         }
 
         private static void ApplyGeneratedBadgeResources(ResourceDictionary resources, PersistedSettings settings)
@@ -333,7 +334,9 @@ namespace PlayniteAchievements.Models.Achievements
 
         private static DrawingImage CreateBadgeImage(RarityTier tier, string geometryKey, PersistedSettings settings)
         {
-            var geometry = TryGetDefaultGeometry(geometryKey);
+            var geometry = settings?.UseTrophiesForRarity == true
+                ? (TryGetDefaultTrophyGeometry("GeoTrophy") ?? TryGetDefaultGeometry(geometryKey))
+                : TryGetDefaultGeometry(geometryKey);
             if (geometry == null)
             {
                 return TryGetDefaultImage(GetIconKey(tier, settings?.UseUniformRarityBadges ?? false)) as DrawingImage;
@@ -368,16 +371,13 @@ namespace PlayniteAchievements.Models.Achievements
 
         private static DrawingImage CreateCompletedBadgeImage(PersistedSettings settings)
         {
-            var geometry = TryGetDefaultGeometry("GeoHexagon");
+            var useTrophy = settings?.UseTrophiesForRarity == true;
+            var geometry = useTrophy
+                ? (TryGetDefaultTrophyGeometry("GeoTrophy") ?? TryGetDefaultGeometry("GeoHexagon"))
+                : TryGetDefaultGeometry("GeoHexagon");
             if (geometry == null)
             {
                 return TryGetDefaultImage("BadgeCompletedGame") as DrawingImage;
-            }
-
-            var innerGeometry = Geometry.Parse("M 64,30 L 90,47 90,83 64,100 38,83 38,47 Z");
-            if (innerGeometry.CanFreeze)
-            {
-                innerGeometry.Freeze();
             }
 
             var drawingGroup = new DrawingGroup();
@@ -390,11 +390,24 @@ namespace PlayniteAchievements.Models.Achievements
                     LineJoin = PenLineJoin.Round
                 }
             });
-            drawingGroup.Children.Add(new GeometryDrawing
+
+            // The inset hexagon accent only reads correctly inside the hexagon badge; skip it
+            // for the trophy silhouette so the completed badge matches the rarity trophies.
+            if (!useTrophy)
             {
-                Geometry = innerGeometry,
-                Brush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF))
-            });
+                var innerGeometry = Geometry.Parse("M 64,30 L 90,47 90,83 64,100 38,83 38,47 Z");
+                if (innerGeometry.CanFreeze)
+                {
+                    innerGeometry.Freeze();
+                }
+
+                drawingGroup.Children.Add(new GeometryDrawing
+                {
+                    Geometry = innerGeometry,
+                    Brush = new SolidColorBrush(Color.FromArgb(0x33, 0xFF, 0xFF, 0xFF))
+                });
+            }
+
             drawingGroup.Children.Add(new GeometryDrawing
             {
                 Geometry = geometry,

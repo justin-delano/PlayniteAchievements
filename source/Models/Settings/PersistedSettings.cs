@@ -97,6 +97,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _modernCompactListShowRarityGlow = true;
         private bool _modernUnlockedListShowRarityGlow = true;
         private bool _useUniformRarityBadges = false;
+        private bool _useTrophiesForRarity = false;
         private RarityColorSettings _rarityColors = RarityColorSettings.CreateDefault();
         private bool _includeUnplayedGames = true;
         private bool _showOverviewCollectionScoreCard = true;
@@ -1065,6 +1066,15 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// When true, rarity badges use the trophy geometry instead of the tier shapes while keeping rarity colors.
+        /// </summary>
+        public bool UseTrophiesForRarity
+        {
+            get => _useTrophiesForRarity;
+            set => SetValue(ref _useTrophiesForRarity, value);
+        }
+
+        /// <summary>
         /// User-selected base colors for rarity, completed game, and trophy badges.
         /// </summary>
         public RarityColorSettings RarityColors
@@ -1951,6 +1961,7 @@ namespace PlayniteAchievements.Models.Settings
                 ModernCompactListShowRarityGlow = this.ModernCompactListShowRarityGlow,
                 ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
+                UseTrophiesForRarity = this.UseTrophiesForRarity,
                 RarityColors = this.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
@@ -2088,6 +2099,7 @@ namespace PlayniteAchievements.Models.Settings
             ModernCompactListShowRarityGlow = defaults.ModernCompactListShowRarityGlow;
             ModernUnlockedListShowRarityGlow = defaults.ModernUnlockedListShowRarityGlow;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
+            UseTrophiesForRarity = defaults.UseTrophiesForRarity;
             RarityColors = RarityColorSettings.CreateDefault();
             ResourceOverrides = CreateDefaultResourceOverrides();
 
