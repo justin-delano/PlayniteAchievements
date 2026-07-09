@@ -382,33 +382,6 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTextColumn Width="*" MinWidth="72" CanUserResize="True"
-                                Header="{DynamicResource LOCPlayAch_Column_FriendsWithUnlocks}"
-                                Binding="{Binding FriendsWithUnlocksCount, StringFormat={}{0:N0}}"
-                                SortMemberPath="FriendsWithUnlocksCount"
-                                ElementStyle="{StaticResource GameSummaryGridTextStyle}"
-                                helpers:ColumnVisibilityHelper.ColumnKey="FriendGameFriendsWithUnlocks"/>
-
-            <DataGridTemplateColumn Width="*" MinWidth="72" CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_LastFriendUnlock}"
-                                    SortMemberPath="LastFriendUnlockUtc"
-                                    helpers:ColumnVisibilityHelper.ColumnKey="FriendGameLastUnlock">
-                <DataGridTemplateColumn.CellTemplate>
-                    <DataTemplate>
-                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
-                            <TextBlock Style="{StaticResource GameSummaryGridTextStyle}">
-                                <TextBlock.Text>
-                                    <MultiBinding Converter="{StaticResource DateDisplayMode}">
-                                        <Binding Path="LastFriendUnlockLocal"/>
-                                        <Binding Path="LastPlayedDateMode" RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </ContentControl>
-                    </DataTemplate>
-                </DataGridTemplateColumn.CellTemplate>
-            </DataGridTemplateColumn>
-
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_CollectionScore}" SortMemberPath="CollectionScore" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryCollectionScore">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
