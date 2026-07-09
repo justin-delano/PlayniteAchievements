@@ -452,12 +452,12 @@ namespace PlayniteAchievements.Models.Tests
                 FriendsOverviewFriendSummariesColumnAlignments = new Dictionary<string, GridAlignment> { ["FriendSummaryFriend"] = GridAlignment.Center },
                 FriendsOverviewFriendSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment> { ["FriendSummaryFriend"] = GridVerticalAlignment.Top },
                 FriendsOverviewFriendSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment> { ["FriendSummaryFriend"] = GridAlignment.Right },
-                FriendsOverviewGameSummariesColumnVisibility = new Dictionary<string, bool> { ["FriendGameFriendsWithUnlocks"] = false },
-                FriendsOverviewGameSummariesColumnWidths = new Dictionary<string, double> { ["FriendGameFriendsWithUnlocks"] = 96d },
-                FriendsOverviewGameSummariesColumnOrder = new Dictionary<string, int> { ["FriendGameFriendsWithUnlocks"] = 4 },
-                FriendsOverviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment> { ["FriendGameFriendsWithUnlocks"] = GridAlignment.Right },
-                FriendsOverviewGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment> { ["FriendGameFriendsWithUnlocks"] = GridVerticalAlignment.Bottom },
-                FriendsOverviewGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment> { ["FriendGameFriendsWithUnlocks"] = GridAlignment.Center },
+                FriendsOverviewGameSummariesColumnVisibility = new Dictionary<string, bool> { ["GameSummaryName"] = false },
+                FriendsOverviewGameSummariesColumnWidths = new Dictionary<string, double> { ["GameSummaryName"] = 96d },
+                FriendsOverviewGameSummariesColumnOrder = new Dictionary<string, int> { ["GameSummaryName"] = 4 },
+                FriendsOverviewGameSummariesColumnAlignments = new Dictionary<string, GridAlignment> { ["GameSummaryName"] = GridAlignment.Right },
+                FriendsOverviewGameSummariesColumnVerticalAlignments = new Dictionary<string, GridVerticalAlignment> { ["GameSummaryName"] = GridVerticalAlignment.Bottom },
+                FriendsOverviewGameSummariesColumnHeaderAlignments = new Dictionary<string, GridAlignment> { ["GameSummaryName"] = GridAlignment.Center },
                 FriendsOverviewSelectedFriendGameSummariesColumnVisibility = new Dictionary<string, bool> { ["GameSummaryLastUnlock"] = true },
                 FriendsOverviewSelectedFriendGameSummariesColumnWidths = new Dictionary<string, double> { ["GameSummaryLastUnlock"] = 112d },
                 FriendsOverviewSelectedFriendGameSummariesColumnOrder = new Dictionary<string, int> { ["GameSummaryLastUnlock"] = 5 },
@@ -505,12 +505,12 @@ namespace PlayniteAchievements.Models.Tests
                 Assert.AreEqual(GridAlignment.Center, copy.FriendsOverviewFriendSummariesColumnAlignments["FriendSummaryFriend"]);
                 Assert.AreEqual(GridVerticalAlignment.Top, copy.FriendsOverviewFriendSummariesColumnVerticalAlignments["FriendSummaryFriend"]);
                 Assert.AreEqual(GridAlignment.Right, copy.FriendsOverviewFriendSummariesColumnHeaderAlignments["FriendSummaryFriend"]);
-                Assert.IsFalse(copy.FriendsOverviewGameSummariesColumnVisibility["FriendGameFriendsWithUnlocks"]);
-                Assert.AreEqual(96d, copy.FriendsOverviewGameSummariesColumnWidths["FriendGameFriendsWithUnlocks"]);
-                Assert.AreEqual(4, copy.FriendsOverviewGameSummariesColumnOrder["FriendGameFriendsWithUnlocks"]);
-                Assert.AreEqual(GridAlignment.Right, copy.FriendsOverviewGameSummariesColumnAlignments["FriendGameFriendsWithUnlocks"]);
-                Assert.AreEqual(GridVerticalAlignment.Bottom, copy.FriendsOverviewGameSummariesColumnVerticalAlignments["FriendGameFriendsWithUnlocks"]);
-                Assert.AreEqual(GridAlignment.Center, copy.FriendsOverviewGameSummariesColumnHeaderAlignments["FriendGameFriendsWithUnlocks"]);
+                Assert.IsFalse(copy.FriendsOverviewGameSummariesColumnVisibility["GameSummaryName"]);
+                Assert.AreEqual(96d, copy.FriendsOverviewGameSummariesColumnWidths["GameSummaryName"]);
+                Assert.AreEqual(4, copy.FriendsOverviewGameSummariesColumnOrder["GameSummaryName"]);
+                Assert.AreEqual(GridAlignment.Right, copy.FriendsOverviewGameSummariesColumnAlignments["GameSummaryName"]);
+                Assert.AreEqual(GridVerticalAlignment.Bottom, copy.FriendsOverviewGameSummariesColumnVerticalAlignments["GameSummaryName"]);
+                Assert.AreEqual(GridAlignment.Center, copy.FriendsOverviewGameSummariesColumnHeaderAlignments["GameSummaryName"]);
                 Assert.IsTrue(copy.FriendsOverviewSelectedFriendGameSummariesColumnVisibility["GameSummaryLastUnlock"]);
                 Assert.AreEqual(112d, copy.FriendsOverviewSelectedFriendGameSummariesColumnWidths["GameSummaryLastUnlock"]);
                 Assert.AreEqual(5, copy.FriendsOverviewSelectedFriendGameSummariesColumnOrder["GameSummaryLastUnlock"]);
@@ -938,10 +938,10 @@ namespace PlayniteAchievements.Models.Tests
             settings.FriendsOverviewFriendSummariesColumnVisibility["FriendSummaryFriend"] = false;
             settings.FriendsOverviewFriendSummariesColumnWidths["FriendSummaryFriend"] = 188d;
             settings.FriendsOverviewFriendSummariesColumnOrder["FriendSummaryFriend"] = 2;
-            settings.FriendsOverviewGameSummariesColumnVisibility["FriendGameFriendsWithUnlocks"] = false;
-            settings.FriendsOverviewGameSummariesColumnWidths["FriendGameFriendsWithUnlocks"] = 96d;
-            settings.FriendsOverviewGameSummariesColumnOrder["FriendGameFriendsWithUnlocks"] = 3;
-            settings.FriendsOverviewGameSummariesColumnAlignments["FriendGameFriendsWithUnlocks"] = GridAlignment.Right;
+            settings.FriendsOverviewGameSummariesColumnVisibility["GameSummaryName"] = false;
+            settings.FriendsOverviewGameSummariesColumnWidths["GameSummaryName"] = 96d;
+            settings.FriendsOverviewGameSummariesColumnOrder["GameSummaryName"] = 3;
+            settings.FriendsOverviewGameSummariesColumnAlignments["GameSummaryName"] = GridAlignment.Right;
             settings.FriendsOverviewSelectedFriendGameSummariesColumnVisibility["GameSummaryLastUnlock"] = true;
             settings.FriendsOverviewSelectedFriendGameSummariesColumnWidths["GameSummaryLastUnlock"] = 112d;
             settings.FriendsOverviewSelectedFriendGameSummariesColumnOrder["GameSummaryLastUnlock"] = 4;
