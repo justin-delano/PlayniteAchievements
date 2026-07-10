@@ -1,3 +1,4 @@
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
@@ -33,6 +34,14 @@ namespace PlayniteAchievements.ViewModels
         private int _collectionLevel;
         private int _prestigeLevel;
         private int _recentUnlockCount;
+        private int _commonCount;
+        private int _uncommonCount;
+        private int _rareCount;
+        private int _ultraRareCount;
+        private int _trophyPlatinumCount;
+        private int _trophyGoldCount;
+        private int _trophySilverCount;
+        private int _trophyBronzeCount;
         private DateTime? _lastUnlockUtc;
         private DateTime? _lastRefreshedUtc;
         private long _totalPlaytimeMinutes;
@@ -228,6 +237,169 @@ namespace PlayniteAchievements.ViewModels
             get => _recentUnlockCount;
             set => SetValue(ref _recentUnlockCount, value);
         }
+
+        // Per-friend unlocked counts by rarity tier, aggregated across all of the friend's games.
+        // Named to match GameSummaryItem/FriendGameSummaryItem.
+        public int CommonCount
+        {
+            get => _commonCount;
+            set
+            {
+                if (SetValueAndReturn(ref _commonCount, value))
+                {
+                    OnPropertyChanged(nameof(TotalCommon));
+                    OnPropertyChanged(nameof(TotalOverall));
+                }
+            }
+        }
+
+        public int UncommonCount
+        {
+            get => _uncommonCount;
+            set
+            {
+                if (SetValueAndReturn(ref _uncommonCount, value))
+                {
+                    OnPropertyChanged(nameof(TotalUncommon));
+                    OnPropertyChanged(nameof(TotalOverall));
+                }
+            }
+        }
+
+        public int RareCount
+        {
+            get => _rareCount;
+            set
+            {
+                if (SetValueAndReturn(ref _rareCount, value))
+                {
+                    OnPropertyChanged(nameof(TotalRare));
+                    OnPropertyChanged(nameof(TotalRareAndUltraRare));
+                    OnPropertyChanged(nameof(TotalOverall));
+                }
+            }
+        }
+
+        public int UltraRareCount
+        {
+            get => _ultraRareCount;
+            set
+            {
+                if (SetValueAndReturn(ref _ultraRareCount, value))
+                {
+                    OnPropertyChanged(nameof(TotalUltraRare));
+                    OnPropertyChanged(nameof(TotalRareAndUltraRare));
+                    OnPropertyChanged(nameof(TotalOverall));
+                }
+            }
+        }
+
+        // Per-friend unlocked trophy counts, aggregated across all of the friend's games.
+        public int TrophyPlatinumCount
+        {
+            get => _trophyPlatinumCount;
+            set
+            {
+                if (SetValueAndReturn(ref _trophyPlatinumCount, value))
+                {
+                    OnPropertyChanged(nameof(PlatinumTrophies));
+                    OnPropertyChanged(nameof(TotalTrophies));
+                }
+            }
+        }
+
+        public int TrophyGoldCount
+        {
+            get => _trophyGoldCount;
+            set
+            {
+                if (SetValueAndReturn(ref _trophyGoldCount, value))
+                {
+                    OnPropertyChanged(nameof(GoldTrophies));
+                    OnPropertyChanged(nameof(TotalTrophies));
+                }
+            }
+        }
+
+        public int TrophySilverCount
+        {
+            get => _trophySilverCount;
+            set
+            {
+                if (SetValueAndReturn(ref _trophySilverCount, value))
+                {
+                    OnPropertyChanged(nameof(SilverTrophies));
+                    OnPropertyChanged(nameof(TotalTrophies));
+                }
+            }
+        }
+
+        public int TrophyBronzeCount
+        {
+            get => _trophyBronzeCount;
+            set
+            {
+                if (SetValueAndReturn(ref _trophyBronzeCount, value))
+                {
+                    OnPropertyChanged(nameof(BronzeTrophies));
+                    OnPropertyChanged(nameof(TotalTrophies));
+                }
+            }
+        }
+
+        // Theme-facing rarity contract. Names mirror LibraryRuntimeState's Total* convention,
+        // since a friend summary is a cross-game rollup of one friend's whole library.
+        // Unlocked-only: no possible-total denominator, so Total == Unlocked and Locked == 0.
+        [DontSerialize]
+        [IgnoreDataMember]
+        public AchievementRarityStats TotalCommon => UnlockedOnlyStats(CommonCount);
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public AchievementRarityStats TotalUncommon => UnlockedOnlyStats(UncommonCount);
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public AchievementRarityStats TotalRare => UnlockedOnlyStats(RareCount);
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public AchievementRarityStats TotalUltraRare => UnlockedOnlyStats(UltraRareCount);
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public AchievementRarityStats TotalRareAndUltraRare =>
+            AchievementRarityStatsCombiner.Combine(TotalRare, TotalUltraRare);
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public AchievementRarityStats TotalOverall =>
+            AchievementRarityStatsCombiner.Combine(TotalCommon, TotalUncommon, TotalRare, TotalUltraRare);
+
+        // Theme-facing trophy contract. Flat ints mirroring LibraryRuntimeState's trophy convention.
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int PlatinumTrophies => TrophyPlatinumCount;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int GoldTrophies => TrophyGoldCount;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int SilverTrophies => TrophySilverCount;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int BronzeTrophies => TrophyBronzeCount;
+
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int TotalTrophies =>
+            TrophyPlatinumCount + TrophyGoldCount + TrophySilverCount + TrophyBronzeCount;
+
+        private static AchievementRarityStats UnlockedOnlyStats(int unlocked) =>
+            new AchievementRarityStats { Total = unlocked, Unlocked = unlocked, Locked = 0 };
 
         public DateTime? LastUnlockUtc
         {

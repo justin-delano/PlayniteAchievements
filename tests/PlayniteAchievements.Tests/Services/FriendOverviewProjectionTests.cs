@@ -132,7 +132,10 @@ namespace PlayniteAchievements.Tests.Services
                         DisplayName = "Steam Alice",
                         AvatarPath = "steam-avatar.png",
                         SharedGamesCount = 1,
-                        UnlockedAchievementsCount = 1
+                        UnlockedAchievementsCount = 1,
+                        CommonCount = 3,
+                        RareCount = 1,
+                        TrophyGoldCount = 2
                     },
                     new FriendSummaryItem
                     {
@@ -141,7 +144,10 @@ namespace PlayniteAchievements.Tests.Services
                         DisplayName = "Exo Alice",
                         AvatarPath = "exo-avatar.png",
                         SharedGamesCount = 1,
-                        UnlockedAchievementsCount = 1
+                        UnlockedAchievementsCount = 1,
+                        UncommonCount = 2,
+                        UltraRareCount = 1,
+                        TrophyGoldCount = 1
                     }
                 },
                 Games = new List<FriendGameSummaryItem>
@@ -206,6 +212,19 @@ namespace PlayniteAchievements.Tests.Services
             Assert.IsTrue(projection.HasUnlocksForFriendGame(merged, data.Games[1]));
             Assert.IsTrue(projection.AllAchievements.All(achievement => achievement.FriendGroupId == group.Id));
             Assert.IsTrue(projection.AllAchievements.All(achievement => achievement.FriendName == "Alice Unified"));
+
+            // Merged friend sums member rarity/trophy counts; theme getters derive from them.
+            Assert.AreEqual(3, merged.CommonCount);
+            Assert.AreEqual(2, merged.UncommonCount);
+            Assert.AreEqual(1, merged.RareCount);
+            Assert.AreEqual(1, merged.UltraRareCount);
+            Assert.AreEqual(3, merged.TrophyGoldCount);
+            Assert.AreEqual(1, merged.TotalRare.Unlocked);
+            Assert.AreEqual(2, merged.TotalRareAndUltraRare.Unlocked);
+            Assert.AreEqual(7, merged.TotalOverall.Unlocked);
+            Assert.AreEqual("7 / 7", merged.TotalOverall.Stats);
+            Assert.AreEqual(3, merged.GoldTrophies);
+            Assert.AreEqual(3, merged.TotalTrophies);
         }
 
         [TestMethod]

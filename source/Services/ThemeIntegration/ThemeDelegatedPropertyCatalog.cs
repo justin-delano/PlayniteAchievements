@@ -156,6 +156,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             nameof(PlayniteAchievementsSettings.DynamicFriendScopeProviderLabel),
             nameof(PlayniteAchievementsSettings.DynamicFriendScopeUserKey),
             nameof(PlayniteAchievementsSettings.DynamicFriendScopeUserLabel),
+            nameof(PlayniteAchievementsSettings.DynamicFriendScopeSummary),
             nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameKey),
             nameof(PlayniteAchievementsSettings.DynamicFriendScopeGameLabel),
             nameof(PlayniteAchievementsSettings.DynamicFriendSummariesFilterKey),
