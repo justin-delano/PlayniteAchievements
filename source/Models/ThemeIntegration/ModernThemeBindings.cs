@@ -157,6 +157,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         [DontSerialize]
         private readonly BulkObservableCollection<FriendAchievementDisplayItem> _dynamicFriendAchievements = new BulkObservableCollection<FriendAchievementDisplayItem>();
         [DontSerialize]
+        private FriendSummaryItem _dynamicFriendScopeSummary;
+        [DontSerialize]
         private string _dynamicFriendScopeProviderKey = DynamicThemeViewKeys.All;
         [DontSerialize]
         private string _dynamicFriendScopeProviderLabel = DynamicThemeViewKeys.All;
@@ -1012,6 +1014,18 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         {
             get => _dynamicFriendAchievements;
             set => ReplaceCollection(_dynamicFriendAchievements, value, nameof(DynamicFriendAchievements));
+        }
+
+        /// <summary>
+        /// The friend currently selected by the friend scope (<see cref="DynamicFriendScopeUserKey"/>),
+        /// exposed as a single bindable item so themes can show that friend's whole-library rarity/trophy
+        /// rollup alongside their scoped achievements list. Null when no individual friend is scoped.
+        /// </summary>
+        [DontSerialize]
+        public FriendSummaryItem DynamicFriendScopeSummary
+        {
+            get => _dynamicFriendScopeSummary;
+            set => SetValue(ref _dynamicFriendScopeSummary, value);
         }
 
         [DontSerialize]

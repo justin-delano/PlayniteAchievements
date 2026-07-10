@@ -1248,6 +1248,9 @@ namespace PlayniteAchievements.Models
         public string DynamicFriendScopeUserLabel => ModernTheme.DynamicFriendScopeUserLabel ?? DynamicThemeViewKeys.All;
 
         [DontSerialize]
+        public FriendSummaryItem DynamicFriendScopeSummary => ModernTheme.DynamicFriendScopeSummary;
+
+        [DontSerialize]
         public string DynamicFriendScopeGameKey
         {
             get => ModernTheme.DynamicFriendScopeGameKey ?? DynamicThemeViewKeys.All;

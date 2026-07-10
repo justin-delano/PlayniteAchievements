@@ -2810,6 +2810,17 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             _settings.ModernTheme.DynamicFriendScopeGameKey = scope.GameKey;
             _settings.ModernTheme.DynamicFriendScopeGameLabel = GetFriendScopeGameLabel(state, scope.GameKey);
 
+            // Surface the scoped friend as a single bindable item so themes can show that friend's
+            // whole-library rarity/trophy rollup next to their scoped achievements list. Null when no
+            // individual friend is scoped (FindFriend returns null for the all-friends scope).
+            var scopeSummary = state.Projection?.FindFriend(scope.UserKey);
+            if (scopeSummary != null)
+            {
+                AttachFriendSummaryCommands(new[] { scopeSummary });
+            }
+
+            _settings.ModernTheme.DynamicFriendScopeSummary = scopeSummary;
+
             ApplyFriendListStateBindings(
                 _runtimeState.FriendSummaries,
                 DynamicThemeViewKeys.LastUnlock,
