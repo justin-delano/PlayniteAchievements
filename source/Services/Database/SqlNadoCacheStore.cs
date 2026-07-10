@@ -11,6 +11,7 @@ using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Database.Rows;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;
 using SqlNado;
@@ -3244,7 +3245,7 @@ namespace PlayniteAchievements.Services.Database
                 return;
             }
 
-            var scoresByFriend = new Dictionary<string, (int CollectionScore, int PrestigeScore)>(
+            var achievementsByFriend = new Dictionary<string, List<FriendAchievementDisplayItem>>(
                 StringComparer.OrdinalIgnoreCase);
             foreach (var achievement in unlockedAchievements ?? Enumerable.Empty<FriendAchievementDisplayItem>())
             {
@@ -3254,18 +3255,38 @@ namespace PlayniteAchievements.Services.Database
                     continue;
                 }
 
-                scoresByFriend.TryGetValue(key, out var current);
-                scoresByFriend[key] = (
-                    AddClamped(current.CollectionScore, achievement.CollectionScore),
-                    AddClamped(current.PrestigeScore, achievement.PrestigeScore));
+                if (!achievementsByFriend.TryGetValue(key, out var list))
+                {
+                    list = new List<FriendAchievementDisplayItem>();
+                    achievementsByFriend[key] = list;
+                }
+
+                list.Add(achievement);
             }
 
             foreach (var friend in friendList)
             {
-                if (scoresByFriend.TryGetValue(BuildFriendScoreKey(friend.ProviderKey, friend.ExternalUserId), out var scores))
+                if (achievementsByFriend.TryGetValue(
+                        BuildFriendScoreKey(friend.ProviderKey, friend.ExternalUserId),
+                        out var friendAchievements))
                 {
-                    friend.CollectionScore = scores.CollectionScore;
-                    friend.PrestigeScore = scores.PrestigeScore;
+                    // Reuse the shared accumulator so per-friend scores, rarity, and trophy counts
+                    // stay consistent with the per-game friend path in
+                    // FriendOverviewProjection.BuildSelectedFriendGameSummary. Every row counts
+                    // (no cross-game dedup) to preserve UnlockedAchievementsCount semantics.
+                    var stats = AchievementStatsAccumulator.FromDisplayItems(
+                        friendAchievements,
+                        treatItemsAsUnlocked: true);
+                    friend.CollectionScore = stats.CollectionScore;
+                    friend.PrestigeScore = stats.PrestigeScore;
+                    friend.CommonCount = stats.CommonCount;
+                    friend.UncommonCount = stats.UncommonCount;
+                    friend.RareCount = stats.RareCount;
+                    friend.UltraRareCount = stats.UltraRareCount;
+                    friend.TrophyPlatinumCount = stats.TrophyPlatinumCount;
+                    friend.TrophyGoldCount = stats.TrophyGoldCount;
+                    friend.TrophySilverCount = stats.TrophySilverCount;
+                    friend.TrophyBronzeCount = stats.TrophyBronzeCount;
                 }
 
                 friend.CollectionLevel = GetDisplayLevel(AchievementLevelCalculator.CalculateModern(friend.CollectionScore));
