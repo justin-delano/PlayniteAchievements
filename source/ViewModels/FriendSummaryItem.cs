@@ -28,6 +28,7 @@ namespace PlayniteAchievements.ViewModels
         private string _avatarPath;
         private int _sharedGamesCount;
         private int _gamesWithUnlocksCount;
+        private int _completedGamesCount;
         private int _unlockedAchievementsCount;
         private int _collectionScore;
         private int _prestigeScore;
@@ -193,6 +194,20 @@ namespace PlayniteAchievements.ViewModels
         {
             get => _gamesWithUnlocksCount;
             set => SetValue(ref _gamesWithUnlocksCount, value);
+        }
+
+        // Number of the friend's games that are 100% complete (all achievements unlocked),
+        // aggregated across all their games. Matches the SharedGamesCount/GamesWithUnlocksCount convention.
+        public int CompletedGamesCount
+        {
+            get => _completedGamesCount;
+            set
+            {
+                if (SetValueAndReturn(ref _completedGamesCount, value))
+                {
+                    OnPropertyChanged(nameof(CompletedGames));
+                }
+            }
         }
 
         public int UnlockedAchievementsCount
@@ -397,6 +412,11 @@ namespace PlayniteAchievements.ViewModels
         [IgnoreDataMember]
         public int TotalTrophies =>
             TrophyPlatinumCount + TrophyGoldCount + TrophySilverCount + TrophyBronzeCount;
+
+        // Theme-facing alias for CompletedGamesCount, matching the OverviewViewModel.CompletedGames name.
+        [DontSerialize]
+        [IgnoreDataMember]
+        public int CompletedGames => CompletedGamesCount;
 
         private static AchievementRarityStats UnlockedOnlyStats(int unlocked) =>
             new AchievementRarityStats { Total = unlocked, Unlocked = unlocked, Locked = 0 };
