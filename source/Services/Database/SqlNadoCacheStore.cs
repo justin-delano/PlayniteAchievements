@@ -236,6 +236,7 @@ namespace PlayniteAchievements.Services.Database
             public string AvatarPath { get; set; }
             public long SharedGamesCount { get; set; }
             public long GamesWithUnlocksCount { get; set; }
+            public long CompletedGamesCount { get; set; }
             public long UnlockedAchievementsCount { get; set; }
             public long RecentUnlockCount { get; set; }
             public string LastUnlockUtc { get; set; }
@@ -4522,6 +4523,7 @@ namespace PlayniteAchievements.Services.Database
                         : row.AvatarUrl,
                     SharedGamesCount = (int)Math.Max(0, row.SharedGamesCount),
                     GamesWithUnlocksCount = (int)Math.Max(0, row.GamesWithUnlocksCount),
+                    CompletedGamesCount = (int)Math.Max(0, row.CompletedGamesCount),
                     UnlockedAchievementsCount = (int)Math.Max(0, row.UnlockedAchievementsCount),
                     RecentUnlockCount = (int)Math.Max(0, row.RecentUnlockCount),
                     LastUnlockUtc = ParseUtc(row.LastUnlockUtc),
@@ -4673,6 +4675,7 @@ namespace PlayniteAchievements.Services.Database
                 unlocks AS (
                     SELECT ugp.UserId AS UserId,
                            COUNT(DISTINCT ugp.GameId) AS GamesWithUnlocksCount,
+                           COUNT(DISTINCT CASE WHEN ugp.TotalAchievements > 0 AND ugp.AchievementsUnlocked >= ugp.TotalAchievements THEN ugp.GameId END) AS CompletedGamesCount,
                            COUNT(ua.Id) AS UnlockedAchievementsCount,
                            COUNT(CASE WHEN ua.UnlockTimeUtc IS NOT NULL AND ua.UnlockTimeUtc >= ? THEN ua.Id END) AS RecentUnlockCount,
                            MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
@@ -4690,6 +4693,7 @@ namespace PlayniteAchievements.Services.Database
                     u.AvatarPath AS AvatarPath,
                     COALESCE(o.SharedGamesCount, 0) AS SharedGamesCount,
                     COALESCE(un.GamesWithUnlocksCount, 0) AS GamesWithUnlocksCount,
+                    COALESCE(un.CompletedGamesCount, 0) AS CompletedGamesCount,
                     COALESCE(un.UnlockedAchievementsCount, 0) AS UnlockedAchievementsCount,
                     COALESCE(un.RecentUnlockCount, 0) AS RecentUnlockCount,
                     un.LastUnlockUtc AS LastUnlockUtc,
@@ -4731,6 +4735,7 @@ namespace PlayniteAchievements.Services.Database
                 unlocks AS (
                     SELECT ugp.UserId AS UserId,
                            COUNT(DISTINCT ugp.GameId) AS GamesWithUnlocksCount,
+                           COUNT(DISTINCT CASE WHEN ugp.TotalAchievements > 0 AND ugp.AchievementsUnlocked >= ugp.TotalAchievements THEN ugp.GameId END) AS CompletedGamesCount,
                            COUNT(ua.Id) AS UnlockedAchievementsCount,
                            COUNT(CASE WHEN ua.UnlockTimeUtc IS NOT NULL AND ua.UnlockTimeUtc >= ? THEN ua.Id END) AS RecentUnlockCount,
                            MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
@@ -4749,6 +4754,7 @@ namespace PlayniteAchievements.Services.Database
                     u.AvatarPath AS AvatarPath,
                     COALESCE(o.SharedGamesCount, 0) AS SharedGamesCount,
                     COALESCE(un.GamesWithUnlocksCount, 0) AS GamesWithUnlocksCount,
+                    COALESCE(un.CompletedGamesCount, 0) AS CompletedGamesCount,
                     COALESCE(un.UnlockedAchievementsCount, 0) AS UnlockedAchievementsCount,
                     COALESCE(un.RecentUnlockCount, 0) AS RecentUnlockCount,
                     un.LastUnlockUtc AS LastUnlockUtc,
