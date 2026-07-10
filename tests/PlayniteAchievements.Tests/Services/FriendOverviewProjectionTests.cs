@@ -133,6 +133,7 @@ namespace PlayniteAchievements.Tests.Services
                         AvatarPath = "steam-avatar.png",
                         SharedGamesCount = 1,
                         UnlockedAchievementsCount = 1,
+                        CompletedGamesCount = 1,
                         CommonCount = 3,
                         RareCount = 1,
                         TrophyGoldCount = 2
@@ -145,6 +146,7 @@ namespace PlayniteAchievements.Tests.Services
                         AvatarPath = "exo-avatar.png",
                         SharedGamesCount = 1,
                         UnlockedAchievementsCount = 1,
+                        CompletedGamesCount = 2,
                         UncommonCount = 2,
                         UltraRareCount = 1,
                         TrophyGoldCount = 1
@@ -225,6 +227,8 @@ namespace PlayniteAchievements.Tests.Services
             Assert.AreEqual("7 / 7", merged.TotalOverall.Stats);
             Assert.AreEqual(3, merged.GoldTrophies);
             Assert.AreEqual(3, merged.TotalTrophies);
+            Assert.AreEqual(3, merged.CompletedGamesCount);
+            Assert.AreEqual(3, merged.CompletedGames);
         }
 
         [TestMethod]
