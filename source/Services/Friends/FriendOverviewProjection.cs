@@ -503,6 +503,7 @@ namespace PlayniteAchievements.Services.Friends
                 AvatarPath = avatar,
                 SharedGamesCount = members.Sum(member => Math.Max(0, member.SharedGamesCount)),
                 GamesWithUnlocksCount = members.Sum(member => Math.Max(0, member.GamesWithUnlocksCount)),
+                CompletedGamesCount = members.Sum(member => Math.Max(0, member.CompletedGamesCount)),
                 UnlockedAchievementsCount = members.Sum(member => Math.Max(0, member.UnlockedAchievementsCount)),
                 CollectionScore = members.Sum(member => Math.Max(0, member.CollectionScore)),
                 PrestigeScore = members.Sum(member => Math.Max(0, member.PrestigeScore)),
