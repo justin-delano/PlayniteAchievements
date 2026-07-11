@@ -18,7 +18,7 @@ namespace PlayniteAchievements.Providers.Manual
     /// Data provider for manually linked achievements.
     /// Implements IDataProvider to integrate with the achievement refresh system.
     /// </summary>
-    public sealed class ManualAchievementsProvider : IDataProvider, IRefreshAuthContextReceiver
+    public sealed class ManualAchievementsProvider : DataProviderBase<ManualSettings>, IDataProvider, IRefreshAuthContextReceiver
     {
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
@@ -28,7 +28,6 @@ namespace PlayniteAchievements.Providers.Manual
             new Dictionary<string, AuthProbeResult>(StringComparer.OrdinalIgnoreCase);
         private readonly List<IRefreshAuthContextReceiver> _sourceAuthContextReceivers =
             new List<IRefreshAuthContextReceiver>();
-        private ManualSettings _providerSettings;
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Manual");
         public string ProviderKey => "Manual";
@@ -54,7 +53,6 @@ namespace PlayniteAchievements.Providers.Manual
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
             _manualSourceRegistry = manualSourceRegistry ?? throw new ArgumentNullException(nameof(manualSourceRegistry));
-            _providerSettings = ProviderRegistry.Settings<ManualSettings>();
         }
 
         /// <summary>
@@ -214,18 +212,6 @@ namespace PlayniteAchievements.Providers.Manual
         }
 
         /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is ManualSettings manualSettings)
-            {
-                _providerSettings.CopyFrom(manualSettings);
-            }
-        }
-
-        /// <inheritdoc />
         public ProviderSettingsViewBase CreateSettingsView() => new ManualSettingsView(_playniteApi, _logger, _settings);
 
         public void BeginRefreshAuthContext(RefreshAuthContext context)
@@ -266,7 +252,7 @@ namespace PlayniteAchievements.Providers.Manual
         {
             if (!ManualSourceAuthentication.ShouldRequireAuthentication(
                     source,
-                    _providerSettings.RequireExophaseAuthentication,
+                    ProviderSettings.RequireExophaseAuthentication,
                     link))
             {
                 return;

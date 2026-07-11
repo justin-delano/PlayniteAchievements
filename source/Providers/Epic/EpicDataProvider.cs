@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Epic
 {
-    public sealed class EpicDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
+    public sealed class EpicDataProvider : DataProviderBase<EpicSettings>, IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Epic",
@@ -25,7 +25,6 @@ namespace PlayniteAchievements.Providers.Epic
         private readonly EpicSessionManager _sessionManager;
         private readonly EpicScanner _scanner;
         private readonly HttpClient _httpClient;
-        private EpicSettings _providerSettings;
 
         private static readonly Guid EpicPluginId = ResolveEpicPluginId();
         internal static readonly Guid LegendaryPluginId = Guid.Parse("EAD65C3B-2F8F-4E37-B4E6-B3DE6BE540C6");
@@ -44,8 +43,6 @@ namespace PlayniteAchievements.Providers.Epic
 
             var apiClient = new EpicApiClient(_httpClient, logger, _sessionManager, settings.Persisted);
             _scanner = new EpicScanner(settings, apiClient, _sessionManager, logger);
-
-            _providerSettings = ProviderRegistry.Settings<EpicSettings>();
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Epic");
@@ -162,18 +159,6 @@ namespace PlayniteAchievements.Providers.Epic
         public void EndRefreshAuthContext(RefreshAuthContext context)
         {
             _scanner?.EndRefreshAuthContext(context);
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is EpicSettings epicSettings)
-            {
-                _providerSettings.CopyFrom(epicSettings);
-            }
         }
 
         /// <inheritdoc />

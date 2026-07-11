@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Xenia
 {
-    internal sealed class XeniaDataProvider : IDataProvider, IProviderOverride
+    internal sealed class XeniaDataProvider : DataProviderBase<XeniaSettings>, IDataProvider, IProviderOverride
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xenia",
@@ -31,7 +31,6 @@ namespace PlayniteAchievements.Providers.Xenia
         private readonly IPlayniteAPI _playniteApi;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;
-        private XeniaSettings _providerSettings;
 
         public XeniaDataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi, string pluginUserDataPath)
         {
@@ -39,7 +38,6 @@ namespace PlayniteAchievements.Providers.Xenia
             _playniteApi = playniteApi;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
-            _providerSettings = ProviderRegistry.Settings<XeniaSettings>();
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Xenia");
@@ -121,13 +119,13 @@ namespace PlayniteAchievements.Providers.Xenia
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            return new XeniaScanner(_logger, _playniteApi, _providerSettings, _pluginUserDataPath, _settings)
+            return new XeniaScanner(_logger, _playniteApi, ProviderSettings, _pluginUserDataPath, _settings)
                 .RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
         }
 
         private string GetAccountPath()
         {
-            return (_providerSettings?.AccountPath ?? string.Empty).Trim();
+            return (ProviderSettings?.AccountPath ?? string.Empty).Trim();
         }
 
         private static bool IsXeniaEmulator(Emulator emulator)
@@ -234,19 +232,7 @@ namespace PlayniteAchievements.Providers.Xenia
         }
 
         /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
         public IProviderSettings CreateDefaultSettings() => new XeniaSettings();
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is XeniaSettings xeniaSettings)
-            {
-                _providerSettings.CopyFrom(xeniaSettings);
-            }
-        }
 
         /// <inheritdoc />
         public ProviderSettingsViewBase CreateSettingsView() => new XeniaSettingsView(_playniteApi);

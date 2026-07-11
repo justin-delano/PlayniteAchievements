@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.EA
 {
-    public sealed class EADataProvider : IDataProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
+    public sealed class EADataProvider : DataProviderBase<EASettings>, IDataProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_EA",
@@ -26,7 +26,6 @@ namespace PlayniteAchievements.Providers.EA
         private readonly EASessionManager _sessionManager;
         private readonly EAScanner _scanner;
         private readonly HttpClient _httpClient;
-        private EASettings _providerSettings;
 
         public EADataProvider(
             ILogger logger,
@@ -40,12 +39,11 @@ namespace PlayniteAchievements.Providers.EA
 
             _httpClient = HttpClientFactory.Create();
             _sessionManager = new EASessionManager(playniteApi, logger, _httpClient);
-            _providerSettings = ProviderRegistry.Settings<EASettings>();
 
             var apiClient = new EAApiClient(_httpClient, logger, _sessionManager);
             _scanner = new EAScanner(
                 settings,
-                _providerSettings,
+                ProviderSettings,
                 apiClient,
                 _sessionManager,
                 logger,
@@ -90,16 +88,6 @@ namespace PlayniteAchievements.Providers.EA
         public void EndRefreshAuthContext(RefreshAuthContext context)
         {
             _scanner?.EndRefreshAuthContext(context);
-        }
-
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is EASettings eaSettings)
-            {
-                _providerSettings.CopyFrom(eaSettings);
-            }
         }
 
         public ProviderSettingsViewBase CreateSettingsView() => new EASettingsView(_sessionManager);

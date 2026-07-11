@@ -16,7 +16,7 @@ namespace PlayniteAchievements.Providers.Xbox
     /// Data provider for Xbox achievement data.
     /// Supports Xbox One/Series X|S, Xbox 360, and PC Game Pass games.
     /// </summary>
-    internal sealed class XboxDataProvider : IDataProvider, IProviderOverride, IDisposable
+    internal sealed class XboxDataProvider : DataProviderBase<XboxSettings>, IDataProvider, IProviderOverride, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Xbox",
@@ -33,7 +33,6 @@ namespace PlayniteAchievements.Providers.Xbox
         private readonly XboxSessionManager _sessionManager;
         private readonly XboxScanner _scanner;
         private readonly XboxApiClient _apiClient;
-        private XboxSettings _providerSettings;
 
         public XboxDataProvider(
             ILogger logger,
@@ -48,9 +47,8 @@ namespace PlayniteAchievements.Providers.Xbox
 
             _sessionManager = new XboxSessionManager(playniteApi, logger, pluginUserDataPath);
 
-            _providerSettings = ProviderRegistry.Settings<XboxSettings>();
             _apiClient = new XboxApiClient(logger, settings.Persisted.GlobalLanguage);
-            _scanner = new XboxScanner(settings, _providerSettings, _sessionManager, _apiClient, logger, playniteApi, pluginUserDataPath);
+            _scanner = new XboxScanner(settings, ProviderSettings, _sessionManager, _apiClient, logger, playniteApi, pluginUserDataPath);
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Xbox");
@@ -113,18 +111,6 @@ namespace PlayniteAchievements.Providers.Xbox
         public void Dispose()
         {
             _apiClient?.Dispose();
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is XboxSettings xboxSettings)
-            {
-                _providerSettings.CopyFrom(xboxSettings);
-            }
         }
 
         /// <inheritdoc />

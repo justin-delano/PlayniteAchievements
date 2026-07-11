@@ -10,17 +10,13 @@ using PlayniteAchievements.Providers.Settings;
 
 namespace PlayniteAchievements.Providers.Ubisoft
 {
-    public sealed class UbisoftDataProvider : IDataProvider
+    public sealed class UbisoftDataProvider : DataProviderBase<UbisoftSettings>, IDataProvider
     {
-        private UbisoftSettings _providerSettings;
-
         public UbisoftDataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
         {
             _ = logger ?? throw new ArgumentNullException(nameof(logger));
             _ = settings ?? throw new ArgumentNullException(nameof(settings));
             _ = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
-
-            _providerSettings = ProviderRegistry.Settings<UbisoftSettings>();
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Ubisoft");
@@ -44,16 +40,6 @@ namespace PlayniteAchievements.Providers.Ubisoft
             {
                 Summary = new RebuildSummary()
             });
-        }
-
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is UbisoftSettings ubisoftSettings)
-            {
-                _providerSettings.CopyFrom(ubisoftSettings);
-            }
         }
 
         public ProviderSettingsViewBase CreateSettingsView() => null;

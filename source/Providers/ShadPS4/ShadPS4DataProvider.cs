@@ -18,7 +18,7 @@ using System.Text;
 
 namespace PlayniteAchievements.Providers.ShadPS4
 {
-    internal sealed class ShadPS4DataProvider : IDataProvider, IProviderOverride
+    internal sealed class ShadPS4DataProvider : DataProviderBase<ShadPS4Settings>, IDataProvider, IProviderOverride
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_ShadPS4",
@@ -34,7 +34,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
         private readonly string _pluginUserDataPath;
-        private ShadPS4Settings _providerSettings;
 
         private Dictionary<string, string> _titleCache;
         private readonly object _cacheLock = new object();
@@ -56,8 +55,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             _playniteApi = playniteApi;
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
 
-            _providerSettings = ProviderRegistry.Settings<ShadPS4Settings>();
-            _scanner = new ShadPS4Scanner(_logger, _settings, _providerSettings, this, _playniteApi, _pluginUserDataPath);
+            _scanner = new ShadPS4Scanner(_logger, _settings, ProviderSettings, this, _playniteApi, _pluginUserDataPath);
         }
 
         public string ProviderName
@@ -112,7 +110,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         public string GetGameDataPath(Game game = null)
         {
             // Priority 1: From provider settings
-            var settingsGameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(_providerSettings?.GameDataPath);
+            var settingsGameDataPath = ShadPS4PathResolver.ResolveConfiguredLegacyGameDataPath(ProviderSettings?.GameDataPath);
             if (!string.IsNullOrWhiteSpace(settingsGameDataPath))
             {
                 return settingsGameDataPath;
@@ -312,7 +310,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
             if (game?.GameActions == null) return false;
 
             // Get settings root for comparison and normalize to likely emulator install folder.
-            var configuredRootPath = ShadPS4PathResolver.ResolveConfiguredRootPath(_providerSettings?.GameDataPath);
+            var configuredRootPath = ShadPS4PathResolver.ResolveConfiguredRootPath(ProviderSettings?.GameDataPath);
             var shadps4InstallFolder = ResolveInstallFolderFromConfiguredRoot(configuredRootPath);
 
             foreach (var action in game.GameActions)
@@ -484,18 +482,6 @@ namespace PlayniteAchievements.Providers.ShadPS4
         }
 
         /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is ShadPS4Settings shadps4Settings)
-            {
-                _providerSettings.CopyFrom(shadps4Settings);
-            }
-        }
-
-        /// <inheritdoc />
         public ProviderSettingsViewBase CreateSettingsView() => new ShadPS4SettingsView(_playniteApi);
 
         /// <summary>
@@ -503,7 +489,7 @@ namespace PlayniteAchievements.Providers.ShadPS4
         /// </summary>
         internal string GetAppDataPath()
         {
-            return ShadPS4PathResolver.ResolveConfiguredAppDataPath(_providerSettings?.GameDataPath);
+            return ShadPS4PathResolver.ResolveConfiguredAppDataPath(ProviderSettings?.GameDataPath);
         }
 
         /// <summary>

@@ -18,7 +18,7 @@ namespace PlayniteAchievements.Providers.Exophase
     /// Full data provider for Exophase achievement tracking.
     /// Supports automatic game claiming by platform and per-game overrides.
     /// </summary>
-    internal sealed class ExophaseDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride
+    internal sealed class ExophaseDataProvider : DataProviderBase<ExophaseSettings>, IDataProvider, IAchievementPageLinkProvider, IProviderOverride
     {
         // Optional value: an empty slug means auto-detect via game-name/platform search.
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
@@ -48,7 +48,6 @@ namespace PlayniteAchievements.Providers.Exophase
             "xbox", "xbox-one", "xbox-360", "retro", "android", "apple", "ubisoft", "uplay"
         };
         private readonly Dictionary<Guid, DateTime> _slugCacheTimestamps = new Dictionary<Guid, DateTime>();
-        private ExophaseSettings _providerSettings;
 
         #endregion
 
@@ -112,7 +111,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 return false;
             }
 
-            if (GameCustomDataLookup.TryGetExophaseSlugOverride(game.Id, out var overrideSlug, _providerSettings) &&
+            if (GameCustomDataLookup.TryGetExophaseSlugOverride(game.Id, out var overrideSlug, ProviderSettings) &&
                 TryBuildAchievementPageUrlFromSlug(overrideSlug, out url))
             {
                 return true;
@@ -200,8 +199,7 @@ namespace PlayniteAchievements.Providers.Exophase
             _sessionManager = new ExophaseSessionManager(playniteApi, logger, pluginUserDataPath);
             _apiClient = new ExophaseApiClient(playniteApi, logger, _sessionManager.CookieSnapshotStore);
 
-            _providerSettings = ProviderRegistry.Settings<ExophaseSettings>();
-            _friendsProvider = new ExophaseFriendsProvider(_apiClient, _providerSettings, settings, playniteApi, logger);
+            _friendsProvider = new ExophaseFriendsProvider(_apiClient, ProviderSettings, settings, playniteApi, logger);
         }
 
         #endregion
@@ -221,13 +219,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 return false;
             }
 
-            if (!_providerSettings.IsEnabled)
+            if (!ProviderSettings.IsEnabled)
             {
                 return false;
             }
 
             // Check explicit game inclusion first
-            if (GameCustomDataLookup.IsExophaseIncluded(game.Id, _providerSettings))
+            if (GameCustomDataLookup.IsExophaseIncluded(game.Id, ProviderSettings))
             {
                 _logger.Debug($"Exophase IsCapable for '{game.Name}': true (explicitly included)");
                 return true;
@@ -236,7 +234,7 @@ namespace PlayniteAchievements.Providers.Exophase
             // Check managed provider/platform token inclusion
             var platformToken = GetExophasePlatformSlug(game);
             if (!string.IsNullOrWhiteSpace(platformToken) &&
-                _providerSettings.ManagedProviders.Contains(platformToken))
+                ProviderSettings.ManagedProviders.Contains(platformToken))
             {
                 _logger.Debug($"Exophase IsCapable for '{game.Name}': true (token '{platformToken}' is managed)");
                 return true;
@@ -856,7 +854,7 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             // Check for manual override first.
-            if (GameCustomDataLookup.TryGetExophaseSlugOverride(game.Id, out var overrideSlug, _providerSettings) &&
+            if (GameCustomDataLookup.TryGetExophaseSlugOverride(game.Id, out var overrideSlug, ProviderSettings) &&
                 !string.IsNullOrWhiteSpace(overrideSlug))
             {
                 _logger?.Debug($"[Exophase] Using override slug for '{game.Name}': {overrideSlug}");
@@ -1130,7 +1128,7 @@ namespace PlayniteAchievements.Providers.Exophase
         private string ResolveProviderPlatformKey(Game game, string resolvedSlug)
         {
             if (game != null &&
-                GameCustomDataLookup.TryGetExophaseSlugOverride(game.Id, out var overrideSlug, _providerSettings) &&
+                GameCustomDataLookup.TryGetExophaseSlugOverride(game.Id, out var overrideSlug, ProviderSettings) &&
                 !string.IsNullOrWhiteSpace(overrideSlug))
             {
                 var overrideToken = ExtractPlatformTokenFromSlug(overrideSlug);
@@ -1181,18 +1179,6 @@ namespace PlayniteAchievements.Providers.Exophase
         #endregion
 
         #region IDataProvider Settings Members
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is ExophaseSettings exophaseSettings)
-            {
-                _providerSettings.CopyFrom(exophaseSettings);
-            }
-        }
 
         /// <inheritdoc />
         public ProviderSettingsViewBase CreateSettingsView() => new ExophaseSettingsView(_sessionManager);
