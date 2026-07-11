@@ -882,18 +882,6 @@ namespace PlayniteAchievements.ViewModels
             _orderedAchievements = items;
         }
 
-        private void ReplaceAchievementsDisplay(IEnumerable<AchievementDisplayItem> displayItems)
-        {
-            if (Achievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-            {
-                bulk.ReplaceAll(displayItems);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(Achievements, displayItems);
-            }
-        }
-
         private void ApplySearchFilter(bool skipDefaultSort = false, bool refreshOrder = false)
         {
             if (refreshOrder || _orderedAchievements.Count != _allAchievements.Count)
@@ -926,7 +914,7 @@ namespace PlayniteAchievements.ViewModels
             var displayItems = DisplayGridRowLimitHelper.Limit(
                 _filteredAchievements,
                 _settings?.Persisted?.SingleGameGridMaxRows);
-            ReplaceAchievementsDisplay(displayItems);
+            CollectionHelper.Replace(Achievements, displayItems);
         }
 
         #region IDisposable

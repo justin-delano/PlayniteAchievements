@@ -537,14 +537,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void ReplaceAchievementRows(IEnumerable<ManageAchievementsFilterItem> rows)
         {
-            if (AchievementRows is BulkObservableCollection<ManageAchievementsFilterItem> bulk)
-            {
-                bulk.ReplaceAll(rows);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(AchievementRows, rows);
-            }
+            CollectionHelper.Replace(AchievementRows, rows);
         }
 
         private void RefreshCategoryLabelFilterOptions()

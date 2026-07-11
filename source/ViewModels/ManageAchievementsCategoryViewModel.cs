@@ -1106,14 +1106,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void ReplaceAchievementRows(IEnumerable<ManageAchievementsCategoryItem> rows)
         {
-            if (AchievementRows is BulkObservableCollection<ManageAchievementsCategoryItem> bulk)
-            {
-                bulk.ReplaceAll(rows);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(AchievementRows, rows);
-            }
+            CollectionHelper.Replace(AchievementRows, rows);
         }
 
         private void ReplaceCategoryRows(IEnumerable<ManageAchievementsCategoryMetadataItem> rows)

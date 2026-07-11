@@ -265,14 +265,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void ReplaceAchievementRows(IEnumerable<ManageAchievementsNoteItem> rows)
         {
-            if (AchievementRows is BulkObservableCollection<ManageAchievementsNoteItem> bulk)
-            {
-                bulk.ReplaceAll(rows);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(AchievementRows, rows);
-            }
+            CollectionHelper.Replace(AchievementRows, rows);
         }
 
         private Dictionary<string, string> GetCurrentCategoryOverrideMap()

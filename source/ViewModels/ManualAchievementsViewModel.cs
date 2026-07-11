@@ -1361,18 +1361,7 @@ namespace PlayniteAchievements.ViewModels
                 ? AllAchievements.Where(item => _editSearchIndex.Matches(item, searchQuery)).ToList()
                 : AllAchievements.ToList();
 
-            if (FilteredAchievements is Common.BulkObservableCollection<ManualAchievementEditItem> bulk)
-            {
-                bulk.ReplaceAll(filtered);
-            }
-            else
-            {
-                FilteredAchievements.Clear();
-                foreach (var item in filtered)
-                {
-                    FilteredAchievements.Add(item);
-                }
-            }
+            Common.CollectionHelper.Replace(FilteredAchievements, filtered);
         }
 
         private void UpdateCounts()
