@@ -14,6 +14,7 @@ using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.ThemeMigration;
 using PlayniteAchievements.Views.Helpers;
+using PlayniteAchievements.Views.Settings.Display.ThemeControls;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 namespace PlayniteAchievements.Views
