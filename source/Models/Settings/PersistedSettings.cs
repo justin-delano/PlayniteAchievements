@@ -56,7 +56,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enablePeriodicUpdates = true;
         private bool _includeHiddenGamesInBulkScans = true;
         private int _periodicUpdateHours = 6;
-        private bool _enableInGamePolling = false;
+        private bool _enableInGamePolling = true;
         private int _inGamePollIntervalSeconds = 15;
         private bool _inGamePollRefreshFriends = false;
         private int _inGameFriendRefreshMultiplier = 4;
