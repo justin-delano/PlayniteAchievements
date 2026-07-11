@@ -6,6 +6,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Xbox.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Collections.Generic;

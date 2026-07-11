@@ -10,6 +10,7 @@ using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.ThemeIntegration;
 

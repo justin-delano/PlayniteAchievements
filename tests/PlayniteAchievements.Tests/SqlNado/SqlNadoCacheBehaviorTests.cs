@@ -7,6 +7,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Database;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Refresh;
 using SqlNado;
 

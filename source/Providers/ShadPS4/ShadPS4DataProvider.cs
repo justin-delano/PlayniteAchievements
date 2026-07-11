@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using System.Text;
 
 namespace PlayniteAchievements.Providers.ShadPS4

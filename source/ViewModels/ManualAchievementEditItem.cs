@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 
 namespace PlayniteAchievements.ViewModels
 {

@@ -5,6 +5,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.ProgressReporting;
 using Playnite.SDK;
 using System;

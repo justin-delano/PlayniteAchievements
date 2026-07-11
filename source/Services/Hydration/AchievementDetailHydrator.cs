@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
 
 namespace PlayniteAchievements.Services.Hydration
 {

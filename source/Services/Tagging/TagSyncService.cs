@@ -12,6 +12,7 @@ using PlayniteAchievements.Models.Tagging;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Logging;
 
 namespace PlayniteAchievements.Services.Tagging

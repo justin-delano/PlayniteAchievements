@@ -6,6 +6,7 @@ using System.Windows;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.UI;
