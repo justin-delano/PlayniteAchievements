@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Summaries;
 using SqlNado;

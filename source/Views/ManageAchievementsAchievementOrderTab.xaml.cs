@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK.Events;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Achievements
 {
     /// <summary>
     /// Shared helpers for applying and editing per-game achievement order.

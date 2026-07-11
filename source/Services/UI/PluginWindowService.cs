@@ -14,6 +14,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Logging;

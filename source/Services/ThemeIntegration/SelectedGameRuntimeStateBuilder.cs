@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;

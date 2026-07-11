@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Achievements
 {
     public sealed class AchievementOverridesService
     {

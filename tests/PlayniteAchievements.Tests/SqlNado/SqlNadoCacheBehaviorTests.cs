@@ -5,6 +5,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Database;
 using PlayniteAchievements.Services.Refresh;
 using SqlNado;

@@ -7,6 +7,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 

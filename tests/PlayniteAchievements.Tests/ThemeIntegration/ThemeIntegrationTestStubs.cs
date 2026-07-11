@@ -1,6 +1,7 @@
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Achievements;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace PlayniteAchievements
 
         public PlayniteAchievementsSettings Settings { get; set; }
 
-        public Services.AchievementDataService AchievementDataService { get; set; }
+        public Services.Achievements.AchievementDataService AchievementDataService { get; set; }
 
         public Services.GameCustomDataStore GameCustomDataStore { get; set; }
 

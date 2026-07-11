@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Services.Summaries

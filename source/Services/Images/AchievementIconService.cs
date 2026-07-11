@@ -3,6 +3,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.ProgressReporting;
 using Playnite.SDK;

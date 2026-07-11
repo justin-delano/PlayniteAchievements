@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Services

@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using Playnite.SDK;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.ViewModels;
 

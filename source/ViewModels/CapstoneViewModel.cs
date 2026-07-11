@@ -2,6 +2,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

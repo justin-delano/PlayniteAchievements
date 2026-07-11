@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Achievements
 {
     internal static class AchievementIconOverrideHelper
     {

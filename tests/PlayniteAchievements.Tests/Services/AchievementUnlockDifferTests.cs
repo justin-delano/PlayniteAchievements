@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 
 namespace PlayniteAchievements.Tests.Services
 {

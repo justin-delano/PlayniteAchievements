@@ -75,8 +75,8 @@
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideValidators.cs" Link="Source\Providers\Overrides\ProviderOverrideValidators.cs" />
     <Compile Include="..\..\source\Providers\Overrides\IProviderOverride.cs" Link="Source\Providers\Overrides\IProviderOverride.cs" />
     <Compile Include="..\..\source\Providers\PSN\PsnNpCommIdHelper.cs" Link="Source\Providers\PSN\PsnNpCommIdHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementIconOverrideHelper.cs" Link="Source\Services\AchievementIconOverrideHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementNoteHelper.cs" Link="Source\Services\AchievementNoteHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementIconOverrideHelper.cs" Link="Source\Services\Achievements\AchievementIconOverrideHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementNoteHelper.cs" Link="Source\Services\Achievements\AchievementNoteHelper.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataLegacyMigration.cs" Link="Source\Services\GameCustomData\GameCustomDataLegacyMigration.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataNormalizer.cs" Link="Source\Services\GameCustomData\GameCustomDataNormalizer.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataRepository.cs" Link="Source\Services\GameCustomData\GameCustomDataRepository.cs" />
@@ -86,10 +86,10 @@
     <Compile Include="..\..\source\Services\Images\DiskImageService.cs" Link="Source\Services\Images\DiskImageService.cs" />
     <Compile Include="..\..\source\Services\Images\ManagedCustomIconService.cs" Link="Source\Services\Images\ManagedCustomIconService.cs" />
     <Compile Include="..\..\source\Services\Images\AchievementIconService.cs" Link="Source\Services\Images\AchievementIconService.cs" />
-    <Compile Include="..\..\source\Services\AchievementSortHelper.cs" Link="Source\Services\AchievementSortHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementCategoryFilterOrderHelper.cs" Link="Source\Services\AchievementCategoryFilterOrderHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementOrderHelper.cs" Link="Source\Services\AchievementOrderHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementCategoryTypeHelper.cs" Link="Source\Services\AchievementCategoryTypeHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementSortHelper.cs" Link="Source\Services\Achievements\AchievementSortHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementCategoryFilterOrderHelper.cs" Link="Source\Services\Achievements\AchievementCategoryFilterOrderHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementOrderHelper.cs" Link="Source\Services\Achievements\AchievementOrderHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementCategoryTypeHelper.cs" Link="Source\Services\Achievements\AchievementCategoryTypeHelper.cs" />
     <Compile Include="..\..\source\Services\GameSummariesSortHelper.cs" Link="Source\Services\GameSummariesSortHelper.cs" />
     <Compile Include="..\..\source\Services\DisplayGridRowLimitHelper.cs" Link="Source\Services\DisplayGridRowLimitHelper.cs" />
     <Compile Include="..\..\source\Services\SearchQuery.cs" Link="Source\Services\SearchQuery.cs" />
@@ -318,7 +318,7 @@
     <Compile Include="..\..\source\Views\ThemeIntegration\Base\ThemeControlBase.cs" Link="Source\Views\ThemeIntegration\Base\ThemeControlBase.cs" />
     <Compile Include="..\..\source\Services\Cache\ICacheManager.cs" Link="Source\Services\Cache\ICacheManager.cs" />
     <Compile Include="..\..\source\Services\Cache\CachedSummaryData.cs" Link="Source\Services\Cache\CachedSummaryData.cs" />
-    <Compile Include="..\..\source\Services\AchievementUnlockDiffer.cs" Link="Source\Services\AchievementUnlockDiffer.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementUnlockDiffer.cs" Link="Source\Services\Achievements\AchievementUnlockDiffer.cs" />
     <Compile Include="..\..\source\Services\Refresh\BulkRefreshGameFilter.cs" Link="Source\Services\Refresh\BulkRefreshGameFilter.cs" />
     <Compile Include="..\..\source\Services\Refresh\ProviderRefreshExecutor.cs" Link="Source\Services\Refresh\ProviderRefreshExecutor.cs" />
     <Compile Include="..\..\source\Services\Refresh\RefreshRequestPlanner.cs" Link="Source\Services\Refresh\RefreshRequestPlanner.cs" />

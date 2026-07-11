@@ -13,6 +13,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;

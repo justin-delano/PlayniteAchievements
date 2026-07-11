@@ -9,6 +9,7 @@ using PlayniteAchievements.Providers.Epic;
 using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 

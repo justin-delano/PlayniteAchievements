@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Playnite.SDK;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Achievements
 {
     internal static class AchievementCategoryTypeHelper
     {

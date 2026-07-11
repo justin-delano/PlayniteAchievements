@@ -4,6 +4,7 @@ using System.ComponentModel;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Views.Helpers

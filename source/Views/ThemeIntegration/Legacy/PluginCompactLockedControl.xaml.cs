@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Legacy

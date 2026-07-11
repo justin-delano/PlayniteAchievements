@@ -9,6 +9,7 @@ using System.Windows.Input;
 using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.UI;

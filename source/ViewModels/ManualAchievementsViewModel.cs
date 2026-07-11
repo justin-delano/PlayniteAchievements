@@ -16,6 +16,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Refresh;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;

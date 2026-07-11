@@ -12,6 +12,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Tagging;
+using PlayniteAchievements.Services.Achievements;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -2650,7 +2651,7 @@ namespace PlayniteAchievements.Models.Settings
 
             foreach (var pair in value)
             {
-                var order = Services.AchievementOrderHelper.NormalizeApiNames(pair.Value);
+                var order = Services.Achievements.AchievementOrderHelper.NormalizeApiNames(pair.Value);
                 if (order.Count > 0)
                 {
                     normalized[pair.Key] = order;
@@ -2713,7 +2714,7 @@ namespace PlayniteAchievements.Models.Settings
                     foreach (var categoryTypePair in gamePair.Value)
                     {
                         var key = (categoryTypePair.Key ?? string.Empty).Trim();
-                        var categoryType = Services.AchievementCategoryTypeHelper.Normalize(categoryTypePair.Value);
+                        var categoryType = Services.Achievements.AchievementCategoryTypeHelper.Normalize(categoryTypePair.Value);
                         if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(categoryType))
                         {
                             continue;

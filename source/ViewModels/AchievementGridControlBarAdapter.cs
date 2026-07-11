@@ -6,6 +6,7 @@ using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 
 namespace PlayniteAchievements.ViewModels
 {

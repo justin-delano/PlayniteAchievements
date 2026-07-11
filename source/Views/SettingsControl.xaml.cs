@@ -17,6 +17,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services.Refresh;

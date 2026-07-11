@@ -9,6 +9,7 @@ using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;

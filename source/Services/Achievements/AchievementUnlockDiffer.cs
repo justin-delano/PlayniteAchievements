@@ -4,7 +4,7 @@ using System.Linq;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Achievements
 {
     internal sealed class AchievementUnlockDiffer
     {

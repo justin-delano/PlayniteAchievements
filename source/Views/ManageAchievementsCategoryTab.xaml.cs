@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;

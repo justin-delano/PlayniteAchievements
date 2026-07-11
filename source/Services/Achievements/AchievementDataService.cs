@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Achievements
 {
     /// <summary>
     /// Centralized read-side service for cached achievement data and hydration overlays.

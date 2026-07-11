@@ -7,6 +7,7 @@ using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Providers.Xenia;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
 using System;
 using System.Collections.Generic;
