@@ -5,9 +5,6 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
-             xmlns:models="clr-namespace:PlayniteAchievements.Models"
-             xmlns:settings="clr-namespace:PlayniteAchievements.Models.Settings"
              xmlns:nav="clr-namespace:PlayniteAchievements.Views.Settings.Navigation"
              mc:Ignorable="d"
              d:DesignHeight="600"
@@ -33,17 +30,6 @@
                     </StackPanel>
                 </TabItem.Header>
                 <ContentControl x:Name="GeneralSettingsContent"/>
-            </TabItem>
-
-            <!-- ================== TAB: DISPLAY ================== -->
-            <TabItem x:Name="DisplayTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_TabDisplay}">
-                <TabItem.Header>
-                    <StackPanel Style="{StaticResource TabHeaderWithIconStyle}">
-                        <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xEFB3;"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </TabItem.Header>
-                <ContentControl x:Name="DisplaySettingsContent"/>
             </TabItem>
 
             <!-- ================== TAB: PROVIDERS ================== -->
@@ -72,232 +58,17 @@
                 <ContentControl x:Name="FriendsSettingsContent"/>
             </TabItem>
 
-            <!-- ================== TAB: THEME MIGRATION ================== -->
-            <TabItem x:Name="ThemeMigrationTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_ThemeMigration_Title}">
+            <!-- ================== TAB: DISPLAY ================== -->
+            <TabItem x:Name="DisplayTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_TabDisplay}">
                 <TabItem.Header>
                     <StackPanel Style="{StaticResource TabHeaderWithIconStyle}">
-                        <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xEFD2;"/>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}" VerticalAlignment="Center"/>
+                        <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xEFB3;"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_TabDisplay}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </TabItem.Header>
-                <ScrollViewer VerticalScrollBarVisibility="Auto"
-                              HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel Margin="20">
-
-                        <!-- ================== MIGRATION SECTION ================== -->
-                        <Border Style="{StaticResource SectionBorderStyle}">
-                            <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
-                                           Style="{StaticResource SectionHeaderStyle}"
-                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"
-                                           TextWrapping="Wrap"/>
-
-                                <!-- Theme Dropdown -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <ComboBox ItemsSource="{Binding AvailableThemes, ElementName=SettingsControlRoot}"
-                                              DisplayMemberPath="BestDisplayName"
-                                              SelectedValuePath="Path"
-                                              SelectedValue="{Binding SelectedThemePath, ElementName=SettingsControlRoot}"
-                                              VerticalContentAlignment="Center"
-                                              IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"/>
-                                </Grid>
-
-                                <!-- Migration Buttons -->
-                                <StackPanel Orientation="Horizontal"
-                                            HorizontalAlignment="Right"
-                                            x:Name="ThemeMigrationPresetButtons"
-                                            Margin="0,12,0,0">
-                                    <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationLimited}"
-                                            Click="MigrateThemeLimited_Click"
-                                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
-                                            Margin="{StaticResource PlayAch.Thickness.Right.Sm}"
-                                            MinWidth="100"
-                                            IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"
-                                            ToolTipService.ShowOnDisabled="True">
-                                        <Button.ToolTip>
-                                            <ToolTip>
-                                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"
-                                                           TextWrapping="Wrap"
-                                                           MaxWidth="250"/>
-                                            </ToolTip>
-                                        </Button.ToolTip>
-                                    </Button>
-                                    <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationFull}"
-                                            x:Name="ThemeMigrationFullButton"
-                                            Click="MigrateThemeFull_Click"
-                                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
-                                            MinWidth="100"
-                                            IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"
-                                            ToolTipService.ShowOnDisabled="True">
-                                        <Button.ToolTip>
-                                            <ToolTip>
-                                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"
-                                                           TextWrapping="Wrap"
-                                                           MaxWidth="250"/>
-                                            </ToolTip>
-                                        </Button.ToolTip>
-                                    </Button>
-                                </StackPanel>
-
-                                <Border Background="{StaticResource PlayAch.Brush.Overlay.Shade.12}"
-                                        x:Name="ThemeMigrationCustomContainer"
-                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                        BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                        CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                        Margin="0,16,0,0"
-                                        Padding="{StaticResource PlayAch.Thickness.None}"
-                                        IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}">
-                                    <Expander x:Name="ThemeMigrationCustomExpander"
-                                              IsExpanded="False"
-                                              Expanded="ThemeMigrationCustomExpander_Expanded"
-                                              Collapsed="ThemeMigrationCustomExpander_Collapsed"
-                                              Background="Transparent"
-                                              BorderThickness="0">
-                                        <Expander.Header>
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Custom}"
-                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                       FontWeight="SemiBold"
-                                                       Margin="-4,8,0,8"/>
-                                        </Expander.Header>
-
-                                        <StackPanel Margin="12,0,12,12">
-                                            <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Description}"
-                                                       Style="{StaticResource MutedTextStyle}"
-                                                       HorizontalAlignment="Left"
-                                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"
-                                                       MaxWidth="520"/>
-
-                                            <Grid Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"
-                                                  HorizontalAlignment="Left">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="176"/>
-                                                    <ColumnDefinition Width="108"/>
-                                                    <ColumnDefinition Width="54"/>
-                                                    <ColumnDefinition Width="108"/>
-                                                </Grid.ColumnDefinitions>
-
-                                                <Button Grid.Column="1"
-                                                        Content="{DynamicResource LOCPlayAch_ThemeMigration_AllLegacy}"
-                                                        Click="ThemeMigrationSetAllLegacy_Click"
-                                                        Style="{StaticResource MigrationChoiceButtonBaseStyle}"
-                                                        Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-                                                <Button Grid.Column="3"
-                                                        Content="{DynamicResource LOCPlayAch_ThemeMigration_AllModern}"
-                                                        Click="ThemeMigrationSetAllModern_Click"
-                                                        Style="{StaticResource MigrationChoiceButtonBaseStyle}"/>
-                                            </Grid>
-
-                                            <ItemsControl ItemsSource="{Binding ThemeMigrationCustomOptions, ElementName=SettingsControlRoot}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate>
-                                                        <Grid Margin="0,0,0,10"
-                                                              HorizontalAlignment="Left">
-                                                            <Grid.ColumnDefinitions>
-                                                                <ColumnDefinition Width="176"/>
-                                                                <ColumnDefinition Width="108"/>
-                                                                <ColumnDefinition Width="54"/>
-                                                                <ColumnDefinition Width="108"/>
-                                                            </Grid.ColumnDefinitions>
-
-                                                            <TextBlock Text="{Binding DisplayName}"
-                                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                                       VerticalAlignment="Center"
-                                                                       Margin="{StaticResource PlayAch.Thickness.Right.Md}"/>
-
-                                                            <Button Grid.Column="1"
-                                                                    Content="{DynamicResource LOCPlayAch_ThemeMigration_ModeLegacy}"
-                                                                    Style="{StaticResource MigrationChoiceLegacyButtonStyle}"
-                                                                    Click="ThemeMigrationRowSetLegacy_Click"
-                                                                    CommandParameter="{Binding}"
-                                                                    Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-
-                                                            <ToggleButton Grid.Column="2"
-                                                                          Style="{StaticResource MigrationSwitchToggleStyle}"
-                                                                          IsChecked="{Binding IsModern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-
-                                                            <Button Grid.Column="3"
-                                                                    Content="{DynamicResource LOCPlayAch_ThemeMigration_ModeModern}"
-                                                                    Style="{StaticResource MigrationChoiceModernButtonStyle}"
-                                                                    Click="ThemeMigrationRowSetModern_Click"
-                                                                    CommandParameter="{Binding}"
-                                                                    Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
-                                                        </Grid>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-
-                                            <Button Content="{DynamicResource LOCPlayAch_ThemeMigration_MigrationCustom}"
-                                                    Click="MigrateThemeCustom_Click"
-                                                    Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
-                                                    Margin="{StaticResource PlayAch.Thickness.Top.Compact}"
-                                                    MinWidth="100"
-                                                    HorizontalAlignment="Right"
-                                                    IsEnabled="{Binding HasThemesToMigrate, ElementName=SettingsControlRoot}"/>
-                                        </StackPanel>
-                                    </Expander>
-                                </Border>
-
-                                <!-- No themes message -->
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_NoThemesMessage}"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
-                                           Visibility="{Binding ShowNoThemesMessage, ElementName=SettingsControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </StackPanel>
-                        </Border>
-
-                        <!-- ================== REVERT SECTION ================== -->
-                        <Border Style="{StaticResource SectionBorderStyle}">
-                            <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Revert}"
-                                           Style="{StaticResource SectionHeaderStyle}"
-                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-
-                                <!-- Revertable Theme Dropdown and Revert Button -->
-                                <Grid Style="{StaticResource SettingRowStyle}">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-
-                                    <ComboBox Grid.Column="0"
-                                              ItemsSource="{Binding RevertableThemes, ElementName=SettingsControlRoot}"
-                                              DisplayMemberPath="BestDisplayName"
-                                              SelectedValuePath="Path"
-                                              SelectedValue="{Binding SelectedRevertThemePath, ElementName=SettingsControlRoot}"
-                                              VerticalContentAlignment="Center"
-                                              IsEnabled="{Binding HasRevertableThemes, ElementName=SettingsControlRoot}"/>
-
-                                    <Button Grid.Column="1"
-                                            Content="{DynamicResource LOCPlayAch_ThemeMigration_RevertButton}"
-                                            Click="RevertTheme_Click"
-                                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
-                                            Margin="16,0,0,0"
-                                            MinWidth="100"
-                                            IsEnabled="{Binding HasRevertableThemes, ElementName=SettingsControlRoot}"/>
-                                </Grid>
-
-                                <!-- No revertable themes message -->
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_NoRevertableThemes}"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           Margin="{StaticResource PlayAch.Thickness.Top.Sm}"
-                                           Visibility="{Binding ShowNoRevertableThemesMessage, ElementName=SettingsControlRoot, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            </StackPanel>
-                        </Border>
-
-                    </StackPanel>
-                </ScrollViewer>
+                <ContentControl x:Name="DisplaySettingsContent"/>
             </TabItem>
 
         </TabControl>
     </Grid>
 </UserControl>
-
-
-
-
-
-
