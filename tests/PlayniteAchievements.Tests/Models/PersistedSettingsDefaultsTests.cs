@@ -117,7 +117,7 @@ namespace PlayniteAchievements.Models.Tests
                 InGameFriendRefreshMultiplier = 5,
                 InGameFriendBatchSize = 7,
                 EnableUnlockToasts = false,
-                EnableFriendUnlockToasts = true,
+                EnableFriendUnlockToasts = false,
                 ToastShowRarityGlow = false,
                 ToastRarityColoredName = false,
                 ToastShowRarityPercent = false,

@@ -65,7 +65,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
         private bool _enableUnlockToasts = true;
-        private bool _enableFriendUnlockToasts = false;
+        private bool _enableFriendUnlockToasts = true;
         private bool _toastShowHeader = true;
         private bool _toastShowName = true;
         private bool _toastShowRarityGlow = true;
