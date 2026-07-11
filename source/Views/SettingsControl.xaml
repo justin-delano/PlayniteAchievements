@@ -60,7 +60,8 @@
                             </Grid.ColumnDefinitions>
 
                             <Button Grid.Column="0" Style="{StaticResource ProminentLinkButtonStyle}"
-                                    Click="JumpToDisplay_Click"
+                                    Click="JumpToTab_Click"
+                                    CommandParameter="Display"
                                     ToolTip="{DynamicResource LOCPlayAch_Settings_TabDisplay}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_TabDisplay}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -71,7 +72,8 @@
                             </Button>
 
                             <Button Grid.Column="1" Style="{StaticResource ProminentLinkButtonStyle}"
-                                    Click="JumpToProviders_Click"
+                                    Click="JumpToTab_Click"
+                                    CommandParameter="Providers"
                                     ToolTip="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_CustomRefresh_ProvidersHeader}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -82,7 +84,8 @@
                             </Button>
 
                             <Button Grid.Column="2" Style="{StaticResource ProminentLinkButtonStyle}"
-                                    Click="JumpToThemeMigration_Click"
+                                    Click="JumpToTab_Click"
+                                    CommandParameter="ThemeMigration"
                                     ToolTip="{DynamicResource LOCPlayAch_ThemeMigration_Title}"
                                     AutomationProperties.Name="{DynamicResource LOCPlayAch_ThemeMigration_Title}">
                                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -392,14 +395,16 @@
                                     <Button x:Name="ViewAchievementsHotkeyCaptureButton"
                                             Grid.Column="1"
                                             Content="{Binding ViewAchievementsHotkeyButtonText, ElementName=SettingsControlRoot}"
-                                            Click="ViewAchievementsHotkeyCapture_Click"
+                                            Click="HotkeyCapture_Click"
+                                            CommandParameter="ViewAchievements"
                                             PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
                                             Margin="12,0,8,0"/>
 
                                     <Button Grid.Column="2"
                                             Content="{DynamicResource LOCPlayAch_Button_Reset}"
-                                            Click="ResetViewAchievementsHotkey_Click"
+                                            Click="ResetHotkey_Click"
+                                            CommandParameter="ViewAchievements"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
                                             MinWidth="{StaticResource PlayAch.Size.Button.ResetMinWidth}"/>
                                 </Grid>
@@ -420,14 +425,16 @@
                                     <Button x:Name="ManageAchievementsHotkeyCaptureButton"
                                             Grid.Column="1"
                                             Content="{Binding ManageAchievementsHotkeyButtonText, ElementName=SettingsControlRoot}"
-                                            Click="ManageAchievementsHotkeyCapture_Click"
+                                            Click="HotkeyCapture_Click"
+                                            CommandParameter="ManageAchievements"
                                             PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
                                             Margin="12,0,8,0"/>
 
                                     <Button Grid.Column="2"
                                             Content="{DynamicResource LOCPlayAch_Button_Reset}"
-                                            Click="ResetManageAchievementsHotkey_Click"
+                                            Click="ResetHotkey_Click"
+                                            CommandParameter="ManageAchievements"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
                                             MinWidth="{StaticResource PlayAch.Size.Button.ResetMinWidth}"/>
                                 </Grid>
@@ -448,14 +455,16 @@
                                     <Button x:Name="OverviewHotkeyCaptureButton"
                                             Grid.Column="1"
                                             Content="{Binding OverviewHotkeyButtonText, ElementName=SettingsControlRoot}"
-                                            Click="OverviewHotkeyCapture_Click"
+                                            Click="HotkeyCapture_Click"
+                                            CommandParameter="Overview"
                                             PreviewKeyDown="HotkeyCapture_PreviewKeyDown"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
                                             Margin="12,0,8,0"/>
 
                                     <Button Grid.Column="2"
                                             Content="{DynamicResource LOCPlayAch_Button_Reset}"
-                                            Click="ResetOverviewHotkey_Click"
+                                            Click="ResetHotkey_Click"
+                                            CommandParameter="Overview"
                                             IsEnabled="{Binding Persisted.EnableAchievementHotkeys}"
                                             MinWidth="{StaticResource PlayAch.Size.Button.ResetMinWidth}"/>
                                 </Grid>
@@ -3669,27 +3678,33 @@
 
                                     <WrapPanel>
                                         <Button x:Name="ToastPreviewCommonButton"
-                                                Click="ToastPreviewCommonButton_Click"
+                                                Click="ToastPreviewButton_Click"
+                                                CommandParameter="common"
                                                 Content="{DynamicResource LOCPlayAch_Rarity_Common}"
                                                 Margin="0,0,8,8"/>
                                         <Button x:Name="ToastPreviewUncommonButton"
-                                                Click="ToastPreviewUncommonButton_Click"
+                                                Click="ToastPreviewButton_Click"
+                                                CommandParameter="uncommon"
                                                 Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"
                                                 Margin="0,0,8,8"/>
                                         <Button x:Name="ToastPreviewRareButton"
-                                                Click="ToastPreviewRareButton_Click"
+                                                Click="ToastPreviewButton_Click"
+                                                CommandParameter="rare"
                                                 Content="{DynamicResource LOCPlayAch_Rarity_Rare}"
                                                 Margin="0,0,8,8"/>
                                         <Button x:Name="ToastPreviewUltraRareButton"
-                                                Click="ToastPreviewUltraRareButton_Click"
+                                                Click="ToastPreviewButton_Click"
+                                                CommandParameter="ultrarare"
                                                 Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"
                                                 Margin="0,0,8,8"/>
                                         <Button x:Name="ToastPreviewCapstoneButton"
-                                                Click="ToastPreviewCapstoneButton_Click"
+                                                Click="ToastPreviewButton_Click"
+                                                CommandParameter="capstone"
                                                 Content="{DynamicResource LOCPlayAch_Completed}"
                                                 Margin="0,0,8,8"/>
                                         <Button x:Name="ToastPreviewFriendButton"
-                                                Click="ToastPreviewFriendButton_Click"
+                                                Click="ToastPreviewButton_Click"
+                                                CommandParameter="friend"
                                                 Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"
                                                 Margin="0,0,8,8"/>
                                     </WrapPanel>

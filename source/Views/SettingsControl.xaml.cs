@@ -405,12 +405,13 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        private void ToastPreviewCommonButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("common"));
-        private void ToastPreviewUncommonButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("uncommon"));
-        private void ToastPreviewRareButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("rare"));
-        private void ToastPreviewUltraRareButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("ultrarare"));
-        private void ToastPreviewCapstoneButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("capstone"));
-        private void ToastPreviewFriendButton_Click(object sender, RoutedEventArgs e) => ShowToastPreview(BuildToastPreviewArgs("friend"));
+        private void ToastPreviewButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button { CommandParameter: string rarity })
+            {
+                ShowToastPreview(BuildToastPreviewArgs(rarity));
+            }
+        }
 
         private void ScreenshotDirectory_Browse_Click(object sender, RoutedEventArgs e)
         {
@@ -2701,51 +2702,50 @@ namespace PlayniteAchievements.Views
             }
         }
 
-        // Quick navigation button handlers from General tab
-        private void JumpToDisplay_Click(object sender, RoutedEventArgs e)
+        // Quick navigation button handler from General tab
+        private void JumpToTab_Click(object sender, RoutedEventArgs e)
         {
-            if (DisplayTab != null)
+            TabItem tab;
+            switch (sender is Button button ? button.CommandParameter as string : null)
             {
-                SettingsTabControl.SelectedItem = DisplayTab;
-                DisplayTab.BringIntoView();
+                case "Display":
+                    tab = DisplayTab;
+                    break;
+                case "Providers":
+                    tab = ProvidersTab;
+                    break;
+                case "ThemeMigration":
+                    tab = ThemeMigrationTab;
+                    break;
+                default:
+                    return;
             }
-        }
 
-        private void JumpToProviders_Click(object sender, RoutedEventArgs e)
-        {
-            if (ProvidersTab != null)
+            if (tab == null)
             {
-                SettingsTabControl.SelectedItem = ProvidersTab;
+                return;
+            }
+
+            SettingsTabControl.SelectedItem = tab;
+            if (ReferenceEquals(tab, ProvidersTab))
+            {
                 BuildProviderNavigationItems();
-                ProvidersTab.BringIntoView();
             }
+
+            tab.BringIntoView();
         }
 
-        private void JumpToThemeMigration_Click(object sender, RoutedEventArgs e)
+        private void HotkeyCapture_Click(object sender, RoutedEventArgs e)
         {
-            if (ThemeMigrationTab != null)
+            if (sender is Button button &&
+                button.CommandParameter is string targetName &&
+                Enum.TryParse(targetName, out HotkeyCaptureTarget target))
             {
-                SettingsTabControl.SelectedItem = ThemeMigrationTab;
-                ThemeMigrationTab.BringIntoView();
+                StartHotkeyCapture(target, button);
             }
         }
 
-        private void ViewAchievementsHotkeyCapture_Click(object sender, RoutedEventArgs e)
-        {
-            StartHotkeyCapture(HotkeyCaptureTarget.ViewAchievements, ViewAchievementsHotkeyCaptureButton);
-        }
-
-        private void ManageAchievementsHotkeyCapture_Click(object sender, RoutedEventArgs e)
-        {
-            StartHotkeyCapture(HotkeyCaptureTarget.ManageAchievements, ManageAchievementsHotkeyCaptureButton);
-        }
-
-        private void OverviewHotkeyCapture_Click(object sender, RoutedEventArgs e)
-        {
-            StartHotkeyCapture(HotkeyCaptureTarget.Overview, OverviewHotkeyCaptureButton);
-        }
-
-        private void ResetViewAchievementsHotkey_Click(object sender, RoutedEventArgs e)
+        private void ResetHotkey_Click(object sender, RoutedEventArgs e)
         {
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (persisted == null)
@@ -2753,31 +2753,27 @@ namespace PlayniteAchievements.Views
                 return;
             }
 
-            persisted.ViewAchievementsHotkey = PersistedSettings.DefaultViewAchievementsHotkey;
-            EndHotkeyCapture();
-        }
-
-        private void ResetManageAchievementsHotkey_Click(object sender, RoutedEventArgs e)
-        {
-            var persisted = _settingsViewModel?.Settings?.Persisted;
-            if (persisted == null)
+            if (!(sender is Button { CommandParameter: string targetName }) ||
+                !Enum.TryParse(targetName, out HotkeyCaptureTarget target))
             {
                 return;
             }
 
-            persisted.ManageAchievementsHotkey = PersistedSettings.DefaultManageAchievementsHotkey;
-            EndHotkeyCapture();
-        }
-
-        private void ResetOverviewHotkey_Click(object sender, RoutedEventArgs e)
-        {
-            var persisted = _settingsViewModel?.Settings?.Persisted;
-            if (persisted == null)
+            switch (target)
             {
-                return;
+                case HotkeyCaptureTarget.ViewAchievements:
+                    persisted.ViewAchievementsHotkey = PersistedSettings.DefaultViewAchievementsHotkey;
+                    break;
+                case HotkeyCaptureTarget.ManageAchievements:
+                    persisted.ManageAchievementsHotkey = PersistedSettings.DefaultManageAchievementsHotkey;
+                    break;
+                case HotkeyCaptureTarget.Overview:
+                    persisted.OverviewHotkey = PersistedSettings.DefaultOverviewHotkey;
+                    break;
+                default:
+                    return;
             }
 
-            persisted.OverviewHotkey = PersistedSettings.DefaultOverviewHotkey;
             EndHotkeyCapture();
         }
 
