@@ -446,7 +446,9 @@ namespace PlayniteAchievements.SqlNado.Tests
         public void CacheStore_RecentFriendCandidatesUseOwnershipRefreshDelta()
         {
             var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
-            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
+            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs")) +
+                          File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "FriendRefreshCoordinator.cs")) +
+                          File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "FriendRefreshWorkPolicy.cs"));
 
             // Recent-scope candidates are gated by explicit scrape state and ownership-refresh deltas,
             // not by a 2-week-playtime filter or a wall-clock last-scrape TTL.
@@ -498,7 +500,7 @@ namespace PlayniteAchievements.SqlNado.Tests
         public void FriendGameImages_DownloadedToPaths_NotPersistedAsUrl()
         {
             var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
-            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
+            var runtime = File.ReadAllText(FindRepoFile("source", "Services", "Refresh", "FriendRefreshCoordinator.cs"));
 
             // Header banner is downloaded with the normalized cache key and stored as local icon+cover paths.
             StringAssert.Contains(runtime, "var cacheKey = GetProviderGameCacheKey(appId, providerGameKey);");
