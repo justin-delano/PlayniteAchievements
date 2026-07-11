@@ -1,3 +1,4 @@
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
@@ -44,7 +45,7 @@ namespace PlayniteAchievements.Providers.GOG
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
             if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
 
-            _httpClient = new HttpClient();
+            _httpClient = HttpClientFactory.Create();
             _sessionManager = new GogSessionManager(playniteApi, logger);
 
             var clientIdCacheStore = new GogClientIdCacheStore(pluginUserDataPath, logger);

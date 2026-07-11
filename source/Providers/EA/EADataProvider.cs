@@ -1,3 +1,4 @@
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Overrides;
@@ -37,7 +38,7 @@ namespace PlayniteAchievements.Providers.EA
             _ = settings ?? throw new ArgumentNullException(nameof(settings));
             _ = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
 
-            _httpClient = new HttpClient();
+            _httpClient = HttpClientFactory.Create();
             _sessionManager = new EASessionManager(playniteApi, logger, _httpClient);
             _providerSettings = ProviderRegistry.Settings<EASettings>();
 

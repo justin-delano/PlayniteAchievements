@@ -779,27 +779,12 @@ namespace PlayniteAchievements.Providers.Epic
                 throw new EpicAuthRequiredException("Epic authorization code is missing.");
             }
 
-            using (var httpClient = new HttpClient())
-            {
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("Authorization", "basic " + AuthEncodedString);
+            var body = await PostTokenRequestAsync(
+                $"grant_type=authorization_code&code={authorizationCode}&token_type=eg1",
+                "Epic token exchange",
+                ct).ConfigureAwait(false);
 
-                using (var content = new StringContent(
-                    $"grant_type=authorization_code&code={authorizationCode}&token_type=eg1"))
-                {
-                    content.Headers.Clear();
-                    content.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
-                    var response = await httpClient.PostAsync(UrlAccountAuth, content, ct).ConfigureAwait(false);
-                    var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        throw new EpicAuthRequiredException($"Epic token exchange failed with HTTP {(int)response.StatusCode}.");
-                    }
-
-                    ApplyTokenResponse(body);
-                }
-            }
+            ApplyTokenResponse(body);
         }
 
         private async Task RenewTokensAsync(string refreshToken, CancellationToken ct)
@@ -809,25 +794,33 @@ namespace PlayniteAchievements.Providers.Epic
                 throw new EpicAuthRequiredException("Epic refresh token is missing.");
             }
 
-            using (var httpClient = new HttpClient())
-            {
-                httpClient.DefaultRequestHeaders.Clear();
-                httpClient.DefaultRequestHeaders.Add("Authorization", "basic " + AuthEncodedString);
+            var body = await PostTokenRequestAsync(
+                $"grant_type=refresh_token&refresh_token={refreshToken}&token_type=eg1",
+                "Epic token refresh",
+                ct).ConfigureAwait(false);
 
-                using (var content = new StringContent(
-                    $"grant_type=refresh_token&refresh_token={refreshToken}&token_type=eg1"))
+            ApplyTokenResponse(body);
+        }
+
+        private static async Task<string> PostTokenRequestAsync(string formData, string operation, CancellationToken ct)
+        {
+            using (var content = new StringContent(formData))
+            using (var request = new HttpRequestMessage(HttpMethod.Post, UrlAccountAuth) { Content = content })
+            {
+                content.Headers.Clear();
+                content.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
+                request.Headers.Add("Authorization", "basic " + AuthEncodedString);
+
+                using (var response = await HttpClientFactory.Shared.SendAsync(request, ct).ConfigureAwait(false))
                 {
-                    content.Headers.Clear();
-                    content.Headers.Add("Content-Type", "application/x-www-form-urlencoded");
-                    var response = await httpClient.PostAsync(UrlAccountAuth, content, ct).ConfigureAwait(false);
                     var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
                     if (!response.IsSuccessStatusCode)
                     {
-                        throw new EpicAuthRequiredException($"Epic token refresh failed with HTTP {(int)response.StatusCode}.");
+                        throw new EpicAuthRequiredException($"{operation} failed with HTTP {(int)response.StatusCode}.");
                     }
 
-                    ApplyTokenResponse(body);
+                    return body;
                 }
             }
         }

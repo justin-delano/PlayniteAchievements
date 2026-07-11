@@ -1,3 +1,4 @@
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
@@ -38,7 +39,7 @@ namespace PlayniteAchievements.Providers.Epic
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
 
-            _httpClient = new HttpClient();
+            _httpClient = HttpClientFactory.Create();
             _sessionManager = new EpicSessionManager(playniteApi, logger);
 
             var apiClient = new EpicApiClient(_httpClient, logger, _sessionManager, settings.Persisted);
