@@ -300,24 +300,6 @@ namespace PlayniteAchievements.Views.Settings.Display
                 : L("LOCPlayAch_Progress", "Progress");
         }
 
-        private void ToggleStartPageGameSummariesGridSortDescending(object sender, RoutedEventArgs e)
-        {
-            var settings = _settings?.Persisted?.StartPageGameSummariesGrid;
-            if (settings != null)
-            {
-                settings.SortDescending = !settings.SortDescending;
-            }
-        }
-
-        private void ToggleStartPageRecentUnlocksGridSortDescending(object sender, RoutedEventArgs e)
-        {
-            var settings = _settings?.Persisted?.StartPageRecentUnlocksGrid;
-            if (settings != null)
-            {
-                settings.SortDescending = !settings.SortDescending;
-            }
-        }
-
         public void Dispose()
         {
             _persistedSubscription?.Dispose();

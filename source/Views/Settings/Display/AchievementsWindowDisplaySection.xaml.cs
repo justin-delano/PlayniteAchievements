@@ -213,24 +213,6 @@ namespace PlayniteAchievements.Views.Settings.Display
         // Sort direction toggles
         // -----------------------------
 
-        private void ToggleSingleGameGridSortDescending(object sender, RoutedEventArgs e)
-        {
-            var persisted = _settings?.Persisted;
-            if (persisted != null)
-            {
-                persisted.SingleGameGridSortDescending = !persisted.SingleGameGridSortDescending;
-            }
-        }
-
-        private void ToggleAchievementDataGridSortDescending(object sender, RoutedEventArgs e)
-        {
-            var persisted = _settings?.Persisted;
-            if (persisted != null)
-            {
-                persisted.AchievementDataGridSortDescending = !persisted.AchievementDataGridSortDescending;
-            }
-        }
-
         private void ToggleCompactListSortDescending(object sender, RoutedEventArgs e)
         {
             var persisted = _settings?.Persisted;
