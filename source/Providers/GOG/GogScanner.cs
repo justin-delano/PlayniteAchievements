@@ -109,8 +109,7 @@ namespace PlayniteAchievements.Providers.GOG
                     var productId = TryGetProductId(game, out var pid) ? pid : "?";
                     _logger?.Debug(ex, $"[GogAch] Failed to scan achievements for {game?.Name} (productId={productId}) after {consecutiveErrors} consecutive errors");
                 },
-                delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
-                delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                rateLimiter,
                 cancel).ConfigureAwait(false);
         }
 

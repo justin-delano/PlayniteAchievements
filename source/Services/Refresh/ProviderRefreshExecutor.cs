@@ -1,4 +1,5 @@
 using Playnite.SDK.Models;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
@@ -37,6 +38,37 @@ namespace PlayniteAchievements.Services
                     Data = null
                 };
             }
+        }
+
+        /// <summary>
+        /// Overload for scanners pacing requests with a RateLimiter: supplies the standard
+        /// between-games and after-error delay callbacks.
+        /// </summary>
+        public static Task<RebuildPayload> RunProviderGamesAsync(
+            IReadOnlyList<Game> gamesToRefresh,
+            Action<Game> onGameStarting,
+            Func<Game, CancellationToken, Task<ProviderGameResult>> processGameAsync,
+            Func<Game, GameAchievementData, Task> onGameCompleted,
+            Func<Exception, bool> isAuthRequiredException,
+            Action<Game, Exception, int> onGameError,
+            RateLimiter rateLimiter,
+            CancellationToken cancel)
+        {
+            if (rateLimiter == null)
+            {
+                throw new ArgumentNullException(nameof(rateLimiter));
+            }
+
+            return RunProviderGamesAsync(
+                gamesToRefresh,
+                onGameStarting,
+                processGameAsync,
+                onGameCompleted,
+                isAuthRequiredException,
+                onGameError,
+                delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
+                delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                cancel);
         }
 
         public static async Task<RebuildPayload> RunProviderGamesAsync(

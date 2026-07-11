@@ -101,8 +101,7 @@ namespace PlayniteAchievements.Providers.EA
                 {
                     _logger?.Debug(ex, $"[EAAch] Failed to scan {game?.Name} after {consecutiveErrors} consecutive errors.");
                 },
-                delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
-                delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                rateLimiter,
                 cancel).ConfigureAwait(false);
         }
 

@@ -119,8 +119,7 @@ namespace PlayniteAchievements.Providers.Steam
                         var appIdText = TryGetPlatformAppId(game, out var appId) ? appId.ToString() : "?";
                         _logger?.Warn($"[SteamAch] Skipping game after retries: {game?.Name} (appId={appIdText}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
                     },
-                    delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
-                    delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                    rateLimiter,
                     cancel).ConfigureAwait(false);
             }
             finally

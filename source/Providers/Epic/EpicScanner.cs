@@ -94,8 +94,7 @@ namespace PlayniteAchievements.Providers.Epic
                 {
                     _logger?.Debug(ex, $"[EpicAch] Failed to scan {game?.Name} after {consecutiveErrors} consecutive errors.");
                 },
-                delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
-                delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                rateLimiter,
                 cancel).ConfigureAwait(false);
         }
 
