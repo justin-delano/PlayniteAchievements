@@ -15,7 +15,7 @@ using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.ManageAchievements
 {
     public enum AchievementNoteStateFilter
     {

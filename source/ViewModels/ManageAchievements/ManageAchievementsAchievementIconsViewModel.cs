@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.ManageAchievements
 {
     public sealed class ManageAchievementsAchievementIconsViewModel : ObservableObject
     {

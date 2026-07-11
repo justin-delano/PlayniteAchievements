@@ -22,7 +22,7 @@ using PlayniteAchievements.Services.Refresh;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.ManageAchievements
 {
     public sealed class ManageAchievementsViewModel : PlayniteAchievements.Common.ObservableObject
     {

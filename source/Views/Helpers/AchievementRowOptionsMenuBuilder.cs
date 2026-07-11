@@ -10,6 +10,7 @@ using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views;
 
 namespace PlayniteAchievements.Views.Helpers

@@ -1,4 +1,4 @@
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.ManageAchievements
 {
     public enum ManageAchievementsTab
     {

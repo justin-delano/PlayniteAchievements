@@ -22,6 +22,7 @@ using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 

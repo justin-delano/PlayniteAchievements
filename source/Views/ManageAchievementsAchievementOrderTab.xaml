@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels.ManageAchievements"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              mc:Ignorable="d"

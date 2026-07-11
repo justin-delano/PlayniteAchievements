@@ -17,6 +17,7 @@ using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
