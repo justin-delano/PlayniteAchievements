@@ -29,6 +29,67 @@ namespace PlayniteAchievements.Services.Database
     {
         private const string PercentNormalizationMetadataKey = "achievement_percent_normalization_v1";
 
+        /// <summary>
+        /// Shared predicate selecting active friend rows; requires the Users table to be aliased as "u".
+        /// </summary>
+        private const string ActiveFriendPredicateSql =
+            "u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL";
+
+        /// <summary>
+        /// Shared column list for achievement-detail join queries; requires AchievementDefinitions
+        /// aliased as "ad" and UserAchievements aliased as "ua".
+        /// </summary>
+        private const string AchievementDetailColumnsSql =
+            @"ad.ApiName AS ApiName,
+                        ad.DisplayName AS DisplayName,
+                        ad.Description AS Description,
+                        ad.UnlockedIconPath AS UnlockedIconPath,
+                        ad.LockedIconPath AS LockedIconPath,
+                        ad.Points AS Points,
+                        ad.ScaledPoints AS ScaledPoints,
+                        ad.Category AS Category,
+                        ad.CategoryType AS CategoryType,
+                        ad.TrophyType AS TrophyType,
+                        ad.Hidden AS Hidden,
+                        ad.IsCapstone AS IsCapstone,
+                        ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
+                        ad.Rarity AS Rarity,
+                        ua.Unlocked AS Unlocked,
+                        ua.UnlockTimeUtc AS UnlockTimeUtc,
+                        ua.ProgressNum AS ProgressNum,
+                        ua.ProgressDenom AS ProgressDenom";
+
+        /// <summary>
+        /// Shared SELECT/FROM/WHERE prefix for the friend-refresh-candidate loaders that drive from
+        /// FriendOwnership. Binds two parameters: u.ProviderKey and g.ProviderKey.
+        /// </summary>
+        private const string FriendRefreshCandidateSelectFromSql =
+            @"SELECT
+                        u.ProviderKey AS ProviderKey,
+                        u.ExternalUserId AS ExternalUserId,
+                        u.DisplayName AS DisplayName,
+                        u.AvatarUrl AS AvatarUrl,
+                        u.LastRefreshedUtc AS LastRefreshedUtc,
+                        g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey,
+                        g.PlayniteGameId AS PlayniteGameId,
+                        g.GameName AS GameName,
+                        fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
+                        fo.LastPlayedUtc AS LastPlayedUtc,
+                        fo.LastOwnershipRefreshUtc AS LastOwnershipRefreshUtc,
+                        fo.LastScrapedUtc AS LastScrapedUtc,
+                        fo.LastScrapeStatus AS LastScrapeStatus
+                      FROM FriendOwnership fo
+                      INNER JOIN Users u ON u.Id = fo.UserId
+                      INNER JOIN Games g ON g.Id = fo.GameId
+                      WHERE u.ProviderKey = ?
+                        AND u.IsCurrentUser = 0
+                        AND u.IsActiveFriend = 1
+                        AND g.ProviderKey = ?";
+
+        private const string FriendRefreshCandidateOrderBySql =
+            " ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;";
+
         private sealed class CacheKeyRow
         {
             public string CacheKey { get; set; }
@@ -50,7 +111,33 @@ namespace PlayniteAchievements.Services.Database
             public string LibrarySourceName { get; set; }
         }
 
-        private sealed class ProgressAchievementJoinRow
+        /// <summary>
+        /// Common shape of achievement join rows (AchievementDefinitions + UserAchievements columns)
+        /// consumed by <see cref="MapAchievementDetail"/>.
+        /// </summary>
+        private interface IAchievementDetailJoinRow
+        {
+            string ApiName { get; }
+            string DisplayName { get; }
+            string Description { get; }
+            string UnlockedIconPath { get; }
+            string LockedIconPath { get; }
+            int? Points { get; }
+            int? ScaledPoints { get; }
+            string Category { get; }
+            string CategoryType { get; }
+            string TrophyType { get; }
+            long Hidden { get; }
+            long IsCapstone { get; }
+            double? GlobalPercentUnlocked { get; }
+            string Rarity { get; }
+            long? Unlocked { get; }
+            string UnlockTimeUtc { get; }
+            int? ProgressNum { get; }
+            int? ProgressDenom { get; }
+        }
+
+        private sealed class ProgressAchievementJoinRow : IAchievementDetailJoinRow
         {
             public long UserGameProgressId { get; set; }
             public string ApiName { get; set; }
@@ -73,7 +160,7 @@ namespace PlayniteAchievements.Services.Database
             public int? ProgressDenom { get; set; }
         }
 
-        private sealed class AchievementJoinRow
+        private sealed class AchievementJoinRow : IAchievementDetailJoinRow
         {
             public string ApiName { get; set; }
             public string DisplayName { get; set; }
@@ -539,24 +626,7 @@ namespace PlayniteAchievements.Services.Database
                 var model = CreateModel(progress);
                 var details = db.Load<AchievementJoinRow>(
                     @"SELECT
-                        ad.ApiName AS ApiName,
-                        ad.DisplayName AS DisplayName,
-                        ad.Description AS Description,
-                        ad.UnlockedIconPath AS UnlockedIconPath,
-                        ad.LockedIconPath AS LockedIconPath,
-                        ad.Points AS Points,
-                        ad.ScaledPoints AS ScaledPoints,
-                        ad.Category AS Category,
-                        ad.CategoryType AS CategoryType,
-                        ad.TrophyType AS TrophyType,
-                        ad.Hidden AS Hidden,
-                        ad.IsCapstone AS IsCapstone,
-                        ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
-                        ad.Rarity AS Rarity,
-                        ua.Unlocked AS Unlocked,
-                        ua.UnlockTimeUtc AS UnlockTimeUtc,
-                        ua.ProgressNum AS ProgressNum,
-                        ua.ProgressDenom AS ProgressDenom
+                        " + AchievementDetailColumnsSql + @"
                       FROM AchievementDefinitions ad
                       LEFT JOIN UserAchievements ua
                         ON ua.AchievementDefinitionId = ad.Id
@@ -573,33 +643,7 @@ namespace PlayniteAchievements.Services.Database
                         continue;
                     }
 
-                    var detail = new AchievementDetail
-                    {
-                        ApiName = row.ApiName,
-                        DisplayName = row.DisplayName,
-                        Description = row.Description,
-                        UnlockedIconPath = MakeAbsolutePath(row.UnlockedIconPath),
-                        LockedIconPath = MakeAbsolutePath(row.LockedIconPath),
-                        Points = row.Points,
-                        ScaledPoints = row.ScaledPoints,
-                        Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(row.Category),
-                        CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(row.CategoryType),
-                        TrophyType = row.TrophyType,
-                        Hidden = row.Hidden != 0,
-                        IsCapstone = row.IsCapstone != 0,
-                        GlobalPercentUnlocked = row.GlobalPercentUnlocked,
-                        Rarity = ParseStoredRarity(row.Rarity),
-                        UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
-                        ProgressNum = row.ProgressNum,
-                        ProgressDenom = row.ProgressDenom
-                    };
-
-                    if (row.Unlocked.HasValue)
-                    {
-                        detail.Unlocked = row.Unlocked.Value != 0;
-                    }
-
-                    model.Achievements.Add(detail);
+                    model.Achievements.Add(MapAchievementDetail(row));
                 }
 
                 BackfillPlayniteGameIdFromCacheKey(model, cacheKey);
@@ -698,24 +742,7 @@ namespace PlayniteAchievements.Services.Database
                     )
                     SELECT
                         lp.UserGameProgressId AS UserGameProgressId,
-                        ad.ApiName AS ApiName,
-                        ad.DisplayName AS DisplayName,
-                        ad.Description AS Description,
-                        ad.UnlockedIconPath AS UnlockedIconPath,
-                        ad.LockedIconPath AS LockedIconPath,
-                        ad.Points AS Points,
-                        ad.ScaledPoints AS ScaledPoints,
-                        ad.Category AS Category,
-                        ad.CategoryType AS CategoryType,
-                        ad.TrophyType AS TrophyType,
-                        ad.Hidden AS Hidden,
-                        ad.IsCapstone AS IsCapstone,
-                        ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
-                        ad.Rarity AS Rarity,
-                        ua.Unlocked AS Unlocked,
-                        ua.UnlockTimeUtc AS UnlockTimeUtc,
-                        ua.ProgressNum AS ProgressNum,
-                        ua.ProgressDenom AS ProgressDenom
+                        " + AchievementDetailColumnsSql + @"
                       FROM LatestProgress lp
                       INNER JOIN AchievementDefinitions ad ON ad.GameId = lp.GameId
                       LEFT JOIN UserAchievements ua
@@ -734,33 +761,7 @@ namespace PlayniteAchievements.Services.Database
                         continue;
                     }
 
-                    var detail = new AchievementDetail
-                    {
-                        ApiName = row.ApiName,
-                        DisplayName = row.DisplayName,
-                        Description = row.Description,
-                        UnlockedIconPath = MakeAbsolutePath(row.UnlockedIconPath),
-                        LockedIconPath = MakeAbsolutePath(row.LockedIconPath),
-                        Points = row.Points,
-                        ScaledPoints = row.ScaledPoints,
-                        Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(row.Category),
-                        CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(row.CategoryType),
-                        TrophyType = row.TrophyType,
-                        Hidden = row.Hidden != 0,
-                        IsCapstone = row.IsCapstone != 0,
-                        GlobalPercentUnlocked = row.GlobalPercentUnlocked,
-                        Rarity = ParseStoredRarity(row.Rarity),
-                        UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
-                        ProgressNum = row.ProgressNum,
-                        ProgressDenom = row.ProgressDenom
-                    };
-
-                    if (row.Unlocked.HasValue)
-                    {
-                        detail.Unlocked = row.Unlocked.Value != 0;
-                    }
-
-                    model.Achievements.Add(detail);
+                    model.Achievements.Add(MapAchievementDetail(row));
                 }
 
                 return selectedByCacheKey
@@ -774,6 +775,37 @@ namespace PlayniteAchievements.Services.Database
                     .Where(a => !string.IsNullOrWhiteSpace(a.Key) && a.Value != null)
                     .ToList();
             });
+        }
+
+        private AchievementDetail MapAchievementDetail(IAchievementDetailJoinRow row)
+        {
+            var detail = new AchievementDetail
+            {
+                ApiName = row.ApiName,
+                DisplayName = row.DisplayName,
+                Description = row.Description,
+                UnlockedIconPath = MakeAbsolutePath(row.UnlockedIconPath),
+                LockedIconPath = MakeAbsolutePath(row.LockedIconPath),
+                Points = row.Points,
+                ScaledPoints = row.ScaledPoints,
+                Category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(row.Category),
+                CategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(row.CategoryType),
+                TrophyType = row.TrophyType,
+                Hidden = row.Hidden != 0,
+                IsCapstone = row.IsCapstone != 0,
+                GlobalPercentUnlocked = row.GlobalPercentUnlocked,
+                Rarity = ParseStoredRarity(row.Rarity),
+                UnlockTimeUtc = ParseUtc(row.UnlockTimeUtc),
+                ProgressNum = row.ProgressNum,
+                ProgressDenom = row.ProgressDenom
+            };
+
+            if (row.Unlocked.HasValue)
+            {
+                detail.Unlocked = row.Unlocked.Value != 0;
+            }
+
+            return detail;
         }
 
         public CachedSummaryData LoadCachedSummaryData(int recentAchievementDetailLimit = 0)
@@ -2762,29 +2794,9 @@ namespace PlayniteAchievements.Services.Database
             bool providerOnlyOnly,
             FriendRefreshOptions options)
         {
-            var sql = new StringBuilder(
-                    @"SELECT
-                        u.ProviderKey AS ProviderKey,
-                        u.ExternalUserId AS ExternalUserId,
-                        u.DisplayName AS DisplayName,
-                        u.AvatarUrl AS AvatarUrl,
-                        u.LastRefreshedUtc AS LastRefreshedUtc,
-                        g.ProviderGameId AS ProviderGameId,
-                        g.ProviderGameKey AS ProviderGameKey,
-                        g.PlayniteGameId AS PlayniteGameId,
-                        g.GameName AS GameName,
-                        fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
-                        fo.LastPlayedUtc AS LastPlayedUtc,
-                        fo.LastOwnershipRefreshUtc AS LastOwnershipRefreshUtc,
-                        fo.LastScrapedUtc AS LastScrapedUtc,
-                        fo.LastScrapeStatus AS LastScrapeStatus
-                      FROM FriendOwnership fo
-                      INNER JOIN Users u ON u.Id = fo.UserId
-                      INNER JOIN Games g ON g.Id = fo.GameId
-                      WHERE u.ProviderKey = ?
-                        AND u.IsCurrentUser = 0
-                        AND u.IsActiveFriend = 1
-                        AND g.ProviderKey = ?
+            var sql = new StringBuilder(FriendRefreshCandidateSelectFromSql);
+            sql.Append(
+                    @"
                         AND (
                             (g.ProviderGameId IS NOT NULL AND g.ProviderGameId > 0)
                             OR (g.ProviderGameKey IS NOT NULL AND TRIM(g.ProviderGameKey) <> '')
@@ -2801,23 +2813,8 @@ namespace PlayniteAchievements.Services.Database
                 sql.Append(" AND g.PlayniteGameId IS NOT NULL AND TRIM(g.PlayniteGameId) <> ''");
             }
 
-            var friendIds = NormalizeFriendFilterIds(options?.FriendExternalUserIds);
-            if (friendIds.Count > 0)
-            {
-                sql.Append(" AND u.ExternalUserId IN (");
-                sql.Append(string.Join(",", friendIds.Select(_ => "?")));
-                sql.Append(')');
-                args.AddRange(friendIds.Cast<object>());
-            }
-
-            var gameIds = NormalizeGameFilterIds(options?.PlayniteGameIds);
-            if (gameIds.Count > 0)
-            {
-                sql.Append(" AND g.PlayniteGameId IN (");
-                sql.Append(string.Join(",", gameIds.Select(_ => "?")));
-                sql.Append(')');
-                args.AddRange(gameIds.Cast<object>());
-            }
+            AppendInClause(sql, args, "u.ExternalUserId", NormalizeFriendFilterIds(options?.FriendExternalUserIds));
+            AppendInClause(sql, args, "g.PlayniteGameId", NormalizeGameFilterIds(options?.PlayniteGameIds));
 
             if (options?.Scope == FriendRefreshScope.Recent)
             {
@@ -2835,7 +2832,7 @@ namespace PlayniteAchievements.Services.Database
                     )");
             }
 
-            sql.Append(" ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;");
+            sql.Append(FriendRefreshCandidateOrderBySql);
 
             return MapFriendRefreshCandidates(
                 db.Load<FriendRefreshCandidateRow>(sql.ToString(), args.ToArray()).ToList());
@@ -2855,48 +2852,18 @@ namespace PlayniteAchievements.Services.Database
                 return new List<FriendRefreshCandidate>();
             }
 
-            var sql = new StringBuilder(
-                    @"SELECT
-                        u.ProviderKey AS ProviderKey,
-                        u.ExternalUserId AS ExternalUserId,
-                        u.DisplayName AS DisplayName,
-                        u.AvatarUrl AS AvatarUrl,
-                        u.LastRefreshedUtc AS LastRefreshedUtc,
-                        g.ProviderGameId AS ProviderGameId,
-                        g.ProviderGameKey AS ProviderGameKey,
-                        g.PlayniteGameId AS PlayniteGameId,
-                        g.GameName AS GameName,
-                        fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
-                        fo.LastPlayedUtc AS LastPlayedUtc,
-                        fo.LastOwnershipRefreshUtc AS LastOwnershipRefreshUtc,
-                        fo.LastScrapedUtc AS LastScrapedUtc,
-                        fo.LastScrapeStatus AS LastScrapeStatus
-                      FROM FriendOwnership fo
-                      INNER JOIN Users u ON u.Id = fo.UserId
-                      INNER JOIN Games g ON g.Id = fo.GameId
-                      WHERE u.ProviderKey = ?
-                        AND u.IsCurrentUser = 0
-                        AND u.IsActiveFriend = 1
-                        AND g.ProviderKey = ?
+            var sql = new StringBuilder(FriendRefreshCandidateSelectFromSql);
+            sql.Append(
+                    @"
                         AND g.ProviderGameId IS NOT NULL
-                        AND g.ProviderGameId > 0
-                        AND g.ProviderGameId IN (");
-            sql.Append(string.Join(",", appIds.Select(_ => "?")));
-            sql.Append(')');
+                        AND g.ProviderGameId > 0");
 
             var args = new List<object> { providerKey, providerKey };
-            args.AddRange(appIds.Cast<object>());
 
-            var friendIds = NormalizeFriendFilterIds(options?.FriendExternalUserIds);
-            if (friendIds.Count > 0)
-            {
-                sql.Append(" AND u.ExternalUserId IN (");
-                sql.Append(string.Join(",", friendIds.Select(_ => "?")));
-                sql.Append(')');
-                args.AddRange(friendIds.Cast<object>());
-            }
+            AppendInClause(sql, args, "g.ProviderGameId", appIds);
+            AppendInClause(sql, args, "u.ExternalUserId", NormalizeFriendFilterIds(options?.FriendExternalUserIds));
 
-            sql.Append(" ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;");
+            sql.Append(FriendRefreshCandidateOrderBySql);
 
             return MapFriendRefreshCandidates(
                 db.Load<FriendRefreshCandidateRow>(sql.ToString(), args.ToArray()).ToList());
@@ -2917,46 +2884,14 @@ namespace PlayniteAchievements.Services.Database
                 return new List<FriendRefreshCandidate>();
             }
 
-            var sql = new StringBuilder(
-                    @"SELECT
-                        u.ProviderKey AS ProviderKey,
-                        u.ExternalUserId AS ExternalUserId,
-                        u.DisplayName AS DisplayName,
-                        u.AvatarUrl AS AvatarUrl,
-                        u.LastRefreshedUtc AS LastRefreshedUtc,
-                        g.ProviderGameId AS ProviderGameId,
-                        g.ProviderGameKey AS ProviderGameKey,
-                        g.PlayniteGameId AS PlayniteGameId,
-                        g.GameName AS GameName,
-                        fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
-                        fo.LastPlayedUtc AS LastPlayedUtc,
-                        fo.LastOwnershipRefreshUtc AS LastOwnershipRefreshUtc,
-                        fo.LastScrapedUtc AS LastScrapedUtc,
-                        fo.LastScrapeStatus AS LastScrapeStatus
-                      FROM FriendOwnership fo
-                      INNER JOIN Users u ON u.Id = fo.UserId
-                      INNER JOIN Games g ON g.Id = fo.GameId
-                      WHERE u.ProviderKey = ?
-                        AND u.IsCurrentUser = 0
-                        AND u.IsActiveFriend = 1
-                        AND g.ProviderKey = ?
-                        AND g.ProviderGameKey IN (");
-            sql.Append(string.Join(",", providerGameKeys.Select(_ => "?")));
-            sql.Append(')');
+            var sql = new StringBuilder(FriendRefreshCandidateSelectFromSql);
 
             var args = new List<object> { providerKey, providerKey };
-            args.AddRange(providerGameKeys.Cast<object>());
 
-            var friendIds = NormalizeFriendFilterIds(options?.FriendExternalUserIds);
-            if (friendIds.Count > 0)
-            {
-                sql.Append(" AND u.ExternalUserId IN (");
-                sql.Append(string.Join(",", friendIds.Select(_ => "?")));
-                sql.Append(')');
-                args.AddRange(friendIds.Cast<object>());
-            }
+            AppendInClause(sql, args, "g.ProviderGameKey", providerGameKeys);
+            AppendInClause(sql, args, "u.ExternalUserId", NormalizeFriendFilterIds(options?.FriendExternalUserIds));
 
-            sql.Append(" ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, fo.PlaytimeForeverMinutes DESC, u.DisplayName, g.GameName;");
+            sql.Append(FriendRefreshCandidateOrderBySql);
 
             return MapFriendRefreshCandidates(
                 db.Load<FriendRefreshCandidateRow>(sql.ToString(), args.ToArray()).ToList());
@@ -3011,6 +2946,27 @@ namespace PlayniteAchievements.Services.Database
                 .ToList() ?? new List<string>();
         }
 
+        /// <summary>
+        /// Appends " AND column IN (?, ...)" with one positional placeholder per value and adds the
+        /// values to <paramref name="args"/> in the same order. No-op for a null or empty collection.
+        /// </summary>
+        private static void AppendInClause<T>(
+            StringBuilder sql,
+            List<object> args,
+            string column,
+            IReadOnlyCollection<T> values)
+        {
+            if (values == null || values.Count == 0)
+            {
+                return;
+            }
+
+            sql.Append(" AND ").Append(column).Append(" IN (");
+            sql.Append(string.Join(",", values.Select(_ => "?")));
+            sql.Append(')');
+            args.AddRange(values.Cast<object>());
+        }
+
         private static List<FriendRefreshCandidate> LoadCurrentUserFriendRefreshCandidates(
             SQLiteDatabase db,
             string providerKey,
@@ -3050,13 +3006,7 @@ namespace PlayniteAchievements.Services.Database
                       AND TRIM(g.PlayniteGameId) <> ''");
 
             var args = new List<object> { providerKey, providerKey };
-            if (ids.Count > 0)
-            {
-                sql.Append(" AND g.PlayniteGameId IN (");
-                sql.Append(string.Join(",", ids.Select(_ => "?")));
-                sql.Append(')');
-                args.AddRange(ids.Cast<object>());
-            }
+            AppendInClause(sql, args, "g.PlayniteGameId", ids);
 
             sql.Append(
                 @")
@@ -3079,20 +3029,11 @@ namespace PlayniteAchievements.Services.Database
                   CROSS JOIN CurrentGames g
                   LEFT JOIN FriendOwnership fo ON fo.UserId = u.Id AND fo.GameId = g.Id
                   WHERE u.ProviderKey = ?
-                    AND u.IsCurrentUser = 0
-                    AND u.IsActiveFriend = 1
-                    AND u.FriendSource IS NOT NULL");
+                    AND " + ActiveFriendPredicateSql);
 
             args.Add(providerKey);
 
-            var friendIds = NormalizeFriendFilterIds(options.FriendExternalUserIds);
-            if (friendIds.Count > 0)
-            {
-                sql.Append(" AND u.ExternalUserId IN (");
-                sql.Append(string.Join(",", friendIds.Select(_ => "?")));
-                sql.Append(')');
-                args.AddRange(friendIds.Cast<object>());
-            }
+            AppendInClause(sql, args, "u.ExternalUserId", NormalizeFriendFilterIds(options.FriendExternalUserIds));
 
             sql.Append(" ORDER BY COALESCE(fo.LastPlayedUtc, '') DESC, COALESCE(fo.PlaytimeForeverMinutes, 0) DESC, u.DisplayName, g.GameName;");
 
@@ -3992,6 +3933,9 @@ namespace PlayniteAchievements.Services.Database
             string nowIso)
         {
             var lastPlayedIso = item.LastPlayedUtc.HasValue ? ToIso(item.LastPlayedUtc.Value) : null;
+            var playtime2Weeks = item.Playtime2WeeksMinutes.HasValue
+                ? (int?)Math.Max(0, item.Playtime2WeeksMinutes.Value)
+                : null;
             var existingId = db.ExecuteScalar<long>(
                 @"SELECT Id
                   FROM FriendOwnership
@@ -4010,7 +3954,7 @@ namespace PlayniteAchievements.Services.Database
                     userId,
                     gameId,
                     Math.Max(0, item.PlaytimeForeverMinutes),
-                    item.Playtime2WeeksMinutes.HasValue ? (object)Math.Max(0, item.Playtime2WeeksMinutes.Value) : DBNull.Value,
+                    DbParam(playtime2Weeks),
                     DbValue(lastPlayedIso),
                     nowIso,
                     nowIso,
@@ -4027,7 +3971,7 @@ namespace PlayniteAchievements.Services.Database
                       UpdatedUtc = ?
                   WHERE Id = ?;",
                 Math.Max(0, item.PlaytimeForeverMinutes),
-                item.Playtime2WeeksMinutes.HasValue ? (object)Math.Max(0, item.Playtime2WeeksMinutes.Value) : DBNull.Value,
+                DbParam(playtime2Weeks),
                 DbValue(lastPlayedIso),
                 nowIso,
                 nowIso,
@@ -4417,8 +4361,8 @@ namespace PlayniteAchievements.Services.Database
                         match.DefinitionId,
                         incomingUnlocked,
                         DbValue(incomingIso),
-                        progressNum.HasValue ? (object)progressNum.Value : DBNull.Value,
-                        progressDenom.HasValue ? (object)progressDenom.Value : DBNull.Value,
+                        DbParam(progressNum),
+                        DbParam(progressDenom),
                         updatedIso,
                         nowIso);
                     continue;
@@ -4450,8 +4394,8 @@ namespace PlayniteAchievements.Services.Database
                       WHERE Id = ?;",
                     incomingUnlocked,
                     DbValue(resolvedIso),
-                    resolvedProgressNum.HasValue ? (object)resolvedProgressNum.Value : DBNull.Value,
-                    resolvedProgressDenom.HasValue ? (object)resolvedProgressDenom.Value : DBNull.Value,
+                    DbParam(resolvedProgressNum),
+                    DbParam(resolvedProgressDenom),
                     updatedIso,
                     existing.Id);
             }
@@ -4476,9 +4420,7 @@ namespace PlayniteAchievements.Services.Database
                             u.AvatarPath AS AvatarPath
                           FROM Users u
                           WHERE u.ProviderKey = ?
-                            AND u.IsCurrentUser = 0
-                            AND u.IsActiveFriend = 1
-                            AND u.FriendSource IS NOT NULL
+                            AND " + ActiveFriendPredicateSql + @"
                           ORDER BY u.DisplayName;",
                         providerKey)
                     .Select(row => new FriendIdentity
@@ -4656,80 +4598,48 @@ namespace PlayniteAchievements.Services.Database
                 .ToList();
         }
 
-        private static List<FriendSummaryRow> LoadFriendSummaryRows(SQLiteDatabase db)
+        private static List<FriendSummaryRow> LoadFriendSummaryRows(SQLiteDatabase db, Guid? playniteGameId = null)
         {
             var recentCutoffIso = ToIso(DateTime.UtcNow.AddDays(-30));
+            var filterByGame = playniteGameId.HasValue;
+            var args = new List<object>();
 
             // Per-friend stats are pre-aggregated once (grouped by UserId) and joined back to
             // the friend rows, replacing the previous six correlated subqueries per friend.
-            return db.Load<FriendSummaryRow>(
-                @"WITH ownership AS (
-                    SELECT fo.UserId AS UserId,
-                           COUNT(DISTINCT fo.GameId) AS SharedGamesCount,
-                           COALESCE(SUM(fo.PlaytimeForeverMinutes), 0) AS TotalPlaytimeMinutes
-                    FROM FriendOwnership fo
-                    INNER JOIN Users u ON u.Id = fo.UserId
-                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
-                    GROUP BY fo.UserId
-                ),
-                unlocks AS (
-                    SELECT ugp.UserId AS UserId,
-                           COUNT(DISTINCT ugp.GameId) AS GamesWithUnlocksCount,
-                           COUNT(DISTINCT CASE WHEN ugp.TotalAchievements > 0 AND ugp.AchievementsUnlocked >= ugp.TotalAchievements THEN ugp.GameId END) AS CompletedGamesCount,
-                           COUNT(ua.Id) AS UnlockedAchievementsCount,
-                           COUNT(CASE WHEN ua.UnlockTimeUtc IS NOT NULL AND ua.UnlockTimeUtc >= ? THEN ua.Id END) AS RecentUnlockCount,
-                           MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
-                    FROM UserGameProgress ugp
-                    INNER JOIN Users u ON u.Id = ugp.UserId
-                    INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
-                    GROUP BY ugp.UserId
-                )
-                SELECT
-                    u.ProviderKey AS ProviderKey,
-                    u.ExternalUserId AS ExternalUserId,
-                    u.DisplayName AS DisplayName,
-                    u.AvatarUrl AS AvatarUrl,
-                    u.AvatarPath AS AvatarPath,
-                    COALESCE(o.SharedGamesCount, 0) AS SharedGamesCount,
-                    COALESCE(un.GamesWithUnlocksCount, 0) AS GamesWithUnlocksCount,
-                    COALESCE(un.CompletedGamesCount, 0) AS CompletedGamesCount,
-                    COALESCE(un.UnlockedAchievementsCount, 0) AS UnlockedAchievementsCount,
-                    COALESCE(un.RecentUnlockCount, 0) AS RecentUnlockCount,
-                    un.LastUnlockUtc AS LastUnlockUtc,
-                    u.LastRefreshedUtc AS LastRefreshedUtc,
-                    COALESCE(o.TotalPlaytimeMinutes, 0) AS TotalPlaytimeMinutes
-                  FROM Users u
-                  LEFT JOIN ownership o ON o.UserId = u.Id
-                  LEFT JOIN unlocks un ON un.UserId = u.Id
-                  WHERE u.IsCurrentUser = 0
-                    AND u.IsActiveFriend = 1
-                    AND u.FriendSource IS NOT NULL
-                  ORDER BY un.LastUnlockUtc DESC, u.DisplayName;",
-                recentCutoffIso).ToList();
-        }
+            // When a target game is supplied, a target_games CTE narrows both aggregates and
+            // only friends related to that game are returned.
+            var sql = new StringBuilder("WITH ");
 
-        private static List<FriendSummaryRow> LoadFriendSummaryRows(SQLiteDatabase db, Guid playniteGameId)
-        {
-            var recentCutoffIso = ToIso(DateTime.UtcNow.AddDays(-30));
-            var playniteGameIdText = playniteGameId.ToString("D");
-
-            return db.Load<FriendSummaryRow>(
-                @"WITH target_games AS (
+            if (filterByGame)
+            {
+                sql.Append(
+                    @"target_games AS (
                     SELECT Id
                     FROM Games
                     WHERE PlayniteGameId IS NOT NULL
                       AND TRIM(PlayniteGameId) <> ''
                       AND LOWER(PlayniteGameId) = LOWER(?)
                 ),
-                ownership AS (
+                ");
+                args.Add(playniteGameId.Value.ToString("D"));
+            }
+
+            sql.Append(
+                @"ownership AS (
                     SELECT fo.UserId AS UserId,
                            COUNT(DISTINCT fo.GameId) AS SharedGamesCount,
                            COALESCE(SUM(fo.PlaytimeForeverMinutes), 0) AS TotalPlaytimeMinutes
-                    FROM FriendOwnership fo
-                    INNER JOIN target_games tg ON tg.Id = fo.GameId
+                    FROM FriendOwnership fo");
+            if (filterByGame)
+            {
+                sql.Append(@"
+                    INNER JOIN target_games tg ON tg.Id = fo.GameId");
+            }
+
+            sql.Append(
+                @"
                     INNER JOIN Users u ON u.Id = fo.UserId
-                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    WHERE " + ActiveFriendPredicateSql + @"
                     GROUP BY fo.UserId
                 ),
                 unlocks AS (
@@ -4739,11 +4649,19 @@ namespace PlayniteAchievements.Services.Database
                            COUNT(ua.Id) AS UnlockedAchievementsCount,
                            COUNT(CASE WHEN ua.UnlockTimeUtc IS NOT NULL AND ua.UnlockTimeUtc >= ? THEN ua.Id END) AS RecentUnlockCount,
                            MAX(ua.UnlockTimeUtc) AS LastUnlockUtc
-                    FROM UserGameProgress ugp
-                    INNER JOIN target_games tg ON tg.Id = ugp.GameId
+                    FROM UserGameProgress ugp");
+            args.Add(recentCutoffIso);
+            if (filterByGame)
+            {
+                sql.Append(@"
+                    INNER JOIN target_games tg ON tg.Id = ugp.GameId");
+            }
+
+            sql.Append(
+                @"
                     INNER JOIN Users u ON u.Id = ugp.UserId
                     INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    WHERE " + ActiveFriendPredicateSql + @"
                     GROUP BY ugp.UserId
                 )
                 SELECT
@@ -4763,13 +4681,17 @@ namespace PlayniteAchievements.Services.Database
                   FROM Users u
                   LEFT JOIN ownership o ON o.UserId = u.Id
                   LEFT JOIN unlocks un ON un.UserId = u.Id
-                  WHERE u.IsCurrentUser = 0
-                    AND u.IsActiveFriend = 1
-                    AND u.FriendSource IS NOT NULL
-                    AND (o.UserId IS NOT NULL OR un.UserId IS NOT NULL)
-                  ORDER BY un.LastUnlockUtc DESC, u.DisplayName;",
-                playniteGameIdText,
-                recentCutoffIso).ToList();
+                  WHERE " + ActiveFriendPredicateSql);
+            if (filterByGame)
+            {
+                sql.Append(@"
+                    AND (o.UserId IS NOT NULL OR un.UserId IS NOT NULL)");
+            }
+
+            sql.Append(@"
+                  ORDER BY un.LastUnlockUtc DESC, u.DisplayName;");
+
+            return db.Load<FriendSummaryRow>(sql.ToString(), args.ToArray()).ToList();
         }
 
         private static List<FriendGameSummaryRow> LoadFriendGameSummaryRows(SQLiteDatabase db)
@@ -4788,7 +4710,7 @@ namespace PlayniteAchievements.Services.Database
                            MAX(fo.LastScrapedUtc) AS LastScrapedUtc
                     FROM FriendOwnership fo
                     INNER JOIN Users u ON u.Id = fo.UserId
-                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    WHERE " + ActiveFriendPredicateSql + @"
                     GROUP BY fo.GameId
                 ),
                 unlocks AS (
@@ -4800,7 +4722,7 @@ namespace PlayniteAchievements.Services.Database
                     FROM Users u
                     INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
                     INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    WHERE " + ActiveFriendPredicateSql + @"
                     GROUP BY ugp.GameId
                 ),
                 totals AS (
@@ -4816,7 +4738,7 @@ namespace PlayniteAchievements.Services.Database
                                ROW_NUMBER() OVER (PARTITION BY fo.GameId ORDER BY fo.LastScrapedUtc DESC) AS rn
                         FROM FriendOwnership fo
                         INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                        WHERE " + ActiveFriendPredicateSql + @"
                           AND fo.LastScrapeStatus IS NOT NULL
                     )
                     WHERE rn = 1
@@ -4871,7 +4793,7 @@ namespace PlayniteAchievements.Services.Database
                     FROM FriendOwnership fo
                     INNER JOIN target_games tg ON tg.Id = fo.GameId
                     INNER JOIN Users u ON u.Id = fo.UserId
-                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    WHERE " + ActiveFriendPredicateSql + @"
                     GROUP BY fo.GameId
                 ),
                 unlocks AS (
@@ -4884,7 +4806,7 @@ namespace PlayniteAchievements.Services.Database
                     INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
                     INNER JOIN target_games tg ON tg.Id = ugp.GameId
                     INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
-                    WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                    WHERE " + ActiveFriendPredicateSql + @"
                     GROUP BY ugp.GameId
                 ),
                 totals AS (
@@ -4902,7 +4824,7 @@ namespace PlayniteAchievements.Services.Database
                         FROM FriendOwnership fo
                         INNER JOIN target_games tg ON tg.Id = fo.GameId
                         INNER JOIN Users u ON u.Id = fo.UserId
-                        WHERE u.IsCurrentUser = 0 AND u.IsActiveFriend = 1 AND u.FriendSource IS NOT NULL
+                        WHERE " + ActiveFriendPredicateSql + @"
                           AND fo.LastScrapeStatus IS NOT NULL
                     )
                     WHERE rn = 1
@@ -4938,9 +4860,10 @@ namespace PlayniteAchievements.Services.Database
                 playniteGameIdText).ToList();
         }
 
-        private static List<FriendGameLinkRow> LoadFriendGameLinkRows(SQLiteDatabase db)
+        private static List<FriendGameLinkRow> LoadFriendGameLinkRows(SQLiteDatabase db, Guid? playniteGameId = null)
         {
-            return db.Load<FriendGameLinkRow>(
+            var args = new List<object>();
+            var sql = new StringBuilder(
                 @"SELECT DISTINCT
                     g.ProviderKey AS ProviderKey,
                     u.ExternalUserId AS ExternalUserId,
@@ -4952,34 +4875,23 @@ namespace PlayniteAchievements.Services.Database
                   FROM Users u
                   INNER JOIN FriendOwnership fo ON fo.UserId = u.Id
                   INNER JOIN Games g ON g.Id = fo.GameId
-                  WHERE u.IsCurrentUser = 0
-                    AND u.IsActiveFriend = 1
-                    AND u.FriendSource IS NOT NULL
-                  ORDER BY u.ExternalUserId, g.GameName;").ToList();
-        }
+                  WHERE " + ActiveFriendPredicateSql);
 
-        private static List<FriendGameLinkRow> LoadFriendGameLinkRows(SQLiteDatabase db, Guid playniteGameId)
-        {
-            return db.Load<FriendGameLinkRow>(
-                @"SELECT DISTINCT
-                    g.ProviderKey AS ProviderKey,
-                    u.ExternalUserId AS ExternalUserId,
-                    g.ProviderGameId AS ProviderGameId,
-                    g.ProviderGameKey AS ProviderGameKey,
-                    g.PlayniteGameId AS PlayniteGameId,
-                    fo.PlaytimeForeverMinutes AS PlaytimeForeverMinutes,
-                    fo.LastPlayedUtc AS LastPlayedUtc
-                  FROM Users u
-                  INNER JOIN FriendOwnership fo ON fo.UserId = u.Id
-                  INNER JOIN Games g ON g.Id = fo.GameId
-                  WHERE u.IsCurrentUser = 0
-                    AND u.IsActiveFriend = 1
-                    AND u.FriendSource IS NOT NULL
+            if (playniteGameId.HasValue)
+            {
+                sql.Append(@"
                     AND g.PlayniteGameId IS NOT NULL
                     AND TRIM(g.PlayniteGameId) <> ''
-                    AND LOWER(g.PlayniteGameId) = LOWER(?)
-                  ORDER BY u.ExternalUserId, g.GameName;",
-                playniteGameId.ToString("D")).ToList();
+                    AND LOWER(g.PlayniteGameId) = LOWER(?)");
+                args.Add(playniteGameId.Value.ToString("D"));
+            }
+
+            sql.Append(@"
+                  ORDER BY u.ExternalUserId, g.GameName;");
+
+            return args.Count > 0
+                ? db.Load<FriendGameLinkRow>(sql.ToString(), args.ToArray()).ToList()
+                : db.Load<FriendGameLinkRow>(sql.ToString()).ToList();
         }
 
         private static List<FriendRecentUnlockRow> LoadFriendAllAchievementRows(SQLiteDatabase db)
@@ -5057,9 +4969,7 @@ namespace PlayniteAchievements.Services.Database
                   INNER JOIN AchievementDefinitions ad ON ad.Id = ua.AchievementDefinitionId
                   LEFT JOIN CurrentUnlocks cu ON cu.PlayniteGameId = g.PlayniteGameId
                       AND cu.ApiName = ad.ApiName
-                  WHERE u.IsCurrentUser = 0
-                    AND u.IsActiveFriend = 1
-                    AND u.FriendSource IS NOT NULL");
+                  WHERE " + ActiveFriendPredicateSql);
 
             if (unlockedOnly)
             {
@@ -5450,9 +5360,9 @@ namespace PlayniteAchievements.Services.Database
                                 userProgressId,
                                 definitionId,
                                 unlocked,
-                                unlockIso != null ? (object)unlockIso : DBNull.Value,
-                                progressNum.HasValue ? (object)progressNum.Value : DBNull.Value,
-                                progressDenom.HasValue ? (object)progressDenom.Value : DBNull.Value,
+                                DbValue(unlockIso),
+                                DbParam(progressNum),
+                                DbParam(progressDenom),
                                 updatedIso,
                                 nowIso);
                             continue;
@@ -5480,9 +5390,9 @@ namespace PlayniteAchievements.Services.Database
                                   LastUpdatedUtc = ?
                               WHERE Id = ?;",
                             unlocked,
-                            unlockIso != null ? (object)unlockIso : DBNull.Value,
-                            progressNum.HasValue ? (object)progressNum.Value : DBNull.Value,
-                            progressDenom.HasValue ? (object)progressDenom.Value : DBNull.Value,
+                            DbValue(unlockIso),
+                            DbParam(progressNum),
+                            DbParam(progressDenom),
                             updatedIso,
                             existing.Id);
                     }
@@ -5736,7 +5646,7 @@ namespace PlayniteAchievements.Services.Database
                           SET GlobalPercentUnlocked = ?,
                               Rarity = ?
                           WHERE Id = ?;",
-                        normalizedPercent.HasValue ? (object)normalizedPercent.Value : DBNull.Value,
+                        DbParam(normalizedPercent),
                         resolvedRarity.ToString(),
                         row.Id);
                 }
@@ -5968,7 +5878,7 @@ namespace PlayniteAchievements.Services.Database
                         (?, ?, ?, ?, ?, ?, ?, ?, ?);",
                     providerKey,
                     DbValue(data.ProviderPlatformKey),
-                    providerGameId.HasValue ? (object)providerGameId.Value : DBNull.Value,
+                    DbParam(providerGameId),
                     DbValue(providerGameKey),
                     DbValue(playniteGameId),
                     DbValue(data.GameName),
@@ -5989,7 +5899,7 @@ namespace PlayniteAchievements.Services.Database
                       LastUpdatedUtc = ?
                   WHERE Id = ?;",
                 DbValue(data.ProviderPlatformKey),
-                providerGameId.HasValue ? (object)providerGameId.Value : DBNull.Value,
+                DbParam(providerGameId),
                 DbValue(providerGameKey),
                 DbValue(playniteGameId),
                 DbValue(data.GameName),
@@ -6173,16 +6083,16 @@ namespace PlayniteAchievements.Services.Database
                         DbValue(achievement.Description),
                         DbValue(MakeRelativePath(achievement.UnlockedIconPath)),
                         DbValue(MakeRelativePath(achievement.LockedIconPath)),
-                        achievement.Points.HasValue ? (object)achievement.Points.Value : DBNull.Value,
-                        achievement.ScaledPoints.HasValue ? (object)achievement.ScaledPoints.Value : DBNull.Value,
+                        DbParam(achievement.Points),
+                        DbParam(achievement.ScaledPoints),
                         DbValue(incomingCategory),
                         DbValue(incomingCategoryType),
                         DbValue(achievement.TrophyType),
                         achievement.Hidden ? 1 : 0,
                         isCapstone ? 1 : 0,
-                        incomingGlobalPercent.HasValue ? (object)incomingGlobalPercent.Value : DBNull.Value,
+                        DbParam(incomingGlobalPercent),
                         incomingRarity,
-                        achievement.ProgressDenom.HasValue ? (object)achievement.ProgressDenom.Value : DBNull.Value,
+                        DbParam(achievement.ProgressDenom),
                         nowIso,
                         updatedIso);
 
@@ -6248,20 +6158,20 @@ namespace PlayniteAchievements.Services.Database
                           ProgressMax = ?,
                           UpdatedUtc = ?
                       WHERE Id = ?;",
-                                        incomingDisplayName != null ? (object)incomingDisplayName : DBNull.Value,
-                                        incomingDescription != null ? (object)incomingDescription : DBNull.Value,
-                                        incomingUnlockedIconPath != null ? (object)incomingUnlockedIconPath : DBNull.Value,
-                                        incomingLockedIconPath != null ? (object)incomingLockedIconPath : DBNull.Value,
-                                        incomingPoints.HasValue ? (object)incomingPoints.Value : DBNull.Value,
-                                        incomingScaledPoints.HasValue ? (object)incomingScaledPoints.Value : DBNull.Value,
-                                        incomingCategory != null ? (object)incomingCategory : DBNull.Value,
-                                        incomingCategoryType != null ? (object)incomingCategoryType : DBNull.Value,
-                                        incomingTrophyType != null ? (object)incomingTrophyType : DBNull.Value,
+                                        DbValue(incomingDisplayName),
+                                        DbValue(incomingDescription),
+                                        DbValue(incomingUnlockedIconPath),
+                                        DbValue(incomingLockedIconPath),
+                                        DbParam(incomingPoints),
+                                        DbParam(incomingScaledPoints),
+                                        DbValue(incomingCategory),
+                                        DbValue(incomingCategoryType),
+                                        DbValue(incomingTrophyType),
                                         incomingHidden,
                                         incomingIsCapstone,
-                                        incomingGlobalPercent.HasValue ? (object)incomingGlobalPercent.Value : DBNull.Value,
+                                        DbParam(incomingGlobalPercent),
                                         incomingStoredRarity,
-                                        incomingProgressMax.HasValue ? (object)incomingProgressMax.Value : DBNull.Value,
+                                        DbParam(incomingProgressMax),
                     updatedIso,
                     existing.Id);
 
@@ -6415,6 +6325,11 @@ namespace PlayniteAchievements.Services.Database
         private static object DbValue(string value)
         {
             return string.IsNullOrWhiteSpace(value) ? (object)DBNull.Value : value;
+        }
+
+        private static object DbParam<T>(T? value) where T : struct
+        {
+            return value.HasValue ? (object)value.Value : DBNull.Value;
         }
 
         private static string NormalizeDbText(string value)
