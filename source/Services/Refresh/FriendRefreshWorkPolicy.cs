@@ -20,7 +20,7 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Refresh
 {
     /// <summary>
     /// Pure friend-refresh policy predicates: static helpers that decide which friend refresh

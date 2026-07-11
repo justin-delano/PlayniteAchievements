@@ -15,6 +15,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;

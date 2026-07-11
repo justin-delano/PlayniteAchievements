@@ -7,6 +7,7 @@ using System.Windows;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views;
 using Playnite.SDK;

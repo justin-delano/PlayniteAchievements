@@ -10,6 +10,7 @@ using System.Windows.Input;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.ThemeMigration;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;

@@ -9,6 +9,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Logging;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern

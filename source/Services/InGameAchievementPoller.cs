@@ -14,6 +14,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Hydration;
+using PlayniteAchievements.Services.Refresh;
 
 namespace PlayniteAchievements.Services
 {

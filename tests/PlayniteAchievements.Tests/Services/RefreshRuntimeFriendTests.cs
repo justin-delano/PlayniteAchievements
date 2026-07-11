@@ -13,6 +13,7 @@ using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Images;
+using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Collections;
 using System.Collections.Generic;

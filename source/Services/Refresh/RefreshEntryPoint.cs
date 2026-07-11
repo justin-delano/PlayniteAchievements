@@ -7,7 +7,7 @@ using PlayniteAchievements.Providers;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Refresh
 {
     public sealed class RefreshExecutionPolicy
     {

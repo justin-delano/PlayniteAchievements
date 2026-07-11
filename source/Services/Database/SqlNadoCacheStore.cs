@@ -12,6 +12,7 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Database.Rows;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
 using Playnite.SDK;

@@ -10,6 +10,7 @@ using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Controls;

@@ -13,6 +13,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Providers.Steam.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 
 namespace PlayniteAchievements.Providers.Manual
 {

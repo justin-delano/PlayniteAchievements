@@ -11,6 +11,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 
 namespace PlayniteAchievements.Providers.Manual
 {

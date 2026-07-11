@@ -20,9 +20,9 @@ using PlayniteAchievements.Services.Friends;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
-using FriendRefreshProgressSession = PlayniteAchievements.Services.RefreshRuntime.FriendRefreshProgressSession;
+using FriendRefreshProgressSession = PlayniteAchievements.Services.Refresh.RefreshRuntime.FriendRefreshProgressSession;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Refresh
 {
     /// <summary>
     /// Coordinates friend refreshes: roster preparation, ownership refresh, unowned-definition

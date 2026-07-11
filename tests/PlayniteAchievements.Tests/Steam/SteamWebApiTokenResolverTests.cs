@@ -3,6 +3,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

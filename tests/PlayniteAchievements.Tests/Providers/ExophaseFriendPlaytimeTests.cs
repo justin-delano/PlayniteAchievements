@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Providers.Exophase;
+using PlayniteAchievements.Services.Refresh;
 
 namespace PlayniteAchievements.Tests.Providers
 {

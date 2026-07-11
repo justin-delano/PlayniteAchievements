@@ -7,6 +7,7 @@ using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
