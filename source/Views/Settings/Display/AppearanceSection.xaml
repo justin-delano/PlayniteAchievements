@@ -317,120 +317,141 @@
                         </StackPanel>
                     </Border>
 
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_AdvancedResources}"
-                               Style="{StaticResource SectionHeaderStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                    <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                    <!-- Advanced -->
+                    <Border Background="{StaticResource PlayAch.Brush.Overlay.Shade.12}"
+                            BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                            BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                            CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                            Margin="0,16,0,0"
+                            Padding="{StaticResource PlayAch.Thickness.None}">
+                        <Expander IsExpanded="False"
+                                  Background="Transparent"
+                                  BorderThickness="0">
+                            <Expander.Header>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Advanced}"
+                                           Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                           FontWeight="SemiBold"
+                                           Margin="8,8,0,8"/>
+                            </Expander.Header>
 
-                    <ItemsControl ItemsSource="{Binding ResourceAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource SettingGroupCardStyle}">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="2*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="2*"/>
-                                        </Grid.ColumnDefinitions>
+                            <StackPanel Margin="12,0,12,12">
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance_AdvancedResources}"
+                                           Style="{StaticResource SectionHeaderStyle}"
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                <Border Style="{StaticResource SectionAccentRuleStyle}"/>
 
-                                        <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding DisplayName}"
-                                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                       FontWeight="SemiBold"
-                                                       TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Style="{StaticResource MutedTextStyle}"
-                                                       TextTrimming="CharacterEllipsis">
-                                                <Run Text="{DynamicResource LOCPlayAch_Settings_Appearance_PlayniteResourceLabel}"/><Run Text=" "/><Run Text="{Binding PlayniteResourceKey, Mode=OneWay}"/>
-                                            </TextBlock>
-                                        </StackPanel>
+                                <ItemsControl ItemsSource="{Binding ResourceAppearanceItems, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Style="{StaticResource SettingGroupCardStyle}">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="2*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="2*"/>
+                                                    </Grid.ColumnDefinitions>
 
-                                        <ComboBox Grid.Column="1"
-                                                  Width="140"
-                                                  Margin="14,0"
-                                                  VerticalAlignment="Center"
-                                                  SelectedValue="{Binding Mode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                  SelectedValuePath="Tag">
-                                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_Appearance_FollowPlaynite}" Tag="{x:Static settings:ResourceOverrideMode.FollowPlaynite}"/>
-                                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Custom}" Tag="{x:Static settings:ResourceOverrideMode.Custom}"/>
-                                            <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Transparent}" Tag="{x:Static settings:ResourceOverrideMode.Transparent}">
-                                                <ComboBoxItem.Style>
-                                                    <Style TargetType="ComboBoxItem">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsBrush}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </ComboBoxItem.Style>
-                                            </ComboBoxItem>
-                                        </ComboBox>
+                                                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding DisplayName}"
+                                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                                                   FontWeight="SemiBold"
+                                                                   TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Style="{StaticResource MutedTextStyle}"
+                                                                   TextTrimming="CharacterEllipsis">
+                                                            <Run Text="{DynamicResource LOCPlayAch_Settings_Appearance_PlayniteResourceLabel}"/><Run Text=" "/><Run Text="{Binding PlayniteResourceKey, Mode=OneWay}"/>
+                                                        </TextBlock>
+                                                    </StackPanel>
 
-                                        <Grid Grid.Column="2" VerticalAlignment="Center">
-                                            <Grid.Style>
-                                                <Style TargetType="Grid">
-                                                    <Setter Property="IsEnabled" Value="False"/>
-                                                    <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Disabled}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsCustom}" Value="True">
-                                                            <Setter Property="IsEnabled" Value="True"/>
-                                                            <Setter Property="Opacity" Value="1"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Grid.Style>
+                                                    <ComboBox Grid.Column="1"
+                                                              Width="140"
+                                                              Margin="14,0"
+                                                              VerticalAlignment="Center"
+                                                              SelectedValue="{Binding Mode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                              SelectedValuePath="Tag">
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_Appearance_FollowPlaynite}" Tag="{x:Static settings:ResourceOverrideMode.FollowPlaynite}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Custom}" Tag="{x:Static settings:ResourceOverrideMode.Custom}"/>
+                                                        <ComboBoxItem Content="{DynamicResource LOCPlayAch_Common_Transparent}" Tag="{x:Static settings:ResourceOverrideMode.Transparent}">
+                                                            <ComboBoxItem.Style>
+                                                                <Style TargetType="ComboBoxItem">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsBrush}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </ComboBoxItem.Style>
+                                                        </ComboBoxItem>
+                                                    </ComboBox>
 
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
+                                                    <Grid Grid.Column="2" VerticalAlignment="Center">
+                                                        <Grid.Style>
+                                                            <Style TargetType="Grid">
+                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                <Setter Property="Opacity" Value="{StaticResource PlayAch.Opacity.Disabled}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsCustom}" Value="True">
+                                                                        <Setter Property="IsEnabled" Value="True"/>
+                                                                        <Setter Property="Opacity" Value="1"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </Grid.Style>
 
-                                            <Border Grid.Column="0"
-                                                    Width="26"
-                                                    Height="26"
-                                                    Margin="0,0,8,0"
-                                                    BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                                    BorderThickness="{StaticResource PlayAch.Thickness.Border}"
-                                                    Background="{Binding PreviewBrush}">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsBrush}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+
+                                                        <Border Grid.Column="0"
+                                                                Width="26"
+                                                                Height="26"
+                                                                Margin="0,0,8,0"
+                                                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                                                BorderThickness="{StaticResource PlayAch.Thickness.Border}"
+                                                                Background="{Binding PreviewBrush}">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsBrush}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                        </Border>
+
+                                                        <TextBox Grid.Column="1"
+                                                                 MinWidth="120"
+                                                                 Text="{Binding DisplayValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+
+                                                        <Button Grid.Column="2"
+                                                                Content="{DynamicResource LOCPlayAch_Button_Pick}"
+                                                                Margin="8,0,0,0"
+                                                                MinWidth="58"
+                                                                Click="PickResourceColor_Click">
+                                                            <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsBrush}" Value="True">
+                                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Button.Style>
+                                                        </Button>
+                                                    </Grid>
+                                                </Grid>
                                             </Border>
-
-                                            <TextBox Grid.Column="1"
-                                                     MinWidth="120"
-                                                     Text="{Binding DisplayValueText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
-
-                                            <Button Grid.Column="2"
-                                                    Content="{DynamicResource LOCPlayAch_Button_Pick}"
-                                                    Margin="8,0,0,0"
-                                                    MinWidth="58"
-                                                    Click="PickResourceColor_Click">
-                                                <Button.Style>
-                        <Style TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
-                                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsBrush}" Value="True">
-                                                                <Setter Property="Visibility" Value="Visible"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Button.Style>
-                                            </Button>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Expander>
+                    </Border>
                 </StackPanel>
             </Border>
         </StackPanel>
