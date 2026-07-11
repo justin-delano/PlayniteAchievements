@@ -37,6 +37,20 @@ namespace PlayniteAchievements.Models.Settings
                 ? new Dictionary<string, JObject>(source.ProviderSettings, StringComparer.OrdinalIgnoreCase)
                 : new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
 
+            // Friend Settings (Friends must be copied before FriendMergeGroups because the
+            // merge-group setter normalizes against the current Friends collection)
+            target.AutoDiscoverFriendProviderKeys = source.AutoDiscoverFriendProviderKeys != null
+                ? new HashSet<string>(source.AutoDiscoverFriendProviderKeys, StringComparer.OrdinalIgnoreCase)
+                : PersistedSettings.CreateDefaultAutoDiscoverFriendProviderKeys();
+            target.Friends = new System.Collections.ObjectModel.ObservableCollection<FriendSettingsEntry>(
+                (source.Friends ?? new System.Collections.ObjectModel.ObservableCollection<FriendSettingsEntry>())
+                .Where(friend => friend != null)
+                .Select(friend => friend.Clone()));
+            target.FriendMergeGroups = new System.Collections.ObjectModel.ObservableCollection<FriendMergeGroup>(
+                (source.FriendMergeGroups ?? new System.Collections.ObjectModel.ObservableCollection<FriendMergeGroup>())
+                .Where(group => group != null)
+                .Select(group => group.Clone()));
+
             // Global Settings
             target.GlobalLanguage = source.GlobalLanguage;
 
