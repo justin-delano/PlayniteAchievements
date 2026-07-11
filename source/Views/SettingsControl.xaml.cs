@@ -24,6 +24,7 @@ using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Helpers;
+using PlayniteAchievements.Views.Settings.Navigation;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Settings;
@@ -651,7 +652,6 @@ namespace PlayniteAchievements.Views
         private readonly ProviderRegistry _providerRegistry;
         private readonly Func<Window, string, string> _pickColor;
         private readonly AchievementToastTemplateResolver _toastTemplateResolver;
-        private ICollectionView _providerNavigationView;
         private bool _providerNavigationBuilt;
         private bool _themeMigrationLoaded;
         private HotkeyCaptureTarget? _capturingHotkey;
@@ -683,25 +683,12 @@ namespace PlayniteAchievements.Views
                 nameof(SelectedProviderNavigationItem),
                 typeof(ProviderNavigationItem),
                 typeof(SettingsControl),
-                new PropertyMetadata(null, OnSelectedProviderNavigationItemChanged));
+                new PropertyMetadata(null));
 
         public ProviderNavigationItem SelectedProviderNavigationItem
         {
             get => (ProviderNavigationItem)GetValue(SelectedProviderNavigationItemProperty);
             set => SetValue(SelectedProviderNavigationItemProperty, value);
-        }
-
-        public static readonly DependencyProperty ProviderSearchTextProperty =
-            DependencyProperty.Register(
-                nameof(ProviderSearchText),
-                typeof(string),
-                typeof(SettingsControl),
-                new PropertyMetadata(string.Empty, OnProviderSearchTextChanged));
-
-        public string ProviderSearchText
-        {
-            get => (string)GetValue(ProviderSearchTextProperty);
-            set => SetValue(ProviderSearchTextProperty, value);
         }
 
         /// <summary>
@@ -2540,8 +2527,6 @@ namespace PlayniteAchievements.Views
                     subtitle));
             }
 
-            ConfigureProviderNavigationView();
-
             if (selectDefault && SelectedProviderNavigationItem == null && ProviderNavigationItems.Count > 0)
             {
                 SelectedProviderNavigationItem = ProviderNavigationItems[0];
@@ -2554,106 +2539,6 @@ namespace PlayniteAchievements.Views
         private static string GetProviderSettingsGroupName(string providerKey)
         {
             return ResourceProvider.GetString(ProviderUiPolicies.GetSettingsGroupResourceKey(providerKey));
-        }
-
-        private void ConfigureProviderNavigationView()
-        {
-            _providerNavigationView = CollectionViewSource.GetDefaultView(ProviderNavigationItems);
-            if (_providerNavigationView == null)
-            {
-                return;
-            }
-
-            _providerNavigationView.Filter = FilterProviderNavigationItem;
-            _providerNavigationView.GroupDescriptions.Clear();
-            _providerNavigationView.GroupDescriptions.Add(
-                new PropertyGroupDescription(nameof(ProviderNavigationItem.GroupName)));
-            _providerNavigationView.Refresh();
-        }
-
-        private bool FilterProviderNavigationItem(object item)
-        {
-            if (!(item is ProviderNavigationItem providerItem))
-            {
-                return false;
-            }
-
-            var searchText = ProviderSearchText;
-            if (string.IsNullOrWhiteSpace(searchText))
-            {
-                return true;
-            }
-
-            return ContainsSearchText(providerItem.DisplayName, searchText) ||
-                ContainsSearchText(providerItem.ProviderKey, searchText) ||
-                ContainsSearchText(providerItem.GroupName, searchText) ||
-                ContainsSearchText(providerItem.Subtitle, searchText);
-        }
-
-        private static bool ContainsSearchText(string value, string searchText)
-            => !string.IsNullOrWhiteSpace(value) &&
-                value.IndexOf(searchText, StringComparison.OrdinalIgnoreCase) >= 0;
-
-        private static void OnProviderSearchTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is SettingsControl control)
-            {
-                control._providerNavigationView?.Refresh();
-                control.SelectFirstVisibleProviderIfNeeded();
-            }
-        }
-
-        private void SelectFirstVisibleProviderIfNeeded()
-        {
-            if (_providerNavigationView == null)
-            {
-                return;
-            }
-
-            if (SelectedProviderNavigationItem != null &&
-                _providerNavigationView.Contains(SelectedProviderNavigationItem))
-            {
-                return;
-            }
-
-            SelectedProviderNavigationItem = _providerNavigationView
-                .Cast<ProviderNavigationItem>()
-                .FirstOrDefault();
-        }
-
-        private static void OnSelectedProviderNavigationItemChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-        {
-            if (d is SettingsControl control && e.NewValue is ProviderNavigationItem item)
-            {
-                control.OnSelectedProviderNavigationItemChangedInternal(item);
-            }
-        }
-
-        private void OnSelectedProviderNavigationItemChangedInternal(ProviderNavigationItem item)
-        {
-            if (item == null) return;
-
-            if (item.IsRedirect)
-            {
-                var redirectItem = ProviderNavigationItems?.FirstOrDefault(x =>
-                    string.Equals(x.ProviderKey, item.RedirectProviderKey, StringComparison.OrdinalIgnoreCase));
-
-                if (redirectItem != null && !ReferenceEquals(item, redirectItem))
-                {
-                    ProviderSearchText = string.Empty;
-                    SelectedProviderNavigationItem = redirectItem;
-                    _logger?.Info($"Redirected {item.ProviderKey} settings navigation to {redirectItem.ProviderKey}");
-                }
-                else
-                {
-                    _logger?.Warn($"Provider settings redirect target not found for {item.ProviderKey}: {item.RedirectProviderKey}");
-                }
-
-                return;
-            }
-
-            var settingsView = item.EnsureSettingsView();
-            if (settingsView == null) return;
         }
 
         private void NavigateToPendingProvider()
@@ -3087,82 +2972,6 @@ namespace PlayniteAchievements.Views
         {
             Process.Start(e.Uri.AbsoluteUri);
             e.Handled = true;
-        }
-    }
-
-    /// <summary>
-    /// Represents a provider item in the settings Providers overview navigation.
-    /// </summary>
-    public sealed class ProviderNavigationItem : PlayniteAchievements.Common.ObservableObject
-    {
-        private readonly IProviderSettings _settings;
-        private readonly Func<ProviderSettingsViewBase> _settingsViewFactory;
-        private ProviderSettingsViewBase _settingsView;
-
-        public ProviderNavigationItem(
-            string providerKey,
-            string displayName,
-            string groupName,
-            string providerIconKey,
-            string providerColorHex,
-            IProviderSettings settings,
-            Func<ProviderSettingsViewBase> settingsViewFactory,
-            string redirectProviderKey = null,
-            string subtitle = null)
-        {
-            ProviderKey = providerKey;
-            DisplayName = displayName;
-            GroupName = groupName;
-            ProviderIconKey = providerIconKey;
-            ProviderColorHex = providerColorHex;
-            _settingsViewFactory = settingsViewFactory;
-            RedirectProviderKey = redirectProviderKey;
-            Subtitle = subtitle;
-            _settings = settings;
-
-            if (_settings != null)
-            {
-                _settings.PropertyChanged += Settings_PropertyChanged;
-            }
-        }
-
-        public string ProviderKey { get; }
-        public string DisplayName { get; }
-        public string GroupName { get; }
-        public string ProviderIconKey { get; }
-        public string ProviderColorHex { get; }
-        public string RedirectProviderKey { get; }
-        public string Subtitle { get; }
-        public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
-        public bool IsRedirect => !string.IsNullOrWhiteSpace(RedirectProviderKey);
-        public bool IsEnabled => _settings?.IsEnabled ?? true;
-        public ProviderSettingsViewBase SettingsView => _settingsView;
-
-        public ProviderSettingsViewBase EnsureSettingsView()
-        {
-            if (IsRedirect || _settingsView != null)
-            {
-                return _settingsView;
-            }
-
-            var view = _settingsViewFactory?.Invoke();
-            if (view != null)
-            {
-                view.Initialize(_settings);
-                _settingsView = view;
-                OnPropertyChanged(nameof(SettingsView));
-            }
-
-            return _settingsView;
-        }
-
-        private void Settings_PropertyChanged(object sender, PropertyChangedEventArgs e)
-        {
-            if (string.IsNullOrEmpty(e.PropertyName) ||
-                string.Equals(e.PropertyName, nameof(IProviderSettings.IsEnabled), StringComparison.Ordinal))
-            {
-                OnPropertyChanged(nameof(IsEnabled));
-            }
         }
     }
 
