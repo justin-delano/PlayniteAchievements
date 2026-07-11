@@ -21,10 +21,16 @@ namespace PlayniteAchievements.Providers.GOG
         private const string UrlAccountInfo = "https://menu.gog.com/v1/account/basic";
         private static readonly TimeSpan InteractiveAuthTimeout = TimeSpan.FromMinutes(3);
 
+        private static readonly TimeSpan TokenExpiryMargin = TimeSpan.FromSeconds(60);
+        private static readonly TimeSpan TokenFallbackLifetime = TimeSpan.FromMinutes(5);
+
         private (bool Success, string UserId) _authResult;
         private int _authCheckInProgress;
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
+        private readonly object _tokenLock = new object();
+        private string _cachedAccessToken;
+        private DateTime _cachedTokenValidUntilUtc;
 
         public string ProviderKey => "GOG";
 
@@ -43,26 +49,61 @@ namespace PlayniteAchievements.Providers.GOG
         }
 
         /// <summary>
-        /// Gets the current access token by probing from source of truth.
+        /// Gets the current access token, reusing a cached token until shortly before it expires.
         /// Throws if not authenticated.
         /// </summary>
-        public string GetAccessToken()
+        public async Task<string> GetAccessTokenAsync(CancellationToken ct)
         {
-            var probeTask = ProbeAuthStateAsync(CancellationToken.None);
-            probeTask.ConfigureAwait(false).GetAwaiter().GetResult();
-
-            if (probeTask.Result.IsSuccess)
+            lock (_tokenLock)
             {
-                var apiResponse = CallAccountInfoApiAsync(timeoutMs: 6000)
-                    .ConfigureAwait(false).GetAwaiter().GetResult();
-
-                if (apiResponse != null && !string.IsNullOrWhiteSpace(apiResponse.ResolvedAccessToken))
+                if (!string.IsNullOrWhiteSpace(_cachedAccessToken) &&
+                    DateTime.UtcNow < _cachedTokenValidUntilUtc)
                 {
-                    return apiResponse.ResolvedAccessToken;
+                    return _cachedAccessToken;
                 }
             }
 
+            ct.ThrowIfCancellationRequested();
+
+            var response = await CallAccountInfoApiAsync(timeoutMs: 6000).ConfigureAwait(false);
+            if (response != null && response.IsLoggedIn &&
+                !string.IsNullOrWhiteSpace(response.ResolvedAccessToken))
+            {
+                CacheAccessToken(response);
+                return response.ResolvedAccessToken;
+            }
+
             throw new AuthRequiredException("GOG authentication required. Please login.");
+        }
+
+        /// <summary>
+        /// Drops the cached access token so the next request re-probes the web session.
+        /// </summary>
+        public void InvalidateAccessToken()
+        {
+            lock (_tokenLock)
+            {
+                _cachedAccessToken = null;
+                _cachedTokenValidUntilUtc = DateTime.MinValue;
+            }
+        }
+
+        private void CacheAccessToken(GogAccountInfoResponse response)
+        {
+            var token = response?.ResolvedAccessToken;
+            if (string.IsNullOrWhiteSpace(token))
+                return;
+
+            var expiresUtc = GetTokenExpiryUtc(response);
+            var validUntilUtc = expiresUtc.HasValue
+                ? expiresUtc.Value - TokenExpiryMargin
+                : DateTime.UtcNow + TokenFallbackLifetime;
+
+            lock (_tokenLock)
+            {
+                _cachedAccessToken = token;
+                _cachedTokenValidUntilUtc = validUntilUtc;
+            }
         }
 
         /// <summary>
@@ -93,6 +134,8 @@ namespace PlayniteAchievements.Providers.GOG
                             gogSettings.UserId = userId;
                             ProviderRegistry.Write(gogSettings, persistToDisk: true);
                         }
+
+                        CacheAccessToken(response);
 
                         var expiresUtc = GetTokenExpiryUtc(response);
                         return AuthProbeResult.AlreadyAuthenticated(userId, expiresUtc);
@@ -224,6 +267,7 @@ namespace PlayniteAchievements.Providers.GOG
         {
             _logger?.Info("[GogAuth] Clearing session.");
             _authResult = (false, null);
+            InvalidateAccessToken();
 
             var gogSettings = ProviderRegistry.Settings<GogSettings>();
             if (!string.IsNullOrWhiteSpace(gogSettings.UserId))

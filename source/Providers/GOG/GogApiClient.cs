@@ -100,7 +100,7 @@ namespace PlayniteAchievements.Providers.GOG
                 return new List<GogAchievementItem>();
             }
 
-            var token = _sessionManager.GetAccessToken();
+            var token = await _sessionManager.GetAccessTokenAsync(ct).ConfigureAwait(false);
             var locale = MapGlobalLanguageToGogLocale(globalLanguage);
             var url = BuildAchievementsUrl(clientId, userId, locale);
 
@@ -120,6 +120,7 @@ namespace PlayniteAchievements.Providers.GOG
                     if (statusCode == 401 || statusCode == 403)
                     {
                         _logger?.Warn($"[GogApi] Auth failed with status {statusCode}. Token may be expired.");
+                        _sessionManager.InvalidateAccessToken();
                         throw new AuthRequiredException("GOG access token expired. Please re-authenticate.");
                     }
 
