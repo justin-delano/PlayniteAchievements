@@ -16,7 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.ManageAchievements
 {
     public partial class ManageAchievementsCapstonesTab : UserControl, IFullscreenControllerNavigable
     {

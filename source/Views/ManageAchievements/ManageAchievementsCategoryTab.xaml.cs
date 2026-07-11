@@ -19,7 +19,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views.Helpers;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.ManageAchievements
 {
     public partial class ManageAchievementsCategoryTab : UserControl, IFullscreenControllerNavigable
     {

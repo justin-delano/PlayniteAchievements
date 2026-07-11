@@ -23,7 +23,7 @@ using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views.Helpers;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.ManageAchievements
 {
     public partial class ManageAchievementsControl : UserControl, IFullscreenControllerNavigable
     {

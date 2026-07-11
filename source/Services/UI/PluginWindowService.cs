@@ -25,6 +25,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
+using PlayniteAchievements.Views.ManageAchievements;
 
 namespace PlayniteAchievements.Services.UI
 {

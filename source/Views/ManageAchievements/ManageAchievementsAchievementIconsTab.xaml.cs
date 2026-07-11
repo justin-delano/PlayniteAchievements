@@ -16,7 +16,7 @@ using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views.Helpers;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.ManageAchievements
 {
     public partial class ManageAchievementsAchievementIconsTab : UserControl, IFullscreenControllerNavigable
     {

@@ -12,7 +12,7 @@ using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.ViewModels;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.ManageAchievements
 {
     public partial class ManageAchievementsManualTrackingTab : UserControl, IFullscreenControllerNavigable
     {
