@@ -8,6 +8,7 @@ using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Images;
 using System;
 using System.Collections.Generic;

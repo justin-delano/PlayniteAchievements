@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.GameCustomData
 {
     internal static class GameCustomDataNormalizer
     {
