@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using System;
 using System.Collections.Generic;
 

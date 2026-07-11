@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 using System.Collections.Generic;
 using System.Windows;

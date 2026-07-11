@@ -14,6 +14,7 @@ using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Services.Summaries;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Services.ThemeIntegration
 {

@@ -10,6 +10,7 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.StartPage;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.ViewModels.StartPage;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.StartPage;

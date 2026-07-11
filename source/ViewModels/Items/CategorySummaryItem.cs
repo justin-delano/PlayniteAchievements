@@ -1,4 +1,4 @@
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     /// <summary>
     /// A <see cref="GameSummaryItem"/> that represents a rollup over one achievement category

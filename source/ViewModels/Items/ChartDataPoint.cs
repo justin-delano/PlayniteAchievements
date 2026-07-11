@@ -1,4 +1,4 @@
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     public class ChartDataPoint
     {

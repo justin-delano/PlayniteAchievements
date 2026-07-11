@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              xmlns:controls="clr-namespace:PlayniteAchievements.Views.Controls"
-             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels.Items"
              mc:Ignorable="d"
              d:DesignHeight="300" d:DesignWidth="600"
              d:DataContext="{d:DesignInstance vm:AchievementDisplayItem}"

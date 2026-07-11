@@ -8,7 +8,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     public class GameSummaryItem : ObservableObject
     {

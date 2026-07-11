@@ -17,6 +17,7 @@ using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Search;
+using PlayniteAchievements.ViewModels.Items;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;

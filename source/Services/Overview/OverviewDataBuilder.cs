@@ -14,6 +14,7 @@ using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Services.Overview

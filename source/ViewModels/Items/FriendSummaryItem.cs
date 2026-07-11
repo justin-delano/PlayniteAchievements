@@ -12,7 +12,7 @@ using System.Runtime.Serialization;
 using System.Windows.Input;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     public sealed class FriendSummaryItem : ObservableObject
     {

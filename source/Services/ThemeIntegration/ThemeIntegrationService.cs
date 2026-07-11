@@ -14,6 +14,7 @@ using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.Services.Library;
 #endif
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;

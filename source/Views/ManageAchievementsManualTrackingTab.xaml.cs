@@ -8,6 +8,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using Playnite.SDK.Events;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.ViewModels;
 

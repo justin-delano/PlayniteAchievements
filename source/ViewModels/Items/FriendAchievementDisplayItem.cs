@@ -5,7 +5,7 @@ using Playnite.SDK.Data;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Friends;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     public sealed class FriendAchievementDisplayItem : AchievementDisplayItem
     {

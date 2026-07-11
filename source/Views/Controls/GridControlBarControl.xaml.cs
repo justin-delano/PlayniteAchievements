@@ -8,6 +8,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Views.Controls
 {

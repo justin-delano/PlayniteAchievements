@@ -16,6 +16,7 @@ using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.ThemeIntegration;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 using System;
 using System.Collections.Generic;

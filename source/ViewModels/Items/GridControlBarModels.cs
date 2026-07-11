@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.Linq;
 using Playnite.SDK;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     public sealed class GridControlBarViewModel : PlayniteAchievements.Common.ObservableObject
     {

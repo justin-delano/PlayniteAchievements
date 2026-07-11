@@ -7,7 +7,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.GameCustomData;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     /// <summary>
     /// Time display mode for the time picker.

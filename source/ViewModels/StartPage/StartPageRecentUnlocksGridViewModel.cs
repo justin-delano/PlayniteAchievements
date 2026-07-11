@@ -8,6 +8,7 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.Services.StartPage;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.ViewModels.StartPage
 {

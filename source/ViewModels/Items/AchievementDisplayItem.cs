@@ -15,7 +15,7 @@ using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     /// <summary>
     /// Thin display wrapper around <see cref="AchievementDetail"/> for view-only state.

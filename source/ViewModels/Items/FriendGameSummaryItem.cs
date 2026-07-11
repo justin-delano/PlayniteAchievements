@@ -5,7 +5,7 @@ using System;
 using System.Runtime.Serialization;
 using System.Windows.Input;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     public sealed class FriendGameSummaryItem : GameSummaryItem
     {

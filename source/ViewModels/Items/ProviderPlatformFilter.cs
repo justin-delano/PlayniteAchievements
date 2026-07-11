@@ -6,7 +6,7 @@ using System.Linq;
 using PlayniteAchievements.Common;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
-namespace PlayniteAchievements.ViewModels
+namespace PlayniteAchievements.ViewModels.Items
 {
     /// <summary>
     /// A single selectable platform (console) under a provider in the Overview platform filter.
