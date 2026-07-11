@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.PSN.Models;
@@ -446,23 +447,8 @@ namespace PlayniteAchievements.Providers.PSN
                 return string.Empty;
             }
 
-            // Remove common suffixes and special characters, convert to lowercase
-            var normalized = name.ToLowerInvariant()
-                .Replace(":", "")
-                .Replace("-", "")
-                .Replace("_", " ")
-                .Replace("®", "")
-                .Replace("™", "")
-                .Replace("©", "")
-                .Trim();
-
-            // Remove multiple spaces
-            while (normalized.Contains("  "))
-            {
-                normalized = normalized.Replace("  ", " ");
-            }
-
-            return normalized;
+            var normalized = GameNameNormalizer.StripTrademarkSymbols(name);
+            return GameNameNormalizer.CollapseSeparators(normalized).ToLowerInvariant();
         }
 
         /// <summary>

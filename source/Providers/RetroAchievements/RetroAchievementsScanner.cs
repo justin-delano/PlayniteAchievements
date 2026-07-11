@@ -807,31 +807,13 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             if (string.IsNullOrWhiteSpace(name)) return string.Empty;
 
-            // Remove common edition suffixes and trim
-            var normalized = name.Trim();
-
-            // Handle RetroAchievements tilde-wrapped tags: "~Homebrew~", "~Hack~", etc.
-            // Remove any ~Something~ pattern (prefix, suffix, or middle) for matching purposes
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"~[^~]+~", "").Trim();
-
-            // Remove text in parentheses (like "(USA)", "(Europe)", etc.)
-            var parenIndex = normalized.IndexOf('(');
-            if (parenIndex > 0)
-            {
-                normalized = normalized.Substring(0, parenIndex).Trim();
-            }
-
-            // Remove text in brackets (like "[!]", "[T+Eng]", etc.)
-            var bracketIndex = normalized.IndexOf('[');
-            if (bracketIndex > 0)
-            {
-                normalized = normalized.Substring(0, bracketIndex).Trim();
-            }
-
-            // Remove common symbols and extra whitespace
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[\s\-_:~\.]+", " ").Trim();
-
-            return normalized;
+            // Remove RetroAchievements tilde-wrapped tags ("~Homebrew~"), region
+            // parentheticals ("(USA)"), and dump-tag brackets ("[T+Eng]"), then
+            // collapse separator runs for matching purposes.
+            var normalized = GameNameNormalizer.StripTildeTags(name);
+            normalized = GameNameNormalizer.StripParentheticals(normalized);
+            normalized = GameNameNormalizer.StripBrackets(normalized);
+            return GameNameNormalizer.CollapseSeparators(normalized);
         }
     }
 }

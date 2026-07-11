@@ -1,3 +1,4 @@
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Exophase;
@@ -456,14 +457,10 @@ namespace PlayniteAchievements.Providers.RPCS3
         private static readonly Regex PlayStationSuffixRegex = new Regex(
             @"\s*[-:]\s*(PlayStation\s*)?(PS[1234])\s*(Edition|Version|Demo|Beta|Trial|Region\s*Free)?",
             RegexOptions.Compiled | RegexOptions.IgnoreCase);
-        private static readonly Regex TrademarkSymbolRegex = new Regex(@"[®™©]", RegexOptions.Compiled);
-        private static readonly Regex ParentheticalContentRegex = new Regex(@"\([^)]*\)", RegexOptions.Compiled);
-        private static readonly Regex BracketedContentRegex = new Regex(@"\[[^\]]*\]", RegexOptions.Compiled);
         private static readonly Regex FileExtensionSuffixRegex = new Regex(@"\.(iso|pkg|rap)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
         private static readonly Regex NonAlphanumericRegex = new Regex(@"[^a-zA-Z0-9\s]", RegexOptions.Compiled);
         private static readonly Regex DigitLetterBoundaryRegex = new Regex(@"(\d)([a-zA-Z])", RegexOptions.Compiled);
         private static readonly Regex LetterDigitBoundaryRegex = new Regex(@"([a-zA-Z])(\d)", RegexOptions.Compiled);
-        private static readonly Regex WhitespaceRunRegex = new Regex(@"\s+", RegexOptions.Compiled);
 
         internal IReadOnlyList<GameTrophySource> ResolveTrophySourcesForGame(
             Game game,
@@ -1655,14 +1652,11 @@ namespace PlayniteAchievements.Providers.RPCS3
             // Remove common suffixes/prefixes
             var normalized = PlayStationSuffixRegex.Replace(name, "");
 
-            // Remove registered/trademark symbols
-            normalized = TrademarkSymbolRegex.Replace(normalized, "");
+            normalized = GameNameNormalizer.StripTrademarkSymbols(normalized);
 
-            // Remove content in parentheses (region info, language codes, etc.)
-            normalized = ParentheticalContentRegex.Replace(normalized, "");
-
-            // Remove content in brackets
-            normalized = BracketedContentRegex.Replace(normalized, "");
+            // Remove region/language parentheticals and bracket tags
+            normalized = GameNameNormalizer.StripParentheticals(normalized);
+            normalized = GameNameNormalizer.StripBrackets(normalized);
 
             // Remove file extensions
             normalized = FileExtensionSuffixRegex.Replace(normalized, "");
@@ -1675,10 +1669,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             normalized = DigitLetterBoundaryRegex.Replace(normalized, "$1 $2");
             normalized = LetterDigitBoundaryRegex.Replace(normalized, "$1 $2");
 
-            // Normalize whitespace
-            normalized = WhitespaceRunRegex.Replace(normalized, " ").Trim();
-
-            return normalized.ToLowerInvariant().Trim();
+            return GameNameNormalizer.CollapseWhitespace(normalized).ToLowerInvariant();
         }
 
         /// <summary>
@@ -1686,57 +1677,7 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private static int CalculateNameSimilarity(string name1, string name2)
         {
-            if (string.IsNullOrWhiteSpace(name1) || string.IsNullOrWhiteSpace(name2))
-            {
-                return 0;
-            }
-
-            // Exact match
-            if (string.Equals(name1, name2, StringComparison.OrdinalIgnoreCase))
-            {
-                return 100;
-            }
-
-            // Check if one contains the other (handles subtitle differences)
-            if (name1.Contains(name2) || name2.Contains(name1))
-            {
-                var longerLength = Math.Max(name1.Length, name2.Length);
-                var shorterLength = Math.Min(name1.Length, name2.Length);
-                return (int)((double)shorterLength / longerLength * 100);
-            }
-
-            // Word-based matching
-            var words1 = name1.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            var words2 = name2.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            if (words1.Length == 0 || words2.Length == 0)
-            {
-                return 0;
-            }
-
-            var set1 = new HashSet<string>(words1, StringComparer.OrdinalIgnoreCase);
-            var set2 = new HashSet<string>(words2, StringComparer.OrdinalIgnoreCase);
-            var intersection = new HashSet<string>(set1, StringComparer.OrdinalIgnoreCase);
-            intersection.IntersectWith(set2);
-
-            if (intersection.Count == 0)
-            {
-                return 0;
-            }
-
-            // Calculate Jaccard-like similarity with bonus for matching key words
-            var union = new HashSet<string>(set1, StringComparer.OrdinalIgnoreCase);
-            union.UnionWith(set2);
-
-            var jaccardScore = (double)intersection.Count / union.Count * 100;
-
-            // Bonus if the first word matches (usually the main title)
-            if (string.Equals(words1[0], words2[0], StringComparison.OrdinalIgnoreCase))
-            {
-                jaccardScore = Math.Min(100, jaccardScore * 1.3);
-            }
-
-            return (int)jaccardScore;
+            return GameNameNormalizer.ComputeMatchScore(name1, name2);
         }
 
         /// <summary>
