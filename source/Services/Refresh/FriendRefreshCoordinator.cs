@@ -647,56 +647,9 @@ namespace PlayniteAchievements.Services.Refresh
             {
                 context.CanContinue = false;
             }
-            else
-            {
-                PopulateCachedOwnershipPresence(context, options);
-            }
 
             progress?.ReportProviderRosterLoaded(providerKey);
             return context;
-        }
-
-        private void PopulateCachedOwnershipPresence(
-            FriendProviderRefreshContext context,
-            FriendRefreshOptions options)
-        {
-            if (context == null ||
-                options?.Scope != FriendRefreshScope.Recent ||
-                FriendRefreshWorkPolicy.HasExplicitProviderGameTargets(options))
-            {
-                return;
-            }
-
-            var friendIds = (context.ScopedFriends ?? new List<FriendIdentity>())
-                .Where(friend => !string.IsNullOrWhiteSpace(friend?.ExternalUserId))
-                .Select(friend => friend.ExternalUserId.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            if (friendIds.Count == 0)
-            {
-                return;
-            }
-
-            try
-            {
-                var presence = _friendCache.LoadFriendOwnershipPresence(context.ProviderKey, friendIds) ??
-                               new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-                foreach (var entry in presence)
-                {
-                    if (entry.Value && !string.IsNullOrWhiteSpace(entry.Key))
-                    {
-                        context.FriendsWithCachedOwnership.Add(entry.Key.Trim());
-                    }
-                }
-
-                _logger?.Debug(
-                    $"Recent friend ownership cache for {context.ProviderKey}: cached={context.FriendsWithCachedOwnership.Count}, missing={Math.Max(0, friendIds.Count - context.FriendsWithCachedOwnership.Count)}.");
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"Failed to load recent friend ownership cache presence for {context.ProviderKey}; ownership bootstrap will refresh all scoped friends.");
-                context.FriendsWithCachedOwnership.Clear();
-            }
         }
 
         private async Task RefreshOwnershipByLogicalFriendAsync(
@@ -791,6 +744,7 @@ namespace PlayniteAchievements.Services.Refresh
                     payloadLock,
                     context.OwnershipSnapshots,
                     context.RecencyFreshKeys,
+                    context.OwnershipFetchedFriendIds,
                     cancel).ConfigureAwait(false);
                 if (!shouldContinue)
                 {
@@ -1029,12 +983,27 @@ namespace PlayniteAchievements.Services.Refresh
                             BuildRecencyGameKey(candidate.Friend?.ExternalUserId, GetProviderGameCacheKey(candidate))))
                         .ToList();
                     context.CandidatesSkippedRecencyFresh += Math.Max(0, beforeRecencyFilter - candidates.Count);
+
+                    // Fail closed: without a fresh ownership snapshot for a friend, none of their games
+                    // can be recency-confirmed, so a fetch hiccup would otherwise dump the friend's whole
+                    // cached backlog into the scrape queue. Explicit game targets are never dropped.
+                    if (!FriendRefreshWorkPolicy.HasExplicitProviderGameTargets(options))
+                    {
+                        var beforeOwnershipFilter = candidates.Count;
+                        candidates = candidates
+                            .Where(candidate =>
+                                !string.IsNullOrWhiteSpace(candidate.Friend?.ExternalUserId) &&
+                                context.OwnershipFetchedFriendIds.Contains(candidate.Friend.ExternalUserId.Trim()))
+                            .ToList();
+                        context.CandidatesSkippedOwnershipUnavailable +=
+                            Math.Max(0, beforeOwnershipFilter - candidates.Count);
+                    }
                 }
 
                 context.CandidatesQueued += candidates.Count;
                 payload.FriendSummary.CandidatesLoaded += candidates.Count;
                 _logger?.Debug(
-                    $"Loaded {context.ProviderKey} friend achievement scrape candidates: raw={rawCandidates.Count}, queued={candidates.Count}, skippedAlreadyProbed={context.CandidatesSkippedAlreadyProbed}, skippedRecencyFresh={context.CandidatesSkippedRecencyFresh}, scope={options.Scope}.");
+                    $"Loaded {context.ProviderKey} friend achievement scrape candidates: raw={rawCandidates.Count}, queued={candidates.Count}, skippedAlreadyProbed={context.CandidatesSkippedAlreadyProbed}, skippedRecencyFresh={context.CandidatesSkippedRecencyFresh}, skippedOwnershipUnavailable={context.CandidatesSkippedOwnershipUnavailable}, scope={options.Scope}.");
 
                 if (!context.Preparation.CanRefreshAchievements)
                 {
@@ -1358,6 +1327,7 @@ namespace PlayniteAchievements.Services.Refresh
             object payloadLock,
             List<FriendOwnershipSnapshot> ownershipSnapshots,
             HashSet<string> recencyFreshKeys,
+            HashSet<string> ownershipFetchedFriendIds,
             CancellationToken cancel)
         {
             if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
@@ -1387,6 +1357,16 @@ namespace PlayniteAchievements.Services.Refresh
                 }
 
                 return true;
+            }
+
+            // Record the successful fetch so Recent's fail-closed candidate filter knows this
+            // friend's recency signals are current (see LoadAchievementWorkItems).
+            if (ownershipFetchedFriendIds != null)
+            {
+                lock (ownershipFetchedFriendIds)
+                {
+                    ownershipFetchedFriendIds.Add(friend.ExternalUserId.Trim());
+                }
             }
 
             lock (payloadLock)
@@ -2593,14 +2573,6 @@ namespace PlayniteAchievements.Services.Refresh
                 return false;
             }
 
-            if (options?.Scope == FriendRefreshScope.Recent &&
-                !FriendRefreshWorkPolicy.HasExplicitProviderGameTargets(options) &&
-                !string.IsNullOrWhiteSpace(friend.ExternalUserId) &&
-                context.FriendsWithCachedOwnership.Contains(friend.ExternalUserId.Trim()))
-            {
-                return false;
-            }
-
             return true;
         }
 
@@ -3135,11 +3107,10 @@ namespace PlayniteAchievements.Services.Refresh
             public List<FriendOwnershipSnapshot> OwnershipSnapshots { get; set; }
             public HashSet<string> ProbedProviderOnlyAchievementKeys { get; } =
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            public HashSet<string> FriendsWithCachedOwnership { get; } =
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             public int RawCandidatesLoaded { get; set; }
             public int CandidatesSkippedAlreadyProbed { get; set; }
             public int CandidatesSkippedRecencyFresh { get; set; }
+            public int CandidatesSkippedOwnershipUnavailable { get; set; }
             public int CandidatesQueued { get; set; }
 
             // Full-scope only: the unowned-definition plan (which provider games are due for a
@@ -3151,6 +3122,12 @@ namespace PlayniteAchievements.Services.Refresh
             // unchanged since the last successful scrape (Steam: playtime equal; RA/Exophase: no newer
             // last-played/unlock). Populated at the ownership step and used by LoadAchievementWorkItems to SKIP.
             public HashSet<string> RecencyFreshKeys { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Recent-scope only: friends whose owned-games fetch succeeded this run. Recent scrapes
+            // fail closed: candidates for friends without a fresh ownership snapshot are dropped
+            // rather than scraped blind (a fetch hiccup must not dump the whole cached backlog).
+            public HashSet<string> OwnershipFetchedFriendIds { get; } =
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         }
 
         private sealed class LogicalFriendRefreshGroup
@@ -3272,9 +3249,10 @@ namespace PlayniteAchievements.Services.Refresh
                 var queued = contexts?.Sum(context => context?.CandidatesQueued ?? 0) ?? 0;
                 var probed = contexts?.Sum(context => context?.CandidatesSkippedAlreadyProbed ?? 0) ?? 0;
                 var recency = contexts?.Sum(context => context?.CandidatesSkippedRecencyFresh ?? 0) ?? 0;
+                var ownershipUnavailable = contexts?.Sum(context => context?.CandidatesSkippedOwnershipUnavailable ?? 0) ?? 0;
                 Log(
                     "friend.loadCandidates",
-                    $"ms={Elapsed(timer)} raw={raw} queued={queued} workItems={workItems} skippedAlreadyProbed={probed} skippedRecencyFresh={recency}");
+                    $"ms={Elapsed(timer)} raw={raw} queued={queued} workItems={workItems} skippedAlreadyProbed={probed} skippedRecencyFresh={recency} skippedOwnershipUnavailable={ownershipUnavailable}");
             }
 
             public void LogPhase(Stopwatch timer, string phase, string detail)
