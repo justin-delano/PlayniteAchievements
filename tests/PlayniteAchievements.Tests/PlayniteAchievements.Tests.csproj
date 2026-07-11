@@ -310,7 +310,7 @@
     <Compile Include="..\..\source\Services\ThemeIntegration\LibraryRuntimeStateBuilder.cs" Link="Source\Services\ThemeIntegration\LibraryRuntimeStateBuilder.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\SelectedGameRuntimeStateBuilder.cs" Link="Source\Services\ThemeIntegration\SelectedGameRuntimeStateBuilder.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeFilterEvaluator.cs" Link="Source\Services\ThemeIntegration\DynamicThemeFilterEvaluator.cs" />
-    <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeFilterExpression.cs" Link="Source\Services\ThemeIntegration\DynamicThemeFilterExpression.cs" />
+    <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeFilterExpression.cs" Link="Source\Models\ThemeIntegration\DynamicThemeFilterExpression.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeLabels.cs" Link="Source\Services\ThemeIntegration\DynamicThemeLabels.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeOptionFactory.cs" Link="Source\Services\ThemeIntegration\DynamicThemeOptionFactory.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" Link="Source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" />
