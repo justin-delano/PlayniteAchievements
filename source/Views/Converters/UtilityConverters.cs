@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -108,6 +109,13 @@ namespace PlayniteAchievements.Views.Converters
     /// </summary>
     public class ProviderIconConverter : IMultiValueConverter
     {
+        // Cache of colored provider icon images keyed by geometry resource key plus color hex
+        // (the rendered image depends on both). Geo* geometry resources are defined statically
+        // and are not rewritten at runtime. Only successful resolutions are cached so
+        // late-loading resource dictionaries can still be found. Converters run on the UI
+        // thread only, so an unlocked Dictionary is acceptable.
+        private static readonly Dictionary<string, DrawingImage> IconImageCache = new Dictionary<string, DrawingImage>();
+
         public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
         {
             if (values.Length >= 2 &&
@@ -120,6 +128,12 @@ namespace PlayniteAchievements.Views.Converters
                 {
                     // Try to find a "Geo" + iconName resource (e.g., GeoSteam for ProviderIconSteam)
                     string geoKey = "Geo" + iconKey.Replace("ProviderIcon", "");
+                    string cacheKey = geoKey + "|" + colorHex;
+
+                    if (IconImageCache.TryGetValue(cacheKey, out var cachedImage))
+                    {
+                        return cachedImage;
+                    }
 
                     var geometry = Application.Current.TryFindResource(geoKey) as Geometry;
                     if (geometry != null)
@@ -135,6 +149,7 @@ namespace PlayniteAchievements.Views.Converters
                                 Brush = new SolidColorBrush(color)
                             };
                             drawingImage.Freeze();
+                            IconImageCache[cacheKey] = drawingImage;
                             return drawingImage;
                         }
                     }
@@ -195,6 +210,74 @@ namespace PlayniteAchievements.Views.Converters
     }
 
     /// <summary>
+    /// Shared ConvertBack logic for the nullable numeric text converters. Blank input maps to
+    /// null, unparseable input maps to Binding.DoNothing, and a ConverterParameter minimum
+    /// clamps positive values from below. Numeric parsing stays type-specific via the supplied
+    /// TryParse implementation (int and double accept different formats).
+    /// </summary>
+    internal static class NullableNumericTextHelper
+    {
+        internal delegate bool TryParseNumber<T>(string text, CultureInfo culture, out T value);
+
+        internal static bool TryParseDouble(string text, CultureInfo culture, out double value)
+        {
+            return double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, culture, out value);
+        }
+
+        internal static bool TryParseInt(string text, CultureInfo culture, out int value)
+        {
+            return int.TryParse(text, NumberStyles.Integer | NumberStyles.AllowThousands, culture, out value);
+        }
+
+        internal static object ConvertBack<T>(object value, object parameter, CultureInfo culture, TryParseNumber<T> tryParse)
+            where T : struct, IComparable<T>
+        {
+            var text = value as string;
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            if (tryParse(text, culture, out var parsed))
+            {
+                var minimum = ParseMinimum(parameter, culture, tryParse);
+                if (minimum.CompareTo(default(T)) > 0 && parsed.CompareTo(default(T)) > 0 && parsed.CompareTo(minimum) < 0)
+                {
+                    return minimum;
+                }
+
+                return parsed;
+            }
+
+            return Binding.DoNothing;
+        }
+
+        private static T ParseMinimum<T>(object parameter, CultureInfo culture, TryParseNumber<T> tryParse)
+            where T : struct
+        {
+            if (parameter == null)
+            {
+                return default(T);
+            }
+
+            var parameterText = parameter.ToString();
+            if (string.IsNullOrWhiteSpace(parameterText))
+            {
+                return default(T);
+            }
+
+            if (tryParse(parameterText, CultureInfo.InvariantCulture, out var invariantValue))
+            {
+                return invariantValue;
+            }
+
+            return tryParse(parameterText, culture, out var cultureValue)
+                ? cultureValue
+                : default(T);
+        }
+    }
+
+    /// <summary>
     /// Converts a TextBox string to nullable double, treating blank input as null.
     /// This is used for settings fields where an empty string means "unlimited".
     /// </summary>
@@ -212,47 +295,7 @@ namespace PlayniteAchievements.Views.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var text = value as string;
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return null;
-            }
-
-            if (double.TryParse(text, NumberStyles.Float | NumberStyles.AllowThousands, culture, out var parsed))
-            {
-                var minimum = ParseMinimum(parameter, culture);
-                if (minimum > 0 && parsed > 0 && parsed < minimum)
-                {
-                    return minimum;
-                }
-
-                return parsed;
-            }
-
-            return Binding.DoNothing;
-        }
-
-        private static double ParseMinimum(object parameter, CultureInfo culture)
-        {
-            if (parameter == null)
-            {
-                return 0;
-            }
-
-            var parameterText = parameter.ToString();
-            if (string.IsNullOrWhiteSpace(parameterText))
-            {
-                return 0;
-            }
-
-            if (double.TryParse(parameterText, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var invariantValue))
-            {
-                return invariantValue;
-            }
-
-            return double.TryParse(parameterText, NumberStyles.Float | NumberStyles.AllowThousands, culture, out var cultureValue)
-                ? cultureValue
-                : 0;
+            return NullableNumericTextHelper.ConvertBack<double>(value, parameter, culture, NullableNumericTextHelper.TryParseDouble);
         }
     }
 
@@ -273,47 +316,7 @@ namespace PlayniteAchievements.Views.Converters
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            var text = value as string;
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return null;
-            }
-
-            if (int.TryParse(text, NumberStyles.Integer | NumberStyles.AllowThousands, culture, out var parsed))
-            {
-                var minimum = ParseMinimum(parameter, culture);
-                if (minimum > 0 && parsed > 0 && parsed < minimum)
-                {
-                    return minimum;
-                }
-
-                return parsed;
-            }
-
-            return Binding.DoNothing;
-        }
-
-        private static int ParseMinimum(object parameter, CultureInfo culture)
-        {
-            if (parameter == null)
-            {
-                return 0;
-            }
-
-            var parameterText = parameter.ToString();
-            if (string.IsNullOrWhiteSpace(parameterText))
-            {
-                return 0;
-            }
-
-            if (int.TryParse(parameterText, NumberStyles.Integer | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out var invariantValue))
-            {
-                return invariantValue;
-            }
-
-            return int.TryParse(parameterText, NumberStyles.Integer | NumberStyles.AllowThousands, culture, out var cultureValue)
-                ? cultureValue
-                : 0;
+            return NullableNumericTextHelper.ConvertBack<int>(value, parameter, culture, NullableNumericTextHelper.TryParseInt);
         }
     }
 
