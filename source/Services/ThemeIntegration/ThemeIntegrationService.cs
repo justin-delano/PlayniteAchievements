@@ -589,8 +589,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     RequestUpdate(id);
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, "[ThemeIntegration] Failed to request selected-game theme update after cache invalidation.");
             }
 
             _friendsOverviewDataCoordinator?.Invalidate();
@@ -613,8 +614,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     return selectedGame.Id;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, "[ThemeIntegration] Failed to read selected game from settings.");
             }
 
             return GetSingleSelectedGameId();
@@ -1163,12 +1165,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                     if (singleGameId.HasValue)
                     {
-                        try { RequestUpdate(singleGameId.Value); } catch { }
+                        try { RequestUpdate(singleGameId.Value); } catch (Exception ex) { _logger?.Debug(ex, "[ThemeIntegration] Failed to request theme update after fullscreen refresh."); }
                     }
 
-                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch (Exception ex) { _logger?.Debug(ex, "[ThemeIntegration] Failed to request fullscreen state refresh after refresh completion."); }
 
-                    try { onCompleted?.Invoke(success); } catch { }
+                    try { onCompleted?.Invoke(success); } catch (Exception ex) { _logger?.Debug(ex, "[ThemeIntegration] Refresh completion callback failed."); }
                 });
         }
 
@@ -1231,10 +1233,10 @@ namespace PlayniteAchievements.Services.ThemeIntegration
 
                     if (gameIdForThemeUpdate.HasValue)
                     {
-                        try { RequestUpdate(gameIdForThemeUpdate.Value); } catch { }
+                        try { RequestUpdate(gameIdForThemeUpdate.Value); } catch (Exception ex) { _logger?.Debug(ex, "[ThemeIntegration] Failed to request theme update after refresh."); }
                     }
 
-                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch { }
+                    try { if (IsFullscreen() && _fullscreenInitialized) RequestRefresh(); } catch (Exception ex) { _logger?.Debug(ex, "[ThemeIntegration] Failed to request fullscreen state refresh after refresh completion."); }
                 });
         }
 
@@ -1308,9 +1310,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         {
                             if (gameIdForThemeUpdate.HasValue)
                             {
-                                try { RequestUpdate(gameIdForThemeUpdate.Value); } catch { }
+                                try { RequestUpdate(gameIdForThemeUpdate.Value); } catch (Exception ex) { _logger?.Debug(ex, "[ThemeIntegration] Failed to request theme update after refresh."); }
                             }
-                            try { if (IsFullscreen()) RequestRefresh(); } catch { }
+                            try { if (IsFullscreen()) RequestRefresh(); } catch (Exception ex) { _logger?.Debug(ex, "[ThemeIntegration] Failed to request fullscreen state refresh after refresh completion."); }
                         }
                     }
                 });

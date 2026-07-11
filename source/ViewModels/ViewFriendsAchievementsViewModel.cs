@@ -656,8 +656,9 @@ namespace PlayniteAchievements.ViewModels
                     return game.Name;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, $"Failed to resolve game name for {_gameId}.");
             }
 
             return L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "Friends Achievements");

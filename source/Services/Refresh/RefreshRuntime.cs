@@ -547,7 +547,7 @@ namespace PlayniteAchievements.Services
                 // Notify refresh completion subscribers (e.g., auth failure notifications).
                 if (!wasCanceled && payload != null)
                 {
-                    try { _onRefreshCompleted?.Invoke(payload); } catch { }
+                    try { _onRefreshCompleted?.Invoke(payload); } catch (Exception ex) { _logger?.Debug(ex, "Refresh completion callback failed."); }
                 }
 
                 _refreshProgressReporter.Reset();
@@ -1224,8 +1224,9 @@ namespace PlayniteAchievements.Services
                     data.ProviderKey = provider?.ProviderKey;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, "Failed to backfill provider key on refreshed game data.");
             }
 
             var unlockedIconOverrides = GameCustomDataLookup.GetAchievementUnlockedIconOverrides(data.PlayniteGameId.Value);
@@ -1266,7 +1267,7 @@ namespace PlayniteAchievements.Services
                 FriendRefresh.PromoteMatchingProviderOnlyFriendGame(provider, data);
 
                 // Fire per-game refresh event for amortized tag syncing
-                try { GameRefreshed?.Invoke(game.Id); } catch { }
+                try { GameRefreshed?.Invoke(game.Id); } catch (Exception ex) { _logger?.Debug(ex, "GameRefreshed event handler failed."); }
             }
         }
 

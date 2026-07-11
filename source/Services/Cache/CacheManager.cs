@@ -166,8 +166,9 @@ namespace PlayniteAchievements.Services
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
-            catch
+            catch (Exception dialogEx)
             {
+                _logger?.Debug(dialogEx, "[Cache] Failed to show cache startup-failure dialog.");
             }
         }
 

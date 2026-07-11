@@ -777,9 +777,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                             games = response.GameList;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         // Failed to parse
+                        _logger?.Debug(ex, "[RA] Failed to parse game list response in both array and object formats.");
                     }
                 }
 

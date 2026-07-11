@@ -236,8 +236,9 @@ namespace PlayniteAchievements.Providers.Manual
                 {
                     _sourceAuthContextReceivers[i]?.EndRefreshAuthContext(context);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger?.Debug(ex, "Manual source receiver failed while ending refresh auth context.");
                 }
             }
 

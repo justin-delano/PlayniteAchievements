@@ -194,8 +194,9 @@ namespace PlayniteAchievements.Services.UI
                 window.Owner = owner ?? _api?.Dialogs?.GetCurrentAppWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, "Failed to set owner for color picker window.");
             }
 
             AttachWindowPlacement(window, ColorPickerWindowPlacementKey, isFullscreen: false);
@@ -503,8 +504,9 @@ namespace PlayniteAchievements.Services.UI
                             text: report.Message,
                             current: Math.Max(0, Math.Min(100, percent)));
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        _logger?.Debug(ex, "Failed to update global progress from rebuild progress report.");
                     }
                 };
 
@@ -1066,6 +1068,7 @@ namespace PlayniteAchievements.Services.UI
                 }
                 catch
                 {
+                    // Static best-effort focus fallback; no logger available here.
                 }
             }
         }
@@ -1315,8 +1318,9 @@ namespace PlayniteAchievements.Services.UI
                         window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger?.Debug(ex, "Failed to set owner for test view window.");
                 }
 
                 window.ShowDialog();
@@ -1375,8 +1379,9 @@ namespace PlayniteAchievements.Services.UI
                         window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger?.Debug(ex, "Failed to set owner for test view window.");
                 }
 
                 window.ShowDialog();
