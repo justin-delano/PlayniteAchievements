@@ -276,21 +276,7 @@ namespace PlayniteAchievements.Providers.GOG
                 ProviderRegistry.Write(gogSettings, persistToDisk: true);
             }
 
-            try
-            {
-                _api.MainView.UIDispatcher.Invoke(() =>
-                {
-                    using (var view = _api.WebViews.CreateOffscreenView())
-                    {
-                        view.DeleteDomainCookies(".gog.com");
-                        view.DeleteDomainCookies("gog.com");
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[GogAuth] Failed to clear GOG cookies from CEF.");
-            }
+            _api.DeleteDomainCookies(_logger, "[GogAuth]", ".gog.com", "gog.com");
         }
 
         // ---------------------------------------------------------------------
@@ -301,22 +287,8 @@ namespace PlayniteAchievements.Providers.GOG
         {
             using (PerfScope.Start(_logger, "GOG.CallAccountInfoApiAsync", thresholdMs: 50, context: $"timeoutMs={timeoutMs}"))
             {
-                var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
-                {
-                    using (var view = _api.WebViews.CreateOffscreenView())
-                    {
-                        await view.NavigateAndWaitAsync(UrlAccountInfo, timeoutMs: timeoutMs);
-                        var responseText = await view.GetPageTextAsync();
-                        if (TryParseAccountInfo(responseText, out var response))
-                        {
-                            return response;
-                        }
-                    }
-                    return null;
-                });
-
-                var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
-                return await responseTask.ConfigureAwait(false);
+                var responseText = await _api.GetPageTextViaOffscreenViewAsync(UrlAccountInfo, timeoutMs).ConfigureAwait(false);
+                return TryParseAccountInfo(responseText, out var response) ? response : null;
             }
         }
 

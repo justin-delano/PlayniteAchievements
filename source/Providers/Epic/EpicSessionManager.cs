@@ -298,23 +298,13 @@ namespace PlayniteAchievements.Providers.Epic
             _logger?.Info("[EpicAuth] Clearing session.");
 
             // Clear cookies from CEF
-            try
-            {
-                _api.MainView.UIDispatcher.Invoke(() =>
-                {
-                    using (var view = _api.WebViews.CreateOffscreenView())
-                    {
-                        view.DeleteDomainCookies("epicgames.com");
-                        view.DeleteDomainCookies(".epicgames.com");
-                        view.DeleteDomainCookies(".store.epicgames.com");
-                        view.DeleteDomainCookies("account-public-service-prod03.ol.epicgames.com");
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[EpicAuth] Failed to clear Epic cookies.");
-            }
+            _api.DeleteDomainCookies(
+                _logger,
+                "[EpicAuth]",
+                "epicgames.com",
+                ".epicgames.com",
+                ".store.epicgames.com",
+                "account-public-service-prod03.ol.epicgames.com");
 
             // Clear persisted tokens
             var epicSettings = GetEpicSettings();
@@ -657,35 +647,29 @@ namespace PlayniteAchievements.Providers.Epic
         {
             using (PerfScope.Start(_logger, "Epic.TryGetAuthorizationCodeFromSessionAsync", thresholdMs: 50))
             {
-                var dispatchOperation = _api.MainView.UIDispatcher.InvokeAsync(async () =>
+                return await _api.WithOffscreenViewAsync(async view =>
                 {
-                    using (var view = _api.WebViews.CreateOffscreenView())
+                    try
                     {
-                        try
-                        {
-                            ct.ThrowIfCancellationRequested();
-                            await view.NavigateAndWaitAsync(UrlAuthCode, timeoutMs: 12000);
+                        ct.ThrowIfCancellationRequested();
+                        await view.NavigateAndWaitAsync(UrlAuthCode, timeoutMs: 12000);
 
-                            var source = await view.GetPageSourceAsync().ConfigureAwait(false);
-                            var code = TryExtractAuthorizationCode(source);
-                            if (!string.IsNullOrWhiteSpace(code))
-                            {
-                                return code;
-                            }
-
-                            var text = await view.GetPageTextAsync().ConfigureAwait(false);
-                            return TryExtractAuthorizationCode(text);
-                        }
-                        catch (Exception ex)
+                        var source = await view.GetPageSourceAsync().ConfigureAwait(false);
+                        var code = TryExtractAuthorizationCode(source);
+                        if (!string.IsNullOrWhiteSpace(code))
                         {
-                            _logger?.Debug(ex, "[EpicAuth] Offscreen auth-code probe failed.");
-                            return null;
+                            return code;
                         }
+
+                        var text = await view.GetPageTextAsync().ConfigureAwait(false);
+                        return TryExtractAuthorizationCode(text);
                     }
-                });
-
-                var operationTask = await dispatchOperation.Task.ConfigureAwait(false);
-                return await operationTask.ConfigureAwait(false);
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "[EpicAuth] Offscreen auth-code probe failed.");
+                        return null;
+                    }
+                }).ConfigureAwait(false);
             }
         }
 
