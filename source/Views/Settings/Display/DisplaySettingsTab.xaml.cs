@@ -58,7 +58,7 @@ namespace PlayniteAchievements.Views.Settings.Display
                     ResourceProvider.GetString("LOCPlayAch_Settings_Display_OverviewSection"),
                     iconGlyph: "",
                     viewFactory: () => _overviewSection =
-                        new OverviewDisplaySection(settings)),
+                        new OverviewDisplaySection()),
                 new SettingsNavigationItem(
                     "FriendsOverview",
                     ResourceProvider.GetString("LOCPlayAch_Settings_Display_FriendsOverviewSection"),
