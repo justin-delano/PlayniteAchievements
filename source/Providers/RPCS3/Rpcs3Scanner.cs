@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -450,6 +451,19 @@ namespace PlayniteAchievements.Providers.RPCS3
         private static readonly System.Text.RegularExpressions.Regex QuotedPathPattern =
             new System.Text.RegularExpressions.Regex("\"([^\"]+)\"|'([^']+)'",
                 System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        // Patterns used by NormalizeGameName.
+        private static readonly Regex PlayStationSuffixRegex = new Regex(
+            @"\s*[-:]\s*(PlayStation\s*)?(PS[1234])\s*(Edition|Version|Demo|Beta|Trial|Region\s*Free)?",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex TrademarkSymbolRegex = new Regex(@"[®™©]", RegexOptions.Compiled);
+        private static readonly Regex ParentheticalContentRegex = new Regex(@"\([^)]*\)", RegexOptions.Compiled);
+        private static readonly Regex BracketedContentRegex = new Regex(@"\[[^\]]*\]", RegexOptions.Compiled);
+        private static readonly Regex FileExtensionSuffixRegex = new Regex(@"\.(iso|pkg|rap)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex NonAlphanumericRegex = new Regex(@"[^a-zA-Z0-9\s]", RegexOptions.Compiled);
+        private static readonly Regex DigitLetterBoundaryRegex = new Regex(@"(\d)([a-zA-Z])", RegexOptions.Compiled);
+        private static readonly Regex LetterDigitBoundaryRegex = new Regex(@"([a-zA-Z])(\d)", RegexOptions.Compiled);
+        private static readonly Regex WhitespaceRunRegex = new Regex(@"\s+", RegexOptions.Compiled);
 
         internal IReadOnlyList<GameTrophySource> ResolveTrophySourcesForGame(
             Game game,
@@ -1639,34 +1653,30 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             // Remove common suffixes/prefixes
-            var normalized = System.Text.RegularExpressions.Regex.Replace(
-                name,
-                @"\s*[-:]\s*(PlayStation\s*)?(PS[1234])\s*(Edition|Version|Demo|Beta|Trial|Region\s*Free)?",
-                "",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var normalized = PlayStationSuffixRegex.Replace(name, "");
 
             // Remove registered/trademark symbols
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[®™©]", "");
+            normalized = TrademarkSymbolRegex.Replace(normalized, "");
 
             // Remove content in parentheses (region info, language codes, etc.)
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\([^)]*\)", "");
+            normalized = ParentheticalContentRegex.Replace(normalized, "");
 
             // Remove content in brackets
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\[[^\]]*\]", "");
+            normalized = BracketedContentRegex.Replace(normalized, "");
 
             // Remove file extensions
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\.(iso|pkg|rap)$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            normalized = FileExtensionSuffixRegex.Replace(normalized, "");
 
             // Remove special characters, keep alphanumeric and spaces
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[^a-zA-Z0-9\s]", " ");
+            normalized = NonAlphanumericRegex.Replace(normalized, " ");
 
             // Separate digits from letters (e.g., "PlayStation3" -> "PlayStation 3")
             // This handles cases like "PlayStation3 Edition" vs "PlayStation 3 Edition"
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"(\d)([a-zA-Z])", "$1 $2");
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"([a-zA-Z])(\d)", "$1 $2");
+            normalized = DigitLetterBoundaryRegex.Replace(normalized, "$1 $2");
+            normalized = LetterDigitBoundaryRegex.Replace(normalized, "$1 $2");
 
             // Normalize whitespace
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\s+", " ").Trim();
+            normalized = WhitespaceRunRegex.Replace(normalized, " ").Trim();
 
             return normalized.ToLowerInvariant().Trim();
         }
