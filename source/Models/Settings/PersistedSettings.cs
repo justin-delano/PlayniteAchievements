@@ -1461,11 +1461,12 @@ namespace PlayniteAchievements.Models.Settings
 
         public GridOptionsCatalog GridOptions
         {
-            get => _gridOptions ?? (_gridOptions = new GridOptionsCatalog());
+            get => AttachGridOptionsBridge(_gridOptions ?? (_gridOptions = new GridOptionsCatalog()));
             set
             {
                 if (SetValueAndReturn(ref _gridOptions, value?.Clone() ?? new GridOptionsCatalog()))
                 {
+                    AttachGridOptionsBridge(_gridOptions);
                     RebindStartPageGridSettings();
                 }
             }

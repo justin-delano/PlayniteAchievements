@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 
 namespace PlayniteAchievements.Models.Settings
 {
@@ -438,6 +440,11 @@ namespace PlayniteAchievements.Models.Settings
 
     public sealed class GridOptionsCatalog : PlayniteAchievements.Common.ObservableObject
     {
+        internal const string AchievementKindName = "Achievement";
+        internal const string GameSummariesKindName = "GameSummaries";
+        internal const string FriendSummariesKindName = "FriendSummaries";
+        internal const string CategorySummariesKindName = "CategorySummaries";
+
         private Dictionary<string, AchievementGridOptions> _achievement =
             new Dictionary<string, AchievementGridOptions>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, GameSummaryGridOptions> _gameSummaries =
@@ -446,6 +453,17 @@ namespace PlayniteAchievements.Models.Settings
             new Dictionary<string, FriendSummaryGridOptions>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, CategorySummaryGridOptions> _categorySummaries =
             new Dictionary<string, CategorySummaryGridOptions>(StringComparer.OrdinalIgnoreCase);
+
+        private readonly Dictionary<PlayniteAchievements.Common.ObservableObject, PropertyChangedEventHandler> _optionSubscriptions =
+            new Dictionary<PlayniteAchievements.Common.ObservableObject, PropertyChangedEventHandler>();
+
+        /// <summary>
+        /// Raised when a property of any option object stored in the catalog changes.
+        /// Carries (kind name, surface key, member name). Kind names are
+        /// <see cref="AchievementKindName"/>, <see cref="GameSummariesKindName"/>,
+        /// <see cref="FriendSummariesKindName"/> and <see cref="CategorySummariesKindName"/>.
+        /// </summary>
+        internal event Action<string, string, string> OptionChanged;
 
         public GridOptionsCatalog()
         {
@@ -461,6 +479,7 @@ namespace PlayniteAchievements.Models.Settings
             }
             set
             {
+                DetachOptions(_achievement);
                 SetValue(ref _achievement, Normalize(value, item => item?.Clone()));
                 EnsureDefaults();
             }
@@ -475,6 +494,7 @@ namespace PlayniteAchievements.Models.Settings
             }
             set
             {
+                DetachOptions(_gameSummaries);
                 SetValue(ref _gameSummaries, Normalize(value, item => item?.Clone()));
                 EnsureDefaults();
             }
@@ -489,6 +509,7 @@ namespace PlayniteAchievements.Models.Settings
             }
             set
             {
+                DetachOptions(_friendSummaries);
                 SetValue(ref _friendSummaries, Normalize(value, item => item?.Clone()));
                 EnsureDefaults();
             }
@@ -503,6 +524,7 @@ namespace PlayniteAchievements.Models.Settings
             }
             set
             {
+                DetachOptions(_categorySummaries);
                 SetValue(ref _categorySummaries, Normalize(value, item => item?.Clone()));
                 EnsureDefaults();
             }
@@ -516,6 +538,7 @@ namespace PlayniteAchievements.Models.Settings
             {
                 options = CreateDefaultAchievement(key);
                 _achievement[key] = options;
+                AttachOptions(AchievementKindName, key, options);
             }
 
             return options;
@@ -529,6 +552,7 @@ namespace PlayniteAchievements.Models.Settings
             {
                 options = CreateDefaultGameSummaries(key);
                 _gameSummaries[key] = options;
+                AttachOptions(GameSummariesKindName, key, options);
             }
 
             return options;
@@ -542,6 +566,7 @@ namespace PlayniteAchievements.Models.Settings
             {
                 options = CreateDefaultFriendSummaries(key);
                 _friendSummaries[key] = options;
+                AttachOptions(FriendSummariesKindName, key, options);
             }
 
             return options;
@@ -555,6 +580,7 @@ namespace PlayniteAchievements.Models.Settings
             {
                 options = new CategorySummaryGridOptions();
                 _categorySummaries[key] = options;
+                AttachOptions(CategorySummariesKindName, key, options);
             }
 
             return options;
@@ -676,6 +702,81 @@ namespace PlayniteAchievements.Models.Settings
             Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.FriendsOverview, () => new CategorySummaryGridOptions());
             Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.ViewFriendsAchievements, () => new CategorySummaryGridOptions());
             Ensure(_categorySummaries, GridOptionKeys.CategorySummaries.DesktopTheme, () => new CategorySummaryGridOptions());
+
+            RefreshOptionSubscriptions();
+        }
+
+        /// <summary>
+        /// Subscribes to every option object currently stored in the catalog and prunes
+        /// subscriptions for objects that were replaced (e.g. by in-place JSON population).
+        /// Idempotent; runs after every <see cref="EnsureDefaults"/> so objects that enter the
+        /// catalog through any path are observed.
+        /// </summary>
+        private void RefreshOptionSubscriptions()
+        {
+            AttachOptionsAll(AchievementKindName, _achievement);
+            AttachOptionsAll(GameSummariesKindName, _gameSummaries);
+            AttachOptionsAll(FriendSummariesKindName, _friendSummaries);
+            AttachOptionsAll(CategorySummariesKindName, _categorySummaries);
+
+            var liveCount = _achievement.Count + _gameSummaries.Count + _friendSummaries.Count + _categorySummaries.Count;
+            if (_optionSubscriptions.Count > liveCount)
+            {
+                PruneStaleSubscriptions();
+            }
+        }
+
+        private void AttachOptionsAll<T>(string kindName, Dictionary<string, T> options)
+            where T : PlayniteAchievements.Common.ObservableObject
+        {
+            foreach (var pair in options)
+            {
+                AttachOptions(kindName, pair.Key, pair.Value);
+            }
+        }
+
+        private void AttachOptions(string kindName, string surfaceKey, PlayniteAchievements.Common.ObservableObject options)
+        {
+            if (options == null || _optionSubscriptions.ContainsKey(options))
+            {
+                return;
+            }
+
+            PropertyChangedEventHandler handler = (sender, e) => OptionChanged?.Invoke(kindName, surfaceKey, e?.PropertyName);
+            options.PropertyChanged += handler;
+            _optionSubscriptions[options] = handler;
+        }
+
+        private void DetachOptions<T>(Dictionary<string, T> options)
+            where T : PlayniteAchievements.Common.ObservableObject
+        {
+            foreach (var value in options.Values)
+            {
+                DetachOptions(value);
+            }
+        }
+
+        private void DetachOptions(PlayniteAchievements.Common.ObservableObject options)
+        {
+            if (options != null && _optionSubscriptions.TryGetValue(options, out var handler))
+            {
+                options.PropertyChanged -= handler;
+                _optionSubscriptions.Remove(options);
+            }
+        }
+
+        private void PruneStaleSubscriptions()
+        {
+            var live = new HashSet<PlayniteAchievements.Common.ObservableObject>();
+            foreach (var value in _achievement.Values) { live.Add(value); }
+            foreach (var value in _gameSummaries.Values) { live.Add(value); }
+            foreach (var value in _friendSummaries.Values) { live.Add(value); }
+            foreach (var value in _categorySummaries.Values) { live.Add(value); }
+
+            foreach (var stale in _optionSubscriptions.Keys.Where(key => !live.Contains(key)).ToList())
+            {
+                DetachOptions(stale);
+            }
         }
 
         private static AchievementGridOptions CreateDefaultAchievement(string key)
