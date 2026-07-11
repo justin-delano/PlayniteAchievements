@@ -3000,15 +3000,6 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 string externalUserId) =>
                 new Dictionary<string, FriendOwnershipRecency>();
 
-            public IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
-                string providerKey,
-                IReadOnlyCollection<string> externalUserIds) =>
-                (externalUserIds ?? Array.Empty<string>())
-                    .Where(id => !string.IsNullOrWhiteSpace(id))
-                    .Select(id => id.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(id => id, _ => false, StringComparer.OrdinalIgnoreCase);
-
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
             {
                 LoadFriendsOverviewDataCalls++;

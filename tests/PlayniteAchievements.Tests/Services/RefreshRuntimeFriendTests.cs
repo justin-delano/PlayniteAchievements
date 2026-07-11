@@ -561,7 +561,7 @@ namespace PlayniteAchievements.Services.Tests
             var cache = new FakeFriendCache
             {
                 Candidates = Enumerable.Range(1, 65)
-                    .Select(index => MakeCandidate(index.ToString(), 1000 + index))
+                    .Select(index => MakeCandidate("1", 1000 + index))
                     .ToList()
             };
             var friends = new FakeFriendsProvider("Steam")
@@ -601,10 +601,6 @@ namespace PlayniteAchievements.Services.Tests
                         AppId = 100,
                         GameName = "Game 100"
                     }
-                },
-                FriendIdsWithCachedOwnership = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "1"
                 }
             };
             var friends = new FakeFriendsProvider("Steam")
@@ -620,7 +616,7 @@ namespace PlayniteAchievements.Services.Tests
                     reportProgress: null)
                 .ConfigureAwait(false);
 
-            Assert.AreEqual(0, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(1, friends.GetOwnedGamesCalls);
             Assert.AreEqual(1, cache.PromoteProviderOnlyGameCalls);
         }
 
@@ -1583,12 +1579,11 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public async Task RefreshAsync_Recent_WithCachedOwnership_SkipsFriendLibraryRefresh()
+        public async Task RefreshAsync_Recent_WithCachedOwnership_StillRefreshesFriendLibrary()
         {
             var cache = new FakeFriendCache
             {
-                Candidates = new List<FriendRefreshCandidate> { MakeCandidate("1", 100) },
-                FriendIdsWithCachedOwnership = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "1" }
+                Candidates = new List<FriendRefreshCandidate> { MakeCandidate("1", 100) }
             };
             var friends = new FakeFriendsProvider("Steam")
             {
@@ -1603,19 +1598,18 @@ namespace PlayniteAchievements.Services.Tests
                     reportProgress: null)
                 .ConfigureAwait(false);
 
-            Assert.AreEqual(0, friends.GetOwnedGamesCalls);
-            Assert.AreEqual(0, cache.SaveFriendOwnershipCalls);
+            // Recent must re-fetch ownership even for cached friends so LastOwnershipRefreshUtc
+            // advances and the recency gate can detect new activity.
+            Assert.AreEqual(1, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(1, cache.SaveFriendOwnershipCalls);
             Assert.AreEqual(1, friends.GetFriendGameAchievementsCalls);
             Assert.AreEqual(1, payload.FriendSummary.CandidatesRefreshed);
         }
 
         [TestMethod]
-        public async Task RefreshAsync_Recent_WithPartiallyCachedOwnership_BootstrapsOnlyMissingFriends()
+        public async Task RefreshAsync_Recent_RefreshesOwnershipForAllScopedFriends()
         {
-            var cache = new FakeFriendCache
-            {
-                FriendIdsWithCachedOwnership = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "1" }
-            };
+            var cache = new FakeFriendCache();
             var friends = new FakeFriendsProvider("Steam")
             {
                 FriendsToReturn = new List<FriendIdentity>
@@ -1633,8 +1627,37 @@ namespace PlayniteAchievements.Services.Tests
                     reportProgress: null)
                 .ConfigureAwait(false);
 
+            Assert.AreEqual(2, friends.GetOwnedGamesCalls);
+            Assert.AreEqual(2, cache.SaveFriendOwnershipCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_Recent_OwnershipFetchFails_SkipsFriendCandidates()
+        {
+            // Fail closed: without a fresh ownership snapshot, none of the friend's games can be
+            // recency-confirmed, so their cached backlog must not be scraped blind.
+            var cache = new FakeFriendCache
+            {
+                Candidates = new List<FriendRefreshCandidate> { MakeCandidate("1", 100) }
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") },
+                OwnedGamesResult = FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>
+                    .Failed("profile temporarily unavailable")
+            };
+            SeedCachedFriends(cache, "Steam", "1");
+
+            var payload = await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions { Scope = FriendRefreshScope.Recent },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
             Assert.AreEqual(1, friends.GetOwnedGamesCalls);
-            Assert.AreEqual(1, cache.SaveFriendOwnershipCalls);
+            Assert.AreEqual(0, friends.GetFriendGameAchievementsCalls);
+            Assert.AreEqual(0, payload.FriendSummary.CandidatesRefreshed);
         }
 
         [TestMethod]
@@ -1643,7 +1666,7 @@ namespace PlayniteAchievements.Services.Tests
             var cache = new FakeFriendCache
             {
                 Candidates = Enumerable.Range(1, 12)
-                    .Select(index => MakeCandidate(index.ToString(), 1000 + index))
+                    .Select(index => MakeCandidate("1", 1000 + index))
                     .ToList()
             };
             var friends = new FakeFriendsProvider("Steam")
@@ -1672,7 +1695,7 @@ namespace PlayniteAchievements.Services.Tests
             var cache = new FakeFriendCache
             {
                 Candidates = Enumerable.Range(1, 8)
-                    .Select(index => MakeCandidate(index.ToString(), 1000 + index))
+                    .Select(index => MakeCandidate("1", 1000 + index))
                     .ToList()
             };
             var friends = new FakeFriendsProvider("Steam")
@@ -2190,21 +2213,6 @@ namespace PlayniteAchievements.Services.Tests
                 string providerKey,
                 string externalUserId) => OwnershipRecency;
 
-            public HashSet<string> FriendIdsWithCachedOwnership { get; set; } =
-                new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            public IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
-                string providerKey,
-                IReadOnlyCollection<string> externalUserIds) =>
-                (externalUserIds ?? Array.Empty<string>())
-                    .Where(id => !string.IsNullOrWhiteSpace(id))
-                    .Select(id => id.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(
-                        id => id,
-                        id => FriendIdsWithCachedOwnership.Contains(id),
-                        StringComparer.OrdinalIgnoreCase);
-
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) =>
                 new FriendsOverviewData();
 
@@ -2504,6 +2512,7 @@ namespace PlayniteAchievements.Services.Tests
             public FriendsProviderResult<FriendsRefreshPreparation> BeginResult { get; set; }
             public IReadOnlyList<FriendIdentity> FriendsToReturn { get; set; } = Array.Empty<FriendIdentity>();
             public IReadOnlyList<FriendGameOwnership> OwnedGamesToReturn { get; set; }
+            public FriendsProviderResult<IReadOnlyList<FriendGameOwnership>> OwnedGamesResult { get; set; }
             public IReadOnlyList<FriendGameOwnership> SteamOwnedGamesSupplementToReturn { get; set; }
             public IReadOnlyList<FriendGameOwnership> LastKnownSteamOwnership { get; private set; }
             public FriendsProviderResult<IReadOnlyList<FriendGameOwnership>> SteamOwnedGamesSupplementResult { get; set; }
@@ -2562,6 +2571,11 @@ namespace PlayniteAchievements.Services.Tests
                     if (OwnershipDelayMs > 0)
                     {
                         await Task.Delay(OwnershipDelayMs, cancel).ConfigureAwait(false);
+                    }
+
+                    if (OwnedGamesResult != null)
+                    {
+                        return OwnedGamesResult;
                     }
 
                     IReadOnlyList<FriendGameOwnership> ownedGames = OwnedGamesToReturn ?? new[]
