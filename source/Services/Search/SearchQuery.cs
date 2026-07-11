@@ -1,6 +1,6 @@
 using System;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Search
 {
     public readonly struct SearchQuery
     {

@@ -22,6 +22,7 @@ using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Refresh;
+using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;

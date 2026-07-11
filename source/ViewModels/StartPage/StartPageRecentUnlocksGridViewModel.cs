@@ -6,6 +6,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Overview;
+using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.Services.StartPage;
 
 namespace PlayniteAchievements.ViewModels.StartPage

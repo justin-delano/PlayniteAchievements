@@ -11,6 +11,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.Services.StartPage;
 using StartPage.SDK;
 
