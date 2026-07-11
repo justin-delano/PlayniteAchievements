@@ -78,6 +78,45 @@
                         </StackPanel>
                     </Grid>
 
+                    <!-- Friend Polling -->
+                    <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"
+                                IsEnabled="{Binding Persisted.EnableInGamePolling}">
+                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_InGamePollRefreshFriends}"
+                                  IsChecked="{Binding Persisted.InGamePollRefreshFriends}"
+                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+
+                        <Grid IsEnabled="{Binding Persisted.InGamePollRefreshFriends}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0"
+                                       Text="{DynamicResource LOCPlayAch_Settings_InGameFriendRefreshMultiplier}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       VerticalAlignment="Center"
+                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
+                            <TextBox Grid.Row="0" Grid.Column="1"
+                                     Text="{Binding Persisted.InGameFriendRefreshMultiplier, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
+                                     TextAlignment="Right"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0"
+                                       Text="{DynamicResource LOCPlayAch_Settings_InGameFriendBatchSize}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       VerticalAlignment="Center"
+                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
+                            <TextBox Grid.Row="1" Grid.Column="1"
+                                     Text="{Binding Persisted.InGameFriendBatchSize, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
+                                     TextAlignment="Right"/>
+                        </Grid>
+                    </StackPanel>
+
                     <!-- Default Overview Refresh Mode -->
                     <Grid Style="{StaticResource SettingRowStyle}">
                         <Grid.ColumnDefinitions>
@@ -196,44 +235,6 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <!-- Friend Polling -->
-                                <StackPanel Margin="0,8,0,0"
-                                            IsEnabled="{Binding Persisted.EnableInGamePolling}">
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_InGamePollRefreshFriends}"
-                                              IsChecked="{Binding Persisted.InGamePollRefreshFriends}"
-                                              Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-
-                                    <Grid IsEnabled="{Binding Persisted.InGamePollRefreshFriends}">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid.RowDefinitions>
-                                            <RowDefinition Height="Auto"/>
-                                            <RowDefinition Height="Auto"/>
-                                        </Grid.RowDefinitions>
-
-                                        <TextBlock Grid.Row="0" Grid.Column="0"
-                                                   Text="{DynamicResource LOCPlayAch_Settings_InGameFriendRefreshMultiplier}"
-                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-                                        <TextBox Grid.Row="0" Grid.Column="1"
-                                                 Text="{Binding Persisted.InGameFriendRefreshMultiplier, UpdateSourceTrigger=PropertyChanged}"
-                                                 Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
-                                                 TextAlignment="Right"/>
-
-                                        <TextBlock Grid.Row="1" Grid.Column="0"
-                                                   Text="{DynamicResource LOCPlayAch_Settings_InGameFriendBatchSize}"
-                                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                                   VerticalAlignment="Center"
-                                                   Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
-                                        <TextBox Grid.Row="1" Grid.Column="1"
-                                                 Text="{Binding Persisted.InGameFriendBatchSize, UpdateSourceTrigger=PropertyChanged}"
-                                                 Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
-                                                 TextAlignment="Right"/>
-                                    </Grid>
-                                </StackPanel>
                             </StackPanel>
                         </Expander>
                     </Border>
