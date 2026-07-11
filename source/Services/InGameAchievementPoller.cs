@@ -11,6 +11,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Hydration;
 

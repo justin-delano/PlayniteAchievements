@@ -9,6 +9,7 @@ using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Providers.Steam;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Database.Rows;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Summaries;

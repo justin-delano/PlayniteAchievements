@@ -11,7 +11,7 @@ using PlayniteAchievements.Services.Images;
 using Playnite.SDK;
 using System.Windows;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Cache
 {
     internal interface ICacheReadOptimizations
     {

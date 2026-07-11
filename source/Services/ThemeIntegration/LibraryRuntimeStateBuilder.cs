@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Threading;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Services.Summaries;
 

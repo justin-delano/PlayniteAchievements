@@ -12,6 +12,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.Tagging;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;

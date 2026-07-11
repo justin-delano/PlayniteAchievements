@@ -1,4 +1,5 @@
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services.Cache;
 using System;
 using System.Collections.Generic;
 

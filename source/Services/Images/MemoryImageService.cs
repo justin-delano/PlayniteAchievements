@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Logging;
 using Playnite.SDK;
 

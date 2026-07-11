@@ -2,7 +2,7 @@ using PlayniteAchievements.Models.Achievements;
 using System;
 using System.Collections.Generic;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Cache
 {
     internal sealed class CachedSummaryData
     {

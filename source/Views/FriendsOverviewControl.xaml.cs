@@ -6,6 +6,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;

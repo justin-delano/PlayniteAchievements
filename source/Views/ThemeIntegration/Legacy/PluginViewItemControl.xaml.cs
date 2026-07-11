@@ -7,6 +7,7 @@ using Playnite.SDK.Controls;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 

@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Cache;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
