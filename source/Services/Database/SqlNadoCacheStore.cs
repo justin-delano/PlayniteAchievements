@@ -220,12 +220,6 @@ namespace PlayniteAchievements.Services.Database
             public string LastScrapeStatus { get; set; }
         }
 
-        private sealed class FriendOwnershipPresenceRow
-        {
-            public string ExternalUserId { get; set; }
-            public long OwnershipCount { get; set; }
-        }
-
         private sealed class FriendOwnershipRecencyRow
         {
             public long? ProviderGameId { get; set; }
@@ -2179,50 +2173,6 @@ namespace PlayniteAchievements.Services.Database
                 }
 
                 return (IReadOnlyDictionary<string, FriendOwnershipRecency>)result;
-            });
-        }
-
-        public IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
-            string providerKey,
-            IReadOnlyCollection<string> externalUserIds)
-        {
-            providerKey = NormalizeProviderKey(providerKey);
-            var ids = NormalizeFriendFilterIds(externalUserIds);
-            var result = ids.ToDictionary(id => id, _ => false, StringComparer.OrdinalIgnoreCase);
-            if (ids.Count == 0)
-            {
-                return result;
-            }
-
-            return WithDb(db =>
-            {
-                var sql = new StringBuilder(
-                    @"SELECT
-                        u.ExternalUserId AS ExternalUserId,
-                        COUNT(fo.Id) AS OwnershipCount
-                      FROM Users u
-                      LEFT JOIN FriendOwnership fo ON fo.UserId = u.Id
-                      WHERE u.ProviderKey = ?
-                        AND u.IsCurrentUser = 0
-                        AND u.IsActiveFriend = 1
-                        AND u.ExternalUserId IN (");
-                sql.Append(string.Join(",", ids.Select(_ => "?")));
-                sql.Append(@")
-                      GROUP BY u.ExternalUserId;");
-
-                var args = new List<object> { providerKey };
-                args.AddRange(ids.Cast<object>());
-
-                var rows = db.Load<FriendOwnershipPresenceRow>(sql.ToString(), args.ToArray()).ToList();
-                foreach (var row in rows)
-                {
-                    if (!string.IsNullOrWhiteSpace(row?.ExternalUserId))
-                    {
-                        result[row.ExternalUserId.Trim()] = row.OwnershipCount > 0;
-                    }
-                }
-
-                return (IReadOnlyDictionary<string, bool>)result;
             });
         }
 

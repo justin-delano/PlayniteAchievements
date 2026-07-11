@@ -224,10 +224,6 @@ namespace PlayniteAchievements.Services.Friends
             string providerKey,
             string externalUserId);
 
-        IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
-            string providerKey,
-            IReadOnlyCollection<string> externalUserIds);
-
         FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit);
 
         FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers);

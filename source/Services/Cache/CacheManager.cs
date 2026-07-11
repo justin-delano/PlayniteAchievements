@@ -1111,18 +1111,6 @@ namespace PlayniteAchievements.Services.Cache
             }
         }
 
-        IReadOnlyDictionary<string, bool> IFriendCacheManager.LoadFriendOwnershipPresence(
-            string providerKey,
-            IReadOnlyCollection<string> externalUserIds)
-        {
-            lock (_sync)
-            {
-                EnsureReady_Locked("LoadFriendOwnershipPresence");
-                return _store.LoadFriendOwnershipPresence(providerKey, externalUserIds) ??
-                       new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
-            }
-        }
-
         FriendsOverviewData IFriendCacheManager.LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
         {
             lock (_sync)
