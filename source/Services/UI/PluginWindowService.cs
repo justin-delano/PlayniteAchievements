@@ -24,6 +24,7 @@ using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views;
+using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ManageAchievements;
 

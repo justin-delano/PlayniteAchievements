@@ -12,6 +12,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views;
+using PlayniteAchievements.Views.Dialogs;
 
 namespace PlayniteAchievements.Views.Helpers
 {

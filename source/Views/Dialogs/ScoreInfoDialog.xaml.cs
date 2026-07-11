@@ -2,7 +2,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.Dialogs
 {
     public partial class ScoreInfoDialog : UserControl
     {

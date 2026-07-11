@@ -2,7 +2,7 @@ using System;
 using Playnite.SDK;
 using PlayniteAchievements.Views.Helpers;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.Dialogs
 {
     internal static class ScoreInfoDialogPresenter
     {

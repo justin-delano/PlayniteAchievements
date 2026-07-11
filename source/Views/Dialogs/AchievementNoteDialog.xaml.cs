@@ -7,7 +7,7 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Views.Helpers;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.Dialogs
 {
     public partial class AchievementNoteDialog : UserControl
     {

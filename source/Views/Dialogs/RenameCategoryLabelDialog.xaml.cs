@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.Dialogs
 {
     public partial class RenameCategoryLabelDialog : UserControl
     {

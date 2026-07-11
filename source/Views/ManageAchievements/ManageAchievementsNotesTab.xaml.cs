@@ -10,6 +10,7 @@ using Playnite.SDK.Events;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.ManageAchievements;
+using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.ManageAchievements

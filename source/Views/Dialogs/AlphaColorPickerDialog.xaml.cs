@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace PlayniteAchievements.Views
+namespace PlayniteAchievements.Views.Dialogs
 {
     public partial class AlphaColorPickerDialog : UserControl
     {

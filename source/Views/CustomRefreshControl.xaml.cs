@@ -8,6 +8,7 @@ using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.UI;
+using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
 using System;
 using System.Collections.Generic;
