@@ -2,14 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using System.Windows.Threading;
 using Microsoft.Win32;
 using Playnite.SDK;
 using Playnite.SDK.Events;
@@ -24,10 +22,6 @@ namespace PlayniteAchievements.Views
     public partial class ManageAchievementsCategoryTab : UserControl, IFullscreenControllerNavigable
     {
         private const string CategoryDragDataFormat = "PlayniteAchievements.ManageAchievementsCategoryRows";
-        private const double AutoScrollEdgeThreshold = 64;
-        private const double AutoScrollMinStep = 2;
-        private const double AutoScrollVariableStep = 14;
-        private const double AutoScrollMaxFactor = 3;
         private static readonly Regex HttpUrlRegex = new Regex(@"https?://[^\s""'<>]+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
         private static readonly string[] SupportedImageExtensions =
         {
@@ -41,33 +35,29 @@ namespace PlayniteAchievements.Views
         };
 
         private DataGridRow _pendingRightClickRow;
-        private Point _categoryDragStartPoint;
-        private bool _hasCategoryDragStartPoint;
-        private ManageAchievementsCategoryMetadataItem _categoryDragAnchorItem;
-        private ScrollViewer _categoryManagerScrollViewer;
-        private readonly DispatcherTimer _categoryAutoScrollTimer;
-        private bool _isCategoryDragging;
-        private int _categoryDragItemCount;
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct POINT
-        {
-            public int X;
-            public int Y;
-        }
-
-        [DllImport("user32.dll")]
-        private static extern bool GetCursorPos(out POINT lpPoint);
 
         public ManageAchievementsCategoryTab(ManageAchievementsCategoryViewModel viewModel)
         {
             InitializeComponent();
             DataContext = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
-            _categoryAutoScrollTimer = new DispatcherTimer(DispatcherPriority.Input)
+            DataGridRowReorderBehavior.SetOptions(CategoryManagerDataGrid, new DataGridRowReorderOptions
             {
-                Interval = TimeSpan.FromMilliseconds(16)
-            };
-            _categoryAutoScrollTimer.Tick += CategoryAutoScrollTimer_Tick;
+                DragDataFormat = CategoryDragDataFormat,
+                DropIndicator = CategoryDropInsertLine,
+                DragCountPopup = CategoryDragCountPopup,
+                DragCountText = CategoryDragCountText,
+                IsReorderableItem = item => item is ManageAchievementsCategoryMetadataItem,
+                ExtractDragKeys = items => items
+                    .OfType<ManageAchievementsCategoryMetadataItem>()
+                    .Select(item => item.CategoryLabel)
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .ToList(),
+                MoveItemsRelativeToTarget = (labels, target, insertAfter) =>
+                    target is ManageAchievementsCategoryMetadataItem targetItem &&
+                    ViewModel?.MoveCategoryRowsByLabel(labels, targetItem.CategoryLabel, insertAfter) == true,
+                MoveItemsToEnd = labels => ViewModel?.MoveCategoryRowsToEndByLabel(labels) == true,
+                RestoreSelection = RestoreCategoryManagerSelectionByLabels
+            });
         }
 
         private ManageAchievementsCategoryViewModel ViewModel => DataContext as ManageAchievementsCategoryViewModel;
@@ -330,204 +320,6 @@ namespace PlayniteAchievements.Views
 
             // Selection is controlled by the checkbox column only.
             e.Handled = true;
-        }
-
-        private void CategoryManagerDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            _hasCategoryDragStartPoint = false;
-            _categoryDragAnchorItem = null;
-
-            var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject);
-            if (!(row?.DataContext is ManageAchievementsCategoryMetadataItem clickedItem))
-            {
-                return;
-            }
-
-            if (!IsDragColumnHit(e.OriginalSource as DependencyObject))
-            {
-                return;
-            }
-
-            _categoryDragStartPoint = e.GetPosition(CategoryManagerDataGrid);
-            _hasCategoryDragStartPoint = true;
-            _categoryDragAnchorItem = clickedItem;
-
-            var hasSelectionModifier = (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) != 0;
-            if (row.IsSelected &&
-                CategoryManagerDataGrid.SelectedItems.Count > 1 &&
-                !hasSelectionModifier)
-            {
-                e.Handled = true;
-            }
-        }
-
-        private void CategoryManagerDataGrid_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        {
-            _hasCategoryDragStartPoint = false;
-            _categoryDragAnchorItem = null;
-        }
-
-        private void CategoryManagerDataGrid_PreviewMouseMove(object sender, MouseEventArgs e)
-        {
-            if (!_hasCategoryDragStartPoint || e.LeftButton != MouseButtonState.Pressed || ViewModel == null)
-            {
-                return;
-            }
-
-            var currentPos = e.GetPosition(CategoryManagerDataGrid);
-            var delta = currentPos - _categoryDragStartPoint;
-            if (Math.Abs(delta.X) < SystemParameters.MinimumHorizontalDragDistance &&
-                Math.Abs(delta.Y) < SystemParameters.MinimumVerticalDragDistance)
-            {
-                return;
-            }
-
-            var clickedItem = _categoryDragAnchorItem;
-            if (clickedItem == null)
-            {
-                var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject);
-                clickedItem = row?.DataContext as ManageAchievementsCategoryMetadataItem;
-            }
-
-            if (clickedItem == null)
-            {
-                return;
-            }
-
-            var selectedRows = CategoryManagerDataGrid.SelectedItems
-                .OfType<ManageAchievementsCategoryMetadataItem>()
-                .ToList();
-            if (!selectedRows.Contains(clickedItem))
-            {
-                selectedRows = new List<ManageAchievementsCategoryMetadataItem> { clickedItem };
-            }
-
-            var sourceOrder = ViewModel.CategoryRows.ToList();
-            var draggedLabels = selectedRows
-                .OrderBy(item => sourceOrder.IndexOf(item))
-                .Select(item => item.CategoryLabel)
-                .Where(label => !string.IsNullOrWhiteSpace(label))
-                .ToList();
-            if (draggedLabels.Count == 0)
-            {
-                return;
-            }
-
-            var dragData = new DataObject(CategoryDragDataFormat, draggedLabels);
-            _hasCategoryDragStartPoint = false;
-            _categoryDragAnchorItem = null;
-            _categoryDragItemCount = draggedLabels.Count;
-            _isCategoryDragging = true;
-            ShowCategoryDragCountPopup();
-            StartCategoryAutoScroll();
-
-            try
-            {
-                DragDrop.DoDragDrop(CategoryManagerDataGrid, dragData, DragDropEffects.Move);
-            }
-            finally
-            {
-                StopCategoryAutoScroll();
-                _isCategoryDragging = false;
-                _categoryDragItemCount = 0;
-                HideCategoryDragCountPopup();
-                HideCategoryDropIndicator();
-            }
-        }
-
-        private void CategoryManagerDataGrid_DragOver(object sender, DragEventArgs e)
-        {
-            var hasValidDragData = e.Data.GetDataPresent(CategoryDragDataFormat);
-            e.Effects = hasValidDragData ? DragDropEffects.Move : DragDropEffects.None;
-            if (hasValidDragData)
-            {
-                EnsureCategoryManagerScrollViewer();
-                UpdateCategoryDropIndicator(e);
-            }
-            else
-            {
-                HideCategoryDropIndicator();
-            }
-
-            e.Handled = true;
-        }
-
-        private void CategoryManagerDataGrid_DragLeave(object sender, DragEventArgs e)
-        {
-            var pointerPosition = Mouse.GetPosition(CategoryManagerDataGrid);
-            if (!IsPointWithinCategoryManagerGrid(pointerPosition))
-            {
-                HideCategoryDropIndicator();
-            }
-        }
-
-        private void CategoryManagerDataGrid_GiveFeedback(object sender, GiveFeedbackEventArgs e)
-        {
-            if (!_isCategoryDragging)
-            {
-                return;
-            }
-
-            UpdateCategoryDragCountPopupPosition();
-            e.UseDefaultCursors = true;
-            e.Handled = true;
-        }
-
-        private void CategoryManagerDataGrid_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
-        {
-            if (e.Action == DragAction.Continue)
-            {
-                ApplyCategoryAutoScrollFromCursor();
-                return;
-            }
-
-            _isCategoryDragging = false;
-            _categoryDragItemCount = 0;
-            _hasCategoryDragStartPoint = false;
-            _categoryDragAnchorItem = null;
-            StopCategoryAutoScroll();
-            HideCategoryDragCountPopup();
-            HideCategoryDropIndicator();
-        }
-
-        private void CategoryManagerDataGrid_Drop(object sender, DragEventArgs e)
-        {
-            HideCategoryDropIndicator();
-            if (ViewModel == null || !e.Data.GetDataPresent(CategoryDragDataFormat))
-            {
-                HideCategoryDragCountPopup();
-                return;
-            }
-
-            var draggedLabels = (e.Data.GetData(CategoryDragDataFormat) as IEnumerable<string>)?.ToList();
-            if (draggedLabels == null || draggedLabels.Count == 0)
-            {
-                HideCategoryDragCountPopup();
-                return;
-            }
-
-            var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject);
-            var moved = false;
-            if (row?.DataContext is ManageAchievementsCategoryMetadataItem targetItem)
-            {
-                var pos = e.GetPosition(row);
-                var insertAfter = pos.Y > row.ActualHeight / 2.0;
-                moved = ViewModel.MoveCategoryRowsByLabel(draggedLabels, targetItem.CategoryLabel, insertAfter);
-            }
-            else
-            {
-                moved = ViewModel.MoveCategoryRowsToEndByLabel(draggedLabels);
-            }
-
-            if (moved)
-            {
-                RestoreCategoryManagerSelectionByLabels(draggedLabels);
-                _isCategoryDragging = false;
-                _categoryDragItemCount = 0;
-                StopCategoryAutoScroll();
-                HideCategoryDragCountPopup();
-                e.Handled = true;
-            }
         }
 
         private void CategoryDataGridRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -916,8 +708,7 @@ namespace PlayniteAchievements.Views
         {
             if (ViewModel?.ResetCategoryMetadata() == true)
             {
-                HideCategoryDropIndicator();
-                HideCategoryDragCountPopup();
+                DataGridRowReorderBehavior.CancelPendingDrag(CategoryManagerDataGrid);
             }
 
             e.Handled = true;
@@ -934,187 +725,6 @@ namespace PlayniteAchievements.Views
             {
                 item.IsSelected = selected;
             }
-        }
-
-        private void EnsureCategoryManagerScrollViewer()
-        {
-            if (_categoryManagerScrollViewer != null)
-            {
-                return;
-            }
-
-            _categoryManagerScrollViewer = VisualTreeHelpers.FindVisualChild<ScrollViewer>(CategoryManagerDataGrid);
-        }
-
-        private void StartCategoryAutoScroll()
-        {
-            EnsureCategoryManagerScrollViewer();
-            if (!_categoryAutoScrollTimer.IsEnabled)
-            {
-                _categoryAutoScrollTimer.Start();
-            }
-        }
-
-        private void StopCategoryAutoScroll()
-        {
-            if (_categoryAutoScrollTimer.IsEnabled)
-            {
-                _categoryAutoScrollTimer.Stop();
-            }
-        }
-
-        private void CategoryAutoScrollTimer_Tick(object sender, EventArgs e)
-        {
-            ApplyCategoryAutoScrollFromCursor();
-        }
-
-        private void ApplyCategoryAutoScrollFromCursor()
-        {
-            if (!_isCategoryDragging || _categoryManagerScrollViewer == null)
-            {
-                return;
-            }
-
-            if (!TryGetCursorPositionInCategoryGrid(out var cursorPosition))
-            {
-                return;
-            }
-
-            var delta = CalculateAutoScrollDelta(cursorPosition.Y, CategoryManagerDataGrid.ActualHeight);
-            if (Math.Abs(delta) < 0.01)
-            {
-                return;
-            }
-
-            var currentOffset = _categoryManagerScrollViewer.VerticalOffset;
-            var nextOffset = Math.Max(
-                0,
-                Math.Min(_categoryManagerScrollViewer.ScrollableHeight, currentOffset + delta));
-            if (Math.Abs(nextOffset - currentOffset) > 0.01)
-            {
-                _categoryManagerScrollViewer.ScrollToVerticalOffset(nextOffset);
-            }
-        }
-
-        private bool TryGetCursorPositionInCategoryGrid(out Point position)
-        {
-            if (!GetCursorPos(out var cursorPoint))
-            {
-                position = default;
-                return false;
-            }
-
-            position = CategoryManagerDataGrid.PointFromScreen(new Point(cursorPoint.X, cursorPoint.Y));
-            return true;
-        }
-
-        private static double CalculateAutoScrollDelta(double pointerY, double gridHeight)
-        {
-            if (gridHeight <= 0)
-            {
-                return 0;
-            }
-
-            if (pointerY < AutoScrollEdgeThreshold)
-            {
-                var pressure = (AutoScrollEdgeThreshold - pointerY) / AutoScrollEdgeThreshold;
-                var factor = Math.Min(AutoScrollMaxFactor, Math.Max(0, pressure));
-                return -(AutoScrollMinStep + (factor * AutoScrollVariableStep));
-            }
-
-            var lowerEdge = gridHeight - AutoScrollEdgeThreshold;
-            if (pointerY > lowerEdge)
-            {
-                var pressure = (pointerY - lowerEdge) / AutoScrollEdgeThreshold;
-                var factor = Math.Min(AutoScrollMaxFactor, Math.Max(0, pressure));
-                return AutoScrollMinStep + (factor * AutoScrollVariableStep);
-            }
-
-            return 0;
-        }
-
-        private void UpdateCategoryDropIndicator(DragEventArgs e)
-        {
-            var row = VisualTreeHelpers.FindVisualParent<DataGridRow>(e.OriginalSource as DependencyObject);
-            if (row?.DataContext is ManageAchievementsCategoryMetadataItem)
-            {
-                var pointerInRow = e.GetPosition(row);
-                var insertAfter = pointerInRow.Y > row.ActualHeight / 2.0;
-                var rowTop = row.TranslatePoint(new Point(0, 0), CategoryManagerDataGrid).Y;
-                var lineY = insertAfter ? rowTop + row.ActualHeight : rowTop;
-                ShowCategoryDropIndicator(lineY);
-                return;
-            }
-
-            if (ViewModel?.CategoryRows?.Count > 0)
-            {
-                ShowCategoryDropIndicator(CategoryManagerDataGrid.ActualHeight - 1);
-            }
-            else
-            {
-                HideCategoryDropIndicator();
-            }
-        }
-
-        private void ShowCategoryDropIndicator(double y)
-        {
-            if (double.IsNaN(y))
-            {
-                HideCategoryDropIndicator();
-                return;
-            }
-
-            var maxTop = Math.Max(0, CategoryManagerDataGrid.ActualHeight - CategoryDropInsertLine.Height);
-            var top = Math.Max(0, Math.Min(maxTop, y - (CategoryDropInsertLine.Height / 2.0)));
-            CategoryDropInsertLine.Margin = new Thickness(0, top, 0, 0);
-            CategoryDropInsertLine.Visibility = Visibility.Visible;
-        }
-
-        private void HideCategoryDropIndicator()
-        {
-            if (CategoryDropInsertLine != null)
-            {
-                CategoryDropInsertLine.Visibility = Visibility.Collapsed;
-            }
-        }
-
-        private void ShowCategoryDragCountPopup()
-        {
-            if (_categoryDragItemCount <= 0)
-            {
-                return;
-            }
-
-            CategoryDragCountText.Text = _categoryDragItemCount.ToString();
-            CategoryDragCountPopup.IsOpen = true;
-            UpdateCategoryDragCountPopupPosition();
-        }
-
-        private void HideCategoryDragCountPopup()
-        {
-            if (CategoryDragCountPopup?.IsOpen == true)
-            {
-                CategoryDragCountPopup.IsOpen = false;
-            }
-        }
-
-        private void UpdateCategoryDragCountPopupPosition()
-        {
-            if (!GetCursorPos(out var cursorPoint))
-            {
-                return;
-            }
-
-            CategoryDragCountPopup.HorizontalOffset = cursorPoint.X + 18;
-            CategoryDragCountPopup.VerticalOffset = cursorPoint.Y + 18;
-        }
-
-        private bool IsPointWithinCategoryManagerGrid(Point point)
-        {
-            return point.X >= 0 &&
-                   point.Y >= 0 &&
-                   point.X <= CategoryManagerDataGrid.ActualWidth &&
-                   point.Y <= CategoryManagerDataGrid.ActualHeight;
         }
 
         private void RestoreCategoryManagerSelectionByLabels(IEnumerable<string> labels)
@@ -1142,12 +752,6 @@ namespace PlayniteAchievements.Views
                     CategoryManagerDataGrid.SelectedItems.Add(row);
                 }
             }
-        }
-
-        private static bool IsDragColumnHit(DependencyObject source)
-        {
-            var cell = VisualTreeHelpers.FindVisualParent<DataGridCell>(source);
-            return cell?.Column?.DisplayIndex == 0;
         }
 
         private static string L(string key, string fallback)

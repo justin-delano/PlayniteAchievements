@@ -466,15 +466,7 @@
                           helpers:DataGridHoverScrollBarBehavior.IsEnabled="True"
                           helpers:DataGridAlignmentBehavior.IsEnabled="True"
                           Tag="ControllerCellFocus"
-                          AllowDrop="True"
-                          PreviewMouseLeftButtonDown="CategoryManagerDataGrid_PreviewMouseLeftButtonDown"
-                          PreviewMouseLeftButtonUp="CategoryManagerDataGrid_PreviewMouseLeftButtonUp"
-                          PreviewMouseMove="CategoryManagerDataGrid_PreviewMouseMove"
-                          DragOver="CategoryManagerDataGrid_DragOver"
-                          DragLeave="CategoryManagerDataGrid_DragLeave"
-                          GiveFeedback="CategoryManagerDataGrid_GiveFeedback"
-                          QueryContinueDrag="CategoryManagerDataGrid_QueryContinueDrag"
-                          Drop="CategoryManagerDataGrid_Drop">
+                          AllowDrop="True">
 
                     <DataGrid.CellStyle>
                         <Style TargetType="DataGridCell" BasedOn="{StaticResource ManageAchievementsControllerCellStyle}" />
