@@ -6,6 +6,7 @@ using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -18,7 +19,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.RetroAchievements
 {
-    internal sealed class RetroAchievementsDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
+    internal sealed class RetroAchievementsDataProvider : DataProviderBase<RetroAchievementsSettings>, IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RetroAchievements",
@@ -39,7 +40,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;
         private readonly RetroAchievementsPathResolver _pathResolver;
-        private RetroAchievementsSettings _providerSettings;
 
         private readonly object _initLock = new object();
         private RetroAchievementsApiClient _apiClient;
@@ -58,8 +58,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
             _pathResolver = new RetroAchievementsPathResolver(playniteApi);
-
-            _providerSettings = ProviderRegistry.Settings<RetroAchievementsSettings>();
         }
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_RetroAchievements");
         public string ProviderKey => "RetroAchievements";
@@ -347,18 +345,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             return string.Equals(gameData?.ProviderKey, "RetroAchievements", StringComparison.OrdinalIgnoreCase) &&
                    string.Equals(ProviderRegistry.Settings<RetroAchievementsSettings>().RaPointsMode, "scaled", StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is RetroAchievementsSettings raSettings)
-            {
-                _providerSettings.CopyFrom(raSettings);
-            }
         }
 
         /// <inheritdoc />

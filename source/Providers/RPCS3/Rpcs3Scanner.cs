@@ -1,15 +1,19 @@
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.RPCS3.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -450,6 +454,15 @@ namespace PlayniteAchievements.Providers.RPCS3
         private static readonly System.Text.RegularExpressions.Regex QuotedPathPattern =
             new System.Text.RegularExpressions.Regex("\"([^\"]+)\"|'([^']+)'",
                 System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        // Patterns used by NormalizeGameName.
+        private static readonly Regex PlayStationSuffixRegex = new Regex(
+            @"\s*[-:]\s*(PlayStation\s*)?(PS[1234])\s*(Edition|Version|Demo|Beta|Trial|Region\s*Free)?",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex FileExtensionSuffixRegex = new Regex(@"\.(iso|pkg|rap)$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        private static readonly Regex NonAlphanumericRegex = new Regex(@"[^a-zA-Z0-9\s]", RegexOptions.Compiled);
+        private static readonly Regex DigitLetterBoundaryRegex = new Regex(@"(\d)([a-zA-Z])", RegexOptions.Compiled);
+        private static readonly Regex LetterDigitBoundaryRegex = new Regex(@"([a-zA-Z])(\d)", RegexOptions.Compiled);
 
         internal IReadOnlyList<GameTrophySource> ResolveTrophySourcesForGame(
             Game game,
@@ -1639,36 +1652,26 @@ namespace PlayniteAchievements.Providers.RPCS3
             }
 
             // Remove common suffixes/prefixes
-            var normalized = System.Text.RegularExpressions.Regex.Replace(
-                name,
-                @"\s*[-:]\s*(PlayStation\s*)?(PS[1234])\s*(Edition|Version|Demo|Beta|Trial|Region\s*Free)?",
-                "",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var normalized = PlayStationSuffixRegex.Replace(name, "");
 
-            // Remove registered/trademark symbols
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[®™©]", "");
+            normalized = GameNameNormalizer.StripTrademarkSymbols(normalized);
 
-            // Remove content in parentheses (region info, language codes, etc.)
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\([^)]*\)", "");
-
-            // Remove content in brackets
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\[[^\]]*\]", "");
+            // Remove region/language parentheticals and bracket tags
+            normalized = GameNameNormalizer.StripParentheticals(normalized);
+            normalized = GameNameNormalizer.StripBrackets(normalized);
 
             // Remove file extensions
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\.(iso|pkg|rap)$", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            normalized = FileExtensionSuffixRegex.Replace(normalized, "");
 
             // Remove special characters, keep alphanumeric and spaces
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[^a-zA-Z0-9\s]", " ");
+            normalized = NonAlphanumericRegex.Replace(normalized, " ");
 
             // Separate digits from letters (e.g., "PlayStation3" -> "PlayStation 3")
             // This handles cases like "PlayStation3 Edition" vs "PlayStation 3 Edition"
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"(\d)([a-zA-Z])", "$1 $2");
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"([a-zA-Z])(\d)", "$1 $2");
+            normalized = DigitLetterBoundaryRegex.Replace(normalized, "$1 $2");
+            normalized = LetterDigitBoundaryRegex.Replace(normalized, "$1 $2");
 
-            // Normalize whitespace
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"\s+", " ").Trim();
-
-            return normalized.ToLowerInvariant().Trim();
+            return GameNameNormalizer.CollapseWhitespace(normalized).ToLowerInvariant();
         }
 
         /// <summary>
@@ -1676,57 +1679,7 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private static int CalculateNameSimilarity(string name1, string name2)
         {
-            if (string.IsNullOrWhiteSpace(name1) || string.IsNullOrWhiteSpace(name2))
-            {
-                return 0;
-            }
-
-            // Exact match
-            if (string.Equals(name1, name2, StringComparison.OrdinalIgnoreCase))
-            {
-                return 100;
-            }
-
-            // Check if one contains the other (handles subtitle differences)
-            if (name1.Contains(name2) || name2.Contains(name1))
-            {
-                var longerLength = Math.Max(name1.Length, name2.Length);
-                var shorterLength = Math.Min(name1.Length, name2.Length);
-                return (int)((double)shorterLength / longerLength * 100);
-            }
-
-            // Word-based matching
-            var words1 = name1.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-            var words2 = name2.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-            if (words1.Length == 0 || words2.Length == 0)
-            {
-                return 0;
-            }
-
-            var set1 = new HashSet<string>(words1, StringComparer.OrdinalIgnoreCase);
-            var set2 = new HashSet<string>(words2, StringComparer.OrdinalIgnoreCase);
-            var intersection = new HashSet<string>(set1, StringComparer.OrdinalIgnoreCase);
-            intersection.IntersectWith(set2);
-
-            if (intersection.Count == 0)
-            {
-                return 0;
-            }
-
-            // Calculate Jaccard-like similarity with bonus for matching key words
-            var union = new HashSet<string>(set1, StringComparer.OrdinalIgnoreCase);
-            union.UnionWith(set2);
-
-            var jaccardScore = (double)intersection.Count / union.Count * 100;
-
-            // Bonus if the first word matches (usually the main title)
-            if (string.Equals(words1[0], words2[0], StringComparison.OrdinalIgnoreCase))
-            {
-                jaccardScore = Math.Min(100, jaccardScore * 1.3);
-            }
-
-            return (int)jaccardScore;
+            return GameNameNormalizer.ComputeMatchScore(name1, name2);
         }
 
         /// <summary>

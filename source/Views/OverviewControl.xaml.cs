@@ -13,10 +13,16 @@ using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Library;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views

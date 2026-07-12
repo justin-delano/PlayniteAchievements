@@ -11,7 +11,11 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.Summaries;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
 
@@ -882,18 +886,6 @@ namespace PlayniteAchievements.ViewModels
             _orderedAchievements = items;
         }
 
-        private void ReplaceAchievementsDisplay(IEnumerable<AchievementDisplayItem> displayItems)
-        {
-            if (Achievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-            {
-                bulk.ReplaceAll(displayItems);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(Achievements, displayItems);
-            }
-        }
-
         private void ApplySearchFilter(bool skipDefaultSort = false, bool refreshOrder = false)
         {
             if (refreshOrder || _orderedAchievements.Count != _allAchievements.Count)
@@ -926,7 +918,7 @@ namespace PlayniteAchievements.ViewModels
             var displayItems = DisplayGridRowLimitHelper.Limit(
                 _filteredAchievements,
                 _settings?.Persisted?.SingleGameGridMaxRows);
-            ReplaceAchievementsDisplay(displayItems);
+            CollectionHelper.Replace(Achievements, displayItems);
         }
 
         #region IDisposable

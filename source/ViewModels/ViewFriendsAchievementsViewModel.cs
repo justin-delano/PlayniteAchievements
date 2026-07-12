@@ -4,7 +4,11 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Refresh;
+using PlayniteAchievements.Services.Search;
+using PlayniteAchievements.ViewModels.Items;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -656,8 +660,9 @@ namespace PlayniteAchievements.ViewModels
                     return game.Name;
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, $"Failed to resolve game name for {_gameId}.");
             }
 
             return L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "Friends Achievements");

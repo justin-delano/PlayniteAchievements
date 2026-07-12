@@ -4,6 +4,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -13,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.PSN
 {
-    internal sealed class PsnDataProvider : IDataProvider, IProviderOverride
+    internal sealed class PsnDataProvider : DataProviderBase<PsnSettings>, IDataProvider, IProviderOverride
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_PSN",
@@ -26,7 +27,6 @@ namespace PlayniteAchievements.Providers.PSN
 
         private readonly PsnSessionManager _sessionManager;
         private readonly PsnScanner _scanner;
-        private PsnSettings _providerSettings;
 
         public PsnDataProvider(
             ILogger logger,
@@ -42,8 +42,6 @@ namespace PlayniteAchievements.Providers.PSN
             _sessionManager = new PsnSessionManager(playniteApi, logger, pluginUserDataPath);
 
             _scanner = new PsnScanner(logger, settings, _sessionManager);
-
-            _providerSettings = ProviderRegistry.Settings<PsnSettings>();
         }
 
         public string ProviderName
@@ -97,18 +95,6 @@ namespace PlayniteAchievements.Providers.PSN
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is PsnSettings psnSettings)
-            {
-                _providerSettings.CopyFrom(psnSettings);
-            }
         }
 
         /// <inheritdoc />

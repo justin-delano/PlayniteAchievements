@@ -12,6 +12,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Base
 {

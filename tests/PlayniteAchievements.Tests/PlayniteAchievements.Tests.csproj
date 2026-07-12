@@ -66,8 +66,8 @@
     <Compile Include="..\..\source\Models\RefreshRequest.cs" Link="Source\Models\RefreshRequest.cs" />
     <Compile Include="..\..\source\Services\Refresh\RefreshEntryPoint.cs" Link="Source\Services\Refresh\RefreshEntryPoint.cs" />
     <Compile Include="..\..\source\Services\LegacyManualLinkImporter.cs" Link="Source\Services\LegacyManualLinkImporter.cs" />
-    <Compile Include="..\..\source\Services\GameCustomDataStore.cs" Link="Source\Services\GameCustomDataStore.cs" />
-    <Compile Include="..\..\source\Services\GameCustomDataLookup.cs" Link="Source\Services\GameCustomDataLookup.cs" />
+    <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataStore.cs" Link="Source\Services\GameCustomData\GameCustomDataStore.cs" />
+    <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataLookup.cs" Link="Source\Services\GameCustomData\GameCustomDataLookup.cs" />
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideValueKind.cs" Link="Source\Providers\Overrides\ProviderOverrideValueKind.cs" />
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideChoice.cs" Link="Source\Providers\Overrides\ProviderOverrideChoice.cs" />
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideValidation.cs" Link="Source\Providers\Overrides\ProviderOverrideValidation.cs" />
@@ -75,8 +75,8 @@
     <Compile Include="..\..\source\Providers\Overrides\ProviderOverrideValidators.cs" Link="Source\Providers\Overrides\ProviderOverrideValidators.cs" />
     <Compile Include="..\..\source\Providers\Overrides\IProviderOverride.cs" Link="Source\Providers\Overrides\IProviderOverride.cs" />
     <Compile Include="..\..\source\Providers\PSN\PsnNpCommIdHelper.cs" Link="Source\Providers\PSN\PsnNpCommIdHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementIconOverrideHelper.cs" Link="Source\Services\AchievementIconOverrideHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementNoteHelper.cs" Link="Source\Services\AchievementNoteHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementIconOverrideHelper.cs" Link="Source\Services\Achievements\AchievementIconOverrideHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementNoteHelper.cs" Link="Source\Services\Achievements\AchievementNoteHelper.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataLegacyMigration.cs" Link="Source\Services\GameCustomData\GameCustomDataLegacyMigration.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataNormalizer.cs" Link="Source\Services\GameCustomData\GameCustomDataNormalizer.cs" />
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataRepository.cs" Link="Source\Services\GameCustomData\GameCustomDataRepository.cs" />
@@ -86,21 +86,21 @@
     <Compile Include="..\..\source\Services\Images\DiskImageService.cs" Link="Source\Services\Images\DiskImageService.cs" />
     <Compile Include="..\..\source\Services\Images\ManagedCustomIconService.cs" Link="Source\Services\Images\ManagedCustomIconService.cs" />
     <Compile Include="..\..\source\Services\Images\AchievementIconService.cs" Link="Source\Services\Images\AchievementIconService.cs" />
-    <Compile Include="..\..\source\Services\AchievementSortHelper.cs" Link="Source\Services\AchievementSortHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementCategoryFilterOrderHelper.cs" Link="Source\Services\AchievementCategoryFilterOrderHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementOrderHelper.cs" Link="Source\Services\AchievementOrderHelper.cs" />
-    <Compile Include="..\..\source\Services\AchievementCategoryTypeHelper.cs" Link="Source\Services\AchievementCategoryTypeHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementSortHelper.cs" Link="Source\Services\Achievements\AchievementSortHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementCategoryFilterOrderHelper.cs" Link="Source\Services\Achievements\AchievementCategoryFilterOrderHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementOrderHelper.cs" Link="Source\Services\Achievements\AchievementOrderHelper.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementCategoryTypeHelper.cs" Link="Source\Services\Achievements\AchievementCategoryTypeHelper.cs" />
     <Compile Include="..\..\source\Services\GameSummariesSortHelper.cs" Link="Source\Services\GameSummariesSortHelper.cs" />
     <Compile Include="..\..\source\Services\DisplayGridRowLimitHelper.cs" Link="Source\Services\DisplayGridRowLimitHelper.cs" />
-    <Compile Include="..\..\source\Services\SearchQuery.cs" Link="Source\Services\SearchQuery.cs" />
-    <Compile Include="..\..\source\Services\SearchTextBuilder.cs" Link="Source\Services\SearchTextBuilder.cs" />
-    <Compile Include="..\..\source\Services\SearchTextIndex.cs" Link="Source\Services\SearchTextIndex.cs" />
+    <Compile Include="..\..\source\Services\Search\SearchQuery.cs" Link="Source\Services\Search\SearchQuery.cs" />
+    <Compile Include="..\..\source\Services\Search\SearchTextBuilder.cs" Link="Source\Services\Search\SearchTextBuilder.cs" />
+    <Compile Include="..\..\source\Services\Search\SearchTextIndex.cs" Link="Source\Services\Search\SearchTextIndex.cs" />
     <Compile Include="..\..\source\Services\Overview\OverviewAchievementFilters.cs" Link="Source\Services\Overview\OverviewAchievementFilters.cs" />
     <Compile Include="..\..\source\Services\Overview\OverviewGameSummaryFilters.cs" Link="Source\Services\Overview\OverviewGameSummaryFilters.cs" />
     <Compile Include="..\..\source\Services\Summaries\AchievementGameStats.cs" Link="Source\Services\Summaries\AchievementGameStats.cs" />
     <Compile Include="..\..\source\Services\Summaries\AchievementStatsAccumulator.cs" Link="Source\Services\Summaries\AchievementStatsAccumulator.cs" />
     <Compile Include="..\..\source\Services\Summaries\CategorySummaryBuilder.cs" Link="Source\Services\Summaries\CategorySummaryBuilder.cs" />
-    <Compile Include="..\..\source\ViewModels\CategorySummaryItem.cs" Link="Source\ViewModels\CategorySummaryItem.cs" />
+    <Compile Include="..\..\source\ViewModels\Items\CategorySummaryItem.cs" Link="Source\ViewModels\Items\CategorySummaryItem.cs" />
     <Compile Include="..\..\source\Services\PlayniteGameMetadataFormatter.cs" Link="Source\Services\PlayniteGameMetadataFormatter.cs" />
     <Compile Include="..\..\source\Services\BackupHelper.cs" Link="Source\Services\BackupHelper.cs" />
     <Compile Include="..\..\source\Models\RebuildProgressModels.cs" Link="Source\Models\RebuildProgressModels.cs" />
@@ -109,11 +109,13 @@
     <Compile Include="..\..\source\Providers\Settings\IProviderSettings.cs" Link="Source\Providers\Settings\IProviderSettings.cs" />
     <Compile Include="..\..\source\Providers\Settings\ProviderSettingsViewBase.cs" Link="Source\Providers\Settings\ProviderSettingsViewBase.cs" />
     <Compile Include="..\..\source\Providers\ProviderRegistry.cs" Link="Source\Providers\ProviderRegistry.cs" />
+    <Compile Include="..\..\source\Providers\DataProviderBase.cs" Link="Source\Providers\DataProviderBase.cs" />
     <Compile Include="..\..\source\Providers\ProviderUiPolicies.cs" Link="Source\Providers\ProviderUiPolicies.cs" />
     <Compile Include="..\..\source\Providers\AchievementPageLinkContext.cs" Link="Source\Providers\AchievementPageLinkContext.cs" />
     <Compile Include="..\..\source\Providers\AchievementPageLinkResolver.cs" Link="Source\Providers\AchievementPageLinkResolver.cs" />
     <Compile Include="..\..\source\Providers\IAchievementPageLinkProvider.cs" Link="Source\Providers\IAchievementPageLinkProvider.cs" />
     <Compile Include="..\..\source\Common\RateLimiter.cs" Link="Source\Common\RateLimiter.cs" />
+    <Compile Include="..\..\source\Common\TransientErrorClassifier.cs" Link="Source\Common\TransientErrorClassifier.cs" />
     <Compile Include="..\..\source\Providers\EA\EAAuthModels.cs" Link="Source\Providers\EA\EAAuthModels.cs" />
     <Compile Include="..\..\source\Providers\EA\EAModels.cs" Link="Source\Providers\EA\EAModels.cs" />
     <Compile Include="..\..\source\Providers\EA\EAProviderSupport.cs" Link="Source\Providers\EA\EAProviderSupport.cs" />
@@ -171,6 +173,7 @@
     <Compile Include="..\..\source\Providers\Exophase\ExophaseFriendPlatformMatcher.cs" Link="Source\Providers\Exophase\ExophaseFriendPlatformMatcher.cs" />
     <Compile Include="..\..\source\Providers\Exophase\ExophaseGameNameMatcher.cs" Link="Source\Providers\Exophase\ExophaseGameNameMatcher.cs" />
     <Compile Include="..\..\source\Common\StringSimilarity.cs" Link="Source\Common\StringSimilarity.cs" />
+    <Compile Include="..\..\source\Common\GameNameNormalizer.cs" Link="Source\Common\GameNameNormalizer.cs" />
     <Compile Include="..\..\source\Providers\Xbox\XboxTitleIdResolver.cs" Link="Source\Providers\Xbox\XboxTitleIdResolver.cs" />
     <Compile Include="..\..\source\Providers\Xenia\XeniaSettings.cs" Link="Source\Providers\Xenia\XeniaSettings.cs" />
     <Compile Include="..\..\source\Providers\Xenia\XeniaTitleIdHelper.cs" Link="Source\Providers\Xenia\XeniaTitleIdHelper.cs" />
@@ -208,18 +211,18 @@
     <Compile Include="..\..\source\Common\RelativeDateFormatter.cs" Link="Source\Common\RelativeDateFormatter.cs" />
     <Compile Include="..\..\source\Common\RelayCommand.cs" Link="Source\Common\RelayCommand.cs" />
     <Compile Include="..\..\source\Common\WebViewExtensions.cs" Link="Source\Common\WebViewExtensions.cs" />
-    <Compile Include="..\..\source\ViewModels\FriendAchievementDisplayItem.cs" Link="Source\ViewModels\FriendAchievementDisplayItem.cs" />
-    <Compile Include="..\..\source\ViewModels\FriendGameSummaryItem.cs" Link="Source\ViewModels\FriendGameSummaryItem.cs" />
-    <Compile Include="..\..\source\ViewModels\FriendSummaryItem.cs" Link="Source\ViewModels\FriendSummaryItem.cs" />
+    <Compile Include="..\..\source\ViewModels\Items\FriendAchievementDisplayItem.cs" Link="Source\ViewModels\Items\FriendAchievementDisplayItem.cs" />
+    <Compile Include="..\..\source\ViewModels\Items\FriendGameSummaryItem.cs" Link="Source\ViewModels\Items\FriendGameSummaryItem.cs" />
+    <Compile Include="..\..\source\ViewModels\Items\FriendSummaryItem.cs" Link="Source\ViewModels\Items\FriendSummaryItem.cs" />
     <Compile Include="..\..\source\ViewModels\IOverviewRefreshHeaderViewModel.cs" Link="Source\ViewModels\IOverviewRefreshHeaderViewModel.cs" />
     <Compile Include="..\..\source\ViewModels\FriendsOverviewViewModel.cs" Link="Source\ViewModels\FriendsOverviewViewModel.cs" />
-    <Compile Include="..\..\source\ViewModels\GameSummaryItem.cs" Link="Source\ViewModels\GameSummaryItem.cs" />
+    <Compile Include="..\..\source\ViewModels\Items\GameSummaryItem.cs" Link="Source\ViewModels\Items\GameSummaryItem.cs" />
     <Compile Include="..\..\source\ViewModels\AchievementGridControlBarAdapter.cs" Link="Source\ViewModels\AchievementGridControlBarAdapter.cs" />
     <Compile Include="..\..\source\ViewModels\GameSummaryGridControlBarAdapter.cs" Link="Source\ViewModels\GameSummaryGridControlBarAdapter.cs" />
-    <Compile Include="..\..\source\ViewModels\GridControlBarModels.cs" Link="Source\ViewModels\GridControlBarModels.cs" />
-    <Compile Include="..\..\source\ViewModels\ProviderPlatformFilter.cs" Link="Source\ViewModels\ProviderPlatformFilter.cs" />
+    <Compile Include="..\..\source\ViewModels\Items\GridControlBarModels.cs" Link="Source\ViewModels\Items\GridControlBarModels.cs" />
+    <Compile Include="..\..\source\ViewModels\Items\ProviderPlatformFilter.cs" Link="Source\ViewModels\Items\ProviderPlatformFilter.cs" />
     <Compile Include="..\..\source\ViewModels\ScoreCardViewModel.cs" Link="Source\ViewModels\ScoreCardViewModel.cs" />
-    <Compile Include="..\..\source\ViewModels\ManualAchievementEditItem.cs" Link="Source\ViewModels\ManualAchievementEditItem.cs" />
+    <Compile Include="..\..\source\ViewModels\Items\ManualAchievementEditItem.cs" Link="Source\ViewModels\Items\ManualAchievementEditItem.cs" />
     <Compile Include="..\..\source\ViewModels\AchievementToastViewModel.cs" Link="Source\ViewModels\AchievementToastViewModel.cs" />
     <Compile Include="..\..\source\Views\Converters\PercentToRarityGlowConverter.cs" Link="Source\Views\Converters\PercentToRarityGlowConverter.cs" />
     <Compile Include="..\..\source\Models\AuthOutcome.cs" Link="Source\Models\AuthOutcome.cs" />
@@ -237,6 +240,7 @@
     <Compile Include="..\..\source\Models\Settings\FriendSettingsEntry.cs" Link="Source\Models\Settings\FriendSettingsEntry.cs" />
     <Compile Include="..\..\source\Models\Settings\PersistedSettings.cs" Link="Source\Models\Settings\PersistedSettings.cs" />
     <Compile Include="..\..\source\Models\Settings\PersistedSettings.GridCompatibility.cs" Link="Source\Models\Settings\PersistedSettings.GridCompatibility.cs" />
+    <Compile Include="..\..\source\Models\Settings\PersistedSettings.GridCompatibility.Notifications.cs" Link="Source\Models\Settings\PersistedSettings.GridCompatibility.Notifications.cs" />
     <Compile Include="..\..\source\Models\Settings\RarityColorSettings.cs" Link="Source\Models\Settings\RarityColorSettings.cs" />
     <Compile Include="..\..\source\Models\Settings\ResourceOverrideDescriptor.cs" Link="Source\Models\Settings\ResourceOverrideDescriptor.cs" />
     <Compile Include="..\..\source\Models\Settings\ResourceOverrideMode.cs" Link="Source\Models\Settings\ResourceOverrideMode.cs" />
@@ -307,7 +311,7 @@
     <Compile Include="..\..\source\Services\ThemeIntegration\LibraryRuntimeStateBuilder.cs" Link="Source\Services\ThemeIntegration\LibraryRuntimeStateBuilder.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\SelectedGameRuntimeStateBuilder.cs" Link="Source\Services\ThemeIntegration\SelectedGameRuntimeStateBuilder.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeFilterEvaluator.cs" Link="Source\Services\ThemeIntegration\DynamicThemeFilterEvaluator.cs" />
-    <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeFilterExpression.cs" Link="Source\Services\ThemeIntegration\DynamicThemeFilterExpression.cs" />
+    <Compile Include="..\..\source\Models\ThemeIntegration\DynamicThemeFilterExpression.cs" Link="Source\Models\ThemeIntegration\DynamicThemeFilterExpression.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeLabels.cs" Link="Source\Services\ThemeIntegration\DynamicThemeLabels.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\DynamicThemeOptionFactory.cs" Link="Source\Services\ThemeIntegration\DynamicThemeOptionFactory.cs" />
     <Compile Include="..\..\source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" Link="Source\Services\ThemeIntegration\ThemeDelegatedPropertyCatalog.cs" />
@@ -315,11 +319,13 @@
     <Compile Include="..\..\source\Views\ThemeIntegration\Base\ThemeControlBase.cs" Link="Source\Views\ThemeIntegration\Base\ThemeControlBase.cs" />
     <Compile Include="..\..\source\Services\Cache\ICacheManager.cs" Link="Source\Services\Cache\ICacheManager.cs" />
     <Compile Include="..\..\source\Services\Cache\CachedSummaryData.cs" Link="Source\Services\Cache\CachedSummaryData.cs" />
-    <Compile Include="..\..\source\Services\AchievementUnlockDiffer.cs" Link="Source\Services\AchievementUnlockDiffer.cs" />
+    <Compile Include="..\..\source\Services\Achievements\AchievementUnlockDiffer.cs" Link="Source\Services\Achievements\AchievementUnlockDiffer.cs" />
     <Compile Include="..\..\source\Services\Refresh\BulkRefreshGameFilter.cs" Link="Source\Services\Refresh\BulkRefreshGameFilter.cs" />
     <Compile Include="..\..\source\Services\Refresh\ProviderRefreshExecutor.cs" Link="Source\Services\Refresh\ProviderRefreshExecutor.cs" />
     <Compile Include="..\..\source\Services\Refresh\RefreshRequestPlanner.cs" Link="Source\Services\Refresh\RefreshRequestPlanner.cs" />
     <Compile Include="..\..\source\Services\Refresh\RefreshRuntime.cs" Link="Source\Services\Refresh\RefreshRuntime.cs" />
+    <Compile Include="..\..\source\Services\Refresh\FriendRefreshCoordinator.cs" Link="Source\Services\Refresh\FriendRefreshCoordinator.cs" />
+    <Compile Include="..\..\source\Services\Refresh\FriendRefreshWorkPolicy.cs" Link="Source\Services\Refresh\FriendRefreshWorkPolicy.cs" />
     <Compile Include="..\..\source\Services\Refresh\RefreshStateManager.cs" Link="Source\Services\Refresh\RefreshStateManager.cs" />
     <Compile Include="..\..\source\Services\Refresh\TargetSelectionResolver.cs" Link="Source\Services\Refresh\TargetSelectionResolver.cs" />
     <Compile Include="..\..\source\Services\ProgressReporting\ProgressReportingService.cs" Link="Source\Services\ProgressReporting\ProgressReportingService.cs" />

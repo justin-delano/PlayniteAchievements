@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 
 namespace PlayniteAchievements.Tests.Services
 {

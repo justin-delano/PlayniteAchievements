@@ -1,5 +1,8 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.GameCustomData;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -7,7 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Refresh
 {
     internal sealed class TargetSelectionCache
     {

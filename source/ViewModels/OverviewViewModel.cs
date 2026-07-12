@@ -17,9 +17,14 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Achievements.Scoring;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
+using PlayniteAchievements.Services.Search;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views;
 using PlayniteAchievements.Views.Helpers;
 using Playnite.SDK;
@@ -1748,14 +1753,7 @@ namespace PlayniteAchievements.ViewModels
                 _globalAchievementSearchIndex.Rebuild(_allAchievements);
             }
 
-            if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulkAll)
-            {
-                bulkAll.ReplaceAll(_allAchievements);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(AllAchievements, _allAchievements);
-            }
+            CollectionHelper.Replace(AllAchievements, _allAchievements);
 
             _allGameSummaries = snapshot.GameSummaries ?? new List<GameSummaryItem>();
             if (gameSummarySearchEntries != null)
@@ -2875,14 +2873,7 @@ namespace PlayniteAchievements.ViewModels
             var source = _allAchievements ?? new List<AchievementDisplayItem>();
             var searchQuery = SearchQuery.From(SearchText);
             var filtered = ApplySort(source.Where(item => FilterAchievement(item, searchQuery))).ToList();
-            if (AllAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-            {
-                bulk.ReplaceAll(filtered);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(AllAchievements, filtered);
-            }
+            CollectionHelper.Replace(AllAchievements, filtered);
             UpdateFilteredStatus();
         }
 
@@ -2974,14 +2965,7 @@ namespace PlayniteAchievements.ViewModels
                 _filteredGameSummaries,
                 _settings?.Persisted?.OverviewGameSummariesGridMaxRows);
 
-            if (GameSummaries is BulkObservableCollection<GameSummaryItem> bulk)
-            {
-                bulk.ReplaceAll(displayItems);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(GameSummaries, displayItems);
-            }
+            CollectionHelper.Replace(GameSummaries, displayItems);
         }
 
         private void SyncRecentAchievementsDisplay()
@@ -2990,37 +2974,22 @@ namespace PlayniteAchievements.ViewModels
                 _filteredRecentAchievements,
                 _settings?.Persisted?.OverviewRecentAchievementsGridMaxRows);
 
-            if (RecentAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-            {
-                bulk.ReplaceAll(displayItems);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(RecentAchievements, displayItems);
-            }
+            CollectionHelper.Replace(RecentAchievements, displayItems);
         }
 
         private void SyncSelectedGameAchievementsDisplay()
         {
             // Keep the unfiltered category-summary source current; the achievement filters do not
             // touch it, so category rollups stay stable while drilled.
-            if (SelectedGameAllAchievements is BulkObservableCollection<AchievementDisplayItem> allBulk)
-            {
-                allBulk.ReplaceAll(_allSelectedGameAchievements ?? new List<AchievementDisplayItem>());
-            }
+            CollectionHelper.Replace(
+                SelectedGameAllAchievements,
+                _allSelectedGameAchievements ?? new List<AchievementDisplayItem>());
 
             var displayItems = DisplayGridRowLimitHelper.Limit(
                 _filteredSelectedGameAchievements,
                 _settings?.Persisted?.OverviewSelectedGameGridMaxRows);
 
-            if (SelectedGameAchievements is BulkObservableCollection<AchievementDisplayItem> bulk)
-            {
-                bulk.ReplaceAll(displayItems);
-            }
-            else
-            {
-                CollectionHelper.SynchronizeCollection(SelectedGameAchievements, displayItems);
-            }
+            CollectionHelper.Replace(SelectedGameAchievements, displayItems);
         }
 
         private void ApplyLeftFilters()

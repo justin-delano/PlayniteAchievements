@@ -11,7 +11,7 @@ using PlayniteAchievements.Providers.Settings;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {
-    public sealed class BattleNetDataProvider : IDataProvider, IProviderOverride, IDisposable
+    public sealed class BattleNetDataProvider : DataProviderBase<BattleNetSettings>, IDataProvider, IProviderOverride, IDisposable
     {
         internal static readonly Guid BattleNetPluginId = BattleNetGameSupport.BattleNetPluginId;
 
@@ -30,7 +30,6 @@ namespace PlayniteAchievements.Providers.BattleNet
         private readonly BattleNetSessionManager _sessionManager;
         private readonly BattleNetScanner _scanner;
         private readonly ILogger _logger;
-        private BattleNetSettings _providerSettings;
 
         public BattleNetDataProvider(
             ILogger logger,
@@ -44,7 +43,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             _logger = logger;
             _apiClient = new BattleNetApiClient(logger);
             _sessionManager = new BattleNetSessionManager(playniteApi, _apiClient, logger);
-            _providerSettings = ProviderRegistry.Settings<BattleNetSettings>();
             _scanner = new BattleNetScanner(
                 _apiClient,
                 _sessionManager,
@@ -65,7 +63,7 @@ namespace PlayniteAchievements.Providers.BattleNet
         public PlayniteAchievements.Models.Friends.IFriendsProvider Friends => null;
 
         public bool IsCapable(Game game) =>
-            BattleNetGameSupport.IsSupported(game, _providerSettings);
+            BattleNetGameSupport.IsSupported(game, ProviderSettings);
 
         public Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
@@ -74,20 +72,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
-        }
-
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is BattleNetSettings battleNetSettings)
-            {
-                _providerSettings.CopyFrom(battleNetSettings);
-            }
-            else
-            {
-                _logger.Warn($"[BattleNet] Ignored incompatible provider settings object: {settings?.GetType().FullName ?? "<null>"}");
-            }
         }
 
         public ProviderSettingsViewBase CreateSettingsView()

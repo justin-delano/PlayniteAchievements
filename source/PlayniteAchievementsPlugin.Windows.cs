@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.ManageAchievements;
 
 namespace PlayniteAchievements
 {

@@ -5,6 +5,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Tests.Services.Summaries
 {

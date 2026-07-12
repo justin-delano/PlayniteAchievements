@@ -7,7 +7,7 @@ using PlayniteAchievements.Providers;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Refresh
 {
     public sealed class RefreshExecutionPolicy
     {
@@ -288,7 +288,10 @@ namespace PlayniteAchievements.Services
                         var gameIds = _refreshService.LastRefreshedGameIds;
                         RefreshCompleted?.Invoke(gameIds);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "RefreshCompleted event handler failed.");
+                    }
                 }
             }
         }

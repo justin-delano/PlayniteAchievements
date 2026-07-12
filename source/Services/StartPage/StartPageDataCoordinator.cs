@@ -6,6 +6,7 @@ using Playnite.SDK;
 #if !TEST
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Library;
 #endif
 using PlayniteAchievements.Services.Overview;

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using PlayniteAchievements.Services.Cache;
 
 namespace PlayniteAchievements.Providers.Ffxiv
 {

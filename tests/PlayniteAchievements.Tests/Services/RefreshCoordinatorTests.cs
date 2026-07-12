@@ -3,6 +3,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Collections.Generic;
 using System.Linq;

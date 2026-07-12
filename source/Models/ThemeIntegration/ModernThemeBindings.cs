@@ -5,7 +5,9 @@ using System.Linq;
 using Playnite.SDK.Data;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
 namespace PlayniteAchievements.Models.ThemeIntegration
@@ -1764,7 +1766,7 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 return fallbackValue;
             }
 
-            return Services.GameCustomDataLookup.ShouldUseSeparateLockedIcons(playniteGameId, settings);
+            return Services.GameCustomData.GameCustomDataLookup.ShouldUseSeparateLockedIcons(playniteGameId, settings);
         }
     }
 }

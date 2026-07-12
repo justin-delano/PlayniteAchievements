@@ -14,12 +14,19 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Manual;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views;
+using PlayniteAchievements.Views.Dialogs;
 using PlayniteAchievements.Views.Helpers;
+using PlayniteAchievements.Views.ManageAchievements;
 
 namespace PlayniteAchievements.Services.UI
 {
@@ -194,8 +201,9 @@ namespace PlayniteAchievements.Services.UI
                 window.Owner = owner ?? _api?.Dialogs?.GetCurrentAppWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             }
-            catch
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, "Failed to set owner for color picker window.");
             }
 
             AttachWindowPlacement(window, ColorPickerWindowPlacementKey, isFullscreen: false);
@@ -503,8 +511,9 @@ namespace PlayniteAchievements.Services.UI
                             text: report.Message,
                             current: Math.Max(0, Math.Min(100, percent)));
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        _logger?.Debug(ex, "Failed to update global progress from rebuild progress report.");
                     }
                 };
 
@@ -1066,6 +1075,7 @@ namespace PlayniteAchievements.Services.UI
                 }
                 catch
                 {
+                    // Static best-effort focus fallback; no logger available here.
                 }
             }
         }
@@ -1315,8 +1325,9 @@ namespace PlayniteAchievements.Services.UI
                         window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger?.Debug(ex, "Failed to set owner for test view window.");
                 }
 
                 window.ShowDialog();
@@ -1375,8 +1386,9 @@ namespace PlayniteAchievements.Services.UI
                         window.Owner = _api?.Dialogs?.GetCurrentAppWindow();
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
+                    _logger?.Debug(ex, "Failed to set owner for test view window.");
                 }
 
                 window.ShowDialog();

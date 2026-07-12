@@ -2,11 +2,12 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.RPCS3;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Providers.Xenia;
+using PlayniteAchievements.Services.Achievements;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.GameCustomData
 {
     internal static class GameCustomDataNormalizer
     {

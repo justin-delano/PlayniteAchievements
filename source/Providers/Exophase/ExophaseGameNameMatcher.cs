@@ -14,57 +14,13 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>Score for an exact (case-insensitive) match of two normalized names.</summary>
         public const int ExactMatchScore = 100;
 
-        private static readonly string[] EditionSuffixes =
-        {
-            " - Definitive Edition",
-            " - Game of the Year Edition",
-            " - Complete Edition",
-            " - Collector's Edition",
-            " - Deluxe Edition",
-            " - Standard Edition",
-            " - Ultimate Edition",
-            " - Premium Edition",
-            " Definitive Edition",
-            " Game of the Year Edition",
-            " Complete Edition",
-            " Collector's Edition",
-            " Deluxe Edition",
-            " Standard Edition",
-            " Ultimate Edition",
-            " Premium Edition",
-            " (Definitive Edition)",
-            " (Game of the Year Edition)",
-            " (Complete Edition)",
-            " (Collector's Edition)",
-            " (Deluxe Edition)",
-            " (Standard Edition)",
-            " (Ultimate Edition)",
-            " (Premium Edition)"
-        };
-
         /// <summary>
         /// Normalizes a game name for matching by trimming and removing a known edition suffix.
         /// Case is preserved; downstream comparisons are case-insensitive.
         /// </summary>
         public static string NormalizeGameName(string name)
         {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return name;
-            }
-
-            var normalized = name.Trim();
-
-            foreach (var suffix in EditionSuffixes)
-            {
-                if (normalized.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
-                {
-                    normalized = normalized.Substring(0, normalized.Length - suffix.Length);
-                    break;
-                }
-            }
-
-            return normalized.Trim();
+            return GameNameNormalizer.StripEditionSuffix(name);
         }
 
         /// <summary>
@@ -113,39 +69,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         public static int ComputeMatchScore(string normalizedSearch, string normalizedTitle)
         {
-            if (string.IsNullOrWhiteSpace(normalizedSearch) || string.IsNullOrWhiteSpace(normalizedTitle))
-            {
-                return 0;
-            }
-
-            if (string.Equals(normalizedTitle, normalizedSearch, StringComparison.OrdinalIgnoreCase))
-            {
-                return ExactMatchScore;
-            }
-
-            if (normalizedTitle.StartsWith(normalizedSearch, StringComparison.OrdinalIgnoreCase))
-            {
-                return 80;
-            }
-
-            if (normalizedTitle.IndexOf(normalizedSearch, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                normalizedSearch.IndexOf(normalizedTitle, StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return 60;
-            }
-
-            var similarity = StringSimilarity.JaroWinklerSimilarityIgnoreCase(normalizedSearch, normalizedTitle);
-            if (similarity >= 0.94)
-            {
-                return 70;
-            }
-
-            if (similarity >= 0.88)
-            {
-                return 40;
-            }
-
-            return 0;
+            return GameNameNormalizer.ComputeMatchScore(normalizedSearch, normalizedTitle);
         }
     }
 }

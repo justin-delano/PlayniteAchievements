@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Providers.Steam

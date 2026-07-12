@@ -11,7 +11,7 @@ using PlayniteAchievements.Services.Images;
 using Playnite.SDK;
 using System.Windows;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Cache
 {
     internal interface ICacheReadOptimizations
     {
@@ -166,8 +166,9 @@ namespace PlayniteAchievements.Services
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);
             }
-            catch
+            catch (Exception dialogEx)
             {
+                _logger?.Debug(dialogEx, "[Cache] Failed to show cache startup-failure dialog.");
             }
         }
 
@@ -1107,18 +1108,6 @@ namespace PlayniteAchievements.Services
                 EnsureReady_Locked("LoadFriendOwnershipRecency");
                 return _store.LoadFriendOwnershipRecency(providerKey, externalUserId) ??
                        new Dictionary<string, FriendOwnershipRecency>(StringComparer.OrdinalIgnoreCase);
-            }
-        }
-
-        IReadOnlyDictionary<string, bool> IFriendCacheManager.LoadFriendOwnershipPresence(
-            string providerKey,
-            IReadOnlyCollection<string> externalUserIds)
-        {
-            lock (_sync)
-            {
-                EnsureReady_Locked("LoadFriendOwnershipPresence");
-                return _store.LoadFriendOwnershipPresence(providerKey, externalUserIds) ??
-                       new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
             }
         }
 

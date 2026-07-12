@@ -9,10 +9,14 @@ using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.ThemeIntegration;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 using System;
 using System.Collections.Generic;
@@ -2995,15 +2999,6 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 string providerKey,
                 string externalUserId) =>
                 new Dictionary<string, FriendOwnershipRecency>();
-
-            public IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
-                string providerKey,
-                IReadOnlyCollection<string> externalUserIds) =>
-                (externalUserIds ?? Array.Empty<string>())
-                    .Where(id => !string.IsNullOrWhiteSpace(id))
-                    .Select(id => id.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(id => id, _ => false, StringComparer.OrdinalIgnoreCase);
 
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
             {

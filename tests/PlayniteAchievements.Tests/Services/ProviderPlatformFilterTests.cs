@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services.Overview;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Tests.Services
 {

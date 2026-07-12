@@ -111,13 +111,13 @@ namespace PlayniteAchievements.Models.Tests
         {
             var source = new PersistedSettings
             {
-                EnableInGamePolling = true,
+                EnableInGamePolling = false,
                 InGamePollIntervalSeconds = 21,
                 InGamePollRefreshFriends = true,
                 InGameFriendRefreshMultiplier = 5,
                 InGameFriendBatchSize = 7,
                 EnableUnlockToasts = false,
-                EnableFriendUnlockToasts = true,
+                EnableFriendUnlockToasts = false,
                 ToastShowRarityGlow = false,
                 ToastRarityColoredName = false,
                 ToastShowRarityPercent = false,

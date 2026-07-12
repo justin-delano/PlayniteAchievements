@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Hoyoverse
 {
-    internal sealed class HoyoverseDataProvider : IDataProvider, IProviderOverride, IDisposable
+    internal sealed class HoyoverseDataProvider : DataProviderBase<HoyoverseSettings>, IDataProvider, IProviderOverride, IDisposable
     {
         internal const string Key = "Hoyoverse";
 
@@ -41,7 +41,6 @@ namespace PlayniteAchievements.Providers.Hoyoverse
         private readonly IPlayniteAPI _playniteApi;
         private readonly string _pluginUserDataPath;
         private readonly HttpClient _httpClient;
-        private HoyoverseSettings _providerSettings;
 
         public HoyoverseDataProvider(ILogger logger, PlayniteAchievementsSettings settings, IPlayniteAPI playniteApi)
             : this(logger, settings, playniteApi, string.Empty)
@@ -54,7 +53,6 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _playniteApi = playniteApi;
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
-            _providerSettings = ProviderRegistry.Settings<HoyoverseSettings>();
             _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         }
 
@@ -81,7 +79,7 @@ namespace PlayniteAchievements.Providers.Hoyoverse
 
         public bool IsCapable(Game game)
         {
-            return HoyoverseGameCatalog.TryResolve(game, _providerSettings, out _);
+            return HoyoverseGameCatalog.TryResolve(game, ProviderSettings, out _);
         }
 
         public Task<RebuildPayload> RefreshAsync(
@@ -93,21 +91,11 @@ namespace PlayniteAchievements.Providers.Hoyoverse
             var scanner = new HoyoverseScanner(
                 _logger,
                 _settings,
-                _providerSettings,
+                ProviderSettings,
                 _pluginUserDataPath,
                 new HoyoverseDefinitionClient(_httpClient, _logger, _pluginUserDataPath));
 
             return scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
-        }
-
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is HoyoverseSettings hoyoverseSettings)
-            {
-                _providerSettings.CopyFrom(hoyoverseSettings);
-            }
         }
 
         public ProviderSettingsViewBase CreateSettingsView()

@@ -4,6 +4,7 @@ using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Services.Summaries
 {

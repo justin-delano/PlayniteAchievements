@@ -6,6 +6,8 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Xbox.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -143,32 +145,8 @@ namespace PlayniteAchievements.Providers.Xbox
         /// </summary>
         private static bool IsTransientError(Exception ex)
         {
-            if (ex is OperationCanceledException) return false;
-            if (ex is XboxTransientException) return true;
-
-            // WebException with transient status codes
-            if (ex is WebException webEx && webEx.Response is HttpWebResponse response)
-            {
-                var statusCode = (int)response.StatusCode;
-                // 429 Too Many Requests, 503 Service Unavailable, 502 Bad Gateway, 504 Gateway Timeout
-                if (statusCode == 429 || statusCode == 502 || statusCode == 503 || statusCode == 504)
-                    return true;
-            }
-
-            // Network-related exceptions
-            var message = ex.Message ?? string.Empty;
-            if (message.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("connection", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                message.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("temporarily", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-
-            if (ex.InnerException != null && !ReferenceEquals(ex.InnerException, ex))
-            {
-                return IsTransientError(ex.InnerException);
-            }
-
-            return false;
+            return TransientErrorClassifier.IsTransient(ex, e =>
+                e is XboxTransientException ? true : (bool?)null);
         }
 
         private async Task<GameAchievementData> FetchGameDataAsync(

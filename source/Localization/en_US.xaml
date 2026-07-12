@@ -349,7 +349,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_CategorySummaries_Toggle">Categories</sys:String>
     <sys:String x:Key="LOCPlayAch_CategorySummaries_ToggleToolTip">Group achievements by category</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_StartInCategoryMode">Start in Category Mode</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_StartInCategoryMode_ViewFriends">Start in Category Mode (View Friends Achievements)</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_CustomIcons">Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Filters">Filters</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_ManualTracking">Manual Tracking</sys:String>
@@ -483,6 +482,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_AchievementDataGridThemeControl">Sort By</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Description">Control how achievement icons are stored on disk. Changes apply on the next refresh.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_AchievementIconCache_Title">Achievement Icon Cache</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Advanced">Advanced</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ApplyAndSync">Apply &amp; Sync</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes">Include hidden games in bulk refreshes</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_IncludeHiddenGamesInBulkRefreshes_Description">Controls whether bulk refreshes include games marked hidden in Playnite. Single-game and other explicit user-targeted refreshes still include hidden games.</sys:String>
@@ -499,7 +499,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_Description">Playnite Achievements Settings</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewSection">Overview</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_FriendsOverviewSection">Friends Overview</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Display_LibrarySection">Library</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_StartPageSection">StartPage</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_GridDefaults">Grid Defaults</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Display_OverviewLayout">Overview Layout</sys:String>

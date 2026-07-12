@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Services.Overview
 {

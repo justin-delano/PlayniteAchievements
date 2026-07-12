@@ -1,9 +1,12 @@
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -18,7 +21,7 @@ namespace PlayniteAchievements.Providers.GOG
     /// IDataProvider implementation for GOG achievements.
     /// Uses WebView-based authentication and GOG gameplay API.
     /// </summary>
-    public sealed class GogDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
+    public sealed class GogDataProvider : DataProviderBase<GogSettings>, IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_GOG",
@@ -31,7 +34,6 @@ namespace PlayniteAchievements.Providers.GOG
         private readonly GogSessionManager _sessionManager;
         private readonly GogScanner _scanner;
         private readonly HttpClient _httpClient;
-        private GogSettings _providerSettings;
 
         public GogDataProvider(
             ILogger logger,
@@ -44,14 +46,12 @@ namespace PlayniteAchievements.Providers.GOG
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
             if (string.IsNullOrWhiteSpace(pluginUserDataPath)) throw new ArgumentException("Plugin user data path is required.", nameof(pluginUserDataPath));
 
-            _httpClient = new HttpClient();
+            _httpClient = HttpClientFactory.Create();
             _sessionManager = new GogSessionManager(playniteApi, logger);
 
             var clientIdCacheStore = new GogClientIdCacheStore(pluginUserDataPath, logger);
             var apiClient = new GogApiClient(_httpClient, logger, _sessionManager, clientIdCacheStore);
             _scanner = new GogScanner(settings, apiClient, _sessionManager, logger);
-
-            _providerSettings = ProviderRegistry.Settings<GogSettings>();
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_GOG");
@@ -168,18 +168,6 @@ namespace PlayniteAchievements.Providers.GOG
         public void EndRefreshAuthContext(RefreshAuthContext context)
         {
             _scanner?.EndRefreshAuthContext(context);
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is GogSettings gogSettings)
-            {
-                _providerSettings.CopyFrom(gogSettings);
-            }
         }
 
         /// <inheritdoc />

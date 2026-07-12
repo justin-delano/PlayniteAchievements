@@ -5,9 +5,14 @@ using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.ViewModels.ManageAchievements;
 using PlayniteAchievements.Views;
+using PlayniteAchievements.Views.Dialogs;
 
 namespace PlayniteAchievements.Views.Helpers
 {

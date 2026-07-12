@@ -13,6 +13,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Views.Controls

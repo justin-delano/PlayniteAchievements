@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using Playnite.SDK.Events;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.BattleNet.Models;
 
@@ -206,23 +207,13 @@ namespace PlayniteAchievements.Providers.BattleNet
             var settings = ProviderRegistry.Settings<BattleNetSettings>();
             ClearTokenState(settings, persistToDisk: true);
 
-            try
-            {
-                _api.MainView.UIDispatcher.Invoke(() =>
-                {
-                    using (var view = _api.WebViews.CreateOffscreenView())
-                    {
-                        view.DeleteDomainCookies("battle.net");
-                        view.DeleteDomainCookies(".battle.net");
-                        view.DeleteDomainCookies("blizzard.com");
-                        view.DeleteDomainCookies(".blizzard.com");
-                    }
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[BattleNetAuth] Failed to clear Battle.net cookies from CEF.");
-            }
+            _api.DeleteDomainCookies(
+                _logger,
+                "[BattleNetAuth]",
+                "battle.net",
+                ".battle.net",
+                "blizzard.com",
+                ".blizzard.com");
         }
 
         private Task<string> CaptureAuthorizationCallbackAsync(

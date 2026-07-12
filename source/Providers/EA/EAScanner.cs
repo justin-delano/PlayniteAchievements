@@ -3,6 +3,8 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -101,8 +103,7 @@ namespace PlayniteAchievements.Providers.EA
                 {
                     _logger?.Debug(ex, $"[EAAch] Failed to scan {game?.Name} after {consecutiveErrors} consecutive errors.");
                 },
-                delayBetweenGamesAsync: (index, token) => rateLimiter.DelayBeforeNextAsync(token),
-                delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                rateLimiter,
                 cancel).ConfigureAwait(false);
         }
 

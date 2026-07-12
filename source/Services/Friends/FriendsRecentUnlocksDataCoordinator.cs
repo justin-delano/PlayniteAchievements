@@ -1,7 +1,9 @@
 using Playnite.SDK;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using System;
 using System.Collections.Generic;
 using System.Linq;

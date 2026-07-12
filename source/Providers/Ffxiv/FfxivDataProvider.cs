@@ -3,6 +3,8 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -19,7 +21,7 @@ namespace PlayniteAchievements.Providers.Ffxiv
     /// FFXIV achievements are account/character-wide, so the resolved set is
     /// attached to the matched FFXIV entry in the Playnite library.
     /// </summary>
-    internal sealed class FfxivDataProvider : IDataProvider, IProviderOverride, IDisposable
+    internal sealed class FfxivDataProvider : DataProviderBase<FfxivSettings>, IDataProvider, IProviderOverride, IDisposable
     {
         // Presence-only binding: forces a game to be treated as FFXIV (account/character-wide data).
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.None();
@@ -27,7 +29,6 @@ namespace PlayniteAchievements.Providers.Ffxiv
         private readonly ILogger _logger;
         private readonly PlayniteAchievementsSettings _settings;
         private readonly string _pluginUserDataPath;
-        private readonly FfxivSettings _providerSettings;
 
         private readonly object _initLock = new object();
         private FfxivApiClient _apiClient;
@@ -38,7 +39,6 @@ namespace PlayniteAchievements.Providers.Ffxiv
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
-            _providerSettings = ProviderRegistry.Settings<FfxivSettings>();
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_FFXIV");
@@ -271,18 +271,6 @@ namespace PlayniteAchievements.Providers.Ffxiv
         public void Dispose()
         {
             _apiClient?.Dispose();
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is FfxivSettings ffxivSettings)
-            {
-                _providerSettings.CopyFrom(ffxivSettings);
-            }
         }
 
         /// <inheritdoc />

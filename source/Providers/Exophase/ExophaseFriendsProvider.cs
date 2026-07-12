@@ -1127,6 +1127,33 @@ namespace PlayniteAchievements.Providers.Exophase
 
         private static class ExophaseFriendPageParser
         {
+            private static readonly Regex ServiceIconPlatformRegex = new Regex(@"exo-icon-service-([a-z0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex ImageHostPlatformRegex = new Regex(@"exophase\.com/([a-z0-9]+)/(?:games|awards)/", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex PlaytimeHoursMinutesRegex = new Regex(@"(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?)?\s*(?:(\d+)\s*m(?:in(?:utes?)?)?)?", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex EarnedTotalCountsRegex = new Regex(@"(\d+)\s*/\s*(\d+)", RegexOptions.Compiled);
+            private static readonly Regex RecentDateContextRegex = new Regex(
+                @"\b(today|yesterday|last\s+24\s+hours?|past\s+24\s+hours?|this\s+week|last\s+week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex LastPlayedLabelRegex = new Regex(@"\b(last\s+played|played\s+on|recently\s+played)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex TodayWordRegex = new Regex(@"\btoday\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex YesterdayWordRegex = new Regex(@"\byesterday\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex WeekdayNameRegex = new Regex(@"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex MonthDayDateRegex = new Regex(
+                @"\b(?:\d{1,2}\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,?\s+\d{4})?\b",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex IsoDateRegex = new Regex(@"\b\d{4}-\d{1,2}-\d{1,2}\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex FourDigitYearRegex = new Regex(@"\b\d{4}\b", RegexOptions.Compiled);
+            private static readonly Regex HeadingTagNameRegex = new Regex(@"^h[1-6]$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex DateHeaderClassRegex = new Regex(@"\b(date|day|activity|header|title)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex CompactDayWordRegex = new Regex(
+                @"^(today|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)$",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex CompactMonthDayDateRegex = new Regex(
+                @"^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,?\s+\d{4})?$",
+                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex CompactIsoDateRegex = new Regex(@"^\d{4}-\d{1,2}-\d{1,2}$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            private static readonly Regex WhitespaceRunRegex = new Regex(@"\s+", RegexOptions.Compiled);
+
             public static ExophaseProfileMetadata ParseProfile(string html)
             {
                 var doc = LoadDocument(html);
@@ -1329,7 +1356,7 @@ namespace PlayniteAchievements.Providers.Exophase
                     // The service icon carries the platform: <i class="exo-icon-service-origin ...">.
                     var serviceIcon = container.SelectSingleNode(".//i[contains(@class, 'exo-icon-service-')]");
                     var iconClass = serviceIcon?.GetAttributeValue("class", string.Empty) ?? string.Empty;
-                    var iconMatch = Regex.Match(iconClass, @"exo-icon-service-([a-z0-9]+)", RegexOptions.IgnoreCase);
+                    var iconMatch = ServiceIconPlatformRegex.Match(iconClass);
                     if (iconMatch.Success)
                     {
                         return NormalizePlatformSlug(iconMatch.Groups[1].Value);
@@ -1337,7 +1364,7 @@ namespace PlayniteAchievements.Providers.Exophase
 
                     // Fall back to the media host path: https://m.exophase.com/{platform}/games/...
                     var imageSrc = ExophaseApiClient.ResolveImageUrl(container) ?? string.Empty;
-                    var imageMatch = Regex.Match(imageSrc, @"exophase\.com/([a-z0-9]+)/(?:games|awards)/", RegexOptions.IgnoreCase);
+                    var imageMatch = ImageHostPlatformRegex.Match(imageSrc);
                     if (imageMatch.Success)
                     {
                         return NormalizePlatformSlug(imageMatch.Groups[1].Value);
@@ -1373,7 +1400,7 @@ namespace PlayniteAchievements.Providers.Exophase
                     return 0;
                 }
 
-                var match = Regex.Match(text, @"(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?)?\s*(?:(\d+)\s*m(?:in(?:utes?)?)?)?", RegexOptions.IgnoreCase);
+                var match = PlaytimeHoursMinutesRegex.Match(text);
                 if (!match.Success)
                 {
                     return 0;
@@ -1414,7 +1441,7 @@ namespace PlayniteAchievements.Providers.Exophase
                     return (null, null);
                 }
 
-                var match = Regex.Match(Clean(progressCol.InnerText) ?? string.Empty, @"(\d+)\s*/\s*(\d+)");
+                var match = EarnedTotalCountsRegex.Match(Clean(progressCol.InnerText) ?? string.Empty);
                 if (!match.Success ||
                     !int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var earned) ||
                     !int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var total))
@@ -1434,10 +1461,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 if (!hasRecentDateContext &&
-                    !Regex.IsMatch(
-                        text,
-                        @"\b(today|yesterday|last\s+24\s+hours?|past\s+24\s+hours?|this\s+week|last\s+week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
-                        RegexOptions.IgnoreCase))
+                    !RecentDateContextRegex.IsMatch(text))
                 {
                     return 0;
                 }
@@ -1471,10 +1495,7 @@ namespace PlayniteAchievements.Providers.Exophase
             private static bool LooksLikeLastPlayedText(string text)
             {
                 return !string.IsNullOrWhiteSpace(text) &&
-                       Regex.IsMatch(
-                           text,
-                           @"\b(last\s+played|played\s+on|recently\s+played)\b",
-                           RegexOptions.IgnoreCase);
+                       LastPlayedLabelRegex.IsMatch(text);
             }
 
             private static DateTime? ResolveRecentDateContextUtc(HtmlNode container)
@@ -1628,22 +1649,19 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 var today = DateTime.UtcNow.Date;
-                if (Regex.IsMatch(text, @"\btoday\b", RegexOptions.IgnoreCase))
+                if (TodayWordRegex.IsMatch(text))
                 {
                     dateUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
                     return true;
                 }
 
-                if (Regex.IsMatch(text, @"\byesterday\b", RegexOptions.IgnoreCase))
+                if (YesterdayWordRegex.IsMatch(text))
                 {
                     dateUtc = DateTime.SpecifyKind(today.AddDays(-1), DateTimeKind.Utc);
                     return true;
                 }
 
-                var weekdayMatch = Regex.Match(
-                    text,
-                    @"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
-                    RegexOptions.IgnoreCase);
+                var weekdayMatch = WeekdayNameRegex.Match(text);
                 if (weekdayMatch.Success &&
                     TryParseWeekday(weekdayMatch.Groups[1].Value, out var weekday))
                 {
@@ -1652,13 +1670,10 @@ namespace PlayniteAchievements.Providers.Exophase
                     return true;
                 }
 
-                var dateMatch = Regex.Match(
-                    text,
-                    @"\b(?:\d{1,2}\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,?\s+\d{4})?\b",
-                    RegexOptions.IgnoreCase);
+                var dateMatch = MonthDayDateRegex.Match(text);
                 if (!dateMatch.Success)
                 {
-                    dateMatch = Regex.Match(text, @"\b\d{4}-\d{1,2}-\d{1,2}\b", RegexOptions.IgnoreCase);
+                    dateMatch = IsoDateRegex.Match(text);
                 }
 
                 if (!dateMatch.Success)
@@ -1667,7 +1682,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 var value = dateMatch.Value;
-                if (!Regex.IsMatch(value, @"\b\d{4}\b"))
+                if (!FourDigitYearRegex.IsMatch(value))
                 {
                     value = value + " " + today.Year.ToString(CultureInfo.InvariantCulture);
                 }
@@ -1730,13 +1745,13 @@ namespace PlayniteAchievements.Providers.Exophase
                 }
 
                 var name = node?.Name ?? string.Empty;
-                if (Regex.IsMatch(name, @"^h[1-6]$", RegexOptions.IgnoreCase))
+                if (HeadingTagNameRegex.IsMatch(name))
                 {
                     return true;
                 }
 
                 var className = node?.GetAttributeValue("class", string.Empty) ?? string.Empty;
-                if (Regex.IsMatch(className, @"\b(date|day|activity|header|title)\b", RegexOptions.IgnoreCase))
+                if (DateHeaderClassRegex.IsMatch(className))
                 {
                     return true;
                 }
@@ -1751,18 +1766,9 @@ namespace PlayniteAchievements.Providers.Exophase
                     return false;
                 }
 
-                return Regex.IsMatch(
-                           text,
-                           @"^(today|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)$",
-                           RegexOptions.IgnoreCase) ||
-                       Regex.IsMatch(
-                           text,
-                           @"^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,?\s+\d{4})?$",
-                           RegexOptions.IgnoreCase) ||
-                       Regex.IsMatch(
-                           text,
-                           @"^\d{4}-\d{1,2}-\d{1,2}$",
-                           RegexOptions.IgnoreCase);
+                return CompactDayWordRegex.IsMatch(text) ||
+                       CompactMonthDayDateRegex.IsMatch(text) ||
+                       CompactIsoDateRegex.IsMatch(text);
             }
 
             private static string NormalizeUrl(string url)
@@ -1790,7 +1796,7 @@ namespace PlayniteAchievements.Providers.Exophase
             {
                 return string.IsNullOrWhiteSpace(value)
                     ? null
-                    : Regex.Replace(WebUtility.HtmlDecode(value), @"\s+", " ").Trim();
+                    : WhitespaceRunRegex.Replace(WebUtility.HtmlDecode(value), " ").Trim();
             }
 
             private static string FirstNonEmpty(params string[] values)

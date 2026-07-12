@@ -1,6 +1,7 @@
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using System.Collections.Generic;
 
 namespace PlayniteAchievements.Models.ThemeIntegration

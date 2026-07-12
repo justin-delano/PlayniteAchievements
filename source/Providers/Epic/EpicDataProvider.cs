@@ -1,9 +1,12 @@
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -14,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace PlayniteAchievements.Providers.Epic
 {
-    public sealed class EpicDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
+    public sealed class EpicDataProvider : DataProviderBase<EpicSettings>, IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_Epic",
@@ -24,7 +27,6 @@ namespace PlayniteAchievements.Providers.Epic
         private readonly EpicSessionManager _sessionManager;
         private readonly EpicScanner _scanner;
         private readonly HttpClient _httpClient;
-        private EpicSettings _providerSettings;
 
         private static readonly Guid EpicPluginId = ResolveEpicPluginId();
         internal static readonly Guid LegendaryPluginId = Guid.Parse("EAD65C3B-2F8F-4E37-B4E6-B3DE6BE540C6");
@@ -38,13 +40,11 @@ namespace PlayniteAchievements.Providers.Epic
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (playniteApi == null) throw new ArgumentNullException(nameof(playniteApi));
 
-            _httpClient = new HttpClient();
+            _httpClient = HttpClientFactory.Create();
             _sessionManager = new EpicSessionManager(playniteApi, logger);
 
             var apiClient = new EpicApiClient(_httpClient, logger, _sessionManager, settings.Persisted);
             _scanner = new EpicScanner(settings, apiClient, _sessionManager, logger);
-
-            _providerSettings = ProviderRegistry.Settings<EpicSettings>();
         }
 
         public string ProviderName => ResourceProvider.GetString("LOCPlayAch_Provider_Epic");
@@ -161,18 +161,6 @@ namespace PlayniteAchievements.Providers.Epic
         public void EndRefreshAuthContext(RefreshAuthContext context)
         {
             _scanner?.EndRefreshAuthContext(context);
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is EpicSettings epicSettings)
-            {
-                _providerSettings.CopyFrom(epicSettings);
-            }
         }
 
         /// <inheritdoc />

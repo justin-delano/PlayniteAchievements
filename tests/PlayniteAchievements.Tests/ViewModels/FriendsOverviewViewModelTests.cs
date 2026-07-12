@@ -4,7 +4,9 @@ using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -1160,15 +1162,6 @@ namespace PlayniteAchievements.Tests.ViewModels
                 string providerKey,
                 string externalUserId) =>
                 new Dictionary<string, FriendOwnershipRecency>();
-
-            public IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
-                string providerKey,
-                IReadOnlyCollection<string> externalUserIds) =>
-                (externalUserIds ?? Array.Empty<string>())
-                    .Where(id => !string.IsNullOrWhiteSpace(id))
-                    .Select(id => id.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(id => id, _ => false, StringComparer.OrdinalIgnoreCase);
 
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
             {

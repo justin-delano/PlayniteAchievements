@@ -8,6 +8,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Xenia;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;

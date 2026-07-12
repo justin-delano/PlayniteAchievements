@@ -471,20 +471,8 @@ namespace PlayniteAchievements.Providers.BattleNet
 
         public static bool IsTransientError(Exception ex)
         {
-            if (ex is BattleNetTransientException) return true;
-            if (ex is HttpRequestException) return true;
-            if (ex is WebException) return true;
-            if (ex is OperationCanceledException) return false;
-
-            if (ex.GetBaseException() is WebException webEx)
-            {
-                if (webEx.Status == WebExceptionStatus.Timeout ||
-                    webEx.Status == WebExceptionStatus.ConnectionClosed ||
-                    webEx.Status == WebExceptionStatus.ConnectFailure)
-                    return true;
-            }
-
-            return false;
+            return TransientErrorClassifier.IsTransient(ex, e =>
+                e is BattleNetTransientException ? true : (bool?)null);
         }
 
         // --- Private ---
@@ -770,8 +758,9 @@ namespace PlayniteAchievements.Providers.BattleNet
 
                 _logger?.Warn("[BattleNet/API] WoW realm-status script did not contain the expected GraphQL hash.");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger?.Debug(ex, "[BattleNet/API] Failed to fetch WoW realm-status GraphQL hash.");
             }
 
             return null;

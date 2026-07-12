@@ -5,6 +5,8 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Overrides;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,7 +17,7 @@ using Playnite.SDK.Models;
 
 namespace PlayniteAchievements.Providers.Steam
 {
-    internal sealed class SteamDataProvider : IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
+    internal sealed class SteamDataProvider : DataProviderBase<SteamSettings>, IDataProvider, IAchievementPageLinkProvider, IProviderOverride, IRefreshAuthContextReceiver, IDisposable
     {
         internal static readonly Guid SteamPluginId = SteamGameIdentity.SteamPluginId;
 
@@ -40,7 +42,6 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamWebApiTokenResolver _tokenResolver;
         private readonly SteamHuntersCategoryEnricher _steamHuntersCategoryEnricher;
         private readonly IFriendsProvider _friendsProvider;
-        private SteamSettings _providerSettings;
 
         public SteamDataProvider(
             ILogger logger,
@@ -53,9 +54,6 @@ namespace PlayniteAchievements.Providers.Steam
             if (api == null) throw new ArgumentNullException(nameof(api));
 
             _sessionManager = new SteamSessionManager(api, logger);
-
-            // Initialize provider settings from persisted settings dictionary
-            _providerSettings = ProviderRegistry.Settings<SteamSettings>();
 
             // Create Steam-specific dependencies
             _steamClient = new SteamHttpClient(api, logger, _sessionManager, pluginUserDataPath);
@@ -78,7 +76,7 @@ namespace PlayniteAchievements.Providers.Steam
         /// AuthSession is the authoritative auth check for runtime flows.
         /// </summary>
         public bool IsAuthenticated =>
-            !string.IsNullOrWhiteSpace(_providerSettings.SteamUserId);
+            !string.IsNullOrWhiteSpace(ProviderSettings.SteamUserId);
 
         public ISessionManager AuthSession => _sessionManager;
 
@@ -172,18 +170,6 @@ namespace PlayniteAchievements.Providers.Steam
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is SteamSettings steamSettings)
-            {
-                _providerSettings.CopyFrom(steamSettings);
-            }
         }
 
         /// <inheritdoc />

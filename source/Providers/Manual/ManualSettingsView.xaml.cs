@@ -9,6 +9,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 
 namespace PlayniteAchievements.Providers.Manual
 {

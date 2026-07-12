@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.UI;
 
 namespace PlayniteAchievements.Services.Tests

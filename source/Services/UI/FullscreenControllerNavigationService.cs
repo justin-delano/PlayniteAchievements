@@ -11,6 +11,7 @@ using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Events;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using PlayniteAchievements.Views.Helpers;
 
 namespace PlayniteAchievements.Services.UI

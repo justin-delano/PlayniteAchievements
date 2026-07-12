@@ -14,6 +14,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 
 namespace PlayniteAchievements.Providers.RPCS3
 {
@@ -32,7 +33,7 @@ namespace PlayniteAchievements.Providers.RPCS3
     /// Data provider for RPCS3 PlayStation 3 emulator trophy tracking.
     /// Parses local trophy files (TROPCONF.SFM + TROPUSR.DAT) from RPCS3 installation.
     /// </summary>
-    internal sealed class Rpcs3DataProvider : IDataProvider, IProviderOverride
+    internal sealed class Rpcs3DataProvider : DataProviderBase<Rpcs3Settings>, IDataProvider, IProviderOverride
     {
         public ProviderOverrideDescriptor OverrideDescriptor { get; } = ProviderOverrideDescriptor.Text(
             "LOCPlayAch_ManageAchievements_Overrides_ProviderValueLabel_RPCS3",
@@ -48,7 +49,6 @@ namespace PlayniteAchievements.Providers.RPCS3
         private readonly ILogger _logger;
         private readonly IPlayniteAPI _playniteApi;
         private readonly string _pluginUserDataPath;
-        private Rpcs3Settings _providerSettings;
 
         private Dictionary<string, string> _trophyFolderCache;
         private readonly object _cacheLock = new object();
@@ -71,8 +71,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             _playniteApi = playniteApi;
             _pluginUserDataPath = pluginUserDataPath ?? string.Empty;
 
-            _providerSettings = ProviderRegistry.Settings<Rpcs3Settings>();
-            _scanner = new Rpcs3Scanner(_logger, _settings, _providerSettings, this, _playniteApi, _pluginUserDataPath);
+            _scanner = new Rpcs3Scanner(_logger, _settings, ProviderSettings, this, _playniteApi, _pluginUserDataPath);
         }
 
         public string ProviderName
@@ -286,7 +285,7 @@ namespace PlayniteAchievements.Providers.RPCS3
             string emulatorRoot = null;
 
             // Priority 1: From provider settings (user-configured, validated)
-            var settingsExePath = _providerSettings?.ExecutablePath;
+            var settingsExePath = ProviderSettings?.ExecutablePath;
             if (!string.IsNullOrWhiteSpace(settingsExePath))
             {
                 var settingsRoot = GetEmulatorRootFromExePath(settingsExePath);
@@ -735,18 +734,6 @@ namespace PlayniteAchievements.Providers.RPCS3
             CancellationToken cancel)
         {
             return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
-        }
-
-        /// <inheritdoc />
-        public IProviderSettings GetSettings() => _providerSettings;
-
-        /// <inheritdoc />
-        public void ApplySettings(IProviderSettings settings)
-        {
-            if (settings is Rpcs3Settings rpcs3Settings)
-            {
-                _providerSettings.CopyFrom(rpcs3Settings);
-            }
         }
 
         /// <inheritdoc />

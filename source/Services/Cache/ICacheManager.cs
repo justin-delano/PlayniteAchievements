@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Cache
 {
     public interface ICacheManager
     {

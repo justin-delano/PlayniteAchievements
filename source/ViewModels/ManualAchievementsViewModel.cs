@@ -16,6 +16,12 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Manual;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Refresh;
+using PlayniteAchievements.Services.Search;
+using PlayniteAchievements.ViewModels.Items;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
@@ -1361,18 +1367,7 @@ namespace PlayniteAchievements.ViewModels
                 ? AllAchievements.Where(item => _editSearchIndex.Matches(item, searchQuery)).ToList()
                 : AllAchievements.ToList();
 
-            if (FilteredAchievements is Common.BulkObservableCollection<ManualAchievementEditItem> bulk)
-            {
-                bulk.ReplaceAll(filtered);
-            }
-            else
-            {
-                FilteredAchievements.Clear();
-                foreach (var item in filtered)
-                {
-                    FilteredAchievements.Add(item);
-                }
-            }
+            Common.CollectionHelper.Replace(FilteredAchievements, filtered);
         }
 
         private void UpdateCounts()

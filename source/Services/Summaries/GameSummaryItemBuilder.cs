@@ -5,6 +5,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using Playnite.SDK;
 
 namespace PlayniteAchievements.Services.Summaries

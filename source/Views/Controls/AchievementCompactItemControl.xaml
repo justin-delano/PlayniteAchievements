@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
-             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels"
+             xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels.Items"
              xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
              mc:Ignorable="d"
              d:DesignHeight="48" d:DesignWidth="48"

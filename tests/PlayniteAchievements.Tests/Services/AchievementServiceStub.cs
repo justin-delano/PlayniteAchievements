@@ -2,6 +2,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.ProgressReporting;
@@ -12,7 +13,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PlayniteAchievements.Services
+namespace PlayniteAchievements.Services.Refresh
 {
     public partial class RefreshRuntime
     {
@@ -223,15 +224,6 @@ namespace PlayniteAchievements.Services
 
             public IReadOnlyDictionary<string, FriendOwnershipRecency> LoadFriendOwnershipRecency(string providerKey, string externalUserId) =>
                 new Dictionary<string, FriendOwnershipRecency>();
-
-            public IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
-                string providerKey,
-                IReadOnlyCollection<string> externalUserIds) =>
-                (externalUserIds ?? Array.Empty<string>())
-                    .Where(id => !string.IsNullOrWhiteSpace(id))
-                    .Select(id => id.Trim())
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToDictionary(id => id, _ => false, StringComparer.OrdinalIgnoreCase);
 
             public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => new FriendsOverviewData();
             public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers) => new FriendsOverviewData();

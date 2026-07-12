@@ -65,9 +65,13 @@ namespace PlayniteAchievements.Providers.GOG
     {
         public string AccessToken { get; set; }
 
-        public string GetAccessToken()
+        public Task<string> GetAccessTokenAsync(CancellationToken ct)
         {
-            return AccessToken;
+            return Task.FromResult(AccessToken);
+        }
+
+        public void InvalidateAccessToken()
+        {
         }
     }
 }

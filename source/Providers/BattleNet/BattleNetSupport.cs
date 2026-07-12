@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 
 namespace PlayniteAchievements.Providers.BattleNet
 {

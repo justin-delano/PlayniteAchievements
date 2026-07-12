@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services;
 

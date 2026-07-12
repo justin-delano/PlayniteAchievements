@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Search;
 
 namespace PlayniteAchievements.Tests.Services
 {

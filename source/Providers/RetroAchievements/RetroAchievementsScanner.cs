@@ -4,6 +4,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using System;
@@ -204,26 +205,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         /// </summary>
         private static bool IsTransientError(Exception ex)
         {
-            if (ex is OperationCanceledException) return false;
-
-            // WebException with transient status codes
-            if (ex is WebException webEx && webEx.Response is HttpWebResponse response)
-            {
-                var statusCode = (int)response.StatusCode;
-                // 429 Too Many Requests, 503 Service Unavailable, 502 Bad Gateway, 504 Gateway Timeout
-                if (statusCode == 429 || statusCode == 502 || statusCode == 503 || statusCode == 504)
-                    return true;
-            }
-
-            // Network-related exceptions
-            var message = ex.Message ?? string.Empty;
-            if (message.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("connection", StringComparison.OrdinalIgnoreCase) >= 0 &&
-                message.IndexOf("reset", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("temporarily", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-            if (message.IndexOf("429", StringComparison.OrdinalIgnoreCase) >= 0) return true;
-
-            return false;
+            return TransientErrorClassifier.IsTransient(ex);
         }
 
         private async Task<GameAchievementData> ScanGameAsync(Game game, int? consoleId, IRaHasher hasher, CancellationToken cancel)
@@ -796,9 +778,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                             games = response.GameList;
                         }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
                         // Failed to parse
+                        _logger?.Debug(ex, "[RA] Failed to parse game list response in both array and object formats.");
                     }
                 }
 
@@ -826,31 +809,13 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         {
             if (string.IsNullOrWhiteSpace(name)) return string.Empty;
 
-            // Remove common edition suffixes and trim
-            var normalized = name.Trim();
-
-            // Handle RetroAchievements tilde-wrapped tags: "~Homebrew~", "~Hack~", etc.
-            // Remove any ~Something~ pattern (prefix, suffix, or middle) for matching purposes
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"~[^~]+~", "").Trim();
-
-            // Remove text in parentheses (like "(USA)", "(Europe)", etc.)
-            var parenIndex = normalized.IndexOf('(');
-            if (parenIndex > 0)
-            {
-                normalized = normalized.Substring(0, parenIndex).Trim();
-            }
-
-            // Remove text in brackets (like "[!]", "[T+Eng]", etc.)
-            var bracketIndex = normalized.IndexOf('[');
-            if (bracketIndex > 0)
-            {
-                normalized = normalized.Substring(0, bracketIndex).Trim();
-            }
-
-            // Remove common symbols and extra whitespace
-            normalized = System.Text.RegularExpressions.Regex.Replace(normalized, @"[\s\-_:~\.]+", " ").Trim();
-
-            return normalized;
+            // Remove RetroAchievements tilde-wrapped tags ("~Homebrew~"), region
+            // parentheticals ("(USA)"), and dump-tag brackets ("[T+Eng]"), then
+            // collapse separator runs for matching purposes.
+            var normalized = GameNameNormalizer.StripTildeTags(name);
+            normalized = GameNameNormalizer.StripParentheticals(normalized);
+            normalized = GameNameNormalizer.StripBrackets(normalized);
+            return GameNameNormalizer.CollapseSeparators(normalized);
         }
     }
 }

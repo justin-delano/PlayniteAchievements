@@ -3,6 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
+using PlayniteAchievements.Services.Refresh;
 
 namespace PlayniteAchievements.Services
 {

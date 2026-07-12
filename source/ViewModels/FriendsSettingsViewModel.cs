@@ -7,6 +7,7 @@ using PlayniteAchievements.Providers;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Friends;
+using PlayniteAchievements.Services.Refresh;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

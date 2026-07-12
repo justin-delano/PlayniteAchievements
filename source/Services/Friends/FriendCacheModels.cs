@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.ViewModels;
+using PlayniteAchievements.ViewModels.Items;
 using System;
 using System.Collections.Generic;
 
@@ -222,10 +223,6 @@ namespace PlayniteAchievements.Services.Friends
         IReadOnlyDictionary<string, FriendOwnershipRecency> LoadFriendOwnershipRecency(
             string providerKey,
             string externalUserId);
-
-        IReadOnlyDictionary<string, bool> LoadFriendOwnershipPresence(
-            string providerKey,
-            IReadOnlyCollection<string> externalUserIds);
 
         FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit);
 

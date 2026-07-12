@@ -12,6 +12,7 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models.Tagging;
+using PlayniteAchievements.Services.Achievements;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
 
@@ -55,7 +56,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enablePeriodicUpdates = true;
         private bool _includeHiddenGamesInBulkScans = true;
         private int _periodicUpdateHours = 6;
-        private bool _enableInGamePolling = false;
+        private bool _enableInGamePolling = true;
         private int _inGamePollIntervalSeconds = 15;
         private bool _inGamePollRefreshFriends = false;
         private int _inGameFriendRefreshMultiplier = 4;
@@ -64,7 +65,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _notifyPeriodicUpdates = true;
         private bool _notifyOnRebuild = true;
         private bool _enableUnlockToasts = true;
-        private bool _enableFriendUnlockToasts = false;
+        private bool _enableFriendUnlockToasts = true;
         private bool _toastShowHeader = true;
         private bool _toastShowName = true;
         private bool _toastShowRarityGlow = true;
@@ -1460,11 +1461,12 @@ namespace PlayniteAchievements.Models.Settings
 
         public GridOptionsCatalog GridOptions
         {
-            get => _gridOptions ?? (_gridOptions = new GridOptionsCatalog());
+            get => AttachGridOptionsBridge(_gridOptions ?? (_gridOptions = new GridOptionsCatalog()));
             set
             {
                 if (SetValueAndReturn(ref _gridOptions, value?.Clone() ?? new GridOptionsCatalog()))
                 {
+                    AttachGridOptionsBridge(_gridOptions);
                     RebindStartPageGridSettings();
                 }
             }
@@ -2650,7 +2652,7 @@ namespace PlayniteAchievements.Models.Settings
 
             foreach (var pair in value)
             {
-                var order = Services.AchievementOrderHelper.NormalizeApiNames(pair.Value);
+                var order = Services.Achievements.AchievementOrderHelper.NormalizeApiNames(pair.Value);
                 if (order.Count > 0)
                 {
                     normalized[pair.Key] = order;
@@ -2713,7 +2715,7 @@ namespace PlayniteAchievements.Models.Settings
                     foreach (var categoryTypePair in gamePair.Value)
                     {
                         var key = (categoryTypePair.Key ?? string.Empty).Trim();
-                        var categoryType = Services.AchievementCategoryTypeHelper.Normalize(categoryTypePair.Value);
+                        var categoryType = Services.Achievements.AchievementCategoryTypeHelper.Normalize(categoryTypePair.Value);
                         if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(categoryType))
                         {
                             continue;

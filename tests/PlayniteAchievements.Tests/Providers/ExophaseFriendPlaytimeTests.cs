@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using PlayniteAchievements.Providers.Exophase;
+using PlayniteAchievements.Services.Refresh;
 
 namespace PlayniteAchievements.Tests.Providers
 {
@@ -44,7 +45,7 @@ namespace PlayniteAchievements.Tests.Providers
         public void ProviderOnlyProbe_PersistsHeaderBannerInsteadOfProfileThumbnail()
         {
             var runtime = File.ReadAllText(
-                FindRepoFile("source", "Services", "Refresh", "RefreshRuntime.cs"));
+                FindRepoFile("source", "Services", "Refresh", "FriendRefreshCoordinator.cs"));
 
             // The provider-only probe persists the scraped header banner as the game's icon and cover.
             StringAssert.Contains(runtime, "!string.IsNullOrWhiteSpace(achievements.IconUrl)");
@@ -52,7 +53,7 @@ namespace PlayniteAchievements.Tests.Providers
 
             // For seed-from-scrape providers the profile-thumbnail download is skipped so it cannot overwrite
             // the higher-quality banner via COALESCE.
-            StringAssert.Contains(runtime, "!ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey)");
+            StringAssert.Contains(runtime, "!FriendRefreshWorkPolicy.ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey)");
         }
 
         [TestMethod]

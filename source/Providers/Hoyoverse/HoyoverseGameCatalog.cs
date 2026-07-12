@@ -1,5 +1,6 @@
 using Playnite.SDK.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.GameCustomData;
 using System;
 using System.Collections.Generic;
 using System.Linq;
