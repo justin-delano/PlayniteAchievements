@@ -776,7 +776,8 @@ namespace PlayniteAchievements.Views.Controls
                     () => _isCategoryMode,
                     SetCategoryMode,
                     CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"),
-                    CanEnterCategoryMode);
+                    CanEnterCategoryMode,
+                    HasMultipleCategories);
             }
 
             if (_backButton == null)
