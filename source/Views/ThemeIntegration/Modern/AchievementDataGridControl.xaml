@@ -23,19 +23,31 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Compact breadcrumb, shown only once a category is selected. No game name is shown here
-             since the surrounding theme UI already displays the current game. -->
-        <TextBlock Grid.Row="0"
-                   Margin="0,0,0,8"
-                   FontSize="{DynamicResource PlayAch.FontSize.Body}"
-                   FontWeight="Bold"
-                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                   TextTrimming="CharacterEllipsis"
-                   Cursor="Hand"
-                   TextDecorations="Underline"
-                   MouseLeftButtonUp="CategoryBreadcrumb_Click"
-                   Text="{Binding SelectedCategoryName, RelativeSource={RelativeSource AncestorType=modern:AchievementDataGridControl}}"
-                   Visibility="{Binding IsCategorySelected, RelativeSource={RelativeSource AncestorType=modern:AchievementDataGridControl}, Converter={StaticResource BoolToVis}}"/>
+        <!-- Breadcrumb, shown only once a category is selected. The game name is the clickable
+             back link (matching the other surfaces' breadcrumb headers); the category itself is
+             plain text since it's the current location, not a navigation target. -->
+        <StackPanel Grid.Row="0"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,8"
+                    Visibility="{Binding IsCategorySelected, RelativeSource={RelativeSource AncestorType=modern:AchievementDataGridControl}, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{Binding GameName, RelativeSource={RelativeSource AncestorType=modern:AchievementDataGridControl}}"
+                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       TextTrimming="CharacterEllipsis"
+                       Cursor="Hand"
+                       TextDecorations="Underline"
+                       MouseLeftButtonUp="GameNameBreadcrumb_Click"/>
+            <TextBlock Text=" > "
+                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       Opacity="{StaticResource PlayAch.Opacity.Subtle}"/>
+            <TextBlock Text="{Binding SelectedCategoryName, RelativeSource={RelativeSource AncestorType=modern:AchievementDataGridControl}}"
+                       FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       TextTrimming="CharacterEllipsis"/>
+        </StackPanel>
 
         <controls:AchievementDataGridControl x:Name="AchievementsGrid"
                                              Grid.Row="1"

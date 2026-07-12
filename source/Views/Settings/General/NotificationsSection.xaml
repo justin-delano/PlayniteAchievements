@@ -44,11 +44,13 @@
                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableFriendUnlockToasts}"
                                   IsChecked="{Binding Persisted.EnableFriendUnlockToasts}"
                                   Margin="18,0,0,0"
-                                  IsEnabled="{Binding Persisted.EnableNotifications}"/>
+                                  IsEnabled="{Binding Persisted.EnableNotifications}"
+                                  Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                 </Border>
 
-                <!-- Live mockup + example toast buttons -->
+                <!-- Live mockup + appearance toggles (adjacent so the mockup reflects each toggle
+                     without scrolling) + example toast buttons -->
                 <Border Style="{StaticResource SectionBorderStyle}">
                     <StackPanel>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ToastPreviewHeader}"
@@ -66,6 +68,36 @@
                             <ContentControl x:Name="ToastMockupHost"
                                             ContentTemplate="{DynamicResource PlayAch.Template.AchievementToast}"/>
                         </Border>
+
+                        <WrapPanel Margin="0,0,0,4">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowHeader}"
+                                      IsChecked="{Binding Persisted.ToastShowHeader}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowName}"
+                                      IsChecked="{Binding Persisted.ToastShowName}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowDescription}"
+                                      IsChecked="{Binding Persisted.ToastShowDescription}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowGameName}"
+                                      IsChecked="{Binding Persisted.ToastShowGameName}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowCategory}"
+                                      IsChecked="{Binding Persisted.ToastShowCategory}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityBadge}"
+                                      IsChecked="{Binding Persisted.ToastShowRarityBadge}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityPercent}"
+                                      IsChecked="{Binding Persisted.ToastShowRarityPercent}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityGlow}"
+                                      IsChecked="{Binding Persisted.ToastShowRarityGlow}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastRarityColoredName}"
+                                      IsChecked="{Binding Persisted.ToastRarityColoredName}"
+                                      Margin="0,0,14,8"/>
+                        </WrapPanel>
 
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ToastPreviewHint}"
                                    Style="{StaticResource MutedTextStyle}"
@@ -166,46 +198,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Appearance -->
-                <Border Style="{StaticResource SectionBorderStyle}">
-                    <StackPanel>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Appearance}"
-                                   Style="{StaticResource SectionHeaderStyle}"
-                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-
-                        <WrapPanel>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowHeader}"
-                                      IsChecked="{Binding Persisted.ToastShowHeader}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowName}"
-                                      IsChecked="{Binding Persisted.ToastShowName}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowDescription}"
-                                      IsChecked="{Binding Persisted.ToastShowDescription}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowGameName}"
-                                      IsChecked="{Binding Persisted.ToastShowGameName}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowCategory}"
-                                      IsChecked="{Binding Persisted.ToastShowCategory}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityBadge}"
-                                      IsChecked="{Binding Persisted.ToastShowRarityBadge}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityPercent}"
-                                      IsChecked="{Binding Persisted.ToastShowRarityPercent}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityGlow}"
-                                      IsChecked="{Binding Persisted.ToastShowRarityGlow}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastRarityColoredName}"
-                                      IsChecked="{Binding Persisted.ToastRarityColoredName}"
-                                      Margin="0,0,14,8"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </Border>
-
                 <!-- Screenshots -->
                 <Border Style="{StaticResource SectionBorderStyle}">
                     <StackPanel>
@@ -218,26 +210,29 @@
                                   IsChecked="{Binding Persisted.EnableUnlockScreenshots}"
                                   Margin="0,0,0,10"/>
 
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScreenshotDirectory}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   Margin="0,0,0,4"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBox Grid.Column="0"
-                                     Text="{Binding Persisted.UnlockScreenshotDirectory, UpdateSourceTrigger=PropertyChanged}"
-                                     VerticalAlignment="Center"/>
-                            <Button Grid.Column="1"
-                                    Content="{DynamicResource LOCPlayAch_Button_Browse}"
-                                    Click="ScreenshotDirectory_Browse_Click"
-                                    Margin="8,0,0,0"/>
-                        </Grid>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScreenshotDirectoryHint}"
-                                   Style="{StaticResource MutedTextStyle}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,6,0,0"/>
+                        <StackPanel Margin="18,0,0,0"
+                                    IsEnabled="{Binding Persisted.EnableUnlockScreenshots}">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScreenshotDirectory}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0"
+                                         Text="{Binding Persisted.UnlockScreenshotDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                         VerticalAlignment="Center"/>
+                                <Button Grid.Column="1"
+                                        Content="{DynamicResource LOCPlayAch_Button_Browse}"
+                                        Click="ScreenshotDirectory_Browse_Click"
+                                        Margin="8,0,0,0"/>
+                            </Grid>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScreenshotDirectoryHint}"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,6,0,0"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </StackPanel>

@@ -135,7 +135,18 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
         }
 
-        private void CategoryBreadcrumb_Click(object sender, MouseButtonEventArgs e)
+        private static readonly DependencyPropertyKey GameNamePropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(GameName), typeof(string),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        public static readonly DependencyProperty GameNameProperty =
+            GameNamePropertyKey.DependencyProperty;
+
+        // Name of the currently loaded game, so the breadcrumb can read "GameName > Category" with
+        // the game name acting as the back link, matching the other surfaces' breadcrumb headers.
+        public string GameName => (string)GetValue(GameNameProperty);
+
+        private void GameNameBreadcrumb_Click(object sender, MouseButtonEventArgs e)
         {
             if (IsCategorySelected)
             {
@@ -226,6 +237,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
 
             var sourceItems = theme?.AllAchievementDisplayItems;
+            SetValue(GameNamePropertyKey, sourceItems?.FirstOrDefault()?.GameName);
             var settings = EffectiveSettings?.Persisted;
             var maxRows = settings?.DesktopThemeAchievementGridMaxRows;
             var orderedAchievements = useSourceOrder
@@ -482,6 +494,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             _lastSourceItems = null;
             _lastOrderedAchievements = null;
             _lastMaxRows = null;
+            SetValue(GameNamePropertyKey, null);
             if (resetSortState)
             {
                 ResetSortState();

@@ -62,6 +62,30 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsEnableFriendsFeaturesOn()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsTrue(settings.EnableFriendsFeatures);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveEnableFriendsFeatures()
+        {
+            var source = new PersistedSettings
+            {
+                EnableFriendsFeatures = false
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsFalse(clone.EnableFriendsFeatures);
+            Assert.IsFalse(target.EnableFriendsFeatures);
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveExophaseSteamFriendOwnershipReplacement()
         {
             var source = new PersistedSettings

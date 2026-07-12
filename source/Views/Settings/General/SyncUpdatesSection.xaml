@@ -80,7 +80,8 @@
 
                     <!-- Friend Polling -->
                     <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"
-                                IsEnabled="{Binding Persisted.EnableInGamePolling}">
+                                IsEnabled="{Binding Persisted.EnableInGamePolling}"
+                                Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}">
                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_InGamePollRefreshFriends}"
                                   IsChecked="{Binding Persisted.InGamePollRefreshFriends}"
                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>

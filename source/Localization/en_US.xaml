@@ -518,6 +518,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_EnablePeriodicUpdates">Enable Background Periodic Updates</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling">Poll achievements while a game is running</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableInGamePolling_Description">Refresh the running game on a short interval so newly unlocked achievements can be detected before the game closes.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsFeatures">Enable Friends Features</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_EnableFriendsFeatures_Description">Disable to hide all friends-related settings, the friends overview, and friend achievement menus.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockToasts">Show achievement unlock toasts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableFriendUnlockToasts">Show friend unlock toasts</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_InGamePollIntervalSeconds">Poll interval (seconds):</sys:String>

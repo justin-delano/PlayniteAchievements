@@ -56,8 +56,7 @@
                          Maximum="{Binding RelativeSource={RelativeSource AncestorType=base:ThemeControlBase}, Path=AchievementCount, Mode=OneWay, FallbackValue=100}"
                          MinWidth="40"
                          Height="16"
-                         VerticalAlignment="Center"
-                         Style="{StaticResource GameProgressBar}"/>
+                         VerticalAlignment="Center"/>
 
             <TextBlock Grid.Column="0"
                        Grid.ColumnSpan="2"

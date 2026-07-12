@@ -39,6 +39,7 @@ namespace PlayniteAchievements.Models.Settings
 
             // Friend Settings (Friends must be copied before FriendMergeGroups because the
             // merge-group setter normalizes against the current Friends collection)
+            target.EnableFriendsFeatures = source.EnableFriendsFeatures;
             target.AutoDiscoverFriendProviderKeys = source.AutoDiscoverFriendProviderKeys != null
                 ? new HashSet<string>(source.AutoDiscoverFriendProviderKeys, StringComparer.OrdinalIgnoreCase)
                 : PersistedSettings.CreateDefaultAutoDiscoverFriendProviderKeys();

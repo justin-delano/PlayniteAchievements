@@ -85,7 +85,8 @@
                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewHideSpoilers}"
                                       IsChecked="{Binding Persisted.FriendsOverviewHideSpoilers}"
-                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"
+                                      Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

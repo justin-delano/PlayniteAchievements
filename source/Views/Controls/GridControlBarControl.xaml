@@ -18,9 +18,10 @@
 
             <!-- Toolbar mode toggle (category-summaries mode), rendered as the left half of a
                  segmented unit: a bordered, icon-only button that butts flush against the category
-                 dropdown on its right. The glyph stays a fixed color; only the border/background
-                 change when the mode is on, matching the other grid toggle buttons. When on, the
-                 adjacent dropdown is hidden so the segment rounds all four corners. -->
+                 dropdown on its right. The glyph stays a fixed color; the checked state uses the
+                 same selected background + accent border as the Unlocked/Locked/Hidden filter
+                 toggles. When on, the adjacent dropdown is hidden so the segment rounds all four
+                 corners. -->
             <Style x:Key="GridModeToggleButtonStyle" TargetType="ToggleButton">
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="Cursor" Value="Hand"/>
@@ -40,7 +41,7 @@
                                 <Viewbox Width="15" Height="15" VerticalAlignment="Center">
                                     <Path x:Name="Glyph"
                                           Data="M0,1.5 H3 V4.5 H0 Z M5.5,1.5 H16 V4.5 H5.5 Z M0,6.5 H3 V9.5 H0 Z M5.5,6.5 H16 V9.5 H5.5 Z M0,11.5 H3 V14.5 H0 Z M5.5,11.5 H16 V14.5 H5.5 Z"
-                                          Fill="{DynamicResource PlayAch.Brush.Text}"/>
+                                          Fill="{DynamicResource PlayAch.Brush.Glyph}"/>
                                 </Viewbox>
                             </Border>
                             <ControlTemplate.Triggers>
@@ -50,10 +51,11 @@
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="Seg" Property="CornerRadius" Value="4"/>
+                                    <Setter TargetName="Seg" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Selected}"/>
                                     <Setter TargetName="Seg" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
-                                    <Setter Property="Opacity" Value="0.55"/>
+                                    <Setter TargetName="Seg" Property="Opacity" Value="{StaticResource PlayAch.Opacity.Disabled}"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
                         </ControlTemplate>

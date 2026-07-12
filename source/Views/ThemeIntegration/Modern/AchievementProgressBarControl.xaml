@@ -30,7 +30,7 @@
             </Style>
         </Grid.Style>
         <Grid.Resources>
-            <Style x:Key="DesktopProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
+            <Style x:Key="DesktopProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
                 <Setter Property="Height" Value="20"/>
             </Style>
 

@@ -547,7 +547,7 @@
                         VerticalAlignment="Center"
                         Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                         FontWeight="SemiBold"
-                        Foreground="White"
+                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                         Visibility="{Binding HasProgress, Converter={StaticResource BoolToVis}}"/>
             </Grid>
         </Grid>

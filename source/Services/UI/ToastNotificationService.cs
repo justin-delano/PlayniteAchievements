@@ -442,8 +442,8 @@ namespace PlayniteAchievements.Services.UI
             var margin = 24d;
             var width = window.ActualWidth > 0 ? window.ActualWidth : window.Width;
             var height = window.ActualHeight > 0 ? window.ActualHeight : window.Height;
-            if (double.IsNaN(width) || width <= 0) width = 380;
-            if (double.IsNaN(height) || height <= 0) height = 120;
+            if (double.IsNaN(width) || width <= 0) width = 410;
+            if (double.IsNaN(height) || height <= 0) height = 138;
 
             switch (_activePosition)
             {
@@ -557,7 +557,7 @@ namespace PlayniteAchievements.Services.UI
             var height = window.ActualHeight > 0 ? window.ActualHeight : window.Height;
             if (double.IsNaN(height) || height <= 0)
             {
-                height = 120;
+                height = 138;
             }
 
             return height + 40;

@@ -176,6 +176,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _compactLockedListSortDescending = false;
         private TaggingSettings _taggingSettings;
         private Dictionary<string, JObject> _providerSettings = new Dictionary<string, JObject>(StringComparer.OrdinalIgnoreCase);
+        private bool _enableFriendsFeatures = true;
         private HashSet<string> _autoDiscoverFriendProviderKeys = CreateDefaultAutoDiscoverFriendProviderKeys();
         private bool _useExophaseForSteamFriendOwnership = false;
         private ObservableCollection<FriendSettingsEntry> _friends = new ObservableCollection<FriendSettingsEntry>();
@@ -198,6 +199,12 @@ namespace PlayniteAchievements.Models.Settings
         #endregion
 
         #region Friend Settings
+
+        public bool EnableFriendsFeatures
+        {
+            get => _enableFriendsFeatures;
+            set => SetValue(ref _enableFriendsFeatures, value);
+        }
 
         public HashSet<string> AutoDiscoverFriendProviderKeys
         {
@@ -1893,6 +1900,7 @@ namespace PlayniteAchievements.Models.Settings
             {
                 // Provider Settings Dictionary (contains all provider-specific settings)
                 ProviderSettings = clonedProviderSettings,
+                EnableFriendsFeatures = this.EnableFriendsFeatures,
                 AutoDiscoverFriendProviderKeys = this.AutoDiscoverFriendProviderKeys != null
                     ? new HashSet<string>(this.AutoDiscoverFriendProviderKeys, StringComparer.OrdinalIgnoreCase)
                     : CreateDefaultAutoDiscoverFriendProviderKeys(),

@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Settings.Display;
 using PlayniteAchievements.Views.Settings.General;
@@ -107,6 +108,8 @@ namespace PlayniteAchievements.Views
                     JumpToTab);
                 GeneralSettingsContent.Content = _generalSettingsTab;
             }
+
+            _settingsViewModel.Settings.Persisted.PropertyChanged += Persisted_PropertyChanged;
 
             // Debug logging to verify DataContext and Settings values
             _logger?.Info($"SettingsControl created. DataContext type: {DataContext?.GetType().Name}");
@@ -303,8 +306,19 @@ namespace PlayniteAchievements.Views
 
         public void Dispose()
         {
+            _settingsViewModel.Settings.Persisted.PropertyChanged -= Persisted_PropertyChanged;
             _displaySettingsTab?.Dispose();
             _generalSettingsTab?.Dispose();
+        }
+
+        private void Persisted_PropertyChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(PersistedSettings.EnableFriendsFeatures)
+                && !_settingsViewModel.Settings.Persisted.EnableFriendsFeatures
+                && SettingsTabControl.SelectedItem == FriendsTab)
+            {
+                SettingsTabControl.SelectedItem = GeneralTab;
+            }
         }
     }
 }
