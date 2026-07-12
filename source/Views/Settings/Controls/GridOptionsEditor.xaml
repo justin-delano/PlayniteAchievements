@@ -37,6 +37,22 @@
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
+            <Style x:Key="CategorySummaryPanelStyle" TargetType="StackPanel">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding CategorySummaryOptions, ElementName=EditorRoot}" Value="{x:Null}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+            <!-- Collapses the common rows when Options is not GridCommonOptions-derived
+                 (CategorySummaryGridOptions has no ShowControlBar/MaxRows). -->
+            <Style x:Key="CommonPanelStyle" TargetType="StackPanel">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding CommonOptions, ElementName=EditorRoot}" Value="{x:Null}">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
     <StackPanel>
@@ -100,32 +116,60 @@
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
         </StackPanel>
 
+        <!-- Category-summary rows -->
+        <StackPanel Style="{StaticResource CategorySummaryPanelStyle}">
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_CategoryGridUseCoverImages}"
+                      IsChecked="{Binding CategorySummaryOptions.UseCoverImages, ElementName=EditorRoot}"
+                      Visibility="{Binding ShowCoverImagesRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCategoryGridColumnHeaders}"
+                      IsChecked="{Binding CategorySummaryOptions.ShowColumnHeaders, ElementName=EditorRoot}"
+                      Visibility="{Binding ShowColumnHeadersRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+            <StackPanel Orientation="Horizontal"
+                        Visibility="{Binding ShowRowHeightRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                        Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                           VerticalAlignment="Center"/>
+                <TextBox Text="{Binding CategorySummaryOptions.RowHeight, ElementName=EditorRoot, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                         Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                           VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+            </StackPanel>
+        </StackPanel>
+
         <!-- Common rows -->
-        <CheckBox IsChecked="{Binding Options.ShowColumnHeaders, ElementName=EditorRoot}"
-                  Visibility="{Binding ShowColumnHeadersRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
-                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
-            <CheckBox.Style>
-                <Style TargetType="CheckBox" BasedOn="{StaticResource PlayAch.CheckBox.BaseStyle}">
-                    <Setter Property="Content" Value="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"/>
-                    <Style.Triggers>
-                        <DataTrigger Binding="{Binding AchievementOptions, ElementName=EditorRoot}" Value="{x:Null}">
-                            <Setter Property="Content" Value="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"/>
-                        </DataTrigger>
-                    </Style.Triggers>
-                </Style>
-            </CheckBox.Style>
-        </CheckBox>
-        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGridControlBar}"
-                  IsChecked="{Binding Options.ShowControlBar, ElementName=EditorRoot}"
-                  Visibility="{Binding ShowControlBarRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
-                  Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+        <StackPanel Style="{StaticResource CommonPanelStyle}">
+            <CheckBox IsChecked="{Binding CommonOptions.ShowColumnHeaders, ElementName=EditorRoot}"
+                      Visibility="{Binding ShowColumnHeadersRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                <CheckBox.Style>
+                    <Style TargetType="CheckBox" BasedOn="{StaticResource PlayAch.CheckBox.BaseStyle}">
+                        <Setter Property="Content" Value="{DynamicResource LOCPlayAch_Settings_ShowAchievementGridColumnHeaders}"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding AchievementOptions, ElementName=EditorRoot}" Value="{x:Null}">
+                                <Setter Property="Content" Value="{DynamicResource LOCPlayAch_Settings_ShowGameSummariesGridColumnHeaders}"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </CheckBox.Style>
+            </CheckBox>
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowGridControlBar}"
+                      IsChecked="{Binding CommonOptions.ShowControlBar, ElementName=EditorRoot}"
+                      Visibility="{Binding ShowControlBarRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+        </StackPanel>
 
         <!-- Achievement date/category rows -->
         <StackPanel Style="{StaticResource AchievementPanelStyle}">
-            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode}"
-                      IsChecked="{Binding AchievementOptions.StartInCategoryMode, ElementName=EditorRoot}"
-                      Visibility="{Binding ShowCategoryModeRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
-                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+            <StackPanel Visibility="{Binding ShowCategoryModeRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}">
+                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode}"
+                          IsChecked="{Binding AchievementOptions.StartInCategoryMode, ElementName=EditorRoot}"
+                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
+                          IsChecked="{Binding AchievementOptions.HideCategorySummaryRow, ElementName=EditorRoot}"
+                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+            </StackPanel>
             <StackPanel Orientation="Horizontal"
                         Visibility="{Binding ShowDateModeRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                         Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
@@ -179,25 +223,27 @@
         </StackPanel>
 
         <!-- Common numeric rows -->
-        <StackPanel Orientation="Horizontal"
-                    Visibility="{Binding ShowRowHeightRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
-                    Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
-            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
-                       VerticalAlignment="Center"/>
-            <TextBox Text="{Binding Options.RowHeight, ElementName=EditorRoot, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
-                     Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
-            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
-                       VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
-        </StackPanel>
-        <StackPanel Orientation="Horizontal"
-                    Visibility="{Binding ShowMaxRowsRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
-                    Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
-            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
-                       VerticalAlignment="Center"/>
-            <TextBox Text="{Binding Options.MaxRows, ElementName=EditorRoot, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
-                     Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
-            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
-                       VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+        <StackPanel Style="{StaticResource CommonPanelStyle}">
+            <StackPanel Orientation="Horizontal"
+                        Visibility="{Binding ShowRowHeightRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                        Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
+                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                           VerticalAlignment="Center"/>
+                <TextBox Text="{Binding CommonOptions.RowHeight, ElementName=EditorRoot, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                         Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                           VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal"
+                        Visibility="{Binding ShowMaxRowsRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridMaxRows}"
+                           VerticalAlignment="Center"/>
+                <TextBox Text="{Binding CommonOptions.MaxRows, ElementName=EditorRoot, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
+                         Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
+                           VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+            </StackPanel>
         </StackPanel>
 
         <!-- Achievement trailing rows: max height and sort -->

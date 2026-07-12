@@ -49,6 +49,32 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void CategorySummariesOptionEdit_RaisesFlatPropertyChangedOnPersistedSettings()
+        {
+            var settings = new PersistedSettings();
+            var raised = new List<string>();
+            settings.PropertyChanged += (sender, e) => raised.Add(e.PropertyName);
+
+            var options = settings.GridOptions.CategorySummaries[GridOptionKeys.CategorySummaries.FriendsOverview];
+            options.UseCoverImages = !options.UseCoverImages;
+
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.FriendsOverviewCategorySummariesUseCoverImages));
+        }
+
+        [TestMethod]
+        public void AchievementHideCategorySummaryRowEdit_RaisesFlatPropertyChangedOnPersistedSettings()
+        {
+            var settings = new PersistedSettings();
+            var raised = new List<string>();
+            settings.PropertyChanged += (sender, e) => raised.Add(e.PropertyName);
+
+            var options = settings.GridOptions.Achievement[GridOptionKeys.Achievement.OverviewSelectedGame];
+            options.HideCategorySummaryRow = !options.HideCategorySummaryRow;
+
+            CollectionAssert.Contains(raised, nameof(PersistedSettings.OverviewSelectedGameAchievementsHideCategorySummaryRow));
+        }
+
+        [TestMethod]
         public void GridOptionsReplacement_ReattachesBridgeToNewCatalog()
         {
             var settings = new PersistedSettings();

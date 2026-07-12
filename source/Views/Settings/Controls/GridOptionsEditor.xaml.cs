@@ -5,16 +5,20 @@ using PlayniteAchievements.Models.Settings;
 namespace PlayniteAchievements.Views.Settings.Controls
 {
     /// <summary>
-    /// Reusable per-surface grid options editor. Hosts bind <see cref="Options"/> to a
-    /// <see cref="GridCommonOptions"/>-derived object from the grid options catalog
-    /// (e.g. {Binding Persisted.GridOptions.Achievement[OverviewRecent]}) and the editor edits
-    /// the option object directly. The control never sets its own DataContext, so the inherited
+    /// Reusable per-surface grid options editor. Hosts bind <see cref="Options"/> to an option
+    /// object from the grid options catalog (e.g.
+    /// {Binding Persisted.GridOptions.Achievement[OverviewRecent]}) and the editor edits the
+    /// option object directly. The control never sets its own DataContext, so the inherited
     /// settings DataContext stays available to hosts.
     ///
-    /// Typed dispatch: <see cref="AchievementOptions"/>, <see cref="GameSummaryOptions"/> and
-    /// <see cref="FriendSummaryOptions"/> are read-only casts of <see cref="Options"/> refreshed
+    /// Typed dispatch: <see cref="AchievementOptions"/>, <see cref="GameSummaryOptions"/>,
+    /// <see cref="FriendSummaryOptions"/>, <see cref="CategorySummaryOptions"/> and
+    /// <see cref="CommonOptions"/> are read-only casts of <see cref="Options"/> refreshed
     /// in the Options changed callback. The XAML gates each typed row panel on its typed property
-    /// being non-null, so bindings through the null typed properties stay silent.
+    /// being non-null, so bindings through the null typed properties stay silent. The common rows
+    /// (column headers, control bar, row height, max rows) are gated on <see cref="CommonOptions"/>
+    /// because <see cref="CategorySummaryGridOptions"/> does not derive from
+    /// <see cref="GridCommonOptions"/>.
     ///
     /// Row capability flag defaults: every row a surface commonly shows defaults to true
     /// (ShowColumnHeadersRow, ShowControlBarRow, ShowRowHeightRow, ShowMaxRowsRow, ShowSortRow,
@@ -34,13 +38,13 @@ namespace PlayniteAchievements.Views.Settings.Controls
 
         public static readonly DependencyProperty OptionsProperty = DependencyProperty.Register(
             nameof(Options),
-            typeof(GridCommonOptions),
+            typeof(object),
             typeof(GridOptionsEditor),
             new PropertyMetadata(null, OnOptionsChanged));
 
-        public GridCommonOptions Options
+        public object Options
         {
-            get => (GridCommonOptions)GetValue(OptionsProperty);
+            get => GetValue(OptionsProperty);
             set => SetValue(OptionsProperty, value);
         }
 
@@ -83,12 +87,40 @@ namespace PlayniteAchievements.Views.Settings.Controls
         public FriendSummaryGridOptions FriendSummaryOptions =>
             (FriendSummaryGridOptions)GetValue(FriendSummaryOptionsProperty);
 
+        private static readonly DependencyPropertyKey CategorySummaryOptionsPropertyKey =
+            DependencyProperty.RegisterReadOnly(
+                nameof(CategorySummaryOptions),
+                typeof(CategorySummaryGridOptions),
+                typeof(GridOptionsEditor),
+                new PropertyMetadata(null));
+
+        public static readonly DependencyProperty CategorySummaryOptionsProperty =
+            CategorySummaryOptionsPropertyKey.DependencyProperty;
+
+        public CategorySummaryGridOptions CategorySummaryOptions =>
+            (CategorySummaryGridOptions)GetValue(CategorySummaryOptionsProperty);
+
+        private static readonly DependencyPropertyKey CommonOptionsPropertyKey =
+            DependencyProperty.RegisterReadOnly(
+                nameof(CommonOptions),
+                typeof(GridCommonOptions),
+                typeof(GridOptionsEditor),
+                new PropertyMetadata(null));
+
+        public static readonly DependencyProperty CommonOptionsProperty =
+            CommonOptionsPropertyKey.DependencyProperty;
+
+        public GridCommonOptions CommonOptions =>
+            (GridCommonOptions)GetValue(CommonOptionsProperty);
+
         private static void OnOptionsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             var editor = (GridOptionsEditor)d;
             editor.SetValue(AchievementOptionsPropertyKey, e.NewValue as AchievementGridOptions);
             editor.SetValue(GameSummaryOptionsPropertyKey, e.NewValue as GameSummaryGridOptions);
             editor.SetValue(FriendSummaryOptionsPropertyKey, e.NewValue as FriendSummaryGridOptions);
+            editor.SetValue(CategorySummaryOptionsPropertyKey, e.NewValue as CategorySummaryGridOptions);
+            editor.SetValue(CommonOptionsPropertyKey, e.NewValue as GridCommonOptions);
         }
 
         public static readonly DependencyProperty HeaderProperty = DependencyProperty.Register(
