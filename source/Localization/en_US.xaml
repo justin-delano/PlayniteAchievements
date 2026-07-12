@@ -124,12 +124,14 @@
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
     <!-- ================================================================= -->
+    <sys:String x:Key="LOCPlayAch_Button_Add">Add</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Apply">Apply</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Browse">Browse</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Cancel</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Clear">Clear</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Configure">Configure</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Login">Login</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Remove">Remove</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Next">Next</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Pick">Pick</sys:String>
@@ -435,6 +437,7 @@
     <sys:String x:Key="LOCPlayAch_Status_RefreshComplete">Refresh complete!</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteAuthRequiredSuffix">Some platforms require authentication.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_FriendsRefreshCompleteWithModeAndCount">{0} friends refresh complete: {1} friend game checks refreshed</sys:String>
+    <!-- In the two status formats below, {0} is a localized refresh mode name (e.g. "Full", "Custom") -->
     <sys:String x:Key="LOCPlayAch_Status_RefreshCompleteWithModeAndCount">{0} refresh complete: {1} games refreshed</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_CombinedRefreshCompleteWithModeAndCounts">{0} complete: {1} games refreshed; {2} friend game checks refreshed.</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_Refreshing">Refreshing...</sys:String>
@@ -665,8 +668,6 @@
     <sys:String x:Key="LOCPlayAch_FriendsSettings_Unmerge">Unmerge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FriendsTableHint">Ignore friends to skip them during refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RefreshFriendsList">Refresh Friends List</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Add">Add</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Remove">Remove</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata">Use Exophase for Metadata</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseExophaseForMetadata_Help">When enabled, this platform keeps native achievement data but uses Exophase to fill missing metadata. Requires Exophase authentication.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_BattleNet_UseDataForAzerothForWowRarity">Use Data for Azeroth for WoW Rarity</sys:String>
@@ -729,6 +730,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_XeniaAccountPathHint">&lt;Xenia Path&gt;\content\&lt;Account ID&gt;\FFFE07D1\00010000\&lt;Account ID&gt;\</sys:String>
     <sys:String x:Key="LOCPlayAch_XeniaValidation_NoAccount">Not a valid Xenia account path - No Account file</sys:String>
 
+    <!-- General Settings (continued): display, maintenance, hotkeys, notifications -->
     <sys:String x:Key="LOCPlayAch_Settings_RebuildNow">Rebuild Now</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_Description">Refresh only your most recently played games with achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecentRefresh_RecentGames">Recent games to refresh</sys:String>
@@ -832,6 +834,7 @@
     <sys:String x:Key="LOCPlayAch_Filter_InProgress">In Progress</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_ActivitySelectorPlaceholder">Activity</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Games">Search Games</sys:String>
+    <!-- Filter_Hidden: filter label for hidden (secret) achievements, not hidden games -->
     <sys:String x:Key="LOCPlayAch_Filter_Hidden">Hidden</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_NoProgress">No Progress</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Played">Played</sys:String>
@@ -935,9 +938,6 @@
     <sys:String x:Key="LOCPlayAch_Tagging_RemoveAllConfirm">Remove all Playnite Achievements tags from all games?</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_RemovingProgress">Removing tags...</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_SyncingProgress">Syncing tags...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Text_UnknownAchievement">Unknown achievement</sys:String>
-    <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Achievement unlocked</sys:String>
-    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
 
     <!-- ================================================================= -->
     <!-- 16 Rarity Sections and Time -->
@@ -969,6 +969,12 @@
     <sys:String x:Key="LOCPlayAch_Error_RefreshFailed">Refresh failed: {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Error_SteamDatetimeParse">Steam unlock datetime parsing failed {0} time(s) during this scan. Check the log and failed_steam_datetimes.csv, then submit an issue on GitHub. Your PlayniteAchievements language setting must match your Steam language for correct parsing.</sys:String>
     <sys:String x:Key="LOCPlayAch_Notification_ProviderAuthFailed">{0} authentication has expired or is invalid. Click to open settings.</sys:String>
+    <!-- Toast_AchievementUnlocked: unlock toast heading for the current user's own achievements -->
+    <sys:String x:Key="LOCPlayAch_Toast_AchievementUnlocked">Achievement unlocked</sys:String>
+    <!-- Toast_FriendUnlocked: unlock toast heading; {0} is the friend's display name -->
+    <sys:String x:Key="LOCPlayAch_Toast_FriendUnlocked">{0} unlocked</sys:String>
+    <!-- Text_UnknownAchievement: fallback shown when an achievement's name cannot be resolved -->
+    <sys:String x:Key="LOCPlayAch_Text_UnknownAchievement">Unknown achievement</sys:String>
 
     <!-- ================================================================= -->
     <!-- 18 Miscellaneous -->
@@ -976,6 +982,7 @@
     <sys:String x:Key="LOCPlayAch_Achievements_ClickToReveal">Click to reveal</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle">Hidden Achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Achievements_HiddenTitle_WithParens"> (Hidden Achievement)</sys:String>
+    <!-- ChartCut: toggle button that trims (cuts) the unlock chart to the selected time period -->
     <sys:String x:Key="LOCPlayAch_ChartCut">Cut</sys:String>
     <sys:String x:Key="LOCPlayAch_ColorPicker_WindowTitle">Pick Color</sys:String>
     <sys:String x:Key="LOCPlayAch_GroupByUnlocked">Group by unlocked</sys:String>
