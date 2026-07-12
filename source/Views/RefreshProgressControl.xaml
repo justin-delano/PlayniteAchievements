@@ -82,7 +82,7 @@
                                VerticalAlignment="Center"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                FontWeight="SemiBold"
-                               Foreground="White"/>
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"/>
                 </Grid>
 
                 <!-- Hint Text -->
