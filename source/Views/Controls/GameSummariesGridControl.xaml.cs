@@ -500,7 +500,7 @@ namespace PlayniteAchievements.Views.Controls
                 setHeaderHorizontalAlignments: map => SetHeaderAlignmentsByKey(settings, map),
                 getDefaultHeaderHorizontalAlignment: () => settings.Persisted?.GridColumnHeaderAlignment ?? GridAlignment.Center,
                 applyCellAlignments: () => DataGridAlignmentBehavior.Refresh(GameSummariesGrid),
-                isRuntimeDefaultWidth: IsLegacyImageColumnRuntimeDefaultWidth);
+                isRuntimeDefaultWidth: IsRuntimeDefaultWidth);
             _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
             ApplyFriendColumnRestrictions();
             _columnPersistence.Attach();
@@ -1047,6 +1047,22 @@ namespace PlayniteAchievements.Views.Controls
                    LegacyImageColumnRuntimeDefaults.TryGetValue(key, out var legacyWidth) &&
                    Math.Abs(ColumnWidthNormalization.RoundPixelWidth(width) -
                             ColumnWidthNormalization.RoundPixelWidth(legacyWidth)) <= 0.2;
+        }
+
+        private bool IsRuntimeDefaultWidth(string key, double width)
+        {
+            if (IsLegacyImageColumnRuntimeDefaultWidth(key, width))
+            {
+                return true;
+            }
+
+            // The compact surfaces originally seeded the standard image widths; those persisted
+            // values are not user customization and may be replaced by the narrower seeds.
+            return !ReferenceEquals(ResolveDefaultWidthSeeds(), DefaultImageColumnWidthSeeds) &&
+                   !string.IsNullOrWhiteSpace(key) &&
+                   DefaultImageColumnWidthSeeds.TryGetValue(key, out var standardWidth) &&
+                   Math.Abs(ColumnWidthNormalization.RoundPixelWidth(width) -
+                            ColumnWidthNormalization.RoundPixelWidth(standardWidth)) <= 0.2;
         }
 
         private static void SavePluginSettings(PlayniteAchievementsSettings settings)
