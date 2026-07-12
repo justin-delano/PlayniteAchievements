@@ -942,14 +942,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <!-- ================================================================= -->
     <!-- 15 Tagging -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Tag_Completed">[PA] Completed</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tag_Excluded">[PA] Excluded</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tag_ExcludedFromSummaries">[PA] Excluded from Summaries</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tag_HasAchievements">[PA] Has Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tag_InProgress">[PA] In Progress</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tag_NoAchievements">[PA] No Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tag_Customized">[PA] Customized</sys:String>
-    <sys:String x:Key="LOCPlayAch_Tag_NotCustomized">[PA] Not Customized</sys:String>
+    <sys:String x:Key="LOCPlayAch_Tag_PrefixFormat">[PA] {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_HasAchievements">Has Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_NoAchievements">No Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_Tagging_Customized">Customized</sys:String>
