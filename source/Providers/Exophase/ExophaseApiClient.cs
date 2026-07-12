@@ -24,6 +24,10 @@ namespace PlayniteAchievements.Providers.Exophase
         private const string SearchUrl = "https://api.exophase.com/public/archive/games";
         private const string AchievementPageBaseUrl = "https://www.exophase.com/game/{0}/achievements/";
         internal const string ExophaseApiNamePrefix = "exophase_";
+        // Stable-id key format keyed on the award's master id (the li's data-master attribute,
+        // equal to the earned endpoint's masterAwardId). The colon cannot appear in legacy
+        // display-derived keys, so the two key families never collide.
+        internal const string ExophaseStableApiNamePrefix = "exophase:";
         private const int AchievementDomReadyPollDelayMs = 250;
         private const int AchievementDomReadyPollAttempts = 8;
 
@@ -949,6 +953,13 @@ namespace PlayniteAchievements.Providers.Exophase
 
                 _logger?.Info($"[Exophase] Parsed {achievements.Count} achievements ({unlockedCount} unlocked, {lockedCount} locked)");
 
+                var legacyKeyCount = achievements.Count(a =>
+                    a.ApiName?.StartsWith(ExophaseStableApiNamePrefix, StringComparison.Ordinal) != true);
+                if (legacyKeyCount > 0)
+                {
+                    _logger?.Debug($"[Exophase] {legacyKeyCount} achievement nodes carried no stable award id; using legacy display-derived keys for them.");
+                }
+
                 return achievements.Count > 0 ? achievements : null;
             }
             catch (Exception ex)
@@ -1001,6 +1012,16 @@ namespace PlayniteAchievements.Providers.Exophase
             var dataEarned = node.GetAttributeValue("data-earned", "0");
             var isUnlocked = dataEarned != "0" && !string.IsNullOrEmpty(dataEarned);
 
+            // data-earned carries the exact unix unlock time when unlocked; prefer it over
+            // parsing the localized display text.
+            DateTime? unlockTimeUtc = null;
+            if (long.TryParse(dataEarned, System.Globalization.NumberStyles.None,
+                    System.Globalization.CultureInfo.InvariantCulture, out var earnedUnixSeconds) &&
+                earnedUnixSeconds > 0)
+            {
+                unlockTimeUtc = DateTimeOffset.FromUnixTimeSeconds(earnedUnixSeconds).UtcDateTime;
+            }
+
             // Check class attribute for unlock-related classes
             var nodeClass = node.GetAttributeValue("class", "");
 
@@ -1013,10 +1034,12 @@ namespace PlayniteAchievements.Providers.Exophase
             var hasUnlockedClass = nodeClass.IndexOf("unlocked", StringComparison.OrdinalIgnoreCase) >= 0;
             var hasCompletedClass = nodeClass.IndexOf("completed", StringComparison.OrdinalIgnoreCase) >= 0;
 
-            DateTime? unlockTimeUtc = null;
             if (!string.IsNullOrWhiteSpace(earnedText))
             {
-                unlockTimeUtc = ParseExophaseTimestamp(earnedText);
+                if (!unlockTimeUtc.HasValue)
+                {
+                    unlockTimeUtc = ParseExophaseTimestamp(earnedText);
+                }
 
                 if (!isUnlocked)
                 {
@@ -1059,14 +1082,17 @@ namespace PlayniteAchievements.Providers.Exophase
             var trophyType = ParseTrophyType(awardPointsNode);
             var isCapstone = string.Equals(trophyType, "platinum", StringComparison.OrdinalIgnoreCase);
 
-            // Generate a stable API name from the display name
-            var apiName = GenerateApiName(displayName);
-
             if (string.IsNullOrWhiteSpace(displayName))
             {
                 _logger?.Warn("[Exophase] Skipping achievement node - no display name found");
                 return null;
             }
+
+            // Key on the stable award id (data-master, mirrored in the id attribute); fall back
+            // to the legacy display-derived key only when the node carries no id.
+            var apiName = TryParseStableAwardId(node, out var stableAwardId)
+                ? ExophaseStableApiNamePrefix + stableAwardId.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                : GenerateApiName(displayName);
 
             return new AchievementDetail
             {
@@ -1084,6 +1110,20 @@ namespace PlayniteAchievements.Providers.Exophase
                 Unlocked = isUnlocked,
                 UnlockTimeUtc = unlockTimeUtc
             };
+        }
+
+        private static bool TryParseStableAwardId(HtmlNode node, out long stableAwardId)
+        {
+            stableAwardId = 0;
+            var candidate = node.GetAttributeValue("data-master", "");
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                candidate = node.GetAttributeValue("id", "");
+            }
+
+            return long.TryParse(candidate?.Trim(), System.Globalization.NumberStyles.None,
+                       System.Globalization.CultureInfo.InvariantCulture, out stableAwardId) &&
+                   stableAwardId > 0;
         }
 
         private static double? NormalizePercent(double? rawPercent)
@@ -1334,6 +1374,12 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             var candidate = apiName.Trim();
+            if (candidate.StartsWith(ExophaseStableApiNamePrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                // Stable-id keys are opaque; never re-normalize them through the name pipeline.
+                return candidate;
+            }
+
             if (candidate.StartsWith(ExophaseApiNamePrefix, StringComparison.OrdinalIgnoreCase))
             {
                 candidate = candidate.Substring(ExophaseApiNamePrefix.Length);
