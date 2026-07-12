@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:settings="clr-namespace:PlayniteAchievements.Providers.Settings"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              mc:Ignorable="d" d:DesignHeight="640" d:DesignWidth="760">
 
     <UserControl.Resources>
@@ -97,29 +98,15 @@
                                Style="{StaticResource SectionHeaderStyle}"/>
 
                     <StackPanel Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
-                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource PlayAch.Brush.Text}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}">
-                            <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Prefix}"/>
-                            <Hyperlink NavigateUri="https://stardb.gg/en/import"
-                                       RequestNavigate="Hyperlink_RequestNavigate"
-                                       TextDecorations="Underline"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource PlayAch.Brush.ActionLink}">
-                                <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter}"/>
-                            </Hyperlink>
-                            <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step1Suffix}"/>
-                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource PlayAch.Brush.Text}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"
+                                   helpers:HyperlinkFormatText.Format="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step1}"
+                                   helpers:HyperlinkFormatText.LinkText="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbImporter}"
+                                   helpers:HyperlinkFormatText.NavigateUri="https://stardb.gg/en/import"/>
 
-                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource PlayAch.Brush.Text}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}">
-                            <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Prefix}"/>
-                            <Hyperlink NavigateUri="https://github.com/juliuskreutz/stardb-exporter"
-                                       RequestNavigate="Hyperlink_RequestNavigate"
-                                       TextDecorations="Underline"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource PlayAch.Brush.ActionLink}">
-                                <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbExporter}"/>
-                            </Hyperlink>
-                            <Run Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step2Suffix}"/>
-                        </TextBlock>
+                        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource PlayAch.Brush.Text}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"
+                                   helpers:HyperlinkFormatText.Format="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step2}"
+                                   helpers:HyperlinkFormatText.LinkText="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_StarDbExporter}"
+                                   helpers:HyperlinkFormatText.NavigateUri="https://github.com/juliuskreutz/stardb-exporter"/>
 
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Hoyoverse_Instructions_Step3}"
                                    TextWrapping="Wrap"
