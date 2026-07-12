@@ -37,6 +37,8 @@ namespace PlayniteAchievements.ViewModels.Items
             public bool UseSeparateLockedIconsWhenAvailable { get; set; }
 
             public bool ShowRarityBar { get; set; }
+
+            public bool HideFriendSpoilers { get; set; }
         }
 
         private AchievementDetail _source;
@@ -272,6 +274,7 @@ namespace PlayniteAchievements.ViewModels.Items
                     OnPropertyChanged(nameof(ShowUnlockDate));
                     OnPropertyChanged(nameof(ShowLockedProgress));
                     OnPropertyChanged(nameof(IsUnlock));
+                    OnPropertyChanged(nameof(UnlockedForVisibility));
                 }
             }
         }
@@ -420,6 +423,26 @@ namespace PlayniteAchievements.ViewModels.Items
                     NotifyRevealStateChanged();
                     OnPropertyChanged(nameof(IsLockedIconHidden));
                     NotifyIconDisplayChanged();
+                }
+            }
+        }
+
+        private bool _hideFriendSpoilers;
+        public bool HideFriendSpoilers
+        {
+            get => _hideFriendSpoilers;
+            set
+            {
+                if (SetValueAndReturn(ref _hideFriendSpoilers, value))
+                {
+                    NotifyRevealStateChanged();
+                    OnPropertyChanged(nameof(IsIconHidden));
+                    OnPropertyChanged(nameof(IsLockedIconHidden));
+                    OnPropertyChanged(nameof(IsTitleHidden));
+                    OnPropertyChanged(nameof(IsDescriptionHidden));
+                    NotifyIconDisplayChanged();
+                    NotifyTitleDisplayChanged();
+                    NotifyDescriptionDisplayChanged();
                 }
             }
         }
@@ -629,10 +652,17 @@ namespace PlayniteAchievements.ViewModels.Items
         public double ProgressPercent => HasProgress ? (ProgressNum.Value * 100.0 / ProgressDenom.Value) : 0;
 
         /// <summary>
+        /// Unlock state used for visibility/obscuring decisions.
+        /// Subclasses may substitute a different unlock source (e.g. the current user's
+        /// unlock state on friend items when spoiler protection is enabled).
+        /// </summary>
+        public virtual bool UnlockedForVisibility => Unlocked;
+
+        /// <summary>
         /// True if the achievement can be revealed (is locked and at least one hiding setting is enabled).
         /// Includes both hidden achievements and locked achievements when ShowLockedIcon is false.
         /// </summary>
-        public bool CanReveal => !Unlocked && (!ShowLockedIcon || (Hidden && (!ShowHiddenIcon || !ShowHiddenTitle || !ShowHiddenDescription)));
+        public bool CanReveal => !UnlockedForVisibility && (!ShowLockedIcon || (Hidden && (!ShowHiddenIcon || !ShowHiddenTitle || !ShowHiddenDescription)));
 
         /// <summary>
         /// True if the achievement details are currently hidden (can reveal and not yet revealed).
@@ -647,7 +677,7 @@ namespace PlayniteAchievements.ViewModels.Items
         /// <summary>
         /// True if the icon is currently being hidden due to locked achievement settings (for XAML styling triggers).
         /// </summary>
-        public bool IsLockedIconHidden => !Unlocked && !ShowLockedIcon && !IsRevealed;
+        public bool IsLockedIconHidden => !UnlockedForVisibility && !ShowLockedIcon && !IsRevealed;
 
         /// <summary>
         /// True if the title is currently being hidden (for XAML styling triggers).
@@ -801,6 +831,7 @@ namespace PlayniteAchievements.ViewModels.Items
             CategoryType = sourceItem.CategoryType;
             CategoryLabel = sourceItem.CategoryLabel;
             IsRevealed = sourceItem.IsRevealed;
+            HideFriendSpoilers = sourceItem.HideFriendSpoilers;
         }
 
         public void ApplyAppearanceSettings(
@@ -841,6 +872,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 resolved.ShowLockedIcon,
                 resolved.UseSeparateLockedIconsWhenAvailable,
                 resolved.ShowRarityBar);
+            HideFriendSpoilers = resolved.HideFriendSpoilers;
         }
 
         public static AppearanceSettingsSnapshot CreateAppearanceSettingsSnapshot(
@@ -859,7 +891,8 @@ namespace PlayniteAchievements.ViewModels.Items
                 ShowLockedIcon = persisted?.ShowLockedIcon ?? true,
                 UseSeparateLockedIconsWhenAvailable = resolvedUseSeparateLockedIcons ??
                     GameCustomDataLookup.ShouldUseSeparateLockedIcons(resolvedGameId, persisted),
-                ShowRarityBar = persisted?.ShowCompactListRarityBar ?? true
+                ShowRarityBar = persisted?.ShowCompactListRarityBar ?? true,
+                HideFriendSpoilers = persisted?.FriendsOverviewHideSpoilers ?? true
             };
         }
 
@@ -1009,6 +1042,7 @@ namespace PlayniteAchievements.ViewModels.Items
             clone.ShowLockedIcon = _showLockedIcon;
             clone.UseSeparateLockedIconsWhenAvailable = _useSeparateLockedIconsWhenAvailable;
             clone.ShowRarityBar = _showRarityBar;
+            clone.HideFriendSpoilers = _hideFriendSpoilers;
             clone.CategoryType = _categoryType;
             clone.CategoryLabel = _categoryLabel;
             clone.GameIconPath = _gameIconPath;
@@ -1092,6 +1126,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 case nameof(PersistedSettings.ShowHiddenSuffix):
                 case nameof(PersistedSettings.ShowLockedIcon):
                 case nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable):
+                case nameof(PersistedSettings.FriendsOverviewHideSpoilers):
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
                 case nameof(PersistedSettings.UseUniformRarityBadges):
                 case nameof(PersistedSettings.RarityColors):
@@ -1286,7 +1321,7 @@ namespace PlayniteAchievements.ViewModels.Items
         private bool ShouldShowPlaceholderIcon()
         {
             return (IsHidden && Hidden && !ShowHiddenIcon) ||
-                   (!Unlocked && !ShowLockedIcon && !IsRevealed);
+                   (!UnlockedForVisibility && !ShowLockedIcon && !IsRevealed);
         }
 
         private string GetLockedDisplayIcon()
