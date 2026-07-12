@@ -474,7 +474,7 @@
                                                      ShowControlBar="{Binding Settings.Persisted.ShowFriendsOverviewAchievementsGridControlBar}"
                                                      ItemsSource="{Binding DisplayedAchievements}"
                                                      ColumnSettingsKey="FriendsOverviewRecentAchievements"
-                                                     EnableCategoryMode="True"
+                                                     EnableCategoryMode="{Binding HasFriendGameSelection}"
                                                      HideBackButton="True"
                                                      HideCategorySummaryRow="{Binding Settings.Persisted.FriendsOverviewAchievementsHideCategorySummaryRow}"
                                                      DrilledCategory="{Binding SelectedCategoryName, Mode=OneWayToSource}"
