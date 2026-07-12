@@ -472,11 +472,15 @@ namespace PlayniteAchievements.Providers.Exophase
     [DataContract]
     public sealed class ExophaseEarnedAward
     {
-        [DataMember(Name = "master_awardid")]
+        // Live responses use camelCase for this one field (unlike the rest of the payload).
+        [DataMember(Name = "masterAwardId")]
         public long MasterAwardId { get; set; }
 
         [DataMember(Name = "awardid")]
         public long AwardId { get; set; }
+
+        // Observed equal to MasterAwardId in live responses; falls back when either is absent.
+        public long EffectiveAwardId => MasterAwardId != 0 ? MasterAwardId : AwardId;
 
         // The platform's native achievement key (e.g. the Steam apiname); locale-independent.
         [DataMember(Name = "canonical_id")]
@@ -492,7 +496,8 @@ namespace PlayniteAchievements.Providers.Exophase
         [DataMember(Name = "slug")]
         public string Slug { get; set; }
 
-        // "/achievement/{game-slug}/{awardid}-{award-slug}"
+        // "/achievement/{game-slug}/{n}-{award-slug}" where {n} is an internal page id,
+        // NOT the award id — do not parse ids out of this.
         [DataMember(Name = "endpoint")]
         public string Endpoint { get; set; }
 
