@@ -679,7 +679,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">pixels (empty = automatic)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">rows (empty = unlimited)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_FriendsOverviewHideSpoilers">Hide friend spoilers until I unlock the achievement</sys:String>
 
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution">Preserve full-resolution achievement icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PreserveAchievementIconResolution_Help">Saves cached icons at their original resolution instead of the optimized 128px cache mode. This uses more disk space.</sys:String>
@@ -803,6 +802,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_SortDirection_Tooltip">Toggle sort direction</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_SortResetHint">Click the active column header again to return to this default sort.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowCompletionBorder">Show Completion Border</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowFriendSpoilers">Show friend spoilers</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Show (Hidden Achievement) suffix</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Show Rarity Glow on Unlocked Icons</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Show Overview Bar Charts</sys:String>

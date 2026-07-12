@@ -683,7 +683,7 @@ namespace PlayniteAchievements.ViewModels
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
             NotifySettingProperties();
-            if (e?.PropertyName == nameof(PersistedSettings.FriendsOverviewHideSpoilers) ||
+            if (e?.PropertyName == nameof(PersistedSettings.ShowFriendSpoilers) ||
                 e?.PropertyName == nameof(PersistedSettings.Friends) ||
                 e?.PropertyName == nameof(PersistedSettings.FriendMergeGroups))
             {

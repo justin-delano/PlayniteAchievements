@@ -38,7 +38,7 @@ namespace PlayniteAchievements.ViewModels.Items
 
             public bool ShowRarityBar { get; set; }
 
-            public bool HideFriendSpoilers { get; set; }
+            public bool ShowFriendSpoilers { get; set; }
         }
 
         private AchievementDetail _source;
@@ -427,13 +427,13 @@ namespace PlayniteAchievements.ViewModels.Items
             }
         }
 
-        private bool _hideFriendSpoilers;
-        public bool HideFriendSpoilers
+        private bool _showFriendSpoilers;
+        public bool ShowFriendSpoilers
         {
-            get => _hideFriendSpoilers;
+            get => _showFriendSpoilers;
             set
             {
-                if (SetValueAndReturn(ref _hideFriendSpoilers, value))
+                if (SetValueAndReturn(ref _showFriendSpoilers, value))
                 {
                     NotifyRevealStateChanged();
                     OnPropertyChanged(nameof(IsIconHidden));
@@ -831,7 +831,7 @@ namespace PlayniteAchievements.ViewModels.Items
             CategoryType = sourceItem.CategoryType;
             CategoryLabel = sourceItem.CategoryLabel;
             IsRevealed = sourceItem.IsRevealed;
-            HideFriendSpoilers = sourceItem.HideFriendSpoilers;
+            ShowFriendSpoilers = sourceItem.ShowFriendSpoilers;
         }
 
         public void ApplyAppearanceSettings(
@@ -872,7 +872,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 resolved.ShowLockedIcon,
                 resolved.UseSeparateLockedIconsWhenAvailable,
                 resolved.ShowRarityBar);
-            HideFriendSpoilers = resolved.HideFriendSpoilers;
+            ShowFriendSpoilers = resolved.ShowFriendSpoilers;
         }
 
         public static AppearanceSettingsSnapshot CreateAppearanceSettingsSnapshot(
@@ -892,7 +892,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 UseSeparateLockedIconsWhenAvailable = resolvedUseSeparateLockedIcons ??
                     GameCustomDataLookup.ShouldUseSeparateLockedIcons(resolvedGameId, persisted),
                 ShowRarityBar = persisted?.ShowCompactListRarityBar ?? true,
-                HideFriendSpoilers = persisted?.FriendsOverviewHideSpoilers ?? true
+                ShowFriendSpoilers = persisted?.ShowFriendSpoilers ?? false
             };
         }
 
@@ -1042,7 +1042,7 @@ namespace PlayniteAchievements.ViewModels.Items
             clone.ShowLockedIcon = _showLockedIcon;
             clone.UseSeparateLockedIconsWhenAvailable = _useSeparateLockedIconsWhenAvailable;
             clone.ShowRarityBar = _showRarityBar;
-            clone.HideFriendSpoilers = _hideFriendSpoilers;
+            clone.ShowFriendSpoilers = _showFriendSpoilers;
             clone.CategoryType = _categoryType;
             clone.CategoryLabel = _categoryLabel;
             clone.GameIconPath = _gameIconPath;
@@ -1126,7 +1126,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 case nameof(PersistedSettings.ShowHiddenSuffix):
                 case nameof(PersistedSettings.ShowLockedIcon):
                 case nameof(PersistedSettings.UseSeparateLockedIconsWhenAvailable):
-                case nameof(PersistedSettings.FriendsOverviewHideSpoilers):
+                case nameof(PersistedSettings.ShowFriendSpoilers):
                 case nameof(PersistedSettings.SeparateLockedIconEnabledGameIds):
                 case nameof(PersistedSettings.UseUniformRarityBadges):
                 case nameof(PersistedSettings.RarityColors):

@@ -266,7 +266,7 @@ namespace PlayniteAchievements.Services.StartPage
             clone.ProviderGameKey = item.ProviderGameKey;
             clone.FriendGroupId = item.FriendGroupId;
             clone.UnlockedBySelf = item.UnlockedBySelf;
-            clone.HideFriendSpoilers = item.HideFriendSpoilers;
+            clone.ShowFriendSpoilers = item.ShowFriendSpoilers;
             clone.SetDynamicAchievementsGameCommand = item.SetDynamicAchievementsGameCommand;
             clone.FilterDynamicLibraryAchievementsByProviderCommand = item.FilterDynamicLibraryAchievementsByProviderCommand;
             clone.OpenViewAchievementsWindow = item.OpenViewAchievementsWindow;

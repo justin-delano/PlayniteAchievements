@@ -125,8 +125,8 @@
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowHiddenSuffix}"
                                           IsChecked="{Binding Persisted.ShowHiddenSuffix}"
                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
-                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewHideSpoilers}"
-                                          IsChecked="{Binding Persisted.FriendsOverviewHideSpoilers}"
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowFriendSpoilers}"
+                                          IsChecked="{Binding Persisted.ShowFriendSpoilers}"
                                           Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}"/>
                             </StackPanel>
                         </StackPanel>

@@ -1997,7 +1997,7 @@ namespace PlayniteAchievements.ViewModels
         {
             var propertyName = e?.PropertyName;
             if (string.IsNullOrWhiteSpace(propertyName) ||
-                propertyName == nameof(PersistedSettings.FriendsOverviewHideSpoilers))
+                propertyName == nameof(PersistedSettings.ShowFriendSpoilers))
             {
                 _friendsOverviewDataCoordinator?.Invalidate();
             }

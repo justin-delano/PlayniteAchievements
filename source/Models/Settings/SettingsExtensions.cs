@@ -127,7 +127,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowOverviewBarCharts = source.ShowOverviewBarCharts;
             target.ShowTopMenuBarButton = source.ShowTopMenuBarButton;
             target.UseExophaseForSteamFriendOwnership = source.UseExophaseForSteamFriendOwnership;
-            target.FriendsOverviewHideSpoilers = source.FriendsOverviewHideSpoilers;
+            target.ShowFriendSpoilers = source.ShowFriendSpoilers;
             target.FriendsOverviewRecentUnlockLimit = source.FriendsOverviewRecentUnlockLimit;
             target.ShowCompactListRarityBar = source.ShowCompactListRarityBar;
             target.ProgressColumnAlignmentDefaulted = source.ProgressColumnAlignmentDefaulted;

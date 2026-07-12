@@ -109,7 +109,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showOverviewRarityPieChart = true;
         private bool _showOverviewTrophyPieChart = true;
         private bool _showOverviewPiePercentages = true;
-        private bool _friendsOverviewHideSpoilers = true;
+        private bool _showFriendSpoilers;
         private int _friendsOverviewRecentUnlockLimit = 200;
         private OverviewPieSmallSliceMode _overviewPieSmallSliceMode = OverviewPieSmallSliceMode.Round;
         private bool _overviewPieChartVisibilityInitializedFromIndividualSettings;
@@ -1232,14 +1232,14 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, friend achievement rows for achievements the current user has not unlocked
+        /// When false, friend achievement rows for achievements the current user has not unlocked
         /// are obscured using the achievement visibility settings, as if locked for the user.
         /// Applies to all friend surfaces (overview, friends achievements window, recent unlocks, themes).
         /// </summary>
-        public bool FriendsOverviewHideSpoilers
+        public bool ShowFriendSpoilers
         {
-            get => _friendsOverviewHideSpoilers;
-            set => SetValue(ref _friendsOverviewHideSpoilers, value);
+            get => _showFriendSpoilers;
+            set => SetValue(ref _showFriendSpoilers, value);
         }
 
         /// <summary>
@@ -1987,7 +1987,7 @@ namespace PlayniteAchievements.Models.Settings
                 OverviewPieSmallSliceMode = this.OverviewPieSmallSliceMode,
                 ShowOverviewBarCharts = this.ShowOverviewBarCharts,
                 ShowTopMenuBarButton = this.ShowTopMenuBarButton,
-                FriendsOverviewHideSpoilers = this.FriendsOverviewHideSpoilers,
+                ShowFriendSpoilers = this.ShowFriendSpoilers,
                 FriendsOverviewRecentUnlockLimit = this.FriendsOverviewRecentUnlockLimit,
                 ShowCompactListRarityBar = this.ShowCompactListRarityBar,
                 ProgressColumnAlignmentDefaulted = this.ProgressColumnAlignmentDefaulted,
@@ -2105,7 +2105,7 @@ namespace PlayniteAchievements.Models.Settings
             ShowHiddenDescription = defaults.ShowHiddenDescription;
             ShowHiddenSuffix = defaults.ShowHiddenSuffix;
             ShowLockedIcon = defaults.ShowLockedIcon;
-            FriendsOverviewHideSpoilers = defaults.FriendsOverviewHideSpoilers;
+            ShowFriendSpoilers = defaults.ShowFriendSpoilers;
             PreserveAchievementIconResolution = defaults.PreserveAchievementIconResolution;
             UseSeparateLockedIconsWhenAvailable = defaults.UseSeparateLockedIconsWhenAvailable;
             SeparateLockedIconEnabledGameIds = new HashSet<Guid>();

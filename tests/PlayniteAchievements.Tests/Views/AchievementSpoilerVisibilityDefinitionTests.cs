@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Tests.Views
                 "public bool CanReveal => !UnlockedForVisibility && (!ShowLockedIcon",
                 "public bool IsLockedIconHidden => !UnlockedForVisibility && !ShowLockedIcon && !IsRevealed;",
                 "(!UnlockedForVisibility && !ShowLockedIcon && !IsRevealed)",
-                "HideFriendSpoilers = persisted?.FriendsOverviewHideSpoilers ?? true");
+                "ShowFriendSpoilers = persisted?.ShowFriendSpoilers ?? false");
         }
 
         [TestMethod]
@@ -31,7 +31,7 @@ namespace PlayniteAchievements.Tests.Views
             AssertContainsAll(
                 code,
                 "public override bool UnlockedForVisibility =>",
-                "HideFriendSpoilers ? UnlockedBySelf : base.UnlockedForVisibility;");
+                "ShowFriendSpoilers ? base.UnlockedForVisibility : UnlockedBySelf;");
         }
 
         [TestMethod]
@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Tests.Views
             var visibilityCardIndex = xaml.IndexOf("LOCPlayAch_Settings_HiddenAchievements", StringComparison.Ordinal);
             var advancedIndex = xaml.IndexOf("LOCPlayAch_Settings_Advanced", StringComparison.Ordinal);
             var suffixToggleIndex = xaml.IndexOf("LOCPlayAch_Settings_ShowHiddenSuffix", StringComparison.Ordinal);
-            var spoilerToggleIndex = xaml.IndexOf("LOCPlayAch_Settings_FriendsOverviewHideSpoilers", StringComparison.Ordinal);
+            var spoilerToggleIndex = xaml.IndexOf("LOCPlayAch_Settings_ShowFriendSpoilers", StringComparison.Ordinal);
 
             Assert.IsTrue(visibilityCardIndex >= 0, "Achievement Visibility card missing.");
             Assert.IsTrue(advancedIndex >= 0, "Advanced expander missing.");
@@ -53,7 +53,7 @@ namespace PlayniteAchievements.Tests.Views
                 "Friend spoiler toggle must live in the Achievement Visibility card.");
             AssertContainsAll(
                 xaml,
-                "IsChecked=\"{Binding Persisted.FriendsOverviewHideSpoilers}\"",
+                "IsChecked=\"{Binding Persisted.ShowFriendSpoilers}\"",
                 "Visibility=\"{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}\"");
         }
 
