@@ -192,11 +192,10 @@ namespace PlayniteAchievements.Services.Friends
             try
             {
                 var persisted = _persistedSettingsFactory();
-                var hideSpoilers = persisted?.FriendsOverviewHideSpoilers ?? true;
                 FriendsOverviewData data;
                 using (PerfScope.Start(_logger, "FriendsOverview.LoadCache", thresholdMs: 25))
                 {
-                    data = _friendCache?.LoadFriendsOverviewData(hideSpoilers, 0) ?? new FriendsOverviewData();
+                    data = _friendCache?.LoadFriendsOverviewData(0) ?? new FriendsOverviewData();
                 }
 
                 return CreateSnapshot(data, persisted);

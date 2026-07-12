@@ -506,7 +506,7 @@ namespace PlayniteAchievements.Views
                 return snapshot;
             }
 
-            var data = _friendCache?.LoadFriendsOverviewData(false, 0);
+            var data = _friendCache?.LoadFriendsOverviewData(0);
             return FriendsOverviewDataCoordinator.CreateSnapshot(data, _settings?.Persisted);
         }
 

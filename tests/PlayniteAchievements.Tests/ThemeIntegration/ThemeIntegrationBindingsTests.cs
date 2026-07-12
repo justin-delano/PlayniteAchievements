@@ -3000,7 +3000,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 string externalUserId) =>
                 new Dictionary<string, FriendOwnershipRecency>();
 
-            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
+            public FriendsOverviewData LoadFriendsOverviewData(int recentLimit)
             {
                 LoadFriendsOverviewDataCalls++;
                 if (FirstLoadThreadId == 0)
@@ -3011,10 +3011,10 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 return Data;
             }
 
-            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers) =>
+            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId) =>
                 Data;
 
-            public FriendsOverviewData LoadFriendRecentUnlocksData(bool hideSpoilers, int recentLimit) =>
+            public FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit) =>
                 Data;
 
             public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() =>

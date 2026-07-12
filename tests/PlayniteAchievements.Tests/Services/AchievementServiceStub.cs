@@ -225,9 +225,9 @@ namespace PlayniteAchievements.Services.Refresh
             public IReadOnlyDictionary<string, FriendOwnershipRecency> LoadFriendOwnershipRecency(string providerKey, string externalUserId) =>
                 new Dictionary<string, FriendOwnershipRecency>();
 
-            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) => new FriendsOverviewData();
-            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers) => new FriendsOverviewData();
-            public FriendsOverviewData LoadFriendRecentUnlocksData(bool hideSpoilers, int recentLimit) => new FriendsOverviewData();
+            public FriendsOverviewData LoadFriendsOverviewData(int recentLimit) => new FriendsOverviewData();
+            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId) => new FriendsOverviewData();
+            public FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit) => new FriendsOverviewData();
             public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() => new List<CurrentUserGameLabel>();
         }
     }

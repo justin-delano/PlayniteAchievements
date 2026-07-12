@@ -2213,13 +2213,13 @@ namespace PlayniteAchievements.Services.Tests
                 string providerKey,
                 string externalUserId) => OwnershipRecency;
 
-            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit) =>
+            public FriendsOverviewData LoadFriendsOverviewData(int recentLimit) =>
                 new FriendsOverviewData();
 
-            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers) =>
+            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId) =>
                 new FriendsOverviewData();
 
-            public FriendsOverviewData LoadFriendRecentUnlocksData(bool hideSpoilers, int recentLimit) =>
+            public FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit) =>
                 new FriendsOverviewData();
 
             public IReadOnlyList<CurrentUserGameLabel> CurrentUserGameLabels { get; set; } =

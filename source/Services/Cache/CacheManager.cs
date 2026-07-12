@@ -1111,32 +1111,32 @@ namespace PlayniteAchievements.Services.Cache
             }
         }
 
-        FriendsOverviewData IFriendCacheManager.LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
+        FriendsOverviewData IFriendCacheManager.LoadFriendsOverviewData(int recentLimit)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("LoadFriendsOverviewData");
-                return _store.LoadFriendsOverviewData(hideSpoilers, recentLimit) ??
+                return _store.LoadFriendsOverviewData(recentLimit) ??
                        new FriendsOverviewData();
             }
         }
 
-        FriendsOverviewData IFriendCacheManager.LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers)
+        FriendsOverviewData IFriendCacheManager.LoadFriendGameAchievementData(Guid playniteGameId)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("LoadFriendGameAchievementData");
-                return _store.LoadFriendGameAchievementData(playniteGameId, hideSpoilers) ??
+                return _store.LoadFriendGameAchievementData(playniteGameId) ??
                        new FriendsOverviewData();
             }
         }
 
-        FriendsOverviewData IFriendCacheManager.LoadFriendRecentUnlocksData(bool hideSpoilers, int recentLimit)
+        FriendsOverviewData IFriendCacheManager.LoadFriendRecentUnlocksData(int recentLimit)
         {
             lock (_sync)
             {
                 EnsureReady_Locked("LoadFriendRecentUnlocksData");
-                return _store.LoadFriendRecentUnlocksData(hideSpoilers, recentLimit) ??
+                return _store.LoadFriendRecentUnlocksData(recentLimit) ??
                        new FriendsOverviewData();
             }
         }

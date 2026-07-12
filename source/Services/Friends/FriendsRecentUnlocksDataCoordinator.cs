@@ -139,11 +139,10 @@ namespace PlayniteAchievements.Services.Friends
                 }
 
                 var persisted = _persistedSettingsFactory();
-                var hideSpoilers = persisted?.FriendsOverviewHideSpoilers ?? true;
                 FriendsOverviewData data;
                 using (PerfScope.Start(_logger, "FriendsRecentUnlocks.LoadCache", thresholdMs: 25))
                 {
-                    data = _friendCache?.LoadFriendRecentUnlocksData(hideSpoilers, recentLimit) ??
+                    data = _friendCache?.LoadFriendRecentUnlocksData(recentLimit) ??
                            new FriendsOverviewData();
                 }
 

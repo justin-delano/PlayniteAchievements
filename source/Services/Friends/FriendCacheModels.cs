@@ -224,11 +224,11 @@ namespace PlayniteAchievements.Services.Friends
             string providerKey,
             string externalUserId);
 
-        FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit);
+        FriendsOverviewData LoadFriendsOverviewData(int recentLimit);
 
-        FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers);
+        FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId);
 
-        FriendsOverviewData LoadFriendRecentUnlocksData(bool hideSpoilers, int recentLimit);
+        FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit);
 
         // Current-user games (with the servicing provider label stored at scan time) used to resolve a
         // friend's games against the local library without re-deriving platform from Source/Platform.

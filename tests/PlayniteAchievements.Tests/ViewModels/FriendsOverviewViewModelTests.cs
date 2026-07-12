@@ -1163,7 +1163,7 @@ namespace PlayniteAchievements.Tests.ViewModels
                 string externalUserId) =>
                 new Dictionary<string, FriendOwnershipRecency>();
 
-            public FriendsOverviewData LoadFriendsOverviewData(bool hideSpoilers, int recentLimit)
+            public FriendsOverviewData LoadFriendsOverviewData(int recentLimit)
             {
                 var data = Data;
                 LoadFriendsOverviewDataCalls++;
@@ -1178,10 +1178,10 @@ namespace PlayniteAchievements.Tests.ViewModels
                     : data;
             }
 
-            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool hideSpoilers) =>
+            public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId) =>
                 Data;
 
-            public FriendsOverviewData LoadFriendRecentUnlocksData(bool hideSpoilers, int recentLimit) =>
+            public FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit) =>
                 Data;
 
             public IReadOnlyList<CurrentUserGameLabel> LoadCurrentUserGameLabels() =>

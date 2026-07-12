@@ -2524,7 +2524,7 @@ namespace PlayniteAchievements.Services.Database
                 .ToList();
         }
 
-        public FriendsOverviewData LoadFriendsOverviewData(bool _, int recentLimit)
+        public FriendsOverviewData LoadFriendsOverviewData(int recentLimit)
         {
             return WithDb(db =>
             {
@@ -2563,7 +2563,7 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
-        public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId, bool _)
+        public FriendsOverviewData LoadFriendGameAchievementData(Guid playniteGameId)
         {
             if (playniteGameId == Guid.Empty)
             {
@@ -2609,7 +2609,7 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
-        public FriendsOverviewData LoadFriendRecentUnlocksData(bool _, int recentLimit)
+        public FriendsOverviewData LoadFriendRecentUnlocksData(int recentLimit)
         {
             return WithDb(db =>
             {
