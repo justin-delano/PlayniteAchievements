@@ -21,6 +21,7 @@ namespace PlayniteAchievements.Views.Settings.Display
     {
         private ObservableCollection<SettingsNavigationItem> _navigationItems;
         private SettingsNavigationItem _friendsOverviewNavigationItem;
+        private SettingsNavigationItem _friendsAchievementsNavigationItem;
         private PlayniteAchievementsSettings _settings;
 
         private DisplayGeneralSection _generalSection;
@@ -57,6 +58,12 @@ namespace PlayniteAchievements.Views.Settings.Display
                 ResourceProvider.GetString("LOCPlayAch_Settings_Display_FriendsOverviewSection"),
                 iconGlyph: "",
                 viewFactory: () => new FriendsOverviewDisplaySection());
+
+            _friendsAchievementsNavigationItem = new SettingsNavigationItem(
+                "FriendsAchievementsWindow",
+                ResourceProvider.GetString("LOCPlayAch_ViewFriendsAchievements_TitleFallback"),
+                iconGlyph: "",
+                viewFactory: () => new FriendsAchievementsWindowDisplaySection());
 
             _navigationItems = new ObservableCollection<SettingsNavigationItem>
             {
@@ -165,6 +172,7 @@ namespace PlayniteAchievements.Views.Settings.Display
             if (settings.Persisted.EnableFriendsFeatures)
             {
                 _navigationItems.Insert(3, _friendsOverviewNavigationItem);
+                _navigationItems.Insert(4, _friendsAchievementsNavigationItem);
             }
 
             MasterDetail.ItemsSource = _navigationItems;
@@ -187,10 +195,22 @@ namespace PlayniteAchievements.Views.Settings.Display
                     var insertIndex = Math.Min(3, _navigationItems.Count);
                     _navigationItems.Insert(insertIndex, _friendsOverviewNavigationItem);
                 }
+
+                if (!_navigationItems.Contains(_friendsAchievementsNavigationItem))
+                {
+                    var insertIndex = Math.Min(
+                        _navigationItems.IndexOf(_friendsOverviewNavigationItem) + 1,
+                        _navigationItems.Count);
+                    _navigationItems.Insert(insertIndex, _friendsAchievementsNavigationItem);
+                }
             }
-            else if (_navigationItems.Remove(_friendsOverviewNavigationItem))
+            else
             {
-                if (MasterDetail.SelectedItem == _friendsOverviewNavigationItem)
+                var wasSelected = MasterDetail.SelectedItem == _friendsOverviewNavigationItem ||
+                                  MasterDetail.SelectedItem == _friendsAchievementsNavigationItem;
+                _navigationItems.Remove(_friendsOverviewNavigationItem);
+                _navigationItems.Remove(_friendsAchievementsNavigationItem);
+                if (wasSelected)
                 {
                     MasterDetail.SelectedItem = _navigationItems[0];
                 }

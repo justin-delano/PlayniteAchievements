@@ -1,5 +1,4 @@
-<UserControl x:Class="PlayniteAchievements.Views.Settings.Display.FriendsOverviewDisplaySection"
-             x:Name="FriendsOverviewDisplaySectionRoot"
+<UserControl x:Class="PlayniteAchievements.Views.Settings.Display.FriendsAchievementsWindowDisplaySection"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -23,7 +22,7 @@
             <Border Style="{StaticResource SectionBorderStyle}"
                     Background="{DynamicResource PlayAch.Brush.Panel}"
                     BorderBrush="{DynamicResource PlayAch.Brush.Border}">
-                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_FriendsOverviewSection}"
+                <TextBlock Text="{DynamicResource LOCPlayAch_ViewFriendsAchievements_TitleFallback}"
                            Style="{StaticResource SectionHeaderStyle}"
                            Margin="0"/>
             </Border>
@@ -35,7 +34,7 @@
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                     <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.FriendSummaries[FriendsOverview]}"/>
+                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.FriendSummaries[ViewFriendsAchievements]}"/>
                     </Border>
                 </StackPanel>
             </Border>
@@ -47,7 +46,7 @@
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                     <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.GameSummaries[FriendsOverview]}"/>
+                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.GameSummaries[ViewFriendsAchievements]}"/>
                     </Border>
                 </StackPanel>
             </Border>
@@ -59,20 +58,19 @@
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                     <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.GameSummaries[FriendsOverviewSelectedFriend]}"/>
+                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.GameSummaries[ViewFriendsAchievementsSelectedFriend]}"/>
                     </Border>
                 </StackPanel>
             </Border>
 
             <Border Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_Title}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Achievements}"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                     <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[FriendsOverviewRecent]}"
-                                                    ShowSortRow="False"
+                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[ViewFriendsAchievements]}"
                                                     ShowCategoryModeRow="True"/>
                     </Border>
 
@@ -80,11 +78,10 @@
                                Style="{StaticResource SubSectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
                     <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.CategorySummaries[FriendsOverview]}"/>
+                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.CategorySummaries[ViewFriendsAchievements]}"/>
                     </Border>
                 </StackPanel>
             </Border>
-
         </StackPanel>
     </ScrollViewer>
 </UserControl>
