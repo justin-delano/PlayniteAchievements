@@ -274,7 +274,7 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_FriendsSettings_AvatarSource}"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Avatar}"
                                                     Width="Auto"
                                                     MinWidth="110"
                                                     MaxWidth="150">
@@ -298,7 +298,7 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Column_Platform}"
+                            <DataGridTemplateColumn Header="{DynamicResource LOCPlayAch_Common_Label_Platform}"
                                                     Width="Auto"
                                                     MinWidth="130"
                                                     MaxWidth="180">

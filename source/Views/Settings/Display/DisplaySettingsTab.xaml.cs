@@ -55,7 +55,7 @@ namespace PlayniteAchievements.Views.Settings.Display
 
             _friendsOverviewNavigationItem = new SettingsNavigationItem(
                 "FriendsOverview",
-                ResourceProvider.GetString("LOCPlayAch_Settings_Display_FriendsOverviewSection"),
+                ResourceProvider.GetString("LOCPlayAch_FriendsOverview_Title"),
                 iconGlyph: "",
                 viewFactory: () => new FriendsOverviewDisplaySection());
 
@@ -81,7 +81,7 @@ namespace PlayniteAchievements.Views.Settings.Display
                         new AppearanceSection(settings, pickColor)),
                 new SettingsNavigationItem(
                     "Overview",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Display_OverviewSection"),
+                    ResourceProvider.GetString("LOCPlayAch_ManageAchievements_Tab_Overview"),
                     iconGlyph: "",
                     viewFactory: () => new OverviewDisplaySection()),
                 new SettingsNavigationItem(

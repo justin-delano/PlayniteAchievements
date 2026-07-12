@@ -718,7 +718,7 @@ namespace PlayniteAchievements.Views
                             GetText(
                                 "LOCPlayAch_Menu_MapToPlayniteGame_PlatformMismatch",
                                 "The selected Playnite game is not on the same platform as the Exophase friend game ({0})."),
-                            string.IsNullOrWhiteSpace(friendPlatform) ? "unknown" : friendPlatform),
+                            string.IsNullOrWhiteSpace(friendPlatform) ? GetText("LOCPlayAch_Common_Unknown", "Unknown") : friendPlatform),
                         GetText("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning);

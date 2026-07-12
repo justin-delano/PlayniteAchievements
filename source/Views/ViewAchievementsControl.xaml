@@ -158,7 +158,7 @@
                                      IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneYear}"
                                      Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="OneYear"/>
                         <RadioButton x:Name="TimelineRangeAllButton"
-                                     Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="TimeRange"
+                                     Content="{DynamicResource LOCPlayAch_Common_All}" GroupName="TimeRange"
                                      Style="{StaticResource TimeRangeButtonStyle}"
                                      IsChecked="{Binding Timeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=All}"
                                      Command="{Binding Timeline.SetTimeRangeCommand}" CommandParameter="All"/>

@@ -683,7 +683,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     ? capstone.DisplayName.Trim()
                     : !string.IsNullOrWhiteSpace(capstone?.ApiName)
                         ? capstone.ApiName.Trim()
-                        : L("LOCPlayAch_CustomRefresh_None", "None");
+                        : L("LOCPlayAch_Common_None", "None");
 
                 HasCapstoneData = (gameData?.HasAchievements ?? false) && list.Count > 0;
                 CapstoneEmptyMessage = L(
@@ -1287,7 +1287,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         internal void NotifyCapstoneChanged(string displayName)
         {
             CurrentCapstoneName = string.IsNullOrWhiteSpace(displayName)
-                ? L("LOCPlayAch_CustomRefresh_None", "None")
+                ? L("LOCPlayAch_Common_None", "None")
                 : displayName.Trim();
             RefreshCustomDataState();
         }

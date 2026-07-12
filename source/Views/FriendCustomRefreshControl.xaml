@@ -80,7 +80,7 @@
                                   BorderBrush="{DynamicResource PlayAch.Brush.Border}"/>
                     </GroupBox>
 
-                    <GroupBox Header="{DynamicResource LOCPlayAch_FriendsOverview_Friends}"
+                    <GroupBox Header="{DynamicResource LOCPlayAch_Settings_Friends}"
                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                               BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                               Margin="0,0,0,10">
@@ -110,7 +110,7 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <GroupBox Header="{DynamicResource LOCPlayAch_FriendsOverview_Games}"
+                    <GroupBox Header="{DynamicResource LOCPlayAch_Column_SharedGames}"
                               Foreground="{DynamicResource PlayAch.Brush.Text}"
                               BorderBrush="{DynamicResource PlayAch.Brush.Border}"
                               Margin="0,0,0,10">

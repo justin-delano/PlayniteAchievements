@@ -320,7 +320,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_GameSummaries}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                FontWeight="Bold"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"

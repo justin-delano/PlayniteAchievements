@@ -23,7 +23,7 @@
             <Border Style="{StaticResource SectionBorderStyle}"
                     Background="{DynamicResource PlayAch.Brush.Panel}"
                     BorderBrush="{DynamicResource PlayAch.Brush.Border}">
-                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Display_FriendsOverviewSection}"
+                <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_Title}"
                            Style="{StaticResource SectionHeaderStyle}"
                            Margin="0"/>
             </Border>
@@ -42,7 +42,7 @@
 
             <Border Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_GameSummaries}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
@@ -54,7 +54,7 @@
 
             <Border Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_GameSummaries}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>

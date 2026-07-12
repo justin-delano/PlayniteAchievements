@@ -34,7 +34,7 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <StackPanel Grid.Column="0">
-                    <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Filters_Header}"
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Menu_Filters}"
                                Style="{StaticResource ManageAchievementsHeaderTitleStyle}" />
                     <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Filters_Hint}"
                                Style="{StaticResource ManageAchievementsHeaderHintStyle}" />

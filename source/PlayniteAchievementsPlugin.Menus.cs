@@ -129,7 +129,7 @@ namespace PlayniteAchievements
             {
                 yield return new GameMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewRefreshProgress"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_Common_View"),
                     MenuSection = PluginGameMenuSection,
                     Action = (a) =>
                     {
@@ -167,7 +167,7 @@ namespace PlayniteAchievements
             {
                 yield return new MainMenuItem
                 {
-                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewRefreshProgress"),
+                    Description = ResourceProvider.GetString("LOCPlayAch_Common_View"),
                     MenuSection = PluginMainMenuSection,
                     Action = (a) =>
                     {

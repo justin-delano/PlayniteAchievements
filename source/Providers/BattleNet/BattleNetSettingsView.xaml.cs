@@ -256,12 +256,6 @@ namespace PlayniteAchievements.Providers.BattleNet
             }
         }
 
-        private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
-        {
-            Process.Start(e.Uri.AbsoluteUri);
-            e.Handled = true;
-        }
-
         private void SetAuthBusy(bool busy)
         {
             if (Dispatcher.CheckAccess())

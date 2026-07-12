@@ -402,7 +402,7 @@
                                 Margin="18,0,0,0"
                                 Visibility="{Binding EnableFriendsFeatures, Converter={StaticResource BoolToVis}}">
                         <Button x:Name="OverviewSubViewButton"
-                                Content="{DynamicResource LOCPlayAch_Overview_SubView_Overview}"
+                                Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Overview}"
                                 Click="OverviewSubViewButton_Click">
                             <Button.Style>
                                 <Style TargetType="Button" BasedOn="{StaticResource OverviewSubViewSwitchButtonStyle}">
@@ -416,7 +416,7 @@
                         </Button>
 
                         <Button x:Name="FriendsSubViewButton"
-                                Content="{DynamicResource LOCPlayAch_Overview_SubView_Friends}"
+                                Content="{DynamicResource LOCPlayAch_Settings_Friends}"
                                 Click="FriendsSubViewButton_Click"
                                 Margin="18,0,0,0">
                             <Button.Style>
@@ -834,7 +834,7 @@
                                                      Style="{StaticResource TimeRangeButtonStyle}"
                                                      IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=OneYear}"
                                                      Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="OneYear"/>
-                                        <RadioButton Content="{DynamicResource LOCPlayAch_TimeRange_All}" GroupName="GlobalTimeRangeDefault"
+                                        <RadioButton Content="{DynamicResource LOCPlayAch_Common_All}" GroupName="GlobalTimeRangeDefault"
                                                      Style="{StaticResource TimeRangeButtonStyle}"
                                                      IsChecked="{Binding GlobalTimeline.TimelineRange, Converter={StaticResource EnumToBool}, ConverterParameter=All}"
                                                      Command="{Binding GlobalTimeline.SetTimeRangeCommand}" CommandParameter="All"/>

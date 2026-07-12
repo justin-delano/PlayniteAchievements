@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:settings="clr-namespace:PlayniteAchievements.Providers.Settings"
+             xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="700">
@@ -63,17 +64,10 @@
                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                         <TextBlock TextWrapping="Wrap"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
-                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}">
-                            <Run Text="{DynamicResource LOCPlayAch_Settings_BattleNet_SetupStep1Prefix}"/>
-                            <Hyperlink NavigateUri="https://develop.battle.net/access/clients"
-                                       RequestNavigate="Hyperlink_RequestNavigate"
-                                       TextDecorations="Underline"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource PlayAch.Brush.ActionLink}">
-                                <Run Text="Battle.net Developer Portal"/>
-                            </Hyperlink>
-                            <Run Text="{DynamicResource LOCPlayAch_Settings_BattleNet_SetupStep1Suffix}"/>
-                        </TextBlock>
+                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"
+                                   helpers:HyperlinkFormatText.Format="{DynamicResource LOCPlayAch_Settings_BattleNet_SetupStep1}"
+                                   helpers:HyperlinkFormatText.LinkText="Battle.net Developer Portal"
+                                   helpers:HyperlinkFormatText.NavigateUri="https://develop.battle.net/access/clients"/>
                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_BattleNet_SetupStep2}"
                                    TextWrapping="Wrap"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
@@ -87,17 +81,10 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                         <TextBlock TextWrapping="Wrap"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text}">
-                            <Run Text="{DynamicResource LOCPlayAch_Settings_BattleNet_SetupSamplePrefix}"/>
-                            <Hyperlink NavigateUri="https://github.com/Blizzard/oauth-client-sample"
-                                       RequestNavigate="Hyperlink_RequestNavigate"
-                                       TextDecorations="Underline"
-                                       FontWeight="SemiBold"
-                                       Foreground="{StaticResource PlayAch.Brush.ActionLink}">
-                                <Run Text="Blizzard OAuth client sample"/>
-                            </Hyperlink>
-                            <Run Text="."/>
-                        </TextBlock>
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   helpers:HyperlinkFormatText.Format="{DynamicResource LOCPlayAch_Settings_BattleNet_SetupSample}"
+                                   helpers:HyperlinkFormatText.LinkText="Blizzard OAuth client sample"
+                                   helpers:HyperlinkFormatText.NavigateUri="https://github.com/Blizzard/oauth-client-sample"/>
                     </StackPanel>
 
                     <Grid>
@@ -240,7 +227,7 @@
 
                                 <TextBlock Grid.Row="0"
                                            Grid.Column="0"
-                                           Text="{DynamicResource LOCPlayAch_Settings_BattleNet_WowRegion}"
+                                           Text="{DynamicResource LOCPlayAch_Common_Label_Region}"
                                            Style="{StaticResource BattleNetFieldLabelStyle}"/>
                                 <ComboBox Grid.Row="0"
                                           Grid.Column="1"

@@ -92,17 +92,24 @@ namespace PlayniteAchievements.Services.Tagging
             {
                 return tagType switch
                 {
-                    TagType.HasAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_HasAchievements"),
-                    TagType.InProgress => ResourceProvider.GetString("LOCPlayAch_Tag_InProgress"),
-                    TagType.Completed => ResourceProvider.GetString("LOCPlayAch_Tag_Completed"),
-                    TagType.NoAchievements => ResourceProvider.GetString("LOCPlayAch_Tag_NoAchievements"),
-                    TagType.Customized => ResourceProvider.GetString("LOCPlayAch_Tag_Customized"),
-                    TagType.NotCustomized => ResourceProvider.GetString("LOCPlayAch_Tag_NotCustomized"),
-                    TagType.Excluded => ResourceProvider.GetString("LOCPlayAch_Tag_Excluded"),
-                    TagType.ExcludedFromSummaries => ResourceProvider.GetString("LOCPlayAch_Tag_ExcludedFromSummaries"),
+                    TagType.HasAchievements => FormatTagName("LOCPlayAch_Tagging_HasAchievements"),
+                    TagType.InProgress => FormatTagName("LOCPlayAch_Filter_InProgress"),
+                    TagType.Completed => FormatTagName("LOCPlayAch_Completed"),
+                    TagType.NoAchievements => FormatTagName("LOCPlayAch_Tagging_NoAchievements"),
+                    TagType.Customized => FormatTagName("LOCPlayAch_Tagging_Customized"),
+                    TagType.NotCustomized => FormatTagName("LOCPlayAch_Tagging_NotCustomized"),
+                    TagType.Excluded => FormatTagName("LOCPlayAch_ManageAchievements_Status_Excluded"),
+                    TagType.ExcludedFromSummaries => FormatTagName("LOCPlayAch_ManageAchievements_Status_ExcludedFromSummaries"),
                     _ => TaggingSettings.GetDefaultDisplayName(tagType)
                 };
             });
+        }
+
+        private static string FormatTagName(string statusResourceKey)
+        {
+            return string.Format(
+                ResourceProvider.GetString("LOCPlayAch_Tag_PrefixFormat"),
+                ResourceProvider.GetString(statusResourceKey));
         }
 
         private void SubscribeToTaggingSettingsChanges(TaggingSettings taggingSettings)

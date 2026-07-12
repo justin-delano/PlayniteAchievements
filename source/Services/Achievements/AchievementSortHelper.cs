@@ -884,6 +884,20 @@ namespace PlayniteAchievements.Services.Achievements
             return CompareByUnlockTime(a, b, ListSortDirection.Ascending, scope);
         }
 
+        private static int CompareByCategoryOrder(AchievementDisplayItem a, AchievementDisplayItem b)
+        {
+            var indexComparison = (a?.CategoryOrderIndex ?? int.MaxValue)
+                .CompareTo(b?.CategoryOrderIndex ?? int.MaxValue);
+            if (indexComparison != 0)
+            {
+                return indexComparison;
+            }
+
+            return CompareText(
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(a?.CategoryLabel),
+                AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(b?.CategoryLabel));
+        }
+
         private static int CompareByAchievementNote(
             AchievementDisplayItem a,
             AchievementDisplayItem b,
@@ -930,7 +944,7 @@ namespace PlayniteAchievements.Services.Achievements
                 return unlockComparison;
             }
 
-            var tieBreakComparison = CompareUnlockTieBreakers(a, b);
+            var tieBreakComparison = CompareUnlockTieBreakers(a, b, scope);
             if (tieBreakComparison != 0)
             {
                 return tieBreakComparison;
@@ -956,8 +970,23 @@ namespace PlayniteAchievements.Services.Achievements
             return CompareByDisplayName(a, b);
         }
 
-        private static int CompareUnlockTieBreakers(AchievementDisplayItem a, AchievementDisplayItem b)
+        private static int CompareUnlockTieBreakers(
+            AchievementDisplayItem a,
+            AchievementDisplayItem b,
+            AchievementSortScope scope)
         {
+            // Within a single game, unlock-time ties (the locked tail) group by category in the
+            // per-game category order before the progress/rarity chain. Recent-achievement lists
+            // span games whose category labels are unrelated, so they never group.
+            if (scope == AchievementSortScope.GameAchievements)
+            {
+                var categoryComparison = CompareByCategoryOrder(a, b);
+                if (categoryComparison != 0)
+                {
+                    return categoryComparison;
+                }
+            }
+
             var progressComparison = CompareProgressFractionDescending(
                 a?.ProgressNum,
                 a?.ProgressDenom,

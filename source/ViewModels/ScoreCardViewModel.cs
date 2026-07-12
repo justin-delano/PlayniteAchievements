@@ -220,7 +220,7 @@ namespace PlayniteAchievements.ViewModels
 
             var nextTier = AchievementRankPresentation.FormatRank(snapshot.NextRank);
             return string.Format(
-                L("LOCPlayAch_Score_Tooltip_NextTierLineFormat", "{0} until {1}"),
+                L("LOCPlayAch_Score_Tooltip_NextLevelRemainingFormat", "{0} until {1}"),
                 Math.Max(0, snapshot.PointsUntilNextRank).ToString("N0"),
                 nextTier);
         }

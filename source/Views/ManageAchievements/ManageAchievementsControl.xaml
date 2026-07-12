@@ -118,7 +118,7 @@
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Category}" />
                     <RadioButton x:Name="FiltersTabButton"
-                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Filters}"
+                                 Content="{DynamicResource LOCPlayAch_Menu_Filters}"
                                  Style="{StaticResource NavTabRadioStyle}"
                                  Visibility="{Binding HasCapstoneData, Converter={StaticResource BoolToVis}}"
                                  IsChecked="{Binding SelectedTab, Mode=TwoWay, Converter={StaticResource EnumToBool}, ConverterParameter=Filters}" />

@@ -409,12 +409,12 @@ namespace PlayniteAchievements.ViewModels
         public string SelectedTypeFilterText => GetSelectedFilterText(
             _selectedTypeFilters,
             TypeFilterOptions,
-            ResourceProvider.GetString("LOCPlayAch_FriendsOverview_TypeFilter") ?? "Type");
+            ResourceProvider.GetString("LOCPlayAch_Common_Label_Type") ?? "Type");
 
         public string SelectedCategoryFilterText => GetSelectedFilterText(
             _selectedCategoryFilters,
             CategoryFilterOptions,
-            ResourceProvider.GetString("LOCPlayAch_FriendsOverview_CategoryFilter") ?? "Category");
+            ResourceProvider.GetString("LOCPlayAch_Common_Label_Category") ?? "Category");
 
         public string AchievementSectionTitle
         {
@@ -1955,7 +1955,7 @@ namespace PlayniteAchievements.ViewModels
                 return selectedValues.First();
             }
 
-            var format = ResourceProvider.GetString("LOCPlayAch_Filter_SelectedCount") ?? "{0:N0} selected";
+            var format = GetResourceFormatOrFallback("LOCPlayAch_Common_SelectedCountFormat", "{0:N0} selected", "{0");
             return string.Format(format, selectedCount);
         }
 
