@@ -17,6 +17,14 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Shadows the plugin-branded chip style from AchievementControlStyles.xaml so the
+                 range selectors use the active Playnite theme's ToggleButton chrome. -->
+            <Style x:Key="TimeRangeButtonStyle" TargetType="RadioButton" BasedOn="{StaticResource {x:Type ToggleButton}}">
+                <Setter Property="Padding" Value="8,4"/>
+                <Setter Property="Margin" Value="0,0,4,0"/>
+                <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Caption}"/>
+            </Style>
         </ResourceDictionary>
     </base:ThemeControlBase.Resources>
 
