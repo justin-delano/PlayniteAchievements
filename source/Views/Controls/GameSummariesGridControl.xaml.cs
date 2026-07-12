@@ -109,12 +109,22 @@ namespace PlayniteAchievements.Views.Controls
                 ["FriendsOverviewSelectedFriendGameSummaries"] = CreateGameSummaryVisibility(
                     platform: true,
                     total: false),
+                // View Friends Achievements summary row, aggregate (no friend selected).
+                ["ViewFriendsAchievementsGameSummaries"] = CreateGameSummaryVisibility(
+                    platform: true,
+                    progress: false,
+                    total: false),
+                // View Friends Achievements summary row, selected friend.
+                ["ViewFriendsAchievementsSelectedFriendGameSummaries"] = CreateGameSummaryVisibility(
+                    platform: true,
+                    total: false),
                 // Category-summaries surfaces: full game-summary set, Cover kept, platform/playtime/
                 // last-played dropped (no per-category meaning). Friend-only columns are excluded at
                 // attach time since category rows are plain GameSummaryItem.
                 ["ViewAchievementsCategorySummaries"] = CreateCategorySummaryVisibility(),
                 ["OverviewSelectedGameCategorySummaries"] = CreateCategorySummaryVisibility(),
                 ["FriendsOverviewCategorySummaries"] = CreateCategorySummaryVisibility(),
+                ["ViewFriendsAchievementsCategorySummaries"] = CreateCategorySummaryVisibility(),
                 ["DesktopThemeCategorySummaries"] = CreateCategorySummaryVisibility()
             };
 
@@ -801,12 +811,18 @@ namespace PlayniteAchievements.Views.Controls
                     return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverview).Columns;
                 case GridSurface.FriendsOverviewSelectedFriend:
                     return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend).Columns;
+                case GridSurface.ViewFriendsAchievements:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements).Columns;
+                case GridSurface.ViewFriendsAchievementsSelectedFriend:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend).Columns;
                 case GridSurface.ViewAchievementsCategory:
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewAchievements).Columns;
                 case GridSurface.OverviewSelectedGameCategory:
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.OverviewSelectedGame).Columns;
                 case GridSurface.FriendsOverviewCategory:
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.FriendsOverview).Columns;
+                case GridSurface.ViewFriendsAchievementsCategory:
+                    return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewFriendsAchievements).Columns;
                 case GridSurface.DesktopThemeCategory:
                     return persisted.GridOptions.GetCategorySummaries(GridOptionKeys.CategorySummaries.DesktopTheme).Columns;
                 default:
@@ -834,6 +850,11 @@ namespace PlayniteAchievements.Views.Controls
                 case GridSurface.FriendsOverviewSelectedFriend:
                 case GridSurface.FriendsOverviewCategory:
                     return persisted.FriendsOverviewGameSummariesLastPlayedDateMode;
+                case GridSurface.ViewFriendsAchievements:
+                case GridSurface.ViewFriendsAchievementsCategory:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements).LastPlayedDateMode;
+                case GridSurface.ViewFriendsAchievementsSelectedFriend:
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend).LastPlayedDateMode;
                 default:
                     return persisted.OverviewGameSummariesLastPlayedDateMode;
             }
@@ -863,9 +884,12 @@ namespace PlayniteAchievements.Views.Controls
             ViewAchievements,
             FriendsOverview,
             FriendsOverviewSelectedFriend,
+            ViewFriendsAchievements,
+            ViewFriendsAchievementsSelectedFriend,
             ViewAchievementsCategory,
             OverviewSelectedGameCategory,
             FriendsOverviewCategory,
+            ViewFriendsAchievementsCategory,
             DesktopThemeCategory
         }
 
@@ -890,6 +914,21 @@ namespace PlayniteAchievements.Views.Controls
             if (string.Equals(ColumnSettingsKey, "FriendsOverviewSelectedFriendGameSummaries", StringComparison.OrdinalIgnoreCase))
             {
                 return GridSurface.FriendsOverviewSelectedFriend;
+            }
+
+            if (string.Equals(ColumnSettingsKey, "ViewFriendsAchievementsGameSummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.ViewFriendsAchievements;
+            }
+
+            if (string.Equals(ColumnSettingsKey, "ViewFriendsAchievementsSelectedFriendGameSummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.ViewFriendsAchievementsSelectedFriend;
+            }
+
+            if (string.Equals(ColumnSettingsKey, "ViewFriendsAchievementsCategorySummaries", StringComparison.OrdinalIgnoreCase))
+            {
+                return GridSurface.ViewFriendsAchievementsCategory;
             }
 
             if (string.Equals(ColumnSettingsKey, "ViewAchievementsCategorySummaries", StringComparison.OrdinalIgnoreCase))
@@ -920,6 +959,7 @@ namespace PlayniteAchievements.Views.Controls
             return surface == GridSurface.ViewAchievementsCategory ||
                    surface == GridSurface.OverviewSelectedGameCategory ||
                    surface == GridSurface.FriendsOverviewCategory ||
+                   surface == GridSurface.ViewFriendsAchievementsCategory ||
                    surface == GridSurface.DesktopThemeCategory;
         }
 
@@ -933,7 +973,7 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             var surface = ResolveSurface();
-            if (surface == GridSurface.FriendsOverview)
+            if (surface == GridSurface.FriendsOverview || surface == GridSurface.ViewFriendsAchievements)
             {
                 foreach (var key in AggregateFriendExcludedColumnKeys)
                 {
@@ -942,7 +982,8 @@ namespace PlayniteAchievements.Views.Controls
                 }
             }
 
-            if (surface != GridSurface.FriendsOverviewSelectedFriend)
+            if (surface != GridSurface.FriendsOverviewSelectedFriend &&
+                surface != GridSurface.ViewFriendsAchievementsSelectedFriend)
             {
                 foreach (var key in SelectedFriendOnlyColumnKeys)
                 {
@@ -1161,6 +1202,7 @@ namespace PlayniteAchievements.Views.Controls
         public void Refresh()
         {
             _columnPersistence?.Refresh();
+            UpdateLastPlayedDateMode(PlayniteAchievementsPlugin.Instance?.Settings);
         }
 
         public void Dispose()
