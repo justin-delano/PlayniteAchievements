@@ -2,6 +2,8 @@ using Playnite.SDK;
 using Playnite.SDK.Events;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Cache;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.UI;
@@ -18,7 +20,12 @@ namespace PlayniteAchievements.Views
 {
     public partial class ViewFriendsAchievementsControl : UserControl, IFullscreenControllerNavigable
     {
+        private readonly IPlayniteAPI _playniteApi;
+        private readonly ILogger _logger;
+        private readonly AchievementOverridesService _achievementOverridesService;
+        private readonly ICacheManager _cacheManager;
         private DataGridRow _pendingFriendRightClickRow;
+        private DataGridRow _pendingSummaryRightClickRow;
 
         public ViewFriendsAchievementsControl()
         {
@@ -32,9 +39,15 @@ namespace PlayniteAchievements.Views
             RefreshEntryPoint refreshEntryPoint,
             IPlayniteAPI playniteApi,
             ILogger logger,
-            PlayniteAchievementsSettings settings)
+            PlayniteAchievementsSettings settings,
+            AchievementOverridesService achievementOverridesService,
+            ICacheManager cacheManager)
         {
             InitializeComponent();
+            _playniteApi = playniteApi;
+            _logger = logger;
+            _achievementOverridesService = achievementOverridesService;
+            _cacheManager = cacheManager;
             DataContext = new ViewFriendsAchievementsViewModel(
                 gameId,
                 dataCoordinator,
@@ -62,6 +75,8 @@ namespace PlayniteAchievements.Views
         public void RefreshView()
         {
             ViewModel?.RefreshView();
+            GameSummaryGridControl?.Refresh();
+            SelectedFriendGameSummaryGridControl?.Refresh();
             FriendSummariesGridControl?.Refresh();
             FriendsAchievementsGrid?.Refresh();
         }
@@ -88,6 +103,8 @@ namespace PlayniteAchievements.Views
 
         private void OnLoaded(object sender, RoutedEventArgs e)
         {
+            GameSummaryGridControl?.Refresh();
+            SelectedFriendGameSummaryGridControl?.Refresh();
             FriendSummariesGridControl?.Refresh();
             FriendsAchievementsGrid?.Refresh();
         }
@@ -151,6 +168,62 @@ namespace PlayniteAchievements.Views
             }
 
             return FriendsAchievementsGrid?.OpenFocusedControlBarMenuForController() == true;
+        }
+
+        private void GameSummaryRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                _pendingSummaryRightClickRow = row;
+            }
+        }
+
+        private void GameSummaryRow_PreviewMouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (TryResolveContextMenuRow(sender, e, out var row))
+            {
+                e.Handled = true;
+                var targetRow = _pendingSummaryRightClickRow ?? row;
+                _pendingSummaryRightClickRow = null;
+                OpenGameSummaryContextMenu(targetRow);
+            }
+        }
+
+        private void OpenGameSummaryContextMenu(DataGridRow row)
+        {
+            if (row == null || row.DataContext == null)
+            {
+                return;
+            }
+
+            var menu = GameRowContextMenuBuilder.BuildGameMenu(
+                row.DataContext,
+                this,
+                ViewModel?.RefreshCommand,
+                ViewModel?.OpenGameInLibraryCommand,
+                gameId => PlayniteAchievementsPlugin.Instance?.OpenManageAchievementsView(gameId),
+                _playniteApi,
+                _achievementOverridesService,
+                _cacheManager,
+                _logger);
+            if (menu == null || menu.Items.Count == 0)
+            {
+                return;
+            }
+
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
+            row.ContextMenu = menu;
+            menu.PlacementTarget = row;
+            menu.IsOpen = true;
+        }
+
+        private void GameNameBreadcrumb_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (ViewModel?.IsCategorySelected == true)
+            {
+                FriendsAchievementsGrid?.ExitDrilledCategory();
+            }
         }
 
         private void FriendRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)

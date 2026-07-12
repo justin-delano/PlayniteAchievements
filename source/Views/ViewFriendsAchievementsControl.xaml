@@ -16,13 +16,6 @@
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/OverviewScopedControlStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <Style x:Key="ViewFriendsHeaderButtonStyle"
-                   TargetType="Button"
-                   BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
-                <Setter Property="Padding" Value="10,3"/>
-                <Setter Property="MinWidth" Value="88"/>
-                <Setter Property="Height" Value="26"/>
-            </Style>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -35,38 +28,37 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
                 <controls:GameSummariesGridControl x:Name="GameSummaryGridControl"
-                                                   Grid.Column="0"
                                                    ItemsSource="{Binding SummaryItems}"
-                                                   ColumnSettingsKey="ViewAchievementsGameSummaries"
+                                                   ColumnSettingsKey="ViewFriendsAchievementsGameSummaries"
                                                    UseCoverImages="{Binding SummaryUseCoverImages}"
                                                    ShowMetadataPlatform="{Binding SummaryShowMetadataPlatform}"
                                                    ShowMetadataPlaytime="{Binding SummaryShowMetadataPlaytime}"
                                                    ShowMetadataRegion="{Binding SummaryShowMetadataRegion}"
-                                                   ShowCompletionBorder="{Binding SummaryShowCompletionBorder}"
+                                                   ShowCompletionBorder="False"
                                                    ShowColumnHeaders="{Binding SummaryShowColumnHeaders}"
+                                                   FixedRowHeight="{Binding SummaryGridRowHeight}"
                                                    DisableRowSelection="True"
-                                                   DelayInitialRenderUntilNormalized="True"/>
+                                                   DelayInitialRenderUntilNormalized="True"
+                                                   RowPreviewMouseRightButtonDown="GameSummaryRow_PreviewMouseRightButtonDown"
+                                                   RowPreviewMouseRightButtonUp="GameSummaryRow_PreviewMouseRightButtonUp"
+                                                   Visibility="{Binding HasFriendSelection, Converter={StaticResource InverseBoolToVis}}"/>
 
-                <Button Grid.Column="1"
-                        Content="{DynamicResource LOCPlayAch_Button_Refresh}"
-                        Command="{Binding RefreshCommand}"
-                        Style="{StaticResource ViewFriendsHeaderButtonStyle}"
-                        VerticalAlignment="Center"
-                        Margin="{StaticResource PlayAch.Thickness.Left.Md}"/>
-
-                <Button Grid.Column="2"
-                        Content="{DynamicResource LOCPlayAch_Menu_OpenGameInLibrary}"
-                        Command="{Binding OpenGameInLibraryCommand}"
-                        Style="{StaticResource ViewFriendsHeaderButtonStyle}"
-                        VerticalAlignment="Center"
-                        Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                <controls:GameSummariesGridControl x:Name="SelectedFriendGameSummaryGridControl"
+                                                   ItemsSource="{Binding SummaryItems}"
+                                                   ColumnSettingsKey="ViewFriendsAchievementsSelectedFriendGameSummaries"
+                                                   UseCoverImages="{Binding SummaryUseCoverImages}"
+                                                   ShowMetadataPlatform="{Binding SummaryShowMetadataPlatform}"
+                                                   ShowMetadataPlaytime="{Binding SummaryShowMetadataPlaytime}"
+                                                   ShowMetadataRegion="{Binding SummaryShowMetadataRegion}"
+                                                   ShowCompletionBorder="False"
+                                                   ShowColumnHeaders="{Binding SummaryShowColumnHeaders}"
+                                                   FixedRowHeight="{Binding SummaryGridRowHeight}"
+                                                   DisableRowSelection="True"
+                                                   DelayInitialRenderUntilNormalized="True"
+                                                   RowPreviewMouseRightButtonDown="GameSummaryRow_PreviewMouseRightButtonDown"
+                                                   RowPreviewMouseRightButtonUp="GameSummaryRow_PreviewMouseRightButtonUp"
+                                                   Visibility="{Binding HasFriendSelection, Converter={StaticResource BoolToVis}}"/>
             </Grid>
 
             <StackPanel Grid.Row="1"
@@ -147,11 +139,37 @@
                         BorderThickness="0,0,0,1">
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <TextBlock Text="{Binding AchievementSectionTitle}"
-                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Body}"
                                    FontWeight="Bold"
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   TextTrimming="CharacterEllipsis"
+                                   MouseLeftButtonUp="GameNameBreadcrumb_Click">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Cursor" Value="Arrow"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCategorySelected}" Value="True">
+                                            <Setter Property="Cursor" Value="Hand"/>
+                                            <Setter Property="TextDecorations" Value="Underline"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text=" &gt; "
+                                   FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                   VerticalAlignment="Center"
+                                   Visibility="{Binding IsCategorySelected, Converter={StaticResource BoolToVis}}"/>
+                        <TextBlock Text="{Binding SelectedCategoryName}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding IsCategorySelected, Converter={StaticResource BoolToVis}}"/>
                         <TextBlock Text="{Binding AchievementCountText}"
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
@@ -182,7 +200,14 @@
                                                          Margin="12,0,0,0"
                                                          ItemsSource="{Binding Achievements}"
                                                          ColumnSettingsKey="ViewFriendsAchievements"
-                                                         EnableCategoryMode="False"
+                                                         EnableCategoryMode="{Binding HasFriendSelection}"
+                                                         CategoryColumnSettingsKey="ViewFriendsAchievementsCategorySummaries"
+                                                         HideBackButton="True"
+                                                         HideCategorySummaryRow="{Binding HideCategorySummaryRow}"
+                                                         DrilledCategory="{Binding SelectedCategoryName, Mode=OneWayToSource}"
+                                                         CategoryUseCoverImages="{Binding CategorySummariesUseCoverImages}"
+                                                         CategoryShowColumnHeaders="{Binding CategorySummariesShowColumnHeaders}"
+                                                         CategoryFixedRowHeight="{Binding CategorySummariesGridRowHeight}"
                                                          ShowGameColumn="False"
                                                          ShowFriendColumn="True"
                                                          HideStatusColumn="False"
