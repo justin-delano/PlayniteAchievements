@@ -39,6 +39,14 @@ namespace PlayniteAchievements.ViewModels.Items
 
         public bool UnlockedBySelf { get; set; }
 
+        /// <summary>
+        /// When spoiler protection is enabled, visibility decisions use the current
+        /// user's unlock state instead of the friend's, so achievements the user has
+        /// not unlocked are obscured per the achievement visibility settings.
+        /// </summary>
+        public override bool UnlockedForVisibility =>
+            HideFriendSpoilers ? UnlockedBySelf : base.UnlockedForVisibility;
+
         public DateTime? FriendUnlockTimeUtc
         {
             get => UnlockTimeUtc;
