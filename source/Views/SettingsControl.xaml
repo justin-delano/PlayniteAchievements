@@ -48,7 +48,8 @@
             </TabItem>
 
             <!-- ================== TAB: FRIENDS ================== -->
-            <TabItem x:Name="FriendsTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_Friends}">
+            <TabItem x:Name="FriendsTab" AutomationProperties.Name="{DynamicResource LOCPlayAch_Settings_Friends}"
+                     Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}">
                 <TabItem.Header>
                     <StackPanel Style="{StaticResource TabHeaderWithIconStyle}">
                         <TextBlock Style="{StaticResource HeaderIconStyle}" Text="&#xED0D;"/>
