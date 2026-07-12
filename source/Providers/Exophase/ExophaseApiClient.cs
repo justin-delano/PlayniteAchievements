@@ -30,6 +30,7 @@ namespace PlayniteAchievements.Providers.Exophase
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
         private readonly ExophaseCookieSnapshotStore _cookieSnapshotStore;
+        private readonly OffscreenViewLeaseSource _offscreenViews;
 
         // Per-refresh cookie cache: when a session is active, the encrypted snapshot is loaded and
         // validated once (in BeginCookieSession) and every fetch reuses it instead of decrypting the
@@ -37,12 +38,14 @@ namespace PlayniteAchievements.Providers.Exophase
         private readonly object _cookieSessionLock = new object();
         private List<HttpCookie> _preparedCookies;
         private bool _cookieSessionActive;
+        private IDisposable _cookieSessionViewLease;
 
         internal ExophaseApiClient(IPlayniteAPI playniteApi, ILogger logger, ExophaseCookieSnapshotStore cookieSnapshotStore)
         {
             _playniteApi = playniteApi ?? throw new ArgumentNullException(nameof(playniteApi));
             _logger = logger;
             _cookieSnapshotStore = cookieSnapshotStore;
+            _offscreenViews = new OffscreenViewLeaseSource(_playniteApi, _logger);
         }
 
         /// <summary>
@@ -55,11 +58,19 @@ namespace PlayniteAchievements.Providers.Exophase
             List<HttpCookie> cookies = null;
             var loaded = _cookieSnapshotStore?.TryLoad(out cookies) ?? false;
 
+            // Every Exophase page fetch goes through an offscreen view (Cloudflare bypass),
+            // so the session also leases one shared view for the whole refresh instead of
+            // creating and disposing a view per page.
+            IDisposable previousViewLease;
             lock (_cookieSessionLock)
             {
                 _preparedCookies = loaded ? cookies : null;
                 _cookieSessionActive = true;
+                previousViewLease = _cookieSessionViewLease;
+                _cookieSessionViewLease = _offscreenViews.BeginLease();
             }
+
+            previousViewLease?.Dispose();
 
             if (loaded && cookies != null && cookies.Count > 0)
             {
@@ -77,11 +88,16 @@ namespace PlayniteAchievements.Providers.Exophase
         /// </summary>
         internal void EndCookieSession()
         {
+            IDisposable viewLease;
             lock (_cookieSessionLock)
             {
                 _preparedCookies = null;
                 _cookieSessionActive = false;
+                viewLease = _cookieSessionViewLease;
+                _cookieSessionViewLease = null;
             }
+
+            viewLease?.Dispose();
         }
 
         /// <summary>
@@ -267,9 +283,9 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
             {
-                using (var view = _playniteApi.WebViews.CreateOffscreenView())
+                try
                 {
-                    try
+                    return await _offscreenViews.WithNavigableViewAsync(async view =>
                     {
                         // Navigate and wait for page load (follows ExophaseSessionManager pattern)
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
@@ -292,16 +308,16 @@ namespace PlayniteAchievements.Providers.Exophase
                         }
 
                         return pageText;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Error(ex, "[Exophase] Failed to fetch JSON via WebView");
-                        return null;
-                    }
+                    }, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "[Exophase] Failed to fetch JSON via WebView");
+                    return null;
                 }
             });
 
@@ -395,9 +411,9 @@ namespace PlayniteAchievements.Providers.Exophase
 
             var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
             {
-                using (var view = _playniteApi.WebViews.CreateOffscreenView())
+                try
                 {
-                    try
+                    return await _offscreenViews.WithNavigableViewAsync(async view =>
                     {
                         // Restore cookies from snapshot if available
                         if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
@@ -448,16 +464,16 @@ namespace PlayniteAchievements.Providers.Exophase
                         }
 
                         return html;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Error(ex, "[Exophase] Failed to fetch HTML via WebView");
-                        return null;
-                    }
+                    }, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "[Exophase] Failed to fetch HTML via WebView");
+                    return null;
                 }
             });
 
@@ -479,9 +495,9 @@ namespace PlayniteAchievements.Providers.Exophase
 
             var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
             {
-                using (var view = _playniteApi.WebViews.CreateOffscreenView())
+                try
                 {
-                    try
+                    return await _offscreenViews.WithNavigableViewAsync(async view =>
                     {
                         if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
                         {
@@ -514,16 +530,16 @@ namespace PlayniteAchievements.Providers.Exophase
                         }
 
                         return html;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        throw;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger?.Error(ex, "[Exophase] Failed to fetch rendered HTML via WebView");
-                        return null;
-                    }
+                    }, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "[Exophase] Failed to fetch rendered HTML via WebView");
+                    return null;
                 }
             });
 
