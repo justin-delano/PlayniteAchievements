@@ -71,6 +71,24 @@
                 </Button>
             </Grid>
 
+            <!-- ================== FRIENDS ================== -->
+            <Border Style="{StaticResource SectionBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Friends}"
+                               Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <StackPanel>
+                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableFriendsFeatures}"
+                                  IsChecked="{Binding Persisted.EnableFriendsFeatures}"
+                                  VerticalAlignment="Center"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_EnableFriendsFeatures_Description}"
+                                   Style="{StaticResource MutedTextStyle}"
+                                   Margin="18,2,0,0"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             <!-- ================== LANGUAGE ================== -->
             <Border Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
