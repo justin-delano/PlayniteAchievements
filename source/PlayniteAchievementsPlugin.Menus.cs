@@ -309,15 +309,18 @@ namespace PlayniteAchievements
                 }
             };
 
-            yield return new GameMenuItem
+            if (_settingsViewModel?.Settings?.Persisted?.EnableFriendsFeatures == true)
             {
-                Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewFriendsAchievements"),
-                MenuSection = PluginGameMenuSection,
-                Action = (a) =>
+                yield return new GameMenuItem
                 {
-                    OpenViewFriendsAchievementsWindow(game.Id);
-                }
-            };
+                    Description = ResourceProvider.GetString("LOCPlayAch_Menu_ViewFriendsAchievements"),
+                    MenuSection = PluginGameMenuSection,
+                    Action = (a) =>
+                    {
+                        OpenViewFriendsAchievementsWindow(game.Id);
+                    }
+                };
+            }
 
             if (!refreshInProgress)
             {
