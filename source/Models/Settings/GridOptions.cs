@@ -447,7 +447,6 @@ namespace PlayniteAchievements.Models.Settings
     {
         private GridColumnLayoutOptions _columns = GridColumnLayoutOptions.CreateWithProgressRightAlignment();
         private bool _showColumnHeaders = true;
-        private bool _showControlBar = true;
         private double? _rowHeight;
         private bool _useCoverImages;
 
@@ -461,12 +460,6 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _showColumnHeaders;
             set => SetValue(ref _showColumnHeaders, value);
-        }
-
-        public bool ShowControlBar
-        {
-            get => _showControlBar;
-            set => SetValue(ref _showControlBar, value);
         }
 
         public double? RowHeight
@@ -489,7 +482,6 @@ namespace PlayniteAchievements.Models.Settings
             {
                 Columns = Columns?.Clone() ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment(),
                 ShowColumnHeaders = ShowColumnHeaders,
-                ShowControlBar = ShowControlBar,
                 RowHeight = RowHeight,
                 UseCoverImages = UseCoverImages
             };
