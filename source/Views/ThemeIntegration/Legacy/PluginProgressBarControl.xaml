@@ -41,8 +41,7 @@
                      Minimum="0"
                      Maximum="{Binding AchievementCount, FallbackValue=100}"
                      Value="{Binding UnlockedCount, Mode=OneWay, FallbackValue=30}"
-                     Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}"
-                     Style="{StaticResource GameProgressBar}" />
+                     Height="{Binding ElementName=PART_GridContener, Path=ActualHeight}" />
 
         <!-- Percent label overlay -->
         <TextBlock Grid.Column="1"
