@@ -225,6 +225,23 @@ namespace PlayniteAchievements.ViewModels
         public bool HasAnySelection => SelectedFriend != null || SelectedGame != null;
         public bool HasFriendGameSelection => SelectedFriend != null && SelectedGame != null;
 
+        // Category the achievement grid is currently drilled into (null when not drilled), pushed
+        // up from AchievementDataGridControl so a breadcrumb segment can follow the section title.
+        private string _selectedCategoryName;
+        public string SelectedCategoryName
+        {
+            get => _selectedCategoryName;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedCategoryName, value))
+                {
+                    OnPropertyChanged(nameof(IsCategorySelected));
+                }
+            }
+        }
+
+        public bool IsCategorySelected => !string.IsNullOrEmpty(SelectedCategoryName);
+
         public string FriendSearchText
         {
             get => _friendSearchText;
