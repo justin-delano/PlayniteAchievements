@@ -1,10 +1,12 @@
 using System;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Views.Settings.Display.ThemeControls;
 using PlayniteAchievements.Views.Settings.Navigation;
 
@@ -18,6 +20,8 @@ namespace PlayniteAchievements.Views.Settings.Display
     public partial class DisplaySettingsTab : UserControl, IDisposable
     {
         private ObservableCollection<SettingsNavigationItem> _navigationItems;
+        private SettingsNavigationItem _friendsOverviewNavigationItem;
+        private PlayniteAchievementsSettings _settings;
 
         private DisplayGeneralSection _generalSection;
         private AppearanceSection _appearanceSection;
@@ -41,11 +45,18 @@ namespace PlayniteAchievements.Views.Settings.Display
             if (plugin == null) throw new ArgumentNullException(nameof(plugin));
             if (pickColor == null) throw new ArgumentNullException(nameof(pickColor));
 
+            _settings = settings;
             _previewState = new ThemeControlPreviewState(settings);
             _themeMigrationController = new ThemeMigrationController(settings, plugin, logger);
 
             var themeControlsGroup = ResourceProvider.GetString("LOCPlayAch_Settings_Display_ThemeIntegration");
             var themeMigrationGroup = ResourceProvider.GetString("LOCPlayAch_ThemeMigration_Title");
+
+            _friendsOverviewNavigationItem = new SettingsNavigationItem(
+                "FriendsOverview",
+                ResourceProvider.GetString("LOCPlayAch_Settings_Display_FriendsOverviewSection"),
+                iconGlyph: "",
+                viewFactory: () => new FriendsOverviewDisplaySection());
 
             _navigationItems = new ObservableCollection<SettingsNavigationItem>
             {
@@ -66,11 +77,6 @@ namespace PlayniteAchievements.Views.Settings.Display
                     ResourceProvider.GetString("LOCPlayAch_Settings_Display_OverviewSection"),
                     iconGlyph: "",
                     viewFactory: () => new OverviewDisplaySection()),
-                new SettingsNavigationItem(
-                    "FriendsOverview",
-                    ResourceProvider.GetString("LOCPlayAch_Settings_Display_FriendsOverviewSection"),
-                    iconGlyph: "",
-                    viewFactory: () => new FriendsOverviewDisplaySection()),
                 new SettingsNavigationItem(
                     "AchievementsWindow",
                     ResourceProvider.GetString("LOCPlayAch_Settings_ViewAchievementsWindow"),
@@ -156,8 +162,39 @@ namespace PlayniteAchievements.Views.Settings.Display
                     viewFactory: () => new RevertThemePage(_themeMigrationController))
             };
 
+            if (settings.Persisted.EnableFriendsFeatures)
+            {
+                _navigationItems.Insert(3, _friendsOverviewNavigationItem);
+            }
+
             MasterDetail.ItemsSource = _navigationItems;
             MasterDetail.SelectedItem = _navigationItems[0];
+
+            settings.Persisted.PropertyChanged += Persisted_PropertyChanged;
+        }
+
+        private void Persisted_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e?.PropertyName != nameof(PersistedSettings.EnableFriendsFeatures))
+            {
+                return;
+            }
+
+            if (_settings.Persisted.EnableFriendsFeatures)
+            {
+                if (!_navigationItems.Contains(_friendsOverviewNavigationItem))
+                {
+                    var insertIndex = Math.Min(3, _navigationItems.Count);
+                    _navigationItems.Insert(insertIndex, _friendsOverviewNavigationItem);
+                }
+            }
+            else if (_navigationItems.Remove(_friendsOverviewNavigationItem))
+            {
+                if (MasterDetail.SelectedItem == _friendsOverviewNavigationItem)
+                {
+                    MasterDetail.SelectedItem = _navigationItems[0];
+                }
+            }
         }
 
         /// <summary>
@@ -186,6 +223,10 @@ namespace PlayniteAchievements.Views.Settings.Display
 
         public void Dispose()
         {
+            if (_settings != null)
+            {
+                _settings.Persisted.PropertyChanged -= Persisted_PropertyChanged;
+            }
             _generalSection?.Dispose();
             _appearanceSection?.Dispose();
             _startPageSection?.Dispose();
