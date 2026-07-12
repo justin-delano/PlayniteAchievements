@@ -81,22 +81,29 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
             var rarityEnricher = await CreateRarityEnricherAsync(cancel).ConfigureAwait(false);
 
-            return await ProviderRefreshExecutor.RunProviderGamesAsync(
-                gamesToRefresh,
-                onGameStarting,
-                async (game, token) =>
-                {
-                    var data = await FetchGameDataAsync(game, titleCache, npCommIdCache, token).ConfigureAwait(false);
-                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
-                    return new ProviderRefreshExecutor.ProviderGameResult { Data = data };
-                },
-                onGameCompleted,
-                isAuthRequiredException: _ => false,
-                onGameError: (game, ex, consecutiveErrors) =>
-                    _logger?.Error(ex, $"[ShadPS4] Error processing game '{game?.Name}'"),
-                delayBetweenGamesAsync: null,
-                delayAfterErrorAsync: null,
-                cancel).ConfigureAwait(false);
+            try
+            {
+                return await ProviderRefreshExecutor.RunProviderGamesAsync(
+                    gamesToRefresh,
+                    onGameStarting,
+                    async (game, token) =>
+                    {
+                        var data = await FetchGameDataAsync(game, titleCache, npCommIdCache, token).ConfigureAwait(false);
+                        await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
+                        return new ProviderRefreshExecutor.ProviderGameResult { Data = data };
+                    },
+                    onGameCompleted,
+                    isAuthRequiredException: _ => false,
+                    onGameError: (game, ex, consecutiveErrors) =>
+                        _logger?.Error(ex, $"[ShadPS4] Error processing game '{game?.Name}'"),
+                    delayBetweenGamesAsync: null,
+                    delayAfterErrorAsync: null,
+                    cancel).ConfigureAwait(false);
+            }
+            finally
+            {
+                rarityEnricher?.Dispose();
+            }
         }
 
         private async Task<ExophaseMetadataEnricher> CreateRarityEnricherAsync(CancellationToken cancel)

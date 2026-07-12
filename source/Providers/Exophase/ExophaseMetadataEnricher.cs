@@ -20,7 +20,7 @@ namespace PlayniteAchievements.Providers.Exophase
         IconPaths = 2
     }
 
-    internal sealed class ExophaseMetadataEnricher
+    internal sealed class ExophaseMetadataEnricher : IDisposable
     {
         private static readonly TimeSpan SlugCacheTtl = TimeSpan.FromHours(1);
 
@@ -71,7 +71,14 @@ namespace PlayniteAchievements.Providers.Exophase
                 var result = await _sessionManager.ProbeAuthStateAsync(ct).ConfigureAwait(false);
                 _isReady = result?.IsSuccess == true;
 
-                if (!_isReady)
+                if (_isReady)
+                {
+                    // One cookie session spans all EnrichAsync calls of the owning scan: fetches
+                    // reuse the cached cookie snapshot and one shared offscreen view instead of
+                    // decrypting the snapshot and creating a view per game. Closed in Dispose.
+                    _apiClient.BeginCookieSession();
+                }
+                else
                 {
                     _logger?.Warn("[ExophaseMetadata] Exophase authentication is required; native metadata will be kept.");
                 }
@@ -84,6 +91,15 @@ namespace PlayniteAchievements.Providers.Exophase
             {
                 _logger?.Warn(ex, "[ExophaseMetadata] Exophase auth probe failed; native metadata will be kept.");
             }
+        }
+
+        /// <summary>
+        /// Closes the cookie session opened by InitializeAsync, releasing the shared
+        /// offscreen view. Owning scanners call this when their scan completes.
+        /// </summary>
+        public void Dispose()
+        {
+            _apiClient?.EndCookieSession();
         }
 
         public async Task EnrichAsync(
