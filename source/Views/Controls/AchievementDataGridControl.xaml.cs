@@ -84,6 +84,12 @@ namespace PlayniteAchievements.Views.Controls
                     friendAvatar: true,
                     friend: true,
                     unlockDate: true),
+                ["ViewFriendsAchievements"] = CreateAchievementVisibility(
+                    status: true,
+                    game: false,
+                    friendAvatar: true,
+                    friend: true,
+                    unlockDate: true),
                 ["Overview"] = CreateAchievementVisibility(status: false, game: true),
                 ["StartPageAchievements"] = CreateAchievementVisibility(
                     status: false,
@@ -146,6 +152,11 @@ namespace PlayniteAchievements.Views.Controls
             new Dictionary<string, IReadOnlyDictionary<string, int>>(StringComparer.OrdinalIgnoreCase)
             {
                 ["FriendsOverviewRecentAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Avatar"] = 0,
+                    ["Friend"] = 1
+                },
+                ["ViewFriendsAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Avatar"] = 0,
                     ["Friend"] = 1
@@ -1691,6 +1702,10 @@ namespace PlayniteAchievements.Views.Controls
                 case "StartPageAchievements":
                     UnlockDateMode = persisted.StartPageAchievementsUnlockDateMode;
                     break;
+                case "ViewFriendsAchievements":
+                case "ViewFriendsAchievementsAchievements":
+                    UnlockDateMode = persisted.GridOptions.GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements).UnlockDateMode;
+                    break;
                 default:
                     // "SingleGame" and any unspecified key fall back to the view-achievements grid.
                     UnlockDateMode = persisted.ViewAchievementsAchievementsUnlockDateMode;
@@ -2524,6 +2539,7 @@ namespace PlayniteAchievements.Views.Controls
         public void Refresh()
         {
             _columnPersistence?.Refresh();
+            UpdateUnlockDateMode();
         }
 
         public void Dispose()
