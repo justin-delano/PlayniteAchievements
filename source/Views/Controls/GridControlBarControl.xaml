@@ -18,8 +18,9 @@
 
             <!-- Toolbar mode toggle (category-summaries mode), rendered as the left half of a
                  segmented unit: a bordered, icon-only button that butts flush against the category
-                 dropdown on its right. The list glyph fills with the accent when the mode is on;
-                 when on, the adjacent dropdown is hidden so the segment rounds all four corners. -->
+                 dropdown on its right. The glyph stays a fixed color; only the border/background
+                 change when the mode is on, matching the other grid toggle buttons. When on, the
+                 adjacent dropdown is hidden so the segment rounds all four corners. -->
             <Style x:Key="GridModeToggleButtonStyle" TargetType="ToggleButton">
                 <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                 <Setter Property="Cursor" Value="Hand"/>
@@ -50,7 +51,6 @@
                                 <Trigger Property="IsChecked" Value="True">
                                     <Setter TargetName="Seg" Property="CornerRadius" Value="4"/>
                                     <Setter TargetName="Seg" Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                    <Setter TargetName="Glyph" Property="Fill" Value="{DynamicResource PlayAch.Brush.Accent}"/>
                                 </Trigger>
                                 <Trigger Property="IsEnabled" Value="False">
                                     <Setter Property="Opacity" Value="0.55"/>
