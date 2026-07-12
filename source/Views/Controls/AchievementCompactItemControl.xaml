@@ -196,6 +196,7 @@
                          Foreground="{DynamicResource PlayAch.Brush.Accent}"
                          BorderThickness="0"/>
             <TextBlock Text="{Binding RarityPercentValue, Mode=OneWay, StringFormat={}{0:F0}%}"
+                       Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
                        FontSize="8"
