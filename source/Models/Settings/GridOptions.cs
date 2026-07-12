@@ -258,6 +258,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _sortDescending = true;
         private double? _maxHeight;
         private bool _startInCategoryMode;
+        private bool _hideCategorySummaryRow;
 
         public bool UseCoverImages
         {
@@ -307,6 +308,14 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _startInCategoryMode, value);
         }
 
+        // When true, the in-grid category summary row hides once a category is selected, leaving
+        // the achievement list full vertical space; a breadcrumb header becomes the only way back.
+        public bool HideCategorySummaryRow
+        {
+            get => _hideCategorySummaryRow;
+            set => SetValue(ref _hideCategorySummaryRow, value);
+        }
+
         public AchievementGridOptions Clone()
         {
             var clone = new AchievementGridOptions();
@@ -319,6 +328,7 @@ namespace PlayniteAchievements.Models.Settings
             clone.SortDescending = SortDescending;
             clone.MaxHeight = MaxHeight;
             clone.StartInCategoryMode = StartInCategoryMode;
+            clone.HideCategorySummaryRow = HideCategorySummaryRow;
             return clone;
         }
     }
@@ -401,6 +411,8 @@ namespace PlayniteAchievements.Models.Settings
     public sealed class FriendSummaryGridOptions : GridCommonOptions
     {
         private DateDisplayMode _lastUnlockDateMode = DateDisplayMode.DateAndTime;
+        private FriendSummariesSortMode _sortMode = FriendSummariesSortMode.RecentUnlock;
+        private bool _sortDescending = true;
 
         public DateDisplayMode LastUnlockDateMode
         {
@@ -408,11 +420,25 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _lastUnlockDateMode, value);
         }
 
+        public FriendSummariesSortMode SortMode
+        {
+            get => _sortMode;
+            set => SetValue(ref _sortMode, value);
+        }
+
+        public bool SortDescending
+        {
+            get => _sortDescending;
+            set => SetValue(ref _sortDescending, value);
+        }
+
         public FriendSummaryGridOptions Clone()
         {
             var clone = new FriendSummaryGridOptions();
             CopyCommonTo(clone);
             clone.LastUnlockDateMode = LastUnlockDateMode;
+            clone.SortMode = SortMode;
+            clone.SortDescending = SortDescending;
             return clone;
         }
     }
