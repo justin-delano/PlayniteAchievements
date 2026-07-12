@@ -156,7 +156,7 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 lock (_cookieLock)
                 {
-                    SteamSessionManager.LoadCefCookiesIntoJar(_api, _logger, _cookieJar);
+                    _sessionManager.LoadCefCookiesIntoJar(_cookieJar);
                 }
             }
         }
@@ -656,6 +656,12 @@ namespace PlayniteAchievements.Providers.Steam
                 }
 
                 _logger.Info($"[SteamAch] CEF fallback succeeded for {url}");
+
+                // The browser session is authenticated but the HTTP jar was not, so
+                // resync the jar now instead of waiting out CEFJarSyncInterval; later
+                // requests can then succeed over plain HTTP without the CEF fallback.
+                SyncCookieJarFromCefIfNeeded(force: true);
+
                 result.Html = cefHtml;
                 result.FinalUrl = cefFinalUrl;
                 result.StatusCode = HttpStatusCode.OK;

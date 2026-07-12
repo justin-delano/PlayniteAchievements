@@ -85,8 +85,7 @@
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                     <Border Style="{StaticResource SectionAccentRuleStyle}"/>
                     <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[ViewFriendsAchievements]}"
-                                                    ShowCategoryModeRow="True"/>
+                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.Achievement[ViewFriendsAchievements]}"/>
                     </Border>
                 </StackPanel>
             </Border>

@@ -66,27 +66,34 @@ namespace PlayniteAchievements.Providers.Xenia
 
             var rarityEnricher = await CreateRarityEnricherAsync(cancel).ConfigureAwait(false);
 
-            return await ProviderRefreshExecutor.RunProviderGamesAsync(
-                gamesToRefresh,
-                onGameStarting,
-                async (game, token) =>
-                {
-                    var data = GetAchievementData(game);
-                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
-                    return new ProviderRefreshExecutor.ProviderGameResult
+            try
+            {
+                return await ProviderRefreshExecutor.RunProviderGamesAsync(
+                    gamesToRefresh,
+                    onGameStarting,
+                    async (game, token) =>
                     {
-                        Data = data
-                    };
-                },
-                onGameCompleted,
-                isAuthRequiredException: _ => false,
-                onGameError: (game, ex, consecutiveErrors) =>
-                {
-                    _logger?.Warn(ex, $"[Xenia] Failed to scan game '{game?.Name}'");
-                },
-                delayBetweenGamesAsync: null,
-                delayAfterErrorAsync: null,
-                cancel).ConfigureAwait(false);
+                        var data = GetAchievementData(game);
+                        await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
+                        return new ProviderRefreshExecutor.ProviderGameResult
+                        {
+                            Data = data
+                        };
+                    },
+                    onGameCompleted,
+                    isAuthRequiredException: _ => false,
+                    onGameError: (game, ex, consecutiveErrors) =>
+                    {
+                        _logger?.Warn(ex, $"[Xenia] Failed to scan game '{game?.Name}'");
+                    },
+                    delayBetweenGamesAsync: null,
+                    delayAfterErrorAsync: null,
+                    cancel).ConfigureAwait(false);
+            }
+            finally
+            {
+                rarityEnricher?.Dispose();
+            }
         }
 
         private GameAchievementData GetAchievementData(Game game)

@@ -931,6 +931,14 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewSelectedGameGridColumnHeaders => _settings?.Persisted?.ShowOverviewSelectedGameGridColumnHeaders ?? true;
 
+        public bool OverviewSelectedGameAchievementsHideCategorySummaryRow => _settings?.Persisted?.OverviewSelectedGameAchievementsHideCategorySummaryRow ?? false;
+
+        public bool ShowOverviewSelectedGameCategorySummariesGridColumnHeaders => _settings?.Persisted?.ShowOverviewSelectedGameCategorySummariesGridColumnHeaders ?? true;
+
+        public double? OverviewSelectedGameCategorySummariesGridRowHeight => _settings?.Persisted?.OverviewSelectedGameCategorySummariesGridRowHeight;
+
+        public bool OverviewSelectedGameCategorySummariesUseCoverImages => _settings?.Persisted?.OverviewSelectedGameCategorySummariesUseCoverImages ?? false;
+
         public bool ShowOverviewGameSummariesGridControlBar => _settings?.Persisted?.ShowOverviewGameSummariesGridControlBar ?? true;
 
         public bool ShowOverviewRecentAchievementsGridControlBar => _settings?.Persisted?.ShowOverviewRecentAchievementsGridControlBar ?? true;
@@ -1169,10 +1177,14 @@ namespace PlayniteAchievements.ViewModels
             {
                 if (SetValueAndReturn(ref _selectedGameDrilledCategory, value))
                 {
+                    OnPropertyChanged(nameof(IsSelectedGameDrilledIntoCategory));
                     RefreshSelectedGameHeaderCounts();
                 }
             }
         }
+
+        // Drives the breadcrumb's "> CategoryName" segment and the clickable game-name affordance.
+        public bool IsSelectedGameDrilledIntoCategory => !string.IsNullOrEmpty(SelectedGameDrilledCategory);
 
         public ObservableCollection<ChartDataPoint> SelectedGameDailyUnlocks { get; } = new ObservableCollection<ChartDataPoint>();
 
@@ -2344,6 +2356,10 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowOverviewGameSummariesGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowOverviewSelectedGameGridColumnHeaders));
+                OnPropertyChanged(nameof(OverviewSelectedGameAchievementsHideCategorySummaryRow));
+                OnPropertyChanged(nameof(ShowOverviewSelectedGameCategorySummariesGridColumnHeaders));
+                OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesGridRowHeight));
+                OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesUseCoverImages));
                 OnPropertyChanged(nameof(ShowOverviewGameSummariesGridControlBar));
                 OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridControlBar));
                 OnPropertyChanged(nameof(ShowOverviewSelectedGameGridControlBar));
@@ -2435,6 +2451,22 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.ShowOverviewSelectedGameGridColumnHeaders))
             {
                 OnPropertyChanged(nameof(ShowOverviewSelectedGameGridColumnHeaders));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameAchievementsHideCategorySummaryRow))
+            {
+                OnPropertyChanged(nameof(OverviewSelectedGameAchievementsHideCategorySummaryRow));
+            }
+            else if (propertyName == nameof(PersistedSettings.ShowOverviewSelectedGameCategorySummariesGridColumnHeaders))
+            {
+                OnPropertyChanged(nameof(ShowOverviewSelectedGameCategorySummariesGridColumnHeaders));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameCategorySummariesGridRowHeight))
+            {
+                OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesGridRowHeight));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameCategorySummariesUseCoverImages))
+            {
+                OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesUseCoverImages));
             }
             else if (propertyName == nameof(PersistedSettings.ShowOverviewGameSummariesGridControlBar))
             {

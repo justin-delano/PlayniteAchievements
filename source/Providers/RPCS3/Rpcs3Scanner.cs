@@ -103,30 +103,38 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             var rarityEnricher = await CreateRarityEnricherAsync(cancel).ConfigureAwait(false);
 
-            var payload = await ProviderRefreshExecutor.RunProviderGamesAsync(
-                gamesToRefresh,
-                game =>
-                {
-                    onGameStarting?.Invoke(game);
-                },
-                async (game, token) =>
-                {
-                    var data = await FetchGameDataAsync(game, trophyFolderCache, token).ConfigureAwait(false);
-                    await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
-                    return new ProviderRefreshExecutor.ProviderGameResult
+            RebuildPayload payload;
+            try
+            {
+                payload = await ProviderRefreshExecutor.RunProviderGamesAsync(
+                    gamesToRefresh,
+                    game =>
                     {
-                        Data = data
-                    };
-                },
-                onGameCompleted,
-                isAuthRequiredException: _ => false,
-                onGameError: (game, ex, consecutiveErrors) =>
-                {
-                    _logger?.Error(ex, $"[RPCS3] Failed to scan '{game?.Name}'");
-                },
-                delayBetweenGamesAsync: null,
-                delayAfterErrorAsync: null,
-                cancel).ConfigureAwait(false);
+                        onGameStarting?.Invoke(game);
+                    },
+                    async (game, token) =>
+                    {
+                        var data = await FetchGameDataAsync(game, trophyFolderCache, token).ConfigureAwait(false);
+                        await EnrichRarityAsync(game, data, rarityEnricher, token).ConfigureAwait(false);
+                        return new ProviderRefreshExecutor.ProviderGameResult
+                        {
+                            Data = data
+                        };
+                    },
+                    onGameCompleted,
+                    isAuthRequiredException: _ => false,
+                    onGameError: (game, ex, consecutiveErrors) =>
+                    {
+                        _logger?.Error(ex, $"[RPCS3] Failed to scan '{game?.Name}'");
+                    },
+                    delayBetweenGamesAsync: null,
+                    delayAfterErrorAsync: null,
+                    cancel).ConfigureAwait(false);
+            }
+            finally
+            {
+                rarityEnricher?.Dispose();
+            }
 
             return payload ?? new RebuildPayload { Summary = new RebuildSummary() };
         }

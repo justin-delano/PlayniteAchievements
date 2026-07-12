@@ -171,5 +171,9 @@ namespace PlayniteAchievements.Providers.Exophase
         {
             return Task.CompletedTask;
         }
+
+        public void Dispose()
+        {
+        }
     }
 }

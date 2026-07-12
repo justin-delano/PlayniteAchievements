@@ -651,7 +651,35 @@
                                         FontWeight="Bold"
                                         Foreground="{DynamicResource PlayAch.Brush.Text}"
                                         TextTrimming="CharacterEllipsis"
-                                        VerticalAlignment="Center"/>
+                                        VerticalAlignment="Center"
+                                        MouseLeftButtonUp="GameNameBreadcrumb_Click">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Cursor" Value="Arrow"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelectedGameDrilledIntoCategory}" Value="True">
+                                                    <Setter Property="Cursor" Value="Hand"/>
+                                                    <Setter Property="TextDecorations" Value="Underline"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+
+                                <TextBlock Text=" > "
+                                        FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                        Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                                        VerticalAlignment="Center"
+                                        Visibility="{Binding IsSelectedGameDrilledIntoCategory, Converter={StaticResource BoolToVis}}"/>
+
+                                <TextBlock Text="{Binding SelectedGameDrilledCategory}"
+                                        FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                                        FontWeight="Bold"
+                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                        TextTrimming="CharacterEllipsis"
+                                        VerticalAlignment="Center"
+                                        Visibility="{Binding IsSelectedGameDrilledIntoCategory, Converter={StaticResource BoolToVis}}"/>
 
                                 <TextBlock Text="{Binding SelectedGameHeaderText}"
                                         FontSize="{DynamicResource PlayAch.FontSize.Caption}"
@@ -735,6 +763,11 @@
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
                                                                  ColumnSettingsKey="OverviewSelectedGameAchievements"
                                                                  EnableCategoryMode="True"
+                                                                 HideBackButton="True"
+                                                                 HideCategorySummaryRow="{Binding OverviewSelectedGameAchievementsHideCategorySummaryRow}"
+                                                                 CategoryUseCoverImages="{Binding OverviewSelectedGameCategorySummariesUseCoverImages}"
+                                                                 CategoryShowColumnHeaders="{Binding ShowOverviewSelectedGameCategorySummariesGridColumnHeaders}"
+                                                                 CategoryFixedRowHeight="{Binding OverviewSelectedGameCategorySummariesGridRowHeight}"
                                                                  CategoryColumnSettingsKey="OverviewSelectedGameCategorySummaries"
                                                                  CategorySummarySource="{Binding SelectedGameAllAchievements}"
                                                                  DrilledCategory="{Binding SelectedGameDrilledCategory, Mode=OneWayToSource}"

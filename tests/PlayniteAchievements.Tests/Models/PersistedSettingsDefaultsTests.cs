@@ -231,7 +231,6 @@ namespace PlayniteAchievements.Models.Tests
             Assert.IsFalse(settings.OverviewSelectedGameAchievementsStartInCategoryMode);
             Assert.IsFalse(settings.ViewAchievementsAchievementGridStartInCategoryMode);
             Assert.IsFalse(settings.FriendsOverviewAchievementsStartInCategoryMode);
-            Assert.IsFalse(settings.ViewFriendsAchievementsStartInCategoryMode);
             Assert.IsFalse(settings.DesktopThemeAchievementGridStartInCategoryMode);
             Assert.IsFalse(settings.StartPageGameSummariesGrid.ShowControlBar);
             Assert.IsFalse(settings.StartPageRecentUnlocksGrid.ShowControlBar);
@@ -427,7 +426,6 @@ namespace PlayniteAchievements.Models.Tests
                 FriendsOverviewAchievementsShowRarityGlow = !defaults.FriendsOverviewAchievementsShowRarityGlow,
                 FriendsOverviewAchievementsColorNamesByRarity = !defaults.FriendsOverviewAchievementsColorNamesByRarity,
                 FriendsOverviewAchievementsStartInCategoryMode = !defaults.FriendsOverviewAchievementsStartInCategoryMode,
-                ViewFriendsAchievementsStartInCategoryMode = !defaults.ViewFriendsAchievementsStartInCategoryMode,
                 ShowFriendsOverviewFriendSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewFriendSummariesGridColumnHeaders,
                 ShowFriendsOverviewGameSummariesGridColumnHeaders = !defaults.ShowFriendsOverviewGameSummariesGridColumnHeaders,
                 ShowFriendsOverviewAchievementsGridColumnHeaders = !defaults.ShowFriendsOverviewAchievementsGridColumnHeaders,
@@ -480,7 +478,6 @@ namespace PlayniteAchievements.Models.Tests
                 Assert.AreEqual(source.FriendsOverviewAchievementsShowRarityGlow, copy.FriendsOverviewAchievementsShowRarityGlow);
                 Assert.AreEqual(source.FriendsOverviewAchievementsColorNamesByRarity, copy.FriendsOverviewAchievementsColorNamesByRarity);
                 Assert.AreEqual(source.FriendsOverviewAchievementsStartInCategoryMode, copy.FriendsOverviewAchievementsStartInCategoryMode);
-                Assert.AreEqual(source.ViewFriendsAchievementsStartInCategoryMode, copy.ViewFriendsAchievementsStartInCategoryMode);
                 Assert.AreEqual(source.ShowFriendsOverviewFriendSummariesGridColumnHeaders, copy.ShowFriendsOverviewFriendSummariesGridColumnHeaders);
                 Assert.AreEqual(source.ShowFriendsOverviewGameSummariesGridColumnHeaders, copy.ShowFriendsOverviewGameSummariesGridColumnHeaders);
                 Assert.AreEqual(source.ShowFriendsOverviewAchievementsGridColumnHeaders, copy.ShowFriendsOverviewAchievementsGridColumnHeaders);
@@ -1088,7 +1085,6 @@ namespace PlayniteAchievements.Models.Tests
                 OverviewSelectedGameAchievementsStartInCategoryMode = true,
                 ViewAchievementsAchievementGridStartInCategoryMode = true,
                 FriendsOverviewAchievementsStartInCategoryMode = true,
-                ViewFriendsAchievementsStartInCategoryMode = true,
                 DesktopThemeAchievementGridStartInCategoryMode = true,
                 GridColumnHeaderAlignment = GridAlignment.Right,
                 GridCellAlignment = GridAlignment.Center,
@@ -1191,7 +1187,6 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.OverviewSelectedGameAchievementsStartInCategoryMode, settings.OverviewSelectedGameAchievementsStartInCategoryMode);
             Assert.AreEqual(defaults.ViewAchievementsAchievementGridStartInCategoryMode, settings.ViewAchievementsAchievementGridStartInCategoryMode);
             Assert.AreEqual(defaults.FriendsOverviewAchievementsStartInCategoryMode, settings.FriendsOverviewAchievementsStartInCategoryMode);
-            Assert.AreEqual(defaults.ViewFriendsAchievementsStartInCategoryMode, settings.ViewFriendsAchievementsStartInCategoryMode);
             Assert.AreEqual(defaults.DesktopThemeAchievementGridStartInCategoryMode, settings.DesktopThemeAchievementGridStartInCategoryMode);
             Assert.AreEqual(defaults.GridColumnHeaderAlignment, settings.GridColumnHeaderAlignment);
             Assert.AreEqual(defaults.GridCellAlignment, settings.GridCellAlignment);

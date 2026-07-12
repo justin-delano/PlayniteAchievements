@@ -385,6 +385,7 @@ namespace PlayniteAchievements.ViewModels.Items
         private readonly Func<bool> _getIsChecked;
         private readonly Action<bool> _setIsChecked;
         private readonly Func<bool> _getIsAvailable;
+        private readonly Func<bool> _getHasMultipleCategories;
 
         public GridModeToggle(
             INotifyPropertyChanged source,
@@ -393,12 +394,14 @@ namespace PlayniteAchievements.ViewModels.Items
             Func<bool> getIsChecked,
             Action<bool> setIsChecked,
             string toolTip = null,
-            Func<bool> getIsAvailable = null)
+            Func<bool> getIsAvailable = null,
+            Func<bool> getHasMultipleCategories = null)
         {
             Content = content;
             _getIsChecked = getIsChecked;
             _setIsChecked = setIsChecked;
             _getIsAvailable = getIsAvailable;
+            _getHasMultipleCategories = getHasMultipleCategories;
             ToolTip = toolTip;
             GridSearchControl.Subscribe(source, sourcePropertyName, Refresh);
         }
@@ -406,8 +409,11 @@ namespace PlayniteAchievements.ViewModels.Items
         public string Content { get; }
 
         // Mirrors the category dropdowns' auto-hide: the toggle disappears when there is nothing to
-        // group by. Stays visible while active so the user can always switch back out of the mode.
-        protected override bool HasAvailableAction => (_getIsAvailable?.Invoke() ?? true) || IsChecked;
+        // group by. Stays visible while active so the user can always switch back out of the mode,
+        // but only if the current game could ever offer multiple categories - otherwise a game with
+        // just one category would keep showing a toggle left over from a previously selected game.
+        protected override bool HasAvailableAction =>
+            (_getIsAvailable?.Invoke() ?? true) || (IsChecked && (_getHasMultipleCategories?.Invoke() ?? true));
 
         public bool IsChecked
         {

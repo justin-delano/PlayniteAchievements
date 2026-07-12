@@ -349,7 +349,33 @@
                                FontWeight="Bold"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
                                VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"/>
+                               TextTrimming="CharacterEllipsis"
+                               MouseLeftButtonUp="GameNameBreadcrumb_Click">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Cursor" Value="Arrow"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsCategorySelected}" Value="True">
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                        <Setter Property="TextDecorations" Value="Underline"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock Text=" > "
+                               FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                               VerticalAlignment="Center"
+                               Visibility="{Binding IsCategorySelected, Converter={StaticResource BoolToVis}}"/>
+                    <TextBlock Text="{Binding SelectedCategoryName}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource PlayAch.Brush.Text}"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
+                               Visibility="{Binding IsCategorySelected, Converter={StaticResource BoolToVis}}"/>
                     <TextBlock Text="{Binding AchievementCountText}"
                                FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                Foreground="{DynamicResource PlayAch.Brush.Text}"
@@ -390,7 +416,8 @@
                                                  DelayInitialRenderUntilNormalized="True"
                                                  RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"
                                                  RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
-                                                 RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
+                                                 RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"
+                                                 Sorting="FriendSummaries_Sorting"/>
 
             <!-- Game summaries -->
             <controls:GameSummariesGridControl x:Name="FriendGameSummariesGridControl"
@@ -413,7 +440,8 @@
                                                DelayInitialRenderUntilNormalized="True"
                                                RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"
                                                RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
-                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
+                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"
+                                               Sorting="GameSummaries_Sorting"/>
 
             <controls:GameSummariesGridControl x:Name="SelectedFriendGameSummariesGridControl"
                                                Grid.Row="1"
@@ -435,7 +463,8 @@
                                                DelayInitialRenderUntilNormalized="True"
                                                RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"
                                                RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
-                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
+                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"
+                                               Sorting="GameSummaries_Sorting"/>
 
             <!-- Achievements -->
             <Grid Grid.Row="1" Grid.Column="4">
@@ -446,6 +475,12 @@
                                                      ItemsSource="{Binding DisplayedAchievements}"
                                                      ColumnSettingsKey="FriendsOverviewRecentAchievements"
                                                      EnableCategoryMode="True"
+                                                     HideBackButton="True"
+                                                     HideCategorySummaryRow="{Binding Settings.Persisted.FriendsOverviewAchievementsHideCategorySummaryRow}"
+                                                     DrilledCategory="{Binding SelectedCategoryName, Mode=OneWayToSource}"
+                                                     CategoryUseCoverImages="{Binding Settings.Persisted.FriendsOverviewCategorySummariesUseCoverImages}"
+                                                     CategoryShowColumnHeaders="{Binding Settings.Persisted.ShowFriendsOverviewCategorySummariesGridColumnHeaders}"
+                                                     CategoryFixedRowHeight="{Binding Settings.Persisted.FriendsOverviewCategorySummariesGridRowHeight}"
                                                      CategoryColumnSettingsKey="FriendsOverviewCategorySummaries"
                                                      ShowGameColumn="True"
                                                      ShowFriendColumn="True"
@@ -457,7 +492,9 @@
                                                      FixedRowHeight="{Binding Settings.Persisted.FriendsOverviewAchievementsGridRowHeight}"
                                                      DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                      DelayInitialRenderUntilNormalized="True"
-                                                     RowPreviewMouseLeftButtonDown="AchievementRow_PreviewMouseLeftButtonDown"/>
+                                                     RowPreviewMouseLeftButtonDown="AchievementRow_PreviewMouseLeftButtonDown"
+                                                     UseExternalSorting="True"
+                                                     Sorting="Achievements_Sorting"/>
 
                 <Border Background="{DynamicResource PlayAch.Brush.Window.Background}"
                         Visibility="{Binding HasStatusText, Converter={StaticResource BoolToVis}}">

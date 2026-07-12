@@ -238,6 +238,23 @@ namespace PlayniteAchievements.ViewModels
             private set => SetValue(ref _gameName, value);
         }
 
+        // Category the achievement grid is currently drilled into (null when not drilled), pushed
+        // up from AchievementDataGridControl so a breadcrumb header can be shown above the grid.
+        private string _selectedCategoryName;
+        public string SelectedCategoryName
+        {
+            get => _selectedCategoryName;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedCategoryName, value))
+                {
+                    OnPropertyChanged(nameof(IsCategorySelected));
+                }
+            }
+        }
+
+        public bool IsCategorySelected => !string.IsNullOrEmpty(SelectedCategoryName);
+
         private int _totalAchievements;
         public int TotalAchievements
         {
@@ -345,6 +362,14 @@ namespace PlayniteAchievements.ViewModels
         public GridControlBarViewModel AchievementsControlBar => _controlBar.ControlBar;
 
         public bool ShowAchievementGridControlBar => _settings?.Persisted?.ShowViewAchievementsAchievementGridControlBar ?? true;
+
+        public bool HideCategorySummaryRow => _settings?.Persisted?.ViewAchievementsAchievementGridHideCategorySummaryRow ?? false;
+
+        public bool CategorySummariesShowColumnHeaders => _settings?.Persisted?.ShowViewAchievementsCategorySummariesGridColumnHeaders ?? true;
+
+        public double? CategorySummariesGridRowHeight => _settings?.Persisted?.ViewAchievementsCategorySummariesGridRowHeight;
+
+        public bool CategorySummariesUseCoverImages => _settings?.Persisted?.ViewAchievementsCategorySummariesUseCoverImages ?? false;
 
         public double? SingleGameGridRowHeight => _settings?.Persisted?.SingleGameGridRowHeight;
 
@@ -756,6 +781,10 @@ namespace PlayniteAchievements.ViewModels
                 ApplyAppearanceSettingsToAchievements();
                 OnPropertyChanged(nameof(SingleGameGridRowHeight));
                 OnPropertyChanged(nameof(ShowAchievementGridControlBar));
+                OnPropertyChanged(nameof(HideCategorySummaryRow));
+                OnPropertyChanged(nameof(CategorySummariesShowColumnHeaders));
+                OnPropertyChanged(nameof(CategorySummariesGridRowHeight));
+                OnPropertyChanged(nameof(CategorySummariesUseCoverImages));
                 RaiseSummaryAppearanceProperties();
                 ApplySavedTimelineState();
                 ApplySearchFilter(skipDefaultSort: CurrentSortDirection.HasValue, refreshOrder: true);
@@ -779,6 +808,30 @@ namespace PlayniteAchievements.ViewModels
             if (e?.PropertyName == nameof(PersistedSettings.ShowViewAchievementsAchievementGridControlBar))
             {
                 OnPropertyChanged(nameof(ShowAchievementGridControlBar));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsAchievementGridHideCategorySummaryRow))
+            {
+                OnPropertyChanged(nameof(HideCategorySummaryRow));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ShowViewAchievementsCategorySummariesGridColumnHeaders))
+            {
+                OnPropertyChanged(nameof(CategorySummariesShowColumnHeaders));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsCategorySummariesGridRowHeight))
+            {
+                OnPropertyChanged(nameof(CategorySummariesGridRowHeight));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsCategorySummariesUseCoverImages))
+            {
+                OnPropertyChanged(nameof(CategorySummariesUseCoverImages));
                 return;
             }
 

@@ -50,6 +50,7 @@ namespace PlayniteAchievements.Providers.Steam
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _offscreenViews = new OffscreenViewLeaseSource(_api, _logger);
         }
 
         internal void SetClearInMemoryAuthState(Action clearInMemoryAuthState)
@@ -234,6 +235,20 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         // ---------------------------------------------------------------------
+        // Scan-scoped offscreen view lease
+        // ---------------------------------------------------------------------
+
+        private readonly OffscreenViewLeaseSource _offscreenViews;
+
+        /// <summary>
+        /// Holds one shared offscreen CEF view open until the returned lease is disposed.
+        /// While a lease is active, page fetches, auth probes, and cookie reads reuse the
+        /// shared view instead of creating and disposing a view per call, bounding CEF
+        /// memory during long scans.
+        /// </summary>
+        public IDisposable BeginOffscreenViewLease() => _offscreenViews.BeginLease();
+
+        // ---------------------------------------------------------------------
         // Internal methods for SteamHttpClient
         // ---------------------------------------------------------------------
 
@@ -252,13 +267,14 @@ namespace PlayniteAchievements.Providers.Steam
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    using (var view = _api.WebViews.CreateOffscreenView())
+                    await _offscreenViews.WithNavigableViewAsync(async view =>
                     {
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
                         await Task.Delay(2000, ct).ConfigureAwait(true);
                         html = await view.GetPageSourceAsync().ConfigureAwait(true);
-                    }
+                        return true;
+                    }, ct).ConfigureAwait(true);
                 }
                 catch (TimeoutException ex)
                 {
@@ -313,13 +329,13 @@ namespace PlayniteAchievements.Providers.Steam
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    using (var view = _api.WebViews.CreateOffscreenView())
+                    return await _offscreenViews.WithNavigableViewAsync(async view =>
                     {
                         _logger?.Debug($"[SteamAuth] Navigating to {CommunityEditInfoUrl} to resolve web auth session...");
                         await view.NavigateAndWaitAsync(CommunityEditInfoUrl, timeoutMs: 15000).ConfigureAwait(true);
                         await Task.Delay(500, ct).ConfigureAwait(true);
                         return ResolveWebAuthSessionFromView(view);
-                    }
+                    }, ct).ConfigureAwait(true);
                 }
                 catch (OperationCanceledException)
                 {
@@ -582,63 +598,77 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
-        public static void LoadCefCookiesIntoJar(
-            IPlayniteAPI api,
-            ILogger logger,
-            CookieContainer cookieJar)
+        /// <summary>
+        /// Copies Steam cookies from the CEF browser into the given HTTP cookie jar,
+        /// reusing the scan-leased offscreen view when one is active.
+        /// </summary>
+        public void LoadCefCookiesIntoJar(CookieContainer cookieJar)
         {
             try
             {
-                InvokeOnUi(api, () =>
+                InvokeOnUi(_api, () =>
                 {
-                    using (var view = api.WebViews.CreateOffscreenView())
+                    var (view, owned) = _offscreenViews.AcquireView();
+                    try
                     {
-                        var cookies = view.GetCookies();
-                        if (cookies == null)
-                        {
-                            return;
-                        }
-
-                        var steamCookies = cookies
-                            .Where(c => c != null && !string.IsNullOrWhiteSpace(c.Domain))
-                            .Where(c => IsSteamDomain(c.Domain))
-                            .ToList();
-
-                        foreach (var c in steamCookies)
-                        {
-                            try
-                            {
-                                var domain = c.Domain.TrimStart('.');
-                                var path = string.IsNullOrWhiteSpace(c.Path) ? "/" : c.Path;
-                                var uri = GetAddUriForDomain(domain);
-                                var cookie = new Cookie(c.Name, SanitizeCookieValue(c.Value), path)
-                                {
-                                    Domain = uri.Host,
-                                    Secure = c.Secure,
-                                    HttpOnly = c.HttpOnly
-                                };
-
-                                if (c.Expires.HasValue && c.Expires.Value > DateTime.MinValue)
-                                {
-                                    var expires = c.Expires.Value;
-                                    cookie.Expires = expires.Kind == DateTimeKind.Utc ? expires : expires.ToUniversalTime();
-                                }
-                                cookieJar.Add(uri, cookie);
-                            }
-                            catch (Exception ex)
-                            {
-                                logger?.Debug($"Failed to add cookie '{c.Name}' to jar: {ex.Message}");
-                            }
-                        }
-
-                        AddSteamTimezoneCookie(cookieJar, logger);
+                        LoadCefCookiesIntoJarFromView(view, _logger, cookieJar);
+                    }
+                    finally
+                    {
+                        _offscreenViews.ReleaseView(view, owned, faulted: false);
                     }
                 });
             }
             catch (Exception ex)
             {
-                logger?.Debug(ex, "Failed to load cookies from CEF into jar");
+                _logger?.Debug(ex, "Failed to load cookies from CEF into jar");
             }
+        }
+
+        private static void LoadCefCookiesIntoJarFromView(
+            IWebView view,
+            ILogger logger,
+            CookieContainer cookieJar)
+        {
+            var cookies = view.GetCookies();
+            if (cookies == null)
+            {
+                return;
+            }
+
+            var steamCookies = cookies
+                .Where(c => c != null && !string.IsNullOrWhiteSpace(c.Domain))
+                .Where(c => IsSteamDomain(c.Domain))
+                .ToList();
+
+            foreach (var c in steamCookies)
+            {
+                try
+                {
+                    var domain = c.Domain.TrimStart('.');
+                    var path = string.IsNullOrWhiteSpace(c.Path) ? "/" : c.Path;
+                    var uri = GetAddUriForDomain(domain);
+                    var cookie = new Cookie(c.Name, SanitizeCookieValue(c.Value), path)
+                    {
+                        Domain = uri.Host,
+                        Secure = c.Secure,
+                        HttpOnly = c.HttpOnly
+                    };
+
+                    if (c.Expires.HasValue && c.Expires.Value > DateTime.MinValue)
+                    {
+                        var expires = c.Expires.Value;
+                        cookie.Expires = expires.Kind == DateTimeKind.Utc ? expires : expires.ToUniversalTime();
+                    }
+                    cookieJar.Add(uri, cookie);
+                }
+                catch (Exception ex)
+                {
+                    logger?.Debug($"Failed to add cookie '{c.Name}' to jar: {ex.Message}");
+                }
+            }
+
+            AddSteamTimezoneCookie(cookieJar, logger);
         }
 
         private static string SanitizeCookieValue(string value)

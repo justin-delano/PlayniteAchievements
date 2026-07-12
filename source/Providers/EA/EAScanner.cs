@@ -74,37 +74,44 @@ namespace PlayniteAchievements.Providers.EA
                 _settings.Persisted.MaxRetryAttempts);
             var metadataEnricher = await CreateMetadataEnricherAsync(cancel).ConfigureAwait(false);
 
-            return await ProviderRefreshExecutor.RunProviderGamesAsync(
-                gamesToRefresh,
-                onGameStarting,
-                async (game, token) =>
-                {
-                    var gameId = game?.GameId?.Trim();
-                    if (string.IsNullOrWhiteSpace(gameId))
+            try
+            {
+                return await ProviderRefreshExecutor.RunProviderGamesAsync(
+                    gamesToRefresh,
+                    onGameStarting,
+                    async (game, token) =>
                     {
-                        return ProviderRefreshExecutor.ProviderGameResult.Skipped();
-                    }
+                        var gameId = game?.GameId?.Trim();
+                        if (string.IsNullOrWhiteSpace(gameId))
+                        {
+                            return ProviderRefreshExecutor.ProviderGameResult.Skipped();
+                        }
 
-                    var data = await rateLimiter.ExecuteWithRetryAsync(
-                        () => FetchGameDataAsync(game, gameId, token),
-                        EAApiClient.IsTransientError,
-                        token).ConfigureAwait(false);
+                        var data = await rateLimiter.ExecuteWithRetryAsync(
+                            () => FetchGameDataAsync(game, gameId, token),
+                            EAApiClient.IsTransientError,
+                            token).ConfigureAwait(false);
 
-                    await EnrichMetadataAsync(game, data, metadataEnricher, token).ConfigureAwait(false);
+                        await EnrichMetadataAsync(game, data, metadataEnricher, token).ConfigureAwait(false);
 
-                    return new ProviderRefreshExecutor.ProviderGameResult
+                        return new ProviderRefreshExecutor.ProviderGameResult
+                        {
+                            Data = data
+                        };
+                    },
+                    onGameCompleted,
+                    isAuthRequiredException: ex => ex is EaAuthRequiredException,
+                    onGameError: (game, ex, consecutiveErrors) =>
                     {
-                        Data = data
-                    };
-                },
-                onGameCompleted,
-                isAuthRequiredException: ex => ex is EaAuthRequiredException,
-                onGameError: (game, ex, consecutiveErrors) =>
-                {
-                    _logger?.Debug(ex, $"[EAAch] Failed to scan {game?.Name} after {consecutiveErrors} consecutive errors.");
-                },
-                rateLimiter,
-                cancel).ConfigureAwait(false);
+                        _logger?.Debug(ex, $"[EAAch] Failed to scan {game?.Name} after {consecutiveErrors} consecutive errors.");
+                    },
+                    rateLimiter,
+                    cancel).ConfigureAwait(false);
+            }
+            finally
+            {
+                metadataEnricher?.Dispose();
+            }
         }
 
         public void BeginRefreshAuthContext(RefreshAuthContext context)

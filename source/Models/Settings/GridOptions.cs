@@ -260,6 +260,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _sortDescending = true;
         private double? _maxHeight;
         private bool _startInCategoryMode;
+        private bool _hideCategorySummaryRow;
 
         public bool UseCoverImages
         {
@@ -309,6 +310,14 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _startInCategoryMode, value);
         }
 
+        // When true, the in-grid category summary row hides once a category is selected, leaving
+        // the achievement list full vertical space; a breadcrumb header becomes the only way back.
+        public bool HideCategorySummaryRow
+        {
+            get => _hideCategorySummaryRow;
+            set => SetValue(ref _hideCategorySummaryRow, value);
+        }
+
         public AchievementGridOptions Clone()
         {
             var clone = new AchievementGridOptions();
@@ -321,6 +330,7 @@ namespace PlayniteAchievements.Models.Settings
             clone.SortDescending = SortDescending;
             clone.MaxHeight = MaxHeight;
             clone.StartInCategoryMode = StartInCategoryMode;
+            clone.HideCategorySummaryRow = HideCategorySummaryRow;
             return clone;
         }
     }
@@ -403,6 +413,8 @@ namespace PlayniteAchievements.Models.Settings
     public sealed class FriendSummaryGridOptions : GridCommonOptions
     {
         private DateDisplayMode _lastUnlockDateMode = DateDisplayMode.DateAndTime;
+        private FriendSummariesSortMode _sortMode = FriendSummariesSortMode.RecentUnlock;
+        private bool _sortDescending = true;
 
         public DateDisplayMode LastUnlockDateMode
         {
@@ -410,11 +422,25 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _lastUnlockDateMode, value);
         }
 
+        public FriendSummariesSortMode SortMode
+        {
+            get => _sortMode;
+            set => SetValue(ref _sortMode, value);
+        }
+
+        public bool SortDescending
+        {
+            get => _sortDescending;
+            set => SetValue(ref _sortDescending, value);
+        }
+
         public FriendSummaryGridOptions Clone()
         {
             var clone = new FriendSummaryGridOptions();
             CopyCommonTo(clone);
             clone.LastUnlockDateMode = LastUnlockDateMode;
+            clone.SortMode = SortMode;
+            clone.SortDescending = SortDescending;
             return clone;
         }
     }
@@ -422,6 +448,9 @@ namespace PlayniteAchievements.Models.Settings
     public sealed class CategorySummaryGridOptions : PlayniteAchievements.Common.ObservableObject
     {
         private GridColumnLayoutOptions _columns = GridColumnLayoutOptions.CreateWithProgressRightAlignment();
+        private bool _showColumnHeaders = true;
+        private double? _rowHeight;
+        private bool _useCoverImages;
 
         public GridColumnLayoutOptions Columns
         {
@@ -429,11 +458,34 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _columns, value ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment());
         }
 
+        public bool ShowColumnHeaders
+        {
+            get => _showColumnHeaders;
+            set => SetValue(ref _showColumnHeaders, value);
+        }
+
+        public double? RowHeight
+        {
+            get => _rowHeight;
+            set => SetValue(ref _rowHeight, PersistedSettings.NormalizeGridRowHeight(value));
+        }
+
+        // Categories show achievement icons by default (matching the achievement grid), not the
+        // larger cover art game-summary grids default to.
+        public bool UseCoverImages
+        {
+            get => _useCoverImages;
+            set => SetValue(ref _useCoverImages, value);
+        }
+
         public CategorySummaryGridOptions Clone()
         {
             return new CategorySummaryGridOptions
             {
-                Columns = Columns?.Clone() ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment()
+                Columns = Columns?.Clone() ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment(),
+                ShowColumnHeaders = ShowColumnHeaders,
+                RowHeight = RowHeight,
+                UseCoverImages = UseCoverImages
             };
         }
     }

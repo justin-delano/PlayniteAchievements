@@ -101,6 +101,48 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         public GridControlBarViewModel ControlBar => _controlBarAdapter.ControlBar;
 
+        /// <summary>
+        /// Identifies the SelectedCategoryName dependency property.
+        /// </summary>
+        public static readonly DependencyProperty SelectedCategoryNameProperty =
+            DependencyProperty.Register(nameof(SelectedCategoryName), typeof(string),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null, OnSelectedCategoryNameChanged));
+
+        /// <summary>
+        /// Category the achievement grid is currently drilled into (null when not drilled), pushed
+        /// up from AchievementsGrid so the compact breadcrumb can be shown above it.
+        /// </summary>
+        public string SelectedCategoryName
+        {
+            get => (string)GetValue(SelectedCategoryNameProperty);
+            set => SetValue(SelectedCategoryNameProperty, value);
+        }
+
+        private static readonly DependencyPropertyKey IsCategorySelectedPropertyKey =
+            DependencyProperty.RegisterReadOnly(nameof(IsCategorySelected), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        public static readonly DependencyProperty IsCategorySelectedProperty =
+            IsCategorySelectedPropertyKey.DependencyProperty;
+
+        public bool IsCategorySelected => (bool)GetValue(IsCategorySelectedProperty);
+
+        private static void OnSelectedCategoryNameChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.SetValue(IsCategorySelectedPropertyKey, !string.IsNullOrEmpty(control.SelectedCategoryName));
+            }
+        }
+
+        private void CategoryBreadcrumb_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (IsCategorySelected)
+            {
+                AchievementsGrid?.ExitDrilledCategory();
+            }
+        }
+
         private static void OnPreviewSizingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is AchievementDataGridControl control && control.IsLoaded)

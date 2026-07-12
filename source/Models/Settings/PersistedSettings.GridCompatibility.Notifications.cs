@@ -145,9 +145,6 @@ namespace PlayniteAchievements.Models.Settings
                 nameof(FriendsOverviewAchievementColumnVisibility), nameof(FriendsOverviewAchievementColumnWidths), nameof(FriendsOverviewAchievementColumnOrder),
                 nameof(FriendsOverviewAchievementColumnAlignments), nameof(FriendsOverviewAchievementColumnVerticalAlignments), nameof(FriendsOverviewAchievementColumnHeaderAlignments));
 
-            // Achievement / ViewFriendsAchievements
-            Add(A, GridOptionKeys.Achievement.ViewFriendsAchievements, nameof(AchievementGridOptions.StartInCategoryMode), nameof(ViewFriendsAchievementsStartInCategoryMode));
-
             // Achievement / StartPageRecent
             Add(A, GridOptionKeys.Achievement.StartPageRecent, nameof(AchievementGridOptions.UnlockDateMode), nameof(StartPageAchievementsUnlockDateMode));
             Add(A, GridOptionKeys.Achievement.StartPageRecent, nameof(AchievementGridOptions.RowHeight), nameof(StartPageRecentAchievementsGridRowHeight));

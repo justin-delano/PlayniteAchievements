@@ -8,6 +8,12 @@ using PlayniteAchievements.ViewModels.Items;
 
 namespace PlayniteAchievements.Services
 {
+    public enum GameSummariesSortSurface
+    {
+        Overview,
+        FriendsOverview
+    }
+
     public readonly struct GameSummariesSortSpec
     {
         public GameSummariesSortSpec(GameSummariesSortMode mode, ListSortDirection direction)
@@ -95,7 +101,9 @@ namespace PlayniteAchievements.Services
 
     public static class GameSummariesSortHelper
     {
-        public static GameSummariesSortSpec GetConfiguredDefaultSort(PersistedSettings settings)
+        public static GameSummariesSortSpec GetConfiguredDefaultSort(
+            PersistedSettings settings,
+            GameSummariesSortSurface surface = GameSummariesSortSurface.Overview)
         {
             if (settings == null)
             {
@@ -104,24 +112,42 @@ namespace PlayniteAchievements.Services
                     ListSortDirection.Descending);
             }
 
-            return new GameSummariesSortSpec(
-                settings.OverviewGameSummariesGridSortMode,
-                settings.OverviewGameSummariesGridSortDescending
-                    ? ListSortDirection.Descending
-                    : ListSortDirection.Ascending);
+            return surface switch
+            {
+                GameSummariesSortSurface.FriendsOverview => new GameSummariesSortSpec(
+                    settings.FriendsOverviewGameSummariesGridSortMode,
+                    settings.FriendsOverviewGameSummariesGridSortDescending
+                        ? ListSortDirection.Descending
+                        : ListSortDirection.Ascending),
+                _ => new GameSummariesSortSpec(
+                    settings.OverviewGameSummariesGridSortMode,
+                    settings.OverviewGameSummariesGridSortDescending
+                        ? ListSortDirection.Descending
+                        : ListSortDirection.Ascending)
+            };
         }
 
-        public static bool IsConfiguredDefaultSortPropertyName(string propertyName)
+        public static bool IsConfiguredDefaultSortPropertyName(
+            string propertyName,
+            GameSummariesSortSurface surface = GameSummariesSortSurface.Overview)
         {
-            return propertyName == nameof(PersistedSettings.OverviewGameSummariesGridSortMode) ||
-                   propertyName == nameof(PersistedSettings.OverviewGameSummariesGridSortDescending);
+            return surface switch
+            {
+                GameSummariesSortSurface.FriendsOverview =>
+                    propertyName == nameof(PersistedSettings.FriendsOverviewGameSummariesGridSortMode) ||
+                    propertyName == nameof(PersistedSettings.FriendsOverviewGameSummariesGridSortDescending),
+                _ =>
+                    propertyName == nameof(PersistedSettings.OverviewGameSummariesGridSortMode) ||
+                    propertyName == nameof(PersistedSettings.OverviewGameSummariesGridSortDescending)
+            };
         }
 
         public static void ApplySortIndicator(
             string currentSortPath,
             ListSortDirection? currentSortDirection,
             PersistedSettings settings,
-            Action<string, ListSortDirection?> applyIndicator)
+            Action<string, ListSortDirection?> applyIndicator,
+            GameSummariesSortSurface surface = GameSummariesSortSurface.Overview)
         {
             if (applyIndicator == null)
             {
@@ -134,7 +160,7 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            var configuredSort = GetConfiguredDefaultSort(settings);
+            var configuredSort = GetConfiguredDefaultSort(settings, surface);
             applyIndicator(
                 configuredSort.IndicatorSortMemberPath,
                 string.IsNullOrWhiteSpace(configuredSort.IndicatorSortMemberPath)
@@ -142,9 +168,13 @@ namespace PlayniteAchievements.Services
                     : configuredSort.Direction);
         }
 
-        public static void SortByConfiguredDefault(List<GameSummaryItem> items, PersistedSettings settings)
+        public static void SortByConfiguredDefault<TItem>(
+            List<TItem> items,
+            PersistedSettings settings,
+            GameSummariesSortSurface surface = GameSummariesSortSurface.Overview)
+            where TItem : GameSummaryItem
         {
-            var configuredSort = GetConfiguredDefaultSort(settings);
+            var configuredSort = GetConfiguredDefaultSort(settings, surface);
             Sort(items, configuredSort.SortMemberPath, configuredSort.Direction);
         }
 
@@ -158,14 +188,15 @@ namespace PlayniteAchievements.Services
             string clickedSortMemberPath,
             string currentSortPath,
             ListSortDirection? currentSortDirection,
-            PersistedSettings settings)
+            PersistedSettings settings,
+            GameSummariesSortSurface surface = GameSummariesSortSurface.Overview)
         {
             if (string.IsNullOrWhiteSpace(clickedSortMemberPath))
             {
                 return GameSummariesGridSortAction.None();
             }
 
-            var configuredSort = GetConfiguredDefaultSort(settings);
+            var configuredSort = GetConfiguredDefaultSort(settings, surface);
             var cycleDirections = GetCycleDirections(clickedSortMemberPath, configuredSort);
             if (cycleDirections.Count == 0)
             {
@@ -189,12 +220,13 @@ namespace PlayniteAchievements.Services
                 cycleDirections[currentDirectionIndex + 1]);
         }
 
-        public static bool TrySortItems(
-            List<GameSummaryItem> items,
+        public static bool TrySortItems<TItem>(
+            List<TItem> items,
             string sortMemberPath,
             ListSortDirection direction,
             ref string currentSortPath,
             ref ListSortDirection currentSortDirection)
+            where TItem : GameSummaryItem
         {
             if (items == null || string.IsNullOrWhiteSpace(sortMemberPath))
             {
@@ -212,18 +244,19 @@ namespace PlayniteAchievements.Services
                 return false;
             }
 
-            items.Sort(comparison);
+            items.Sort((a, b) => comparison(a, b));
             currentSortPath = sortMemberPath;
             currentSortDirection = direction;
             return true;
         }
 
-        private static bool TryReverse(
-            List<GameSummaryItem> items,
+        private static bool TryReverse<TItem>(
+            List<TItem> items,
             string sortMemberPath,
             ListSortDirection direction,
             ref string currentSortPath,
             ref ListSortDirection currentSortDirection)
+            where TItem : GameSummaryItem
         {
             if (!string.Equals(currentSortPath, sortMemberPath, StringComparison.Ordinal) ||
                 currentSortDirection != ListSortDirection.Ascending ||
@@ -486,7 +519,8 @@ namespace PlayniteAchievements.Services
             return direction == ListSortDirection.Ascending ? comparison : -comparison;
         }
 
-        private static void Sort(List<GameSummaryItem> items, string sortMemberPath, ListSortDirection direction)
+        private static void Sort<TItem>(List<TItem> items, string sortMemberPath, ListSortDirection direction)
+            where TItem : GameSummaryItem
         {
             if (items == null)
             {
@@ -499,7 +533,7 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            items.Sort(comparison);
+            items.Sort((a, b) => comparison(a, b));
         }
     }
 }

@@ -105,30 +105,37 @@ namespace PlayniteAchievements.Providers.Xbox
                     _settings.Persisted.ScanDelayMs,
                     _settings.Persisted.MaxRetryAttempts);
 
-                return await ProviderRefreshExecutor.RunProviderGamesAsync(
-                    gamesToRefresh,
-                    onGameStarting,
-                    async (game, token) =>
-                    {
-                        var data = await rateLimiter.ExecuteWithRetryAsync(
-                            () => FetchGameDataAsync(game, authData, xuid, rarityEnricher, token),
-                            IsTransientError,
-                            token).ConfigureAwait(false);
-
-                        return new ProviderRefreshExecutor.ProviderGameResult
+                try
+                {
+                    return await ProviderRefreshExecutor.RunProviderGamesAsync(
+                        gamesToRefresh,
+                        onGameStarting,
+                        async (game, token) =>
                         {
-                            Data = data
-                        };
-                    },
-                    onGameCompleted,
-                    isAuthRequiredException: ex => ex is XboxAuthRequiredException,
-                    onGameError: (game, ex, consecutiveErrors) =>
-                    {
-                        _logger?.Warn($"[XboxAch] Skipping game after retries: {game?.Name}. Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
-                    },
-                    delayBetweenGamesAsync: null,
-                    delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
-                    cancel).ConfigureAwait(false);
+                            var data = await rateLimiter.ExecuteWithRetryAsync(
+                                () => FetchGameDataAsync(game, authData, xuid, rarityEnricher, token),
+                                IsTransientError,
+                                token).ConfigureAwait(false);
+
+                            return new ProviderRefreshExecutor.ProviderGameResult
+                            {
+                                Data = data
+                            };
+                        },
+                        onGameCompleted,
+                        isAuthRequiredException: ex => ex is XboxAuthRequiredException,
+                        onGameError: (game, ex, consecutiveErrors) =>
+                        {
+                            _logger?.Warn($"[XboxAch] Skipping game after retries: {game?.Name}. Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
+                        },
+                        delayBetweenGamesAsync: null,
+                        delayAfterErrorAsync: (consecutiveErrors, token) => rateLimiter.DelayAfterErrorAsync(consecutiveErrors, token),
+                        cancel).ConfigureAwait(false);
+                }
+                finally
+                {
+                    rarityEnricher?.Dispose();
+                }
             }
             catch (XboxAuthRequiredException)
             {

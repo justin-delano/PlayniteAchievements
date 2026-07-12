@@ -246,25 +246,65 @@
         </Grid>
 
         <!-- Achievements List -->
-        <controls:AchievementDataGridControl x:Name="AchievementsDataGridControl"
-                                             Grid.Row="2"
-                                             Margin="16,0,16,0"
-                                             Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}"
-                                             ItemsSource="{Binding Achievements}"
-                                             RevealCommand="{Binding RevealAchievementCommand}"
-                                             ColumnSettingsKey="SingleGame"
-                                             EnableCategoryMode="True"
-                                             CategoryColumnSettingsKey="ViewAchievementsCategorySummaries"
-                                             DataGridMaxHeight="{x:Static sys:Double.NaN}"
-                                             ShowRarityGlow="{Binding ShowRarityGlow}"
-                                             ColorNamesByRarity="{Binding ColorNamesByRarity}"
-                                             FixedRowHeight="{Binding SingleGameGridRowHeight}"
-                                             ControlBar="{Binding AchievementsControlBar}"
-                                             ShowControlBar="{Binding ShowAchievementGridControlBar}"
-                                             UseExternalSorting="True"
-                                             Sorting="OnGridSorting"
-                                             RowPreviewMouseRightButtonDown="AchievementRow_PreviewMouseRightButtonDown"
-                                             RowPreviewMouseRightButtonUp="AchievementRow_PreviewMouseRightButtonUp"/>
+        <Grid Grid.Row="2"
+              Margin="16,0,16,0"
+              Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Breadcrumb header, shown only once a category is selected -->
+            <StackPanel Grid.Row="0"
+                        Orientation="Horizontal"
+                        Margin="0,0,0,8"
+                        Visibility="{Binding IsCategorySelected, Converter={StaticResource BoolToVis}}">
+                <TextBlock Text="{Binding GameName}"
+                        FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                        FontWeight="Bold"
+                        Foreground="{DynamicResource PlayAch.Brush.Text}"
+                        TextTrimming="CharacterEllipsis"
+                        VerticalAlignment="Center"
+                        Cursor="Hand"
+                        TextDecorations="Underline"
+                        MouseLeftButtonUp="GameNameBreadcrumb_Click"/>
+                <TextBlock Text=" > "
+                        FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                        Foreground="{DynamicResource PlayAch.Brush.Text}"
+                        Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                        VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding SelectedCategoryName}"
+                        FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                        FontWeight="Bold"
+                        Foreground="{DynamicResource PlayAch.Brush.Text}"
+                        TextTrimming="CharacterEllipsis"
+                        VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <controls:AchievementDataGridControl x:Name="AchievementsDataGridControl"
+                                                 Grid.Row="1"
+                                                 ItemsSource="{Binding Achievements}"
+                                                 RevealCommand="{Binding RevealAchievementCommand}"
+                                                 ColumnSettingsKey="SingleGame"
+                                                 EnableCategoryMode="True"
+                                                 HideBackButton="True"
+                                                 HideCategorySummaryRow="{Binding HideCategorySummaryRow}"
+                                                 DrilledCategory="{Binding SelectedCategoryName, Mode=OneWayToSource}"
+                                                 CategoryUseCoverImages="{Binding CategorySummariesUseCoverImages}"
+                                                 CategoryShowColumnHeaders="{Binding CategorySummariesShowColumnHeaders}"
+                                                 CategoryFixedRowHeight="{Binding CategorySummariesGridRowHeight}"
+                                                 CategoryColumnSettingsKey="ViewAchievementsCategorySummaries"
+                                                 DataGridMaxHeight="{x:Static sys:Double.NaN}"
+                                                 ShowRarityGlow="{Binding ShowRarityGlow}"
+                                                 ColorNamesByRarity="{Binding ColorNamesByRarity}"
+                                                 FixedRowHeight="{Binding SingleGameGridRowHeight}"
+                                                 ControlBar="{Binding AchievementsControlBar}"
+                                                 ShowControlBar="{Binding ShowAchievementGridControlBar}"
+                                                 UseExternalSorting="True"
+                                                 Sorting="OnGridSorting"
+                                                 RowPreviewMouseRightButtonDown="AchievementRow_PreviewMouseRightButtonDown"
+                                                 RowPreviewMouseRightButtonUp="AchievementRow_PreviewMouseRightButtonUp"/>
+        </Grid>
     </Grid>
     </Border>
 </UserControl>

@@ -516,6 +516,38 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        public static readonly DependencyProperty HideBackButtonProperty =
+            DependencyProperty.Register(nameof(HideBackButton), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        // When true, the in-grid Back button is never created, letting a host's own breadcrumb
+        // header (which calls ExitDrilledCategory()) be the only way back to the category list.
+        public bool HideBackButton
+        {
+            get => (bool)GetValue(HideBackButtonProperty);
+            set => SetValue(HideBackButtonProperty, value);
+        }
+
+        public static readonly DependencyProperty HideCategorySummaryRowProperty =
+            DependencyProperty.Register(nameof(HideCategorySummaryRow), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnHideCategorySummaryRowChanged));
+
+        // When true, the in-grid category summary row (DrillHeaderVisible) stays hidden once a
+        // category is selected, giving the achievement list the full vertical space.
+        public bool HideCategorySummaryRow
+        {
+            get => (bool)GetValue(HideCategorySummaryRowProperty);
+            set => SetValue(HideCategorySummaryRowProperty, value);
+        }
+
+        private static void OnHideCategorySummaryRowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.ApplyCategoryViewState();
+            }
+        }
+
         public static readonly DependencyProperty CategoryColumnSettingsKeyProperty =
             DependencyProperty.Register(nameof(CategoryColumnSettingsKey), typeof(string),
                 typeof(AchievementDataGridControl), new PropertyMetadata(null));
@@ -527,6 +559,38 @@ namespace PlayniteAchievements.Views.Controls
         {
             get => (string)GetValue(CategoryColumnSettingsKeyProperty);
             set => SetValue(CategoryColumnSettingsKeyProperty, value);
+        }
+
+        public static readonly DependencyProperty CategoryUseCoverImagesProperty =
+            DependencyProperty.Register(nameof(CategoryUseCoverImages), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        // Independent cover-images toggle for the embedded category grids (list + drill header),
+        // kept distinct from the achievement grid's own UseCoverImages.
+        public bool CategoryUseCoverImages
+        {
+            get => (bool)GetValue(CategoryUseCoverImagesProperty);
+            set => SetValue(CategoryUseCoverImagesProperty, value);
+        }
+
+        public static readonly DependencyProperty CategoryShowColumnHeadersProperty =
+            DependencyProperty.Register(nameof(CategoryShowColumnHeaders), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(true));
+
+        public bool CategoryShowColumnHeaders
+        {
+            get => (bool)GetValue(CategoryShowColumnHeadersProperty);
+            set => SetValue(CategoryShowColumnHeadersProperty, value);
+        }
+
+        public static readonly DependencyProperty CategoryFixedRowHeightProperty =
+            DependencyProperty.Register(nameof(CategoryFixedRowHeight), typeof(double?),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        public double? CategoryFixedRowHeight
+        {
+            get => (double?)GetValue(CategoryFixedRowHeightProperty);
+            set => SetValue(CategoryFixedRowHeightProperty, value);
         }
 
         public static readonly DependencyProperty CategorySummariesProperty =
@@ -779,10 +843,11 @@ namespace PlayniteAchievements.Views.Controls
                     () => _isCategoryMode,
                     SetCategoryMode,
                     CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"),
-                    CanEnterCategoryMode);
+                    CanEnterCategoryMode,
+                    HasMultipleCategories);
             }
 
-            if (_backButton == null)
+            if (_backButton == null && !HideBackButton)
             {
                 _backButton = new GridActionButton(
                     CategoryModeText("LOCPlayAch_Common_Back", "Back"),
@@ -842,9 +907,10 @@ namespace PlayniteAchievements.Views.Controls
             return persisted.GridOptions.GetAchievement(id).StartInCategoryMode;
         }
 
-        // Positions the category-mode Back and toggle controls for the current mode: in flat mode the
-        // toggle is the left half of the segmented unit beside the category dropdown (trailing items);
-        // in category mode both Back and the toggle move to the leading zone, left of the search box.
+        // Positions the category-mode Back and toggle controls for the current mode. The toggle always
+        // stays in the trailing (right-side) items, spliced beside the category dropdown in flat mode;
+        // it never relocates across the bar. Only the Back button moves to the leading zone, left of
+        // the search box, while in category mode.
         private void UpdateModeControlPlacement()
         {
             var bar = _controlBarWithToggle;
@@ -853,9 +919,22 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
+            if (!bar.Items.Contains(_modeToggle))
+            {
+                var insertIndex = bar.Items.Count;
+                for (var i = 0; i < bar.Items.Count; i++)
+                {
+                    if (bar.Items[i] is GridMultiSelectFilter)
+                    {
+                        insertIndex = i;
+                    }
+                }
+
+                bar.Items.Insert(Math.Min(insertIndex, bar.Items.Count), _modeToggle);
+            }
+
             if (_isCategoryMode)
             {
-                bar.Items.Remove(_modeToggle);
                 if (_connectedCategoryFilter != null)
                 {
                     _connectedCategoryFilter.ConnectedLeft = false;
@@ -865,33 +944,12 @@ namespace PlayniteAchievements.Views.Controls
                 {
                     bar.LeadingItems.Insert(0, _backButton);
                 }
-
-                if (!bar.LeadingItems.Contains(_modeToggle))
-                {
-                    bar.LeadingItems.Add(_modeToggle);
-                }
             }
             else
             {
                 if (_backButton != null)
                 {
                     bar.LeadingItems.Remove(_backButton);
-                }
-
-                bar.LeadingItems.Remove(_modeToggle);
-
-                if (!bar.Items.Contains(_modeToggle))
-                {
-                    var insertIndex = bar.Items.Count;
-                    for (var i = 0; i < bar.Items.Count; i++)
-                    {
-                        if (bar.Items[i] is GridMultiSelectFilter)
-                        {
-                            insertIndex = i;
-                        }
-                    }
-
-                    bar.Items.Insert(Math.Min(insertIndex, bar.Items.Count), _modeToggle);
                 }
 
                 if (_connectedCategoryFilter != null)
@@ -1089,7 +1147,7 @@ namespace PlayniteAchievements.Views.Controls
             var drill = grouping && _drilledCategory != null;
             var list = grouping && !drill;
             CategoryListVisible = list;
-            DrillHeaderVisible = drill;
+            DrillHeaderVisible = drill && !HideCategorySummaryRow;
             AchievementGridVisible = !list;
             DrilledCategory = drill ? _drilledCategory : null;
             RecomputeEffectiveAchievements();
@@ -1340,6 +1398,10 @@ namespace PlayniteAchievements.Views.Controls
 
             _drillItems.ReplaceAll(items);
         }
+
+        // Public entry point for a host's own breadcrumb header to navigate back to the category
+        // summary list, for surfaces where HideBackButton suppresses the in-grid Back button.
+        public void ExitDrilledCategory() => CategoryBackToList();
 
         private void CategoryBackToList()
         {

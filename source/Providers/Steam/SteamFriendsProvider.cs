@@ -18,9 +18,11 @@ namespace PlayniteAchievements.Providers.Steam
         private readonly SteamScanner _scanner;
         private readonly SteamWebApiTokenResolver _tokenResolver;
         private readonly SteamHuntersCategoryEnricher _steamHuntersCategoryEnricher;
+        private readonly SteamSessionManager _sessionManager;
         private readonly ILogger _logger;
         private readonly object _refreshStateLock = new object();
         private TokenState _preparedRefreshTokenState;
+        private IDisposable _refreshViewLease;
         private Dictionary<int, Task<SchemaAndPercentages>> _friendRefreshSchemaTasks =
             new Dictionary<int, Task<SchemaAndPercentages>>();
 
@@ -30,6 +32,7 @@ namespace PlayniteAchievements.Providers.Steam
             SteamScanner scanner,
             SteamWebApiTokenResolver tokenResolver,
             SteamHuntersCategoryEnricher steamHuntersCategoryEnricher,
+            SteamSessionManager sessionManager,
             ILogger logger)
         {
             _steamClient = steamClient ?? throw new ArgumentNullException(nameof(steamClient));
@@ -37,6 +40,7 @@ namespace PlayniteAchievements.Providers.Steam
             _scanner = scanner ?? throw new ArgumentNullException(nameof(scanner));
             _tokenResolver = tokenResolver ?? throw new ArgumentNullException(nameof(tokenResolver));
             _steamHuntersCategoryEnricher = steamHuntersCategoryEnricher;
+            _sessionManager = sessionManager ?? throw new ArgumentNullException(nameof(sessionManager));
             _logger = logger;
         }
 
@@ -47,9 +51,18 @@ namespace PlayniteAchievements.Providers.Steam
             EndRefresh();
             _steamHuntersCategoryEnricher?.ClearCache();
 
+            // Hold one shared offscreen CEF view for the whole friend refresh (released in
+            // EndRefresh) so per-friend page fetches that fall back to CEF reuse a single
+            // browser instance instead of creating one per page.
+            lock (_refreshStateLock)
+            {
+                _refreshViewLease = _sessionManager.BeginOffscreenViewLease();
+            }
+
             var session = await ResolveSteamSessionFromTokenResolverAsync(cancel).ConfigureAwait(false);
             if (!session.IsSuccess)
             {
+                EndRefresh();
                 return FriendsProviderResult<FriendsRefreshPreparation>.Failed(
                     session.ErrorMessage,
                     authRequired: session.AuthRequired);
@@ -69,11 +82,16 @@ namespace PlayniteAchievements.Providers.Steam
 
         public void EndRefresh()
         {
+            IDisposable viewLease;
             lock (_refreshStateLock)
             {
                 _preparedRefreshTokenState = null;
                 _friendRefreshSchemaTasks.Clear();
+                viewLease = _refreshViewLease;
+                _refreshViewLease = null;
             }
+
+            viewLease?.Dispose();
         }
 
         public async Task<FriendsProviderResult<IReadOnlyList<FriendIdentity>>> GetFriendsAsync(CancellationToken cancel)

@@ -24,7 +24,8 @@ namespace PlayniteAchievements.Services.Achievements
         OverviewSelectedGame,
         OverviewRecentAchievements,
         SingleGame,
-        AchievementDataGrid
+        AchievementDataGrid,
+        FriendsOverviewRecentAchievements
     }
 
     public struct AchievementSortSpec
@@ -118,6 +119,7 @@ namespace PlayniteAchievements.Services.Achievements
                     AchievementSortSurface.OverviewRecentAchievements => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
                     AchievementSortSurface.SingleGame => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
                     AchievementSortSurface.AchievementDataGrid => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
+                    AchievementSortSurface.FriendsOverviewRecentAchievements => new AchievementSortSpec(CompactListSortMode.UnlockTime, ListSortDirection.Descending),
                     _ => new AchievementSortSpec(CompactListSortMode.None, ListSortDirection.Ascending)
                 };
             }
@@ -145,6 +147,9 @@ namespace PlayniteAchievements.Services.Achievements
                 AchievementSortSurface.AchievementDataGrid => new AchievementSortSpec(
                     settings.AchievementDataGridSortMode,
                     settings.AchievementDataGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
+                AchievementSortSurface.FriendsOverviewRecentAchievements => new AchievementSortSpec(
+                    settings.FriendsOverviewAchievementsGridSortMode,
+                    settings.FriendsOverviewAchievementsGridSortDescending ? ListSortDirection.Descending : ListSortDirection.Ascending),
                 _ => new AchievementSortSpec(CompactListSortMode.None, ListSortDirection.Ascending)
             };
         }
@@ -406,6 +411,9 @@ namespace PlayniteAchievements.Services.Achievements
                 AchievementSortSurface.AchievementDataGrid =>
                     propertyName == nameof(PersistedSettings.AchievementDataGridSortMode) ||
                     propertyName == nameof(PersistedSettings.AchievementDataGridSortDescending),
+                AchievementSortSurface.FriendsOverviewRecentAchievements =>
+                    propertyName == nameof(PersistedSettings.FriendsOverviewAchievementsGridSortMode) ||
+                    propertyName == nameof(PersistedSettings.FriendsOverviewAchievementsGridSortDescending),
                 _ => false
             };
         }
@@ -544,14 +552,15 @@ namespace PlayniteAchievements.Services.Achievements
             return primary ?? fallback ?? new List<AchievementDetail>();
         }
 
-        public static bool TrySortItems(
-            List<AchievementDisplayItem> items,
+        public static bool TrySortItems<TItem>(
+            List<TItem> items,
             string sortMemberPath,
             ListSortDirection direction,
             AchievementSortScope scope,
             ref string currentSortPath,
             ref ListSortDirection? currentSortDirection,
-            IReadOnlyDictionary<AchievementDisplayItem, int> stableOrder = null)
+            IReadOnlyDictionary<TItem, int> stableOrder = null)
+            where TItem : AchievementDisplayItem
         {
             if (items == null || items.Count == 0 || string.IsNullOrWhiteSpace(sortMemberPath))
             {
@@ -706,13 +715,19 @@ namespace PlayniteAchievements.Services.Achievements
             return indexed.Select(item => item.Detail).ToList();
         }
 
-        public static Comparison<AchievementDisplayItem> WithStableOrder(
+        public static Comparison<TItem> WithStableOrder<TItem>(
             Comparison<AchievementDisplayItem> comparison,
-            IReadOnlyDictionary<AchievementDisplayItem, int> stableOrder)
+            IReadOnlyDictionary<TItem, int> stableOrder)
+            where TItem : AchievementDisplayItem
         {
-            if (comparison == null || stableOrder == null || stableOrder.Count == 0)
+            if (comparison == null)
             {
-                return comparison;
+                return null;
+            }
+
+            if (stableOrder == null || stableOrder.Count == 0)
+            {
+                return (a, b) => comparison(a, b);
             }
 
             return (a, b) =>
