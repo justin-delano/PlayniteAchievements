@@ -917,6 +917,8 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewBarCharts => _settings?.Persisted?.ShowOverviewBarCharts ?? true;
 
+        public bool EnableFriendsFeatures => _settings?.Persisted?.EnableFriendsFeatures ?? true;
+
         public bool ShowOverviewGameMetadataPlatform => _settings?.Persisted?.ShowOverviewGameMetadataPlatform ?? true;
 
         public bool ShowOverviewGameMetadataPlaytime => _settings?.Persisted?.ShowOverviewGameMetadataPlaytime ?? true;
@@ -2349,6 +2351,7 @@ namespace PlayniteAchievements.ViewModels
                 RaiseOverviewPieChartVisibilityChanged();
                 OnPropertyChanged(nameof(ShowOverviewPiePercentages));
                 OnPropertyChanged(nameof(ShowOverviewBarCharts));
+                OnPropertyChanged(nameof(EnableFriendsFeatures));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataPlatform));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataPlaytime));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataRegion));
@@ -2423,6 +2426,10 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.ShowOverviewBarCharts))
             {
                 OnPropertyChanged(nameof(ShowOverviewBarCharts));
+            }
+            else if (propertyName == nameof(PersistedSettings.EnableFriendsFeatures))
+            {
+                OnPropertyChanged(nameof(EnableFriendsFeatures));
             }
             else if (propertyName == nameof(PersistedSettings.ShowOverviewGameMetadataPlatform))
             {
