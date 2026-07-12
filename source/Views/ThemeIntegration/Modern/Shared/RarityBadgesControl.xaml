@@ -44,6 +44,7 @@
                            VerticalAlignment="Center"
                            Style="{StaticResource RarityIcon}"/>
                     <TextBlock Text="{Binding Count}"
+                               Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
                                VerticalAlignment="Center"
                                Margin="{StaticResource PlayAch.Thickness.Left.Xs}"
                                FontSize="{DynamicResource PlayAch.FontSize.Caption}"
