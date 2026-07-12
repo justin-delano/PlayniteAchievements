@@ -377,6 +377,10 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowRarityBar { get; set; } = true;
 
+        public bool HideFriendSpoilers { get; set; }
+
+        public virtual bool UnlockedForVisibility => Unlocked;
+
         public bool IsRevealed { get; set; }
 
         public static AchievementDisplayItem Create(
