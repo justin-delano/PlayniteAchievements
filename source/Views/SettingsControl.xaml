@@ -1449,6 +1449,33 @@
                                         </Border>
                                     </StackPanel>
                                 </Border>
+
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CategoryGrid}"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_CategoryGridUseCoverImages}"
+                                                          IsChecked="{Binding Persisted.FriendsOverviewCategorySummariesUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCategoryGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowFriendsOverviewCategorySummariesGridColumnHeaders}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.FriendsOverviewCategorySummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </ScrollViewer>
 
@@ -2238,6 +2265,32 @@
                                         </Border>
                                     </StackPanel>
                                 </Border>
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CategoryGrid}"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_CategoryGridUseCoverImages}"
+                                                          IsChecked="{Binding Persisted.OverviewSelectedGameCategorySummariesUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCategoryGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowOverviewSelectedGameCategorySummariesGridColumnHeaders}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.OverviewSelectedGameCategorySummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
                             </StackPanel>
                         </ScrollViewer>
 
@@ -2400,6 +2453,33 @@
                                     </StackPanel>
                                 </Border>
 
+                                <Border Style="{StaticResource SectionBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CategoryGrid}"
+                                                   Style="{StaticResource SectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+                                        <Border Style="{StaticResource SettingGroupCardStyle}">
+                                            <StackPanel>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_CategoryGridUseCoverImages}"
+                                                          IsChecked="{Binding Persisted.ViewAchievementsCategorySummariesUseCoverImages}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCategoryGridColumnHeaders}"
+                                                          IsChecked="{Binding Persisted.ShowViewAchievementsCategorySummariesGridColumnHeaders}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                               VerticalAlignment="Center"/>
+                                                    <TextBox Text="{Binding Persisted.ViewAchievementsCategorySummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                             Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                                    <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
+                                                               VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </StackPanel>
+                                </Border>
+
                                 <Border Style="{StaticResource SectionBorderStyle}"
                                         Background="{DynamicResource PlayAch.Brush.Panel}"
                                         BorderBrush="{DynamicResource PlayAch.Brush.Border}">
@@ -2489,6 +2569,23 @@
                                             <TextBox Text="{Binding Persisted.DesktopThemeAchievementGridMaxRows, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableIntTextConverter}, ConverterParameter=1}"
                                                      Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RowsUnlimitedUnit}"
+                                                       VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
+                                        </StackPanel>
+                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_CategoryGrid}"
+                                                   Style="{StaticResource SubSectionHeaderStyle}"
+                                                   Margin="{StaticResource PlayAch.Thickness.Top.Md}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_CategoryGridUseCoverImages}"
+                                                  IsChecked="{Binding Persisted.DesktopThemeCategorySummariesUseCoverImages}"
+                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCategoryGridColumnHeaders}"
+                                                  IsChecked="{Binding Persisted.ShowDesktopThemeCategorySummariesGridColumnHeaders}"
+                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                        <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
+                                                       VerticalAlignment="Center"/>
+                                            <TextBox Text="{Binding Persisted.DesktopThemeCategorySummariesGridRowHeight, UpdateSourceTrigger=LostFocus, Converter={StaticResource NullableDoubleTextConverter}, ConverterParameter=32}"
+                                                     Width="80" Margin="{StaticResource PlayAch.Thickness.Left.Sm}"/>
+                                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PixelsAutomaticUnit}"
                                                        VerticalAlignment="Center" Margin="{StaticResource PlayAch.Thickness.Left.Xs}" Opacity="{StaticResource PlayAch.Opacity.Muted}"/>
                                         </StackPanel>
                                         <TextBlock Text="{DynamicResource LOCPlayAch_Settings_SortBy}"
