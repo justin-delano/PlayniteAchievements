@@ -1411,10 +1411,6 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
                                                           IsChecked="{Binding Persisted.FriendsOverviewAchievementsHideCategorySummaryRow}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode_ViewFriends}"
-                                                          IsChecked="{Binding Persisted.ViewFriendsAchievementsStartInCategoryMode}"
-                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"
-                                                          ToolTip="{DynamicResource LOCPlayAch_Menu_ViewFriendsAchievements}"/>
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
                                                                VerticalAlignment="Center"/>
