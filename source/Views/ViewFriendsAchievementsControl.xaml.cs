@@ -226,6 +226,60 @@ namespace PlayniteAchievements.Views
             }
         }
 
+        // Clicking the already-selected friend clears the selection (same toggle behavior as the
+        // Friends Overview summary grids).
+        private void FriendRow_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!TryResolveContextMenuRow(sender, e, out var row) ||
+                !(row.DataContext is FriendSummaryItem))
+            {
+                return;
+            }
+
+            var grid = VisualTreeHelpers.FindVisualParent<DataGrid>(row);
+            if (grid == null || !IsSelectedRow(row, grid))
+            {
+                return;
+            }
+
+            if (ViewModel != null)
+            {
+                ViewModel.SelectedFriend = null;
+            }
+
+            ClearGridSelection(grid);
+            e.Handled = true;
+        }
+
+        private static bool IsSelectedRow(DataGridRow row, DataGrid grid)
+        {
+            return row != null &&
+                   grid != null &&
+                   (row.IsSelected ||
+                   ReferenceEquals(grid.SelectedItem, row.DataContext) ||
+                   ReferenceEquals(grid.CurrentItem, row.DataContext));
+        }
+
+        private static void ClearGridSelection(DataGrid grid)
+        {
+            if (grid == null)
+            {
+                return;
+            }
+
+            try
+            {
+                grid.SelectedItem = null;
+                grid.UnselectAll();
+                grid.CurrentItem = null;
+                Keyboard.ClearFocus();
+            }
+            catch
+            {
+                // Best effort; focus clearing should not break row toggling.
+            }
+        }
+
         private void FriendRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (TryResolveContextMenuRow(sender, e, out var row))

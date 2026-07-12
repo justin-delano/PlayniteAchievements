@@ -176,7 +176,8 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Text}"
                                    Opacity="{StaticResource PlayAch.Opacity.Subtle}"
                                    Margin="{StaticResource PlayAch.Thickness.Left.Sm}"
-                                   VerticalAlignment="Center"/>
+                                   VerticalAlignment="Center"
+                                   Visibility="{Binding HasFriendSelection, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                 </Border>
 
@@ -192,6 +193,7 @@
                                                      ShowColumnHeaders="{Binding ShowFriendSummariesGridColumnHeaders}"
                                                      FixedRowHeight="{Binding FriendSummariesGridRowHeight}"
                                                      DelayInitialRenderUntilNormalized="True"
+                                                     RowPreviewMouseLeftButtonDown="FriendRow_PreviewMouseLeftButtonDown"
                                                      RowPreviewMouseRightButtonDown="FriendRow_PreviewMouseRightButtonDown"
                                                      RowPreviewMouseRightButtonUp="FriendRow_PreviewMouseRightButtonUp"/>
 
