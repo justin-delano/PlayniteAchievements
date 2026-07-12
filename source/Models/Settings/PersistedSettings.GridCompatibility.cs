@@ -12,7 +12,6 @@ namespace PlayniteAchievements.Models.Settings
         private AchievementGridOptions AchievementOverviewRecent => GridOptions.GetAchievement(GridOptionKeys.Achievement.OverviewRecent);
         private AchievementGridOptions AchievementOverviewSelectedGame => GridOptions.GetAchievement(GridOptionKeys.Achievement.OverviewSelectedGame);
         private AchievementGridOptions AchievementFriendsOverviewRecent => GridOptions.GetAchievement(GridOptionKeys.Achievement.FriendsOverviewRecent);
-        private AchievementGridOptions AchievementViewFriendsAchievements => GridOptions.GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements);
         private AchievementGridOptions AchievementStartPageRecent => GridOptions.GetAchievement(GridOptionKeys.Achievement.StartPageRecent);
         private AchievementGridOptions AchievementStartPageFriendRecent => GridOptions.GetAchievement(GridOptionKeys.Achievement.StartPageFriendAchievements);
         private AchievementGridOptions AchievementDesktopTheme => GridOptions.GetAchievement(GridOptionKeys.Achievement.DesktopTheme);
@@ -63,7 +62,6 @@ namespace PlayniteAchievements.Models.Settings
         [JsonIgnore] public bool OverviewSelectedGameAchievementsStartInCategoryMode { get => AchievementOverviewSelectedGame.StartInCategoryMode; set => SetGridValue(OverviewSelectedGameAchievementsStartInCategoryMode, v => AchievementOverviewSelectedGame.StartInCategoryMode = v, value); }
         [JsonIgnore] public bool ViewAchievementsAchievementGridStartInCategoryMode { get => AchievementSingleGame.StartInCategoryMode; set => SetGridValue(ViewAchievementsAchievementGridStartInCategoryMode, v => AchievementSingleGame.StartInCategoryMode = v, value); }
         [JsonIgnore] public bool FriendsOverviewAchievementsStartInCategoryMode { get => AchievementFriendsOverviewRecent.StartInCategoryMode; set => SetGridValue(FriendsOverviewAchievementsStartInCategoryMode, v => AchievementFriendsOverviewRecent.StartInCategoryMode = v, value); }
-        [JsonIgnore] public bool ViewFriendsAchievementsStartInCategoryMode { get => AchievementViewFriendsAchievements.StartInCategoryMode; set => SetGridValue(ViewFriendsAchievementsStartInCategoryMode, v => AchievementViewFriendsAchievements.StartInCategoryMode = v, value); }
         [JsonIgnore] public bool DesktopThemeAchievementGridStartInCategoryMode { get => AchievementDesktopTheme.StartInCategoryMode; set => SetGridValue(DesktopThemeAchievementGridStartInCategoryMode, v => AchievementDesktopTheme.StartInCategoryMode = v, value); }
         [JsonIgnore] public bool OverviewSelectedGameAchievementsHideCategorySummaryRow { get => AchievementOverviewSelectedGame.HideCategorySummaryRow; set => SetGridValue(OverviewSelectedGameAchievementsHideCategorySummaryRow, v => AchievementOverviewSelectedGame.HideCategorySummaryRow = v, value); }
         [JsonIgnore] public bool ViewAchievementsAchievementGridHideCategorySummaryRow { get => AchievementSingleGame.HideCategorySummaryRow; set => SetGridValue(ViewAchievementsAchievementGridHideCategorySummaryRow, v => AchievementSingleGame.HideCategorySummaryRow = v, value); }
