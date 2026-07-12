@@ -279,7 +279,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Fetches JSON from a URL using offscreen WebView to bypass Cloudflare.
         /// </summary>
-        private async Task<string> FetchJsonViaWebViewAsync(string url, CancellationToken ct)
+        internal async Task<string> FetchJsonViaWebViewAsync(string url, CancellationToken ct)
         {
             var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
             {
@@ -545,6 +545,96 @@ namespace PlayniteAchievements.Providers.Exophase
 
             var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
             return await responseTask.ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Fetches a rendered profile page and reads the server-rendered JS globals the public API
+        /// needs: window.playerProfileId (the numeric top-level profile id the games-list endpoint
+        /// takes) and window.playerGames (the rich SSR blob holding the 50 most-recently-played games,
+        /// the only source of game-level canonical_id/appid). Both are read via script evaluation so
+        /// the browser has already decoded the \uXXXX-escaped SSR literal.
+        /// </summary>
+        internal async Task<ProfilePageFetchResult> FetchProfilePageWithGlobalsAsync(string url, CancellationToken ct)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return null;
+            }
+
+            var (snapshotLoaded, snapshotCookies) = AcquireFetchCookies();
+
+            var dispatchOperation = _playniteApi.MainView.UIDispatcher.InvokeAsync(async () =>
+            {
+                try
+                {
+                    return await _offscreenViews.WithNavigableViewAsync(async view =>
+                    {
+                        if (snapshotLoaded && snapshotCookies != null && snapshotCookies.Count > 0)
+                        {
+                            await RestoreCookiesAsync(view, snapshotCookies, ct).ConfigureAwait(false);
+                        }
+
+                        await view.NavigateAndWaitAsync(url, timeoutMs: 20000).ConfigureAwait(false);
+                        await Task.Delay(1000, ct).ConfigureAwait(false);
+
+                        var html = await view.GetPageSourceAsync().ConfigureAwait(false);
+                        if (string.IsNullOrWhiteSpace(html))
+                        {
+                            return null;
+                        }
+
+                        if (html.Contains("Just a moment") ||
+                            html.Contains("Cloudflare") ||
+                            html.Contains("Verifying you are human"))
+                        {
+                            _logger?.Warn("[Exophase] Cloudflare challenge detected on profile page");
+                            return null;
+                        }
+
+                        var result = new ProfilePageFetchResult { Html = html };
+
+                        var idEval = await view
+                            .EvaluateScriptAsync("(typeof window.playerProfileId !== 'undefined' && window.playerProfileId !== null) ? String(window.playerProfileId) : ''")
+                            .ConfigureAwait(false);
+                        if (idEval?.Success == true && idEval.Result != null)
+                        {
+                            result.PlayerProfileId = Convert.ToString(idEval.Result);
+                        }
+
+                        var gamesEval = await view
+                            .EvaluateScriptAsync("(typeof window.playerGames === 'string') ? window.playerGames : (window.playerGames ? JSON.stringify(window.playerGames) : '')")
+                            .ConfigureAwait(false);
+                        if (gamesEval?.Success == true && gamesEval.Result != null)
+                        {
+                            result.PlayerGamesJson = Convert.ToString(gamesEval.Result);
+                        }
+
+                        return result;
+                    }, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Error(ex, "[Exophase] Failed to fetch profile page with globals via WebView");
+                    return null;
+                }
+            });
+
+            var responseTask = await dispatchOperation.Task.ConfigureAwait(false);
+            return await responseTask.ConfigureAwait(false);
+        }
+
+        internal sealed class ProfilePageFetchResult
+        {
+            public string Html { get; set; }
+
+            // Raw string values of the SSR globals; empty when the page did not define them.
+            public string PlayerProfileId { get; set; }
+
+            public string PlayerGamesJson { get; set; }
         }
 
         /// <summary>
