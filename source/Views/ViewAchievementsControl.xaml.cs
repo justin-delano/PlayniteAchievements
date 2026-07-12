@@ -250,6 +250,14 @@ namespace PlayniteAchievements.Views
             menu.IsOpen = true;
         }
 
+        private void GameNameBreadcrumb_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (ViewModel?.IsCategorySelected == true)
+            {
+                AchievementsDataGridControl.ExitDrilledCategory();
+            }
+        }
+
         private void AchievementRow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (TryResolveContextMenuRow(sender, e, out var row))
