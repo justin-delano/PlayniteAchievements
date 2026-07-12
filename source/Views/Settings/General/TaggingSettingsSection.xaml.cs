@@ -1,4 +1,6 @@
 using System;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using Playnite.SDK;
@@ -13,6 +15,57 @@ namespace PlayniteAchievements.Views.Settings.General
     {
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly ILogger _logger;
+        private ObservableCollection<CompletionStatusOption> _completionStatuses;
+
+        /// <summary>
+        /// Represents a selectable completion status in the picker. Guid.Empty stands for
+        /// the default behavior (status named "Completed").
+        /// </summary>
+        public class CompletionStatusOption
+        {
+            public Guid Id { get; set; }
+            public string Name { get; set; }
+        }
+
+        /// <summary>
+        /// Completion statuses from the Playnite database, preceded by a default option.
+        /// Bound as the completion status ComboBox ItemsSource.
+        /// </summary>
+        public ObservableCollection<CompletionStatusOption> CompletionStatuses
+        {
+            get
+            {
+                if (_completionStatuses == null)
+                {
+                    _completionStatuses = BuildCompletionStatusOptions();
+                }
+
+                return _completionStatuses;
+            }
+        }
+
+        private ObservableCollection<CompletionStatusOption> BuildCompletionStatusOptions()
+        {
+            var options = new ObservableCollection<CompletionStatusOption>
+            {
+                new CompletionStatusOption
+                {
+                    Id = Guid.Empty,
+                    Name = L("LOCPlayAch_Common_Default", "Default")
+                }
+            };
+
+            var statuses = _plugin?.PlayniteApi?.Database?.CompletionStatuses;
+            if (statuses != null)
+            {
+                foreach (var status in statuses.OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase))
+                {
+                    options.Add(new CompletionStatusOption { Id = status.Id, Name = status.Name });
+                }
+            }
+
+            return options;
+        }
 
         public TaggingSettingsSection()
         {
