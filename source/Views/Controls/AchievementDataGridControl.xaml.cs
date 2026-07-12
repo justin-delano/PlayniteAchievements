@@ -558,6 +558,38 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(CategoryColumnSettingsKeyProperty, value);
         }
 
+        public static readonly DependencyProperty CategoryUseCoverImagesProperty =
+            DependencyProperty.Register(nameof(CategoryUseCoverImages), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        // Independent cover-images toggle for the embedded category grids (list + drill header),
+        // kept distinct from the achievement grid's own UseCoverImages.
+        public bool CategoryUseCoverImages
+        {
+            get => (bool)GetValue(CategoryUseCoverImagesProperty);
+            set => SetValue(CategoryUseCoverImagesProperty, value);
+        }
+
+        public static readonly DependencyProperty CategoryShowColumnHeadersProperty =
+            DependencyProperty.Register(nameof(CategoryShowColumnHeaders), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(true));
+
+        public bool CategoryShowColumnHeaders
+        {
+            get => (bool)GetValue(CategoryShowColumnHeadersProperty);
+            set => SetValue(CategoryShowColumnHeadersProperty, value);
+        }
+
+        public static readonly DependencyProperty CategoryFixedRowHeightProperty =
+            DependencyProperty.Register(nameof(CategoryFixedRowHeight), typeof(double?),
+                typeof(AchievementDataGridControl), new PropertyMetadata(null));
+
+        public double? CategoryFixedRowHeight
+        {
+            get => (double?)GetValue(CategoryFixedRowHeightProperty);
+            set => SetValue(CategoryFixedRowHeightProperty, value);
+        }
+
         public static readonly DependencyProperty CategorySummariesProperty =
             DependencyProperty.Register(nameof(CategorySummaries), typeof(IEnumerable<GameSummaryItem>),
                 typeof(AchievementDataGridControl), new PropertyMetadata(null));
