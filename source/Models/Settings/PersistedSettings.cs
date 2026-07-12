@@ -1232,7 +1232,9 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// When true, friend achievement rows for achievements the current user has not unlocked are hidden.
+        /// When true, friend achievement rows for achievements the current user has not unlocked
+        /// are obscured using the achievement visibility settings, as if locked for the user.
+        /// Applies to all friend surfaces (overview, friends achievements window, recent unlocks, themes).
         /// </summary>
         public bool FriendsOverviewHideSpoilers
         {
@@ -2103,6 +2105,7 @@ namespace PlayniteAchievements.Models.Settings
             ShowHiddenDescription = defaults.ShowHiddenDescription;
             ShowHiddenSuffix = defaults.ShowHiddenSuffix;
             ShowLockedIcon = defaults.ShowLockedIcon;
+            FriendsOverviewHideSpoilers = defaults.FriendsOverviewHideSpoilers;
             PreserveAchievementIconResolution = defaults.PreserveAchievementIconResolution;
             UseSeparateLockedIconsWhenAvailable = defaults.UseSeparateLockedIconsWhenAvailable;
             SeparateLockedIconEnabledGameIds = new HashSet<Guid>();
