@@ -1854,21 +1854,30 @@ namespace PlayniteAchievements.ViewModels
             UpdateScopedFilterOptions();
         }
 
-        // Type and category options reflect only the achievements currently in scope (selected
-        // friend/game and provider), so a single selected game lists just that game's types and
-        // categories rather than every game's. Recomputed from ApplyFilters as the selection changes.
+        // Type and category options reflect only the achievements currently in scope. They only
+        // make sense once a single game is selected (achievement types/categories are game-specific
+        // vocabulary); with no game selected they're cleared, which auto-hides the dropdowns via
+        // GridMultiSelectFilter.HasAvailableAction. Recomputed from ApplyFilters as selection changes.
         private void UpdateScopedFilterOptions()
         {
+            if (SelectedGame == null)
+            {
+                ReplaceOptions(TypeFilterOptions, Enumerable.Empty<string>());
+                ReplaceOptions(CategoryFilterOptions, Enumerable.Empty<string>());
+                PruneFilterSelections(_selectedTypeFilters, TypeFilterOptions);
+                PruneFilterSelections(_selectedCategoryFilters, CategoryFilterOptions);
+                OnPropertyChanged(nameof(SelectedTypeFilterText));
+                OnPropertyChanged(nameof(SelectedCategoryFilterText));
+                AchievementsControlBar?.Refresh();
+                return;
+            }
+
             var scoped = (HasAnySelection ? _allAchievements : _allRecentUnlocks)
-                .Where(achievement => MatchesProvider(achievement?.ProviderKey));
+                .Where(achievement => MatchesProvider(achievement?.ProviderKey))
+                .Where(achievement => IsSameGame(achievement, SelectedGame));
             if (SelectedFriend != null)
             {
                 scoped = scoped.Where(achievement => IsSameFriend(achievement, SelectedFriend));
-            }
-
-            if (SelectedGame != null)
-            {
-                scoped = scoped.Where(achievement => IsSameGame(achievement, SelectedGame));
             }
 
             var scopedList = scoped.ToList();
