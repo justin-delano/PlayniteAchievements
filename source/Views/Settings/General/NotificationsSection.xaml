@@ -44,7 +44,8 @@
                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableFriendUnlockToasts}"
                                   IsChecked="{Binding Persisted.EnableFriendUnlockToasts}"
                                   Margin="18,0,0,0"
-                                  IsEnabled="{Binding Persisted.EnableNotifications}"/>
+                                  IsEnabled="{Binding Persisted.EnableNotifications}"
+                                  Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}"/>
                     </StackPanel>
                 </Border>
 
