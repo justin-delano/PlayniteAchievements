@@ -31,16 +31,19 @@ namespace PlayniteAchievements
             return new StartPageExtensionArgs
             {
                 ExtensionName = L("LOCPlayAch_Title_PluginName", "Playnite Achievements"),
-                Views = StartPageViewCatalog.Views.Select(view => new StartPageViewArgsBase
-                {
-                    ViewId = view.ViewId,
-                    Name = L(view.NameKey, view.ViewId),
-                    Description = string.IsNullOrWhiteSpace(view.DescriptionKey)
-                        ? string.Empty
-                        : L(view.DescriptionKey, string.Empty),
-                    HasSettings = false,
-                    AllowMultipleInstances = false
-                }).ToList()
+                Views = StartPageViewCatalog.Views
+                    .Where(view => view.WidgetKind != StartPageWidgetKind.FriendsRecentUnlocksGrid
+                        || Settings.Persisted.EnableFriendsFeatures)
+                    .Select(view => new StartPageViewArgsBase
+                    {
+                        ViewId = view.ViewId,
+                        Name = L(view.NameKey, view.ViewId),
+                        Description = string.IsNullOrWhiteSpace(view.DescriptionKey)
+                            ? string.Empty
+                            : L(view.DescriptionKey, string.Empty),
+                        HasSettings = false,
+                        AllowMultipleInstances = false
+                    }).ToList()
             };
         }
 
@@ -107,7 +110,7 @@ namespace PlayniteAchievements
                 case StartPageWidgetKind.RecentUnlocksGrid:
                     return new StartPageRecentUnlocksGridViewModel(GetStartPageDataCoordinator(), Settings, _logger);
                 case StartPageWidgetKind.FriendsRecentUnlocksGrid:
-                    return _friendsRecentUnlocksDataCoordinator == null
+                    return _friendsRecentUnlocksDataCoordinator == null || !Settings.Persisted.EnableFriendsFeatures
                         ? null
                         : new StartPageFriendsRecentUnlocksGridViewModel(
                             _friendsRecentUnlocksDataCoordinator,
@@ -243,8 +246,11 @@ namespace PlayniteAchievements
 
             if (data is FriendAchievementDisplayItem)
             {
-                menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewFriendsAchievements",
-                    () => OpenViewFriendsAchievementsWindow(gameId)));
+                if (Settings.Persisted.EnableFriendsFeatures)
+                {
+                    menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewFriendsAchievements",
+                        () => OpenViewFriendsAchievementsWindow(gameId)));
+                }
                 menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_ViewAchievements",
                     () => OpenViewAchievementsWindow(gameId)));
                 menu.Items.Add(CreateStartPageMenuItem(resourceOwner, "LOCPlayAch_Menu_OpenGameInLibrary",
