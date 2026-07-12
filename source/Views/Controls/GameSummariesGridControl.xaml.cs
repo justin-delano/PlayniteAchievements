@@ -34,6 +34,15 @@ namespace PlayniteAchievements.Views.Controls
                 ["GameSummaryPlatform"] = DefaultPlatformColumnWidth
             };
 
+        // The View Friends Achievements summary strip is a single-row header; the image cell
+        // drives the row height from its column width, so it seeds narrower than list surfaces.
+        private static readonly IReadOnlyDictionary<string, double> CompactImageColumnWidthSeeds =
+            new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Cover"] = 48,
+                ["GameSummaryPlatform"] = 36
+            };
+
         private static readonly IReadOnlyDictionary<string, double> LegacyImageColumnRuntimeDefaults =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
             {
@@ -478,7 +487,7 @@ namespace PlayniteAchievements.Views.Controls
                 () => GetVisibilityByKey(settings),
                 map => SetVisibilityByKey(settings, map),
                 () => SavePluginSettings(settings),
-                defaultWidthSeeds: DefaultImageColumnWidthSeeds,
+                defaultWidthSeeds: ResolveDefaultWidthSeeds(),
                 getOrder: () => GetOrderByKey(settings),
                 setOrder: map => SetOrderByKey(settings, map),
                 getCellAlignments: () => GetAlignmentsByKey(settings),
@@ -891,6 +900,15 @@ namespace PlayniteAchievements.Views.Controls
             FriendsOverviewCategory,
             ViewFriendsAchievementsCategory,
             DesktopThemeCategory
+        }
+
+        private IReadOnlyDictionary<string, double> ResolveDefaultWidthSeeds()
+        {
+            var surface = ResolveSurface();
+            return surface == GridSurface.ViewFriendsAchievements ||
+                   surface == GridSurface.ViewFriendsAchievementsSelectedFriend
+                ? CompactImageColumnWidthSeeds
+                : DefaultImageColumnWidthSeeds;
         }
 
         private GridSurface ResolveSurface()
