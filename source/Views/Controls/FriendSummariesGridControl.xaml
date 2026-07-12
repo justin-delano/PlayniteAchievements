@@ -98,6 +98,11 @@
                                     CanUserSort="False"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Avatar">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
                         <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
