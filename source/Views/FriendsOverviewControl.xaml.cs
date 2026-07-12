@@ -171,6 +171,14 @@ namespace PlayniteAchievements.Views
             ClearSelection();
         }
 
+        private void GameNameBreadcrumb_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (_viewModel?.IsCategorySelected == true)
+            {
+                FriendsAchievementsGrid?.ExitDrilledCategory();
+            }
+        }
+
         private void ClearSelection()
         {
             _viewModel?.ClearSelection();
