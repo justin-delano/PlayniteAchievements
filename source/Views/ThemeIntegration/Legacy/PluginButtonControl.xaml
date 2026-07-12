@@ -72,7 +72,7 @@
                                  Maximum="{Binding AchievementCount, Mode=OneWay, FallbackValue=100}"
                                  Value="{Binding UnlockedCount, Mode=OneWay, FallbackValue=30}">
                         <ProgressBar.Style>
-                            <Style TargetType="{x:Type ProgressBar}" BasedOn="{StaticResource PlayAch.ProgressBar.BaseStyle}">
+                            <Style TargetType="{x:Type ProgressBar}" BasedOn="{StaticResource {x:Type ProgressBar}}">
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=IsMouseOver}" Value="True">
                                         <Setter Property="Foreground" Value="{Binding ElementName=PART_PluginButton, Path=Foreground}" />
