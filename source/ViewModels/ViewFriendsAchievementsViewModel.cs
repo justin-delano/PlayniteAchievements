@@ -43,7 +43,9 @@ namespace PlayniteAchievements.ViewModels
         private readonly List<FriendSummaryItem> _allFriends = new List<FriendSummaryItem>();
         private readonly List<FriendAchievementDisplayItem> _allAchievements = new List<FriendAchievementDisplayItem>();
         private FriendGameSummaryItem _summaryItem;
+        private FriendOverviewProjection _projection;
         private FriendSummaryItem _selectedFriend;
+        private string _selectedCategoryName;
         private string _friendSearchText = string.Empty;
         private string _gameName;
         private bool _isLoading;
@@ -136,12 +138,29 @@ namespace PlayniteAchievements.ViewModels
                     OnPropertyChanged(nameof(HasFriendSelection));
                     OnPropertyChanged(nameof(AchievementSectionTitle));
                     OnPropertyChanged(nameof(AchievementCountText));
+                    UpdateSummaryItems();
                     ApplyFilters();
                 }
             }
         }
 
         public bool HasFriendSelection => SelectedFriend != null;
+
+        // Category the achievement grid is currently drilled into (null when not drilled), pushed
+        // up from AchievementDataGridControl so a breadcrumb header can be shown above the grid.
+        public string SelectedCategoryName
+        {
+            get => _selectedCategoryName;
+            set
+            {
+                if (SetValueAndReturn(ref _selectedCategoryName, value))
+                {
+                    OnPropertyChanged(nameof(IsCategorySelected));
+                }
+            }
+        }
+
+        public bool IsCategorySelected => !string.IsNullOrEmpty(SelectedCategoryName);
 
         public string FriendSearchText
         {
@@ -239,17 +258,17 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        public bool SummaryUseCoverImages => false;
+        public bool SummaryUseCoverImages => GameSummaryOptions?.UseCoverImages ?? false;
 
-        public bool SummaryShowMetadataPlatform => true;
+        public bool SummaryShowMetadataPlatform => GameSummaryOptions?.ShowMetadataPlatform ?? true;
 
-        public bool SummaryShowMetadataPlaytime => true;
+        public bool SummaryShowMetadataPlaytime => GameSummaryOptions?.ShowMetadataPlaytime ?? true;
 
-        public bool SummaryShowMetadataRegion => true;
+        public bool SummaryShowMetadataRegion => GameSummaryOptions?.ShowMetadataRegion ?? true;
 
-        public bool SummaryShowColumnHeaders => false;
+        public bool SummaryShowColumnHeaders => GameSummaryOptions?.ShowColumnHeaders ?? true;
 
-        public bool SummaryShowCompletionBorder => false;
+        public double? SummaryGridRowHeight => GameSummaryOptions?.RowHeight;
 
         public double? FriendSummariesGridRowHeight =>
             _settings?.Persisted?.GridOptions?.GetFriendSummaries(GridOptionKeys.FriendSummaries.ViewFriendsAchievements)?.RowHeight;
@@ -278,8 +297,26 @@ namespace PlayniteAchievements.ViewModels
         public bool ColorNamesByRarity =>
             AchievementGridOptions?.ColorNamesByRarity ?? false;
 
+        public bool HideCategorySummaryRow =>
+            AchievementGridOptions?.HideCategorySummaryRow ?? false;
+
+        public bool CategorySummariesShowColumnHeaders =>
+            CategorySummaryOptions?.ShowColumnHeaders ?? true;
+
+        public double? CategorySummariesGridRowHeight =>
+            CategorySummaryOptions?.RowHeight;
+
+        public bool CategorySummariesUseCoverImages =>
+            CategorySummaryOptions?.UseCoverImages ?? false;
+
         private AchievementGridOptions AchievementGridOptions =>
             _settings?.Persisted?.GridOptions?.GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements);
+
+        private GameSummaryGridOptions GameSummaryOptions =>
+            _settings?.Persisted?.GridOptions?.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements);
+
+        private CategorySummaryGridOptions CategorySummaryOptions =>
+            _settings?.Persisted?.GridOptions?.GetCategorySummaries(GridOptionKeys.CategorySummaries.ViewFriendsAchievements);
 
         public async Task LoadAsync()
         {
@@ -329,6 +366,9 @@ namespace PlayniteAchievements.ViewModels
 
         public void RefreshView()
         {
+            // The window's grid-option surfaces have no flat-name change notifications, so a
+            // settings save must re-read the option-backed properties explicitly.
+            NotifySettingProperties();
             _dataCoordinator.Invalidate();
             _ = LoadAsync();
         }
@@ -382,11 +422,9 @@ namespace PlayniteAchievements.ViewModels
             _allAchievements.AddRange((snapshot?.AllAchievements ?? new List<FriendAchievementDisplayItem>())
                 .Where(achievement => achievement?.PlayniteGameId == _gameId));
 
+            _projection = snapshot?.Projection;
             _summaryItem = (snapshot?.Games ?? new List<FriendGameSummaryItem>())
                 .FirstOrDefault(game => game?.PlayniteGameId == _gameId);
-            SummaryItems.ReplaceAll(_summaryItem != null
-                ? new[] { _summaryItem }
-                : Array.Empty<FriendGameSummaryItem>());
 
             if (_summaryItem != null && !string.IsNullOrWhiteSpace(_summaryItem.GameName))
             {
@@ -399,10 +437,30 @@ namespace PlayniteAchievements.ViewModels
                     FriendOverviewProjection.IsSameFriend(friend, SelectedFriend));
             }
 
+            UpdateSummaryItems();
+
             _friendSearchIndex.Rebuild(_allFriends);
             _achievementControlBar.UpdateOptions(_allAchievements);
             OnPropertyChanged(nameof(HasAchievements));
             ApplyFilters();
+        }
+
+        // Mirrors the Friends Overview game-summary pair: the aggregate all-friends row when no
+        // friend is selected, the selected friend's row for this game otherwise.
+        private void UpdateSummaryItems()
+        {
+            var item = _summaryItem;
+            if (SelectedFriend != null && _projection != null)
+            {
+                // The warm-path snapshot reuses the full overview projection, so the per-friend
+                // rows must be filtered back down to this window's game.
+                item = _projection.GetSelectedFriendGames(SelectedFriend)
+                    .FirstOrDefault(game => game?.PlayniteGameId == _gameId) ?? _summaryItem;
+            }
+
+            SummaryItems.ReplaceAll(item != null
+                ? new[] { item }
+                : Array.Empty<FriendGameSummaryItem>());
         }
 
         private void ApplyFilters()
@@ -632,6 +690,16 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(UseCoverImages));
             OnPropertyChanged(nameof(ShowRarityGlow));
             OnPropertyChanged(nameof(ColorNamesByRarity));
+            OnPropertyChanged(nameof(SummaryUseCoverImages));
+            OnPropertyChanged(nameof(SummaryShowMetadataPlatform));
+            OnPropertyChanged(nameof(SummaryShowMetadataPlaytime));
+            OnPropertyChanged(nameof(SummaryShowMetadataRegion));
+            OnPropertyChanged(nameof(SummaryShowColumnHeaders));
+            OnPropertyChanged(nameof(SummaryGridRowHeight));
+            OnPropertyChanged(nameof(HideCategorySummaryRow));
+            OnPropertyChanged(nameof(CategorySummariesShowColumnHeaders));
+            OnPropertyChanged(nameof(CategorySummariesGridRowHeight));
+            OnPropertyChanged(nameof(CategorySummariesUseCoverImages));
         }
 
         private void OpenGameInLibrary()
