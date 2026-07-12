@@ -872,6 +872,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Filter_NoProgress">No Progress</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Played">Played</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Unplayed</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_Visible">Visible</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">Capstone</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_Started">Started</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_NotStarted">Not Started</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Has Last Unlock</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">No Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Game Summaries</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GamesPieChart">Completed Games</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_Incomplete">Incomplete</sys:String>
