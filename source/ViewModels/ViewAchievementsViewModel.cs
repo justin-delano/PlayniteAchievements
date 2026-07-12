@@ -329,6 +329,12 @@ namespace PlayniteAchievements.ViewModels
 
         public bool HideCategorySummaryRow => _settings?.Persisted?.ViewAchievementsAchievementGridHideCategorySummaryRow ?? false;
 
+        public bool CategorySummariesShowColumnHeaders => _settings?.Persisted?.ShowViewAchievementsCategorySummariesGridColumnHeaders ?? true;
+
+        public double? CategorySummariesGridRowHeight => _settings?.Persisted?.ViewAchievementsCategorySummariesGridRowHeight;
+
+        public bool CategorySummariesUseCoverImages => _settings?.Persisted?.ViewAchievementsCategorySummariesUseCoverImages ?? false;
+
         public double? SingleGameGridRowHeight => _settings?.Persisted?.SingleGameGridRowHeight;
 
         // The Manage Achievements window follows the Overview "Selected Game Achievements" glow setting.
@@ -729,6 +735,9 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(SingleGameGridRowHeight));
                 OnPropertyChanged(nameof(ShowAchievementGridControlBar));
                 OnPropertyChanged(nameof(HideCategorySummaryRow));
+                OnPropertyChanged(nameof(CategorySummariesShowColumnHeaders));
+                OnPropertyChanged(nameof(CategorySummariesGridRowHeight));
+                OnPropertyChanged(nameof(CategorySummariesUseCoverImages));
                 RaiseSummaryAppearanceProperties();
                 ApplySavedTimelineState();
                 ApplySearchFilter(skipDefaultSort: CurrentSortDirection.HasValue, refreshOrder: true);
@@ -758,6 +767,24 @@ namespace PlayniteAchievements.ViewModels
             if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsAchievementGridHideCategorySummaryRow))
             {
                 OnPropertyChanged(nameof(HideCategorySummaryRow));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ShowViewAchievementsCategorySummariesGridColumnHeaders))
+            {
+                OnPropertyChanged(nameof(CategorySummariesShowColumnHeaders));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsCategorySummariesGridRowHeight))
+            {
+                OnPropertyChanged(nameof(CategorySummariesGridRowHeight));
+                return;
+            }
+
+            if (e?.PropertyName == nameof(PersistedSettings.ViewAchievementsCategorySummariesUseCoverImages))
+            {
+                OnPropertyChanged(nameof(CategorySummariesUseCoverImages));
                 return;
             }
 
