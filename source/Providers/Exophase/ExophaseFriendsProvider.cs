@@ -20,6 +20,7 @@ namespace PlayniteAchievements.Providers.Exophase
     {
         private const string Provider = "Exophase";
         private readonly ExophaseApiClient _apiClient;
+        private readonly ExophasePublicApiClient _publicApiClient;
         private readonly ExophaseSettings _settings;
         private readonly PlayniteAchievementsSettings _globalSettings;
         private readonly IPlayniteAPI _playniteApi;
@@ -27,11 +28,27 @@ namespace PlayniteAchievements.Providers.Exophase
         private readonly SemaphoreSlim _webViewGate = new SemaphoreSlim(1, 1);
 
         // Per-refresh map of (friend username + provider game key) -> the friend's per-game context id,
-        // parsed from the profile games page as the "#{id}" fragment on each game's achievements link.
-        // Used to build the friend-scoped achievement URL. Populated during the ownership pass (which
-        // always runs before achievements) and cleared each refresh.
+        // the "#{id}" fragment (master_playerid) on each game's achievements link. Sourced from the
+        // games-list API's endpoint_awards (or the profile-page scrape on the fallback path). Used to
+        // build the friend-scoped achievement URL. Populated during the ownership pass (which always
+        // runs before achievements) and cleared each refresh.
         private readonly Dictionary<string, string> _friendGameContextIds =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        // Per-refresh memo of each friend's fetched library so the Steam ownership supplement reuses
+        // the ownership fetch instead of re-scraping the profile. Cleared each refresh.
+        private readonly Dictionary<string, IReadOnlyList<ExophaseFriendGame>> _friendLibraryMemo =
+            new Dictionary<string, IReadOnlyList<ExophaseFriendGame>>(StringComparer.OrdinalIgnoreCase);
+
+        // Per-refresh memo of resolved profile identities (playerProfileId + SSR games blob + rendered
+        // HTML) so the metadata probe and the ownership pass share one profile-page fetch per friend.
+        private readonly Dictionary<string, ExophaseProfileIdentity> _friendIdentityMemo =
+            new Dictionary<string, ExophaseProfileIdentity>(StringComparer.OrdinalIgnoreCase);
+
+        // Per-refresh map of provider game key -> Exophase master_id (game-global, same for every
+        // friend), sourced from the games-list API. Consumed by the earned-awards endpoint.
+        private readonly Dictionary<string, long> _friendGameMasterIds =
+            new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
 
         // Per-refresh index of the current user's cached games, keyed on the servicing provider label
         // the plugin stored at scan time (see CurrentUserGameLabel). Populated by the refresh runtime via
@@ -50,6 +67,7 @@ namespace PlayniteAchievements.Providers.Exophase
             ILogger logger)
         {
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
+            _publicApiClient = new ExophasePublicApiClient(_apiClient, logger);
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _globalSettings = globalSettings;
             _playniteApi = playniteApi;
@@ -61,6 +79,9 @@ namespace PlayniteAchievements.Providers.Exophase
         public Task<FriendsProviderResult<FriendsRefreshPreparation>> BeginRefreshAsync(CancellationToken cancel)
         {
             _friendGameContextIds.Clear();
+            _friendLibraryMemo.Clear();
+            _friendIdentityMemo.Clear();
+            _friendGameMasterIds.Clear();
             ClearCurrentUserGameIndex();
 
             // Load and validate the encrypted cookie snapshot once for this refresh; every per-friend
@@ -80,6 +101,9 @@ namespace PlayniteAchievements.Providers.Exophase
         public void EndRefresh()
         {
             _friendGameContextIds.Clear();
+            _friendLibraryMemo.Clear();
+            _friendIdentityMemo.Clear();
+            _friendGameMasterIds.Clear();
             ClearCurrentUserGameIndex();
             _apiClient.EndCookieSession();
         }
@@ -238,6 +262,12 @@ namespace PlayniteAchievements.Providers.Exophase
                 if (!string.IsNullOrWhiteSpace(game.ContextId))
                 {
                     _friendGameContextIds[BuildContextMapKey(config.ExternalUserId, key)] = game.ContextId;
+                }
+
+                // Remember the game-global master_id for the earned-awards endpoint.
+                if (game.MasterId > 0)
+                {
+                    _friendGameMasterIds[key] = game.MasterId;
                 }
 
                 result.Add(new FriendGameOwnership
@@ -795,6 +825,14 @@ namespace PlayniteAchievements.Providers.Exophase
             string username,
             CancellationToken cancel)
         {
+            // The identity fetch renders the same profile page and is memoized per refresh, so the
+            // metadata probe and the ownership pass share one fetch per friend.
+            var identity = await GetProfileIdentityAsync(username, cancel).ConfigureAwait(false);
+            if (!string.IsNullOrWhiteSpace(identity?.Html))
+            {
+                return ExophaseFriendPageParser.ParseProfile(identity.Html);
+            }
+
             var url = BuildProfileUrl(username);
             var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: false).ConfigureAwait(false);
             return ExophaseFriendPageParser.ParseProfile(html);
@@ -825,6 +863,175 @@ namespace PlayniteAchievements.Providers.Exophase
         }
 
         private async Task<IReadOnlyList<ExophaseFriendGame>> FetchOwnedGamesAsync(
+            string username,
+            CancellationToken cancel)
+        {
+            // Memoized per refresh: the ownership pass and the Steam supplement pass both need the
+            // friend's library; one fetch serves both.
+            var memoKey = username?.Trim() ?? string.Empty;
+            if (_friendLibraryMemo.TryGetValue(memoKey, out var memoized))
+            {
+                return memoized;
+            }
+
+            var games = await FetchOwnedGamesViaApiAsync(username, cancel).ConfigureAwait(false);
+            if (games == null)
+            {
+                // API path unavailable (unresolvable playerProfileId, Cloudflare, or a mid-pagination
+                // failure). Fall back to the legacy profile-page scrape rather than persisting a
+                // truncated library.
+                _logger?.Warn($"[ExophaseFriends] Games-list API unavailable for '{username}'; falling back to profile-page scrape.");
+                games = await FetchOwnedGamesViaHtmlAsync(username, cancel).ConfigureAwait(false);
+            }
+
+            _friendLibraryMemo[memoKey] = games;
+            return games;
+        }
+
+        private async Task<IReadOnlyList<ExophaseFriendGame>> FetchOwnedGamesViaApiAsync(
+            string username,
+            CancellationToken cancel)
+        {
+            var identity = await GetProfileIdentityAsync(username, cancel).ConfigureAwait(false);
+            if (identity == null || identity.PlayerProfileId <= 0)
+            {
+                return null;
+            }
+
+            var apiGames = await _publicApiClient
+                .GetPlayerGamesAsync(identity.PlayerProfileId, cancel)
+                .ConfigureAwait(false);
+            if (apiGames == null)
+            {
+                return null;
+            }
+
+            // The SSR blob (recent 50 games) is the only source of the game-level Steam appid;
+            // index it by master_id so API rows pick their appid up for free.
+            var ssrAppIdsByMasterId = new Dictionary<long, int>();
+            foreach (var ssrGame in identity.SsrGames ?? new List<ExophasePlayerGame>())
+            {
+                if (ssrGame == null || ssrGame.MasterId <= 0)
+                {
+                    continue;
+                }
+
+                var ssrAppId = ExophasePublicApiClient.GetSteamAppId(ssrGame);
+                if (ssrAppId > 0)
+                {
+                    ssrAppIdsByMasterId[ssrGame.MasterId] = ssrAppId;
+                }
+            }
+
+            var games = new List<ExophaseFriendGame>();
+            var skippedNoAwards = 0;
+            foreach (var apiGame in apiGames)
+            {
+                cancel.ThrowIfCancellationRequested();
+                var mapped = MapApiGameToFriendGame(apiGame, ssrAppIdsByMasterId);
+                if (mapped == null)
+                {
+                    skippedNoAwards++;
+                    continue;
+                }
+
+                games.Add(mapped);
+            }
+
+            var deduped = games
+                .GroupBy(game => (game.Platform ?? string.Empty) + "|" + game.Slug, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .ToList();
+            _logger?.Info($"[ExophaseFriends] Games-list API: '{username}' (profile {identity.PlayerProfileId}) -> " +
+                $"{apiGames.Count} game(s), kept {deduped.Count} with achievements " +
+                $"(skipped {skippedNoAwards} without an awards endpoint).");
+            return deduped;
+        }
+
+        private ExophaseFriendGame MapApiGameToFriendGame(
+            ExophasePlayerGame apiGame,
+            IReadOnlyDictionary<long, int> ssrAppIdsByMasterId)
+        {
+            // Rows without an awards endpoint are demos/tools with no achievements.
+            if (apiGame?.Meta == null || string.IsNullOrWhiteSpace(apiGame.Meta.EndpointAwards))
+            {
+                return null;
+            }
+
+            var slug = ExophasePublicApiClient.GetGameSlug(apiGame);
+            var platform = apiGame.Meta.EnvironmentSlug?.Trim();
+            if (string.IsNullOrWhiteSpace(slug) || string.IsNullOrWhiteSpace(platform))
+            {
+                return null;
+            }
+
+            var playtimeMinutes = ExophasePublicApiClient.GetPlaytimeMinutes(apiGame);
+            if (playtimeMinutes <= 0 && !string.IsNullOrWhiteSpace(apiGame.Playtime))
+            {
+                playtimeMinutes = ExophaseFriendPageParser.ParsePlaytimeMinutes(apiGame.Playtime);
+            }
+
+            var appId = 0;
+            if (ssrAppIdsByMasterId != null && apiGame.MasterId > 0)
+            {
+                ssrAppIdsByMasterId.TryGetValue(apiGame.MasterId, out appId);
+            }
+
+            return new ExophaseFriendGame
+            {
+                Slug = slug,
+                Title = apiGame.Meta.Title,
+                ImageUrl = ExophasePublicApiClient.NormalizeImageUrl(apiGame.ResourceStandard),
+                Platform = platform,
+                SteamAppId = appId,
+                ContextId = ExophasePublicApiClient.GetContextId(apiGame)
+                    ?? (apiGame.MasterPlayerId > 0 ? apiGame.MasterPlayerId.ToString() : null),
+                MasterId = apiGame.MasterId,
+                PlaytimeMinutes = Math.Max(0, playtimeMinutes),
+                RecentPlaytimeMinutes = 0,
+                LastPlayedUtc = ExophasePublicApiClient.FromUnixSeconds(apiGame.LastPlayedUtc),
+                AchievementsEarned = apiGame.EarnedAwards,
+                AchievementsTotal = apiGame.TotalAwards
+            };
+        }
+
+        private async Task<ExophaseProfileIdentity> GetProfileIdentityAsync(
+            string username,
+            CancellationToken cancel)
+        {
+            var memoKey = username?.Trim() ?? string.Empty;
+            if (memoKey.Length == 0)
+            {
+                return null;
+            }
+
+            if (_friendIdentityMemo.TryGetValue(memoKey, out var memoized))
+            {
+                return memoized;
+            }
+
+            await _webViewGate.WaitAsync(cancel).ConfigureAwait(false);
+            ExophaseProfileIdentity identity;
+            try
+            {
+                identity = await _publicApiClient.ResolveProfileIdentityAsync(memoKey, cancel).ConfigureAwait(false);
+            }
+            finally
+            {
+                _webViewGate.Release();
+            }
+
+            if (identity != null)
+            {
+                _friendIdentityMemo[memoKey] = identity;
+                _logger?.Debug($"[ExophaseFriends] Resolved profile identity for '{memoKey}': " +
+                    $"playerProfileId={identity.PlayerProfileId}, ssrGames={identity.SsrGames?.Count ?? 0}.");
+            }
+
+            return identity;
+        }
+
+        private async Task<IReadOnlyList<ExophaseFriendGame>> FetchOwnedGamesViaHtmlAsync(
             string username,
             CancellationToken cancel)
         {
@@ -1074,9 +1281,14 @@ namespace PlayniteAchievements.Providers.Exophase
             public string Platform { get; set; }
             public int SteamAppId { get; set; }
 
-            // Friend's per-game context id from the games-page achievement link fragment
+            // Friend's per-game context id from the achievement link fragment
             // (/game/{slug}/achievements/#{ContextId}); scopes the achievement page to this friend.
+            // Equals the friend's per-service master_playerid on the API path.
             public string ContextId { get; set; }
+
+            // Exophase's internal game id (game-global, stable). Populated on the API path only;
+            // 0 when the row came from the profile-page scrape fallback.
+            public long MasterId { get; set; }
             public int PlaytimeMinutes { get; set; }
             public int RecentPlaytimeMinutes { get; set; }
             public DateTime? LastPlayedUtc { get; set; }
@@ -1393,7 +1605,7 @@ namespace PlayniteAchievements.Providers.Exophase
                 return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(value.Replace('-', ' '));
             }
 
-            private static int ParsePlaytimeMinutes(string text)
+            public static int ParsePlaytimeMinutes(string text)
             {
                 if (string.IsNullOrWhiteSpace(text))
                 {
