@@ -1959,7 +1959,7 @@ namespace PlayniteAchievements.ViewModels
             return string.Format(format, selectedCount);
         }
 
-        private static string GetResourceFormatOrFallback(string resourceKey, string fallback, params string[] requiredPlaceholders)
+        internal static string GetResourceFormatOrFallback(string resourceKey, string fallback, params string[] requiredPlaceholders)
         {
             var value = ResourceProvider.GetString(resourceKey);
             if (string.IsNullOrWhiteSpace(value) ||

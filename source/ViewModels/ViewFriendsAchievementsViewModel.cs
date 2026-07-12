@@ -247,14 +247,24 @@ namespace PlayniteAchievements.ViewModels
         {
             get
             {
-                var totalRows = Achievements.Count;
-                var unlocked = Achievements.Count(item => item?.Unlocked == true);
-                return totalRows > 0
-                    ? string.Format(
-                        L("LOCPlayAch_ViewFriendsAchievements_AchievementCount", "({0}/{1} unlocked rows)"),
-                        unlocked,
-                        totalRows)
-                    : string.Empty;
+                if (SelectedFriend == null)
+                {
+                    return string.Empty;
+                }
+
+                var game = GetSelectedFriendGameSummary() ?? _summaryItem;
+                var unlocked = Math.Max(0, game?.UniqueFriendUnlockedAchievementsCount ?? 0);
+                var total = Math.Max(0, game?.TotalAchievements ?? 0);
+                var format = FriendsOverviewViewModel.GetResourceFormatOrFallback(
+                    "LOCPlayAch_FriendsOverview_SelectedGameAchievementCount",
+                    "({0}/{1} {2})",
+                    "{0}");
+
+                return string.Format(
+                    format,
+                    unlocked,
+                    total,
+                    L("LOCPlayAch_Achievements", "Achievements"));
             }
         }
 
@@ -449,18 +459,23 @@ namespace PlayniteAchievements.ViewModels
         // friend is selected, the selected friend's row for this game otherwise.
         private void UpdateSummaryItems()
         {
-            var item = _summaryItem;
-            if (SelectedFriend != null && _projection != null)
-            {
-                // The warm-path snapshot reuses the full overview projection, so the per-friend
-                // rows must be filtered back down to this window's game.
-                item = _projection.GetSelectedFriendGames(SelectedFriend)
-                    .FirstOrDefault(game => game?.PlayniteGameId == _gameId) ?? _summaryItem;
-            }
-
+            var item = GetSelectedFriendGameSummary() ?? _summaryItem;
             SummaryItems.ReplaceAll(item != null
                 ? new[] { item }
                 : Array.Empty<FriendGameSummaryItem>());
+        }
+
+        private FriendGameSummaryItem GetSelectedFriendGameSummary()
+        {
+            if (SelectedFriend == null || _projection == null)
+            {
+                return null;
+            }
+
+            // The warm-path snapshot reuses the full overview projection, so the per-friend
+            // rows must be filtered back down to this window's game.
+            return _projection.GetSelectedFriendGames(SelectedFriend)
+                .FirstOrDefault(game => game?.PlayniteGameId == _gameId);
         }
 
         private void ApplyFilters()

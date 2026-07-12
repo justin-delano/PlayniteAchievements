@@ -933,7 +933,6 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_TitleFallback">Friends Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_SelectedFriendTitle">{0} Achievements</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_AllFriendsTitle">Friends Achievements</sys:String>
-    <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_AchievementCount">({0}/{1} unlocked rows)</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_LoadFailed">Failed to load friends achievements.</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_NoData">No friend achievement data for this game yet.</sys:String>
     <sys:String x:Key="LOCPlayAch_ViewFriendsAchievements_RefreshSelectedFriend">Refresh Friend for This Game</sys:String>
