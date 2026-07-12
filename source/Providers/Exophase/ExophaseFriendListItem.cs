@@ -106,7 +106,7 @@ namespace PlayniteAchievements.Providers.Exophase
         public string PlatformButtonLabel => SelectedPlatformCount == 0
             ? ResourceProvider.GetString("LOCPlayAch_Exophase_SelectPlatforms")
             : string.Format(
-                ResourceProvider.GetString("LOCPlayAch_Exophase_PlatformsSelectedCount"),
+                ResourceProvider.GetString("LOCPlayAch_Common_SelectedCountFormat"),
                 SelectedPlatformCount);
 
         /// <summary>

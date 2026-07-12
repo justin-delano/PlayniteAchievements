@@ -1955,7 +1955,7 @@ namespace PlayniteAchievements.ViewModels
                 return selectedValues.First();
             }
 
-            var format = ResourceProvider.GetString("LOCPlayAch_Filter_SelectedCount") ?? "{0:N0} selected";
+            var format = GetResourceFormatOrFallback("LOCPlayAch_Common_SelectedCountFormat", "{0:N0} selected", "{0");
             return string.Format(format, selectedCount);
         }
 
