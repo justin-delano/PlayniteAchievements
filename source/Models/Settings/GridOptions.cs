@@ -27,6 +27,8 @@ namespace PlayniteAchievements.Models.Settings
             public const string ViewAchievements = "ViewAchievements";
             public const string FriendsOverview = "FriendsOverview";
             public const string FriendsOverviewSelectedFriend = "FriendsOverviewSelectedFriend";
+            public const string ViewFriendsAchievements = "ViewFriendsAchievements";
+            public const string ViewFriendsAchievementsSelectedFriend = "ViewFriendsAchievementsSelectedFriend";
         }
 
         public static class FriendSummaries
@@ -702,6 +704,10 @@ namespace PlayniteAchievements.Models.Settings
                     return GridOptionKeys.GameSummaries.FriendsOverview;
                 case "FriendsOverviewSelectedFriendGameSummaries":
                     return GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend;
+                case "ViewFriendsAchievementsGameSummaries":
+                    return GridOptionKeys.GameSummaries.ViewFriendsAchievements;
+                case "ViewFriendsAchievementsSelectedFriendGameSummaries":
+                    return GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend;
                 default:
                     return GridOptionKeys.GameSummaries.Overview;
             }
@@ -745,6 +751,8 @@ namespace PlayniteAchievements.Models.Settings
             Ensure(_gameSummaries, GridOptionKeys.GameSummaries.ViewAchievements, () => CreateDefaultGameSummaries(GridOptionKeys.GameSummaries.ViewAchievements));
             Ensure(_gameSummaries, GridOptionKeys.GameSummaries.FriendsOverview, () => CreateDefaultGameSummaries(GridOptionKeys.GameSummaries.FriendsOverview));
             Ensure(_gameSummaries, GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend, () => CreateDefaultGameSummaries(GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend));
+            Ensure(_gameSummaries, GridOptionKeys.GameSummaries.ViewFriendsAchievements, () => CreateDefaultGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements));
+            Ensure(_gameSummaries, GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend, () => CreateDefaultGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend));
 
             Ensure(_friendSummaries, GridOptionKeys.FriendSummaries.FriendsOverview, () => CreateDefaultFriendSummaries(GridOptionKeys.FriendSummaries.FriendsOverview));
             Ensure(_friendSummaries, GridOptionKeys.FriendSummaries.ViewFriendsAchievements, () => CreateDefaultFriendSummaries(GridOptionKeys.FriendSummaries.ViewFriendsAchievements));
@@ -862,7 +870,9 @@ namespace PlayniteAchievements.Models.Settings
                 options.MaxRows = PersistedSettings.DefaultStartPageGridMaxRows;
                 options.ShowControlBar = false;
             }
-            else if (string.Equals(key, GridOptionKeys.GameSummaries.ViewAchievements, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(key, GridOptionKeys.GameSummaries.ViewAchievements, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(key, GridOptionKeys.GameSummaries.ViewFriendsAchievements, StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(key, GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend, StringComparison.OrdinalIgnoreCase))
             {
                 options.UseCoverImages = false;
             }

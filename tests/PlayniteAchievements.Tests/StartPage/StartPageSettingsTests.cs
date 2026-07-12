@@ -325,7 +325,9 @@ namespace PlayniteAchievements.Tests.StartPage
                 GridOptionKeys.GameSummaries.StartPage,
                 GridOptionKeys.GameSummaries.ViewAchievements,
                 GridOptionKeys.GameSummaries.FriendsOverview,
-                GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend
+                GridOptionKeys.GameSummaries.FriendsOverviewSelectedFriend,
+                GridOptionKeys.GameSummaries.ViewFriendsAchievements,
+                GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend
             };
             var friendSummaryIds = new[]
             {
