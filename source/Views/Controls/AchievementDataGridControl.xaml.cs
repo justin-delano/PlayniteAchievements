@@ -513,6 +513,18 @@ namespace PlayniteAchievements.Views.Controls
             }
         }
 
+        public static readonly DependencyProperty HideBackButtonProperty =
+            DependencyProperty.Register(nameof(HideBackButton), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false));
+
+        // When true, the in-grid Back button is never created, letting a host's own breadcrumb
+        // header (which calls ExitDrilledCategory()) be the only way back to the category list.
+        public bool HideBackButton
+        {
+            get => (bool)GetValue(HideBackButtonProperty);
+            set => SetValue(HideBackButtonProperty, value);
+        }
+
         public static readonly DependencyProperty CategoryColumnSettingsKeyProperty =
             DependencyProperty.Register(nameof(CategoryColumnSettingsKey), typeof(string),
                 typeof(AchievementDataGridControl), new PropertyMetadata(null));
@@ -780,7 +792,7 @@ namespace PlayniteAchievements.Views.Controls
                     HasMultipleCategories);
             }
 
-            if (_backButton == null)
+            if (_backButton == null && !HideBackButton)
             {
                 _backButton = new GridActionButton(
                     CategoryModeText("LOCPlayAch_Common_Back", "Back"),
@@ -1331,6 +1343,10 @@ namespace PlayniteAchievements.Views.Controls
 
             _drillItems.ReplaceAll(items);
         }
+
+        // Public entry point for a host's own breadcrumb header to navigate back to the category
+        // summary list, for surfaces where HideBackButton suppresses the in-grid Back button.
+        public void ExitDrilledCategory() => CategoryBackToList();
 
         private void CategoryBackToList()
         {
