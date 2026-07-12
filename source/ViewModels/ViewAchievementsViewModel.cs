@@ -163,8 +163,22 @@ namespace PlayniteAchievements.ViewModels
             // the initial load so the first display reflects it.
             RestoreGridStateIfMatching();
 
-            // Load data
-            LoadGameData();
+            // Resolve the game name synchronously so the window title is correct at
+            // creation, then load achievement data in the background so the window
+            // can render immediately instead of blocking the UI thread on the load.
+            GameName = _playniteApi?.Database?.Games?.Get(_gameId)?.Name;
+            IsLoading = true;
+            Task.Run(() =>
+            {
+                try
+                {
+                    LoadGameData();
+                }
+                finally
+                {
+                    IsLoading = false;
+                }
+            });
         }
 
         private void RestoreGridStateIfMatching()
@@ -233,6 +247,7 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _totalAchievements, value))
                 {
                     OnPropertyChanged(nameof(HasAchievements));
+                    OnPropertyChanged(nameof(ShowNoAchievementsPlaceholder));
                 }
             }
         }
@@ -296,6 +311,23 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool HasAchievements => TotalAchievements > 0;
+
+        private bool _isLoading;
+        public bool IsLoading
+        {
+            get => _isLoading;
+            private set
+            {
+                if (SetValueAndReturn(ref _isLoading, value))
+                {
+                    OnPropertyChanged(nameof(ShowNoAchievementsPlaceholder));
+                }
+            }
+        }
+
+        // Keeps the "no achievements" placeholder from flashing while the initial
+        // background load is still running.
+        public bool ShowNoAchievementsPlaceholder => !HasAchievements && !IsLoading;
 
         public bool HasCustomAchievementOrder
         {
@@ -418,6 +450,14 @@ namespace PlayniteAchievements.ViewModels
 
         private void LoadGameData()
         {
+            using (PerfScope.Start(_logger, "ViewAchievements.LoadGameData", thresholdMs: 100))
+            {
+                LoadGameDataCore();
+            }
+        }
+
+        private void LoadGameDataCore()
+        {
             try
             {
                 var game = _playniteApi?.Database?.Games?.Get(_gameId);
@@ -440,11 +480,12 @@ namespace PlayniteAchievements.ViewModels
                     _allAchievements = new List<AchievementDisplayItem>();
                     _orderedAchievements = new List<AchievementDisplayItem>();
                     _filteredAchievements = new List<AchievementDisplayItem>();
-                    _controlBar.Clear();
                     HasCustomAchievementOrder = false;
 
                     System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
                     {
+                        // The control bar's filter option collections are UI-bound.
+                        _controlBar.Clear();
                         Achievements.Clear();
                     });
 
@@ -494,7 +535,9 @@ namespace PlayniteAchievements.ViewModels
                 _allAchievements = displayItems;
                 RefreshOrderedAchievements(skipDefaultSort: false);
 
-                _controlBar.UpdateOptions(_allAchievements);
+                // The control bar's filter option collections are UI-bound.
+                System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+                    _controlBar.UpdateOptions(_allAchievements));
                 ApplySearchFilter();
 
                 Timeline.SetCounts(unlockCounts);

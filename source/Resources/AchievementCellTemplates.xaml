@@ -378,40 +378,47 @@
                 </MultiBinding>
             </Grid.Height>
 
-            <Image Stretch="Uniform"
-                   Margin="2"
-                   RenderOptions.BitmapScalingMode="HighQuality"
-                   SnapsToDevicePixels="True"
-                   IsHitTestVisible="False"
-                   helpers:AsyncImage.Uri="{Binding DisplayIcon}"
-                   helpers:AsyncImage.DecodePixel="128">
-                <Image.Style>
-                    <Style TargetType="Image">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                        <Setter Property="Effect" Value="{x:Null}"/>
-                        <Style.Triggers>
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True"/>
-                                </MultiDataTrigger.Conditions>
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
-                            </MultiDataTrigger>
-                            <!-- Hardcore achievements use a solid border instead of the soft glow. -->
-                            <MultiDataTrigger>
-                                <MultiDataTrigger.Conditions>
-                                    <Condition Binding="{Binding Unlocked}" Value="True"/>
-                                    <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True"/>
-                                    <Condition Binding="{Binding IsHardcore}" Value="True"/>
-                                </MultiDataTrigger.Conditions>
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                                <Setter Property="Effect" Value="{x:Null}"/>
-                            </MultiDataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Image.Style>
-            </Image>
+            <!-- BitmapCache stores the blurred glow output so scrolling composites a
+                 cached texture instead of re-rasterizing the DropShadowEffect per frame. -->
+            <Border IsHitTestVisible="False">
+                <Border.CacheMode>
+                    <BitmapCache/>
+                </Border.CacheMode>
+                <Image Stretch="Uniform"
+                       Margin="2"
+                       RenderOptions.BitmapScalingMode="HighQuality"
+                       SnapsToDevicePixels="True"
+                       IsHitTestVisible="False"
+                       helpers:AsyncImage.Uri="{Binding DisplayIcon}"
+                       helpers:AsyncImage.DecodePixel="128">
+                    <Image.Style>
+                        <Style TargetType="Image">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Setter Property="Effect" Value="{x:Null}"/>
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                        <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Effect" Value="{Binding Rarity, Converter={StaticResource PercentToRarityGlow}}"/>
+                                </MultiDataTrigger>
+                                <!-- Hardcore achievements use a solid border instead of the soft glow. -->
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding Unlocked}" Value="True"/>
+                                        <Condition Binding="{Binding ShowRarityGlow, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}" Value="True"/>
+                                        <Condition Binding="{Binding IsHardcore}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Setter Property="Effect" Value="{x:Null}"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Image.Style>
+                </Image>
+            </Border>
 
             <Image Stretch="Uniform"
                    Margin="2"

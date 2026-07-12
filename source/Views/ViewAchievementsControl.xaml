@@ -201,9 +201,20 @@
             </StackPanel>
         </Border>
 
+        <!-- Loading Placeholder -->
+        <Grid Grid.Row="2"
+              Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+            <TextBlock Text="{DynamicResource LOCPlayAch_Status_LoadingAchievements}"
+                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                       Opacity="{StaticResource PlayAch.Opacity.Subtle}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+        </Grid>
+
         <!-- No Achievements Placeholder -->
         <Grid Grid.Row="2"
-              Visibility="{Binding HasAchievements, Converter={StaticResource InverseBoolToVis}}">
+              Visibility="{Binding ShowNoAchievementsPlaceholder, Converter={StaticResource BoolToVis}}">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="40">
                 <TextBlock Text="{DynamicResource LOCPlayAch_NoAchievementsTitle}"
                            FontSize="{DynamicResource PlayAch.FontSize.Title}"
