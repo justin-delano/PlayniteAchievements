@@ -938,7 +938,16 @@ namespace PlayniteAchievements
                 if (_gameCustomDataStore != null)
                 {
                     _gameCustomDataStore.CustomDataChanged += GameCustomDataStore_CustomDataChanged;
-                    _eventSubscriptions.Add(() => _gameCustomDataStore.CustomDataChanged -= GameCustomDataStore_CustomDataChanged);
+                    _eventSubscriptions.Add(() =>
+                    {
+                        _gameCustomDataStore.CustomDataChanged -= GameCustomDataStore_CustomDataChanged;
+                        lock (_customDataChangeSync)
+                        {
+                            _customDataChangeTimer?.Dispose();
+                            _customDataChangeTimer = null;
+                            _pendingCustomDataChangeIds.Clear();
+                        }
+                    });
                 }
 
                 var persisted = _settingsViewModel?.Settings?.Persisted;
@@ -956,26 +965,71 @@ namespace PlayniteAchievements
             }
         }
 
+        // Coalesces bursts of custom-data changes (e.g. checkbox toggles in the Manage
+        // Achievements window) so tag sync, theme rebuilds, and start-page invalidation
+        // run once per burst instead of once per edit. Cache invalidation subscribers
+        // stay on the synchronous CustomDataChanged event; only these side effects are
+        // deferred.
+        private static readonly TimeSpan CustomDataChangeCoalesceDelay = TimeSpan.FromMilliseconds(400);
+        private readonly object _customDataChangeSync = new object();
+        private readonly HashSet<Guid> _pendingCustomDataChangeIds = new HashSet<Guid>();
+        private Timer _customDataChangeTimer;
+
         private void GameCustomDataStore_CustomDataChanged(object sender, GameCustomDataChangedEventArgs e)
         {
-            if (e?.PlayniteGameId == Guid.Empty)
+            if (e == null || e.PlayniteGameId == Guid.Empty)
             {
                 return;
             }
 
+            lock (_customDataChangeSync)
+            {
+                _pendingCustomDataChangeIds.Add(e.PlayniteGameId);
+                if (_customDataChangeTimer == null)
+                {
+                    _customDataChangeTimer = new Timer(
+                        _ => FlushPendingCustomDataChanges(),
+                        null,
+                        CustomDataChangeCoalesceDelay,
+                        Timeout.InfiniteTimeSpan);
+                }
+                else
+                {
+                    _customDataChangeTimer.Change(CustomDataChangeCoalesceDelay, Timeout.InfiniteTimeSpan);
+                }
+            }
+        }
+
+        private void FlushPendingCustomDataChanges()
+        {
+            List<Guid> gameIds;
+            lock (_customDataChangeSync)
+            {
+                gameIds = _pendingCustomDataChangeIds.ToList();
+                _pendingCustomDataChangeIds.Clear();
+            }
+
+            foreach (var gameId in gameIds)
+            {
+                HandleCustomDataChanged(gameId);
+            }
+        }
+
+        private void HandleCustomDataChanged(Guid gameId)
+        {
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
             {
-                QueueTagSync(e.PlayniteGameId);
+                QueueTagSync(gameId);
             }
 
             try
             {
-                _themeIntegrationService?.NotifyCustomDataChanged(e.PlayniteGameId);
+                _themeIntegrationService?.NotifyCustomDataChanged(gameId);
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={e.PlayniteGameId}.");
+                _logger?.Debug(ex, $"Failed to refresh theme state after custom-data change for gameId={gameId}.");
             }
 
             InvalidateStartPageData();

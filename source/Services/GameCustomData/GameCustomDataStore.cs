@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services.Achievements;
@@ -167,15 +168,18 @@ namespace PlayniteAchievements.Services.GameCustomData
 
         private void Save(Guid playniteGameId, GameCustomDataFile data, GameCustomDataFile previousData)
         {
-            var normalized = GameCustomDataNormalizer.NormalizeInternal(data, playniteGameId);
-            _repository.Save(playniteGameId, normalized);
-            RefreshCachedEntry(playniteGameId);
-            if (ShouldSyncManagedCustomIconCache(previousData, normalized))
+            using (PerfScope.Start(_logger, "GameCustomData.Save", thresholdMs: 50))
             {
-                SyncManagedCustomIconCache(playniteGameId, normalized);
-            }
+                var normalized = GameCustomDataNormalizer.NormalizeInternal(data, playniteGameId);
+                _repository.Save(playniteGameId, normalized);
+                RefreshCachedEntry(playniteGameId);
+                if (ShouldSyncManagedCustomIconCache(previousData, normalized))
+                {
+                    SyncManagedCustomIconCache(playniteGameId, normalized);
+                }
 
-            RaiseCustomDataChanged(playniteGameId);
+                RaiseCustomDataChanged(playniteGameId);
+            }
         }
 
         public void Delete(Guid playniteGameId)

@@ -248,6 +248,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public void ReloadData()
         {
+            using (PerfScope.Start(_logger, "ManageAchievements.Filters.ReloadData", thresholdMs: 100))
+            {
+                ReloadDataCore();
+            }
+        }
+
+        private void ReloadDataCore()
+        {
             try
             {
                 var revealedStateByApiName = AchievementRows
@@ -446,7 +454,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
 
             PersistCurrentFilters();
-            ApplyFilter();
+
+            // A toggle only changes the visible row set when a filter-state filter is
+            // active; the toggled row itself updates through its bindings, so the full
+            // re-filter (and its collection reset) can be skipped otherwise.
+            if ((SelectedFilterOption?.Value ?? AchievementFilterStateFilter.All) != AchievementFilterStateFilter.All)
+            {
+                ApplyFilter();
+            }
         }
 
         private void PersistCurrentFilters()
@@ -485,6 +500,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
 
         private void ApplyFilter()
+        {
+            using (PerfScope.Start(_logger, "ManageAchievements.Filters.ApplyFilter", thresholdMs: 50))
+            {
+                ApplyFilterCore();
+            }
+        }
+
+        private void ApplyFilterCore()
         {
             var filtered = _allRows.AsEnumerable();
             var searchQuery = SearchQuery.From(SearchText);
