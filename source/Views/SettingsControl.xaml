@@ -1408,6 +1408,9 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode}"
                                                           IsChecked="{Binding Persisted.FriendsOverviewAchievementsStartInCategoryMode}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
+                                                          IsChecked="{Binding Persisted.FriendsOverviewAchievementsHideCategorySummaryRow}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode_ViewFriends}"
                                                           IsChecked="{Binding Persisted.ViewFriendsAchievementsStartInCategoryMode}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"
@@ -2171,6 +2174,9 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode}"
                                                           IsChecked="{Binding Persisted.OverviewSelectedGameAchievementsStartInCategoryMode}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
+                                                          IsChecked="{Binding Persisted.OverviewSelectedGameAchievementsHideCategorySummaryRow}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
                                                                VerticalAlignment="Center"/>
@@ -2329,6 +2335,9 @@
                                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode}"
                                                           IsChecked="{Binding Persisted.ViewAchievementsAchievementGridStartInCategoryMode}"
                                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
+                                                          IsChecked="{Binding Persisted.ViewAchievementsAchievementGridHideCategorySummaryRow}"
+                                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                                                 <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                                     <TextBlock Text="{DynamicResource LOCPlayAch_Settings_GridRowHeight}"
                                                                VerticalAlignment="Center"/>
@@ -2440,6 +2449,9 @@
                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode}"
                                                   IsChecked="{Binding Persisted.DesktopThemeAchievementGridStartInCategoryMode}"
+                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
+                                                  IsChecked="{Binding Persisted.DesktopThemeAchievementGridHideCategorySummaryRow}"
                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
                                         <StackPanel Orientation="Horizontal" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}">
                                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
