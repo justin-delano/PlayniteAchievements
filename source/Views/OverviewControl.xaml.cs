@@ -492,6 +492,14 @@ namespace PlayniteAchievements.Views
             _lastSelectedOverviewGameId = null;
         }
 
+        private void GameNameBreadcrumb_Click(object sender, MouseButtonEventArgs e)
+        {
+            if (_viewModel?.IsSelectedGameDrilledIntoCategory == true)
+            {
+                GameAchievementsGrid.ExitDrilledCategory();
+            }
+        }
+
         public bool HandleFullscreenControllerInput(ControllerInput input)
         {
             if (_viewModel == null)
