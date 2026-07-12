@@ -233,6 +233,174 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         // ---------------------------------------------------------------------
+        // Scan-scoped offscreen view lease
+        // ---------------------------------------------------------------------
+
+        private readonly object _viewLeaseLock = new object();
+        private readonly SemaphoreSlim _leasedViewNavGate = new SemaphoreSlim(1, 1);
+        private IWebView _leasedView;
+        private int _viewLeaseCount;
+
+        /// <summary>
+        /// Holds one shared offscreen CEF view open until the returned lease is disposed.
+        /// While a lease is active, page fetches, auth probes, and cookie reads reuse the
+        /// shared view instead of creating and disposing a view per call, bounding CEF
+        /// memory during long scans.
+        /// </summary>
+        public IDisposable BeginOffscreenViewLease()
+        {
+            lock (_viewLeaseLock)
+            {
+                _viewLeaseCount++;
+            }
+
+            return new OffscreenViewLease(this);
+        }
+
+        private sealed class OffscreenViewLease : IDisposable
+        {
+            private SteamSessionManager _owner;
+
+            public OffscreenViewLease(SteamSessionManager owner)
+            {
+                _owner = owner;
+            }
+
+            public void Dispose()
+            {
+                Interlocked.Exchange(ref _owner, null)?.EndOffscreenViewLease();
+            }
+        }
+
+        private void EndOffscreenViewLease()
+        {
+            IWebView toDispose;
+            lock (_viewLeaseLock)
+            {
+                _viewLeaseCount = Math.Max(0, _viewLeaseCount - 1);
+                if (_viewLeaseCount > 0)
+                {
+                    return;
+                }
+
+                toDispose = _leasedView;
+                _leasedView = null;
+            }
+
+            DisposeOffscreenView(toDispose);
+        }
+
+        private void DisposeOffscreenView(IWebView view)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            try
+            {
+                InvokeOnUi(_api, () => view.Dispose());
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to dispose offscreen view.");
+            }
+        }
+
+        /// <summary>
+        /// Returns the shared leased view (created on first use) when a lease is active,
+        /// otherwise a fresh per-call view the caller owns. Must be called on the UI thread.
+        /// </summary>
+        private (IWebView View, bool Owned) AcquireOffscreenView()
+        {
+            lock (_viewLeaseLock)
+            {
+                if (_viewLeaseCount > 0)
+                {
+                    if (_leasedView == null)
+                    {
+                        _leasedView = _api.WebViews.CreateOffscreenView();
+                    }
+
+                    return (_leasedView, false);
+                }
+            }
+
+            return (_api.WebViews.CreateOffscreenView(), true);
+        }
+
+        /// <summary>
+        /// Releases a view returned by AcquireOffscreenView. Per-call views are disposed;
+        /// a faulted shared view is discarded so the next acquisition recreates it.
+        /// </summary>
+        private void ReleaseOffscreenView(IWebView view, bool owned, bool faulted)
+        {
+            if (view == null)
+            {
+                return;
+            }
+
+            if (!owned)
+            {
+                if (!faulted)
+                {
+                    return;
+                }
+
+                lock (_viewLeaseLock)
+                {
+                    if (ReferenceEquals(_leasedView, view))
+                    {
+                        _leasedView = null;
+                    }
+                }
+            }
+
+            try
+            {
+                view.Dispose();
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to dispose offscreen view.");
+            }
+        }
+
+        /// <summary>
+        /// Runs navigation work against an offscreen view on the current (UI) thread.
+        /// Navigations on the shared leased view are serialized through a gate; per-call
+        /// views run unguarded as before.
+        /// </summary>
+        private async Task<T> WithNavigableOffscreenViewAsync<T>(Func<IWebView, Task<T>> work, CancellationToken ct)
+        {
+            var (view, owned) = AcquireOffscreenView();
+            if (!owned)
+            {
+                await _leasedViewNavGate.WaitAsync(ct).ConfigureAwait(true);
+            }
+
+            var faulted = false;
+            try
+            {
+                return await work(view).ConfigureAwait(true);
+            }
+            catch
+            {
+                faulted = true;
+                throw;
+            }
+            finally
+            {
+                if (!owned)
+                {
+                    _leasedViewNavGate.Release();
+                }
+
+                ReleaseOffscreenView(view, owned, faulted);
+            }
+        }
+
+        // ---------------------------------------------------------------------
         // Internal methods for SteamHttpClient
         // ---------------------------------------------------------------------
 
@@ -251,13 +419,14 @@ namespace PlayniteAchievements.Providers.Steam
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    using (var view = _api.WebViews.CreateOffscreenView())
+                    await WithNavigableOffscreenViewAsync(async view =>
                     {
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
                         await Task.Delay(2000, ct).ConfigureAwait(true);
                         html = await view.GetPageSourceAsync().ConfigureAwait(true);
-                    }
+                        return true;
+                    }, ct).ConfigureAwait(true);
                 }
                 catch (TimeoutException ex)
                 {
@@ -312,13 +481,13 @@ namespace PlayniteAchievements.Providers.Steam
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    using (var view = _api.WebViews.CreateOffscreenView())
+                    return await WithNavigableOffscreenViewAsync(async view =>
                     {
                         _logger?.Debug($"[SteamAuth] Navigating to {CommunityEditInfoUrl} to resolve web auth session...");
                         await view.NavigateAndWaitAsync(CommunityEditInfoUrl, timeoutMs: 15000).ConfigureAwait(true);
                         await Task.Delay(500, ct).ConfigureAwait(true);
                         return ResolveWebAuthSessionFromView(view);
-                    }
+                    }, ct).ConfigureAwait(true);
                 }
                 catch (OperationCanceledException)
                 {
@@ -581,63 +750,77 @@ namespace PlayniteAchievements.Providers.Steam
             }
         }
 
-        public static void LoadCefCookiesIntoJar(
-            IPlayniteAPI api,
-            ILogger logger,
-            CookieContainer cookieJar)
+        /// <summary>
+        /// Copies Steam cookies from the CEF browser into the given HTTP cookie jar,
+        /// reusing the scan-leased offscreen view when one is active.
+        /// </summary>
+        public void LoadCefCookiesIntoJar(CookieContainer cookieJar)
         {
             try
             {
-                InvokeOnUi(api, () =>
+                InvokeOnUi(_api, () =>
                 {
-                    using (var view = api.WebViews.CreateOffscreenView())
+                    var (view, owned) = AcquireOffscreenView();
+                    try
                     {
-                        var cookies = view.GetCookies();
-                        if (cookies == null)
-                        {
-                            return;
-                        }
-
-                        var steamCookies = cookies
-                            .Where(c => c != null && !string.IsNullOrWhiteSpace(c.Domain))
-                            .Where(c => IsSteamDomain(c.Domain))
-                            .ToList();
-
-                        foreach (var c in steamCookies)
-                        {
-                            try
-                            {
-                                var domain = c.Domain.TrimStart('.');
-                                var path = string.IsNullOrWhiteSpace(c.Path) ? "/" : c.Path;
-                                var uri = GetAddUriForDomain(domain);
-                                var cookie = new Cookie(c.Name, SanitizeCookieValue(c.Value), path)
-                                {
-                                    Domain = uri.Host,
-                                    Secure = c.Secure,
-                                    HttpOnly = c.HttpOnly
-                                };
-
-                                if (c.Expires.HasValue && c.Expires.Value > DateTime.MinValue)
-                                {
-                                    var expires = c.Expires.Value;
-                                    cookie.Expires = expires.Kind == DateTimeKind.Utc ? expires : expires.ToUniversalTime();
-                                }
-                                cookieJar.Add(uri, cookie);
-                            }
-                            catch (Exception ex)
-                            {
-                                logger?.Debug($"Failed to add cookie '{c.Name}' to jar: {ex.Message}");
-                            }
-                        }
-
-                        AddSteamTimezoneCookie(cookieJar, logger);
+                        LoadCefCookiesIntoJarFromView(view, _logger, cookieJar);
+                    }
+                    finally
+                    {
+                        ReleaseOffscreenView(view, owned, faulted: false);
                     }
                 });
             }
             catch (Exception ex)
             {
-                logger?.Debug(ex, "Failed to load cookies from CEF into jar");
+                _logger?.Debug(ex, "Failed to load cookies from CEF into jar");
             }
+        }
+
+        private static void LoadCefCookiesIntoJarFromView(
+            IWebView view,
+            ILogger logger,
+            CookieContainer cookieJar)
+        {
+            var cookies = view.GetCookies();
+            if (cookies == null)
+            {
+                return;
+            }
+
+            var steamCookies = cookies
+                .Where(c => c != null && !string.IsNullOrWhiteSpace(c.Domain))
+                .Where(c => IsSteamDomain(c.Domain))
+                .ToList();
+
+            foreach (var c in steamCookies)
+            {
+                try
+                {
+                    var domain = c.Domain.TrimStart('.');
+                    var path = string.IsNullOrWhiteSpace(c.Path) ? "/" : c.Path;
+                    var uri = GetAddUriForDomain(domain);
+                    var cookie = new Cookie(c.Name, SanitizeCookieValue(c.Value), path)
+                    {
+                        Domain = uri.Host,
+                        Secure = c.Secure,
+                        HttpOnly = c.HttpOnly
+                    };
+
+                    if (c.Expires.HasValue && c.Expires.Value > DateTime.MinValue)
+                    {
+                        var expires = c.Expires.Value;
+                        cookie.Expires = expires.Kind == DateTimeKind.Utc ? expires : expires.ToUniversalTime();
+                    }
+                    cookieJar.Add(uri, cookie);
+                }
+                catch (Exception ex)
+                {
+                    logger?.Debug($"Failed to add cookie '{c.Name}' to jar: {ex.Message}");
+                }
+            }
+
+            AddSteamTimezoneCookie(cookieJar, logger);
         }
 
         private static string SanitizeCookieValue(string value)

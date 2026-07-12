@@ -165,13 +165,16 @@ namespace PlayniteAchievements.Providers.Steam
                    id > 0;
         }
 
-        public Task<RebuildPayload> RefreshAsync(
+        public async Task<RebuildPayload> RefreshAsync(
             IReadOnlyList<Game> gamesToRefresh,
             Action<Game> onGameStarting,
             Func<Game, GameAchievementData, Task> onGameCompleted,
             CancellationToken cancel)
         {
-            return _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel);
+            using (_sessionManager.BeginOffscreenViewLease())
+            {
+                return await _scanner.RefreshAsync(gamesToRefresh, onGameStarting, onGameCompleted, cancel).ConfigureAwait(false);
+            }
         }
 
         /// <inheritdoc />

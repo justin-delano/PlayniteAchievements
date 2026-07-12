@@ -156,7 +156,7 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 lock (_cookieLock)
                 {
-                    SteamSessionManager.LoadCefCookiesIntoJar(_api, _logger, _cookieJar);
+                    _sessionManager.LoadCefCookiesIntoJar(_cookieJar);
                 }
             }
         }
