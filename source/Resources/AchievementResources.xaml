@@ -53,9 +53,9 @@
 
     <DataTemplate x:Key="PlayAch.Template.AchievementToast"
                   DataType="{x:Type vm:AchievementToastViewModel}">
-        <Border Width="356"
-                MinHeight="56"
-                MaxHeight="140"
+        <Border Width="410"
+                MinHeight="64"
+                MaxHeight="160"
                 Margin="14"
                 CornerRadius="8"
                 Background="{DynamicResource PlayAch.Brush.PopupSurface}"
@@ -96,9 +96,9 @@
                 <StackPanel Grid.Column="0"
                             VerticalAlignment="Center"
                             HorizontalAlignment="Center"
-                            Margin="0,0,18,0">
-                    <Grid Width="48"
-                          Height="48"
+                            Margin="0,0,26,0">
+                    <Grid Width="55"
+                          Height="55"
                           HorizontalAlignment="Center">
                         <Image Stretch="UniformToFill"
                                RenderOptions.BitmapScalingMode="HighQuality"
@@ -117,12 +117,13 @@
                                 HorizontalAlignment="Center"
                                 Margin="0,4,0,0">
                         <Image Source="{Binding BadgeImage}"
-                               Width="18"
-                               Height="18"
+                               Width="21"
+                               Height="21"
                                VerticalAlignment="Center"
                                RenderOptions.BitmapScalingMode="HighQuality"
                                Visibility="{Binding ShowBadge, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <TextBlock Text="{Binding PercentText}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                    VerticalAlignment="Center"
@@ -148,14 +149,16 @@
                                    helpers:AsyncImage.DecodePixel="64"/>
                         </Border>
                         <TextBlock Text="{Binding HeaderText}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                    TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
 
                     <TextBlock Text="{Binding TitleText}"
+                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                Foreground="{Binding TitleBrush}"
-                               FontSize="{DynamicResource PlayAch.FontSize.Body}"
+                               FontSize="{DynamicResource PlayAch.FontSize.Title}"
                                FontWeight="SemiBold"
                                TextWrapping="NoWrap"
                                TextTrimming="CharacterEllipsis"
@@ -163,6 +166,7 @@
                                Visibility="{Binding ShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                     <TextBlock Text="{Binding Description}"
+                               Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                TextWrapping="Wrap"
@@ -174,15 +178,18 @@
                     <StackPanel Orientation="Horizontal"
                                 Margin="0,2,0,0">
                         <TextBlock Text="{Binding GameName}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                    TextTrimming="CharacterEllipsis"
                                    Visibility="{Binding ShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <TextBlock Text="  &#8226;  "
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                    Visibility="{Binding ShowGameCategorySeparator, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <TextBlock Text="{Binding Category}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                    TextTrimming="CharacterEllipsis"
@@ -201,7 +208,7 @@
                             Margin="0,8,0,0"
                             CornerRadius="2"
                             HorizontalAlignment="Stretch"
-                            Background="{Binding AccentBrush}"
+                            Background="{DynamicResource PlayAch.Brush.Progress.Fill}"
                             RenderTransformOrigin="0,0">
                         <Border.RenderTransform>
                             <ScaleTransform ScaleX="1"
