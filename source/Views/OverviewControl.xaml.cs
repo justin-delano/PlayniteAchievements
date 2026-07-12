@@ -128,6 +128,10 @@ namespace PlayniteAchievements.Views
             ActiveSubView = _lastSelectedSubView;
             ApplyActiveSubView();
             PlayniteAchievementsPlugin.SettingsSaved += Plugin_SettingsSaved;
+            if (_settings?.Persisted != null)
+            {
+                _settings.Persisted.PropertyChanged += Persisted_PropertyChanged;
+            }
         }
 
         public OverviewSubView ActiveSubView
@@ -221,6 +225,16 @@ namespace PlayniteAchievements.Views
                 _friendsOverview?.HasAnySelection == true;
         }
 
+        private void Persisted_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e?.PropertyName == nameof(PersistedSettings.EnableFriendsFeatures)
+                && !_settings.Persisted.EnableFriendsFeatures
+                && ActiveSubView == OverviewSubView.Friends)
+            {
+                ActiveSubView = OverviewSubView.Overview;
+            }
+        }
+
         // Invoked by AchievementHotkeyService when F5 is pressed while focus is within this view.
         // Runs the main refresh, honoring the refresh-mode selector.
         public void TriggerHotkeyRefresh()
@@ -302,6 +316,10 @@ namespace PlayniteAchievements.Views
                     _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
                 }
                 PlayniteAchievementsPlugin.SettingsSaved -= Plugin_SettingsSaved;
+                if (_settings?.Persisted != null)
+                {
+                    _settings.Persisted.PropertyChanged -= Persisted_PropertyChanged;
+                }
                 if (_friendsOverview?.ViewModel != null)
                 {
                     _friendsOverview.ViewModel.PropertyChanged -= FriendsViewModel_PropertyChanged;
