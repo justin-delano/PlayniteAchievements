@@ -123,7 +123,7 @@ namespace PlayniteAchievements.Views
                     if (IsChecking)
                     {
                         return ResourceProvider.GetString("LOCPlayAch_Landing_Status_BadgeChecking")
-                            ?? "CHECKING";
+                            ?? "Checking";
                     }
                     if (!IsEnabled)
                     {
