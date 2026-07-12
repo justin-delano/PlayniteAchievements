@@ -525,6 +525,26 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(HideBackButtonProperty, value);
         }
 
+        public static readonly DependencyProperty HideCategorySummaryRowProperty =
+            DependencyProperty.Register(nameof(HideCategorySummaryRow), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(false, OnHideCategorySummaryRowChanged));
+
+        // When true, the in-grid category summary row (DrillHeaderVisible) stays hidden once a
+        // category is selected, giving the achievement list the full vertical space.
+        public bool HideCategorySummaryRow
+        {
+            get => (bool)GetValue(HideCategorySummaryRowProperty);
+            set => SetValue(HideCategorySummaryRowProperty, value);
+        }
+
+        private static void OnHideCategorySummaryRowChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.ApplyCategoryViewState();
+            }
+        }
+
         public static readonly DependencyProperty CategoryColumnSettingsKeyProperty =
             DependencyProperty.Register(nameof(CategoryColumnSettingsKey), typeof(string),
                 typeof(AchievementDataGridControl), new PropertyMetadata(null));
@@ -1092,7 +1112,7 @@ namespace PlayniteAchievements.Views.Controls
             var drill = grouping && _drilledCategory != null;
             var list = grouping && !drill;
             CategoryListVisible = list;
-            DrillHeaderVisible = drill;
+            DrillHeaderVisible = drill && !HideCategorySummaryRow;
             AchievementGridVisible = !list;
             DrilledCategory = drill ? _drilledCategory : null;
             RecomputeEffectiveAchievements();
