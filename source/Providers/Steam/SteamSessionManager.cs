@@ -49,6 +49,7 @@ namespace PlayniteAchievements.Providers.Steam
         {
             _api = api ?? throw new ArgumentNullException(nameof(api));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _offscreenViews = new OffscreenViewLeaseSource(_api, _logger);
         }
 
         internal void SetClearInMemoryAuthState(Action clearInMemoryAuthState)
@@ -236,10 +237,7 @@ namespace PlayniteAchievements.Providers.Steam
         // Scan-scoped offscreen view lease
         // ---------------------------------------------------------------------
 
-        private readonly object _viewLeaseLock = new object();
-        private readonly SemaphoreSlim _leasedViewNavGate = new SemaphoreSlim(1, 1);
-        private IWebView _leasedView;
-        private int _viewLeaseCount;
+        private readonly OffscreenViewLeaseSource _offscreenViews;
 
         /// <summary>
         /// Holds one shared offscreen CEF view open until the returned lease is disposed.
@@ -247,158 +245,7 @@ namespace PlayniteAchievements.Providers.Steam
         /// shared view instead of creating and disposing a view per call, bounding CEF
         /// memory during long scans.
         /// </summary>
-        public IDisposable BeginOffscreenViewLease()
-        {
-            lock (_viewLeaseLock)
-            {
-                _viewLeaseCount++;
-            }
-
-            return new OffscreenViewLease(this);
-        }
-
-        private sealed class OffscreenViewLease : IDisposable
-        {
-            private SteamSessionManager _owner;
-
-            public OffscreenViewLease(SteamSessionManager owner)
-            {
-                _owner = owner;
-            }
-
-            public void Dispose()
-            {
-                Interlocked.Exchange(ref _owner, null)?.EndOffscreenViewLease();
-            }
-        }
-
-        private void EndOffscreenViewLease()
-        {
-            IWebView toDispose;
-            lock (_viewLeaseLock)
-            {
-                _viewLeaseCount = Math.Max(0, _viewLeaseCount - 1);
-                if (_viewLeaseCount > 0)
-                {
-                    return;
-                }
-
-                toDispose = _leasedView;
-                _leasedView = null;
-            }
-
-            DisposeOffscreenView(toDispose);
-        }
-
-        private void DisposeOffscreenView(IWebView view)
-        {
-            if (view == null)
-            {
-                return;
-            }
-
-            try
-            {
-                InvokeOnUi(_api, () => view.Dispose());
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "Failed to dispose offscreen view.");
-            }
-        }
-
-        /// <summary>
-        /// Returns the shared leased view (created on first use) when a lease is active,
-        /// otherwise a fresh per-call view the caller owns. Must be called on the UI thread.
-        /// </summary>
-        private (IWebView View, bool Owned) AcquireOffscreenView()
-        {
-            lock (_viewLeaseLock)
-            {
-                if (_viewLeaseCount > 0)
-                {
-                    if (_leasedView == null)
-                    {
-                        _leasedView = _api.WebViews.CreateOffscreenView();
-                    }
-
-                    return (_leasedView, false);
-                }
-            }
-
-            return (_api.WebViews.CreateOffscreenView(), true);
-        }
-
-        /// <summary>
-        /// Releases a view returned by AcquireOffscreenView. Per-call views are disposed;
-        /// a faulted shared view is discarded so the next acquisition recreates it.
-        /// </summary>
-        private void ReleaseOffscreenView(IWebView view, bool owned, bool faulted)
-        {
-            if (view == null)
-            {
-                return;
-            }
-
-            if (!owned)
-            {
-                if (!faulted)
-                {
-                    return;
-                }
-
-                lock (_viewLeaseLock)
-                {
-                    if (ReferenceEquals(_leasedView, view))
-                    {
-                        _leasedView = null;
-                    }
-                }
-            }
-
-            try
-            {
-                view.Dispose();
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "Failed to dispose offscreen view.");
-            }
-        }
-
-        /// <summary>
-        /// Runs navigation work against an offscreen view on the current (UI) thread.
-        /// Navigations on the shared leased view are serialized through a gate; per-call
-        /// views run unguarded as before.
-        /// </summary>
-        private async Task<T> WithNavigableOffscreenViewAsync<T>(Func<IWebView, Task<T>> work, CancellationToken ct)
-        {
-            var (view, owned) = AcquireOffscreenView();
-            if (!owned)
-            {
-                await _leasedViewNavGate.WaitAsync(ct).ConfigureAwait(true);
-            }
-
-            var faulted = false;
-            try
-            {
-                return await work(view).ConfigureAwait(true);
-            }
-            catch
-            {
-                faulted = true;
-                throw;
-            }
-            finally
-            {
-                if (!owned)
-                {
-                    _leasedViewNavGate.Release();
-                }
-
-                ReleaseOffscreenView(view, owned, faulted);
-            }
-        }
+        public IDisposable BeginOffscreenViewLease() => _offscreenViews.BeginLease();
 
         // ---------------------------------------------------------------------
         // Internal methods for SteamHttpClient
@@ -419,7 +266,7 @@ namespace PlayniteAchievements.Providers.Steam
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    await WithNavigableOffscreenViewAsync(async view =>
+                    await _offscreenViews.WithNavigableViewAsync(async view =>
                     {
                         await view.NavigateAndWaitAsync(url, timeoutMs: 15000);
                         finalUrl = view.GetCurrentAddress();
@@ -481,7 +328,7 @@ namespace PlayniteAchievements.Providers.Steam
                 try
                 {
                     ct.ThrowIfCancellationRequested();
-                    return await WithNavigableOffscreenViewAsync(async view =>
+                    return await _offscreenViews.WithNavigableViewAsync(async view =>
                     {
                         _logger?.Debug($"[SteamAuth] Navigating to {CommunityEditInfoUrl} to resolve web auth session...");
                         await view.NavigateAndWaitAsync(CommunityEditInfoUrl, timeoutMs: 15000).ConfigureAwait(true);
@@ -760,14 +607,14 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 InvokeOnUi(_api, () =>
                 {
-                    var (view, owned) = AcquireOffscreenView();
+                    var (view, owned) = _offscreenViews.AcquireView();
                     try
                     {
                         LoadCefCookiesIntoJarFromView(view, _logger, cookieJar);
                     }
                     finally
                     {
-                        ReleaseOffscreenView(view, owned, faulted: false);
+                        _offscreenViews.ReleaseView(view, owned, faulted: false);
                     }
                 });
             }
