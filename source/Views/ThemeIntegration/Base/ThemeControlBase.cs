@@ -11,6 +11,8 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
+using PlayniteAchievements.Services.Logging;
+using PlayniteAchievements.Services.UI;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 
@@ -22,6 +24,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
     /// </summary>
     public abstract class ThemeControlBase : PluginUserControl
     {
+        private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(ThemeControlBase));
+
         private bool _isAutoUpdateSubscribed;
         private bool _themeUpdateQueued;
 
@@ -302,6 +306,51 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             DataContext = EffectiveSettings;
             Loaded += ThemeControlBase_Loaded;
             Unloaded += ThemeControlBase_Unloaded;
+        }
+
+        private static ResourceDictionary _themeNativeTokens;
+
+        /// <summary>
+        /// Gets a shared dictionary of PlayAch.* tokens resolved from the active Playnite theme
+        /// without user appearance overrides. Merging it into a theme control shadows the
+        /// app-level tokens for the control's subtree (including hosted shared controls), so
+        /// controls embedded in themes render pure theme values while plugin windows keep the
+        /// override-aware app-level tokens.
+        /// </summary>
+        private static ResourceDictionary GetThemeNativeTokens()
+        {
+            if (_themeNativeTokens == null)
+            {
+                var dictionary = new ResourceDictionary();
+                PlayAchResourceService.Apply(dictionary, null);
+                _themeNativeTokens = dictionary;
+            }
+
+            return _themeNativeTokens;
+        }
+
+        /// <summary>
+        /// Merges the theme-native token dictionary after XAML initialization. This must not run
+        /// in the constructor: a &lt;UserControl.Resources&gt; element replaces the Resources
+        /// instance during InitializeComponent, which would discard a constructor-time merge.
+        /// </summary>
+        protected override void OnInitialized(EventArgs e)
+        {
+            base.OnInitialized(e);
+
+            if (Application.Current == null || DesignerProperties.GetIsInDesignMode(this))
+            {
+                return;
+            }
+
+            try
+            {
+                Resources.MergedDictionaries.Add(GetThemeNativeTokens());
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to merge theme-native token dictionary.");
+            }
         }
 
         private void ThemeControlBase_Loaded(object sender, RoutedEventArgs e)
