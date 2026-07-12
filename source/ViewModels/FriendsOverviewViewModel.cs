@@ -12,6 +12,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
@@ -51,6 +52,15 @@ namespace PlayniteAchievements.ViewModels
         private List<FriendAchievementDisplayItem> _allRecentUnlocks = new List<FriendAchievementDisplayItem>();
         private List<FriendAchievementDisplayItem> _allAchievements = new List<FriendAchievementDisplayItem>();
         private List<FriendAchievementDisplayItem> _allUnlockedAchievements = new List<FriendAchievementDisplayItem>();
+        private List<FriendSummaryItem> _filteredFriendsList = new List<FriendSummaryItem>();
+        private List<FriendGameSummaryItem> _filteredGamesList = new List<FriendGameSummaryItem>();
+        private List<FriendAchievementDisplayItem> _filteredAchievementsList = new List<FriendAchievementDisplayItem>();
+        private string _friendSortPath;
+        private ListSortDirection _friendSortDirection;
+        private string _gameSortPath;
+        private ListSortDirection _gameSortDirection;
+        private string _achievementSortPath;
+        private ListSortDirection _achievementSortDirection;
         private FriendOverviewProjection _projection = new FriendOverviewProjection(null);
         private readonly HashSet<string> _selectedTypeFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly HashSet<string> _selectedCategoryFilters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -164,6 +174,21 @@ namespace PlayniteAchievements.ViewModels
         public BulkObservableCollection<FriendSummaryItem> Friends => FilteredFriends;
         public BulkObservableCollection<FriendGameSummaryItem> Games => FilteredGames;
         public BulkObservableCollection<FriendAchievementDisplayItem> RecentUnlocks => DisplayedAchievements;
+
+        public string FriendSortPath => _friendSortPath;
+
+        public ListSortDirection? FriendSortDirection =>
+            string.IsNullOrWhiteSpace(_friendSortPath) ? (ListSortDirection?)null : _friendSortDirection;
+
+        public string GameSortPath => _gameSortPath;
+
+        public ListSortDirection? GameSortDirection =>
+            string.IsNullOrWhiteSpace(_gameSortPath) ? (ListSortDirection?)null : _gameSortDirection;
+
+        public string AchievementSortPath => _achievementSortPath;
+
+        public ListSortDirection? AchievementSortDirection =>
+            string.IsNullOrWhiteSpace(_achievementSortPath) ? (ListSortDirection?)null : _achievementSortDirection;
         public GridControlBarViewModel FriendSummariesControlBar { get; }
         public GridControlBarViewModel GameSummariesControlBar { get; }
         public GridControlBarViewModel AchievementsControlBar { get; }
@@ -1346,10 +1371,7 @@ namespace PlayniteAchievements.ViewModels
                     friends = friends.Where(friend => HasUnlocksForFriendGame(friend, SelectedGame));
                 }
 
-                var friendList = friends
-                    .OrderByDescending(friend => friend?.LastUnlockUtc ?? DateTime.MinValue)
-                    .ThenBy(friend => friend?.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-                    .ToList();
+                var friendList = friends.ToList();
 
                 var gameSource = SelectedFriend != null
                     ? GetSelectedFriendGames(SelectedFriend)
@@ -1360,10 +1382,7 @@ namespace PlayniteAchievements.ViewModels
                     .Where(game => HasAnyFriendUnlocks(game))
                     .Where(game => _gameSearchIndex.Matches(game, gameQuery));
 
-                var gameList = games
-                    .OrderByDescending(game => game?.LastUnlockUtc ?? DateTime.MinValue)
-                    .ThenBy(game => game?.GameName, StringComparer.CurrentCultureIgnoreCase)
-                    .ToList();
+                var gameList = games.ToList();
 
                 var selectionChanged = false;
                 if (SelectedFriend != null)
@@ -1445,22 +1464,72 @@ namespace PlayniteAchievements.ViewModels
                     achievements = achievements.Where(achievement => IsSameGame(achievement, SelectedGame));
                 }
 
-                var achievementList = achievements
-                    .OrderByDescending(achievement => achievement?.UnlockTimeUtc ?? DateTime.MinValue)
-                    .ThenBy(achievement => achievement?.FriendName, StringComparer.CurrentCultureIgnoreCase)
-                    .ThenBy(achievement => achievement?.GameName, StringComparer.CurrentCultureIgnoreCase)
-                    .ThenBy(achievement => achievement?.DisplayName, StringComparer.CurrentCultureIgnoreCase)
-                    .ToList();
+                var achievementList = achievements.ToList();
+
+                _filteredFriendsList = friendList;
+                _filteredGamesList = gameList;
+                _filteredAchievementsList = achievementList;
+
+                if (!string.IsNullOrEmpty(_friendSortPath))
+                {
+                    FriendSummarySortHelper.TrySortItems(
+                        _filteredFriendsList,
+                        _friendSortPath,
+                        _friendSortDirection,
+                        ref _friendSortPath,
+                        ref _friendSortDirection);
+                }
+                else
+                {
+                    FriendSummarySortHelper.SortByConfiguredDefault(_filteredFriendsList, _settings?.Persisted);
+                }
+
+                if (!string.IsNullOrEmpty(_gameSortPath))
+                {
+                    GameSummariesSortHelper.TrySortItems(
+                        _filteredGamesList,
+                        _gameSortPath,
+                        _gameSortDirection,
+                        ref _gameSortPath,
+                        ref _gameSortDirection);
+                }
+                else
+                {
+                    GameSummariesSortHelper.SortByConfiguredDefault(
+                        _filteredGamesList,
+                        _settings?.Persisted,
+                        GameSummariesSortSurface.FriendsOverview);
+                }
+
+                if (!string.IsNullOrEmpty(_achievementSortPath))
+                {
+                    var achievementSortDirection = (ListSortDirection?)_achievementSortDirection;
+                    if (AchievementSortHelper.TrySortItems(
+                            _filteredAchievementsList,
+                            _achievementSortPath,
+                            _achievementSortDirection,
+                            AchievementSortScope.RecentAchievements,
+                            ref _achievementSortPath,
+                            ref achievementSortDirection) &&
+                        achievementSortDirection.HasValue)
+                    {
+                        _achievementSortDirection = achievementSortDirection.Value;
+                    }
+                }
+                else
+                {
+                    ApplyAchievementConfiguredDefaultSort();
+                }
 
                 var persisted = _settings?.Persisted;
                 FilteredFriends.ReplaceAll(DisplayGridRowLimitHelper.Limit(
-                    friendList,
+                    _filteredFriendsList,
                     persisted?.FriendsOverviewFriendSummariesGridMaxRows));
                 FilteredGames.ReplaceAll(DisplayGridRowLimitHelper.Limit(
-                    gameList,
+                    _filteredGamesList,
                     persisted?.FriendsOverviewGameSummariesGridMaxRows));
                 DisplayedAchievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(
-                    achievementList,
+                    _filteredAchievementsList,
                     persisted?.FriendsOverviewAchievementsGridMaxRows));
                 OnPropertyChanged(nameof(AchievementCountText));
                 OnPropertyChanged(nameof(HasData));
@@ -1469,6 +1538,141 @@ namespace PlayniteAchievements.ViewModels
             {
                 _isApplyingFilters = false;
             }
+        }
+
+        private void ApplyAchievementConfiguredDefaultSort()
+        {
+            var configuredSort = AchievementSortHelper.GetConfiguredDefaultSort(
+                _settings?.Persisted,
+                AchievementSortSurface.FriendsOverviewRecentAchievements);
+            if (configuredSort.PreservesSourceOrder)
+            {
+                return;
+            }
+
+            var comparison = AchievementSortHelper.GetComparison(
+                configuredSort.SortMemberPath,
+                configuredSort.Direction,
+                AchievementSortScope.RecentAchievements);
+            if (comparison == null)
+            {
+                return;
+            }
+
+            _filteredAchievementsList.Sort(comparison);
+        }
+
+        public void SortDataGrid(DataGrid dataGrid, string sortMemberPath, ListSortDirection direction)
+        {
+            if (dataGrid == null || string.IsNullOrEmpty(sortMemberPath))
+            {
+                return;
+            }
+
+            var itemsSource = dataGrid.ItemsSource;
+            if (itemsSource == FilteredFriends)
+            {
+                SortFriends(sortMemberPath, direction);
+            }
+            else if (itemsSource == FilteredGames)
+            {
+                SortGames(sortMemberPath, direction);
+            }
+            else if (itemsSource == DisplayedAchievements)
+            {
+                SortAchievements(sortMemberPath, direction);
+            }
+        }
+
+        private void SortFriends(string sortMemberPath, ListSortDirection direction)
+        {
+            if (!FriendSummarySortHelper.TrySortItems(
+                    _filteredFriendsList,
+                    sortMemberPath,
+                    direction,
+                    ref _friendSortPath,
+                    ref _friendSortDirection))
+            {
+                return;
+            }
+
+            SyncFriendsDisplay();
+        }
+
+        private void SortGames(string sortMemberPath, ListSortDirection direction)
+        {
+            if (!GameSummariesSortHelper.TrySortItems(
+                    _filteredGamesList,
+                    sortMemberPath,
+                    direction,
+                    ref _gameSortPath,
+                    ref _gameSortDirection))
+            {
+                return;
+            }
+
+            SyncGamesDisplay();
+        }
+
+        private void SortAchievements(string sortMemberPath, ListSortDirection direction)
+        {
+            var achievementSortDirection = (ListSortDirection?)_achievementSortDirection;
+            if (!AchievementSortHelper.TrySortItems(
+                    _filteredAchievementsList,
+                    sortMemberPath,
+                    direction,
+                    AchievementSortScope.RecentAchievements,
+                    ref _achievementSortPath,
+                    ref achievementSortDirection))
+            {
+                return;
+            }
+
+            if (achievementSortDirection.HasValue)
+            {
+                _achievementSortDirection = achievementSortDirection.Value;
+            }
+
+            SyncAchievementsDisplay();
+        }
+
+        public void ApplyDefaultFriendSort()
+        {
+            _friendSortPath = null;
+            ApplyFilters(preserveSelections: true);
+        }
+
+        public void ApplyDefaultGameSort()
+        {
+            _gameSortPath = null;
+            ApplyFilters(preserveSelections: true);
+        }
+
+        public void ApplyDefaultAchievementSort()
+        {
+            _achievementSortPath = null;
+            ApplyFilters(preserveSelections: true);
+        }
+
+        private void SyncFriendsDisplay()
+        {
+            FilteredFriends.ReplaceAll(DisplayGridRowLimitHelper.Limit(
+                _filteredFriendsList,
+                _settings?.Persisted?.FriendsOverviewFriendSummariesGridMaxRows));
+        }
+
+        private void SyncGamesDisplay()
+        {
+            FilteredGames.ReplaceAll(DisplayGridRowLimitHelper.Limit(
+                _filteredGamesList,
+                _settings?.Persisted?.FriendsOverviewGameSummariesGridMaxRows));
+        }
+
+        private void SyncAchievementsDisplay()
+        {
+            DisplayedAchievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(
+                _filteredAchievementsList,
+                _settings?.Persisted?.FriendsOverviewAchievementsGridMaxRows));
         }
 
         private bool MatchesProvider(string providerKey)
@@ -1791,6 +1995,33 @@ namespace PlayniteAchievements.ViewModels
                 propertyName == nameof(PersistedSettings.FriendsOverviewAchievementsGridMaxRows))
             {
                 ApplyFilters();
+            }
+
+            if (string.IsNullOrWhiteSpace(_friendSortPath) &&
+                (string.IsNullOrWhiteSpace(propertyName) ||
+                 FriendSummarySortHelper.IsConfiguredDefaultSortPropertyName(propertyName)))
+            {
+                ApplyFilters();
+                OnPropertyChanged(nameof(FriendSortPath));
+                OnPropertyChanged(nameof(FriendSortDirection));
+            }
+
+            if (string.IsNullOrWhiteSpace(_gameSortPath) &&
+                (string.IsNullOrWhiteSpace(propertyName) ||
+                 GameSummariesSortHelper.IsConfiguredDefaultSortPropertyName(propertyName, GameSummariesSortSurface.FriendsOverview)))
+            {
+                ApplyFilters();
+                OnPropertyChanged(nameof(GameSortPath));
+                OnPropertyChanged(nameof(GameSortDirection));
+            }
+
+            if (string.IsNullOrWhiteSpace(_achievementSortPath) &&
+                (string.IsNullOrWhiteSpace(propertyName) ||
+                 AchievementSortHelper.IsConfiguredDefaultSortPropertyName(propertyName, AchievementSortSurface.FriendsOverviewRecentAchievements)))
+            {
+                ApplyFilters();
+                OnPropertyChanged(nameof(AchievementSortPath));
+                OnPropertyChanged(nameof(AchievementSortDirection));
             }
         }
 

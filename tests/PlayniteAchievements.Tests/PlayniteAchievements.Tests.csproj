@@ -91,6 +91,7 @@
     <Compile Include="..\..\source\Services\AchievementOrderHelper.cs" Link="Source\Services\AchievementOrderHelper.cs" />
     <Compile Include="..\..\source\Services\AchievementCategoryTypeHelper.cs" Link="Source\Services\AchievementCategoryTypeHelper.cs" />
     <Compile Include="..\..\source\Services\GameSummariesSortHelper.cs" Link="Source\Services\GameSummariesSortHelper.cs" />
+    <Compile Include="..\..\source\Services\FriendSummarySortHelper.cs" Link="Source\Services\FriendSummarySortHelper.cs" />
     <Compile Include="..\..\source\Services\DisplayGridRowLimitHelper.cs" Link="Source\Services\DisplayGridRowLimitHelper.cs" />
     <Compile Include="..\..\source\Services\SearchQuery.cs" Link="Source\Services\SearchQuery.cs" />
     <Compile Include="..\..\source\Services\SearchTextBuilder.cs" Link="Source\Services\SearchTextBuilder.cs" />
@@ -252,6 +253,7 @@
     <Compile Include="..\..\source\Models\Settings\GridVerticalAlignment.cs" Link="Source\Models\Settings\GridVerticalAlignment.cs" />
     <Compile Include="..\..\source\Models\Settings\CompactListSortMode.cs" Link="Source\Models\Settings\CompactListSortMode.cs" />
     <Compile Include="..\..\source\Models\Settings\GameSummariesSortMode.cs" Link="Source\Models\Settings\GameSummariesSortMode.cs" />
+    <Compile Include="..\..\source\Models\Settings\FriendSummariesSortMode.cs" Link="Source\Models\Settings\FriendSummariesSortMode.cs" />
     <Compile Include="..\..\source\Models\Settings\GridOptions.cs" Link="Source\Models\Settings\GridOptions.cs" />
     <Compile Include="..\..\source\Models\Settings\OverviewSettingsMigration.cs" Link="Source\Models\Settings\OverviewSettingsMigration.cs" />
     <Compile Include="..\..\source\Models\Settings\GridOptionsSettingsMigration.cs" Link="Source\Models\Settings\GridOptionsSettingsMigration.cs" />

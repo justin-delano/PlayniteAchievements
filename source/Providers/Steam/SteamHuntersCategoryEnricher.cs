@@ -110,7 +110,7 @@ namespace PlayniteAchievements.Providers.Steam
             for (var i = 0; i < (groups?.Count ?? 0); i++)
             {
                 var group = groups[i];
-                var type = ResolveCategoryType(groupBy, i);
+                var type = ResolveCategoryType(groupBy, group);
                 var label = NormalizeGroupLabel(group)
                     ?? (string.Equals(type, BaseCategoryType, StringComparison.Ordinal)
                         ? baseFallbackLabel
@@ -139,14 +139,14 @@ namespace PlayniteAchievements.Providers.Steam
             return updated;
         }
 
-        private static string ResolveCategoryType(string groupBy, int groupIndex)
+        private static string ResolveCategoryType(string groupBy, SteamHuntersAchievementGroup group)
         {
             if (string.Equals(groupBy, "game", StringComparison.OrdinalIgnoreCase))
             {
                 return BaseCategoryType;
             }
 
-            return groupIndex == 0 ? BaseCategoryType : DlcCategoryType;
+            return group?.DlcAppId.HasValue == true ? DlcCategoryType : BaseCategoryType;
         }
 
         private Task<SteamHuntersAchievementGroupsResponse> GetGroupsAsync(

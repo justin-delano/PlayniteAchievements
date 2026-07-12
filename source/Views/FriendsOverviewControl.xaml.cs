@@ -11,6 +11,7 @@ using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Views.Helpers;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -109,6 +110,7 @@ namespace PlayniteAchievements.Views
                 },
                 friendsOverviewDataCoordinator: friendsOverviewDataCoordinator);
             DataContext = _viewModel;
+            _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         }
 
         private async void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
@@ -128,6 +130,11 @@ namespace PlayniteAchievements.Views
 
         public void Dispose()
         {
+            if (_viewModel != null)
+            {
+                _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            }
+
             FriendSummariesGridControl?.Dispose();
             FriendGameSummariesGridControl?.Dispose();
             SelectedFriendGameSummariesGridControl?.Dispose();
@@ -352,6 +359,163 @@ namespace PlayniteAchievements.Views
                 var targetRow = _pendingRightClickRow ?? row;
                 _pendingRightClickRow = null;
                 OpenContextMenuForRow(targetRow);
+            }
+        }
+
+        private void FriendSummaries_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            if (_viewModel == null) return;
+            e.Handled = true;
+
+            var grid = sender as DataGrid;
+            if (grid == null) return;
+
+            var settings = _viewModel.Settings?.Persisted;
+            var sortAction = FriendSummarySortHelper.ResolveGridSortAction(
+                e.Column?.SortMemberPath,
+                _viewModel.FriendSortPath,
+                _viewModel.FriendSortDirection,
+                settings);
+            if (sortAction.Kind == FriendSummariesGridSortActionKind.None)
+            {
+                return;
+            }
+
+            if (sortAction.Kind == FriendSummariesGridSortActionKind.ResetToDefault)
+            {
+                _viewModel.ApplyDefaultFriendSort();
+            }
+            else if (sortAction.Direction.HasValue)
+            {
+                _viewModel.SortDataGrid(grid, sortAction.SortMemberPath, sortAction.Direction.Value);
+            }
+
+            ResetFriendSummariesSortDirection();
+        }
+
+        private void GameSummaries_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            if (_viewModel == null) return;
+            e.Handled = true;
+
+            var grid = sender as DataGrid;
+            if (grid == null) return;
+
+            var settings = _viewModel.Settings?.Persisted;
+            var sortAction = GameSummariesSortHelper.ResolveGridSortAction(
+                e.Column?.SortMemberPath,
+                _viewModel.GameSortPath,
+                _viewModel.GameSortDirection,
+                settings,
+                GameSummariesSortSurface.FriendsOverview);
+            if (sortAction.Kind == GameSummariesGridSortActionKind.None)
+            {
+                return;
+            }
+
+            if (sortAction.Kind == GameSummariesGridSortActionKind.ResetToDefault)
+            {
+                _viewModel.ApplyDefaultGameSort();
+            }
+            else if (sortAction.Direction.HasValue)
+            {
+                _viewModel.SortDataGrid(grid, sortAction.SortMemberPath, sortAction.Direction.Value);
+            }
+
+            ResetGameSummariesSortDirection();
+        }
+
+        private void Achievements_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            if (_viewModel == null) return;
+            e.Handled = true;
+
+            var control = sender as Controls.AchievementDataGridControl;
+            var grid = control?.InternalDataGrid;
+            if (grid == null) return;
+
+            var settings = _viewModel.Settings?.Persisted;
+            var sortAction = AchievementSortHelper.ResolveGridSortAction(
+                e.Column?.SortMemberPath,
+                _viewModel.AchievementSortPath,
+                _viewModel.AchievementSortDirection,
+                settings,
+                AchievementSortSurface.FriendsOverviewRecentAchievements,
+                e.Column?.SortDirection);
+            if (sortAction.Kind == AchievementGridSortActionKind.None)
+            {
+                return;
+            }
+
+            if (sortAction.Kind == AchievementGridSortActionKind.ResetToDefault)
+            {
+                _viewModel.ApplyDefaultAchievementSort();
+            }
+            else if (sortAction.Direction.HasValue)
+            {
+                _viewModel.SortDataGrid(grid, sortAction.SortMemberPath, sortAction.Direction.Value);
+            }
+
+            ResetAchievementsSortDirection();
+        }
+
+        private void ResetFriendSummariesSortDirection()
+        {
+            if (FriendSummariesGridControl == null)
+            {
+                return;
+            }
+
+            FriendSummarySortHelper.ApplySortIndicator(
+                _viewModel?.FriendSortPath,
+                _viewModel?.FriendSortDirection,
+                _viewModel?.Settings?.Persisted,
+                (sortPath, sortDirection) => FriendSummariesGridControl.SetSortIndicator(sortPath, sortDirection));
+        }
+
+        private void ResetGameSummariesSortDirection()
+        {
+            GameSummariesSortHelper.ApplySortIndicator(
+                _viewModel?.GameSortPath,
+                _viewModel?.GameSortDirection,
+                _viewModel?.Settings?.Persisted,
+                (sortPath, sortDirection) =>
+                {
+                    FriendGameSummariesGridControl?.SetSortIndicator(sortPath, sortDirection);
+                    SelectedFriendGameSummariesGridControl?.SetSortIndicator(sortPath, sortDirection);
+                },
+                GameSummariesSortSurface.FriendsOverview);
+        }
+
+        private void ResetAchievementsSortDirection()
+        {
+            AchievementSortHelper.ApplySortIndicator(
+                _viewModel?.AchievementSortPath,
+                _viewModel?.AchievementSortDirection,
+                _viewModel?.Settings?.Persisted,
+                AchievementSortSurface.FriendsOverviewRecentAchievements,
+                (sortPath, sortDirection) => FriendsAchievementsGrid?.SetSortIndicator(sortPath, sortDirection));
+        }
+
+        private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (_viewModel == null || e == null) return;
+
+            if (e.PropertyName == nameof(FriendsOverviewViewModel.FriendSortPath) ||
+                e.PropertyName == nameof(FriendsOverviewViewModel.FriendSortDirection))
+            {
+                ResetFriendSummariesSortDirection();
+            }
+            else if (e.PropertyName == nameof(FriendsOverviewViewModel.GameSortPath) ||
+                     e.PropertyName == nameof(FriendsOverviewViewModel.GameSortDirection) ||
+                     e.PropertyName == nameof(FriendsOverviewViewModel.HasFriendSelection))
+            {
+                ResetGameSummariesSortDirection();
+            }
+            else if (e.PropertyName == nameof(FriendsOverviewViewModel.AchievementSortPath) ||
+                     e.PropertyName == nameof(FriendsOverviewViewModel.AchievementSortDirection))
+            {
+                ResetAchievementsSortDirection();
             }
         }
 

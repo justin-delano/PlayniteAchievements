@@ -416,7 +416,8 @@
                                                  DelayInitialRenderUntilNormalized="True"
                                                  RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"
                                                  RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
-                                                 RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
+                                                 RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"
+                                                 Sorting="FriendSummaries_Sorting"/>
 
             <!-- Game summaries -->
             <controls:GameSummariesGridControl x:Name="FriendGameSummariesGridControl"
@@ -439,7 +440,8 @@
                                                DelayInitialRenderUntilNormalized="True"
                                                RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"
                                                RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
-                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
+                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"
+                                               Sorting="GameSummaries_Sorting"/>
 
             <controls:GameSummariesGridControl x:Name="SelectedFriendGameSummariesGridControl"
                                                Grid.Row="1"
@@ -461,7 +463,8 @@
                                                DelayInitialRenderUntilNormalized="True"
                                                RowPreviewMouseLeftButtonDown="SummaryRow_PreviewMouseLeftButtonDown"
                                                RowPreviewMouseRightButtonDown="DataGridRow_PreviewMouseRightButtonDown"
-                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"/>
+                                               RowPreviewMouseRightButtonUp="DataGridRow_PreviewMouseRightButtonUp"
+                                               Sorting="GameSummaries_Sorting"/>
 
             <!-- Achievements -->
             <Grid Grid.Row="1" Grid.Column="4">
@@ -489,7 +492,9 @@
                                                      FixedRowHeight="{Binding Settings.Persisted.FriendsOverviewAchievementsGridRowHeight}"
                                                      DataGridMaxHeight="{x:Static sys:Double.NaN}"
                                                      DelayInitialRenderUntilNormalized="True"
-                                                     RowPreviewMouseLeftButtonDown="AchievementRow_PreviewMouseLeftButtonDown"/>
+                                                     RowPreviewMouseLeftButtonDown="AchievementRow_PreviewMouseLeftButtonDown"
+                                                     UseExternalSorting="True"
+                                                     Sorting="Achievements_Sorting"/>
 
                 <Border Background="{DynamicResource PlayAch.Brush.Window.Background}"
                         Visibility="{Binding HasStatusText, Converter={StaticResource BoolToVis}}">
