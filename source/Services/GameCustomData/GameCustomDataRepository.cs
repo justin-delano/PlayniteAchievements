@@ -27,6 +27,7 @@ namespace PlayniteAchievements.Services
         private readonly string _databasePath;
         private readonly ILogger _logger;
         private readonly JsonSerializerSettings _writeSettings;
+        private SQLiteDatabase _db;
         private bool _schemaInitialized;
 
         public GameCustomDataRepository(string databasePath, JsonSerializerSettings writeSettings, ILogger logger = null)
@@ -285,26 +286,51 @@ namespace PlayniteAchievements.Services
 
             lock (_syncRoot)
             {
-                var databaseExists = File.Exists(_databasePath);
-                if (!databaseExists && !createIfMissing)
+                // The connection is opened once and kept for the process lifetime
+                // (mirroring SqlNadoCacheStore); opening per call dominated the cost
+                // of the small per-edit writes issued from the UI.
+                if (_db == null)
                 {
-                    return defaultValue;
-                }
-
-                if (createIfMissing)
-                {
-                    EnsureParentDirectory();
-                }
-
-                using (var db = OpenDatabase(createIfMissing))
-                {
-                    if (!_schemaInitialized || !databaseExists)
+                    var databaseExists = File.Exists(_databasePath);
+                    if (!databaseExists && !createIfMissing)
                     {
-                        EnsureSchema(db);
-                        _schemaInitialized = true;
+                        return defaultValue;
                     }
 
-                    return action(db);
+                    if (createIfMissing)
+                    {
+                        EnsureParentDirectory();
+                    }
+
+                    var db = OpenDatabase(createIfMissing);
+                    try
+                    {
+                        if (!_schemaInitialized || !databaseExists)
+                        {
+                            EnsureSchema(db);
+                            _schemaInitialized = true;
+                        }
+                    }
+                    catch
+                    {
+                        db.Dispose();
+                        throw;
+                    }
+
+                    _db = db;
+                }
+
+                try
+                {
+                    return action(_db);
+                }
+                catch
+                {
+                    // Discard the shared connection on failure so the next call
+                    // reopens instead of reusing a potentially broken handle.
+                    try { _db.Dispose(); } catch { }
+                    _db = null;
+                    throw;
                 }
             }
         }
