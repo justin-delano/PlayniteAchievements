@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d"
              d:DesignHeight="600"
              d:DesignWidth="700">
@@ -41,6 +42,20 @@
                         <CheckBox Content="{DynamicResource LOCPlayAch_Settings_SetCompletionStatus}"
                                   IsChecked="{Binding Persisted.TaggingSettings.SetCompletionStatus, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                   Margin="0,0,0,8"/>
+
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="18,0,0,8"
+                                    Visibility="{Binding Persisted.TaggingSettings.SetCompletionStatus, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <TextBlock Text="{DynamicResource LOCCompletionStatus}"
+                                       VerticalAlignment="Center"
+                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
+                            <ComboBox x:Name="CompletionStatusComboBox"
+                                      MinWidth="200"
+                                      ItemsSource="{Binding CompletionStatuses, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                      DisplayMemberPath="Name"
+                                      SelectedValuePath="Id"
+                                      SelectedValue="{Binding Persisted.TaggingSettings.CompletionStatusId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged, TargetNullValue={x:Static sys:Guid.Empty}}"/>
+                        </StackPanel>
 
                         <!-- Action Buttons -->
                         <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
