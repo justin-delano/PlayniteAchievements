@@ -83,10 +83,52 @@
                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
                                       IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewHideSpoilers}"
-                                      IsChecked="{Binding Persisted.FriendsOverviewHideSpoilers}"
-                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"
-                                      Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource SectionBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_Achievements}"
+                               Style="{StaticResource SectionHeaderStyle}"
+                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                    <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                    <!-- Achievement Visibility -->
+                    <Border Style="{StaticResource SettingGroupCardStyle}">
+                        <StackPanel>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements}"
+                                       Style="{StaticResource SubSectionHeaderStyle}"
+                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements_Description}"
+                                       Style="{StaticResource MutedTextStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
+                            <TextBlock Text="PREVIEW"
+                                       Style="{StaticResource ContextLabelStyle}"/>
+                            <modern:AchievementDataGridControl
+                                Style="{StaticResource PreviewThemeControlStyle}"
+                                ThemeDataOverride="{Binding AchievementVisibilityPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                PreviewMaxHeightOverride="220"
+                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                            <TextBlock Text="SETTINGS"
+                                       Style="{StaticResource ContextLabelStyle}"/>
+                            <StackPanel>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealLockedIcon}"
+                                          IsChecked="{Binding Persisted.ShowLockedIcon}"
+                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenIcon}"
+                                          IsChecked="{Binding Persisted.ShowHiddenIcon}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenTitle}"
+                                          IsChecked="{Binding Persisted.ShowHiddenTitle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenDescription}"
+                                          IsChecked="{Binding Persisted.ShowHiddenDescription}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowHiddenSuffix}"
+                                          IsChecked="{Binding Persisted.ShowHiddenSuffix}"
+                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_FriendsOverviewHideSpoilers}"
+                                          IsChecked="{Binding Persisted.FriendsOverviewHideSpoilers}"
+                                          Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}"/>
+                            </StackPanel>
                         </StackPanel>
                     </Border>
                 </StackPanel>
@@ -110,71 +152,29 @@
                     </Expander.Header>
 
                     <StackPanel Margin="12,0,12,12">
-                        <Border Style="{StaticResource SectionBorderStyle}">
+                        <Border Style="{StaticResource SettingGroupCardStyle}">
                             <StackPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Achievements}"
-                                           Style="{StaticResource SectionHeaderStyle}"
-                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-
-                                <Border Style="{StaticResource SettingGroupCardStyle}">
-                                    <StackPanel>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Title}"
-                                                   Style="{StaticResource SubSectionHeaderStyle}"
-                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Description}"
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"
-                                                   TextWrapping="Wrap"/>
-                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable}"
-                                                  IsChecked="{Binding Persisted.UseSeparateLockedIconsWhenAvailable}"
-                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help}"
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   Margin="24,0,0,10"
-                                                   TextWrapping="Wrap"/>
-                                        <CheckBox Content="{DynamicResource LOCPlayAch_Settings_PreserveAchievementIconResolution}"
-                                                  IsChecked="{Binding Persisted.PreserveAchievementIconResolution}"
-                                                  Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PreserveAchievementIconResolution_Help}"
-                                                   Style="{StaticResource MutedTextStyle}"
-                                                   Margin="24,0,0,0"
-                                                   TextWrapping="Wrap"/>
-                                    </StackPanel>
-                                </Border>
-
-                                <!-- Achievement Visibility -->
-                                <Border Style="{StaticResource SettingGroupCardStyle}">
-                                    <StackPanel>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements}"
-                                                   Style="{StaticResource SubSectionHeaderStyle}"
-                                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
-                                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements_Description}"
-                                                   Style="{StaticResource MutedTextStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                                        <TextBlock Text="PREVIEW"
-                                                   Style="{StaticResource ContextLabelStyle}"/>
-                                        <modern:AchievementDataGridControl
-                                            Style="{StaticResource PreviewThemeControlStyle}"
-                                            ThemeDataOverride="{Binding AchievementVisibilityPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                            PreviewMaxHeightOverride="220"
-                                            Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                                        <TextBlock Text="SETTINGS"
-                                                   Style="{StaticResource ContextLabelStyle}"/>
-                                        <StackPanel>
-                                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealLockedIcon}"
-                                                      IsChecked="{Binding Persisted.ShowLockedIcon}"
-                                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
-                                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenIcon}"
-                                                      IsChecked="{Binding Persisted.ShowHiddenIcon}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
-                                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenTitle}"
-                                                      IsChecked="{Binding Persisted.ShowHiddenTitle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
-                                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealHiddenDescription}"
-                                                      IsChecked="{Binding Persisted.ShowHiddenDescription}" Margin="{StaticResource PlayAch.Thickness.Bottom.Compact}"/>
-                                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowHiddenSuffix}"
-                                                      IsChecked="{Binding Persisted.ShowHiddenSuffix}"/>
-                                        </StackPanel>
-                                    </StackPanel>
-                                </Border>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Title}"
+                                           Style="{StaticResource SubSectionHeaderStyle}"
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_AchievementIconCache_Description}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"
+                                           TextWrapping="Wrap"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable}"
+                                          IsChecked="{Binding Persisted.UseSeparateLockedIconsWhenAvailable}"
+                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UseSeparateLockedIconsWhenAvailable_Help}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="24,0,0,10"
+                                           TextWrapping="Wrap"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_PreserveAchievementIconResolution}"
+                                          IsChecked="{Binding Persisted.PreserveAchievementIconResolution}"
+                                          Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_PreserveAchievementIconResolution_Help}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           Margin="24,0,0,0"
+                                           TextWrapping="Wrap"/>
                             </StackPanel>
                         </Border>
 
