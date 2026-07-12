@@ -446,6 +446,10 @@ namespace PlayniteAchievements.Models.Settings
     public sealed class CategorySummaryGridOptions : PlayniteAchievements.Common.ObservableObject
     {
         private GridColumnLayoutOptions _columns = GridColumnLayoutOptions.CreateWithProgressRightAlignment();
+        private bool _showColumnHeaders = true;
+        private bool _showControlBar = true;
+        private double? _rowHeight;
+        private bool _useCoverImages;
 
         public GridColumnLayoutOptions Columns
         {
@@ -453,11 +457,41 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _columns, value ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment());
         }
 
+        public bool ShowColumnHeaders
+        {
+            get => _showColumnHeaders;
+            set => SetValue(ref _showColumnHeaders, value);
+        }
+
+        public bool ShowControlBar
+        {
+            get => _showControlBar;
+            set => SetValue(ref _showControlBar, value);
+        }
+
+        public double? RowHeight
+        {
+            get => _rowHeight;
+            set => SetValue(ref _rowHeight, PersistedSettings.NormalizeGridRowHeight(value));
+        }
+
+        // Categories show achievement icons by default (matching the achievement grid), not the
+        // larger cover art game-summary grids default to.
+        public bool UseCoverImages
+        {
+            get => _useCoverImages;
+            set => SetValue(ref _useCoverImages, value);
+        }
+
         public CategorySummaryGridOptions Clone()
         {
             return new CategorySummaryGridOptions
             {
-                Columns = Columns?.Clone() ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment()
+                Columns = Columns?.Clone() ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment(),
+                ShowColumnHeaders = ShowColumnHeaders,
+                ShowControlBar = ShowControlBar,
+                RowHeight = RowHeight,
+                UseCoverImages = UseCoverImages
             };
         }
     }
