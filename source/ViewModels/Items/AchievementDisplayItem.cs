@@ -1331,19 +1331,38 @@ namespace PlayniteAchievements.ViewModels.Items
             string defaultCoverPath,
             Guid? playniteGameId)
         {
+            ApplyCategoryPresentation(
+                item,
+                gameData?.AchievementCategoryOrder,
+                gameData?.AchievementCategoryImageOverrides,
+                categoryLabel,
+                defaultIconPath,
+                defaultCoverPath,
+                playniteGameId);
+        }
+
+        internal static void ApplyCategoryPresentation(
+            AchievementDisplayItem item,
+            IReadOnlyList<string> categoryOrder,
+            IReadOnlyDictionary<string, CategoryImageOverrideData> categoryImageOverrides,
+            string categoryLabel,
+            string defaultIconPath,
+            string defaultCoverPath,
+            Guid? playniteGameId)
+        {
             if (item == null)
             {
                 return;
             }
 
             var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryLabel);
-            item.CategoryOrderIndex = ResolveCategoryOrderIndex(normalizedCategory, gameData?.AchievementCategoryOrder);
+            item.CategoryOrderIndex = ResolveCategoryOrderIndex(normalizedCategory, categoryOrder);
 
             CategoryImageOverrideData imageOverride = null;
             if (!string.IsNullOrWhiteSpace(normalizedCategory) &&
-                gameData?.AchievementCategoryImageOverrides != null)
+                categoryImageOverrides != null)
             {
-                gameData.AchievementCategoryImageOverrides.TryGetValue(normalizedCategory, out imageOverride);
+                categoryImageOverrides.TryGetValue(normalizedCategory, out imageOverride);
             }
 
             item.CategoryIconPath =
