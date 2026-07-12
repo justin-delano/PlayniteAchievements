@@ -126,7 +126,7 @@
                         IsDefault="True"
                         Visibility="{Binding ShowCompleteButtons, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-                <Button Content="{DynamicResource LOCPlayAch_Progress_ButtonViewAchievements}"
+                <Button Content="{DynamicResource LOCPlayAch_Menu_ViewAchievements}"
                         Command="{Binding OpenViewAchievementsCommand}"
                         Style="{StaticResource PlayAch.Button.BaseStyle}"
                         Padding="{StaticResource PlayAch.Thickness.ButtonPadding}"

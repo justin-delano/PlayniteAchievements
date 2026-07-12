@@ -443,7 +443,7 @@ namespace PlayniteAchievements.Views
             _recentLimitOverrideText = (_settings?.Persisted?.RecentRefreshGamesCount ?? 10).ToString();
             _placeholderPreset = new CustomRefreshPreset
             {
-                Name = L("LOCPlayAch_CustomRefresh_None", " "),
+                Name = L("LOCPlayAch_Common_None", " "),
                 Options = null
             };
 
@@ -1023,7 +1023,7 @@ namespace PlayniteAchievements.Views
                 .ToList();
 
             var providerDisplay = selectedProviderNames.Count == 0
-                ? L("LOCPlayAch_CustomRefresh_None", "None")
+                ? L("LOCPlayAch_Common_None", "None")
                 : string.Join(", ", selectedProviderNames);
 
             var estimatedTargets = ResolveEstimatedTargets(selectedProviders).Count;

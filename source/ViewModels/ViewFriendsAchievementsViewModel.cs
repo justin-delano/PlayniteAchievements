@@ -239,9 +239,9 @@ namespace PlayniteAchievements.ViewModels
 
         public string AchievementSectionTitle => SelectedFriend != null
             ? string.Format(
-                L("LOCPlayAch_ViewFriendsAchievements_SelectedFriendTitle", "{0} Achievements"),
+                L("LOCPlayAch_FriendsOverview_SelectedFriendAchievements", "{0} Achievements"),
                 SelectedFriend.DisplayName)
-            : L("LOCPlayAch_ViewFriendsAchievements_AllFriendsTitle", "Friends Achievements");
+            : L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "Friends Achievements");
 
         public string AchievementCountText
         {
@@ -363,7 +363,7 @@ namespace PlayniteAchievements.ViewModels
             catch (Exception ex)
             {
                 _logger?.Error(ex, $"Failed to load friend achievements for {_gameId}.");
-                StatusText = L("LOCPlayAch_ViewFriendsAchievements_LoadFailed", "Failed to load friends achievements.");
+                StatusText = L("LOCPlayAch_FriendsOverview_LoadFailed", "Failed to load friends achievements.");
             }
             finally
             {

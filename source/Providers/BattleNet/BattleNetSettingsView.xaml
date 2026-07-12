@@ -240,7 +240,7 @@
 
                                 <TextBlock Grid.Row="0"
                                            Grid.Column="0"
-                                           Text="{DynamicResource LOCPlayAch_Settings_BattleNet_WowRegion}"
+                                           Text="{DynamicResource LOCPlayAch_Common_Label_Region}"
                                            Style="{StaticResource BattleNetFieldLabelStyle}"/>
                                 <ComboBox Grid.Row="0"
                                           Grid.Column="1"

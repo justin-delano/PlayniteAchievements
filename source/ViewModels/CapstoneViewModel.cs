@@ -447,7 +447,7 @@ namespace PlayniteAchievements.ViewModels
 
         private void SetCurrentMarkerText(string markerDisplayName)
         {
-            var fallback = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_None") ?? "None";
+            var fallback = ResourceProvider.GetString("LOCPlayAch_Common_None") ?? "None";
             var markerText = string.IsNullOrWhiteSpace(markerDisplayName) ? fallback : markerDisplayName.Trim();
             var format = ResourceProvider.GetString("LOCPlayAch_Capstone_Current");
             if (string.IsNullOrWhiteSpace(format))

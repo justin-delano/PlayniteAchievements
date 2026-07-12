@@ -850,7 +850,7 @@ namespace PlayniteAchievements.Views.Controls
                 _modeToggle = new GridModeToggle(
                     null,
                     null,
-                    CategoryModeText("LOCPlayAch_CategorySummaries_Toggle", "Categories"),
+                    CategoryModeText("LOCPlayAch_ManageAchievements_Tab_Category", "Categories"),
                     () => _isCategoryMode,
                     SetCategoryMode,
                     CategoryModeText("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group by category"),

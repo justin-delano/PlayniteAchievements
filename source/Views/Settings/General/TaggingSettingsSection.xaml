@@ -116,7 +116,7 @@
                                               VerticalAlignment="Center"
                                               Margin="0,0,8,6"/>
                                     <TextBlock Grid.Row="1" Grid.Column="1"
-                                               Text="{DynamicResource LOCPlayAch_Tagging_InProgress}"
+                                               Text="{DynamicResource LOCPlayAch_Filter_InProgress}"
                                                VerticalAlignment="Center"
                                                Margin="0,0,12,6"/>
                                     <TextBox Grid.Row="1" Grid.Column="2"

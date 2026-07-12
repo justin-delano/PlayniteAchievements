@@ -154,13 +154,13 @@
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"
                                 helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryUnlocks"/>
             <DataGridTextColumn Width="*" MinWidth="72" CanUserResize="True"
-                                Header="{DynamicResource LOCPlayAch_Column_PrestigeScore}"
+                                Header="{DynamicResource LOCPlayAch_Score_Prestige}"
                                 Binding="{Binding PrestigeScore, StringFormat={}{0:N0}}"
                                 SortMemberPath="PrestigeScore"
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"
                                 helpers:ColumnVisibilityHelper.ColumnKey="FriendSummaryPrestigeScore"/>
             <DataGridTextColumn Width="*" MinWidth="72" CanUserResize="True"
-                                Header="{DynamicResource LOCPlayAch_Column_CollectionScore}"
+                                Header="{DynamicResource LOCPlayAch_Score_Collection}"
                                 Binding="{Binding CollectionScore, StringFormat={}{0:N0}}"
                                 SortMemberPath="CollectionScore"
                                 ElementStyle="{StaticResource FriendSummaryTextStyle}"

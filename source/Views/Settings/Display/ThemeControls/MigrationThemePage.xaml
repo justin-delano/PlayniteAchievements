@@ -91,7 +91,7 @@
                                   Background="Transparent"
                                   BorderThickness="0">
                             <Expander.Header>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_ThemeMigration_Custom}"
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Common_Custom}"
                                            Foreground="{DynamicResource PlayAch.Brush.Text}"
                                            FontWeight="SemiBold"
                                            Margin="-4,8,0,8"/>

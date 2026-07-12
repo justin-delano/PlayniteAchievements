@@ -720,7 +720,7 @@ namespace PlayniteAchievements.Views
                 .Where(name => !string.IsNullOrWhiteSpace(name))
                 .ToList();
             var providerDisplay = selectedProviders.Count == 0
-                ? L("LOCPlayAch_CustomRefresh_None", "None")
+                ? L("LOCPlayAch_Common_None", "None")
                 : string.Join(", ", selectedProviders);
             var scopeDisplay = ScopeOptions
                 .FirstOrDefault(option => option.Scope == SelectedScope)
