@@ -840,9 +840,10 @@ namespace PlayniteAchievements.Views.Controls
             return persisted.GridOptions.GetAchievement(id).StartInCategoryMode;
         }
 
-        // Positions the category-mode Back and toggle controls for the current mode: in flat mode the
-        // toggle is the left half of the segmented unit beside the category dropdown (trailing items);
-        // in category mode both Back and the toggle move to the leading zone, left of the search box.
+        // Positions the category-mode Back and toggle controls for the current mode. The toggle always
+        // stays in the trailing (right-side) items, spliced beside the category dropdown in flat mode;
+        // it never relocates across the bar. Only the Back button moves to the leading zone, left of
+        // the search box, while in category mode.
         private void UpdateModeControlPlacement()
         {
             var bar = _controlBarWithToggle;
@@ -851,9 +852,22 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
+            if (!bar.Items.Contains(_modeToggle))
+            {
+                var insertIndex = bar.Items.Count;
+                for (var i = 0; i < bar.Items.Count; i++)
+                {
+                    if (bar.Items[i] is GridMultiSelectFilter)
+                    {
+                        insertIndex = i;
+                    }
+                }
+
+                bar.Items.Insert(Math.Min(insertIndex, bar.Items.Count), _modeToggle);
+            }
+
             if (_isCategoryMode)
             {
-                bar.Items.Remove(_modeToggle);
                 if (_connectedCategoryFilter != null)
                 {
                     _connectedCategoryFilter.ConnectedLeft = false;
@@ -863,33 +877,12 @@ namespace PlayniteAchievements.Views.Controls
                 {
                     bar.LeadingItems.Insert(0, _backButton);
                 }
-
-                if (!bar.LeadingItems.Contains(_modeToggle))
-                {
-                    bar.LeadingItems.Add(_modeToggle);
-                }
             }
             else
             {
                 if (_backButton != null)
                 {
                     bar.LeadingItems.Remove(_backButton);
-                }
-
-                bar.LeadingItems.Remove(_modeToggle);
-
-                if (!bar.Items.Contains(_modeToggle))
-                {
-                    var insertIndex = bar.Items.Count;
-                    for (var i = 0; i < bar.Items.Count; i++)
-                    {
-                        if (bar.Items[i] is GridMultiSelectFilter)
-                        {
-                            insertIndex = i;
-                        }
-                    }
-
-                    bar.Items.Insert(Math.Min(insertIndex, bar.Items.Count), _modeToggle);
                 }
 
                 if (_connectedCategoryFilter != null)
