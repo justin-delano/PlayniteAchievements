@@ -120,6 +120,10 @@
     <sys:String x:Key="LOCPlayAch_Column_RarityPercent">Rarity Percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Total">Total</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Trophy">Trophy</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_UnlockToasts">Unlock toasts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_FriendToasts">Friend toasts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Screenshots">Screenshots</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Recordings">Recordings</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -518,6 +522,10 @@
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantClean">Clean (game only)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantWithToast">With toast overlay</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantFramed">Framed (frame added to the saved image)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverrides">Per-platform overrides</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ProviderNotificationOverridesHint">Default follows the global settings above. Per-platform values only apply while the matching master switch is on; the master notification and screenshot switches always win.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Override_On">On</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Override_Off">Off</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FramePreviewButton">Preview frame on screen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_FramePreviewHint">The frame is composited onto saved screenshots only; it never appears on screen during play. The preview closes on click, Escape, or after 10 seconds.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewHint">Fire an example toast to see it on screen with your current settings, position, and slide animation.</sys:String>

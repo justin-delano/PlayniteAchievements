@@ -46,6 +46,7 @@ namespace PlayniteAchievements.Views.Settings.General
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly AchievementToastTemplateResolver _toastTemplateResolver;
         private readonly PersistedSettingsSubscription _persistedSubscription;
+        private readonly ProviderNotificationSettingsViewModel _providerOverridesViewModel;
         private Window _framePreviewWindow;
 
         public NotificationsSection()
@@ -68,6 +69,15 @@ namespace PlayniteAchievements.Views.Settings.General
                 _settings,
                 OnPersistedPropertyChanged,
                 UpdateToastMockup);
+
+            // The overrides grid is a DataContext island: its view model is independent of this
+            // section's settings DataContext, and its ItemsSource is never reset in code-behind.
+            _providerOverridesViewModel = new ProviderNotificationSettingsViewModel(
+                settings,
+                plugin,
+                plugin.ProviderRegistry,
+                logger);
+            ProviderOverridesGrid.DataContext = _providerOverridesViewModel;
 
             Loaded += (s, e) => UpdateToastMockup();
         }
@@ -305,6 +315,7 @@ namespace PlayniteAchievements.Views.Settings.General
         public void Dispose()
         {
             _persistedSubscription?.Dispose();
+            _providerOverridesViewModel?.Dispose();
             CloseFramePreview();
         }
 
