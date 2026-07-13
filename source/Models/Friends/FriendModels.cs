@@ -115,6 +115,11 @@ namespace PlayniteAchievements.Models.Friends
         public IReadOnlyCollection<string> FriendExternalUserIds { get; set; }
         public bool ForceDefinitionRefresh { get; set; }
 
+        // Reuse cached Ok schemas even for scopes that normally force a definition re-fetch
+        // (SelectedGame/Full). Set by latency-sensitive programmatic callers such as the
+        // in-game poller; user-initiated refreshes leave this false.
+        public bool PreferCachedDefinitions { get; set; }
+
         public FriendCustomRefreshOptions Clone()
         {
             return new FriendCustomRefreshOptions
@@ -144,7 +149,8 @@ namespace PlayniteAchievements.Models.Friends
                     .Select(id => id.Trim())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList(),
-                ForceDefinitionRefresh = ForceDefinitionRefresh
+                ForceDefinitionRefresh = ForceDefinitionRefresh,
+                PreferCachedDefinitions = PreferCachedDefinitions
             };
         }
 
