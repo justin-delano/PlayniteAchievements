@@ -115,7 +115,7 @@
             Style="{StaticResource CardBorderStyle}"
             Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"
             Padding="16,12,16,12"
-                Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
+                Visibility="Collapsed">
             <StackPanel>
                 <!-- Timeline Header -->
                 <ToggleButton x:Name="TimelineToggleButton"
