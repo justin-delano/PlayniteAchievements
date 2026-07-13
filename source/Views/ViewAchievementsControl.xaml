@@ -284,6 +284,7 @@
             <controls:AchievementDataGridControl x:Name="AchievementsDataGridControl"
                                                  Grid.Row="1"
                                                  ItemsSource="{Binding Achievements}"
+                                                 CategorySummarySource="{Binding AllAchievements}"
                                                  RevealCommand="{Binding RevealAchievementCommand}"
                                                  ColumnSettingsKey="SingleGame"
                                                  EnableCategoryMode="True"
