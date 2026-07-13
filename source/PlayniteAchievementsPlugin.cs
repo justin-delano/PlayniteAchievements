@@ -1069,7 +1069,9 @@ namespace PlayniteAchievements
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
             {
-                _tagSyncService.SyncTagsForGames(new List<Guid> { gameId });
+                // Queued off-thread behind the tag-sync gate so the Playnite DB write (and its
+                // ItemUpdated fan-out) does not run inside the provider's per-game refresh loop.
+                QueueTagSync(gameId);
             }
 
             InvalidateStartPageData();
