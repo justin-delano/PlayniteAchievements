@@ -109,6 +109,14 @@ namespace PlayniteAchievements.Models.Settings
             target.FrameShowRarityGlow = source.FrameShowRarityGlow;
             target.FrameRarityColoredName = source.FrameRarityColoredName;
             target.UnlockScreenshotDirectory = source.UnlockScreenshotDirectory;
+            target.EnableUnlockRecordings = source.EnableUnlockRecordings;
+            target.FfmpegPath = source.FfmpegPath;
+            target.UnlockRecordingDirectory = source.UnlockRecordingDirectory;
+            target.RecordingClipSeconds = source.RecordingClipSeconds;
+            target.RecordingFps = source.RecordingFps;
+            target.RecordingResolution = source.RecordingResolution;
+            target.RecordingEncoder = source.RecordingEncoder;
+            target.RecordingCaptureBackend = source.RecordingCaptureBackend;
             target.ProviderNotificationOverrides = source.ProviderNotificationOverrides != null
                 ? source.ProviderNotificationOverrides.ToDictionary(
                     kvp => kvp.Key,

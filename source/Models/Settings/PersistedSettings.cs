@@ -91,6 +91,14 @@ namespace PlayniteAchievements.Models.Settings
         private bool _frameShowRarityGlow = true;
         private bool _frameRarityColoredName = true;
         private string _unlockScreenshotDirectory;
+        private bool _enableUnlockRecordings = false;
+        private string _ffmpegPath;
+        private string _unlockRecordingDirectory;
+        private int _recordingClipSeconds = 15;
+        private int _recordingFps = 30;
+        private RecordingResolution _recordingResolution = RecordingResolution.Native;
+        private RecordingEncoder _recordingEncoder = RecordingEncoder.Auto;
+        private RecordingCaptureBackend _recordingCaptureBackend = RecordingCaptureBackend.Auto;
         private Dictionary<string, ProviderNotificationOverride> _providerNotificationOverrides =
             new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
         private ToastScreenCorner _toastPosition = ToastScreenCorner.BottomRight;
@@ -1043,6 +1051,71 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _unlockScreenshotDirectory;
             set => SetValue(ref _unlockScreenshotDirectory, value);
+        }
+
+        /// <summary>
+        /// When true, a video clip of the game's monitor is saved for each of your own unlocks
+        /// while a game is running, via a rolling ffmpeg screen capture. Requires a valid
+        /// <see cref="FfmpegPath"/>; the plugin never downloads ffmpeg.
+        /// </summary>
+        public bool EnableUnlockRecordings
+        {
+            get => _enableUnlockRecordings;
+            set => SetValue(ref _enableUnlockRecordings, value);
+        }
+
+        /// <summary>
+        /// Full path to a user-supplied ffmpeg.exe used for unlock recordings.
+        /// </summary>
+        public string FfmpegPath
+        {
+            get => _ffmpegPath;
+            set => SetValue(ref _ffmpegPath, value);
+        }
+
+        /// <summary>
+        /// Base directory for unlock recordings. Blank falls back to
+        /// <see cref="UnlockScreenshotDirectory"/> at runtime. Files are written to
+        /// &lt;dir&gt;\Game\NNN_AchievementName.mp4.
+        /// </summary>
+        public string UnlockRecordingDirectory
+        {
+            get => _unlockRecordingDirectory;
+            set => SetValue(ref _unlockRecordingDirectory, value);
+        }
+
+        /// <summary>
+        /// Target/minimum clip length in seconds. Clips always cover both the unlock moment and
+        /// the toast appearing, so they stretch past this value when the detection gap is large.
+        /// </summary>
+        public int RecordingClipSeconds
+        {
+            get => _recordingClipSeconds;
+            set => SetValue(ref _recordingClipSeconds, Math.Min(60, Math.Max(5, value)));
+        }
+
+        public int RecordingFps
+        {
+            get => _recordingFps;
+            set => SetValue(ref _recordingFps, Math.Min(60, Math.Max(10, value)));
+        }
+
+        public RecordingResolution RecordingResolution
+        {
+            get => _recordingResolution;
+            set => SetValue(ref _recordingResolution, value);
+        }
+
+        public RecordingEncoder RecordingEncoder
+        {
+            get => _recordingEncoder;
+            set => SetValue(ref _recordingEncoder, value);
+        }
+
+        public RecordingCaptureBackend RecordingCaptureBackend
+        {
+            get => _recordingCaptureBackend;
+            set => SetValue(ref _recordingCaptureBackend, value);
         }
 
         /// <summary>
@@ -2127,6 +2200,14 @@ namespace PlayniteAchievements.Models.Settings
                 FrameShowRarityGlow = this.FrameShowRarityGlow,
                 FrameRarityColoredName = this.FrameRarityColoredName,
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
+                EnableUnlockRecordings = this.EnableUnlockRecordings,
+                FfmpegPath = this.FfmpegPath,
+                UnlockRecordingDirectory = this.UnlockRecordingDirectory,
+                RecordingClipSeconds = this.RecordingClipSeconds,
+                RecordingFps = this.RecordingFps,
+                RecordingResolution = this.RecordingResolution,
+                RecordingEncoder = this.RecordingEncoder,
+                RecordingCaptureBackend = this.RecordingCaptureBackend,
                 ProviderNotificationOverrides = this.ProviderNotificationOverrides != null
                     ? this.ProviderNotificationOverrides.ToDictionary(
                         kvp => kvp.Key,
