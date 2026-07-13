@@ -1992,6 +1992,19 @@ namespace PlayniteAchievements.Services.Database
                             definitions = LoadAchievementDefinitionsForGame(db, game.Id);
                         }
 
+                        // Stable-keyed unlock rows carry no display text and can only match definitions by
+                        // key. Until this game's definitions have been fetched (empty) or migrated off the
+                        // legacy display-derived keys, saving would record a collapsed unlock count; record
+                        // a transient state instead so the candidate retries after the definition refresh.
+                        if (SqlNadoCacheBehavior.RowsRequireStableKeyedDefinitions(incomingRows) &&
+                            !SqlNadoCacheBehavior.HasStableKeyedDefinitions(definitions))
+                        {
+                            _logger?.Info($"Friend achievements for provider={providerKey}, game={ToProviderGameLogKey(appId, providerGameKey)} " +
+                                "deferred: definitions are missing or still legacy-keyed; awaiting definition migration.");
+                            UpdateFriendOwnershipScrapeState(db, user.Id, game.Id, "transient", "awaiting-definition-migration", updatedIso, nowIso);
+                            return;
+                        }
+
                         var totalAchievements = definitions.Count;
                         var matchedRows = MapFriendRowsToDefinitions(definitions, incomingRows);
 

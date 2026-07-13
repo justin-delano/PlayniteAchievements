@@ -12,6 +12,25 @@ namespace PlayniteAchievements.Services.Database
         // no cached definitions. Requires a stable ApiName plus a display name; rows a provider could only
         // key as unlock-status (no ApiName/name) are skipped and duplicate ApiNames are collapsed, so this
         // seeds nothing for providers that do not carry definition-quality data in their scrape.
+        // Unlock rows sourced from the Exophase earned-awards JSON endpoint carry only the stable
+        // "exophase:{id}" key and no display text; they can match definitions solely by key, so the
+        // save must wait until the game's definitions exist and have been migrated to stable keys.
+        public static bool RowsRequireStableKeyedDefinitions(IReadOnlyList<FriendAchievementRow> rows)
+        {
+            return rows != null &&
+                   rows.Count > 0 &&
+                   rows.All(row => row?.ApiName?.StartsWith("exophase:", StringComparison.OrdinalIgnoreCase) == true &&
+                                   string.IsNullOrWhiteSpace(row.DisplayName));
+        }
+
+        public static bool HasStableKeyedDefinitions(IReadOnlyList<Rows.AchievementDefinitionRow> definitions)
+        {
+            return definitions != null &&
+                   definitions.Count > 0 &&
+                   !definitions.Any(definition =>
+                       definition?.ApiName?.StartsWith("exophase_", StringComparison.OrdinalIgnoreCase) == true);
+        }
+
         public static List<AchievementDetail> BuildDefinitionsFromFriendRows(IEnumerable<FriendAchievementRow> rows)
         {
             var result = new List<AchievementDetail>();
