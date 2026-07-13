@@ -35,6 +35,11 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private readonly string _gameIdText;
 
         private List<ManageAchievementsCategoryItem> _allRows = new List<ManageAchievementsCategoryItem>();
+
+        // Same row instances as _allRows re-sorted into canonical definition/custom order; used as
+        // the first-seen fallback for category-row ordering so it matches the other surfaces
+        // instead of the alphabetical row listing.
+        private List<ManageAchievementsCategoryItem> _definitionOrderedRows = new List<ManageAchievementsCategoryItem>();
         private readonly SearchTextIndex<ManageAchievementsCategoryItem> _searchIndex =
             new SearchTextIndex<ManageAchievementsCategoryItem>(item =>
                 SearchTextBuilder.ForManageCategory(
@@ -431,6 +436,22 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 .Where(a => a != null)
                 .ToList();
 
+                var canonicalIndexByApiName = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                for (var i = 0; i < canonicalAchievements.Count; i++)
+                {
+                    var canonicalApiName = (canonicalAchievements[i]?.ApiName ?? string.Empty).Trim();
+                    if (canonicalApiName.Length > 0 && !canonicalIndexByApiName.ContainsKey(canonicalApiName))
+                    {
+                        canonicalIndexByApiName[canonicalApiName] = i;
+                    }
+                }
+
+                _definitionOrderedRows = _allRows
+                    .OrderBy(row => canonicalIndexByApiName.TryGetValue(row.ApiName ?? string.Empty, out var index)
+                        ? index
+                        : int.MaxValue)
+                    .ToList();
+
                 _searchIndex.Rebuild(_allRows);
                 HasAchievements = _allRows.Count > 0;
                 ApplyFilter();
@@ -441,6 +462,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             {
                 _logger?.Error(ex, $"Failed loading category rows for gameId={_gameId}");
                 _allRows = new List<ManageAchievementsCategoryItem>();
+                _definitionOrderedRows = new List<ManageAchievementsCategoryItem>();
                 _searchIndex.Clear();
                 _canonicalCategoryLabelFilterOptions = new List<string>();
                 ReplaceAchievementRows(_allRows);
@@ -1166,7 +1188,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 (categoryImages != null && categoryImages.Count > 0);
 
             var orderedLabels = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
-                _allRows,
+                _definitionOrderedRows.Count > 0 ? _definitionOrderedRows : _allRows,
                 row => row?.Category,
                 categoryOrder);
             var fileStems = AchievementIconCachePathBuilder.BuildFileStems(orderedLabels);
