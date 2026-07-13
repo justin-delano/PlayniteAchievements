@@ -14,6 +14,13 @@ namespace PlayniteAchievements.Services.Friends
         public int WrittenCount { get; set; }
         public int SkippedCount { get; set; }
 
+        // ApiName renames (old -> new) applied to this game's achievement definitions during the
+        // save, plus the mapped Playnite game id they apply to. Consumers rewrite ApiName-keyed
+        // per-game custom data with this map; null/empty when nothing was renamed or the game is
+        // provider-only (no Playnite id, hence no custom data).
+        public Dictionary<string, string> RenamedApiNames { get; set; }
+        public Guid? RenamedPlayniteGameId { get; set; }
+
         public static FriendCacheWriteResult Ok(int incomingCount = 0, int writtenCount = 0, int skippedCount = 0) =>
             new FriendCacheWriteResult
             {
@@ -172,6 +179,13 @@ namespace PlayniteAchievements.Services.Friends
             string coverAbsolutePath);
 
         Dictionary<string, FriendGameDefinitionState> LoadFriendGameDefinitionStates(
+            string providerKey,
+            IReadOnlyCollection<string> providerGameKeys);
+
+        // Provider game cache keys (from the given set) whose cached definitions still carry
+        // legacy display-derived Exophase keys and therefore need a definition re-fetch to
+        // migrate them to stable ids.
+        List<string> LoadLegacyKeyedDefinitionGameKeys(
             string providerKey,
             IReadOnlyCollection<string> providerGameKeys);
 

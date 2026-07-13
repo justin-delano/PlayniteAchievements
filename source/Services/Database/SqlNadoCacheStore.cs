@@ -981,6 +981,8 @@ namespace PlayniteAchievements.Services.Database
             try
             {
                 var writtenCount = 0;
+                var renamedApiNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                Guid? renamedPlayniteGameId = null;
                 WithDb(db =>
                 {
                     db.RunTransaction(() =>
@@ -1005,8 +1007,10 @@ namespace PlayniteAchievements.Services.Database
                                     gameId,
                                     definition.Achievements,
                                     nowIso,
-                                    checkedIso);
+                                    checkedIso,
+                                    renamedApiNames);
                                 writtenCount = definition.Achievements.Count;
+                                renamedPlayniteGameId = ParseGuid(game?.PlayniteGameId);
                             }
                         }
 
@@ -1025,10 +1029,17 @@ namespace PlayniteAchievements.Services.Database
                     });
                 });
 
-                return FriendCacheWriteResult.Ok(
+                var result = FriendCacheWriteResult.Ok(
                     incomingCount: definition.Achievements?.Count ?? 0,
                     writtenCount: writtenCount,
                     skippedCount: Math.Max(0, (definition.Achievements?.Count ?? 0) - writtenCount));
+                if (renamedApiNames.Count > 0)
+                {
+                    result.RenamedApiNames = renamedApiNames;
+                    result.RenamedPlayniteGameId = renamedPlayniteGameId;
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -1178,6 +1189,76 @@ namespace PlayniteAchievements.Services.Database
                 }
 
                 return result;
+            });
+        }
+
+        // Returns the subset of the given provider game cache keys whose cached achievement
+        // definitions still carry legacy display-derived Exophase keys ("exophase_..."). Such games
+        // need a definition re-fetch so the rename-aware upsert can migrate them to stable ids
+        // before locale-independent unlock rows can match.
+        public List<string> LoadLegacyKeyedDefinitionGameKeys(
+            string providerKey,
+            IReadOnlyCollection<string> providerGameKeys)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            var keys = (providerGameKeys ?? Array.Empty<string>())
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (keys.Count == 0)
+            {
+                return new List<string>();
+            }
+
+            return WithDb(db =>
+            {
+                var numericIds = keys
+                    .Select(key => int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : 0)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var slugKeys = keys
+                    .Where(key => !int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                    .ToList();
+
+                var clauses = new List<string>();
+                var args = new List<object> { providerKey };
+                if (numericIds.Count > 0)
+                {
+                    clauses.Add("g.ProviderGameId IN (" + string.Join(",", numericIds.Select(_ => "?")) + ")");
+                    args.AddRange(numericIds.Cast<object>());
+                }
+
+                if (slugKeys.Count > 0)
+                {
+                    clauses.Add("g.ProviderGameKey IN (" + string.Join(",", slugKeys.Select(_ => "?")) + ")");
+                    args.AddRange(slugKeys.Cast<object>());
+                }
+
+                if (clauses.Count == 0)
+                {
+                    return new List<string>();
+                }
+
+                var sql =
+                    @"SELECT DISTINCT
+                        g.Id AS Id,
+                        g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey
+                      FROM Games g
+                      INNER JOIN AchievementDefinitions d ON d.GameId = g.Id
+                      WHERE g.ProviderKey = ?
+                        AND d.ApiName LIKE 'exophase\_%' ESCAPE '\'
+                        AND (" + string.Join(" OR ", clauses) + ");";
+
+                var requestedKeySet = new HashSet<string>(keys, StringComparer.OrdinalIgnoreCase);
+                return db.Load<GameRow>(sql, args.ToArray())
+                    .Where(row => row != null)
+                    .Select(row => ToProviderGameCacheKey((int)Math.Max(0, row.ProviderGameId ?? 0), row.ProviderGameKey))
+                    .Where(key => !string.IsNullOrWhiteSpace(key) && requestedKeySet.Contains(key))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
             });
         }
 
@@ -1859,6 +1940,8 @@ namespace PlayniteAchievements.Services.Database
 
             try
             {
+                var renamedApiNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                Guid? renamedPlayniteGameId = null;
                 WithDb(db =>
                 {
                     db.RunTransaction(() =>
@@ -1869,6 +1952,8 @@ namespace PlayniteAchievements.Services.Database
                         {
                             return;
                         }
+
+                        renamedPlayniteGameId = ParseGuid(game.PlayniteGameId);
 
                         var status = ResolveFriendScrapeStatus(achievements);
                         var detail = achievements?.DetailCode.ToString();
@@ -1887,7 +1972,8 @@ namespace PlayniteAchievements.Services.Database
                             db,
                             game,
                             nowIso,
-                            updatedIso);
+                            updatedIso,
+                            renamedApiNames);
                         if (refreshedFromMappedCurrentUser)
                         {
                             definitions = LoadAchievementDefinitionsForGame(db, game.Id);
@@ -1902,7 +1988,7 @@ namespace PlayniteAchievements.Services.Database
                             // this provider), or an older friend-seeded definition set with the same keys.
                             // Seed/refresh from this scrape only when no mapped current-user schema won;
                             // native definitions stay canonical for shared/mapped games.
-                            UpsertAchievementDefinitions(db, game.Id, seededDefinitions, nowIso, updatedIso);
+                            UpsertAchievementDefinitions(db, game.Id, seededDefinitions, nowIso, updatedIso, renamedApiNames);
                             definitions = LoadAchievementDefinitionsForGame(db, game.Id);
                         }
 
@@ -1949,7 +2035,14 @@ namespace PlayniteAchievements.Services.Database
                     });
                 });
 
-                return FriendCacheWriteResult.Ok();
+                var result = FriendCacheWriteResult.Ok();
+                if (renamedApiNames.Count > 0)
+                {
+                    result.RenamedApiNames = renamedApiNames;
+                    result.RenamedPlayniteGameId = renamedPlayniteGameId;
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -3572,7 +3665,8 @@ namespace PlayniteAchievements.Services.Database
             SQLiteDatabase db,
             GameRow game,
             string nowIso,
-            string updatedIso)
+            string updatedIso,
+            IDictionary<string, string> renameCollector = null)
         {
             if (db == null ||
                 game == null ||
@@ -3598,7 +3692,7 @@ namespace PlayniteAchievements.Services.Database
                 return false;
             }
 
-            UpsertAchievementDefinitions(db, game.Id, achievements, nowIso, updatedIso);
+            UpsertAchievementDefinitions(db, game.Id, achievements, nowIso, updatedIso, renameCollector);
             return true;
         }
 
@@ -4693,11 +4787,14 @@ namespace PlayniteAchievements.Services.Database
             return iconUrl.Substring(lastSlash + 1);
         }
 
-        public void SaveCurrentUserGameData(string key, GameAchievementData data)
+        // Returns the ApiName renames applied while upserting definitions (old -> new), so the
+        // caller can rewrite ApiName-keyed per-game custom data (notes, order, filters, overrides).
+        public Dictionary<string, string> SaveCurrentUserGameData(string key, GameAchievementData data)
         {
+            var renamedApiNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (string.IsNullOrWhiteSpace(key))
             {
-                return;
+                return renamedApiNames;
             }
 
             var cacheKey = key.Trim();
@@ -4781,7 +4878,8 @@ namespace PlayniteAchievements.Services.Database
                         gameId,
                         achievements,
                         nowIso,
-                        updatedIso);
+                        updatedIso,
+                        renamedApiNames);
 
                     var existingRows = db.Load<UserAchievementRow>(
                         @"SELECT Id, UserGameProgressId, AchievementDefinitionId, Unlocked, UnlockTimeUtc, ProgressNum, ProgressDenom, LastUpdatedUtc, CreatedUtc
@@ -4879,6 +4977,8 @@ namespace PlayniteAchievements.Services.Database
                     }
                 });
             });
+
+            return renamedApiNames;
         }
 
         private GameRow FindExistingRealProviderGame(SQLiteDatabase db, string cacheKey)
@@ -5496,7 +5596,8 @@ namespace PlayniteAchievements.Services.Database
             long gameId,
             IEnumerable<AchievementDetail> achievements,
             string nowIso,
-            string updatedIso)
+            string updatedIso,
+            IDictionary<string, string> renameCollector = null)
         {
             var idsByApiName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
             if (achievements == null)
@@ -5508,6 +5609,10 @@ namespace PlayniteAchievements.Services.Database
                 return idsByApiName;
             }
 
+            var incomingAchievements = achievements
+                .Where(a => a != null && !string.IsNullOrWhiteSpace(a.ApiName))
+                .ToList();
+
             var desiredApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var existingByApiName = db.Load<AchievementDefinitionRow>(
@@ -5518,7 +5623,46 @@ namespace PlayniteAchievements.Services.Database
                 .Where(a => !string.IsNullOrWhiteSpace(a?.ApiName))
                 .ToDictionary(a => a.ApiName.Trim(), StringComparer.OrdinalIgnoreCase);
 
-            foreach (var achievement in achievements)
+            // An incoming achievement whose ApiName is unknown may be an existing achievement whose
+            // key changed (provider key-format migration or a renamed achievement) rather than a new
+            // one. Pair such incoming rows with otherwise-stale existing rows by content and rename
+            // the existing row in place, preserving its Id and therefore every user's unlock rows
+            // (UserAchievements cascades on definition delete). Unpaired rows keep the existing
+            // insert + prune semantics.
+            var renamesByOldApiName = ComputeDefinitionRenames(incomingAchievements, existingByApiName);
+            foreach (var rename in renamesByOldApiName)
+            {
+                if (!existingByApiName.TryGetValue(rename.Key, out var renamedRow) || renamedRow == null)
+                {
+                    continue;
+                }
+
+                db.ExecuteNonQuery(
+                    @"UPDATE AchievementDefinitions
+                      SET ApiName = ?,
+                          UpdatedUtc = ?
+                      WHERE Id = ?;",
+                    rename.Value,
+                    updatedIso,
+                    renamedRow.Id);
+
+                existingByApiName.Remove(rename.Key);
+                renamedRow.ApiName = rename.Value;
+                existingByApiName[rename.Value] = renamedRow;
+
+                if (renameCollector != null)
+                {
+                    renameCollector[rename.Key] = rename.Value;
+                }
+                _logger?.Debug($"Renamed achievement definition {renamedRow.Id} '{rename.Key}' -> '{rename.Value}' (gameId={gameId})");
+            }
+
+            if (renamesByOldApiName.Count > 0)
+            {
+                _logger?.Info($"Renamed {renamesByOldApiName.Count} achievement definitions in place for gameId={gameId}, preserving unlock history.");
+            }
+
+            foreach (var achievement in incomingAchievements)
             {
                 if (achievement == null || string.IsNullOrWhiteSpace(achievement.ApiName))
                 {
@@ -5672,6 +5816,143 @@ namespace PlayniteAchievements.Services.Database
             }
 
             return idsByApiName;
+        }
+
+        // Pairs incoming achievements that have no ApiName match (would-be inserts) with existing
+        // definitions absent from the incoming set (would-be prune candidates), by content:
+        // DisplayName+Description, then DisplayName, then icon filename. A pair forms only when the
+        // content key is unique on BOTH sides within its tier, so ambiguity always falls through to
+        // the pre-existing insert + prune behavior rather than a speculative rename. Rename targets
+        // are by construction absent from the existing key set, so in-place ApiName updates cannot
+        // collide with other rows for the game.
+        private static Dictionary<string, string> ComputeDefinitionRenames(
+            List<AchievementDetail> incomingAchievements,
+            Dictionary<string, AchievementDefinitionRow> existingByApiName)
+        {
+            var renames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (incomingAchievements == null || incomingAchievements.Count == 0 ||
+                existingByApiName == null || existingByApiName.Count == 0)
+            {
+                return renames;
+            }
+
+            var incomingApiNames = new HashSet<string>(
+                incomingAchievements.Select(a => a.ApiName.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            var unmatchedIncoming = incomingAchievements
+                .Where(a => !existingByApiName.ContainsKey(a.ApiName.Trim()))
+                .ToList();
+            var unmatchedExisting = existingByApiName.Values
+                .Where(row => row != null && !incomingApiNames.Contains(row.ApiName.Trim()))
+                .ToList();
+
+            if (unmatchedIncoming.Count == 0 || unmatchedExisting.Count == 0)
+            {
+                return renames;
+            }
+
+            var tiers = new Func<string, string, string>[]
+            {
+                (displayName, description) => CombineRenameMatchKey(
+                    NormalizeMatchText(displayName),
+                    NormalizeMatchText(description)),
+                (displayName, description) => NormalizeMatchText(displayName),
+                null // icon tier handled separately below
+            };
+
+            for (var tierIndex = 0; tierIndex < tiers.Length; tierIndex++)
+            {
+                if (unmatchedIncoming.Count == 0 || unmatchedExisting.Count == 0)
+                {
+                    break;
+                }
+
+                Dictionary<string, AchievementDetail> incomingByKey;
+                Dictionary<string, AchievementDefinitionRow> existingByKey;
+                if (tiers[tierIndex] != null)
+                {
+                    var tier = tiers[tierIndex];
+                    incomingByKey = GroupUniqueByKey(
+                        unmatchedIncoming,
+                        a => tier(a.DisplayName, a.Description));
+                    existingByKey = GroupUniqueByKey(
+                        unmatchedExisting,
+                        row => tier(row.DisplayName, row.Description));
+                }
+                else
+                {
+                    incomingByKey = GroupUniqueByKey(
+                        unmatchedIncoming,
+                        a => FirstIconFilename(a.UnlockedIconPath, a.LockedIconPath));
+                    existingByKey = GroupUniqueByKey(
+                        unmatchedExisting,
+                        row => FirstIconFilename(row.UnlockedIconPath, row.LockedIconPath));
+                }
+
+                foreach (var pair in incomingByKey)
+                {
+                    if (pair.Value == null ||
+                        !existingByKey.TryGetValue(pair.Key, out var existingRow) ||
+                        existingRow == null)
+                    {
+                        continue;
+                    }
+
+                    var oldApiName = existingRow.ApiName.Trim();
+                    var newApiName = pair.Value.ApiName.Trim();
+                    if (renames.ContainsKey(oldApiName))
+                    {
+                        continue;
+                    }
+
+                    renames[oldApiName] = newApiName;
+                    unmatchedIncoming.Remove(pair.Value);
+                    unmatchedExisting.Remove(existingRow);
+                }
+            }
+
+            return renames;
+        }
+
+        private static string CombineRenameMatchKey(string left, string right)
+        {
+            if (string.IsNullOrEmpty(left) || string.IsNullOrEmpty(right))
+            {
+                return null;
+            }
+
+            return left + "\n" + right;
+        }
+
+        private static string FirstIconFilename(string primaryIconPath, string secondaryIconPath)
+        {
+            var fileName = ExtractIconFilename(primaryIconPath);
+            return string.IsNullOrWhiteSpace(fileName)
+                ? ExtractIconFilename(secondaryIconPath)
+                : fileName;
+        }
+
+        // Groups items by a content key; a key that maps to more than one item is marked ambiguous
+        // by storing null, so callers can require uniqueness. Null/empty keys are skipped.
+        private static Dictionary<string, TItem> GroupUniqueByKey<TItem>(
+            List<TItem> items,
+            Func<TItem, string> keySelector)
+            where TItem : class
+        {
+            var byKey = new Dictionary<string, TItem>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                byKey[key] = byKey.ContainsKey(key) ? null : item;
+            }
+
+            return byKey;
         }
 
         public void Dispose()
