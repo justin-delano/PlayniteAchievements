@@ -5,7 +5,6 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Playnite.SDK;
-using PlayniteAchievements.ViewModels;
 
 namespace PlayniteAchievements.Services.UI
 {
@@ -42,7 +41,7 @@ namespace PlayniteAchievements.Services.UI
         /// Composites the frame template (with the toast view model as DataContext) onto the
         /// screenshot. Returns a frozen bitmap sized exactly like the input, or null on failure.
         /// </summary>
-        public BitmapSource ComposeFramed(BitmapSource screenshot, DataTemplate frameTemplate, AchievementToastViewModel viewModel)
+        public BitmapSource ComposeFramed(BitmapSource screenshot, DataTemplate frameTemplate, object viewModel)
         {
             if (screenshot == null || frameTemplate == null || viewModel == null)
             {
