@@ -1264,7 +1264,9 @@ namespace PlayniteAchievements.Services.Database
 
                 if (slugKeys.Count > 0)
                 {
-                    clauses.Add("g.ProviderGameKey IN (" + string.Join(",", slugKeys.Select(_ => "?")) + ")");
+                    // COLLATE NOCASE mirrors the OrdinalIgnoreCase key comparisons used everywhere
+                    // else in this file; SQLite IN is case-sensitive by default.
+                    clauses.Add("g.ProviderGameKey COLLATE NOCASE IN (" + string.Join(",", slugKeys.Select(_ => "?")) + ")");
                     args.AddRange(slugKeys.Cast<object>());
                 }
 
@@ -3276,6 +3278,26 @@ namespace PlayniteAchievements.Services.Database
                 ? playniteGameId.Value
                 : Guid.Empty;
 
+            if (applyOwnershipMapping && mappedId != Guid.Empty)
+            {
+                // One mapping claim per (provider, library game): release any OTHER key's row still
+                // claiming this PlayniteGameId (the previous winner among duplicate trophy lists).
+                // This must run BEFORE this key claims the mapping below — the partial unique index
+                // on (ProviderKey, PlayniteGameId) rejects a second claim, so a claim-first order
+                // aborts the whole ownership transaction whenever the mapping winner changes.
+                db.ExecuteNonQuery(
+                    @"UPDATE Games
+                      SET PlayniteGameId = NULL,
+                          LastUpdatedUtc = ?
+                      WHERE ProviderKey = ?
+                        AND PlayniteGameId = ?
+                        AND Id <> ?;",
+                    nowIso,
+                    providerKey,
+                    mappedId.ToString(),
+                    row?.Id ?? -1);
+            }
+
             if (row == null)
             {
                 if (!allowCreate && mappedId == Guid.Empty)
@@ -3335,23 +3357,6 @@ namespace PlayniteAchievements.Services.Database
             if (row == null)
             {
                 return null;
-            }
-
-            if (applyOwnershipMapping && mappedId != Guid.Empty)
-            {
-                // One mapping claim per (provider, library game): release any OTHER key's row still
-                // claiming this PlayniteGameId (the previous winner among duplicate trophy lists).
-                db.ExecuteNonQuery(
-                    @"UPDATE Games
-                      SET PlayniteGameId = NULL,
-                          LastUpdatedUtc = ?
-                      WHERE ProviderKey = ?
-                        AND PlayniteGameId = ?
-                        AND Id <> ?;",
-                    nowIso,
-                    providerKey,
-                    mappedId.ToString(),
-                    row.Id);
             }
 
             // Identity refresh: name/platform/appid only. The key equals the row's key by
