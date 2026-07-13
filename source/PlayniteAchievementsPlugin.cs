@@ -623,12 +623,44 @@ namespace PlayniteAchievements
                 _logger?.Debug(ex, $"Failed to stop in-game poller for {game.Name}.");
             }
 
+            if (!AnyProviderCapable(game))
+            {
+                _logger.Info($"Game stopped: {game.Name}; no enabled provider is capable, skipping refresh.");
+                return;
+            }
+
             _logger.Info($"Game stopped: {game.Name}. Triggering refresh.");
             await _refreshCoordinator.ExecuteAsync(new RefreshRequest
             {
                 Mode = RefreshModeType.Single,
                 SingleGameId = game.Id
             }).ConfigureAwait(false);
+        }
+
+        private bool AnyProviderCapable(Game game)
+        {
+            var providers = Providers;
+            if (providers == null)
+            {
+                return false;
+            }
+
+            foreach (var provider in providers)
+            {
+                try
+                {
+                    if (provider?.IsCapable(game) == true)
+                    {
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"Provider capability check failed for {provider?.ProviderKey}.");
+                }
+            }
+
+            return false;
         }
 
         // === Lifecycle ===
