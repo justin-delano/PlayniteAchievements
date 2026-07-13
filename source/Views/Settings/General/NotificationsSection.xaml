@@ -212,6 +212,18 @@
 
                         <StackPanel Margin="18,0,0,0"
                                     IsEnabled="{Binding Persisted.EnableUnlockScreenshots}">
+                            <WrapPanel Margin="0,0,0,6">
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ScreenshotVariantClean}"
+                                          IsChecked="{Binding Persisted.UnlockScreenshotClean}"
+                                          Margin="0,0,14,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ScreenshotVariantWithToast}"
+                                          IsChecked="{Binding Persisted.UnlockScreenshotWithToast}"
+                                          Margin="0,0,14,8"/>
+                                <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ScreenshotVariantFramed}"
+                                          IsChecked="{Binding Persisted.UnlockScreenshotFramed}"
+                                          Margin="0,0,14,8"/>
+                            </WrapPanel>
+
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ScreenshotDirectory}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text}"
                                        Margin="0,0,0,4"/>
@@ -232,6 +244,39 @@
                                        Style="{StaticResource MutedTextStyle}"
                                        TextWrapping="Wrap"
                                        Margin="0,6,0,0"/>
+
+                            <!-- Frame mockup: the 16:9 grid stands in for the screenshot; the frame
+                                 template lays out on the same 1080-DIP virtual canvas the
+                                 compositor uses, scaled down uniformly. -->
+                            <StackPanel Visibility="{Binding Persisted.UnlockScreenshotFramed, Converter={StaticResource BoolToVis}}"
+                                        Margin="0,10,0,0">
+                                <Border Background="{DynamicResource PlayAch.Brush.Surface}"
+                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                        BorderThickness="1"
+                                        CornerRadius="8"
+                                        Padding="10"
+                                        HorizontalAlignment="Left"
+                                        Margin="0,0,0,8">
+                                    <Viewbox Stretch="Uniform"
+                                             MaxWidth="480">
+                                        <Grid Width="1920"
+                                              Height="1080"
+                                              Background="#FF17222D">
+                                            <ContentControl x:Name="FrameMockupHost"/>
+                                        </Grid>
+                                    </Viewbox>
+                                </Border>
+                                <WrapPanel>
+                                    <Button x:Name="FramePreviewButton"
+                                            Click="FramePreviewButton_Click"
+                                            Content="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
+                                            Margin="0,0,8,0"/>
+                                </WrapPanel>
+                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FramePreviewHint}"
+                                           Style="{StaticResource MutedTextStyle}"
+                                           TextWrapping="Wrap"
+                                           Margin="0,6,0,0"/>
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </Border>

@@ -46,6 +46,7 @@ namespace PlayniteAchievements.Views.Settings.General
         private readonly PlayniteAchievementsPlugin _plugin;
         private readonly AchievementToastTemplateResolver _toastTemplateResolver;
         private readonly PersistedSettingsSubscription _persistedSubscription;
+        private Window _framePreviewWindow;
 
         public NotificationsSection()
         {
@@ -98,6 +99,123 @@ namespace PlayniteAchievements.Views.Settings.General
 
             ToastMockupHost.ContentTemplate = _toastTemplateResolver.ResolveTemplate();
             ToastMockupHost.Content = new AchievementToastViewModel(BuildToastPreviewArgs("mockup"), persisted);
+            UpdateFrameMockup(persisted);
+        }
+
+        /// <summary>
+        /// Rebuilds the inline screenshot-frame mockup (shown when the framed variant is enabled)
+        /// from the resolved frame template and the same sample view model as the toast mockup.
+        /// </summary>
+        private void UpdateFrameMockup(PersistedSettings persisted)
+        {
+            if (FrameMockupHost == null || persisted == null)
+            {
+                return;
+            }
+
+            FrameMockupHost.ContentTemplate = _toastTemplateResolver.ResolveFrameTemplate();
+            FrameMockupHost.Content = new AchievementToastViewModel(BuildToastPreviewArgs("mockup"), persisted);
+        }
+
+        /// <summary>
+        /// Shows the screenshot frame full-monitor over Playnite so themes can be checked at real
+        /// scale. Reproduces the compositor's 1080-DIP virtual canvas exactly (Viewbox Fill onto
+        /// the monitor), so what is shown matches what gets stamped onto saved images. Dismissed
+        /// by click, Escape, or a 10s auto-close timer.
+        /// </summary>
+        private void FramePreviewButton_Click(object sender, RoutedEventArgs e)
+        {
+            var persisted = _settings?.Persisted;
+            if (persisted == null)
+            {
+                return;
+            }
+
+            CloseFramePreview();
+
+            var template = _toastTemplateResolver.ResolveFrameTemplate();
+            if (template == null)
+            {
+                return;
+            }
+
+            var window = Views.Helpers.PlayniteUiProvider.CreateBorderlessTopmostWindow(
+                _plugin.PlayniteApi,
+                ResourceProvider.GetString("LOCPlayAch_Title_PluginName") ?? "Playnite Achievements");
+            window.SizeToContent = SizeToContent.Manual;
+            window.ShowActivated = true;
+            window.Focusable = true;
+
+            var reference = _plugin.PlayniteApi?.Dialogs?.GetCurrentAppWindow() ?? Window.GetWindow(this);
+            var monitorPixels = Views.Helpers.PlayniteUiProvider.PlaceOnWindowMonitor(window, reference);
+            if (monitorPixels == null)
+            {
+                return;
+            }
+
+            var (canvasWidth, canvasHeight, _) = ScreenshotFrameCompositor.ComputeCanvas(
+                monitorPixels.Value.Width,
+                monitorPixels.Value.Height);
+            var canvas = new Grid
+            {
+                Width = canvasWidth,
+                Height = canvasHeight,
+                // Almost-transparent so the live screen shows through while the window still
+                // receives the dismissing click (fully transparent pixels are not hit-testable).
+                Background = new System.Windows.Media.SolidColorBrush(
+                    System.Windows.Media.Color.FromArgb(1, 0, 0, 0)),
+            };
+            canvas.Children.Add(new ContentControl
+            {
+                Content = new AchievementToastViewModel(BuildToastPreviewArgs("mockup"), persisted),
+                ContentTemplate = template,
+            });
+            window.Content = new System.Windows.Controls.Viewbox
+            {
+                Stretch = System.Windows.Media.Stretch.Fill,
+                Child = canvas,
+            };
+
+            var autoClose = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(10),
+            };
+            autoClose.Tick += (s, args) => window.Close();
+            window.PreviewMouseDown += (s, args) => window.Close();
+            window.PreviewKeyDown += (s, args) =>
+            {
+                if (args.Key == System.Windows.Input.Key.Escape)
+                {
+                    args.Handled = true;
+                    window.Close();
+                }
+            };
+            window.Closed += (s, args) =>
+            {
+                autoClose.Stop();
+                if (ReferenceEquals(_framePreviewWindow, window))
+                {
+                    _framePreviewWindow = null;
+                }
+            };
+
+            _framePreviewWindow = window;
+            window.Show();
+            window.Focus();
+            autoClose.Start();
+        }
+
+        private void CloseFramePreview()
+        {
+            try
+            {
+                _framePreviewWindow?.Close();
+            }
+            catch
+            {
+            }
+
+            _framePreviewWindow = null;
         }
 
         private void ShowToastPreview(AchievementUnlockedEventArgs args)
@@ -187,6 +305,7 @@ namespace PlayniteAchievements.Views.Settings.General
         public void Dispose()
         {
             _persistedSubscription?.Dispose();
+            CloseFramePreview();
         }
 
         private static string L(string key, string fallback)

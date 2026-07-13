@@ -209,6 +209,55 @@ namespace PlayniteAchievements.Views.Helpers
             return window;
         }
 
+        /// <summary>
+        /// Sizes and positions a manual-placement window to cover the entire monitor the
+        /// reference window is on (physical monitor bounds converted to DIPs via the reference's
+        /// presentation source). Returns the monitor's physical pixel bounds, or null when
+        /// placement failed and the window was left untouched.
+        /// </summary>
+        public static System.Drawing.Rectangle? PlaceOnWindowMonitor(Window window, Window reference)
+        {
+            if (window == null)
+            {
+                return null;
+            }
+
+            try
+            {
+                var handle = reference != null
+                    ? new System.Windows.Interop.WindowInteropHelper(reference).Handle
+                    : IntPtr.Zero;
+                var screen = handle != IntPtr.Zero
+                    ? System.Windows.Forms.Screen.FromHandle(handle)
+                    : System.Windows.Forms.Screen.PrimaryScreen;
+                var bounds = screen?.Bounds;
+                if (bounds == null || bounds.Value.Width <= 0 || bounds.Value.Height <= 0)
+                {
+                    return null;
+                }
+
+                var toDips = Matrix.Identity;
+                var source = reference != null ? PresentationSource.FromVisual(reference) : null;
+                if (source?.CompositionTarget != null)
+                {
+                    toDips = source.CompositionTarget.TransformFromDevice;
+                }
+
+                var topLeft = toDips.Transform(new Point(bounds.Value.Left, bounds.Value.Top));
+                var size = toDips.Transform(new Point(bounds.Value.Width, bounds.Value.Height));
+                window.WindowStartupLocation = WindowStartupLocation.Manual;
+                window.Left = topLeft.X;
+                window.Top = topLeft.Y;
+                window.Width = size.X;
+                window.Height = size.Y;
+                return bounds.Value;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public static Window CreateBorderlessTopmostWindow(IPlayniteAPI api, string title)
         {
             api = api ?? API.Instance;
