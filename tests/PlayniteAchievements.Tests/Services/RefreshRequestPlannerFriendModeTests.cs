@@ -228,6 +228,35 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Resolve_FriendsCustom_PreferCachedDefinitions_SuppressesForcedDefinitionRefresh()
+        {
+            var gameId = Guid.NewGuid();
+            var planner = CreatePlanner(Array.Empty<Game>());
+            var steamProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            // The in-game poller path: selected-game scope normally forces a schema re-download,
+            // but PreferCachedDefinitions keeps polling ticks on the cached Ok schema.
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    Options = RefreshOptions.FromFriend(new FriendCustomRefreshOptions
+                    {
+                        ProviderKeys = new[] { "Steam" },
+                        Scope = FriendRefreshScope.SelectedGame,
+                        PlayniteGameIds = new[] { gameId },
+                        PreferCachedDefinitions = true
+                    })
+                },
+                new IDataProvider[] { steamProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.IsNotNull(resolved.FriendOptions);
+            Assert.AreEqual(FriendRefreshScope.SelectedGame, resolved.FriendOptions.Scope);
+            Assert.IsFalse(resolved.FriendOptions.ForceDefinitionRefresh);
+        }
+
+        [TestMethod]
         public void Resolve_FriendsCustom_CarriesProviderScopedFriendAccounts()
         {
             var planner = CreatePlanner(Array.Empty<Game>());

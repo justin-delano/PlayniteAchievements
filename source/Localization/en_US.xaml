@@ -374,6 +374,8 @@
     <sys:String x:Key="LOCPlayAch_CustomRefresh_IncludeHeader">Include game IDs</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_InvalidRecentLimit">Recent limit override must be a positive number.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_MenuItem">Custom Refresh...</sys:String>
+    <!-- CustomRefresh_NoCapableProviderForGames: {0} is a comma-separated list of game names (capped) -->
+    <sys:String x:Key="LOCPlayAch_CustomRefresh_NoCapableProviderForGames">No enabled and authenticated platform can refresh these games: {0}. Enable the matching platform or check its authentication in settings.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingGames">No games match this custom refresh request.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_NoMatchingProviders">No enabled and authenticated platforms match this custom refresh request.</sys:String>
     <sys:String x:Key="LOCPlayAch_CustomRefresh_Presets_Delete">Delete</sys:String>

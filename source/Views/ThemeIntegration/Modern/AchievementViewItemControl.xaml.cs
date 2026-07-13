@@ -26,6 +26,10 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         private bool _isCacheEventSubscribed;
         private bool _cacheRefreshQueued;
 
+        // Game id of the current DataContext, written on the UI thread and read on cache-event
+        // threads so per-game events can be filtered without a dispatcher round-trip per event.
+        private volatile string _currentGameIdText;
+
         #region ShowProgressBar Property
 
         public static readonly DependencyProperty ShowProgressBarProperty =
@@ -201,13 +205,13 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                             QueueRefresh();
                         }
                     }),
-                    DispatcherPriority.Render);
+                    DispatcherPriority.Background);
             }
         }
 
         private void GameCustomDataStore_CustomDataChanged(object sender, GameCustomDataChangedEventArgs e)
         {
-            if (e == null || e.PlayniteGameId == Guid.Empty)
+            if (e == null || e.PlayniteGameId == Guid.Empty || !IsCurrentGame(e.PlayniteGameId.ToString()))
             {
                 return;
             }
@@ -217,6 +221,14 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         private void RefreshService_GameCacheUpdated(object sender, GameCacheUpdatedEventArgs e)
         {
+            // Filter on the event thread so a library-wide refresh does not queue one UI
+            // dispatch per saved game on every visible item; the dispatched match below
+            // re-checks against the live DataContext in case the container was recycled.
+            if (!IsCurrentGame(e?.GameId))
+            {
+                return;
+            }
+
             var updatedGameId = ParseUpdatedGameId(e);
             if (!updatedGameId.HasValue)
             {
@@ -224,6 +236,14 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
 
             DispatchRefreshIfLoaded(() => QueueRefreshIfMatches(updatedGameId.Value));
+        }
+
+        private bool IsCurrentGame(string gameIdText)
+        {
+            var current = _currentGameIdText;
+            return !string.IsNullOrWhiteSpace(gameIdText) &&
+                   !string.IsNullOrEmpty(current) &&
+                   string.Equals(current, gameIdText.Trim(), StringComparison.OrdinalIgnoreCase);
         }
 
         private void DispatchRefreshIfLoaded(Action refresh)
@@ -251,7 +271,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                         refresh();
                     }
                 }),
-                DispatcherPriority.Render);
+                DispatcherPriority.Background);
         }
 
         private Guid? GetCurrentGameIdFromDataContext()
@@ -308,7 +328,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
             dispatcher.BeginInvoke(
                 new Action(RunQueuedRefresh),
-                DispatcherPriority.Render);
+                DispatcherPriority.Background);
         }
 
         private void RunQueuedRefresh()
@@ -327,6 +347,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             // GameContext can be used if DataContext doesn't provide a game
             if (newContext != null && newContext.Id != Guid.Empty)
             {
+                _currentGameIdText = newContext.Id.ToString();
                 UpdateForGame(newContext.Id);
             }
             else
@@ -340,10 +361,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             var game = ThemeViewItemGameResolver.GetGame(DataContext);
             if (game != null && game.Id != Guid.Empty)
             {
+                _currentGameIdText = game.Id.ToString();
                 UpdateForGame(game.Id);
             }
             else
             {
+                _currentGameIdText = null;
                 ClearData();
             }
         }

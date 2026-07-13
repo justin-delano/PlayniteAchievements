@@ -623,12 +623,44 @@ namespace PlayniteAchievements
                 _logger?.Debug(ex, $"Failed to stop in-game poller for {game.Name}.");
             }
 
+            if (!AnyProviderCapable(game))
+            {
+                _logger.Info($"Game stopped: {game.Name}; no enabled provider is capable, skipping refresh.");
+                return;
+            }
+
             _logger.Info($"Game stopped: {game.Name}. Triggering refresh.");
             await _refreshCoordinator.ExecuteAsync(new RefreshRequest
             {
                 Mode = RefreshModeType.Single,
                 SingleGameId = game.Id
             }).ConfigureAwait(false);
+        }
+
+        private bool AnyProviderCapable(Game game)
+        {
+            var providers = Providers;
+            if (providers == null)
+            {
+                return false;
+            }
+
+            foreach (var provider in providers)
+            {
+                try
+                {
+                    if (provider?.IsCapable(game) == true)
+                    {
+                        return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"Provider capability check failed for {provider?.ProviderKey}.");
+                }
+            }
+
+            return false;
         }
 
         // === Lifecycle ===
@@ -1069,7 +1101,9 @@ namespace PlayniteAchievements
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
             {
-                _tagSyncService.SyncTagsForGames(new List<Guid> { gameId });
+                // Queued off-thread behind the tag-sync gate so the Playnite DB write (and its
+                // ItemUpdated fan-out) does not run inside the provider's per-game refresh loop.
+                QueueTagSync(gameId);
             }
 
             InvalidateStartPageData();

@@ -809,12 +809,13 @@ namespace PlayniteAchievements.Services.Refresh
             }
         }
 
-        private static RebuildPayload CreateCurrentRefreshPayload(
+        private RebuildPayload CreateCurrentRefreshPayload(
             IReadOnlyList<ProviderRefreshExecutor.ProviderExecutionResult> providerResults)
         {
             var mergedSummary = new RebuildSummary();
             var authRequired = false;
             var failedProviderKeys = new List<string>();
+            var faultedProviderKeys = new List<string>();
 
             foreach (var result in providerResults)
             {
@@ -822,6 +823,8 @@ namespace PlayniteAchievements.Services.Refresh
                 {
                     continue;
                 }
+
+                RecordProviderFault(result, faultedProviderKeys);
 
                 if (result.Payload.AuthRequired)
                 {
@@ -853,8 +856,34 @@ namespace PlayniteAchievements.Services.Refresh
             {
                 Summary = mergedSummary,
                 AuthRequired = authRequired,
-                FailedProviderKeys = failedProviderKeys
+                FailedProviderKeys = failedProviderKeys,
+                FaultedProviderKeys = faultedProviderKeys
             };
+        }
+
+        /// <summary>
+        /// Logs a provider execution fault and records its provider key so the completion
+        /// message can name the provider whose games did not refresh.
+        /// </summary>
+        private void RecordProviderFault(
+            ProviderRefreshExecutor.ProviderExecutionResult result,
+            List<string> faultedProviderKeys)
+        {
+            if (result?.Fault == null)
+            {
+                return;
+            }
+
+            var key = result.Provider?.ProviderKey;
+            _logger?.Error(
+                result.Fault,
+                $"Provider '{key ?? "unknown"}' refresh faulted; remaining providers continued.");
+
+            if (!string.IsNullOrWhiteSpace(key) &&
+                !faultedProviderKeys.Contains(key, StringComparer.OrdinalIgnoreCase))
+            {
+                faultedProviderKeys.Add(key);
+            }
         }
 
         /// <summary>
@@ -1165,6 +1194,7 @@ namespace PlayniteAchievements.Services.Refresh
                     foreach (var result in providerResults)
                     {
                         FriendRefreshCoordinator.Merge(payload, result?.Payload);
+                        RecordProviderFault(result, payload.FaultedProviderKeys);
                     }
 
                     if (hasFriendWork)
@@ -1297,6 +1327,20 @@ namespace PlayniteAchievements.Services.Refresh
             if (string.IsNullOrWhiteSpace(resolvedMessage))
             {
                 resolvedMessage = defaultMessage;
+            }
+
+            if (payload?.FaultedProviderKeys?.Count > 0)
+            {
+                var failedFormat = ResourceProvider.GetString("LOCPlayAch_Error_RefreshFailed");
+                if (string.IsNullOrWhiteSpace(failedFormat))
+                {
+                    failedFormat = "Refresh failed: {0}";
+                }
+
+                resolvedMessage = string.Concat(
+                    resolvedMessage,
+                    " ",
+                    string.Format(failedFormat, string.Join(", ", payload.FaultedProviderKeys)));
             }
 
             if (payload?.AuthRequired == true)

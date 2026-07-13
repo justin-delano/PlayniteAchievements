@@ -23,7 +23,16 @@ namespace PlayniteAchievements.Services.Refresh
         {
             public IDataProvider Provider { get; set; }
             public RebuildPayload Payload { get; set; }
+
+            // Non-cancellation exception that aborted this provider's execution. Contained per
+            // provider so sibling providers finish their runs; consumers surface it to the user.
+            public Exception Fault { get; set; }
         }
+
+        // A single game's cache-write failure is treated like any other per-game error so one bad
+        // row cannot abort a whole run; this many consecutive persistence failures indicate a
+        // systemic problem (disk full, locked database) and abort the provider instead.
+        private const int MaxConsecutivePersistenceErrors = 3;
 
         internal sealed class ProviderGameResult
         {
@@ -96,6 +105,7 @@ namespace PlayniteAchievements.Services.Refresh
             }
 
             var consecutiveErrors = 0;
+            var consecutivePersistenceErrors = 0;
             var authRequiredTriggered = false;
 
             for (var i = 0; i < gamesToRefresh.Count; i++)
@@ -149,6 +159,7 @@ namespace PlayniteAchievements.Services.Refresh
                     }
 
                     consecutiveErrors = 0;
+                    consecutivePersistenceErrors = 0;
 
                     if (delayBetweenGamesAsync != null && i < gamesToRefresh.Count - 1)
                     {
@@ -156,10 +167,6 @@ namespace PlayniteAchievements.Services.Refresh
                     }
                 }
                 catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (CachePersistenceException)
                 {
                     throw;
                 }
@@ -186,6 +193,19 @@ namespace PlayniteAchievements.Services.Refresh
 
                     consecutiveErrors++;
                     onGameError?.Invoke(game, ex, consecutiveErrors);
+
+                    if (ex is CachePersistenceException)
+                    {
+                        consecutivePersistenceErrors++;
+                        if (consecutivePersistenceErrors >= MaxConsecutivePersistenceErrors)
+                        {
+                            throw;
+                        }
+                    }
+                    else
+                    {
+                        consecutivePersistenceErrors = 0;
+                    }
 
                     if (delayAfterErrorAsync != null && consecutiveErrors >= 3)
                     {
@@ -225,13 +245,7 @@ namespace PlayniteAchievements.Services.Refresh
                     cancel.ThrowIfCancellationRequested();
 
                     var plan = plans[i];
-                    var payload = await executeProviderAsync(plan).ConfigureAwait(false) ?? new RebuildPayload();
-
-                    sequentialResults.Add(new ProviderExecutionResult
-                    {
-                        Provider = plan.Provider,
-                        Payload = payload
-                    });
+                    sequentialResults.Add(await ExecutePlanContainedAsync(plan, executeProviderAsync).ConfigureAwait(false));
                 }
 
                 return sequentialResults;
@@ -241,17 +255,43 @@ namespace PlayniteAchievements.Services.Refresh
                 .Select(async plan =>
                 {
                     cancel.ThrowIfCancellationRequested();
-
-                    var payload = await executeProviderAsync(plan).ConfigureAwait(false) ?? new RebuildPayload();
-                    return new ProviderExecutionResult
-                    {
-                        Provider = plan.Provider,
-                        Payload = payload
-                    };
+                    return await ExecutePlanContainedAsync(plan, executeProviderAsync).ConfigureAwait(false);
                 })
                 .ToArray();
 
             return await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Runs one provider plan, containing any non-cancellation exception in the result's
+        /// Fault so a faulted provider cannot abort sibling providers or the whole run.
+        /// </summary>
+        private static async Task<ProviderExecutionResult> ExecutePlanContainedAsync(
+            ProviderExecutionPlan plan,
+            Func<ProviderExecutionPlan, Task<RebuildPayload>> executeProviderAsync)
+        {
+            try
+            {
+                var payload = await executeProviderAsync(plan).ConfigureAwait(false) ?? new RebuildPayload();
+                return new ProviderExecutionResult
+                {
+                    Provider = plan.Provider,
+                    Payload = payload
+                };
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                return new ProviderExecutionResult
+                {
+                    Provider = plan.Provider,
+                    Payload = new RebuildPayload { Summary = new RebuildSummary() },
+                    Fault = ex
+                };
+            }
         }
     }
 }
