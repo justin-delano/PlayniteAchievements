@@ -1718,11 +1718,11 @@ namespace PlayniteAchievements.Services.Refresh
                 }
             }
 
-            // Seed-from-scrape providers (Exophase) acquire provider-only images from the game header banner in
-            // ProbeAndPersistProviderOnlyFriendGameAsync above. Skip the profile-thumbnail download here: it runs
-            // after the probe loop and, because SaveProviderGameImagePaths lets a non-null value win via
+            // Banner-preferring providers (Exophase) acquire provider-only images from the game header
+            // banner during the definition fetch above. Skip the profile-thumbnail download for them: it
+            // runs after that loop and, because SaveProviderGameImagePaths lets a non-null value win via
             // COALESCE, a small thumbnail would overwrite the higher-quality banner.
-            if (!FriendRefreshWorkPolicy.ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey))
+            if (!FriendRefreshWorkPolicy.PrefersDefinitionHeaderBannerImages(providerKey))
             {
                 await DownloadUnownedGameImagesAsync(providerKey, discoveredProviderGameKeys, ownershipByKey, cancel, progress).ConfigureAwait(false);
             }

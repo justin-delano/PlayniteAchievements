@@ -28,14 +28,14 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void GetFriendGameAchievements_ParsesHeaderBannerFromScrapedPage()
+        public void GetFriendGameDefinition_ParsesHeaderBannerFromSameFetch()
         {
             var provider = File.ReadAllText(
                 FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
 
-            // The friend achievement scrape now returns the page HTML too, and the game header banner is parsed
-            // from that same HTML (no second request) and attached to the result so provider-only friend games
-            // get a full-size icon/cover.
+            // The definition fetch returns the page HTML too, and the game header banner is parsed from
+            // that same HTML (no second request) and attached to the definition so provider-only friend
+            // games get a full-size icon/cover.
             StringAssert.Contains(provider, "FetchAchievementsWithHtmlAsync");
             StringAssert.Contains(provider, "ExophaseFriendPageParser.ParseGameHeaderImageUrl(fetched.Html)");
             StringAssert.Contains(provider, "IconUrl = headerImageUrl");
@@ -51,9 +51,9 @@ namespace PlayniteAchievements.Tests.Providers
             StringAssert.Contains(runtime, "!string.IsNullOrWhiteSpace(achievements.IconUrl)");
             StringAssert.Contains(runtime, "achievements.IconUrl,");
 
-            // For seed-from-scrape providers the profile-thumbnail download is skipped so it cannot overwrite
-            // the higher-quality banner via COALESCE.
-            StringAssert.Contains(runtime, "!FriendRefreshWorkPolicy.ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey)");
+            // For banner-preferring providers the profile-thumbnail download is skipped so it cannot
+            // overwrite the higher-quality banner via COALESCE.
+            StringAssert.Contains(runtime, "!FriendRefreshWorkPolicy.PrefersDefinitionHeaderBannerImages(providerKey)");
         }
 
         [TestMethod]

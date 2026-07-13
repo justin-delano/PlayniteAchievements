@@ -47,7 +47,11 @@ namespace PlayniteAchievements.Services.Refresh
 
         internal static bool ShouldSeedDefinitionsFromFriendAchievementScrape(string providerKey)
         {
-            return string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase);
+            // Exophase friend unlocks come from the earned-awards JSON endpoint, whose rows carry only
+            // the stable award id (no names/descriptions), so definitions cannot be seeded from the
+            // unlock rows. They come from the once-per-game schema fetch (GetFriendGameDefinitionAsync),
+            // shared across all friends.
+            return false;
         }
 
         internal static bool HasZeroUnlockHint(FriendGameOwnership ownership)
@@ -233,6 +237,15 @@ namespace PlayniteAchievements.Services.Refresh
         {
             return options?.DiscoversProviderOnlyGames() == true &&
                    SupportsProviderOnlyFriendDetails(providerKey);
+        }
+
+        // Providers whose provider-only friend games get their icon/cover from the achievements-page
+        // header banner (downloaded during the definition fetch). The generic profile-thumbnail
+        // download must be skipped for them: SaveProviderGameImagePaths lets a non-null value win via
+        // COALESCE, so a small thumbnail would overwrite the higher-quality banner.
+        internal static bool PrefersDefinitionHeaderBannerImages(string providerKey)
+        {
+            return string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase);
         }
 
         internal static bool ShouldGuardProviderOnlyZeroUnlocks(string providerKey)
