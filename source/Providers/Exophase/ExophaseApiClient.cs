@@ -30,6 +30,19 @@ namespace PlayniteAchievements.Providers.Exophase
         internal const string ExophaseStableApiNamePrefix = "exophase:";
         private const int AchievementDomReadyPollDelayMs = 250;
         private const int AchievementDomReadyPollAttempts = 8;
+        // Above this many images, the in-browser CDN warm is skipped; DiskImageService's
+        // lazy-thumbnail retry path warms each thumbnail on download instead.
+        private const int MaxImageWarmCount = 400;
+
+        // Renderer-side mirror of ContainsAchievementMarkup + HasUnlockDataPopulated so readiness
+        // can be polled without serializing the full page source across the CEF boundary each pass.
+        private const string AchievementDomReadyScript =
+            "(function(){try{" +
+            "if(!document.querySelector('.award-title,.award-average,.award-earned,[data-earned],[data-average]')){return false;}" +
+            "if(document.querySelector('.award.visible.earned,.award.earned')){return true;}" +
+            "var es=document.querySelectorAll('[data-earned]');" +
+            "for(var i=0;i<es.length;i++){var v=parseInt(es[i].getAttribute('data-earned'),10);if(v>0){return true;}}" +
+            "return false;}catch(e){return false;}})()";
 
         private readonly IPlayniteAPI _playniteApi;
         private readonly ILogger _logger;
@@ -426,12 +439,27 @@ namespace PlayniteAchievements.Providers.Exophase
                     // Wait for JavaScript to populate unlock status (loaded async after initial render)
                     await Task.Delay(1000, ct).ConfigureAwait(false);
 
-                    var html = await PollAsync(
-                        _ => view.GetPageSourceAsync(),
-                        h => ContainsAchievementMarkup(h) && HasUnlockDataPopulated(h),
+                    // Poll a cheap renderer-side readiness signal, then serialize the (multi-MB for
+                    // large games) page source across the CEF boundary once instead of per attempt.
+                    await PollAsync(
+                        async _ =>
+                        {
+                            var eval = await view.EvaluateScriptAsync(AchievementDomReadyScript).ConfigureAwait(false);
+                            return eval?.Success == true &&
+                                   string.Equals(Convert.ToString(eval.Result), bool.TrueString, StringComparison.OrdinalIgnoreCase);
+                        },
+                        ready => ready,
                         AchievementDomReadyPollAttempts,
                         AchievementDomReadyPollDelayMs,
                         ct).ConfigureAwait(false);
+
+                    var html = await view.GetPageSourceAsync().ConfigureAwait(false);
+                    if (!ContainsAchievementMarkup(html) || !HasUnlockDataPopulated(html))
+                    {
+                        // The readiness script can race the final DOM mutation; retry the fetch once.
+                        await Task.Delay(AchievementDomReadyPollDelayMs, ct).ConfigureAwait(false);
+                        html = await view.GetPageSourceAsync().ConfigureAwait(false);
+                    }
 
                     if (string.IsNullOrWhiteSpace(html))
                     {
@@ -455,8 +483,16 @@ namespace PlayniteAchievements.Providers.Exophase
                     // on this first request, so the subsequent HTTP download hits 200 instead of 404.
                     if (waitForImages)
                     {
-                        await ForceLazyImagesToLoadAsync(view, ct).ConfigureAwait(false);
-                        await WaitForImagesLoadedAsync(view, ct).ConfigureAwait(false);
+                        var imageCount = await GetDocumentImageCountAsync(view).ConfigureAwait(false);
+                        if (imageCount > MaxImageWarmCount)
+                        {
+                            _logger?.Info($"[Exophase] Skipping in-browser CDN warm for {imageCount} images (cap {MaxImageWarmCount}); thumbnails will warm via the download retry path.");
+                        }
+                        else
+                        {
+                            await ForceLazyImagesToLoadAsync(view, ct).ConfigureAwait(false);
+                            await WaitForImagesLoadedAsync(view, ct).ConfigureAwait(false);
+                        }
                     }
 
                     return html;
@@ -791,6 +827,28 @@ namespace PlayniteAchievements.Providers.Exophase
 
                 await Task.Delay(delayMs, ct).ConfigureAwait(false);
             }
+        }
+
+        /// <summary>
+        /// Returns the page's img element count, or -1 when evaluation fails.
+        /// </summary>
+        private static async Task<int> GetDocumentImageCountAsync(IWebView view)
+        {
+            try
+            {
+                var eval = await view.EvaluateScriptAsync("document.images.length").ConfigureAwait(false);
+                if (eval?.Success == true && eval.Result != null &&
+                    int.TryParse(Convert.ToString(eval.Result), out var count))
+                {
+                    return count;
+                }
+            }
+            catch
+            {
+                // Best-effort; the caller falls back to warming.
+            }
+
+            return -1;
         }
 
         private static bool ContainsAchievementMarkup(string html)
