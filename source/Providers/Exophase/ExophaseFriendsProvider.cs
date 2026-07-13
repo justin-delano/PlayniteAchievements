@@ -601,19 +601,24 @@ namespace PlayniteAchievements.Providers.Exophase
                 return FriendsProviderResult<FriendGameDefinition>.Failed("Exophase friend game key is missing a slug.");
             }
 
+            // One fetch serves both the schema and the header banner: the achievements page carries the
+            // game's banner in its layout, so parse it from the same rendered HTML instead of fetching
+            // the game overview page separately.
             var url = ExophaseApiClient.BuildUrlFromSlug(parsed.GameSlug, parsed.PlatformSlug);
-            var achievements = await _apiClient
-                .FetchAchievementsAsync(url, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
+            var fetched = await _apiClient
+                .FetchAchievementsWithHtmlAsync(url, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
                 .ConfigureAwait(false);
 
-            var rows = achievements ?? new List<AchievementDetail>();
+            var rows = fetched?.Achievements ?? new List<AchievementDetail>();
 
             // Reuse the main provider's rarity assignment so friend achievements get the same
             // percentage/rarity tiers instead of defaulting to Common.
             ExophaseDataProvider.ApplyProviderOwnedRarity(
                 rows,
                 ExophaseDataProvider.MapSlugToProviderPlatformKey(parsed.PlatformSlug));
-            var headerImageUrl = await FetchGameHeaderImageAsync(parsed.GameSlug, cancel).ConfigureAwait(false);
+            var headerImageUrl = string.IsNullOrEmpty(fetched?.Html)
+                ? null
+                : ExophaseFriendPageParser.ParseGameHeaderImageUrl(fetched.Html);
 
             return FriendsProviderResult<FriendGameDefinition>.FromData(new FriendGameDefinition
             {
@@ -643,74 +648,123 @@ namespace PlayniteAchievements.Providers.Exophase
                 return FriendsProviderResult<FriendGameAchievements>.Failed("Exophase friend id or game key is missing.");
             }
 
-            // The friend's games page links each game to /game/{slug}/achievements/#{contextId}, which
-            // renders that friend's unlock state. Reuse the main provider's achievement fetch+parse
-            // against that friend-scoped URL: FetchAchievementsAsync waits for the JS-loaded unlock data
-            // and ParseAchievementsHtml yields names, descriptions, full-size icons AND unlock times for
-            // the friend in one pass (no separate awards scrape).
-            var contextId = GetFriendGameContextId(friend.ExternalUserId, providerGameKey);
-            var achievementUrl = BuildFriendAchievementUrl(parsed.GameSlug, parsed.PlatformSlug, contextId);
-            var fetched = await _apiClient
-                .FetchAchievementsWithHtmlAsync(achievementUrl, ExophaseApiClient.MapLanguageToAcceptLanguage("en-US"), cancel, waitForImages: true)
+            // The earned-awards JSON endpoint returns the friend's unlocks for one game keyed by the
+            // stable award id with exact unix timestamps: locale-proof, no page render, no image
+            // warming. Names, descriptions, and icons come from the shared per-game definitions at
+            // read time (GetFriendGameDefinitionAsync), not from these rows.
+            var ids = await ResolveEarnedEndpointIdsAsync(friend.ExternalUserId, providerGameKey, cancel).ConfigureAwait(false);
+            if (ids == null)
+            {
+                return FriendsProviderResult<FriendGameAchievements>.Failed(
+                    $"Could not resolve Exophase player/game ids for '{providerGameKey}'.",
+                    transientFailure: true);
+            }
+
+            var earned = await _publicApiClient
+                .GetEarnedAwardsAsync(ids.Value.MasterPlayerId, ids.Value.MasterId, cancel)
                 .ConfigureAwait(false);
-            var achievements = fetched?.Achievements ?? new List<AchievementDetail>();
+            if (earned == null)
+            {
+                // Fetch failure (Cloudflare or transport); an empty list is a legitimate zero-unlock
+                // result and is handled below.
+                return FriendsProviderResult<FriendGameAchievements>.Failed(
+                    $"Exophase earned-awards fetch failed for '{providerGameKey}'.",
+                    transientFailure: true);
+            }
 
-            // The friend achievement page carries the game's header banner in its layout; parse it from the
-            // same HTML so provider-only friend games get a full-size icon/cover without a second request. For
-            // Exophase, definitions are seeded from this scrape (no separate GetFriendGameDefinitionAsync fetch),
-            // so this is the only chance to capture the banner during the provider-only probe.
-            var headerImageUrl = string.IsNullOrEmpty(fetched?.Html)
-                ? null
-                : ExophaseFriendPageParser.ParseGameHeaderImageUrl(fetched.Html);
-
-            // Reuse the main provider's rarity assignment (percentage -> rarity tier) so friend
-            // achievements are not all reported as Common.
-            ExophaseDataProvider.ApplyProviderOwnedRarity(
-                achievements,
-                ExophaseDataProvider.MapSlugToProviderPlatformKey(parsed.PlatformSlug));
-
-            var rows = achievements
-                .Where(achievement => achievement != null)
-                .Select(achievement => new FriendAchievementRow
+            var rows = earned
+                .Where(award => award != null && award.EffectiveAwardId > 0)
+                .Select(award => new FriendAchievementRow
                 {
-                    // Carry the stable, display-derived api name so the unlock rows match canonical
-                    // definitions by key (not just display text), and so definitions can be seeded from
-                    // this scrape when the game has none cached yet.
-                    ApiName = achievement.ApiName,
-                    DisplayName = achievement.DisplayName,
-                    Description = achievement.Description,
-                    IconUrl = achievement.Unlocked ? achievement.UnlockedIconPath : achievement.LockedIconPath,
-                    UnlockedIconUrl = achievement.UnlockedIconPath,
-                    LockedIconUrl = achievement.LockedIconPath,
-                    Points = achievement.Points,
-                    ScaledPoints = achievement.ScaledPoints,
-                    Category = achievement.Category,
-                    CategoryType = achievement.CategoryType,
-                    TrophyType = achievement.TrophyType,
-                    Hidden = achievement.Hidden,
-                    IsCapstone = achievement.IsCapstone,
-                    GlobalPercentUnlocked = achievement.GlobalPercentUnlocked,
-                    Rarity = achievement.Rarity,
-                    Unlocked = achievement.Unlocked,
-                    UnlockTimeUtc = achievement.UnlockTimeUtc,
-                    ProgressNum = achievement.ProgressNum,
-                    ProgressDenom = achievement.ProgressDenom
+                    ApiName = ExophaseApiClient.ExophaseStableApiNamePrefix +
+                        award.EffectiveAwardId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    IconUrl = ExophasePublicApiClient.NormalizeImageUrl(award.Icons?.Original ?? award.Icons?.Medium),
+                    UnlockedIconUrl = ExophasePublicApiClient.NormalizeImageUrl(award.Icons?.Original ?? award.Icons?.Medium),
+                    Unlocked = true,
+                    UnlockTimeUtc = award.Timestamp > 0
+                        ? DateTimeOffset.FromUnixTimeSeconds(award.Timestamp).UtcDateTime
+                        : (DateTime?)null
                 })
                 .ToList();
 
             _logger?.Debug($"[ExophaseFriends] GetFriendGameAchievements: friend='{friend.ExternalUserId}', " +
-                $"gameKey='{providerGameKey}', contextId='{contextId ?? "(none)"}' -> " +
-                $"{achievements.Count} achievement(s), {rows.Count(row => row.Unlocked)} unlocked.");
+                $"gameKey='{providerGameKey}', masterPlayerId={ids.Value.MasterPlayerId}, masterId={ids.Value.MasterId} -> " +
+                $"{rows.Count} unlocked award(s).");
 
             return FriendsProviderResult<FriendGameAchievements>.FromData(new FriendGameAchievements
             {
                 Friend = friend,
                 ProviderGameKey = providerGameKey,
                 LastUpdatedUtc = DateTime.UtcNow,
-                StatsUnavailable = achievements.Count == 0,
-                IconUrl = headerImageUrl,
+                StatsUnavailable = false,
                 Rows = rows
             });
+        }
+
+        /// <summary>
+        /// Resolves the (master_playerid, master_id) pair the earned-awards endpoint needs for one
+        /// (friend, game). Ownership refreshes populate the per-refresh memos; cache-sourced candidates
+        /// (Recent/SelectedGame/Custom scopes) trigger one memoized ownership fetch for the friend.
+        /// </summary>
+        private async Task<(long MasterPlayerId, long MasterId)?> ResolveEarnedEndpointIdsAsync(
+            string username,
+            string providerGameKey,
+            CancellationToken cancel)
+        {
+            if (TryGetEarnedEndpointIds(username, providerGameKey, out var resolved))
+            {
+                return resolved;
+            }
+
+            // Ownership was not fetched this refresh (or the game key was filtered out); fetch the
+            // friend's library once (memoized per refresh) and index every game's ids, not just the
+            // selected platforms, so id resolution is independent of platform filtering.
+            var games = await FetchOwnedGamesAsync(username, cancel).ConfigureAwait(false);
+            foreach (var game in games ?? (IReadOnlyList<ExophaseFriendGame>)Array.Empty<ExophaseFriendGame>())
+            {
+                var key = ExophaseFriendGameKey.Build(game.Platform, game.Slug);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(game.ContextId))
+                {
+                    _friendGameContextIds[BuildContextMapKey(username, key)] = game.ContextId;
+                }
+
+                if (game.MasterId > 0)
+                {
+                    _friendGameMasterIds[key] = game.MasterId;
+                }
+            }
+
+            return TryGetEarnedEndpointIds(username, providerGameKey, out resolved)
+                ? resolved
+                : ((long MasterPlayerId, long MasterId)?)null;
+        }
+
+        private bool TryGetEarnedEndpointIds(
+            string username,
+            string providerGameKey,
+            out (long MasterPlayerId, long MasterId) ids)
+        {
+            ids = default((long, long));
+            var contextId = GetFriendGameContextId(username, providerGameKey);
+            if (string.IsNullOrWhiteSpace(contextId) ||
+                !long.TryParse(contextId.Trim(), out var masterPlayerId) ||
+                masterPlayerId <= 0)
+            {
+                return false;
+            }
+
+            if (!_friendGameMasterIds.TryGetValue(providerGameKey, out var masterId) || masterId <= 0)
+            {
+                return false;
+            }
+
+            ids = (masterPlayerId, masterId);
+            return true;
         }
 
         private List<FriendSettingsEntry> GetConfiguredFriends(bool includeIgnored)
