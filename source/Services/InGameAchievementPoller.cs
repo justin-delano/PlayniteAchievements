@@ -254,6 +254,17 @@ namespace PlayniteAchievements.Services
                 }).ConfigureAwait(false);
 
             timer.Stop();
+
+            // Slow ticks widen the unlock-to-toast gap and therefore stretch recording clips;
+            // the Warn makes over-interval ticks visible in the plugin log.
+            _logger?.Debug(
+                $"[PollerTiming] tick took {timer.Elapsed.TotalSeconds:F1}s, interval {interval.TotalSeconds:F0}s");
+            if (timer.Elapsed > interval)
+            {
+                _logger?.Warn(
+                    $"[PollerTiming] tick took {timer.Elapsed.TotalSeconds:F1}s, exceeding the {interval.TotalSeconds:F0}s poll interval; unlock detection (and clip length) lags accordingly.");
+            }
+
             var after = _cacheManager?.LoadGameData(game.Id.ToString());
             HydrateForToast(after);
             var unlocks = _differ.DiffUserUnlocks(before, after)
