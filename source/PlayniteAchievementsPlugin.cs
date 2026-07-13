@@ -89,6 +89,7 @@ namespace PlayniteAchievements
         private readonly BackgroundUpdater _backgroundUpdates;
         private readonly InGameAchievementPoller _inGamePoller;
         private readonly ToastNotificationService _toastNotifications;
+        private readonly Services.Recording.UnlockRecordingService _unlockRecordings;
 
         /// <summary>
         /// Process id of the currently running game (from OnGameStarted), used to identify the
@@ -394,6 +395,14 @@ namespace PlayniteAchievements
                         _logger,
                         () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
                         () => _startedProcessId);
+                    _unlockRecordings = new Services.Recording.UnlockRecordingService(
+                        PlayniteApi,
+                        settings,
+                        _logger,
+                        pluginUserDataPath,
+                        () => _startedProcessId,
+                        _toastNotifications,
+                        key => Services.UI.ProviderNotificationPolicy.Resolve(settings?.Persisted, key).Recordings);
                     _inGamePoller = new InGameAchievementPoller(
                         PlayniteApi,
                         settings,
@@ -584,6 +593,7 @@ namespace PlayniteAchievements
                 _startedProcessId = args?.StartedProcessId;
                 _achievementHotkeyTargetResolver?.NotifyGameStarted(args?.Game);
                 _inGamePoller?.Start(args?.Game);
+                _unlockRecordings?.OnGameStarted(args?.Game);
             }
             catch (Exception ex)
             {
@@ -597,6 +607,7 @@ namespace PlayniteAchievements
             {
                 _startedProcessId = null;
                 _toastNotifications?.ClearPending();
+                _unlockRecordings?.OnGameStopped();
                 _achievementHotkeyTargetResolver?.NotifyGameStopped(args?.Game);
             }
             catch (Exception ex)
@@ -862,6 +873,7 @@ namespace PlayniteAchievements
             _backgroundUpdates.Stop();
             try { _inGamePoller?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGamePoller"); }
             try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
+            try { _unlockRecordings?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockRecordings"); }
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
             try { _windowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowService"); }
