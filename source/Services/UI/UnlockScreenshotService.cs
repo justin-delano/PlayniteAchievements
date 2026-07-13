@@ -319,6 +319,24 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
+        /// Bounds of the monitor hosting the game window (started-process main window, else
+        /// foreground), in physical pixels. Used by the unlock-recording service to scope the
+        /// ffmpeg screen capture: ffmpeg can't follow a moving window, so the whole monitor is
+        /// recorded. Returns null when no window or monitor can be resolved.
+        /// </summary>
+        public Rectangle? TryGetGameMonitorBounds(int? startedProcessId)
+        {
+            var hwnd = ResolveWindow(startedProcessId);
+            if (hwnd == IntPtr.Zero)
+            {
+                return null;
+            }
+
+            var bounds = ResolveMonitorBounds(hwnd);
+            return bounds.Width > 0 && bounds.Height > 0 ? bounds : (Rectangle?)null;
+        }
+
+        /// <summary>
         /// Resolves the game window handle once (started-process main window, else foreground),
         /// for cheap per-frame toast following via <see cref="TryGetClientBounds"/>. Returns
         /// IntPtr.Zero when no game is running so preview toasts don't follow Playnite's window.
