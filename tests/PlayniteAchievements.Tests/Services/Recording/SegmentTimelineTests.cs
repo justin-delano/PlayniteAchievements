@@ -1,0 +1,397 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Services.Recording;
+
+namespace PlayniteAchievements.Services.Tests.Recording
+{
+    [TestClass]
+    public class SegmentTimelineTests
+    {
+        // Fixed-offset zone so parsing tests don't depend on the machine's local time zone.
+        private static readonly TimeZoneInfo PlusTwo = TimeZoneInfo.CreateCustomTimeZone(
+            "Test+2", TimeSpan.FromHours(2), "Test+2", "Test+2");
+
+        private static readonly DateTime T0 = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+
+        private static SegmentTimeline.SegmentInfo Segment(DateTime startUtc, long size = 1)
+        {
+            return new SegmentTimeline.SegmentInfo
+            {
+                Path = $@"C:\buf\seg_{startUtc:yyyyMMdd-HHmmss}.ts",
+                StartUtc = startUtc,
+                SizeBytes = size
+            };
+        }
+
+        // === Filename parsing ===
+
+        [TestMethod]
+        public void ParseSegments_ConvertsLocalStampsToUtcWithInjectedZone()
+        {
+            var segments = SegmentTimeline.ParseSegments(
+                new[] { (@"C:\buf\seg_20260101-140000.ts", 123L) },
+                PlusTwo);
+
+            Assert.AreEqual(1, segments.Count);
+            Assert.AreEqual(new DateTime(2026, 1, 1, 12, 0, 0), segments[0].StartUtc);
+            Assert.AreEqual(123L, segments[0].SizeBytes);
+        }
+
+        [TestMethod]
+        public void ParseSegments_OrdersOldestFirstAndSkipsForeignFiles()
+        {
+            var segments = SegmentTimeline.ParseSegments(
+                new[]
+                {
+                    (@"C:\buf\seg_20260101-140010.ts", 1L),
+                    (@"C:\buf\clip_abc.mp4", 1L),
+                    (@"C:\buf\seg_20260101-140000.ts", 1L),
+                    (@"C:\buf\seg_garbage.ts", 1L),
+                    (@"C:\buf\notes.txt", 1L)
+                },
+                PlusTwo);
+
+            Assert.AreEqual(2, segments.Count);
+            Assert.IsTrue(segments[0].StartUtc < segments[1].StartUtc);
+        }
+
+        // === Precise-unlock detection ===
+
+        [TestMethod]
+        public void IsPreciseUnlockTime_NullIsCoarse()
+        {
+            Assert.IsFalse(SegmentTimeline.IsPreciseUnlockTime(null, T0, T0.AddSeconds(30)));
+        }
+
+        [TestMethod]
+        public void IsPreciseUnlockTime_MidnightTimeOfDayIsCoarse()
+        {
+            var dateOnly = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+            Assert.IsFalse(SegmentTimeline.IsPreciseUnlockTime(
+                dateOnly, dateOnly.AddHours(-1), dateOnly.AddHours(1)));
+        }
+
+        [TestMethod]
+        public void IsPreciseUnlockTime_BeforeCaptureStartIsCoarse()
+        {
+            Assert.IsFalse(SegmentTimeline.IsPreciseUnlockTime(
+                T0.AddSeconds(-1), T0, T0.AddSeconds(30)));
+        }
+
+        [TestMethod]
+        public void IsPreciseUnlockTime_FarInFutureIsCoarse()
+        {
+            var detection = T0.AddSeconds(30);
+
+            Assert.IsFalse(SegmentTimeline.IsPreciseUnlockTime(
+                detection.AddSeconds(6), T0, detection));
+            Assert.IsTrue(SegmentTimeline.IsPreciseUnlockTime(
+                detection.AddSeconds(5), T0, detection));
+        }
+
+        [TestMethod]
+        public void IsPreciseUnlockTime_WithinCaptureWindowIsPrecise()
+        {
+            Assert.IsTrue(SegmentTimeline.IsPreciseUnlockTime(
+                T0.AddSeconds(10), T0, T0.AddSeconds(30)));
+        }
+
+        // === Clip window ===
+
+        [TestMethod]
+        public void ComputeClipWindow_PreciseUnlock_CoversUnlockLeadThroughToastTail()
+        {
+            var captureStart = T0;
+            var unlock = T0.AddSeconds(60);
+            var detection = unlock.AddSeconds(10);
+            var toast = detection.AddSeconds(1);
+
+            var (start, end) = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, toast, captureStart, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            Assert.AreEqual(unlock.AddSeconds(-5), start);
+            Assert.AreEqual(toast.AddSeconds(3), end);
+            // 19s window: longer than the 15s target because the unlock-to-toast gap demands it.
+            Assert.AreEqual(19, (end - start).TotalSeconds, 0.001);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_CoarseUnlock_GuaranteesWorstCasePollInterval()
+        {
+            var captureStart = T0;
+            var detection = T0.AddSeconds(120);
+            var toast = detection.AddSeconds(1);
+
+            var (start, end) = SegmentTimeline.ComputeClipWindow(
+                null, detection, toast, captureStart, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            Assert.AreEqual(detection.AddSeconds(-17), start);
+            Assert.AreEqual(toast.AddSeconds(3), end);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_ShortGap_StretchesBackToTargetLength()
+        {
+            var captureStart = T0;
+            var unlock = T0.AddSeconds(60);
+            var detection = unlock.AddSeconds(1);
+            var toast = detection.AddSeconds(1);
+
+            var (start, end) = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, toast, captureStart, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            // Anchors alone give 10s (unlock-5 .. toast+3); the target stretches it to 15s.
+            Assert.AreEqual(end.AddSeconds(-15), start);
+            Assert.AreEqual(15, (end - start).TotalSeconds, 0.001);
+            // Both anchors are inside the window.
+            Assert.IsTrue(start <= unlock && unlock <= end);
+            Assert.IsTrue(start <= toast && toast.AddSeconds(3) <= end);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_NoToast_FallsBackToDetectionAnchoredEnd()
+        {
+            var detection = T0.AddSeconds(60);
+
+            var (_, end) = SegmentTimeline.ComputeClipWindow(
+                null, detection, null, T0, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            Assert.AreEqual(detection.AddSeconds(5), end);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_MidnightUnlockIsTreatedAsCoarse()
+        {
+            var captureStart = new DateTime(2025, 12, 31, 23, 0, 0, DateTimeKind.Utc);
+            var unlock = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var detection = unlock.AddMinutes(5);
+            var toast = detection.AddSeconds(1);
+
+            var (start, _) = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, toast, captureStart, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            // Coarse anchor: detection - N - 2, not unlock - 5.
+            Assert.AreEqual(detection.AddSeconds(-17), start);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_PreSessionUnlockIsTreatedAsCoarse()
+        {
+            var captureStart = T0;
+            var unlock = T0.AddMinutes(-30);
+            var detection = T0.AddSeconds(120);
+            var toast = detection.AddSeconds(1);
+
+            var (start, _) = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, toast, captureStart, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            Assert.AreEqual(detection.AddSeconds(-17), start);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_FutureUnlockTimestampIsTreatedAsCoarse()
+        {
+            var captureStart = T0;
+            var detection = T0.AddSeconds(120);
+            var unlock = detection.AddMinutes(10);
+            var toast = detection.AddSeconds(1);
+
+            var (start, _) = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, toast, captureStart, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            Assert.AreEqual(detection.AddSeconds(-17), start);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_ClampsToCaptureStart()
+        {
+            var captureStart = T0;
+            var unlock = T0.AddSeconds(2);
+            var detection = T0.AddSeconds(3);
+            var toast = detection.AddSeconds(1);
+
+            var (start, _) = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, toast, captureStart, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            Assert.AreEqual(captureStart, start);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_ClampsToOldestSegmentWhenLater()
+        {
+            var captureStart = T0;
+            var oldestSegment = T0.AddSeconds(50);
+            var unlock = T0.AddSeconds(52);
+            var detection = T0.AddSeconds(53);
+            var toast = detection.AddSeconds(1);
+
+            var (start, _) = SegmentTimeline.ComputeClipWindow(
+                unlock, detection, toast, captureStart, oldestSegment,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            Assert.AreEqual(oldestSegment, start);
+        }
+
+        [TestMethod]
+        public void ComputeClipWindow_HardCapsAtBufferDepth()
+        {
+            var captureStart = T0;
+            var detection = T0.AddSeconds(300);
+            // Pathologically late toast: raw window would be N + 2 + 60 + 3 = 80s > depth (45s).
+            var toast = detection.AddSeconds(60);
+
+            var (start, end) = SegmentTimeline.ComputeClipWindow(
+                null, detection, toast, captureStart, null,
+                pollIntervalSeconds: 15, targetClipSeconds: 15);
+
+            Assert.AreEqual(45, (end - start).TotalSeconds, 0.001);
+        }
+
+        // === Depth math ===
+
+        [TestMethod]
+        public void BufferDepthSeconds_TakesMaxOfTripleIntervalAndClipSpan()
+        {
+            Assert.AreEqual(45, SegmentTimeline.BufferDepthSeconds(15, 15));
+            Assert.AreEqual(55, SegmentTimeline.BufferDepthSeconds(10, 30));
+            Assert.AreEqual(180, SegmentTimeline.BufferDepthSeconds(60, 15));
+        }
+
+        [TestMethod]
+        public void RetainedSegmentCount_CeilsDepthPlusTwo()
+        {
+            Assert.AreEqual(11, SegmentTimeline.RetainedSegmentCount(45, 5));
+            Assert.AreEqual(12, SegmentTimeline.RetainedSegmentCount(46, 5));
+        }
+
+        // === Clip planning ===
+
+        [TestMethod]
+        public void PlanClip_SelectsOverlappingSegmentsWithOffsetAndDuration()
+        {
+            var segments = new List<SegmentTimeline.SegmentInfo>
+            {
+                Segment(T0),
+                Segment(T0.AddSeconds(5)),
+                Segment(T0.AddSeconds(10)),
+                Segment(T0.AddSeconds(15))
+            };
+
+            var plan = SegmentTimeline.PlanClip(segments, T0.AddSeconds(3), T0.AddSeconds(12), 5);
+
+            Assert.IsNotNull(plan);
+            CollectionAssert.AreEqual(
+                new[] { segments[0], segments[1], segments[2] },
+                plan.Segments.ToArray());
+            Assert.AreEqual(3, plan.StartOffsetSeconds, 0.001);
+            Assert.AreEqual(9, plan.DurationSeconds, 0.001);
+        }
+
+        [TestMethod]
+        public void PlanClip_WindowBeforeFirstSegment_SnapsToRecordedData()
+        {
+            var segments = new List<SegmentTimeline.SegmentInfo>
+            {
+                Segment(T0.AddSeconds(10)),
+                Segment(T0.AddSeconds(15))
+            };
+
+            var plan = SegmentTimeline.PlanClip(segments, T0, T0.AddSeconds(18), 5);
+
+            Assert.IsNotNull(plan);
+            Assert.AreEqual(0, plan.StartOffsetSeconds, 0.001);
+            Assert.AreEqual(8, plan.DurationSeconds, 0.001);
+        }
+
+        [TestMethod]
+        public void PlanClip_BoundarySegmentIsExcludedWhenWindowStartsAtItsEnd()
+        {
+            var segments = new List<SegmentTimeline.SegmentInfo>
+            {
+                Segment(T0),
+                Segment(T0.AddSeconds(5))
+            };
+
+            // Window starts exactly where segment 0 ends: only segment 1 participates.
+            var plan = SegmentTimeline.PlanClip(segments, T0.AddSeconds(5), T0.AddSeconds(9), 5);
+
+            Assert.IsNotNull(plan);
+            Assert.AreEqual(1, plan.Segments.Count);
+            Assert.AreSame(segments[1], plan.Segments[0]);
+        }
+
+        [TestMethod]
+        public void PlanClip_NoOverlap_ReturnsNull()
+        {
+            var segments = new List<SegmentTimeline.SegmentInfo> { Segment(T0) };
+
+            Assert.IsNull(SegmentTimeline.PlanClip(
+                segments, T0.AddSeconds(30), T0.AddSeconds(40), 5));
+            Assert.IsNull(SegmentTimeline.PlanClip(
+                new List<SegmentTimeline.SegmentInfo>(), T0, T0.AddSeconds(10), 5));
+        }
+
+        // === Pruning ===
+
+        [TestMethod]
+        public void SelectPrunable_KeepsBufferDepthNewestSegments()
+        {
+            // N=15, C=15 -> depth 45s -> retain ceil(45/5)+2 = 11.
+            var segments = Enumerable.Range(0, 15)
+                .Select(i => Segment(T0.AddSeconds(i * 5)))
+                .ToList();
+
+            var prunable = SegmentTimeline.SelectPrunable(segments, 15, 15, 5, maxTotalBytes: 0);
+
+            Assert.AreEqual(4, prunable.Count);
+            CollectionAssert.AreEqual(segments.Take(4).ToArray(), prunable.ToArray());
+        }
+
+        [TestMethod]
+        public void SelectPrunable_ByteCapPrunesOldestBeyondBudget()
+        {
+            const long gigabyte = 1024L * 1024 * 1024;
+            var segments = Enumerable.Range(0, 5)
+                .Select(i => Segment(T0.AddSeconds(i * 5), gigabyte))
+                .ToList();
+
+            // Depth would keep all 5, but only the newest two fit under 2 GB.
+            var prunable = SegmentTimeline.SelectPrunable(segments, 15, 15, 5, maxTotalBytes: 2 * gigabyte);
+
+            Assert.AreEqual(3, prunable.Count);
+            CollectionAssert.AreEqual(segments.Take(3).ToArray(), prunable.ToArray());
+        }
+
+        [TestMethod]
+        public void SelectPrunable_AlwaysKeepsTheNewestSegmentEvenOverBudget()
+        {
+            var segments = new List<SegmentTimeline.SegmentInfo>
+            {
+                Segment(T0, 10),
+                Segment(T0.AddSeconds(5), long.MaxValue / 2)
+            };
+
+            var prunable = SegmentTimeline.SelectPrunable(segments, 15, 15, 5, maxTotalBytes: 100);
+
+            Assert.AreEqual(1, prunable.Count);
+            Assert.AreSame(segments[0], prunable[0]);
+        }
+
+        [TestMethod]
+        public void SelectPrunable_EmptyInput_ReturnsEmpty()
+        {
+            Assert.AreEqual(0, SegmentTimeline.SelectPrunable(null, 15, 15, 5, 0).Count);
+        }
+    }
+}
