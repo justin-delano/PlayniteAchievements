@@ -77,7 +77,7 @@ namespace PlayniteAchievements.Services.UI
 
         private void OnAchievementUnlocked(object sender, AchievementUnlockedEventArgs e)
         {
-            if (_disposed || !ShouldShow(e))
+            if (_disposed || !ShouldProcess(e))
             {
                 return;
             }
@@ -92,31 +92,59 @@ namespace PlayniteAchievements.Services.UI
             dispatcher.BeginInvoke(new Action(() => EnqueueOnUi(e)), DispatcherPriority.Background);
         }
 
-        private bool ShouldShow(AchievementUnlockedEventArgs args)
+        /// <summary>
+        /// Whether an unlock enters the wave pipeline at all: it either toasts, or (own unlocks
+        /// only) has at least one screenshot variant enabled. Screenshots no longer require
+        /// toasts — a screenshot-only wave runs the pipeline windowless.
+        /// </summary>
+        private bool ShouldProcess(AchievementUnlockedEventArgs args)
         {
             if (args == null)
             {
                 return false;
             }
 
-            // Preview toasts fired from the settings panel always show, regardless of the
-            // user's notification enablement toggles.
-            if (args.IsPreview)
+            if (ShouldToast(args.IsPreview, args.IsFriendUnlock, args.ProviderKey))
             {
                 return true;
             }
 
-            // The policy ANDs the EnableNotifications master switch into both toast flags and
-            // resolves all-false for null settings.
-            var effective = ProviderNotificationPolicy.Resolve(_settings?.Persisted, args.ProviderKey);
-            return args.IsFriendUnlock
+            if (args.IsFriendUnlock)
+            {
+                return false;
+            }
+
+            var persisted = _settings?.Persisted;
+            if (persisted?.EnableUnlockScreenshots != true ||
+                string.IsNullOrWhiteSpace(persisted.UnlockScreenshotDirectory))
+            {
+                return false;
+            }
+
+            return ProviderNotificationPolicy.Resolve(persisted, args.ProviderKey).AnyScreenshot;
+        }
+
+        /// <summary>
+        /// Whether this unlock shows an on-screen toast. Previews always toast; otherwise the
+        /// policy ANDs the EnableNotifications master switch into both toast flags and resolves
+        /// all-false for null settings.
+        /// </summary>
+        private bool ShouldToast(bool isPreview, bool isFriendUnlock, string providerKey)
+        {
+            if (isPreview)
+            {
+                return true;
+            }
+
+            var effective = ProviderNotificationPolicy.Resolve(_settings?.Persisted, providerKey);
+            return isFriendUnlock
                 ? effective.FriendUnlockToasts
                 : effective.UnlockToasts;
         }
 
         private void EnqueueOnUi(AchievementUnlockedEventArgs args)
         {
-            if (_disposed || !ShouldShow(args))
+            if (_disposed || !ShouldProcess(args))
             {
                 return;
             }
@@ -215,9 +243,16 @@ namespace PlayniteAchievements.Services.UI
             // both read the resolved value.
             _activePosition = EffectivePosition();
 
+            // Toasts and screenshots gate independently: a wave can contain items that toast,
+            // items that only produce screenshots, or a mix (waves batch by friend/own only).
+            var toastItems = wave
+                .Where(vm => ShouldToast(vm.IsPreview, vm.IsFriendUnlock, vm.ProviderKey))
+                .ToList();
+
             // The clean capture must precede window.Show(); overlapping it with the sound-align
-            // delay below adds no latency to the toast itself.
-            var plan = BuildScreenshotPlan(wave);
+            // delay below adds no latency to the toast itself. With-toast variants are dropped
+            // when nothing in the wave toasts (they would just duplicate the clean shot).
+            var plan = BuildScreenshotPlan(wave, toastItems.Count > 0);
             Task<System.Drawing.Bitmap> cleanCaptureTask = null;
             if (plan != null && plan.NeedsCleanCapture)
             {
@@ -225,9 +260,26 @@ namespace PlayniteAchievements.Services.UI
                 cleanCaptureTask = Task.Run(() => _screenshotService.CaptureGameWindow(processId));
             }
 
+            // Screenshot-only wave: no sound, no window, no delays — capture and save. Running
+            // this inside the sequential wave pipeline guarantees no earlier wave's toast is
+            // still on screen, keeping the clean shot clean.
+            if (toastItems.Count == 0)
+            {
+                if (plan != null)
+                {
+                    _ = SaveWaveScreenshotsAsync(plan, cleanCaptureTask, null);
+                }
+                else
+                {
+                    DisposeCaptureTask(cleanCaptureTask);
+                }
+
+                return;
+            }
+
             // Play the sound first, then show the toast after a short delay so the audio onset and
             // the slide-in visually align.
-            PlayWaveSound(wave);
+            PlayWaveSound(toastItems);
             await Task.Delay(450).ConfigureAwait(true);
             if (_disposed)
             {
@@ -242,7 +294,7 @@ namespace PlayniteAchievements.Services.UI
 
             var items = new ItemsControl
             {
-                ItemsSource = wave,
+                ItemsSource = toastItems,
                 IsHitTestVisible = false
             };
             var template = _templateResolver.ResolveTemplate();
@@ -279,7 +331,7 @@ namespace PlayniteAchievements.Services.UI
 
                 // The wave is now fully visible: signal the recording service so it can anchor
                 // clip ends at the moment the toast actually appeared on screen.
-                RaiseWaveDisplayed(wave);
+                RaiseWaveDisplayed(toastItems);
 
                 // The with-toast capture happens here (toast slid in and painted; DWM has
                 // presented the frame). CopyFromScreen has no UI-thread affinity, so blit on the
@@ -416,7 +468,9 @@ namespace PlayniteAchievements.Services.UI
         /// nothing should be captured (previews, friend waves, screenshots disabled, no directory,
         /// or every item resolved to no variants).
         /// </summary>
-        private WaveScreenshotPlan BuildScreenshotPlan(IReadOnlyList<AchievementToastViewModel> wave)
+        private WaveScreenshotPlan BuildScreenshotPlan(
+            IReadOnlyList<AchievementToastViewModel> wave,
+            bool toastWillShow)
         {
             if (wave == null || wave.Count == 0)
             {
@@ -447,7 +501,9 @@ namespace PlayniteAchievements.Services.UI
                     variants |= ScreenshotVariants.Clean;
                 }
 
-                if (effective.ScreenshotWithToast)
+                // Without an on-screen toast the with-toast variant would just duplicate the
+                // clean capture, so it only applies to waves that actually show one.
+                if (effective.ScreenshotWithToast && toastWillShow)
                 {
                     variants |= ScreenshotVariants.WithToast;
                 }

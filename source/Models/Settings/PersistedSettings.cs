@@ -951,7 +951,8 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// When true, a screenshot of the game's monitor is saved for each of your own unlock
-        /// waves (requires unlock toasts to be enabled). Opt-in since it writes files to disk.
+        /// waves. Independent of unlock toasts (the with-toast variant is skipped when no toast
+        /// shows). Opt-in since it writes files to disk.
         /// </summary>
         public bool EnableUnlockScreenshots
         {

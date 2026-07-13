@@ -519,7 +519,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotsHeader">Unlock screenshots</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockScreenshots">Save a screenshot when you unlock an achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectory">Screenshot folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectoryHint">Captures the game's monitor for your own unlocks and saves to &lt;folder&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png, where &lt;variant&gt; is clean, toast, or framed. Requires unlock toasts to be enabled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectoryHint">Captures the game's monitor for your own unlocks and saves to &lt;folder&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png, where &lt;variant&gt; is clean, toast, or framed. Screenshots work even when unlock toasts are disabled; the toast variant is only saved when a toast is shown.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantClean">Clean (game only)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantWithToast">With toast overlay</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantFramed">Framed (frame added to the saved image)</sys:String>
