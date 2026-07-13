@@ -1603,6 +1603,7 @@ namespace PlayniteAchievements.Services.Refresh
                     progress?.ReportDefinitionCheckActive(gameName);
 
                     await limiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
+                    _logger?.Info($"[FriendRefresh] Fetching game definition {i + 1}/{dueProviderGameKeys.Count} for {providerKey}/{providerGameKey} ('{gameName}').");
                     var definitionResult = await limiter.ExecuteWithRetryAsync(
                         () => friendsProvider.GetFriendGameDefinitionAsync(providerGameKey, appId, gameName, cancel),
                         FriendRefreshWorkPolicy.IsTransientError,
