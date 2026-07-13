@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly Action _ensureResourcesLoaded;
         private readonly Func<int?> _getRunningGameProcessId;
         private readonly UnlockScreenshotService _screenshotService;
+        private readonly ScreenshotFrameCompositor _frameCompositor;
         private readonly AchievementToastTemplateResolver _templateResolver;
         private readonly Queue<AchievementToastViewModel> _queue = new Queue<AchievementToastViewModel>();
         private bool _processing;
@@ -46,6 +47,7 @@ namespace PlayniteAchievements.Services.UI
             _ensureResourcesLoaded = ensureResourcesLoaded;
             _getRunningGameProcessId = getRunningGameProcessId;
             _screenshotService = new UnlockScreenshotService(logger);
+            _frameCompositor = new ScreenshotFrameCompositor(logger);
             _templateResolver = new AchievementToastTemplateResolver(api, logger);
             PlayniteAchievementsPlugin.AchievementUnlocked += OnAchievementUnlocked;
         }
@@ -193,12 +195,23 @@ namespace PlayniteAchievements.Services.UI
             // both read the resolved value.
             _activePosition = EffectivePosition();
 
+            // The clean capture must precede window.Show(); overlapping it with the sound-align
+            // delay below adds no latency to the toast itself.
+            var plan = BuildScreenshotPlan(wave);
+            Task<System.Drawing.Bitmap> cleanCaptureTask = null;
+            if (plan != null && plan.NeedsCleanCapture)
+            {
+                var processId = _getRunningGameProcessId?.Invoke();
+                cleanCaptureTask = Task.Run(() => _screenshotService.CaptureGameWindow(processId));
+            }
+
             // Play the sound first, then show the toast after a short delay so the audio onset and
             // the slide-in visually align.
             PlayWaveSound(wave);
             await Task.Delay(450).ConfigureAwait(true);
             if (_disposed)
             {
+                DisposeCaptureTask(cleanCaptureTask);
                 return;
             }
 
@@ -236,6 +249,7 @@ namespace PlayniteAchievements.Services.UI
                 await Task.Delay(captureDelayMs).ConfigureAwait(true);
                 if (_disposed)
                 {
+                    DisposeCaptureTask(cleanCaptureTask);
                     return;
                 }
 
@@ -244,7 +258,22 @@ namespace PlayniteAchievements.Services.UI
                 window.BeginAnimation(Window.TopProperty, null);
                 PlaceWindow(window);
 
-                MaybeCaptureScreenshot(wave);
+                // The with-toast capture happens here (toast slid in and painted; DWM has
+                // presented the frame). CopyFromScreen has no UI-thread affinity, so blit on the
+                // thread pool.
+                System.Drawing.Bitmap toastBitmap = null;
+                if (plan != null && plan.NeedsToastCapture)
+                {
+                    var processId = _getRunningGameProcessId?.Invoke();
+                    toastBitmap = await Task.Run(() => _screenshotService.CaptureGameWindow(processId))
+                        .ConfigureAwait(true);
+                }
+
+                if (plan != null)
+                {
+                    _ = SaveWaveScreenshotsAsync(plan, cleanCaptureTask, toastBitmap);
+                    cleanCaptureTask = null;
+                }
 
                 // Follow the game window every rendered frame (smooth while dragging). The handle
                 // is resolved once — for launcher games that's the foreground game window at show
@@ -337,70 +366,192 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
+        private sealed class WaveScreenshotPlan
+        {
+            public List<(AchievementToastViewModel Vm, ScreenshotVariants Variants)> Items { get; } =
+                new List<(AchievementToastViewModel, ScreenshotVariants)>();
+
+            public string BaseDirectory { get; set; }
+
+            public bool NeedsCleanCapture => Items.Any(i =>
+                (i.Variants & (ScreenshotVariants.Clean | ScreenshotVariants.Framed)) != 0);
+
+            public bool NeedsToastCapture => Items.Any(i =>
+                (i.Variants & ScreenshotVariants.WithToast) != 0);
+
+            public bool NeedsFrame => Items.Any(i =>
+                (i.Variants & ScreenshotVariants.Framed) != 0);
+        }
+
         /// <summary>
-        /// For your own (non-preview) unlock waves, captures the game monitor once (toast is on
-        /// screen at this point) and saves the same image to one file per achievement in the wave.
-        /// The GDI blit runs on the UI thread; the disk writes are offloaded so file I/O never
-        /// blocks the toast.
+        /// Decides which screenshot variants this wave should produce. Returns null when nothing
+        /// should be captured (previews, friend waves, screenshots disabled, or no directory).
         /// </summary>
-        private void MaybeCaptureScreenshot(IReadOnlyList<AchievementToastViewModel> wave)
+        private WaveScreenshotPlan BuildScreenshotPlan(IReadOnlyList<AchievementToastViewModel> wave)
         {
             if (wave == null || wave.Count == 0)
             {
-                return;
+                return null;
             }
 
             var first = wave[0];
             if (first.IsPreview || first.IsFriendUnlock)
             {
-                return;
+                return null;
             }
 
             var persisted = _settings?.Persisted;
             var baseDir = persisted?.UnlockScreenshotDirectory;
             if (persisted?.EnableUnlockScreenshots != true || string.IsNullOrWhiteSpace(baseDir))
             {
-                return;
+                return null;
             }
 
-            var bitmap = _screenshotService.CaptureGameWindow(_getRunningGameProcessId?.Invoke());
-            if (bitmap == null)
+            var variants = ScreenshotVariants.None;
+            if (persisted.UnlockScreenshotClean)
             {
-                return;
+                variants |= ScreenshotVariants.Clean;
             }
 
-            var targets = wave
-                .Select(vm => new
-                {
-                    vm.ProviderKey,
-                    vm.GameName,
-                    vm.AchievementName,
-                    vm.AchievementNumber,
-                    vm.TotalCount
-                })
-                .ToList();
-
-            _ = Task.Run(() =>
+            if (persisted.UnlockScreenshotWithToast)
             {
-                try
+                variants |= ScreenshotVariants.WithToast;
+            }
+
+            if (persisted.UnlockScreenshotFramed)
+            {
+                variants |= ScreenshotVariants.Framed;
+            }
+
+            if (variants == ScreenshotVariants.None)
+            {
+                return null;
+            }
+
+            var plan = new WaveScreenshotPlan { BaseDirectory = baseDir };
+            foreach (var vm in wave)
+            {
+                plan.Items.Add((vm, variants));
+            }
+
+            return plan;
+        }
+
+        /// <summary>
+        /// Saves all requested screenshot variants for a wave. Starts on the UI thread
+        /// (fire-and-forget from the toast pipeline): framed composites render on the dispatcher
+        /// at Background priority so the toast animation stays smooth, and all PNG/file I/O is
+        /// offloaded to the thread pool. Owns disposal of both captured bitmaps.
+        /// </summary>
+        private async Task SaveWaveScreenshotsAsync(
+            WaveScreenshotPlan plan,
+            Task<System.Drawing.Bitmap> cleanCaptureTask,
+            System.Drawing.Bitmap toastBitmap)
+        {
+            System.Drawing.Bitmap cleanBitmap = null;
+            try
+            {
+                if (cleanCaptureTask != null)
                 {
-                    foreach (var t in targets)
+                    cleanBitmap = await cleanCaptureTask.ConfigureAwait(true);
+                }
+
+                var framedByVm = new Dictionary<AchievementToastViewModel, System.Windows.Media.Imaging.BitmapSource>();
+                if (plan.NeedsFrame && cleanBitmap != null)
+                {
+                    var captured = cleanBitmap;
+                    var cleanSource = await Task.Run(() => ScreenshotFrameCompositor.ToBitmapSource(captured))
+                        .ConfigureAwait(true);
+                    var frameTemplate = _templateResolver.ResolveFrameTemplate();
+                    if (cleanSource != null && frameTemplate != null)
                     {
-                        _screenshotService.Save(
-                            bitmap,
-                            baseDir,
-                            t.ProviderKey,
-                            t.GameName,
-                            t.AchievementName,
-                            t.AchievementNumber,
-                            t.TotalCount);
+                        foreach (var item in plan.Items)
+                        {
+                            if ((item.Variants & ScreenshotVariants.Framed) == 0)
+                            {
+                                continue;
+                            }
+
+                            await Dispatcher.Yield(DispatcherPriority.Background);
+                            if (_disposed)
+                            {
+                                break;
+                            }
+
+                            var framed = _frameCompositor.ComposeFramed(cleanSource, frameTemplate, item.Vm);
+                            if (framed != null)
+                            {
+                                framedByVm[item.Vm] = framed;
+                            }
+                        }
                     }
                 }
-                finally
+
+                var baseDir = plan.BaseDirectory;
+                var items = plan.Items;
+                var clean = cleanBitmap;
+                var toast = toastBitmap;
+                cleanBitmap = null;
+                toastBitmap = null;
+                _ = Task.Run(() =>
                 {
-                    bitmap.Dispose();
-                }
-            });
+                    try
+                    {
+                        foreach (var item in items)
+                        {
+                            var vm = item.Vm;
+                            if ((item.Variants & ScreenshotVariants.Clean) != 0 && clean != null)
+                            {
+                                _screenshotService.Save(
+                                    clean, baseDir, vm.ProviderKey, vm.GameName, vm.AchievementName,
+                                    vm.AchievementNumber, vm.TotalCount,
+                                    UnlockScreenshotService.VariantSuffix(ScreenshotVariants.Clean));
+                            }
+
+                            if ((item.Variants & ScreenshotVariants.WithToast) != 0 && toast != null)
+                            {
+                                _screenshotService.Save(
+                                    toast, baseDir, vm.ProviderKey, vm.GameName, vm.AchievementName,
+                                    vm.AchievementNumber, vm.TotalCount,
+                                    UnlockScreenshotService.VariantSuffix(ScreenshotVariants.WithToast));
+                            }
+
+                            if (framedByVm.TryGetValue(vm, out var framed))
+                            {
+                                _screenshotService.Save(
+                                    framed, baseDir, vm.ProviderKey, vm.GameName, vm.AchievementName,
+                                    vm.AchievementNumber, vm.TotalCount,
+                                    UnlockScreenshotService.VariantSuffix(ScreenshotVariants.Framed));
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        clean?.Dispose();
+                        toast?.Dispose();
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Unlock screenshot pipeline failed.");
+            }
+            finally
+            {
+                cleanBitmap?.Dispose();
+                toastBitmap?.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Disposes the bitmap of an in-flight clean capture when the wave aborts before the save
+        /// pipeline takes ownership.
+        /// </summary>
+        private static void DisposeCaptureTask(Task<System.Drawing.Bitmap> captureTask)
+        {
+            captureTask?.ContinueWith(
+                t => t.Result?.Dispose(),
+                TaskContinuationOptions.OnlyOnRanToCompletion);
         }
 
         private void PlaceWindow(Window window)
