@@ -297,6 +297,29 @@ namespace PlayniteAchievements.Providers.Exophase
                 .OrderBy(item => item.GameName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+            // A friend can own several trophy lists of the same library game (e.g. the PS4 and PS5
+            // lists of one title). Only one row may carry the library mapping — the cache keeps one
+            // mapped proxy row per (provider, PlayniteGameId) — so keep it on the list the friend
+            // actually plays (most unlocks, then most recent activity) and leave the rest
+            // provider-only.
+            foreach (var group in deduped
+                .Where(item => item.PlayniteGameId.HasValue && item.PlayniteGameId.Value != Guid.Empty)
+                .GroupBy(item => item.PlayniteGameId.Value)
+                .Where(group => group.Count() > 1))
+            {
+                var winner = group
+                    .OrderByDescending(item => item.AchievementUnlocksHint ?? 0)
+                    .ThenByDescending(item => item.LastPlayedUtc ?? DateTime.MinValue)
+                    .ThenBy(item => item.ProviderGameKey, StringComparer.OrdinalIgnoreCase)
+                    .First();
+                foreach (var loser in group.Where(item => !ReferenceEquals(item, winner)))
+                {
+                    loser.PlayniteGameId = null;
+                }
+
+                _logger?.Info($"[ExophaseFriends] GetOwnedGames: '{config.ExternalUserId}' owns {group.Count()} lists mapping to library game {group.Key}; kept mapping on '{winner.ProviderGameKey}'.");
+            }
+
             _logger?.Info($"[ExophaseFriends] GetOwnedGames: '{config.ExternalUserId}' parsed {allGames.Count} profile game(s), " +
                 $"kept {deduped.Count} on selected platform(s) [{string.Join(", ", platforms)}] " +
                 $"(skipped {skippedOtherPlatform} on other platforms).");
