@@ -249,7 +249,6 @@ namespace PlayniteAchievements.Services.UI
                 await Task.Delay(captureDelayMs).ConfigureAwait(true);
                 if (_disposed)
                 {
-                    DisposeCaptureTask(cleanCaptureTask);
                     return;
                 }
 
@@ -319,6 +318,10 @@ namespace PlayniteAchievements.Services.UI
             }
             finally
             {
+                // Null after the save pipeline takes ownership; disposes the pending capture when
+                // the wave aborts (dispose, exception) before the hand-off.
+                DisposeCaptureTask(cleanCaptureTask);
+
                 if (onRendering != null)
                 {
                     CompositionTarget.Rendering -= onRendering;
