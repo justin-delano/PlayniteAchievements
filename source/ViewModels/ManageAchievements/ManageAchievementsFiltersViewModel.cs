@@ -275,22 +275,25 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 var summaryFilteredApiNames = GameCustomDataLookup.GetSummaryFilteredAchievementApiNames(_gameId, _settings?.Persisted);
 
                 List<AchievementDetail> orderedAchievements;
+                List<AchievementDetail> canonicalAchievements;
                 if (hydratedGameData?.AchievementOrder != null && hydratedGameData.AchievementOrder.Count > 0)
                 {
                     orderedAchievements = AchievementOrderHelper.ApplyOrder(
                         rawAchievements,
                         a => a.ApiName,
                         hydratedGameData.AchievementOrder);
+                    canonicalAchievements = orderedAchievements;
                 }
                 else
                 {
                     orderedAchievements = rawAchievements
                         .OrderBy(a => a.DisplayName ?? a.ApiName, StringComparer.OrdinalIgnoreCase)
                         .ToList();
+                    canonicalAchievements = rawAchievements;
                 }
 
                 _canonicalCategoryLabelFilterOptions = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
-                    orderedAchievements,
+                    canonicalAchievements,
                     achievement => ResolveEffectiveCategoryLabel(achievement, categoryOverrides),
                     hydratedGameData?.AchievementCategoryOrder);
 

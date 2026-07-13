@@ -3019,10 +3019,11 @@ namespace PlayniteAchievements.ViewModels
         private void SyncSelectedGameAchievementsDisplay()
         {
             // Keep the unfiltered category-summary source current; the achievement filters do not
-            // touch it, so category rollups stay stable while drilled.
+            // touch it, so category rollups stay stable while drilled. Sync from the canonical
+            // definition/custom-order snapshot so category ordering does not follow the live grid sort.
             CollectionHelper.Replace(
                 SelectedGameAllAchievements,
-                _allSelectedGameAchievements ?? new List<AchievementDisplayItem>());
+                _selectedGameDefaultOrderedAchievements ?? new List<AchievementDisplayItem>());
 
             var displayItems = DisplayGridRowLimitHelper.Limit(
                 _filteredSelectedGameAchievements,
