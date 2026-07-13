@@ -680,6 +680,9 @@ namespace PlayniteAchievements.Providers.Exophase
                 {
                     ApiName = ExophaseApiClient.ExophaseStableApiNamePrefix +
                         award.EffectiveAwardId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    // The platform-native achievement key (Steam apiname, PSN trophy id, ...) so the
+                    // save can match definitions written by the platform's own provider for mapped games.
+                    ProviderNativeKey = award.CanonicalId,
                     IconUrl = ExophasePublicApiClient.NormalizeImageUrl(award.Icons?.Original ?? award.Icons?.Medium),
                     UnlockedIconUrl = ExophasePublicApiClient.NormalizeImageUrl(award.Icons?.Original ?? award.Icons?.Medium),
                     Unlocked = true,
