@@ -2147,6 +2147,11 @@ namespace PlayniteAchievements.Services.Tests
                     .Where(pair => providerGameKeys?.Contains(pair.Key) == true)
                     .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
 
+            public List<string> LoadLegacyKeyedDefinitionGameKeys(
+                string providerKey,
+                IReadOnlyCollection<string> providerGameKeys) =>
+                new List<string>();
+
             public FriendUnownedCacheStats GetUnownedFriendGameCacheStats() =>
                 new FriendUnownedCacheStats();
 

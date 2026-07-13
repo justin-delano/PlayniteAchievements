@@ -2947,6 +2947,11 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 IReadOnlyCollection<string> providerGameKeys) =>
                 new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
 
+            public List<string> LoadLegacyKeyedDefinitionGameKeys(
+                string providerKey,
+                IReadOnlyCollection<string> providerGameKeys) =>
+                new List<string>();
+
             public FriendUnownedCacheStats GetUnownedFriendGameCacheStats() =>
                 new FriendUnownedCacheStats();
 

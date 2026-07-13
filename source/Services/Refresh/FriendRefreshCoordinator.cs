@@ -1515,10 +1515,32 @@ namespace PlayniteAchievements.Services.Refresh
             var dueProviderGameKeys = FriendRefreshWorkPolicy.ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey)
                 ? new List<string>()
                 : options?.ForceDefinitionRefresh == true
-                    ? providerGameKeys
+                    ? providerGameKeys.ToList()
                     : providerGameKeys
                         .Where(key => FriendRefreshWorkPolicy.IsDefinitionCheckDue(states.TryGetValue(key, out var state) ? state : null))
                         .ToList();
+
+            // Games whose cached definitions still carry legacy display-derived Exophase keys are
+            // definition-due regardless of check freshness: the definition fetch performs the
+            // in-place rename to stable ids, which must happen before locale-independent unlock
+            // rows can match.
+            if (!FriendRefreshWorkPolicy.ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey))
+            {
+                var legacyKeyedGameKeys = _friendCache.LoadLegacyKeyedDefinitionGameKeys(providerKey, providerGameKeys);
+                if (legacyKeyedGameKeys?.Count > 0)
+                {
+                    var dueKeySet = new HashSet<string>(dueProviderGameKeys, StringComparer.OrdinalIgnoreCase);
+                    foreach (var legacyKey in legacyKeyedGameKeys)
+                    {
+                        if (dueKeySet.Add(legacyKey))
+                        {
+                            dueProviderGameKeys.Add(legacyKey);
+                        }
+                    }
+
+                    _logger?.Info($"[FriendRefresh] {legacyKeyedGameKeys.Count} {providerKey} games have legacy-keyed definitions; queued for definition refresh to migrate to stable ids.");
+                }
+            }
 
             plan.OwnershipByKey = ownershipByKey;
             plan.ProviderGameKeys = providerGameKeys;
