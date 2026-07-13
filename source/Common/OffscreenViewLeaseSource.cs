@@ -10,10 +10,9 @@ namespace PlayniteAchievements.Common
     /// many calls. While at least one lease is active, acquisition returns a single
     /// shared view (created lazily); otherwise each acquisition returns a fresh
     /// per-call view the caller owns. A faulted shared view is discarded so the next
-    /// acquisition recreates it. Offscreen views are only safe to create and use on
-    /// the UI thread, so AcquireView, ReleaseView, and WithNavigableViewAsync must be
-    /// called from the UI dispatcher; BeginLease and lease disposal may be called from
-    /// any thread.
+    /// acquisition recreates it. Offscreen views have no UI-thread affinity (CEF runs
+    /// its own threads), so all members may be called from any thread; concurrent
+    /// navigations on the shared view are serialized through an internal gate.
     /// </summary>
     internal sealed class OffscreenViewLeaseSource
     {
@@ -91,7 +90,7 @@ namespace PlayniteAchievements.Common
 
         /// <summary>
         /// Returns the shared leased view (created on first use) when a lease is active,
-        /// otherwise a fresh per-call view the caller owns. Must be called on the UI thread.
+        /// otherwise a fresh per-call view the caller owns.
         /// </summary>
         public (IWebView View, bool Owned) AcquireView()
         {
@@ -149,7 +148,7 @@ namespace PlayniteAchievements.Common
         }
 
         /// <summary>
-        /// Runs navigation work against an offscreen view on the current (UI) thread.
+        /// Runs navigation work against an offscreen view; callable from any thread.
         /// Navigations on the shared leased view are serialized through a gate; per-call
         /// views run unguarded. An exception from the work marks the view faulted.
         /// </summary>
@@ -158,13 +157,13 @@ namespace PlayniteAchievements.Common
             var (view, owned) = AcquireView();
             if (!owned)
             {
-                await _navGate.WaitAsync(ct).ConfigureAwait(true);
+                await _navGate.WaitAsync(ct).ConfigureAwait(false);
             }
 
             var faulted = false;
             try
             {
-                return await work(view).ConfigureAwait(true);
+                return await work(view).ConfigureAwait(false);
             }
             catch
             {
