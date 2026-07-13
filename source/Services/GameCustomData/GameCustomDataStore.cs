@@ -161,6 +161,135 @@ namespace PlayniteAchievements.Services.GameCustomData
             Save(playniteGameId, data, previous);
         }
 
+        // Rewrites every ApiName-keyed field after achievement definitions were renamed in place
+        // (stable-key migrations / renamed achievements), so notes, ordering, filters, category and
+        // icon overrides, and the manual capstone follow the definition to its new key. No-op when
+        // the game has no stored custom data or none of the old keys appear in it.
+        public bool RenameAchievementApiNames(Guid playniteGameId, IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (playniteGameId == Guid.Empty || renamedApiNames == null || renamedApiNames.Count == 0)
+            {
+                return false;
+            }
+
+            if (!TryLoad(playniteGameId, out var probe) || probe == null)
+            {
+                return false;
+            }
+
+            if (!ApplyAchievementApiNameRenames(probe, renamedApiNames))
+            {
+                return false;
+            }
+
+            Update(playniteGameId, data => ApplyAchievementApiNameRenames(data, renamedApiNames));
+            _logger?.Info($"Rewrote achievement custom-data keys for game {playniteGameId} after {renamedApiNames.Count} definition renames.");
+            return true;
+        }
+
+        private static bool ApplyAchievementApiNameRenames(
+            GameCustomDataFile data,
+            IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (data == null)
+            {
+                return false;
+            }
+
+            var changed = false;
+
+            if (TryResolveRenamedApiName(renamedApiNames, data.ManualCapstoneApiName, out var renamedCapstone))
+            {
+                data.ManualCapstoneApiName = renamedCapstone;
+                changed = true;
+            }
+
+            changed |= RenameListEntries(data.AchievementOrder, renamedApiNames);
+            changed |= RenameListEntries(data.FilteredAchievementApiNames, renamedApiNames);
+            changed |= RenameListEntries(data.SummaryFilteredAchievementApiNames, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementCategoryOverrides, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementCategoryTypeOverrides, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementUnlockedIconOverrides, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementLockedIconOverrides, renamedApiNames);
+            changed |= RenameDictionaryKeys(data.AchievementNotes, renamedApiNames);
+
+            return changed;
+        }
+
+        private static bool TryResolveRenamedApiName(
+            IReadOnlyDictionary<string, string> renamedApiNames,
+            string apiName,
+            out string renamed)
+        {
+            renamed = null;
+            var normalized = apiName?.Trim();
+            if (string.IsNullOrWhiteSpace(normalized))
+            {
+                return false;
+            }
+
+            foreach (var pair in renamedApiNames)
+            {
+                if (string.Equals(pair.Key, normalized, StringComparison.OrdinalIgnoreCase))
+                {
+                    renamed = pair.Value;
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool RenameListEntries(IList<string> entries, IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (entries == null || entries.Count == 0)
+            {
+                return false;
+            }
+
+            var changed = false;
+            for (var i = 0; i < entries.Count; i++)
+            {
+                if (TryResolveRenamedApiName(renamedApiNames, entries[i], out var renamed))
+                {
+                    entries[i] = renamed;
+                    changed = true;
+                }
+            }
+
+            return changed;
+        }
+
+        private static bool RenameDictionaryKeys(
+            IDictionary<string, string> map,
+            IReadOnlyDictionary<string, string> renamedApiNames)
+        {
+            if (map == null || map.Count == 0)
+            {
+                return false;
+            }
+
+            var changed = false;
+            foreach (var oldKey in map.Keys.ToList())
+            {
+                if (!TryResolveRenamedApiName(renamedApiNames, oldKey, out var newKey))
+                {
+                    continue;
+                }
+
+                var value = map[oldKey];
+                map.Remove(oldKey);
+                if (!map.ContainsKey(newKey))
+                {
+                    map[newKey] = value;
+                }
+
+                changed = true;
+            }
+
+            return changed;
+        }
+
         public void Save(Guid playniteGameId, GameCustomDataFile data)
         {
             Save(playniteGameId, data, previousData: null);

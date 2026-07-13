@@ -981,6 +981,8 @@ namespace PlayniteAchievements.Services.Database
             try
             {
                 var writtenCount = 0;
+                var renamedApiNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                Guid? renamedPlayniteGameId = null;
                 WithDb(db =>
                 {
                     db.RunTransaction(() =>
@@ -989,7 +991,22 @@ namespace PlayniteAchievements.Services.Database
                             definition.Achievements != null &&
                             definition.Achievements.Count > 0)
                         {
-                            var game = LoadAnyGameByAppId(db, providerKey, definition.AppId, definition.ProviderGameKey);
+                            // Exophase keys resolve through the single-row invariant (healing any
+                            // duplicates) without touching the mapping flag; other providers keep
+                            // the existing lookup.
+                            var game = IsExophaseProvider(providerKey) && !string.IsNullOrWhiteSpace(definition.ProviderGameKey)
+                                ? ResolveSingleExophaseFriendGameRow(
+                                    db,
+                                    providerKey,
+                                    definition.AppId,
+                                    NormalizeProviderGameKey(definition.ProviderGameKey),
+                                    definition.ProviderPlatformKey,
+                                    null,
+                                    allowCreate: true,
+                                    applyOwnershipMapping: false,
+                                    definition.GameName,
+                                    nowIso)
+                                : LoadAnyGameByAppId(db, providerKey, definition.AppId, definition.ProviderGameKey);
                             var gameId = game?.Id ?? EnsureProviderOnlyGame(
                                 db,
                                 providerKey,
@@ -1000,13 +1017,32 @@ namespace PlayniteAchievements.Services.Database
                                 nowIso);
                             if (gameId > 0)
                             {
-                                UpsertAchievementDefinitions(
-                                    db,
-                                    gameId,
-                                    definition.Achievements,
-                                    nowIso,
-                                    checkedIso);
-                                writtenCount = definition.Achievements.Count;
+                                // A complete Ok definition fetch is authoritative for provider-only
+                                // rows. Mapped proxy rows mirror the current user's schema via the
+                                // proxy refresh (authoritative at unlock-save time); writing the
+                                // aggregator schema onto them would re-introduce a second key family
+                                // the proxy refresh just pruned — regardless of phase ordering — so
+                                // mapped rows get no definition write here at all (state and banner
+                                // are still recorded below).
+                                var isProviderOnlyRow = !ParseGuid(game?.PlayniteGameId).HasValue;
+                                if (isProviderOnlyRow)
+                                {
+                                    UpsertAchievementDefinitions(
+                                        db,
+                                        gameId,
+                                        definition.Achievements,
+                                        nowIso,
+                                        checkedIso,
+                                        renamedApiNames,
+                                        authoritativeSource: true);
+                                    writtenCount = definition.Achievements.Count;
+                                }
+                                else
+                                {
+                                    _logger?.Debug($"Skipping definition write for mapped friend game {providerKey}/{definition.ProviderGameKey}; the mapped current-user schema is canonical for its proxy row.");
+                                }
+
+                                renamedPlayniteGameId = ParseGuid(game?.PlayniteGameId);
                             }
                         }
 
@@ -1025,10 +1061,17 @@ namespace PlayniteAchievements.Services.Database
                     });
                 });
 
-                return FriendCacheWriteResult.Ok(
+                var result = FriendCacheWriteResult.Ok(
                     incomingCount: definition.Achievements?.Count ?? 0,
                     writtenCount: writtenCount,
                     skippedCount: Math.Max(0, (definition.Achievements?.Count ?? 0) - writtenCount));
+                if (renamedApiNames.Count > 0)
+                {
+                    result.RenamedApiNames = renamedApiNames;
+                    result.RenamedPlayniteGameId = renamedPlayniteGameId;
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -1178,6 +1221,78 @@ namespace PlayniteAchievements.Services.Database
                 }
 
                 return result;
+            });
+        }
+
+        // Returns the subset of the given provider game cache keys whose cached achievement
+        // definitions still carry legacy display-derived Exophase keys ("exophase_..."). Such games
+        // need a definition re-fetch so the rename-aware upsert can migrate them to stable ids
+        // before locale-independent unlock rows can match.
+        public List<string> LoadLegacyKeyedDefinitionGameKeys(
+            string providerKey,
+            IReadOnlyCollection<string> providerGameKeys)
+        {
+            providerKey = NormalizeProviderKey(providerKey);
+            var keys = (providerGameKeys ?? Array.Empty<string>())
+                .Where(key => !string.IsNullOrWhiteSpace(key))
+                .Select(key => key.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (keys.Count == 0)
+            {
+                return new List<string>();
+            }
+
+            return WithDb(db =>
+            {
+                var numericIds = keys
+                    .Select(key => int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) ? parsed : 0)
+                    .Where(id => id > 0)
+                    .Distinct()
+                    .ToList();
+                var slugKeys = keys
+                    .Where(key => !int.TryParse(key, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                    .ToList();
+
+                var clauses = new List<string>();
+                var args = new List<object> { providerKey };
+                if (numericIds.Count > 0)
+                {
+                    clauses.Add("g.ProviderGameId IN (" + string.Join(",", numericIds.Select(_ => "?")) + ")");
+                    args.AddRange(numericIds.Cast<object>());
+                }
+
+                if (slugKeys.Count > 0)
+                {
+                    // COLLATE NOCASE mirrors the OrdinalIgnoreCase key comparisons used everywhere
+                    // else in this file; SQLite IN is case-sensitive by default.
+                    clauses.Add("g.ProviderGameKey COLLATE NOCASE IN (" + string.Join(",", slugKeys.Select(_ => "?")) + ")");
+                    args.AddRange(slugKeys.Cast<object>());
+                }
+
+                if (clauses.Count == 0)
+                {
+                    return new List<string>();
+                }
+
+                var sql =
+                    @"SELECT DISTINCT
+                        g.Id AS Id,
+                        g.ProviderGameId AS ProviderGameId,
+                        g.ProviderGameKey AS ProviderGameKey
+                      FROM Games g
+                      INNER JOIN AchievementDefinitions d ON d.GameId = g.Id
+                      WHERE g.ProviderKey = ?
+                        AND d.ApiName LIKE 'exophase\_%' ESCAPE '\'
+                        AND (" + string.Join(" OR ", clauses) + ");";
+
+                var requestedKeySet = new HashSet<string>(keys, StringComparer.OrdinalIgnoreCase);
+                return db.Load<GameRow>(sql, args.ToArray())
+                    .Where(row => row != null)
+                    .Select(row => ToProviderGameCacheKey((int)Math.Max(0, row.ProviderGameId ?? 0), row.ProviderGameKey))
+                    .Where(key => !string.IsNullOrWhiteSpace(key) && requestedKeySet.Contains(key))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
             });
         }
 
@@ -1859,16 +1974,35 @@ namespace PlayniteAchievements.Services.Database
 
             try
             {
+                var renamedApiNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                Guid? renamedPlayniteGameId = null;
                 WithDb(db =>
                 {
                     db.RunTransaction(() =>
                     {
                         var user = LoadFriendUser(db, providerKey, externalUserId);
-                        var game = LoadAnyGameByAppId(db, providerKey, appId, providerGameKey);
+                        // Exophase keys resolve through the single-row invariant (healing any
+                        // duplicates) without touching the mapping flag; other providers keep the
+                        // existing lookup.
+                        var game = IsExophaseProvider(providerKey) && !string.IsNullOrWhiteSpace(providerGameKey)
+                            ? ResolveSingleExophaseFriendGameRow(
+                                db,
+                                providerKey,
+                                appId,
+                                providerGameKey,
+                                null,
+                                null,
+                                allowCreate: false,
+                                applyOwnershipMapping: false,
+                                null,
+                                nowIso)
+                            : LoadAnyGameByAppId(db, providerKey, appId, providerGameKey);
                         if (user == null || game == null)
                         {
                             return;
                         }
+
+                        renamedPlayniteGameId = ParseGuid(game.PlayniteGameId);
 
                         var status = ResolveFriendScrapeStatus(achievements);
                         var detail = achievements?.DetailCode.ToString();
@@ -1887,7 +2021,8 @@ namespace PlayniteAchievements.Services.Database
                             db,
                             game,
                             nowIso,
-                            updatedIso);
+                            updatedIso,
+                            renamedApiNames);
                         if (refreshedFromMappedCurrentUser)
                         {
                             definitions = LoadAchievementDefinitionsForGame(db, game.Id);
@@ -1902,12 +2037,38 @@ namespace PlayniteAchievements.Services.Database
                             // this provider), or an older friend-seeded definition set with the same keys.
                             // Seed/refresh from this scrape only when no mapped current-user schema won;
                             // native definitions stay canonical for shared/mapped games.
-                            UpsertAchievementDefinitions(db, game.Id, seededDefinitions, nowIso, updatedIso);
+                            UpsertAchievementDefinitions(db, game.Id, seededDefinitions, nowIso, updatedIso, renamedApiNames);
                             definitions = LoadAchievementDefinitionsForGame(db, game.Id);
+                        }
+
+                        // Stable-keyed unlock rows carry no display text and can only match definitions by
+                        // key. Defer only while definitions are missing or still carry legacy display-derived
+                        // Exophase keys (migration-pending); definitions keyed by another provider's scheme
+                        // (mapped games serviced by Steam/PSN/...) proceed and match via the native-key bridge.
+                        if (SqlNadoCacheBehavior.RowsRequireStableKeyedDefinitions(incomingRows) &&
+                            (definitions.Count == 0 ||
+                             SqlNadoCacheBehavior.HasLegacyExophaseKeyedDefinitions(definitions.Select(def => def?.ApiName))))
+                        {
+                            _logger?.Info($"Friend achievements for provider={providerKey}, game={ToProviderGameLogKey(appId, providerGameKey)} " +
+                                "deferred: definitions are missing or still legacy-keyed; awaiting definition migration.");
+                            UpdateFriendOwnershipScrapeState(db, user.Id, game.Id, "transient", "awaiting-definition-migration", updatedIso, nowIso);
+                            return;
                         }
 
                         var totalAchievements = definitions.Count;
                         var matchedRows = MapFriendRowsToDefinitions(definitions, incomingRows);
+
+                        // A nonzero unlock list that matches no definition at all is a matching failure
+                        // (mismatched key schemes, stale definitions), never a real state; persisting it
+                        // would write the collapsed unlock counts this pipeline exists to prevent. Record
+                        // a transient state so the candidate retries after definitions heal.
+                        if (matchedRows.Count == 0 && incomingRows.Count > 0 && definitions.Count > 0)
+                        {
+                            _logger?.Warn($"Friend achievements for provider={providerKey}, game={ToProviderGameLogKey(appId, providerGameKey)} " +
+                                $"deferred: none of {incomingRows.Count} unlock row(s) matched {definitions.Count} cached definition(s).");
+                            UpdateFriendOwnershipScrapeState(db, user.Id, game.Id, "transient", "no-definition-match", updatedIso, nowIso);
+                            return;
+                        }
 
                         var cacheKey = BuildFriendCacheKey(providerKey, externalUserId, game);
                         var existingProgress = LoadUserGameProgress(db, user.Id, game.Id, cacheKey);
@@ -1949,7 +2110,14 @@ namespace PlayniteAchievements.Services.Database
                     });
                 });
 
-                return FriendCacheWriteResult.Ok();
+                var result = FriendCacheWriteResult.Ok();
+                if (renamedApiNames.Count > 0)
+                {
+                    result.RenamedApiNames = renamedApiNames;
+                    result.RenamedPlayniteGameId = renamedPlayniteGameId;
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -3006,6 +3174,30 @@ namespace PlayniteAchievements.Services.Database
             string nowIso)
         {
             providerGameKey = NormalizeProviderGameKey(providerGameKey);
+
+            // Aggregator (Exophase) friend games hold the invariant: exactly ONE Games row per
+            // (provider, providerGameKey). The library mapping is a flag set/cleared on that single
+            // row by the ownership save (which is authoritative for the mapping each run) — it is
+            // never expressed by creating a second row for the same key, and a mapped item never
+            // rewrites another key's row. Every Exophase key row is friend-pipeline-owned (the
+            // current user's own rows use un-prefixed slug keys), so flag changes here cannot touch
+            // current-user data. Other providers keep the shared-row semantics below, where a friend
+            // item may legitimately resolve to the current user's own Games row.
+            if (IsExophaseProvider(providerKey) && !string.IsNullOrWhiteSpace(providerGameKey))
+            {
+                return ResolveSingleExophaseFriendGameRow(
+                    db,
+                    providerKey,
+                    appId,
+                    providerGameKey,
+                    providerPlatformKey,
+                    playniteGameId,
+                    allowProviderOnly,
+                    applyOwnershipMapping: true,
+                    gameName,
+                    nowIso);
+            }
+
             if (playniteGameId.HasValue && playniteGameId.Value != Guid.Empty)
             {
                 var mapped = LoadGameByPlayniteId(db, providerKey, playniteGameId.Value);
@@ -3064,6 +3256,199 @@ namespace PlayniteAchievements.Services.Database
             return gameId > 0
                 ? LoadProviderOnlyGameByAppId(db, providerKey, appId, providerGameKey)
                 : null;
+        }
+
+        // Resolves THE single Games row for an Exophase friend game key, healing any duplicate rows
+        // for the key first, and optionally syncing the library-mapping flag from the ownership row.
+        // Returns null only when the row does not exist and creation is not allowed.
+        private static GameRow ResolveSingleExophaseFriendGameRow(
+            SQLiteDatabase db,
+            string providerKey,
+            int appId,
+            string providerGameKey,
+            string providerPlatformKey,
+            Guid? playniteGameId,
+            bool allowCreate,
+            bool applyOwnershipMapping,
+            string gameName,
+            string nowIso)
+        {
+            var row = MergeDuplicateFriendGameRows(db, providerKey, providerGameKey, nowIso);
+            var mappedId = playniteGameId.HasValue && playniteGameId.Value != Guid.Empty
+                ? playniteGameId.Value
+                : Guid.Empty;
+
+            if (applyOwnershipMapping && mappedId != Guid.Empty)
+            {
+                // One mapping claim per (provider, library game): release any OTHER key's row still
+                // claiming this PlayniteGameId (the previous winner among duplicate trophy lists).
+                // This must run BEFORE this key claims the mapping below — the partial unique index
+                // on (ProviderKey, PlayniteGameId) rejects a second claim, so a claim-first order
+                // aborts the whole ownership transaction whenever the mapping winner changes.
+                // Scoped to friend-format keys ("platform|slug"): the current user's own
+                // Exophase-provider row uses a bare slug key and must never lose its mapping here.
+                db.ExecuteNonQuery(
+                    @"UPDATE Games
+                      SET PlayniteGameId = NULL,
+                          LastUpdatedUtc = ?
+                      WHERE ProviderKey = ?
+                        AND PlayniteGameId = ?
+                        AND ProviderGameKey LIKE '%|%'
+                        AND Id <> ?;",
+                    nowIso,
+                    providerKey,
+                    mappedId.ToString(),
+                    row?.Id ?? -1);
+            }
+
+            if (row == null)
+            {
+                if (!allowCreate && mappedId == Guid.Empty)
+                {
+                    return null;
+                }
+
+                var name = string.IsNullOrWhiteSpace(gameName)
+                    ? $"{providerKey} Game {ToProviderGameLogKey(appId, providerGameKey)}"
+                    : gameName.Trim();
+                db.ExecuteNonQuery(
+                    @"INSERT INTO Games
+                        (ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc)
+                      VALUES
+                        (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+                    providerKey,
+                    DbValue(string.IsNullOrWhiteSpace(providerPlatformKey) ? providerKey : providerPlatformKey.Trim()),
+                    appId > 0 ? (object)appId : DBNull.Value,
+                    DbValue(providerGameKey),
+                    mappedId != Guid.Empty ? (object)mappedId.ToString() : DBNull.Value,
+                    DbValue(name),
+                    DbValue(providerKey),
+                    nowIso,
+                    nowIso);
+                row = LoadAnyGameByAppId(db, providerKey, appId, providerGameKey);
+            }
+            else if (applyOwnershipMapping)
+            {
+                var rowMappedId = ParseGuid(row.PlayniteGameId) ?? Guid.Empty;
+                if (mappedId != Guid.Empty && rowMappedId != mappedId)
+                {
+                    db.ExecuteNonQuery(
+                        @"UPDATE Games
+                          SET PlayniteGameId = ?,
+                              LastUpdatedUtc = ?
+                          WHERE Id = ?;",
+                        mappedId.ToString(),
+                        nowIso,
+                        row.Id);
+                    row.PlayniteGameId = mappedId.ToString();
+                }
+                else if (mappedId == Guid.Empty && rowMappedId != Guid.Empty)
+                {
+                    // Ownership is authoritative for the mapping: this key did not resolve to (or
+                    // lost) the library mapping this run, so the stale flag is cleared in place.
+                    db.ExecuteNonQuery(
+                        @"UPDATE Games
+                          SET PlayniteGameId = NULL,
+                              LastUpdatedUtc = ?
+                          WHERE Id = ?;",
+                        nowIso,
+                        row.Id);
+                    row.PlayniteGameId = null;
+                }
+            }
+
+            if (row == null)
+            {
+                return null;
+            }
+
+            // Identity refresh: name/platform/appid only. The key equals the row's key by
+            // construction (key-first resolution), so the COALESCE write cannot re-key the row.
+            UpdateMappedGameIdentity(db, row.Id, appId, providerGameKey, providerPlatformKey, gameName, nowIso);
+            return LoadAnyGameByAppId(db, providerKey, appId, providerGameKey);
+        }
+
+        // Restores the one-row-per-(provider, key) invariant for a key whose rows were duplicated by
+        // earlier mapped/provider-only split resolution: keeps the row holding the most progress data
+        // (tie: most recently updated), absorbs the losers' missing definitions, ownership, and
+        // progress via the promotion movers, and deletes the loser rows. Returns the surviving row,
+        // or null when the key has no rows.
+        private static GameRow MergeDuplicateFriendGameRows(
+            SQLiteDatabase db,
+            string providerKey,
+            string providerGameKey,
+            string nowIso)
+        {
+            var rows = db.Load<GameRow>(
+                @"SELECT Id, ProviderKey, ProviderPlatformKey, ProviderGameId, ProviderGameKey, PlayniteGameId, GameName, LibrarySourceName, FirstSeenUtc, LastUpdatedUtc
+                  FROM Games
+                  WHERE ProviderKey = ?
+                    AND ProviderGameKey = ?
+                  ORDER BY Id;",
+                providerKey,
+                providerGameKey).ToList();
+            if (rows.Count <= 1)
+            {
+                return rows.FirstOrDefault();
+            }
+
+            GameRow keeper = null;
+            var keeperProgressCount = -1L;
+            foreach (var candidate in rows)
+            {
+                var progressCount = db.ExecuteScalar<long>(
+                    "SELECT COUNT(*) FROM UserGameProgress WHERE GameId = ?;",
+                    candidate.Id);
+                if (progressCount > keeperProgressCount ||
+                    (progressCount == keeperProgressCount &&
+                     string.CompareOrdinal(candidate.LastUpdatedUtc, keeper?.LastUpdatedUtc) > 0))
+                {
+                    keeper = candidate;
+                    keeperProgressCount = progressCount;
+                }
+            }
+
+            foreach (var loser in rows)
+            {
+                if (loser.Id == keeper.Id)
+                {
+                    continue;
+                }
+
+                // Same movers the provider-only promotion uses: definitions the keeper lacks move
+                // over (so unlock rows keep resolving), ownership and progress rows migrate with
+                // ApiName-based achievement remapping, and conflicts keep the keeper's data.
+                MergeProviderOnlyDefinitionsIntoTarget(db, loser.Id, keeper.Id, nowIso);
+                MoveFriendOwnershipToPromotedGame(db, loser.Id, keeper.Id, nowIso);
+                MoveFriendProgressToPromotedGame(db, loser.Id, keeper.Id, nowIso);
+
+                // Definitions still on the loser are duplicates of keys the keeper already holds
+                // (everything else moved above), and any unlock rows still referencing them were
+                // copied/remapped onto the keeper's definitions by the progress mover — delete both
+                // explicitly rather than relying on FK cascade, which is per-connection.
+                db.ExecuteNonQuery(
+                    @"DELETE FROM UserAchievements
+                      WHERE AchievementDefinitionId IN (
+                          SELECT Id FROM AchievementDefinitions WHERE GameId = ?
+                      );",
+                    loser.Id);
+                db.ExecuteNonQuery(
+                    @"DELETE FROM AchievementDefinitions
+                      WHERE GameId = ?;",
+                    loser.Id);
+                db.ExecuteNonQuery(
+                    "DELETE FROM ProviderGameDefinitionState WHERE ProviderKey = ? AND ProviderGameKey = ? AND Id NOT IN (SELECT MIN(Id) FROM ProviderGameDefinitionState WHERE ProviderKey = ? AND ProviderGameKey = ?);",
+                    providerKey,
+                    providerGameKey,
+                    providerKey,
+                    providerGameKey);
+                db.ExecuteNonQuery(
+                    "DELETE FROM Games WHERE Id = ?;",
+                    loser.Id);
+            }
+
+            // The keeper carries the union; a stale mapping flag on it is reconciled by the caller.
+            return keeper;
         }
 
         private static bool ShouldUseSharedFriendGameFallback(string providerKey, string providerGameKey, Guid? playniteGameId)
@@ -3130,14 +3515,17 @@ namespace PlayniteAchievements.Services.Database
                 return 0;
             }
 
+            providerGameKey = NormalizeProviderGameKey(providerGameKey);
+
+            // Dev-parity behavior for non-Exophase providers (Exophase keys never reach this
+            // method; they resolve through ResolveSingleExophaseFriendGameRow, which handles
+            // duplicate trophy lists without hijacking row identity).
             var existing = LoadGameByPlayniteId(db, providerKey, playniteGameId);
             if (existing != null)
             {
                 UpdateMappedGameIdentity(db, existing.Id, appId, providerGameKey, providerPlatformKey, gameName, nowIso);
                 return existing.Id;
             }
-
-            providerGameKey = NormalizeProviderGameKey(providerGameKey);
 
             // Upgrade an existing provider-only row for this game in place (attach the PlayniteGameId)
             // rather than inserting a second row. A cross-provider aggregator friend game (ProviderKey
@@ -3572,7 +3960,8 @@ namespace PlayniteAchievements.Services.Database
             SQLiteDatabase db,
             GameRow game,
             string nowIso,
-            string updatedIso)
+            string updatedIso,
+            IDictionary<string, string> renameCollector = null)
         {
             if (db == null ||
                 game == null ||
@@ -3598,7 +3987,9 @@ namespace PlayniteAchievements.Services.Database
                 return false;
             }
 
-            UpsertAchievementDefinitions(db, game.Id, achievements, nowIso, updatedIso);
+            // The mapped current-user schema is complete by construction; the proxy row must mirror
+            // it exactly, so stale accumulated keys are pruned regardless of relative counts.
+            UpsertAchievementDefinitions(db, game.Id, achievements, nowIso, updatedIso, renameCollector, authoritativeSource: true);
             return true;
         }
 
@@ -3737,6 +4128,31 @@ namespace PlayniteAchievements.Services.Database
                 if (byApiName.Count == 1)
                 {
                     return byApiName[0];
+                }
+            }
+
+            // Native-key bridge: mapped games serviced by the platform's own provider key their
+            // definitions with the platform-native scheme (Steam apinames, PSN "{group}:{trophyId}").
+            // Aggregator rows carry that native key in ProviderNativeKey — match it verbatim first,
+            // then in the group-qualified PSN form. Unique matches only.
+            if (!string.IsNullOrWhiteSpace(row.ProviderNativeKey))
+            {
+                var byNativeKey = definitions
+                    .Where(def => !usedDefinitionIds.Contains(def.Id) &&
+                                  SqlNadoCacheBehavior.MatchesNativeKey(def.ApiName, row.ProviderNativeKey))
+                    .ToList();
+                if (byNativeKey.Count == 1)
+                {
+                    return byNativeKey[0];
+                }
+
+                var byGroupQualifiedKey = definitions
+                    .Where(def => !usedDefinitionIds.Contains(def.Id) &&
+                                  SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey(def.ApiName, row.ProviderNativeKey))
+                    .ToList();
+                if (byGroupQualifiedKey.Count == 1)
+                {
+                    return byGroupQualifiedKey[0];
                 }
             }
 
@@ -4693,11 +5109,14 @@ namespace PlayniteAchievements.Services.Database
             return iconUrl.Substring(lastSlash + 1);
         }
 
-        public void SaveCurrentUserGameData(string key, GameAchievementData data)
+        // Returns the ApiName renames applied while upserting definitions (old -> new), so the
+        // caller can rewrite ApiName-keyed per-game custom data (notes, order, filters, overrides).
+        public Dictionary<string, string> SaveCurrentUserGameData(string key, GameAchievementData data)
         {
+            var renamedApiNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             if (string.IsNullOrWhiteSpace(key))
             {
-                return;
+                return renamedApiNames;
             }
 
             var cacheKey = key.Trim();
@@ -4781,7 +5200,8 @@ namespace PlayniteAchievements.Services.Database
                         gameId,
                         achievements,
                         nowIso,
-                        updatedIso);
+                        updatedIso,
+                        renamedApiNames);
 
                     var existingRows = db.Load<UserAchievementRow>(
                         @"SELECT Id, UserGameProgressId, AchievementDefinitionId, Unlocked, UnlockTimeUtc, ProgressNum, ProgressDenom, LastUpdatedUtc, CreatedUtc
@@ -4879,6 +5299,8 @@ namespace PlayniteAchievements.Services.Database
                     }
                 });
             });
+
+            return renamedApiNames;
         }
 
         private GameRow FindExistingRealProviderGame(SQLiteDatabase db, string cacheKey)
@@ -5496,17 +5918,29 @@ namespace PlayniteAchievements.Services.Database
             long gameId,
             IEnumerable<AchievementDetail> achievements,
             string nowIso,
-            string updatedIso)
+            string updatedIso,
+            IDictionary<string, string> renameCollector = null,
+            bool authoritativeSource = false)
         {
             var idsByApiName = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
             if (achievements == null)
             {
+                db.ExecuteNonQuery(
+                    @"DELETE FROM UserAchievements
+                      WHERE AchievementDefinitionId IN (
+                          SELECT Id FROM AchievementDefinitions WHERE GameId = ?
+                      );",
+                    gameId);
                 db.ExecuteNonQuery(
                     @"DELETE FROM AchievementDefinitions
                       WHERE GameId = ?;",
                     gameId);
                 return idsByApiName;
             }
+
+            var incomingAchievements = achievements
+                .Where(a => a != null && !string.IsNullOrWhiteSpace(a.ApiName))
+                .ToList();
 
             var desiredApiNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -5518,7 +5952,46 @@ namespace PlayniteAchievements.Services.Database
                 .Where(a => !string.IsNullOrWhiteSpace(a?.ApiName))
                 .ToDictionary(a => a.ApiName.Trim(), StringComparer.OrdinalIgnoreCase);
 
-            foreach (var achievement in achievements)
+            // An incoming achievement whose ApiName is unknown may be an existing achievement whose
+            // key changed (provider key-format migration or a renamed achievement) rather than a new
+            // one. Pair such incoming rows with otherwise-stale existing rows by content and rename
+            // the existing row in place, preserving its Id and therefore every user's unlock rows
+            // (UserAchievements cascades on definition delete). Unpaired rows keep the existing
+            // insert + prune semantics.
+            var renamesByOldApiName = ComputeDefinitionRenames(incomingAchievements, existingByApiName);
+            foreach (var rename in renamesByOldApiName)
+            {
+                if (!existingByApiName.TryGetValue(rename.Key, out var renamedRow) || renamedRow == null)
+                {
+                    continue;
+                }
+
+                db.ExecuteNonQuery(
+                    @"UPDATE AchievementDefinitions
+                      SET ApiName = ?,
+                          UpdatedUtc = ?
+                      WHERE Id = ?;",
+                    rename.Value,
+                    updatedIso,
+                    renamedRow.Id);
+
+                existingByApiName.Remove(rename.Key);
+                renamedRow.ApiName = rename.Value;
+                existingByApiName[rename.Value] = renamedRow;
+
+                if (renameCollector != null)
+                {
+                    renameCollector[rename.Key] = rename.Value;
+                }
+                _logger?.Debug($"Renamed achievement definition {renamedRow.Id} '{rename.Key}' -> '{rename.Value}' (gameId={gameId})");
+            }
+
+            if (renamesByOldApiName.Count > 0)
+            {
+                _logger?.Info($"Renamed {renamesByOldApiName.Count} achievement definitions in place for gameId={gameId}, preserving unlock history.");
+            }
+
+            foreach (var achievement in incomingAchievements)
             {
                 if (achievement == null || string.IsNullOrWhiteSpace(achievement.ApiName))
                 {
@@ -5660,10 +6133,29 @@ namespace PlayniteAchievements.Services.Database
             // cached) that would otherwise delete good achievement data. An equal-or-larger incoming
             // set still prunes, so genuine renames/replacements/growth are handled. Legitimate
             // shrinkage (a developer removing achievements) is left un-pruned rather than risk data loss.
-            if (desiredApiNames.Count >= existingByApiName.Count && staleDefinitionIds.Count > 0)
+            //
+            // An authoritative source (a mapped current-user schema copied onto its friend proxy row,
+            // or a complete Ok definition fetch) is exempt from the count comparison: it is complete
+            // by construction, and holding stale keys instead deadlocks proxy rows where several key
+            // schemes have accumulated — every DisplayName is then duplicated, so rename pairing is
+            // ambiguous, the count invariant never allows the prune, and legacy keys defer friend
+            // saves forever. Friend unlock rows attached to pruned rows are re-derived from the next
+            // earned fetch; current-user saves never pass authoritativeSource.
+            if ((authoritativeSource || desiredApiNames.Count >= existingByApiName.Count) &&
+                desiredApiNames.Count > 0 &&
+                staleDefinitionIds.Count > 0)
             {
                 for (int i = 0; i < staleDefinitionIds.Count; i++)
                 {
+                    // Explicitly delete dependent unlock rows: the declared ON DELETE CASCADE only
+                    // applies when the connection has PRAGMA foreign_keys enabled, which is not
+                    // guaranteed on the save connections. A stale definition surviving with unlock
+                    // rows (or unlock rows orphaned and later re-joined by rowid reuse) is how
+                    // duplicate per-family unlock sets arise.
+                    db.ExecuteNonQuery(
+                        @"DELETE FROM UserAchievements
+                          WHERE AchievementDefinitionId = ?;",
+                        staleDefinitionIds[i]);
                     db.ExecuteNonQuery(
                         @"DELETE FROM AchievementDefinitions
                           WHERE Id = ?;",
@@ -5672,6 +6164,151 @@ namespace PlayniteAchievements.Services.Database
             }
 
             return idsByApiName;
+        }
+
+        // Pairs incoming achievements that have no ApiName match (would-be inserts) with existing
+        // definitions absent from the incoming set (would-be prune candidates), by content:
+        // DisplayName+Description, then DisplayName, then icon filename. A pair forms only when the
+        // content key is unique on BOTH sides within its tier, so ambiguity always falls through to
+        // the pre-existing insert + prune behavior rather than a speculative rename. Rename targets
+        // are by construction absent from the existing key set, so in-place ApiName updates cannot
+        // collide with other rows for the game.
+        private static Dictionary<string, string> ComputeDefinitionRenames(
+            List<AchievementDetail> incomingAchievements,
+            Dictionary<string, AchievementDefinitionRow> existingByApiName)
+        {
+            var renames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (incomingAchievements == null || incomingAchievements.Count == 0 ||
+                existingByApiName == null || existingByApiName.Count == 0)
+            {
+                return renames;
+            }
+
+            var incomingApiNames = new HashSet<string>(
+                incomingAchievements.Select(a => a.ApiName.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            var unmatchedIncoming = incomingAchievements
+                .Where(a => !existingByApiName.ContainsKey(a.ApiName.Trim()))
+                .ToList();
+            var unmatchedExisting = existingByApiName.Values
+                .Where(row => row != null && !incomingApiNames.Contains(row.ApiName.Trim()))
+                .ToList();
+
+            if (unmatchedIncoming.Count == 0 || unmatchedExisting.Count == 0)
+            {
+                return renames;
+            }
+
+            var tiers = new Func<string, string, string>[]
+            {
+                (displayName, description) => CombineRenameMatchKey(
+                    NormalizeMatchText(displayName),
+                    NormalizeMatchText(description)),
+                (displayName, description) => NormalizeMatchText(displayName),
+                null // icon tier handled separately below
+            };
+
+            for (var tierIndex = 0; tierIndex < tiers.Length; tierIndex++)
+            {
+                if (unmatchedIncoming.Count == 0 || unmatchedExisting.Count == 0)
+                {
+                    break;
+                }
+
+                Dictionary<string, AchievementDetail> incomingByKey;
+                Dictionary<string, AchievementDefinitionRow> existingByKey;
+                if (tiers[tierIndex] != null)
+                {
+                    var tier = tiers[tierIndex];
+                    incomingByKey = GroupUniqueByKey(
+                        unmatchedIncoming,
+                        a => tier(a.DisplayName, a.Description));
+                    existingByKey = GroupUniqueByKey(
+                        unmatchedExisting,
+                        row => tier(row.DisplayName, row.Description));
+                }
+                else
+                {
+                    incomingByKey = GroupUniqueByKey(
+                        unmatchedIncoming,
+                        a => FirstIconFilename(a.UnlockedIconPath, a.LockedIconPath));
+                    existingByKey = GroupUniqueByKey(
+                        unmatchedExisting,
+                        row => FirstIconFilename(row.UnlockedIconPath, row.LockedIconPath));
+                }
+
+                foreach (var pair in incomingByKey)
+                {
+                    if (pair.Value == null ||
+                        !existingByKey.TryGetValue(pair.Key, out var existingRow) ||
+                        existingRow == null)
+                    {
+                        continue;
+                    }
+
+                    var oldApiName = existingRow.ApiName.Trim();
+                    var newApiName = pair.Value.ApiName.Trim();
+                    if (renames.ContainsKey(oldApiName))
+                    {
+                        continue;
+                    }
+
+                    // A degenerate incoming set with duplicate ApiNames could target the same new
+                    // key from two pairs; the second in-place UPDATE would violate
+                    // UNIQUE (GameId, ApiName) and abort the save. First pairing wins.
+                    if (renames.ContainsValue(newApiName))
+                    {
+                        continue;
+                    }
+
+                    renames[oldApiName] = newApiName;
+                    unmatchedIncoming.Remove(pair.Value);
+                    unmatchedExisting.Remove(existingRow);
+                }
+            }
+
+            return renames;
+        }
+
+        private static string CombineRenameMatchKey(string left, string right)
+        {
+            if (string.IsNullOrEmpty(left) || string.IsNullOrEmpty(right))
+            {
+                return null;
+            }
+
+            return left + "\n" + right;
+        }
+
+        private static string FirstIconFilename(string primaryIconPath, string secondaryIconPath)
+        {
+            var fileName = ExtractIconFilename(primaryIconPath);
+            return string.IsNullOrWhiteSpace(fileName)
+                ? ExtractIconFilename(secondaryIconPath)
+                : fileName;
+        }
+
+        // Groups items by a content key; a key that maps to more than one item is marked ambiguous
+        // by storing null, so callers can require uniqueness. Null/empty keys are skipped.
+        private static Dictionary<string, TItem> GroupUniqueByKey<TItem>(
+            List<TItem> items,
+            Func<TItem, string> keySelector)
+            where TItem : class
+        {
+            var byKey = new Dictionary<string, TItem>(StringComparer.OrdinalIgnoreCase);
+            foreach (var item in items)
+            {
+                var key = keySelector(item);
+                if (string.IsNullOrWhiteSpace(key))
+                {
+                    continue;
+                }
+
+                byKey[key] = byKey.ContainsKey(key) ? null : item;
+            }
+
+            return byKey;
         }
 
         public void Dispose()

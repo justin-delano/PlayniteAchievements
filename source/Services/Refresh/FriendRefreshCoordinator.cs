@@ -1515,10 +1515,32 @@ namespace PlayniteAchievements.Services.Refresh
             var dueProviderGameKeys = FriendRefreshWorkPolicy.ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey)
                 ? new List<string>()
                 : options?.ForceDefinitionRefresh == true
-                    ? providerGameKeys
+                    ? providerGameKeys.ToList()
                     : providerGameKeys
                         .Where(key => FriendRefreshWorkPolicy.IsDefinitionCheckDue(states.TryGetValue(key, out var state) ? state : null))
                         .ToList();
+
+            // Games whose cached definitions still carry legacy display-derived Exophase keys are
+            // definition-due regardless of check freshness: the definition fetch performs the
+            // in-place rename to stable ids, which must happen before locale-independent unlock
+            // rows can match.
+            if (!FriendRefreshWorkPolicy.ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey))
+            {
+                var legacyKeyedGameKeys = _friendCache.LoadLegacyKeyedDefinitionGameKeys(providerKey, providerGameKeys);
+                if (legacyKeyedGameKeys?.Count > 0)
+                {
+                    var dueKeySet = new HashSet<string>(dueProviderGameKeys, StringComparer.OrdinalIgnoreCase);
+                    foreach (var legacyKey in legacyKeyedGameKeys)
+                    {
+                        if (dueKeySet.Add(legacyKey))
+                        {
+                            dueProviderGameKeys.Add(legacyKey);
+                        }
+                    }
+
+                    _logger?.Info($"[FriendRefresh] {legacyKeyedGameKeys.Count} {providerKey} games have legacy-keyed definitions; queued for definition refresh to migrate to stable ids.");
+                }
+            }
 
             plan.OwnershipByKey = ownershipByKey;
             plan.ProviderGameKeys = providerGameKeys;
@@ -1581,6 +1603,7 @@ namespace PlayniteAchievements.Services.Refresh
                     progress?.ReportDefinitionCheckActive(gameName);
 
                     await limiter.DelayBeforeNextAsync(cancel).ConfigureAwait(false);
+                    _logger?.Info($"[FriendRefresh] Fetching game definition {i + 1}/{dueProviderGameKeys.Count} for {providerKey}/{providerGameKey} ('{gameName}').");
                     var definitionResult = await limiter.ExecuteWithRetryAsync(
                         () => friendsProvider.GetFriendGameDefinitionAsync(providerGameKey, appId, gameName, cancel),
                         FriendRefreshWorkPolicy.IsTransientError,
@@ -1696,11 +1719,11 @@ namespace PlayniteAchievements.Services.Refresh
                 }
             }
 
-            // Seed-from-scrape providers (Exophase) acquire provider-only images from the game header banner in
-            // ProbeAndPersistProviderOnlyFriendGameAsync above. Skip the profile-thumbnail download here: it runs
-            // after the probe loop and, because SaveProviderGameImagePaths lets a non-null value win via
+            // Banner-preferring providers (Exophase) acquire provider-only images from the game header
+            // banner during the definition fetch above. Skip the profile-thumbnail download for them: it
+            // runs after that loop and, because SaveProviderGameImagePaths lets a non-null value win via
             // COALESCE, a small thumbnail would overwrite the higher-quality banner.
-            if (!FriendRefreshWorkPolicy.ShouldSeedDefinitionsFromFriendAchievementScrape(providerKey))
+            if (!FriendRefreshWorkPolicy.PrefersDefinitionHeaderBannerImages(providerKey))
             {
                 await DownloadUnownedGameImagesAsync(providerKey, discoveredProviderGameKeys, ownershipByKey, cancel, progress).ConfigureAwait(false);
             }

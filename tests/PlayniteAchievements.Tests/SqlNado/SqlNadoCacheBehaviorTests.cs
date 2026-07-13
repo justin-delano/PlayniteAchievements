@@ -249,6 +249,51 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [TestMethod]
+        public void HasLegacyExophaseKeyedDefinitions_DetectsOnlyLegacyPrefix()
+        {
+            Assert.IsTrue(SqlNadoCacheBehavior.HasLegacyExophaseKeyedDefinitions(
+                new[] { "default:5", "exophase_platinum_trophy" }));
+            Assert.IsFalse(SqlNadoCacheBehavior.HasLegacyExophaseKeyedDefinitions(
+                new[] { "exophase:7186932", "default:5", "KNT_Achievement_05" }));
+            Assert.IsFalse(SqlNadoCacheBehavior.HasLegacyExophaseKeyedDefinitions(new string[0]));
+            Assert.IsFalse(SqlNadoCacheBehavior.HasLegacyExophaseKeyedDefinitions(null));
+        }
+
+        [TestMethod]
+        public void MatchesNativeKey_MatchesVerbatimIgnoringCaseAndWhitespace()
+        {
+            // Steam: definition ApiName is the apiname, which is exactly the aggregator's native key.
+            Assert.IsTrue(SqlNadoCacheBehavior.MatchesNativeKey("KNT_Achievement_05", "knt_achievement_05"));
+            Assert.IsTrue(SqlNadoCacheBehavior.MatchesNativeKey(" quest_begin_gristle ", "quest_begin_gristle"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesNativeKey("KNT_Achievement_05", "KNT_Achievement_06"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesNativeKey(null, "key"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesNativeKey("key", null));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesNativeKey("", ""));
+        }
+
+        [TestMethod]
+        public void MatchesGroupQualifiedNativeKey_MatchesPsnTrophyKeys()
+        {
+            // PSN: definitions are keyed "{group}:{trophyId}"; the native key is the bare trophy id.
+            Assert.IsTrue(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey("default:5", "5"));
+            Assert.IsTrue(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey("001:17", "17"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey("default:5", "6"));
+        }
+
+        [TestMethod]
+        public void MatchesGroupQualifiedNativeKey_RejectsAggregatorAndMalformedKeys()
+        {
+            // "exophase:{id}" is the aggregator's own scheme, never a group-qualified native key.
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey("exophase:7186932", "7186932"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey("EXOPHASE:5", "5"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey("no-separator", "no-separator"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey(":5", "5"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey("default:", ""));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey(null, "5"));
+            Assert.IsFalse(SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey("default:5", null));
+        }
+
+        [TestMethod]
         public void ShouldFallbackToProviderGameIdLookup_RetroAchievementsWithPlayniteId_ReturnsFalse()
         {
             var shouldFallback = SqlNadoCacheBehavior.ShouldFallbackToProviderGameIdLookup(

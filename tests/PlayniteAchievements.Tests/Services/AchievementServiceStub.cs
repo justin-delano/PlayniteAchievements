@@ -183,6 +183,11 @@ namespace PlayniteAchievements.Services.Refresh
                 IReadOnlyCollection<string> providerGameKeys) =>
                 new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
 
+            public List<string> LoadLegacyKeyedDefinitionGameKeys(
+                string providerKey,
+                IReadOnlyCollection<string> providerGameKeys) =>
+                new List<string>();
+
             public FriendUnownedCacheStats GetUnownedFriendGameCacheStats() => new FriendUnownedCacheStats();
             public FriendUnownedCacheClearResult ClearUnownedFriendGameData() => new FriendUnownedCacheClearResult { Success = true };
             public FriendCacheWriteResult ClearUnownedFriendGame(string providerKey, int appId, string providerGameKey) => FriendCacheWriteResult.Ok();
