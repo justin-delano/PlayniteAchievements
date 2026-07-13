@@ -238,82 +238,170 @@
     <DataTemplate x:Key="PlayAch.Template.ScreenshotFrame"
                   DataType="{x:Type vm:AchievementToastViewModel}">
         <Grid>
-            <!-- Full-bleed frame: thin dark outer edge with a rarity/capstone accent border inside. -->
-            <Border BorderBrush="#CC000000"
-                    BorderThickness="2"/>
-            <Border Margin="2"
+            <!-- Frame chrome: thin dark outer edge, a soft wide accent band, a crisp inner accent
+                 line, and bright corner brackets. Layering one bound accent brush at different
+                 opacities/thicknesses reads richer than a single solid border while staying fully
+                 rarity/capstone-driven. -->
+            <Border BorderBrush="#D9000000"
+                    BorderThickness="3"/>
+            <Border Margin="3"
                     BorderBrush="{Binding AccentBrush}"
-                    BorderThickness="6"/>
+                    BorderThickness="10"
+                    Opacity="0.35"/>
+            <Border Margin="13"
+                    BorderBrush="{Binding AccentBrush}"
+                    BorderThickness="2"
+                    Opacity="0.9"/>
 
-            <!-- Bottom info bar -->
+            <!-- Corner brackets -->
+            <Border Width="130" Height="130" HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Margin="3" BorderBrush="{Binding AccentBrush}" BorderThickness="7,7,0,0"/>
+            <Border Width="130" Height="130" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Margin="3" BorderBrush="{Binding AccentBrush}" BorderThickness="0,7,7,0"/>
+            <Border Width="130" Height="130" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                    Margin="3" BorderBrush="{Binding AccentBrush}" BorderThickness="7,0,0,7"/>
+            <Border Width="130" Height="130" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="3" BorderBrush="{Binding AccentBrush}" BorderThickness="0,0,7,7"/>
+
+            <!-- Bottom contrast wash so the info bar reads over any game footage -->
+            <Rectangle VerticalAlignment="Bottom"
+                       Height="300"
+                       Margin="13,0,13,13"
+                       IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#00000000" Offset="0"/>
+                        <GradientStop Color="#A6000000" Offset="1"/>
+                    </LinearGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
+
+            <!-- Bottom info bar: mirrors the toast layout (accent strip, icon column with badge +
+                 percent, text column), honoring the same ToastShow* customization toggles, just
+                 more spread out. -->
             <Border VerticalAlignment="Bottom"
-                    Margin="24,0,24,24"
-                    CornerRadius="12"
+                    Margin="36,0,36,36"
+                    CornerRadius="14"
                     Background="#CC141414"
                     BorderBrush="{Binding AccentBrush}"
-                    BorderThickness="1"
-                    Padding="20,14">
+                    BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <Grid Grid.Column="0"
-                          Width="72"
-                          Height="72"
-                          VerticalAlignment="Center">
-                        <Image Stretch="UniformToFill"
-                               RenderOptions.BitmapScalingMode="HighQuality"
-                               Source="{Binding IconPath}"
-                               Effect="{Binding RarityGlowEffect}"/>
-                        <Border Margin="-2"
-                                BorderThickness="2"
-                                Background="Transparent"
-                                BorderBrush="{Binding IconBorderBrush}"
-                                Visibility="{Binding ShowShineBorder, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                    </Grid>
+                    <!-- Rarity accent strip (capstone color takes precedence over rarity) -->
+                    <Border Grid.Column="0"
+                            Width="7"
+                            CornerRadius="14,0,0,14"
+                            Background="{Binding AccentBrush}"/>
 
+                    <!-- Icon column: icon with rarity glow, badge + percent centered below. The
+                         frame binds FrameShow*/Frame* properties (its own settings), not the
+                         toast's Show* toggles. -->
                     <StackPanel Grid.Column="1"
-                                Margin="20,0,20,0"
-                                VerticalAlignment="Center">
-                        <TextBlock Text="{Binding TitleText}"
-                                   Foreground="{Binding TitleBrush}"
-                                   FontSize="30"
-                                   FontWeight="SemiBold"
-                                   TextTrimming="CharacterEllipsis"/>
-                        <TextBlock Text="{Binding Description}"
-                                   Foreground="#DDDDDD"
-                                   FontSize="19"
-                                   TextTrimming="CharacterEllipsis"
-                                   Margin="0,4,0,0"
-                                   Visibility="{Binding ShowDescription, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                VerticalAlignment="Center"
+                                Margin="26,20,0,20">
+                        <Grid Width="104"
+                              Height="104"
+                              HorizontalAlignment="Center">
+                            <Image Stretch="UniformToFill"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   Source="{Binding IconPath}"
+                                   Effect="{Binding FrameRarityGlowEffect}"/>
+                            <Border Margin="-3"
+                                    BorderThickness="3"
+                                    Background="Transparent"
+                                    BorderBrush="{Binding IconBorderBrush}"
+                                    Visibility="{Binding FrameShowShineBorder, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </Grid>
                         <StackPanel Orientation="Horizontal"
-                                    Margin="0,4,0,0">
-                            <TextBlock Text="{Binding GameName}"
-                                       Foreground="#BBBBBB"
-                                       FontSize="19"
-                                       TextTrimming="CharacterEllipsis"
-                                       Visibility="{Binding ShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <TextBlock Text="  &#8226;  "
-                                       Foreground="#BBBBBB"
-                                       FontSize="19"
-                                       Visibility="{Binding ShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    HorizontalAlignment="Center"
+                                    Margin="0,8,0,0">
+                            <Image Source="{Binding BadgeImage}"
+                                   Width="36"
+                                   Height="36"
+                                   VerticalAlignment="Center"
+                                   RenderOptions.BitmapScalingMode="HighQuality"
+                                   Visibility="{Binding FrameShowBadge, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             <TextBlock Text="{Binding PercentText}"
                                        Foreground="#BBBBBB"
-                                       FontSize="19"
-                                       Visibility="{Binding ShowPercent, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                       FontSize="20"
+                                       VerticalAlignment="Center"
+                                       Margin="7,0,0,0"
+                                       Visibility="{Binding FrameShowPercent, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </StackPanel>
                     </StackPanel>
 
-                    <Image Grid.Column="2"
-                           Source="{Binding BadgeImage}"
-                           Width="44"
-                           Height="44"
-                           VerticalAlignment="Center"
-                           RenderOptions.BitmapScalingMode="HighQuality"
-                           Visibility="{Binding ShowBadge, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    <!-- Text column: header, name, description, game/category -->
+                    <StackPanel Grid.Column="2"
+                                VerticalAlignment="Center"
+                                Margin="30,20,24,20">
+                        <TextBlock Text="{Binding HeaderText}"
+                                   Foreground="#9F9F9F"
+                                   FontSize="20"
+                                   TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding FrameShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <TextBlock Text="{Binding TitleText}"
+                                   Foreground="{Binding FrameTitleBrush}"
+                                   FontSize="34"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="0,2,0,0"
+                                   Visibility="{Binding FrameShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <TextBlock Text="{Binding Description}"
+                                   Foreground="#DDDDDD"
+                                   FontSize="21"
+                                   TextWrapping="Wrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxHeight="58"
+                                   Margin="0,6,0,0"
+                                   Visibility="{Binding FrameShowDescription, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,8,0,0">
+                            <TextBlock Text="{Binding GameName}"
+                                       Foreground="#BBBBBB"
+                                       FontSize="21"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="{Binding FrameShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="  &#8226;  "
+                                       Foreground="#BBBBBB"
+                                       FontSize="21"
+                                       Visibility="{Binding FrameShowGameCategorySeparator, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="{Binding Category}"
+                                       Foreground="#BBBBBB"
+                                       FontSize="21"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="{Binding FrameShowCategory, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Branding: shared screenshots identify the plugin. Product name stays a
+                         literal (not localized). BrandingIcon.png loads synchronously via pack URI. -->
+                    <StackPanel Grid.Column="3"
+                                VerticalAlignment="Center"
+                                Margin="0,20,26,20">
+                        <Image Source="pack://application:,,,/PlayniteAchievements;component/Resources/BrandingIcon.png"
+                               Width="72"
+                               Height="72"
+                               HorizontalAlignment="Center"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               Opacity="0.95"/>
+                        <TextBlock Text="Playnite"
+                                   Foreground="#8A8A8A"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,6,0,0"/>
+                        <TextBlock Text="Achievements"
+                                   Foreground="#8A8A8A"
+                                   FontSize="16"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
                 </Grid>
             </Border>
         </Grid>
