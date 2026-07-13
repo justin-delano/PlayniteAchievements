@@ -488,7 +488,7 @@ namespace PlayniteAchievements.Providers.Exophase
         /// <summary>
         /// Fetches a rendered public Exophase page through the same WebView path used by achievement pages.
         /// </summary>
-        internal async Task<string> FetchRenderedHtmlAsync(string url, CancellationToken ct, int postLoadDelayMs = 1000, bool scrollToLoad = false)
+        internal async Task<string> FetchRenderedHtmlAsync(string url, CancellationToken ct, int postLoadDelayMs = 1000)
         {
             if (string.IsNullOrWhiteSpace(url))
             {
@@ -512,11 +512,6 @@ namespace PlayniteAchievements.Providers.Exophase
                         if (postLoadDelayMs > 0)
                         {
                             await Task.Delay(postLoadDelayMs, ct).ConfigureAwait(false);
-                        }
-
-                        if (scrollToLoad)
-                        {
-                            await AutoScrollToLoadAsync(view, ct).ConfigureAwait(false);
                         }
 
                         var html = await view.GetPageSourceAsync().ConfigureAwait(false);
@@ -639,54 +634,6 @@ namespace PlayniteAchievements.Providers.Exophase
             public string PlayerProfileId { get; set; }
 
             public string PlayerGamesJson { get; set; }
-        }
-
-        /// <summary>
-        /// Repeatedly scrolls an offscreen view to the bottom to trigger lazy-loaded content (such as a
-        /// user's full games list, which appends on scroll rather than paginating) until the page height
-        /// stops growing across two consecutive passes or a hard cap is reached.
-        /// </summary>
-        private static async Task AutoScrollToLoadAsync(IWebView view, CancellationToken ct)
-        {
-            double lastHeight = 0;
-            var stableCount = 0;
-            for (var pass = 0; pass < 40 && stableCount < 2; pass++)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                var eval = await view
-                    .EvaluateScriptAsync("window.scrollTo(0, document.body.scrollHeight); document.body.scrollHeight;")
-                    .ConfigureAwait(false);
-
-                double height = 0;
-                if (eval?.Success == true && eval.Result != null)
-                {
-                    try
-                    {
-                        height = Convert.ToDouble(eval.Result);
-                    }
-                    catch
-                    {
-                        height = 0;
-                    }
-                }
-
-                if (height > 0 && height <= lastHeight)
-                {
-                    stableCount++;
-                }
-                else
-                {
-                    stableCount = 0;
-                }
-
-                if (height > lastHeight)
-                {
-                    lastHeight = height;
-                }
-
-                await Task.Delay(700, ct).ConfigureAwait(false);
-            }
         }
 
         /// <summary>
