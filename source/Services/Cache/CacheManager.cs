@@ -932,18 +932,25 @@ namespace PlayniteAchievements.Services.Cache
             string providerKey,
             FriendGameDefinition definition)
         {
+            FriendCacheWriteResult result;
             lock (_sync)
             {
                 EnsureReady_Locked("SaveFriendGameDefinition");
-                var result = _store.SaveFriendGameDefinition(providerKey, definition);
+                result = _store.SaveFriendGameDefinition(providerKey, definition);
                 if (result?.Success == true)
                 {
-                    ApplyDefinitionRenamesToCustomData(result.RenamedPlayniteGameId, result.RenamedApiNames);
                     RaiseOrDeferFriendCacheInvalidatedEvent();
                 }
-
-                return result;
             }
+
+            if (result?.Success == true)
+            {
+                // Outside the cache lock: CustomDataChanged handlers are synchronous and may call
+                // back into cache invalidation.
+                ApplyDefinitionRenamesToCustomData(result.RenamedPlayniteGameId, result.RenamedApiNames);
+            }
+
+            return result;
         }
 
         FriendCacheWriteResult IFriendCacheManager.SaveProviderGameImagePaths(
@@ -1075,18 +1082,25 @@ namespace PlayniteAchievements.Services.Cache
             int appId,
             FriendGameAchievements achievements)
         {
+            FriendCacheWriteResult result;
             lock (_sync)
             {
                 EnsureReady_Locked("SaveFriendGameAchievements");
-                var result = _store.SaveFriendGameAchievements(providerKey, externalUserId, providerGameKey, appId, achievements);
+                result = _store.SaveFriendGameAchievements(providerKey, externalUserId, providerGameKey, appId, achievements);
                 if (result?.Success == true)
                 {
-                    ApplyDefinitionRenamesToCustomData(result.RenamedPlayniteGameId, result.RenamedApiNames);
                     RaiseOrDeferFriendCacheInvalidatedEvent();
                 }
-
-                return result;
             }
+
+            if (result?.Success == true)
+            {
+                // Outside the cache lock: CustomDataChanged handlers are synchronous and may call
+                // back into cache invalidation.
+                ApplyDefinitionRenamesToCustomData(result.RenamedPlayniteGameId, result.RenamedApiNames);
+            }
+
+            return result;
         }
 
         List<FriendAchievementRow> IFriendCacheManager.LoadFriendGameAchievements(
