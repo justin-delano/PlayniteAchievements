@@ -52,6 +52,29 @@ namespace PlayniteAchievements.Services.UI
             PlayniteAchievementsPlugin.AchievementUnlocked += OnAchievementUnlocked;
         }
 
+        /// <summary>
+        /// Raised when a non-preview toast wave is fully on screen (slide-in finished and
+        /// placement snapped) — the end anchor for unlock recordings. Fires on the UI thread.
+        /// </summary>
+        internal event EventHandler<ToastWaveDisplayedEventArgs> WaveDisplayed;
+
+        private void RaiseWaveDisplayed(IReadOnlyList<AchievementToastViewModel> wave)
+        {
+            if (wave == null || wave.Count == 0 || wave[0].IsPreview)
+            {
+                return;
+            }
+
+            try
+            {
+                WaveDisplayed?.Invoke(this, new ToastWaveDisplayedEventArgs(wave, DateTime.UtcNow));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Toast wave-displayed handler failed.");
+            }
+        }
+
         private void OnAchievementUnlocked(object sender, AchievementUnlockedEventArgs e)
         {
             if (_disposed || !ShouldShow(e))
@@ -253,6 +276,10 @@ namespace PlayniteAchievements.Services.UI
                 // the game window corner now that the toast is fully laid out.
                 window.BeginAnimation(Window.TopProperty, null);
                 PlaceWindow(window);
+
+                // The wave is now fully visible: signal the recording service so it can anchor
+                // clip ends at the moment the toast actually appeared on screen.
+                RaiseWaveDisplayed(wave);
 
                 // The with-toast capture happens here (toast slid in and painted; DWM has
                 // presented the frame). CopyFromScreen has no UI-thread affinity, so blit on the
