@@ -100,6 +100,12 @@ namespace PlayniteAchievements.Models.Settings
             target.UnlockScreenshotWithToast = source.UnlockScreenshotWithToast;
             target.UnlockScreenshotFramed = source.UnlockScreenshotFramed;
             target.UnlockScreenshotDirectory = source.UnlockScreenshotDirectory;
+            target.ProviderNotificationOverrides = source.ProviderNotificationOverrides != null
+                ? source.ProviderNotificationOverrides.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value?.Clone(),
+                    StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
 
             // Display Preferences
             target.ShowHiddenIcon = source.ShowHiddenIcon;

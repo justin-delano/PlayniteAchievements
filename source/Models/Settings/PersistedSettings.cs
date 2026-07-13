@@ -82,6 +82,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _unlockScreenshotWithToast = true;
         private bool _unlockScreenshotFramed = false;
         private string _unlockScreenshotDirectory;
+        private Dictionary<string, ProviderNotificationOverride> _providerNotificationOverrides =
+            new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
         private ToastScreenCorner _toastPosition = ToastScreenCorner.BottomRight;
         private int _recentRefreshGamesCount = 10;
         private RefreshModeType _defaultOverviewRefreshMode = RefreshModeType.Installed;
@@ -976,6 +978,62 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _unlockScreenshotDirectory;
             set => SetValue(ref _unlockScreenshotDirectory, value);
+        }
+
+        /// <summary>
+        /// Per-provider notification overrides keyed by provider key. Only deviating providers
+        /// are stored; absent providers inherit the global notification defaults, so new
+        /// providers pick up the globals automatically.
+        /// </summary>
+        public Dictionary<string, ProviderNotificationOverride> ProviderNotificationOverrides
+        {
+            get => _providerNotificationOverrides ??
+                   (_providerNotificationOverrides =
+                       new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase));
+            set => SetValue(ref _providerNotificationOverrides, NormalizeProviderNotificationOverrides(value));
+        }
+
+        /// <summary>
+        /// The stored override for a provider, or null when the provider has no deviation and
+        /// inherits the global notification defaults.
+        /// </summary>
+        public ProviderNotificationOverride GetProviderNotificationOverride(string providerKey)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            return providerKey != null &&
+                   ProviderNotificationOverrides.TryGetValue(providerKey, out var value)
+                ? value
+                : null;
+        }
+
+        /// <summary>
+        /// Stores a clone of the override for a provider, removing the entry when the override
+        /// is null or all-inherit. Reassigns the dictionary so PropertyChanged is raised.
+        /// </summary>
+        public void SetProviderNotificationOverride(string providerKey, ProviderNotificationOverride value)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var overrides = new Dictionary<string, ProviderNotificationOverride>(
+                ProviderNotificationOverrides,
+                StringComparer.OrdinalIgnoreCase);
+            if (value == null || value.IsAllInherit)
+            {
+                if (!overrides.Remove(providerKey))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                overrides[providerKey] = value.Clone();
+            }
+
+            ProviderNotificationOverrides = overrides;
         }
 
         #endregion
@@ -1995,6 +2053,12 @@ namespace PlayniteAchievements.Models.Settings
                 UnlockScreenshotWithToast = this.UnlockScreenshotWithToast,
                 UnlockScreenshotFramed = this.UnlockScreenshotFramed,
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
+                ProviderNotificationOverrides = this.ProviderNotificationOverrides != null
+                    ? this.ProviderNotificationOverrides.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Clone(),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase),
 
                 // Display Preferences
                 ShowHiddenIcon = this.ShowHiddenIcon,
@@ -2312,6 +2376,24 @@ namespace PlayniteAchievements.Models.Settings
                         };
                         break;
                 }
+            }
+
+            return normalized;
+        }
+
+        private static Dictionary<string, ProviderNotificationOverride> NormalizeProviderNotificationOverrides(
+            IEnumerable<KeyValuePair<string, ProviderNotificationOverride>> value)
+        {
+            var normalized = new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in value ?? Enumerable.Empty<KeyValuePair<string, ProviderNotificationOverride>>())
+            {
+                var key = NormalizeProviderKeyToken(pair.Key);
+                if (key == null || pair.Value == null || pair.Value.IsAllInherit)
+                {
+                    continue;
+                }
+
+                normalized[key] = pair.Value;
             }
 
             return normalized;
