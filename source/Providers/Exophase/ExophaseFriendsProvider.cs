@@ -5,6 +5,7 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Settings;
+using PlayniteAchievements.Providers.Steam;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -392,8 +393,9 @@ namespace PlayniteAchievements.Providers.Exophase
                     ProviderGameKey = key,
                     ProviderPlatformKey = ExophaseDataProvider.MapSlugToProviderPlatformKey(game.Platform),
                     GameName = game.Title,
-                    IconUrl = game.ImageUrl,
-                    CoverUrl = game.ImageUrl,
+                    // Steam games surfaced via Exophase use Steam CDN images, not Exophase ones.
+                    IconUrl = SteamImageUrls.Icon(appId),
+                    CoverUrl = SteamImageUrls.Cover(appId),
                     PlaytimeForeverMinutes = Math.Max(0, game.PlaytimeMinutes),
                     Playtime2WeeksMinutes = game.RecentPlaytimeMinutes > 0
                         ? (int?)game.RecentPlaytimeMinutes
