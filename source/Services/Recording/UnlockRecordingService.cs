@@ -143,8 +143,6 @@ namespace PlayniteAchievements.Services.Recording
             }
 
             var bufferRoot = Path.Combine(_pluginUserDataPath, BufferRootFolderName);
-            CleanupStaleBufferDirectories(bufferRoot);
-
             if (!HasFreeSpace(bufferRoot, MinFreeBytesToStart))
             {
                 _logger?.Warn("[Recording] Less than 2 GB free on the buffer drive; skipping this session.");
@@ -207,6 +205,10 @@ namespace PlayniteAchievements.Services.Recording
         {
             try
             {
+                // Crash cleanup off the game-started event thread: deleting a large leftover
+                // buffer can take a moment and must not delay game launch handling.
+                CleanupStaleBufferDirectories(Path.GetDirectoryName(session.BufferDirectory));
+
                 var token = session.Cts.Token;
                 var deadline = DateTime.UtcNow.AddSeconds(WindowResolveTimeoutSeconds);
                 System.Drawing.Rectangle? bounds = null;
