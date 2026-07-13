@@ -238,75 +238,58 @@
     <DataTemplate x:Key="PlayAch.Template.ScreenshotFrame"
                   DataType="{x:Type vm:AchievementToastViewModel}">
         <Grid>
-            <!-- Frame chrome: thin dark outer edge, a soft wide accent band, a crisp inner accent
-                 line, and bright corner brackets. Layering one bound accent brush at different
-                 opacities/thicknesses reads richer than a single solid border while staying fully
-                 rarity/capstone-driven. -->
-            <Border BorderBrush="#D9000000"
-                    BorderThickness="3"/>
-            <Border Margin="3"
+            <!-- Frame chrome: a slim accent line whose diagonal opacity mask makes the bound
+                 rarity/capstone color read as a gradient, matted by a dark outer edge and a faint
+                 inner hairline. -->
+            <Border BorderBrush="#E6000000"
+                    BorderThickness="2"/>
+            <Border Margin="2"
                     BorderBrush="{Binding AccentBrush}"
-                    BorderThickness="10"
-                    Opacity="0.35"/>
-            <Border Margin="13"
-                    BorderBrush="{Binding AccentBrush}"
-                    BorderThickness="2"
-                    Opacity="0.9"/>
+                    BorderThickness="5">
+                <Border.OpacityMask>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#FFFFFFFF" Offset="0"/>
+                        <GradientStop Color="#66FFFFFF" Offset="1"/>
+                    </LinearGradientBrush>
+                </Border.OpacityMask>
+            </Border>
+            <Border Margin="7"
+                    BorderBrush="{DynamicResource PlayAch.Brush.PopupBorder}"
+                    BorderThickness="1"/>
 
-            <!-- Corner brackets -->
-            <Border Width="130" Height="130" HorizontalAlignment="Left" VerticalAlignment="Top"
-                    Margin="3" BorderBrush="{Binding AccentBrush}" BorderThickness="7,7,0,0"/>
-            <Border Width="130" Height="130" HorizontalAlignment="Right" VerticalAlignment="Top"
-                    Margin="3" BorderBrush="{Binding AccentBrush}" BorderThickness="0,7,7,0"/>
-            <Border Width="130" Height="130" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                    Margin="3" BorderBrush="{Binding AccentBrush}" BorderThickness="7,0,0,7"/>
-            <Border Width="130" Height="130" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                    Margin="3" BorderBrush="{Binding AccentBrush}" BorderThickness="0,0,7,7"/>
-
-            <!-- Bottom contrast wash so the info bar reads over any game footage -->
+            <!-- Bottom contrast wash so the banner reads over any game footage -->
             <Rectangle VerticalAlignment="Bottom"
-                       Height="300"
-                       Margin="13,0,13,13"
+                       Height="200"
+                       Margin="7,0,7,7"
                        IsHitTestVisible="False">
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                         <GradientStop Color="#00000000" Offset="0"/>
-                        <GradientStop Color="#A6000000" Offset="1"/>
+                        <GradientStop Color="#8C000000" Offset="1"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
 
-            <!-- Bottom info bar: mirrors the toast layout (accent strip, icon column with badge +
-                 percent, text column), honoring the same ToastShow* customization toggles, just
-                 more spread out. -->
+            <!-- Bottom banner: flush with the frame edge (not a floating card), gradient surface,
+                 accent rule on top. Binds the FrameShow*/Frame* properties (its own settings), not
+                 the toast's Show* toggles. -->
             <Border VerticalAlignment="Bottom"
-                    Margin="36,0,36,36"
-                    CornerRadius="14"
-                    Background="#CC141414"
+                    Margin="7,0,7,7"
                     BorderBrush="{Binding AccentBrush}"
-                    BorderThickness="1">
-                <Grid>
+                    BorderThickness="0,3,0,0"
+                    Background="{DynamicResource PlayAch.Brush.PopupSurface}">
+                <Grid Margin="28,14,28,14">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- Rarity accent strip (capstone color takes precedence over rarity) -->
-                    <Border Grid.Column="0"
-                            Width="7"
-                            CornerRadius="14,0,0,14"
-                            Background="{Binding AccentBrush}"/>
-
-                    <!-- Icon column: icon with rarity glow, badge + percent centered below. The
-                         frame binds FrameShow*/Frame* properties (its own settings), not the
-                         toast's Show* toggles. -->
-                    <StackPanel Grid.Column="1"
-                                VerticalAlignment="Center"
-                                Margin="26,20,0,20">
-                        <Grid Width="104"
-                              Height="104"
+                    <!-- Icon column: icon with rarity glow, badge + percent centered below -->
+                    <StackPanel Grid.Column="0"
+                                VerticalAlignment="Center">
+                        <Grid Width="84"
+                              Height="84"
                               HorizontalAlignment="Center">
                             <Image Stretch="UniformToFill"
                                    RenderOptions.BitmapScalingMode="HighQuality"
@@ -320,60 +303,67 @@
                         </Grid>
                         <StackPanel Orientation="Horizontal"
                                     HorizontalAlignment="Center"
-                                    Margin="0,8,0,0">
+                                    Margin="0,6,0,0">
                             <Image Source="{Binding BadgeImage}"
-                                   Width="36"
-                                   Height="36"
+                                   Width="28"
+                                   Height="28"
                                    VerticalAlignment="Center"
                                    RenderOptions.BitmapScalingMode="HighQuality"
                                    Visibility="{Binding FrameShowBadge, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             <TextBlock Text="{Binding PercentText}"
-                                       Foreground="#BBBBBB"
-                                       FontSize="20"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
                                        VerticalAlignment="Center"
-                                       Margin="7,0,0,0"
+                                       Margin="6,0,0,0"
                                        Visibility="{Binding FrameShowPercent, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </StackPanel>
                     </StackPanel>
 
                     <!-- Text column: header, name, description, game/category -->
-                    <StackPanel Grid.Column="2"
+                    <StackPanel Grid.Column="1"
                                 VerticalAlignment="Center"
-                                Margin="30,20,24,20">
+                                Margin="26,0,22,0">
                         <TextBlock Text="{Binding HeaderText}"
-                                   Foreground="#9F9F9F"
-                                   FontSize="20"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                   FontSize="17"
                                    TextTrimming="CharacterEllipsis"
                                    Visibility="{Binding FrameShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <TextBlock Text="{Binding TitleText}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{Binding FrameTitleBrush}"
-                                   FontSize="34"
+                                   FontSize="30"
                                    FontWeight="SemiBold"
                                    TextTrimming="CharacterEllipsis"
-                                   Margin="0,2,0,0"
+                                   Margin="0,1,0,0"
                                    Visibility="{Binding FrameShowName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <TextBlock Text="{Binding Description}"
-                                   Foreground="#DDDDDD"
-                                   FontSize="21"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                   FontSize="19"
                                    TextWrapping="Wrap"
                                    TextTrimming="CharacterEllipsis"
-                                   MaxHeight="58"
-                                   Margin="0,6,0,0"
+                                   MaxHeight="52"
+                                   Margin="0,4,0,0"
                                    Visibility="{Binding FrameShowDescription, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <StackPanel Orientation="Horizontal"
-                                    Margin="0,8,0,0">
+                                    Margin="0,5,0,0">
                             <TextBlock Text="{Binding GameName}"
-                                       Foreground="#BBBBBB"
-                                       FontSize="21"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="19"
                                        TextTrimming="CharacterEllipsis"
                                        Visibility="{Binding FrameShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             <TextBlock Text="  &#8226;  "
-                                       Foreground="#BBBBBB"
-                                       FontSize="21"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="19"
                                        Visibility="{Binding FrameShowGameCategorySeparator, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                             <TextBlock Text="{Binding Category}"
-                                       Foreground="#BBBBBB"
-                                       FontSize="21"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="19"
                                        TextTrimming="CharacterEllipsis"
                                        Visibility="{Binding FrameShowCategory, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </StackPanel>
@@ -381,26 +371,31 @@
 
                     <!-- Branding: shared screenshots identify the plugin. Product name stays a
                          literal (not localized). BrandingIcon.png loads synchronously via pack URI. -->
-                    <StackPanel Grid.Column="3"
-                                VerticalAlignment="Center"
-                                Margin="0,20,26,20">
+                    <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <Border Width="1"
+                                Margin="0,10,20,10"
+                                Background="{DynamicResource PlayAch.Brush.PopupBorder}"/>
                         <Image Source="pack://application:,,,/PlayniteAchievements;component/Resources/BrandingIcon.png"
-                               Width="72"
-                               Height="72"
-                               HorizontalAlignment="Center"
+                               Width="58"
+                               Height="58"
+                               VerticalAlignment="Center"
                                RenderOptions.BitmapScalingMode="HighQuality"
                                Opacity="0.95"/>
-                        <TextBlock Text="Playnite"
-                                   Foreground="#8A8A8A"
-                                   FontSize="16"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,6,0,0"/>
-                        <TextBlock Text="Achievements"
-                                   Foreground="#8A8A8A"
-                                   FontSize="16"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Center"/>
+                        <StackPanel VerticalAlignment="Center"
+                                    Margin="12,0,0,0">
+                            <TextBlock Text="Playnite"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"/>
+                            <TextBlock Text="Achievements"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       FontWeight="SemiBold"/>
+                        </StackPanel>
                     </StackPanel>
                 </Grid>
             </Border>
