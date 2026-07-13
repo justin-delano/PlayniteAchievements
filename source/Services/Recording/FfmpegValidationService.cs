@@ -46,11 +46,15 @@ namespace PlayniteAchievements.Services.Recording
 
             /// <summary>Diagnostic detail for the settings status line when invalid.</summary>
             public string Error { get; set; }
+
+            /// <summary>True when the gdigrab smoke test ran as part of this result.</summary>
+            public bool SmokeTested { get; set; }
         }
 
         /// <summary>
-        /// Validates the ffmpeg at the given path. Cached per path per session (the smoke test
-        /// only upgrades a cached probe-only result, never repeats).
+        /// Validates the ffmpeg at the given path. Cached per path per session; when the caller
+        /// requests the smoke test and the cached result is probe-only, the validation is rerun
+        /// once with the smoke test to upgrade the cache.
         /// </summary>
         public async Task<FfmpegValidationResult> ValidateAsync(string ffmpegPath, bool runSmokeTest = false)
         {
@@ -60,7 +64,7 @@ namespace PlayniteAchievements.Services.Recording
                 return new FfmpegValidationResult { IsValid = false, Error = "file not found" };
             }
 
-            if (_cache.TryGetValue(path, out var cached))
+            if (_cache.TryGetValue(path, out var cached) && (!runSmokeTest || cached.SmokeTested || !cached.IsValid))
             {
                 return cached;
             }
@@ -94,6 +98,7 @@ namespace PlayniteAchievements.Services.Recording
 
             if (runSmokeTest)
             {
+                result.SmokeTested = true;
                 var smokeOk = await RunSmokeTestAsync(path).ConfigureAwait(false);
                 if (!smokeOk)
                 {
