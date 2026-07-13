@@ -78,13 +78,33 @@ namespace PlayniteAchievements.Common
                 return;
             }
 
+            // Wait briefly for any in-flight navigation to release the gate so the view is
+            // not disposed under an active operation (e.g. a cancelled refresh still unwinding);
+            // dispose regardless after the timeout so a wedged navigation cannot leak the view.
+            var gateHeld = false;
             try
             {
-                InvokeOnUi(() => toDispose.Dispose());
+                gateHeld = _navGate.Wait(TimeSpan.FromSeconds(5));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Failed to acquire nav gate before disposing offscreen view.");
+            }
+
+            try
+            {
+                toDispose.Dispose();
             }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "Failed to dispose offscreen view.");
+            }
+            finally
+            {
+                if (gateHeld)
+                {
+                    _navGate.Release();
+                }
             }
         }
 
@@ -172,25 +192,16 @@ namespace PlayniteAchievements.Common
             }
             finally
             {
+                // Discard/dispose a faulted view before releasing the gate so the next
+                // waiter never acquires a view that is about to be disposed under it.
+                ReleaseView(view, owned, faulted);
+
                 if (!owned)
                 {
                     _navGate.Release();
                 }
-
-                ReleaseView(view, owned, faulted);
             }
         }
 
-        private void InvokeOnUi(Action action)
-        {
-            var dispatcher = _api?.MainView?.UIDispatcher;
-            if (dispatcher == null || dispatcher.CheckAccess())
-            {
-                action();
-                return;
-            }
-
-            dispatcher.Invoke(action);
-        }
     }
 }
