@@ -353,18 +353,31 @@ namespace PlayniteAchievements.Services.Refresh
                 }
             }
 
-            var targetGameIds = mergedIds
-                .Select(gameId => _api.Database.Games.Get(gameId))
-                .Where(game => game != null &&
-                               _targetSelectionResolver.ResolveProviderForGame(game, providers, targetSelectionCache) != null)
-                .Select(game => game.Id)
-                .ToList();
+            var targetGameIds = new List<Guid>();
+            var unserviceableGameNames = new List<string>();
+            foreach (var gameId in mergedIds)
+            {
+                var game = _api.Database.Games.Get(gameId);
+                if (game == null)
+                {
+                    continue;
+                }
+
+                if (_targetSelectionResolver.ResolveProviderForGame(game, providers, targetSelectionCache) != null)
+                {
+                    targetGameIds.Add(game.Id);
+                }
+                else
+                {
+                    unserviceableGameNames.Add(game.Name);
+                }
+            }
 
             if (targetGameIds.Count == 0)
             {
                 return new CurrentOptionResult
                 {
-                    UserMessage = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingGames"),
+                    UserMessage = ResolveEmptyTargetsUserMessage(unserviceableGameNames),
                     EmptySelectionLogMessage = ResolveEmptySelectionMessage(mode, options.Scope)
                 };
             }
@@ -379,6 +392,33 @@ namespace PlayniteAchievements.Services.Refresh
                     BypassExclusions = true
                 }
             };
+        }
+
+        /// <summary>
+        /// Picks the empty-target dialog text: when candidates matched the request but every one
+        /// was dropped because no enabled and authenticated provider services it, names those
+        /// games; otherwise falls back to the generic no-matching-games message.
+        /// </summary>
+        private static string ResolveEmptyTargetsUserMessage(IReadOnlyList<string> unserviceableGameNames)
+        {
+            var names = unserviceableGameNames?
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .ToList() ?? new List<string>();
+            if (names.Count == 0)
+            {
+                return ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoMatchingGames");
+            }
+
+            const int maxDisplayedNames = 5;
+            var displayNames = string.Join(", ", names.Take(maxDisplayedNames));
+            if (names.Count > maxDisplayedNames)
+            {
+                displayNames += ", ...";
+            }
+
+            var format = ResourceProvider.GetString("LOCPlayAch_CustomRefresh_NoCapableProviderForGames") ??
+                         "No enabled and authenticated platform can refresh these games: {0}. Enable the matching platform or check its authentication in settings.";
+            return string.Format(format, displayNames);
         }
 
         private bool IsNativeBulkCurrentMode(RefreshModeType mode, RefreshOptions options)
