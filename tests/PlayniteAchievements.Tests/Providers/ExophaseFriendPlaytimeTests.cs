@@ -11,16 +11,14 @@ namespace PlayniteAchievements.Tests.Providers
     public class ExophaseFriendPlaytimeTests
     {
         [TestMethod]
-        public void ParseGames_WiresAchievementProgressCountIntoOwnershipHint()
+        public void ApiOwnership_WiresAchievementCountsIntoOwnershipHints()
         {
             var provider = File.ReadAllText(
                 FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
 
-            // The game-progress award column ("6/37") is parsed for its earned/total count...
-            StringAssert.Contains(provider, "game-progress");
-            StringAssert.Contains(provider, "exo-icon-award");
-            StringAssert.Contains(provider, @"(\d+)\s*/\s*(\d+)");
-            StringAssert.Contains(provider, "ParseAchievementCounts");
+            // The games-list API supplies earned/total counts on every row...
+            StringAssert.Contains(provider, "AchievementsEarned = apiGame.EarnedAwards");
+            StringAssert.Contains(provider, "AchievementsTotal = apiGame.TotalAwards");
 
             // ...and the earned/total values flow into the ownership unlock hint.
             StringAssert.Contains(provider, "AchievementUnlocksHint = game.AchievementsEarned");
@@ -68,24 +66,13 @@ namespace PlayniteAchievements.Tests.Providers
         [TestMethod]
         public void ParsePlaytimeMinutes_AcceptsCommaDecimalAndNormalizesToDot()
         {
-            var provider = File.ReadAllText(
-                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
+            var parser = File.ReadAllText(
+                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendPageParser.cs"));
 
             // The hours group accepts a comma or dot decimal, and the comma is normalized to a dot
             // before invariant parsing so French values like "12,5 h" parse correctly.
-            StringAssert.Contains(provider, @"(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?)?");
-            StringAssert.Contains(provider, "match.Groups[1].Value.Replace(',', '.')");
-        }
-
-        [TestMethod]
-        public void ParseGames_DoesNotDerivePlatformFromSiblingRows()
-        {
-            var provider = File.ReadAllText(
-                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
-
-            StringAssert.Contains(provider, "CountDistinctGameSlugs(current) <= 1");
-            StringAssert.Contains(provider, "ExtractPlatformSlugFromGameSlug(slug)");
-            StringAssert.Contains(provider, "broad profile containers may contain many platform icons");
+            StringAssert.Contains(parser, @"(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?)?");
+            StringAssert.Contains(parser, "match.Groups[1].Value.Replace(',', '.')");
         }
 
         [TestMethod]
@@ -98,17 +85,6 @@ namespace PlayniteAchievements.Tests.Providers
             StringAssert.Contains(provider, "IsKnownSteamOwnership(game, knownSteamGames)");
             StringAssert.Contains(provider, "HasPositiveAchievementUnlock(game)");
             StringAssert.Contains(provider, "ResolveSteamAppIdForSupplementAsync(game, cancel)");
-        }
-
-        [TestMethod]
-        public void ExophaseFriendOwnership_SkipsRowsWithoutProfileAchievementProgress()
-        {
-            var provider = File.ReadAllText(
-                FindRepoFile("source", "Providers", "Exophase", "ExophaseFriendsProvider.cs"));
-
-            StringAssert.Contains(provider, "HasAchievementProgressSignal(game)");
-            StringAssert.Contains(provider, "skippedNoAchievementSignal");
-            StringAssert.Contains(provider, "AchievementsTotal.GetValueOrDefault() > 0");
         }
 
         [TestMethod]
