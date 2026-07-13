@@ -54,6 +54,26 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowGameCategorySeparator => ShowGameName && ShowCategory;
         public bool HasFriendAvatar => !string.IsNullOrWhiteSpace(FriendAvatar);
 
+        // Frame-scoped visibility/appearance: the screenshot frame honors its own FrameShow*
+        // settings so the saved image can show different fields than the on-screen toast.
+        public bool FrameShowHeader => IsFriendUnlock || _settings.FrameShowHeader;
+        public bool FrameShowName => _settings.FrameShowName && !string.IsNullOrWhiteSpace(TitleText);
+        public bool FrameShowDescription => _settings.FrameShowDescription && !string.IsNullOrWhiteSpace(_args.Description);
+        public bool FrameShowCategory => _settings.FrameShowCategory && !string.IsNullOrWhiteSpace(_args.Category);
+        public bool FrameShowPercent => _settings.FrameShowRarityPercent && _args.GlobalPercent.HasValue;
+        public bool FrameShowBadge => _settings.FrameShowRarityBadge && (IsCapstone || HasTrophy || HasRarityData);
+        public bool FrameShowGameName => _settings.FrameShowGameName && !string.IsNullOrWhiteSpace(_args.GameName);
+        public bool FrameShowGameCategorySeparator => FrameShowGameName && FrameShowCategory;
+        public bool FrameShowShineBorder => _settings.FrameShowRarityGlow && IsHardcore;
+
+        // The frame's bar is a fixed dark surface, so the non-rarity fallback is plain white
+        // rather than the theme text brush (which may be dark in light themes).
+        public Brush FrameTitleBrush => _settings.FrameRarityColoredName ? AccentBrush : Brushes.White;
+
+        public Effect FrameRarityGlowEffect => _settings.FrameShowRarityGlow && !IsHardcore
+            ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings)
+            : null;
+
         public string HeaderText
         {
             get

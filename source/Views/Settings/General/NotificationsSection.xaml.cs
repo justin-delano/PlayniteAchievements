@@ -39,7 +39,16 @@ namespace PlayniteAchievements.Views.Settings.General
             nameof(PersistedSettings.ToastShowRarityPercent),
             nameof(PersistedSettings.ToastShowDescription),
             nameof(PersistedSettings.ToastShowCategory),
-            nameof(PersistedSettings.ToastShowGameName)
+            nameof(PersistedSettings.ToastShowGameName),
+            nameof(PersistedSettings.FrameShowHeader),
+            nameof(PersistedSettings.FrameShowName),
+            nameof(PersistedSettings.FrameShowDescription),
+            nameof(PersistedSettings.FrameShowCategory),
+            nameof(PersistedSettings.FrameShowGameName),
+            nameof(PersistedSettings.FrameShowRarityBadge),
+            nameof(PersistedSettings.FrameShowRarityPercent),
+            nameof(PersistedSettings.FrameShowRarityGlow),
+            nameof(PersistedSettings.FrameRarityColoredName)
         };
 
         private readonly PlayniteAchievementsSettings _settings;

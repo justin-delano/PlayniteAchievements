@@ -81,6 +81,15 @@ namespace PlayniteAchievements.Models.Settings
         private bool _unlockScreenshotClean = false;
         private bool _unlockScreenshotWithToast = true;
         private bool _unlockScreenshotFramed = false;
+        private bool _frameShowHeader = true;
+        private bool _frameShowName = true;
+        private bool _frameShowDescription = true;
+        private bool _frameShowCategory = true;
+        private bool _frameShowGameName = true;
+        private bool _frameShowRarityBadge = true;
+        private bool _frameShowRarityPercent = true;
+        private bool _frameShowRarityGlow = true;
+        private bool _frameRarityColoredName = true;
         private string _unlockScreenshotDirectory;
         private Dictionary<string, ProviderNotificationOverride> _providerNotificationOverrides =
             new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
@@ -968,6 +977,62 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _unlockScreenshotFramed;
             set => SetValue(ref _unlockScreenshotFramed, value);
+        }
+
+        // Frame appearance toggles: which fields the screenshot frame renders. Independent of
+        // the ToastShow* toggles so the saved image can differ from the on-screen toast.
+        public bool FrameShowHeader
+        {
+            get => _frameShowHeader;
+            set => SetValue(ref _frameShowHeader, value);
+        }
+
+        public bool FrameShowName
+        {
+            get => _frameShowName;
+            set => SetValue(ref _frameShowName, value);
+        }
+
+        public bool FrameShowDescription
+        {
+            get => _frameShowDescription;
+            set => SetValue(ref _frameShowDescription, value);
+        }
+
+        public bool FrameShowCategory
+        {
+            get => _frameShowCategory;
+            set => SetValue(ref _frameShowCategory, value);
+        }
+
+        public bool FrameShowGameName
+        {
+            get => _frameShowGameName;
+            set => SetValue(ref _frameShowGameName, value);
+        }
+
+        public bool FrameShowRarityBadge
+        {
+            get => _frameShowRarityBadge;
+            set => SetValue(ref _frameShowRarityBadge, value);
+        }
+
+        public bool FrameShowRarityPercent
+        {
+            get => _frameShowRarityPercent;
+            set => SetValue(ref _frameShowRarityPercent, value);
+        }
+
+        public bool FrameShowRarityGlow
+        {
+            get => _frameShowRarityGlow;
+            set => SetValue(ref _frameShowRarityGlow, value);
+        }
+
+        public bool FrameRarityColoredName
+        {
+            get => _frameRarityColoredName;
+            set => SetValue(ref _frameRarityColoredName, value);
         }
 
         /// <summary>
@@ -2052,6 +2117,15 @@ namespace PlayniteAchievements.Models.Settings
                 UnlockScreenshotClean = this.UnlockScreenshotClean,
                 UnlockScreenshotWithToast = this.UnlockScreenshotWithToast,
                 UnlockScreenshotFramed = this.UnlockScreenshotFramed,
+                FrameShowHeader = this.FrameShowHeader,
+                FrameShowName = this.FrameShowName,
+                FrameShowDescription = this.FrameShowDescription,
+                FrameShowCategory = this.FrameShowCategory,
+                FrameShowGameName = this.FrameShowGameName,
+                FrameShowRarityBadge = this.FrameShowRarityBadge,
+                FrameShowRarityPercent = this.FrameShowRarityPercent,
+                FrameShowRarityGlow = this.FrameShowRarityGlow,
+                FrameRarityColoredName = this.FrameRarityColoredName,
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
                 ProviderNotificationOverrides = this.ProviderNotificationOverrides != null
                     ? this.ProviderNotificationOverrides.ToDictionary(

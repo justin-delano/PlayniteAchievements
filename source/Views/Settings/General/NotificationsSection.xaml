@@ -283,6 +283,40 @@
                                         </Grid>
                                     </Viewbox>
                                 </Border>
+
+                                <!-- Frame appearance: independent of the toast's ToastShow*
+                                     toggles; drives the FrameShow* bindings in the frame template.
+                                     Labels reuse the generic toast-toggle keys. -->
+                                <WrapPanel Margin="0,0,0,4">
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowHeader}"
+                                              IsChecked="{Binding Persisted.FrameShowHeader}"
+                                              Margin="0,0,14,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowName}"
+                                              IsChecked="{Binding Persisted.FrameShowName}"
+                                              Margin="0,0,14,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowDescription}"
+                                              IsChecked="{Binding Persisted.FrameShowDescription}"
+                                              Margin="0,0,14,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowGameName}"
+                                              IsChecked="{Binding Persisted.FrameShowGameName}"
+                                              Margin="0,0,14,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Category}"
+                                              IsChecked="{Binding Persisted.FrameShowCategory}"
+                                              Margin="0,0,14,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityBadge}"
+                                              IsChecked="{Binding Persisted.FrameShowRarityBadge}"
+                                              Margin="0,0,14,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityPercent}"
+                                              IsChecked="{Binding Persisted.FrameShowRarityPercent}"
+                                              Margin="0,0,14,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityGlow}"
+                                              IsChecked="{Binding Persisted.FrameShowRarityGlow}"
+                                              Margin="0,0,14,8"/>
+                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastRarityColoredName}"
+                                              IsChecked="{Binding Persisted.FrameRarityColoredName}"
+                                              Margin="0,0,14,8"/>
+                                </WrapPanel>
+
                                 <WrapPanel>
                                     <Button x:Name="FramePreviewButton"
                                             Click="FramePreviewButton_Click"
