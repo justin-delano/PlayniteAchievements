@@ -1,4 +1,3 @@
-using HtmlAgilityPack;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models.Achievements;
@@ -8,10 +7,7 @@ using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers.Steam;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Net;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -87,9 +83,10 @@ namespace PlayniteAchievements.Providers.Exophase
 
             // Load and validate the encrypted cookie snapshot once for this refresh; every per-friend
             // and per-game fetch reuses the cached cookies instead of decrypting the file per call.
-            // Exophase still fetches public profile/owned-games/definition pages without critical
-            // cookies, so achievements remain enabled regardless (the single log line surfaces any
-            // missing criticals), matching the prior warn-and-continue behavior.
+            // Exophase still fetches public profile pages, the games-list/earned JSON API, and
+            // definition pages without critical cookies, so achievements remain enabled regardless
+            // (the single log line surfaces any missing criticals), matching the prior
+            // warn-and-continue behavior.
             var hasCriticalCookies = _apiClient.BeginCookieSession();
             _logger?.Info($"[ExophaseFriends] BeginRefresh: cookie session prepared (allCriticalCookiesPresent={hasCriticalCookies}).");
 
@@ -226,10 +223,15 @@ namespace PlayniteAchievements.Providers.Exophase
                 return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.FromData(Array.Empty<FriendGameOwnership>());
             }
 
-            // Exophase lists every platform's games together on a single profile page: there is no
-            // per-platform page and the ?environment= filter is ignored. Fetch the profile once (with
-            // scroll to load the lazily-appended entries) and filter to the friend's selected platforms.
+            // Exophase lists every platform's games together in one paginated API library: fetch it
+            // once (memoized per refresh) and filter to the friend's selected platforms.
             var allGames = await FetchOwnedGamesAsync(config.ExternalUserId, cancel).ConfigureAwait(false);
+            if (allGames == null)
+            {
+                return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.Failed(
+                    $"Exophase games list unavailable for '{config.ExternalUserId}'.",
+                    transientFailure: true);
+            }
 
             // Compare on the canonical provider platform key rather than the raw scraped token so a
             // friend's game tagged e.g. "ps4"/"ps5"/"vita" matches the coarse "psn" selection, and
@@ -339,6 +341,13 @@ namespace PlayniteAchievements.Providers.Exophase
 
             var username = externalUserId.Trim();
             var allGames = await FetchOwnedGamesAsync(username, cancel).ConfigureAwait(false);
+            if (allGames == null)
+            {
+                return FriendsProviderResult<IReadOnlyList<FriendGameOwnership>>.Failed(
+                    $"Exophase games list unavailable for '{username}'.",
+                    transientFailure: true);
+            }
+
             var steamLabelsByName = BuildUniqueSteamLabelsByNormalizedName(currentUserLabels);
             var knownSteamGames = BuildKnownSteamOwnershipIndex(knownSteamOwnership);
             var result = new List<FriendGameOwnership>();
@@ -903,6 +912,21 @@ namespace PlayniteAchievements.Providers.Exophase
             return DateTime.UtcNow - friend.LastProbedUtc.Value > TimeSpan.FromDays(7);
         }
 
+        // Marks the friend's persisted probe state so the settings UI shows why ownership data
+        // stopped refreshing (same mechanics the metadata probe uses).
+        private void RecordOwnershipProbeFailure(string username, string error)
+        {
+            var friend = GetConfiguredFriend(username);
+            if (friend == null)
+            {
+                return;
+            }
+
+            friend.LastProbedUtc = DateTime.UtcNow;
+            friend.LastProbeStatus = "failed";
+            friend.LastError = error;
+        }
+
         private async Task<ExophaseProfileMetadata> FetchProfileMetadataAsync(
             string username,
             CancellationToken cancel)
@@ -916,32 +940,8 @@ namespace PlayniteAchievements.Providers.Exophase
             }
 
             var url = BuildProfileUrl(username);
-            var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: false).ConfigureAwait(false);
+            var html = await FetchRenderedHtmlSerializedAsync(url, cancel).ConfigureAwait(false);
             return ExophaseFriendPageParser.ParseProfile(html);
-        }
-
-        private async Task<string> FetchGameHeaderImageAsync(string gameSlug, CancellationToken cancel)
-        {
-            if (string.IsNullOrWhiteSpace(gameSlug))
-            {
-                return null;
-            }
-
-            try
-            {
-                var url = ExophaseApiClient.BuildUrlFromSlug(gameSlug);
-                var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: false).ConfigureAwait(false);
-                return ExophaseFriendPageParser.ParseGameHeaderImageUrl(html);
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, $"[ExophaseFriends] Failed to fetch game header image for '{gameSlug}'.");
-                return null;
-            }
         }
 
         private async Task<IReadOnlyList<ExophaseFriendGame>> FetchOwnedGamesAsync(
@@ -959,11 +959,14 @@ namespace PlayniteAchievements.Providers.Exophase
             var games = await FetchOwnedGamesViaApiAsync(username, cancel).ConfigureAwait(false);
             if (games == null)
             {
-                // API path unavailable (unresolvable playerProfileId, Cloudflare, or a mid-pagination
-                // failure). Fall back to the legacy profile-page scrape rather than persisting a
-                // truncated library.
-                _logger?.Warn($"[ExophaseFriends] Games-list API unavailable for '{username}'; falling back to profile-page scrape.");
-                games = await FetchOwnedGamesViaHtmlAsync(username, cancel).ConfigureAwait(false);
+                // API path unavailable: unresolvable playerProfileId (renamed/private profile),
+                // Cloudflare challenge, or a mid-pagination failure. Fail cleanly rather than
+                // persisting a truncated library; the null memo caps the cost at one attempt per
+                // refresh and callers surface a transient failure so cached data is kept.
+                _logger?.Warn($"[ExophaseFriends] Games-list API unavailable for '{username}' " +
+                    "(profile id unresolvable, Cloudflare challenge, or pagination failure); keeping cached data.");
+                RecordOwnershipProbeFailure(username,
+                    "Exophase games-list API unavailable (profile id unresolvable or fetch blocked).");
             }
 
             _friendLibraryMemo[memoKey] = games;
@@ -1113,52 +1116,12 @@ namespace PlayniteAchievements.Providers.Exophase
             return identity;
         }
 
-        private async Task<IReadOnlyList<ExophaseFriendGame>> FetchOwnedGamesViaHtmlAsync(
-            string username,
-            CancellationToken cancel)
-        {
-            var urls = new[]
-            {
-                BuildProfileUrl(username),
-                BuildGamesUrl(username)
-            }
-                .Where(url => !string.IsNullOrWhiteSpace(url))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            var games = new List<ExophaseFriendGame>();
-            foreach (var url in urls)
-            {
-                cancel.ThrowIfCancellationRequested();
-                var html = await FetchRenderedHtmlSerializedAsync(url, cancel, scrollToLoad: true).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(html))
-                {
-                    _logger?.Warn($"[ExophaseFriends] Profile fetch: empty or blocked HTML from {url}. " +
-                        "The page may require login, have been rate-limited, or failed to render.");
-                    continue;
-                }
-
-                var page = ExophaseFriendPageParser.ParseGames(html);
-                games.AddRange(page.Games);
-                _logger?.Debug($"[ExophaseFriends] Profile fetch: {url} -> htmlLength={html.Length}, " +
-                    $"parsedGames={page.Games.Count}.");
-            }
-
-            var deduped = games
-                .Where(game => !string.IsNullOrWhiteSpace(game?.Slug))
-                .GroupBy(game => (game.Platform ?? string.Empty) + "|" + game.Slug, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .ToList();
-            _logger?.Debug($"[ExophaseFriends] Profile fetch: '{username}' -> parsedGames={games.Count}, uniqueGames={deduped.Count}.");
-            return deduped;
-        }
-
-        private async Task<string> FetchRenderedHtmlSerializedAsync(string url, CancellationToken cancel, bool scrollToLoad = false)
+        private async Task<string> FetchRenderedHtmlSerializedAsync(string url, CancellationToken cancel)
         {
             await _webViewGate.WaitAsync(cancel).ConfigureAwait(false);
             try
             {
-                return await _apiClient.FetchRenderedHtmlAsync(url, cancel, scrollToLoad: scrollToLoad).ConfigureAwait(false);
+                return await _apiClient.FetchRenderedHtmlAsync(url, cancel).ConfigureAwait(false);
             }
             finally
             {
@@ -1302,11 +1265,6 @@ namespace PlayniteAchievements.Providers.Exophase
             return $"https://www.exophase.com/user/{Uri.EscapeDataString(username.Trim())}/";
         }
 
-        private static string BuildGamesUrl(string username)
-        {
-            return $"https://www.exophase.com/user/{Uri.EscapeDataString(username.Trim())}/games/";
-        }
-
         private static string BuildContextMapKey(string username, string providerGameKey)
         {
             return (username?.Trim() ?? string.Empty) + "|" + (providerGameKey?.Trim() ?? string.Empty);
@@ -1317,18 +1275,6 @@ namespace PlayniteAchievements.Providers.Exophase
             return _friendGameContextIds.TryGetValue(BuildContextMapKey(username, providerGameKey), out var contextId)
                 ? contextId
                 : null;
-        }
-
-        private static string BuildFriendAchievementUrl(string gameSlug, string platformSlug, string contextId)
-        {
-            // Mirrors the games-page link: /game/{slug}/{endpoint}/#{contextId} renders the friend's
-            // unlock state. The endpoint (trophies/challenges/achievements) is resolved from the
-            // known platform so PSN/Ubisoft games hit the right page regardless of the slug suffix.
-            // Without a context id this falls back to the plain (viewer-scoped) page.
-            var url = ExophaseApiClient.BuildUrlFromSlug(gameSlug, platformSlug);
-            return string.IsNullOrWhiteSpace(contextId)
-                ? url
-                : url + "#" + contextId.Trim();
         }
 
         private static List<string> NormalizePlatforms(IEnumerable<string> platforms)
@@ -1382,17 +1328,6 @@ namespace PlayniteAchievements.Providers.Exophase
             public int? AchievementsTotal { get; set; }
         }
 
-        private sealed class ParsedGamesPage
-        {
-            public List<ExophaseFriendGame> Games { get; set; } = new List<ExophaseFriendGame>();
-        }
-
-        private sealed class ExophaseProfileMetadata
-        {
-            public string DisplayName { get; set; }
-            public string AvatarUrl { get; set; }
-        }
-
         private static class ExophaseFriendGameKey
         {
             public static string Build(string platformSlug, string gameSlug)
@@ -1416,686 +1351,6 @@ namespace PlayniteAchievements.Providers.Exophase
                 return parts.Length == 2
                     ? (parts[0].Trim().ToLowerInvariant(), parts[1].Trim().ToLowerInvariant())
                     : (null, key.Trim().ToLowerInvariant());
-            }
-        }
-
-        private static class ExophaseFriendPageParser
-        {
-            private static readonly Regex ServiceIconPlatformRegex = new Regex(@"exo-icon-service-([a-z0-9]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex ImageHostPlatformRegex = new Regex(@"exophase\.com/([a-z0-9]+)/(?:games|awards)/", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex PlaytimeHoursMinutesRegex = new Regex(@"(?:(\d+(?:[.,]\d+)?)\s*h(?:ours?)?)?\s*(?:(\d+)\s*m(?:in(?:utes?)?)?)?", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex EarnedTotalCountsRegex = new Regex(@"(\d+)\s*/\s*(\d+)", RegexOptions.Compiled);
-            private static readonly Regex RecentDateContextRegex = new Regex(
-                @"\b(today|yesterday|last\s+24\s+hours?|past\s+24\s+hours?|this\s+week|last\s+week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex LastPlayedLabelRegex = new Regex(@"\b(last\s+played|played\s+on|recently\s+played)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex TodayWordRegex = new Regex(@"\btoday\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex YesterdayWordRegex = new Regex(@"\byesterday\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex WeekdayNameRegex = new Regex(@"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex MonthDayDateRegex = new Regex(
-                @"\b(?:\d{1,2}\s+)?(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,?\s+\d{4})?\b",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex IsoDateRegex = new Regex(@"\b\d{4}-\d{1,2}-\d{1,2}\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex FourDigitYearRegex = new Regex(@"\b\d{4}\b", RegexOptions.Compiled);
-            private static readonly Regex HeadingTagNameRegex = new Regex(@"^h[1-6]$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex DateHeaderClassRegex = new Regex(@"\b(date|day|activity|header|title)\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex CompactDayWordRegex = new Regex(
-                @"^(today|yesterday|monday|tuesday|wednesday|thursday|friday|saturday|sunday)$",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex CompactMonthDayDateRegex = new Regex(
-                @"^(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\.?\s+\d{1,2}(?:,?\s+\d{4})?$",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex CompactIsoDateRegex = new Regex(@"^\d{4}-\d{1,2}-\d{1,2}$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            private static readonly Regex WhitespaceRunRegex = new Regex(@"\s+", RegexOptions.Compiled);
-
-            public static ExophaseProfileMetadata ParseProfile(string html)
-            {
-                var doc = LoadDocument(html);
-                if (doc?.DocumentNode == null)
-                {
-                    return new ExophaseProfileMetadata();
-                }
-
-                var header = doc.DocumentNode.SelectSingleNode("//section[contains(@class, 'section-profile-header')]")
-                    ?? doc.DocumentNode;
-                return new ExophaseProfileMetadata
-                {
-                    DisplayName = FirstNonEmpty(
-                        Clean(header.SelectSingleNode(".//div[contains(@class, 'column-username')]//h2")?.InnerText),
-                        Clean(header.SelectSingleNode(".//h2")?.InnerText)),
-                    AvatarUrl = NormalizeUrl(FirstNonEmpty(
-                        header.SelectSingleNode(".//div[contains(@class, 'avatar')]//img")?.GetAttributeValue("src", null),
-                        header.SelectSingleNode(".//img[contains(@src, '/forums/data/avatars/')]")?.GetAttributeValue("src", null)))
-                };
-            }
-
-            public static string ParseGameHeaderImageUrl(string html)
-            {
-                var doc = LoadDocument(html);
-                if (doc?.DocumentNode == null)
-                {
-                    return null;
-                }
-
-                return NormalizeUrl(FirstNonEmpty(
-                    ExophaseApiClient.ResolveImageUrl(doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'col-game-information')]//a[contains(@class, 'image')]")),
-                    ExophaseApiClient.ResolveImageUrl(doc.DocumentNode.SelectSingleNode("//div[contains(@class, 'feature-header')]")),
-                    ExophaseApiClient.ResolveImageUrl(doc.DocumentNode.SelectSingleNode("//a[contains(@class, 'image')]"))));
-            }
-
-            public static ParsedGamesPage ParseGames(string html)
-            {
-                var result = new ParsedGamesPage();
-                var doc = LoadDocument(html);
-                if (doc?.DocumentNode == null)
-                {
-                    return result;
-                }
-
-                // Each game row exposes its title as <h3><a href=".../game/{slug}/achievements/#id">Title</a>.
-                // Prefer the heading anchors so award-icon and navigation links are not mistaken for games;
-                // fall back to any /game/ anchor if the markup changes.
-                var links = doc.DocumentNode.SelectNodes("//h3/a[contains(@href, '/game/')]")
-                    ?? doc.DocumentNode.SelectNodes("//a[contains(@href, '/game/')]");
-
-                foreach (var link in Nodes(links))
-                {
-                    var rawHref = link.GetAttributeValue("href", null);
-                    var href = NormalizeUrl(rawHref);
-                    var slug = ExophaseApiClient.ExtractSlugFromUrl(href);
-                    if (string.IsNullOrWhiteSpace(slug))
-                    {
-                        continue;
-                    }
-
-                    var contextId = ExtractFragmentId(rawHref);
-                    var container = FindGameContainer(link);
-                    var platform = DerivePlatform(container, slug);
-                    var title = FirstNonEmpty(
-                        Clean(link.InnerText),
-                        Clean(link.GetAttributeValue("title", null)),
-                        Clean(container?.SelectSingleNode(".//div[contains(@class, 'col-image')]//img")?.GetAttributeValue("alt", null)),
-                        SlugToTitle(slug, platform));
-                    var image = NormalizeUrl(FirstNonEmpty(
-                        ExophaseApiClient.ResolveImageUrl(container?.SelectSingleNode(".//div[contains(@class, 'col-image')]")),
-                        ExophaseApiClient.ResolveImageUrl(container)));
-                    var recentDateContext = ResolveRecentDateContextUtc(container);
-                    // The games listing renders a per-game "last played" cell (<div class="lastplayed">July 1, 2026</div>);
-                    // prefer it as the recency signal before the generic attribute/heading fallbacks.
-                    DateTime? lastPlayedFromCell = null;
-                    if (TryParseDateText(
-                            container?.SelectSingleNode(".//div[contains(@class, 'lastplayed')]")?.InnerText,
-                            out var parsedLastPlayedCell))
-                    {
-                        lastPlayedFromCell = parsedLastPlayedCell;
-                    }
-
-                    var lastPlayedUtc = lastPlayedFromCell ?? ParseLastPlayedUtc(container) ?? recentDateContext;
-
-                    var (achievementsEarned, achievementsTotal) = ParseAchievementCounts(container);
-
-                    result.Games.Add(new ExophaseFriendGame
-                    {
-                        Slug = slug,
-                        Title = title,
-                        ImageUrl = image,
-                        Platform = platform,
-                        SteamAppId = ExophaseSteamAppIdParser.Extract(container?.OuterHtml),
-                        ContextId = contextId,
-                        PlaytimeMinutes = ParsePlaytimeMinutes(container?.InnerText),
-                        RecentPlaytimeMinutes = ParseRecentPlaytimeMinutes(container?.InnerText, recentDateContext.HasValue),
-                        LastPlayedUtc = lastPlayedUtc,
-                        AchievementsEarned = achievementsEarned,
-                        AchievementsTotal = achievementsTotal
-                    });
-                }
-
-                return result;
-            }
-
-            private static HtmlDocument LoadDocument(string html)
-            {
-                if (string.IsNullOrWhiteSpace(html))
-                {
-                    return null;
-                }
-
-                var doc = new HtmlDocument();
-                doc.LoadHtml(html);
-                return doc;
-            }
-
-            private static IEnumerable<HtmlNode> Nodes(HtmlNodeCollection nodes)
-            {
-                return nodes ?? Enumerable.Empty<HtmlNode>();
-            }
-
-            private static string ExtractFragmentId(string href)
-            {
-                if (string.IsNullOrWhiteSpace(href))
-                {
-                    return null;
-                }
-
-                var hashIndex = href.IndexOf('#');
-                if (hashIndex < 0 || hashIndex >= href.Length - 1)
-                {
-                    return null;
-                }
-
-                var fragment = href.Substring(hashIndex + 1).Trim();
-                return string.IsNullOrWhiteSpace(fragment) ? null : fragment;
-            }
-
-            private static HtmlNode FindGameContainer(HtmlNode link)
-            {
-                var current = link;
-                for (var i = 0; i < 8 && current?.ParentNode != null; i++)
-                {
-                    current = current.ParentNode;
-                    if (!HasGameRowSignals(current))
-                    {
-                        continue;
-                    }
-
-                    // Do not let a broad list/container node classify this row from a sibling's
-                    // service icon, image, playtime, or progress block. Row containers can legitimately
-                    // contain multiple links to the same game (image + title), so count distinct slugs.
-                    if (CountDistinctGameSlugs(current) <= 1)
-                    {
-                        return current;
-                    }
-                }
-
-                return link.ParentNode;
-            }
-
-            private static bool HasGameRowSignals(HtmlNode node)
-            {
-                return node != null &&
-                       (node.SelectSingleNode(".//div[contains(@class, 'col-image')]") != null ||
-                        node.SelectSingleNode(".//i[contains(@class, 'exo-icon-service-')]") != null ||
-                        node.SelectSingleNode(".//div[contains(@class, 'game-progress')]") != null ||
-                        node.SelectSingleNode(".//div[contains(@class, 'lastplayed')]") != null);
-            }
-
-            private static int CountDistinctGameSlugs(HtmlNode node)
-            {
-                var slugs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var link in Nodes(node?.SelectNodes(".//a[contains(@href, '/game/')]")))
-                {
-                    var slug = ExophaseApiClient.ExtractSlugFromUrl(
-                        NormalizeUrl(link.GetAttributeValue("href", null)));
-                    if (!string.IsNullOrWhiteSpace(slug))
-                    {
-                        slugs.Add(slug);
-                    }
-                }
-
-                return slugs.Count;
-            }
-
-            private static string DerivePlatform(HtmlNode container, string slug)
-            {
-                // The slug is row-local and cannot be contaminated by sibling rows. Prefer it over
-                // service icons because broad profile containers may contain many platform icons.
-                var slugPlatform = ExophaseFriendPlatformMatcher.ExtractPlatformSlugFromGameSlug(slug);
-                if (!string.IsNullOrWhiteSpace(slugPlatform))
-                {
-                    return NormalizePlatformSlug(slugPlatform);
-                }
-
-                if (container != null)
-                {
-                    // The service icon carries the platform: <i class="exo-icon-service-origin ...">.
-                    var serviceIcon = container.SelectSingleNode(".//i[contains(@class, 'exo-icon-service-')]");
-                    var iconClass = serviceIcon?.GetAttributeValue("class", string.Empty) ?? string.Empty;
-                    var iconMatch = ServiceIconPlatformRegex.Match(iconClass);
-                    if (iconMatch.Success)
-                    {
-                        return NormalizePlatformSlug(iconMatch.Groups[1].Value);
-                    }
-
-                    // Fall back to the media host path: https://m.exophase.com/{platform}/games/...
-                    var imageSrc = ExophaseApiClient.ResolveImageUrl(container) ?? string.Empty;
-                    var imageMatch = ImageHostPlatformRegex.Match(imageSrc);
-                    if (imageMatch.Success)
-                    {
-                        return NormalizePlatformSlug(imageMatch.Groups[1].Value);
-                    }
-                }
-
-                // Last resort: the platform suffix embedded in the slug (e.g. dead-space-3-origin -> origin).
-                var lastDash = (slug ?? string.Empty).LastIndexOf('-');
-                if (lastDash > 0 && lastDash < slug.Length - 1)
-                {
-                    return NormalizePlatformSlug(slug.Substring(lastDash + 1));
-                }
-
-                return null;
-            }
-
-            private static string SlugToTitle(string slug, string platform)
-            {
-                var value = slug ?? string.Empty;
-                if (!string.IsNullOrWhiteSpace(platform) &&
-                    value.EndsWith("-" + platform, StringComparison.OrdinalIgnoreCase))
-                {
-                    value = value.Substring(0, value.Length - platform.Length - 1);
-                }
-
-                return CultureInfo.CurrentCulture.TextInfo.ToTitleCase(value.Replace('-', ' '));
-            }
-
-            public static int ParsePlaytimeMinutes(string text)
-            {
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    return 0;
-                }
-
-                var match = PlaytimeHoursMinutesRegex.Match(text);
-                if (!match.Success)
-                {
-                    return 0;
-                }
-
-                var total = 0;
-                // Accept a comma decimal (e.g. French "12,5 h") by normalizing it to a dot before
-                // parsing with the invariant culture.
-                var hoursText = match.Groups[1].Value.Replace(',', '.');
-                if (double.TryParse(hoursText, NumberStyles.Float, CultureInfo.InvariantCulture, out var hours))
-                {
-                    total += (int)Math.Round(hours * 60);
-                }
-
-                if (int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var minutes))
-                {
-                    total += minutes;
-                }
-
-                return Math.Max(0, total);
-            }
-
-            // Reads the "earned/total" achievement count from a game row's game-progress block,
-            // rendered as an award icon followed by e.g. "6/37". Returns (null, null) when the row
-            // has no progress block (some platforms/games omit it) so the caller leaves the hint unset.
-            private static (int? Earned, int? Total) ParseAchievementCounts(HtmlNode container)
-            {
-                if (container == null)
-                {
-                    return (null, null);
-                }
-
-                var progressCol = container.SelectSingleNode(
-                    ".//div[contains(@class, 'game-progress')]//i[contains(@class, 'exo-icon-award')]/parent::div")
-                    ?? container.SelectSingleNode(".//div[contains(@class, 'game-progress')]//div[contains(@class, 'progress-units-top')]");
-                if (progressCol == null)
-                {
-                    return (null, null);
-                }
-
-                var match = EarnedTotalCountsRegex.Match(Clean(progressCol.InnerText) ?? string.Empty);
-                if (!match.Success ||
-                    !int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var earned) ||
-                    !int.TryParse(match.Groups[2].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var total))
-                {
-                    return (null, null);
-                }
-
-                return (Math.Max(0, earned), Math.Max(0, total));
-            }
-
-            private static int ParseRecentPlaytimeMinutes(string text, bool hasRecentDateContext)
-            {
-                text = Clean(text);
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    return 0;
-                }
-
-                if (!hasRecentDateContext &&
-                    !RecentDateContextRegex.IsMatch(text))
-                {
-                    return 0;
-                }
-
-                return ParsePlaytimeMinutes(text);
-            }
-
-            private static DateTime? ParseLastPlayedUtc(HtmlNode container)
-            {
-                if (container == null)
-                {
-                    return null;
-                }
-
-                var nodeDate = FindDateTimeInNode(container);
-                if (nodeDate.HasValue)
-                {
-                    return nodeDate.Value;
-                }
-
-                var text = Clean(container.InnerText);
-                if (LooksLikeLastPlayedText(text) &&
-                    TryParseDateText(text, out var parsed))
-                {
-                    return parsed;
-                }
-
-                return null;
-            }
-
-            private static bool LooksLikeLastPlayedText(string text)
-            {
-                return !string.IsNullOrWhiteSpace(text) &&
-                       LastPlayedLabelRegex.IsMatch(text);
-            }
-
-            private static DateTime? ResolveRecentDateContextUtc(HtmlNode container)
-            {
-                var current = container;
-                for (var depth = 0; depth < 8 && current != null; depth++, current = current.ParentNode)
-                {
-                    var isCurrentDateHeader = IsLikelyDateHeader(current);
-                    var nodeDate = isCurrentDateHeader
-                        ? FindDateTimeInNode(current, directOnly: true)
-                        : null;
-                    if (nodeDate.HasValue)
-                    {
-                        return nodeDate.Value;
-                    }
-
-                    if (TryParseDateText(Clean(current.InnerText), out var inlineDate) &&
-                        isCurrentDateHeader)
-                    {
-                        return inlineDate;
-                    }
-
-                    var previous = current.PreviousSibling;
-                    for (var i = 0; i < 12 && previous != null; i++, previous = previous.PreviousSibling)
-                    {
-                        if (string.IsNullOrWhiteSpace(previous.InnerText) &&
-                            !previous.HasChildNodes)
-                        {
-                            continue;
-                        }
-
-                        if (!IsLikelyDateHeader(previous))
-                        {
-                            continue;
-                        }
-
-                        nodeDate = FindDateTimeInNode(previous);
-                        if (nodeDate.HasValue)
-                        {
-                            return nodeDate.Value;
-                        }
-
-                        if (TryParseDateText(Clean(previous.InnerText), out var siblingDate) &&
-                            IsLikelyDateHeader(previous))
-                        {
-                            return siblingDate;
-                        }
-                    }
-                }
-
-                return null;
-            }
-
-            private static DateTime? FindDateTimeInNode(HtmlNode node, bool directOnly = false)
-            {
-                if (node == null)
-                {
-                    return null;
-                }
-
-                foreach (var candidate in EnumerateDateNodes(node, directOnly))
-                {
-                    var parsed = ParseDateTimeAttribute(candidate);
-                    if (parsed.HasValue)
-                    {
-                        return parsed.Value;
-                    }
-                }
-
-                return null;
-            }
-
-            private static IEnumerable<HtmlNode> EnumerateDateNodes(HtmlNode node, bool directOnly)
-            {
-                if (node == null)
-                {
-                    yield break;
-                }
-
-                if (HasDateAttribute(node))
-                {
-                    yield return node;
-                }
-
-                var xpath = directOnly
-                    ? "./*[@datetime or @data-date or @data-timestamp or @title]"
-                    : ".//*[@datetime or @data-date or @data-timestamp or @title]";
-                foreach (var child in Nodes(node.SelectNodes(xpath)))
-                {
-                    yield return child;
-                }
-            }
-
-            private static bool HasDateAttribute(HtmlNode node)
-            {
-                return node?.Attributes["datetime"] != null ||
-                       node?.Attributes["data-date"] != null ||
-                       node?.Attributes["data-timestamp"] != null ||
-                       node?.Attributes["title"] != null;
-            }
-
-            private static DateTime? ParseDateTimeAttribute(HtmlNode node)
-            {
-                var raw = FirstNonEmpty(
-                    node?.GetAttributeValue("datetime", null),
-                    node?.GetAttributeValue("data-date", null),
-                    node?.GetAttributeValue("data-timestamp", null),
-                    node?.GetAttributeValue("title", null));
-                if (string.IsNullOrWhiteSpace(raw))
-                {
-                    return null;
-                }
-
-                raw = WebUtility.HtmlDecode(raw.Trim());
-                if (long.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var unix))
-                {
-                    try
-                    {
-                        if (unix > 9999999999L)
-                        {
-                            unix /= 1000;
-                        }
-
-                        return DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime;
-                    }
-                    catch
-                    {
-                        return null;
-                    }
-                }
-
-                if (DateTimeOffset.TryParse(
-                        raw,
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                        out var offset))
-                {
-                    return offset.UtcDateTime;
-                }
-
-                return TryParseDateText(raw, out var parsed) ? parsed : (DateTime?)null;
-            }
-
-            private static bool TryParseDateText(string text, out DateTime dateUtc)
-            {
-                dateUtc = default(DateTime);
-                text = Clean(text);
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    return false;
-                }
-
-                var today = DateTime.UtcNow.Date;
-                if (TodayWordRegex.IsMatch(text))
-                {
-                    dateUtc = DateTime.SpecifyKind(today, DateTimeKind.Utc);
-                    return true;
-                }
-
-                if (YesterdayWordRegex.IsMatch(text))
-                {
-                    dateUtc = DateTime.SpecifyKind(today.AddDays(-1), DateTimeKind.Utc);
-                    return true;
-                }
-
-                var weekdayMatch = WeekdayNameRegex.Match(text);
-                if (weekdayMatch.Success &&
-                    TryParseWeekday(weekdayMatch.Groups[1].Value, out var weekday))
-                {
-                    var daysBack = ((int)today.DayOfWeek - (int)weekday + 7) % 7;
-                    dateUtc = DateTime.SpecifyKind(today.AddDays(-daysBack), DateTimeKind.Utc);
-                    return true;
-                }
-
-                var dateMatch = MonthDayDateRegex.Match(text);
-                if (!dateMatch.Success)
-                {
-                    dateMatch = IsoDateRegex.Match(text);
-                }
-
-                if (!dateMatch.Success)
-                {
-                    return false;
-                }
-
-                var value = dateMatch.Value;
-                if (!FourDigitYearRegex.IsMatch(value))
-                {
-                    value = value + " " + today.Year.ToString(CultureInfo.InvariantCulture);
-                }
-
-                if (!DateTime.TryParse(
-                        value,
-                        CultureInfo.InvariantCulture,
-                        DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
-                        out var parsedDate))
-                {
-                    return false;
-                }
-
-                dateUtc = DateTime.SpecifyKind(parsedDate.Date, DateTimeKind.Utc);
-                return true;
-            }
-
-            private static bool TryParseWeekday(string value, out DayOfWeek day)
-            {
-                switch ((value ?? string.Empty).Trim().ToLowerInvariant())
-                {
-                    case "sunday":
-                        day = DayOfWeek.Sunday;
-                        return true;
-                    case "monday":
-                        day = DayOfWeek.Monday;
-                        return true;
-                    case "tuesday":
-                        day = DayOfWeek.Tuesday;
-                        return true;
-                    case "wednesday":
-                        day = DayOfWeek.Wednesday;
-                        return true;
-                    case "thursday":
-                        day = DayOfWeek.Thursday;
-                        return true;
-                    case "friday":
-                        day = DayOfWeek.Friday;
-                        return true;
-                    case "saturday":
-                        day = DayOfWeek.Saturday;
-                        return true;
-                    default:
-                        day = default(DayOfWeek);
-                        return false;
-                }
-            }
-
-            private static bool IsLikelyDateHeader(HtmlNode node)
-            {
-                var text = Clean(node?.InnerText);
-                if (string.IsNullOrWhiteSpace(text))
-                {
-                    return false;
-                }
-
-                if (node.SelectSingleNode(".//a[contains(@href, '/game/')]") != null)
-                {
-                    return false;
-                }
-
-                var name = node?.Name ?? string.Empty;
-                if (HeadingTagNameRegex.IsMatch(name))
-                {
-                    return true;
-                }
-
-                var className = node?.GetAttributeValue("class", string.Empty) ?? string.Empty;
-                if (DateHeaderClassRegex.IsMatch(className))
-                {
-                    return true;
-                }
-
-                return IsCompactDateText(text);
-            }
-
-            private static bool IsCompactDateText(string text)
-            {
-                if (string.IsNullOrWhiteSpace(text) || text.Length > 48)
-                {
-                    return false;
-                }
-
-                return CompactDayWordRegex.IsMatch(text) ||
-                       CompactMonthDayDateRegex.IsMatch(text) ||
-                       CompactIsoDateRegex.IsMatch(text);
-            }
-
-            private static string NormalizeUrl(string url)
-            {
-                if (string.IsNullOrWhiteSpace(url))
-                {
-                    return null;
-                }
-
-                url = WebUtility.HtmlDecode(url.Trim());
-                if (url.StartsWith("//", StringComparison.Ordinal))
-                {
-                    return "https:" + url;
-                }
-
-                if (url.StartsWith("/", StringComparison.Ordinal))
-                {
-                    return "https://www.exophase.com" + url;
-                }
-
-                return url;
-            }
-
-            private static string Clean(string value)
-            {
-                return string.IsNullOrWhiteSpace(value)
-                    ? null
-                    : WhitespaceRunRegex.Replace(WebUtility.HtmlDecode(value), " ").Trim();
-            }
-
-            private static string FirstNonEmpty(params string[] values)
-            {
-                return values?.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
             }
         }
     }
