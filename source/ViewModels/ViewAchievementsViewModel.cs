@@ -274,6 +274,10 @@ namespace PlayniteAchievements.ViewModels
         // Achievement list
         public ObservableCollection<AchievementDisplayItem> Achievements { get; } = new BulkObservableCollection<AchievementDisplayItem>();
 
+        // Unfiltered achievements in canonical definition/custom order; feeds the grid's
+        // CategorySummarySource so category ordering does not follow the configured or live sort.
+        public ObservableCollection<AchievementDisplayItem> AllAchievements { get; } = new BulkObservableCollection<AchievementDisplayItem>();
+
         // Single-row game summary grid (standardized header surface).
         public ObservableCollection<GameSummaryItem> SummaryItems { get; } = new ObservableCollection<GameSummaryItem>();
 
@@ -512,6 +516,7 @@ namespace PlayniteAchievements.ViewModels
                         // The control bar's filter option collections are UI-bound.
                         _controlBar.Clear();
                         Achievements.Clear();
+                        AllAchievements.Clear();
                     });
 
                     Timeline.SetCounts(null);
@@ -562,7 +567,10 @@ namespace PlayniteAchievements.ViewModels
 
                 // The control bar's filter option collections are UI-bound.
                 System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
-                    _controlBar.UpdateOptions(_allAchievements));
+                {
+                    _controlBar.UpdateOptions(_allAchievements);
+                    CollectionHelper.Replace(AllAchievements, _allAchievements);
+                });
                 ApplySearchFilter();
 
                 Timeline.SetCounts(unlockCounts);
