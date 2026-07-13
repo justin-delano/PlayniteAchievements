@@ -3285,12 +3285,15 @@ namespace PlayniteAchievements.Services.Database
                 // This must run BEFORE this key claims the mapping below — the partial unique index
                 // on (ProviderKey, PlayniteGameId) rejects a second claim, so a claim-first order
                 // aborts the whole ownership transaction whenever the mapping winner changes.
+                // Scoped to friend-format keys ("platform|slug"): the current user's own
+                // Exophase-provider row uses a bare slug key and must never lose its mapping here.
                 db.ExecuteNonQuery(
                     @"UPDATE Games
                       SET PlayniteGameId = NULL,
                           LastUpdatedUtc = ?
                       WHERE ProviderKey = ?
                         AND PlayniteGameId = ?
+                        AND ProviderGameKey LIKE '%|%'
                         AND Id <> ?;",
                     nowIso,
                     providerKey,
@@ -3514,28 +3517,14 @@ namespace PlayniteAchievements.Services.Database
 
             providerGameKey = NormalizeProviderGameKey(providerGameKey);
 
+            // Dev-parity behavior for non-Exophase providers (Exophase keys never reach this
+            // method; they resolve through ResolveSingleExophaseFriendGameRow, which handles
+            // duplicate trophy lists without hijacking row identity).
             var existing = LoadGameByPlayniteId(db, providerKey, playniteGameId);
             if (existing != null)
             {
-                if (SameProviderGameIdentity(existing, appId, providerGameKey))
-                {
-                    UpdateMappedGameIdentity(db, existing.Id, appId, providerGameKey, providerPlatformKey, gameName, nowIso);
-                    return existing.Id;
-                }
-
-                // A different provider game key already holds this PlayniteGameId mapping (e.g. a
-                // friend owns two Exophase trophy lists of the same library game). Never hijack the
-                // existing row's identity — that flip-flops one row between the two keys, piles both
-                // schemas onto it, and orphans the loser. Move the mapping instead: the old row
-                // reverts to provider-only (keeping its definitions and history) and the incoming key
-                // gets its own row below.
-                db.ExecuteNonQuery(
-                    @"UPDATE Games
-                      SET PlayniteGameId = NULL,
-                          LastUpdatedUtc = ?
-                      WHERE Id = ?;",
-                    nowIso,
-                    existing.Id);
+                UpdateMappedGameIdentity(db, existing.Id, appId, providerGameKey, providerPlatformKey, gameName, nowIso);
+                return existing.Id;
             }
 
             // Upgrade an existing provider-only row for this game in place (attach the PlayniteGameId)
@@ -3578,24 +3567,6 @@ namespace PlayniteAchievements.Services.Database
                 nowIso,
                 nowIso);
             return db.ExecuteScalar<long>("SELECT last_insert_rowid();");
-        }
-
-        // Whether a cached Games row and an incoming ownership row refer to the same provider game:
-        // by provider game key when both sides have one, else by numeric provider game id (appId).
-        private static bool SameProviderGameIdentity(GameRow existing, int appId, string normalizedProviderGameKey)
-        {
-            if (existing == null)
-            {
-                return false;
-            }
-
-            var existingKey = NormalizeProviderGameKey(existing.ProviderGameKey);
-            if (!string.IsNullOrWhiteSpace(existingKey) && !string.IsNullOrWhiteSpace(normalizedProviderGameKey))
-            {
-                return string.Equals(existingKey, normalizedProviderGameKey, StringComparison.OrdinalIgnoreCase);
-            }
-
-            return appId > 0 && existing.ProviderGameId == appId;
         }
 
         private static void UpdateMappedGameIdentity(
@@ -6279,6 +6250,14 @@ namespace PlayniteAchievements.Services.Database
                     var oldApiName = existingRow.ApiName.Trim();
                     var newApiName = pair.Value.ApiName.Trim();
                     if (renames.ContainsKey(oldApiName))
+                    {
+                        continue;
+                    }
+
+                    // A degenerate incoming set with duplicate ApiNames could target the same new
+                    // key from two pairs; the second in-place UPDATE would violate
+                    // UNIQUE (GameId, ApiName) and abort the save. First pairing wins.
+                    if (renames.ContainsValue(newApiName))
                     {
                         continue;
                     }
