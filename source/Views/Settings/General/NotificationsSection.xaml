@@ -66,96 +66,6 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Live mockup + appearance toggles (adjacent so the mockup reflects each toggle
-                     without scrolling) + example toast buttons -->
-                <Border Style="{StaticResource SectionBorderStyle}">
-                    <StackPanel>
-                        <TextBlock Text="{DynamicResource LOCPlayAch_NotesDialog_Preview}"
-                                   Style="{StaticResource SectionHeaderStyle}"
-                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-
-                        <Border Background="{DynamicResource PlayAch.Brush.Surface}"
-                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                BorderThickness="1"
-                                CornerRadius="8"
-                                Padding="18"
-                                HorizontalAlignment="Left"
-                                Margin="0,0,0,10">
-                            <ContentControl x:Name="ToastMockupHost"
-                                            ContentTemplate="{DynamicResource PlayAch.Template.AchievementToast}"/>
-                        </Border>
-
-                        <WrapPanel Margin="0,0,0,4">
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowHeader}"
-                                      IsChecked="{Binding Persisted.ToastShowHeader}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowName}"
-                                      IsChecked="{Binding Persisted.ToastShowName}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowDescription}"
-                                      IsChecked="{Binding Persisted.ToastShowDescription}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowGameName}"
-                                      IsChecked="{Binding Persisted.ToastShowGameName}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Category}"
-                                      IsChecked="{Binding Persisted.ToastShowCategory}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityBadge}"
-                                      IsChecked="{Binding Persisted.ToastShowRarityBadge}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityPercent}"
-                                      IsChecked="{Binding Persisted.ToastShowRarityPercent}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityGlow}"
-                                      IsChecked="{Binding Persisted.ToastShowRarityGlow}"
-                                      Margin="0,0,14,8"/>
-                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastRarityColoredName}"
-                                      IsChecked="{Binding Persisted.ToastRarityColoredName}"
-                                      Margin="0,0,14,8"/>
-                        </WrapPanel>
-
-                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ToastPreviewHint}"
-                                   Style="{StaticResource MutedTextStyle}"
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,10"/>
-
-                        <WrapPanel>
-                            <Button x:Name="ToastPreviewCommonButton"
-                                    Click="ToastPreviewButton_Click"
-                                    CommandParameter="common"
-                                    Content="{DynamicResource LOCPlayAch_Rarity_Common}"
-                                    Margin="0,0,8,8"/>
-                            <Button x:Name="ToastPreviewUncommonButton"
-                                    Click="ToastPreviewButton_Click"
-                                    CommandParameter="uncommon"
-                                    Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"
-                                    Margin="0,0,8,8"/>
-                            <Button x:Name="ToastPreviewRareButton"
-                                    Click="ToastPreviewButton_Click"
-                                    CommandParameter="rare"
-                                    Content="{DynamicResource LOCPlayAch_Rarity_Rare}"
-                                    Margin="0,0,8,8"/>
-                            <Button x:Name="ToastPreviewUltraRareButton"
-                                    Click="ToastPreviewButton_Click"
-                                    CommandParameter="ultrarare"
-                                    Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"
-                                    Margin="0,0,8,8"/>
-                            <Button x:Name="ToastPreviewCapstoneButton"
-                                    Click="ToastPreviewButton_Click"
-                                    CommandParameter="capstone"
-                                    Content="{DynamicResource LOCPlayAch_Completed}"
-                                    Margin="0,0,8,8"/>
-                            <Button x:Name="ToastPreviewFriendButton"
-                                    Click="ToastPreviewButton_Click"
-                                    CommandParameter="friend"
-                                    Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"
-                                    Margin="0,0,8,8"/>
-                        </WrapPanel>
-                    </StackPanel>
-                </Border>
-
                 <!-- Behavior -->
                 <Border Style="{StaticResource SectionBorderStyle}">
                     <StackPanel IsEnabled="{Binding Persisted.EnableNotifications}">
@@ -261,74 +171,170 @@
                                        Style="{StaticResource MutedTextStyle}"
                                        TextWrapping="Wrap"
                                        Margin="0,6,0,0"/>
-
-                            <!-- Frame mockup: the 16:9 grid stands in for the screenshot; the frame
-                                 template lays out on the same 1080-DIP virtual canvas the
-                                 compositor uses, scaled down uniformly. -->
-                            <StackPanel Visibility="{Binding Persisted.UnlockScreenshotFramed, Converter={StaticResource BoolToVis}}"
-                                        Margin="0,10,0,0">
-                                <Border Background="{DynamicResource PlayAch.Brush.Surface}"
-                                        BorderBrush="{DynamicResource PlayAch.Brush.Border}"
-                                        BorderThickness="1"
-                                        CornerRadius="8"
-                                        Padding="10"
-                                        HorizontalAlignment="Left"
-                                        Margin="0,0,0,8">
-                                    <Viewbox Stretch="Uniform"
-                                             MaxWidth="480">
-                                        <Grid Width="1920"
-                                              Height="1080"
-                                              Background="#FF17222D">
-                                            <ContentControl x:Name="FrameMockupHost"/>
-                                        </Grid>
-                                    </Viewbox>
-                                </Border>
-
-                                <!-- Frame appearance: independent of the toast's ToastShow*
-                                     toggles; drives the FrameShow* bindings in the frame template.
-                                     Labels reuse the generic toast-toggle keys. -->
-                                <WrapPanel Margin="0,0,0,4">
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowHeader}"
-                                              IsChecked="{Binding Persisted.FrameShowHeader}"
-                                              Margin="0,0,14,8"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowName}"
-                                              IsChecked="{Binding Persisted.FrameShowName}"
-                                              Margin="0,0,14,8"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowDescription}"
-                                              IsChecked="{Binding Persisted.FrameShowDescription}"
-                                              Margin="0,0,14,8"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowGameName}"
-                                              IsChecked="{Binding Persisted.FrameShowGameName}"
-                                              Margin="0,0,14,8"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Category}"
-                                              IsChecked="{Binding Persisted.FrameShowCategory}"
-                                              Margin="0,0,14,8"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityBadge}"
-                                              IsChecked="{Binding Persisted.FrameShowRarityBadge}"
-                                              Margin="0,0,14,8"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityPercent}"
-                                              IsChecked="{Binding Persisted.FrameShowRarityPercent}"
-                                              Margin="0,0,14,8"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityGlow}"
-                                              IsChecked="{Binding Persisted.FrameShowRarityGlow}"
-                                              Margin="0,0,14,8"/>
-                                    <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastRarityColoredName}"
-                                              IsChecked="{Binding Persisted.FrameRarityColoredName}"
-                                              Margin="0,0,14,8"/>
-                                </WrapPanel>
-
-                                <WrapPanel>
-                                    <Button x:Name="FramePreviewButton"
-                                            Click="FramePreviewButton_Click"
-                                            Content="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
-                                            Margin="0,0,8,0"/>
-                                </WrapPanel>
-                                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FramePreviewHint}"
-                                           Style="{StaticResource MutedTextStyle}"
-                                           TextWrapping="Wrap"
-                                           Margin="0,6,0,0"/>
-                            </StackPanel>
                         </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Live mockup + appearance toggles (adjacent so the mockup reflects each toggle
+                     without scrolling) + example toast buttons -->
+                <Border Style="{StaticResource SectionBorderStyle}">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_NotesDialog_Preview}"
+                                   Style="{StaticResource SectionHeaderStyle}"
+                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                        <Border Background="{DynamicResource PlayAch.Brush.Surface}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="18"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,10">
+                            <ContentControl x:Name="ToastMockupHost"
+                                            ContentTemplate="{DynamicResource PlayAch.Template.AchievementToast}"/>
+                        </Border>
+
+                        <WrapPanel Margin="0,0,0,4">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowHeader}"
+                                      IsChecked="{Binding Persisted.ToastShowHeader}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowName}"
+                                      IsChecked="{Binding Persisted.ToastShowName}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowDescription}"
+                                      IsChecked="{Binding Persisted.ToastShowDescription}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowGameName}"
+                                      IsChecked="{Binding Persisted.ToastShowGameName}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Category}"
+                                      IsChecked="{Binding Persisted.ToastShowCategory}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityBadge}"
+                                      IsChecked="{Binding Persisted.ToastShowRarityBadge}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityPercent}"
+                                      IsChecked="{Binding Persisted.ToastShowRarityPercent}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityGlow}"
+                                      IsChecked="{Binding Persisted.ToastShowRarityGlow}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastRarityColoredName}"
+                                      IsChecked="{Binding Persisted.ToastRarityColoredName}"
+                                      Margin="0,0,14,8"/>
+                        </WrapPanel>
+
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_ToastPreviewHint}"
+                                   Style="{StaticResource MutedTextStyle}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"/>
+
+                        <WrapPanel>
+                            <Button x:Name="ToastPreviewCommonButton"
+                                    Click="ToastPreviewButton_Click"
+                                    CommandParameter="common"
+                                    Content="{DynamicResource LOCPlayAch_Rarity_Common}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="ToastPreviewUncommonButton"
+                                    Click="ToastPreviewButton_Click"
+                                    CommandParameter="uncommon"
+                                    Content="{DynamicResource LOCPlayAch_Rarity_Uncommon}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="ToastPreviewRareButton"
+                                    Click="ToastPreviewButton_Click"
+                                    CommandParameter="rare"
+                                    Content="{DynamicResource LOCPlayAch_Rarity_Rare}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="ToastPreviewUltraRareButton"
+                                    Click="ToastPreviewButton_Click"
+                                    CommandParameter="ultrarare"
+                                    Content="{DynamicResource LOCPlayAch_Rarity_UltraRare}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="ToastPreviewCapstoneButton"
+                                    Click="ToastPreviewButton_Click"
+                                    CommandParameter="capstone"
+                                    Content="{DynamicResource LOCPlayAch_Completed}"
+                                    Margin="0,0,8,8"/>
+                            <Button x:Name="ToastPreviewFriendButton"
+                                    Click="ToastPreviewButton_Click"
+                                    CommandParameter="friend"
+                                    Content="{DynamicResource LOCPlayAch_Settings_ToastPreviewFriend}"
+                                    Margin="0,0,8,8"/>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Screenshot frame preview + appearance: the 16:9 grid stands in for the
+                     screenshot; the frame template lays out on the same 1080-DIP virtual canvas
+                     the compositor uses, scaled down uniformly. -->
+                <Border Style="{StaticResource SectionBorderStyle}">
+                    <StackPanel>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FrameHeader}"
+                                   Style="{StaticResource SectionHeaderStyle}"
+                                   Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+                        <Border Style="{StaticResource SectionAccentRuleStyle}"/>
+
+                        <Border Background="{DynamicResource PlayAch.Brush.Surface}"
+                                BorderBrush="{DynamicResource PlayAch.Brush.Border}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10"
+                                HorizontalAlignment="Left"
+                                Margin="0,0,0,8">
+                            <Viewbox Stretch="Uniform"
+                                     MaxWidth="480">
+                                <Grid Width="1920"
+                                      Height="1080"
+                                      Background="#FF17222D">
+                                    <ContentControl x:Name="FrameMockupHost"/>
+                                </Grid>
+                            </Viewbox>
+                        </Border>
+
+                        <!-- Frame appearance: independent of the toast's ToastShow*
+                             toggles; drives the FrameShow* bindings in the frame template.
+                             Labels reuse the generic toast-toggle keys. -->
+                        <WrapPanel Margin="0,0,0,4">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowHeader}"
+                                      IsChecked="{Binding Persisted.FrameShowHeader}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowName}"
+                                      IsChecked="{Binding Persisted.FrameShowName}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowDescription}"
+                                      IsChecked="{Binding Persisted.FrameShowDescription}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowGameName}"
+                                      IsChecked="{Binding Persisted.FrameShowGameName}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Category}"
+                                      IsChecked="{Binding Persisted.FrameShowCategory}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityBadge}"
+                                      IsChecked="{Binding Persisted.FrameShowRarityBadge}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityPercent}"
+                                      IsChecked="{Binding Persisted.FrameShowRarityPercent}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityGlow}"
+                                      IsChecked="{Binding Persisted.FrameShowRarityGlow}"
+                                      Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastRarityColoredName}"
+                                      IsChecked="{Binding Persisted.FrameRarityColoredName}"
+                                      Margin="0,0,14,8"/>
+                        </WrapPanel>
+
+                        <WrapPanel>
+                            <Button x:Name="FramePreviewButton"
+                                    Click="FramePreviewButton_Click"
+                                    Content="{DynamicResource LOCPlayAch_Settings_FramePreviewButton}"
+                                    Margin="0,0,8,0"/>
+                        </WrapPanel>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_FramePreviewHint}"
+                                   Style="{StaticResource MutedTextStyle}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
 
