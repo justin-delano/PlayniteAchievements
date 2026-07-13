@@ -352,7 +352,8 @@ namespace PlayniteAchievements.Services
                 Scope = FriendRefreshScope.SelectedGame,
                 PlayniteGameIds = new[] { game.Id },
                 FriendExternalUserIds = friendIds,
-                ForceDefinitionRefresh = true
+                // Polling ticks must be fast: reuse the cached schema and fetch only unlock rows.
+                PreferCachedDefinitions = true
             });
             options.RunProvidersInParallelOverride = false;
 
@@ -393,8 +394,7 @@ namespace PlayniteAchievements.Services
                     new FriendRefreshOptions
                     {
                         Scope = FriendRefreshScope.SelectedGame,
-                        PlayniteGameIds = new[] { game.Id },
-                        ForceDefinitionRefresh = true
+                        PlayniteGameIds = new[] { game.Id }
                     }) ?? new List<FriendRefreshCandidate>();
 
                 foreach (var candidate in candidates)
