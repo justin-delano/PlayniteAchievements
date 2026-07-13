@@ -12,9 +12,9 @@ namespace PlayniteAchievements.Services.Database
         // no cached definitions. Requires a stable ApiName plus a display name; rows a provider could only
         // key as unlock-status (no ApiName/name) are skipped and duplicate ApiNames are collapsed, so this
         // seeds nothing for providers that do not carry definition-quality data in their scrape.
-        // Unlock rows sourced from the Exophase earned-awards JSON endpoint carry only the stable
-        // "exophase:{id}" key and no display text; they can match definitions solely by key, so the
-        // save must wait until the game's definitions exist and have been migrated to stable keys.
+        // Unlock rows sourced from the Exophase earned-awards JSON endpoint carry only stable keys
+        // ("exophase:{id}" plus the platform-native ProviderNativeKey) and no display text; they can
+        // match definitions solely by key.
         public static bool RowsRequireStableKeyedDefinitions(IReadOnlyList<FriendAchievementRow> rows)
         {
             return rows != null &&
@@ -23,12 +23,57 @@ namespace PlayniteAchievements.Services.Database
                                    string.IsNullOrWhiteSpace(row.DisplayName));
         }
 
-        public static bool HasStableKeyedDefinitions(IReadOnlyList<Rows.AchievementDefinitionRow> definitions)
+        // Legacy display-derived Exophase keys ("exophase_...") mean the game's definitions are
+        // still awaiting the stable-id migration; stable-keyed unlock rows cannot match them and
+        // must defer. Definitions keyed by another provider's scheme (Steam apinames, PSN trophy
+        // keys) are NOT migration-pending — those saves proceed and match via the native-key bridge.
+        public static bool HasLegacyExophaseKeyedDefinitions(IEnumerable<string> definitionApiNames)
         {
-            return definitions != null &&
-                   definitions.Count > 0 &&
-                   !definitions.Any(definition =>
-                       definition?.ApiName?.StartsWith("exophase_", StringComparison.OrdinalIgnoreCase) == true);
+            return definitionApiNames != null &&
+                   definitionApiNames.Any(apiName =>
+                       apiName?.StartsWith("exophase_", StringComparison.OrdinalIgnoreCase) == true);
+        }
+
+        // Native-key bridge: an aggregator unlock row carries the platform's native achievement key
+        // (Exophase /earned canonical_id). Definitions written by the platform's own provider may use
+        // that key verbatim (Steam: ApiName == apiname).
+        public static bool MatchesNativeKey(string definitionApiName, string nativeKey)
+        {
+            var definition = definitionApiName?.Trim();
+            var native = nativeKey?.Trim();
+            return !string.IsNullOrEmpty(definition) &&
+                   !string.IsNullOrEmpty(native) &&
+                   string.Equals(definition, native, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // Group-qualified native-key form: PSN definitions are keyed "{group}:{trophyId}" (group
+        // "default" when blank) while Exophase's canonical_id for PSN is the bare trophy id, so the
+        // bridge matches on the "{id}" segment. "exophase:{id}" is the aggregator's own scheme, never
+        // a group-qualified native key, and is excluded. Adjust here if live PSN canonical_id data
+        // shows a different shape.
+        public static bool MatchesGroupQualifiedNativeKey(string definitionApiName, string nativeKey)
+        {
+            var definition = definitionApiName?.Trim();
+            var native = nativeKey?.Trim();
+            if (string.IsNullOrEmpty(definition) || string.IsNullOrEmpty(native))
+            {
+                return false;
+            }
+
+            var separatorIndex = definition.LastIndexOf(':');
+            if (separatorIndex <= 0 || separatorIndex >= definition.Length - 1)
+            {
+                return false;
+            }
+
+            var group = definition.Substring(0, separatorIndex);
+            if (string.Equals(group, "exophase", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var idSegment = definition.Substring(separatorIndex + 1);
+            return string.Equals(idSegment, native, StringComparison.OrdinalIgnoreCase);
         }
 
         public static List<AchievementDetail> BuildDefinitionsFromFriendRows(IEnumerable<FriendAchievementRow> rows)

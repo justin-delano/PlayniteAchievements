@@ -1993,11 +1993,12 @@ namespace PlayniteAchievements.Services.Database
                         }
 
                         // Stable-keyed unlock rows carry no display text and can only match definitions by
-                        // key. Until this game's definitions have been fetched (empty) or migrated off the
-                        // legacy display-derived keys, saving would record a collapsed unlock count; record
-                        // a transient state instead so the candidate retries after the definition refresh.
+                        // key. Defer only while definitions are missing or still carry legacy display-derived
+                        // Exophase keys (migration-pending); definitions keyed by another provider's scheme
+                        // (mapped games serviced by Steam/PSN/...) proceed and match via the native-key bridge.
                         if (SqlNadoCacheBehavior.RowsRequireStableKeyedDefinitions(incomingRows) &&
-                            !SqlNadoCacheBehavior.HasStableKeyedDefinitions(definitions))
+                            (definitions.Count == 0 ||
+                             SqlNadoCacheBehavior.HasLegacyExophaseKeyedDefinitions(definitions.Select(def => def?.ApiName))))
                         {
                             _logger?.Info($"Friend achievements for provider={providerKey}, game={ToProviderGameLogKey(appId, providerGameKey)} " +
                                 "deferred: definitions are missing or still legacy-keyed; awaiting definition migration.");
@@ -2007,6 +2008,18 @@ namespace PlayniteAchievements.Services.Database
 
                         var totalAchievements = definitions.Count;
                         var matchedRows = MapFriendRowsToDefinitions(definitions, incomingRows);
+
+                        // A nonzero unlock list that matches no definition at all is a matching failure
+                        // (mismatched key schemes, stale definitions), never a real state; persisting it
+                        // would write the collapsed unlock counts this pipeline exists to prevent. Record
+                        // a transient state so the candidate retries after definitions heal.
+                        if (matchedRows.Count == 0 && incomingRows.Count > 0 && definitions.Count > 0)
+                        {
+                            _logger?.Warn($"Friend achievements for provider={providerKey}, game={ToProviderGameLogKey(appId, providerGameKey)} " +
+                                $"deferred: none of {incomingRows.Count} unlock row(s) matched {definitions.Count} cached definition(s).");
+                            UpdateFriendOwnershipScrapeState(db, user.Id, game.Id, "transient", "no-definition-match", updatedIso, nowIso);
+                            return;
+                        }
 
                         var cacheKey = BuildFriendCacheKey(providerKey, externalUserId, game);
                         var existingProgress = LoadUserGameProgress(db, user.Id, game.Id, cacheKey);
@@ -3844,6 +3857,31 @@ namespace PlayniteAchievements.Services.Database
                 if (byApiName.Count == 1)
                 {
                     return byApiName[0];
+                }
+            }
+
+            // Native-key bridge: mapped games serviced by the platform's own provider key their
+            // definitions with the platform-native scheme (Steam apinames, PSN "{group}:{trophyId}").
+            // Aggregator rows carry that native key in ProviderNativeKey — match it verbatim first,
+            // then in the group-qualified PSN form. Unique matches only.
+            if (!string.IsNullOrWhiteSpace(row.ProviderNativeKey))
+            {
+                var byNativeKey = definitions
+                    .Where(def => !usedDefinitionIds.Contains(def.Id) &&
+                                  SqlNadoCacheBehavior.MatchesNativeKey(def.ApiName, row.ProviderNativeKey))
+                    .ToList();
+                if (byNativeKey.Count == 1)
+                {
+                    return byNativeKey[0];
+                }
+
+                var byGroupQualifiedKey = definitions
+                    .Where(def => !usedDefinitionIds.Contains(def.Id) &&
+                                  SqlNadoCacheBehavior.MatchesGroupQualifiedNativeKey(def.ApiName, row.ProviderNativeKey))
+                    .ToList();
+                if (byGroupQualifiedKey.Count == 1)
+                {
+                    return byGroupQualifiedKey[0];
                 }
             }
 
