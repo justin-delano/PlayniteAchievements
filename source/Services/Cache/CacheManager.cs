@@ -66,6 +66,7 @@ namespace PlayniteAchievements.Services.Cache
 
         private readonly IPlayniteAPI _api;
         private readonly ILogger _logger;
+        private readonly PlayniteAchievementsPlugin _plugin;
         private readonly CacheStorage _storage;
         private readonly SqlNadoCacheStore _store;
         private readonly LegacyJsonCacheImporter _importer;
@@ -101,12 +102,34 @@ namespace PlayniteAchievements.Services.Cache
         {
             _api = api;
             _logger = logger;
+            _plugin = plugin;
             _storage = new CacheStorage(plugin, logger);
             _store = new SqlNadoCacheStore(plugin, logger, _storage.BaseDir);
             _importer = new LegacyJsonCacheImporter(_storage, _store, logger);
             _diskImageService = diskImageService ?? throw new ArgumentNullException(nameof(diskImageService));
 
             InitializeCacheStartup();
+        }
+
+        // Applies definition ApiName renames to the game's custom data (notes, order, filters,
+        // overrides) so user-authored data follows renamed/rekeyed achievements. Resolved lazily
+        // from the plugin because the custom-data store is wired during plugin initialization.
+        private void ApplyDefinitionRenamesToCustomData(Guid? playniteGameId, Dictionary<string, string> renamedApiNames)
+        {
+            if (renamedApiNames == null || renamedApiNames.Count == 0 ||
+                playniteGameId == null || playniteGameId.Value == Guid.Empty)
+            {
+                return;
+            }
+
+            try
+            {
+                _plugin?.GameCustomDataStore?.RenameAchievementApiNames(playniteGameId.Value, renamedApiNames);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, $"Failed to rewrite custom-data achievement keys for game {playniteGameId}.");
+            }
         }
 
         List<GameAchievementData> ICacheReadOptimizations.LoadAllGameDataFast()
@@ -739,6 +762,8 @@ namespace PlayniteAchievements.Services.Cache
                 var writeTime = DateTime.UtcNow;
                 var providerKey = data?.ProviderKey;
                 var scopeChanged = false;
+                Dictionary<string, string> renamedApiNames = null;
+                Guid? renamedPlayniteGameId = null;
 
                 if (_initializationFailure != null)
                 {
@@ -767,7 +792,8 @@ namespace PlayniteAchievements.Services.Cache
                             toWrite.PlayniteGameId = parsedId;
                         }
 
-                        _store.SaveCurrentUserGameData(normalizedKey, toWrite);
+                        renamedApiNames = _store.SaveCurrentUserGameData(normalizedKey, toWrite);
+                        renamedPlayniteGameId = toWrite.PlayniteGameId;
 
                         scopeChanged = RefreshScopeToken_Locked(clearMemoryOnChange: true);
                         SetMemoryGameData_Locked(normalizedKey, toWrite);
@@ -786,6 +812,10 @@ namespace PlayniteAchievements.Services.Cache
                         ex.Message,
                         ex);
                 }
+
+                // Outside the cache lock: CustomDataChanged handlers are synchronous and may call
+                // back into cache invalidation.
+                ApplyDefinitionRenamesToCustomData(renamedPlayniteGameId, renamedApiNames);
 
                 if (scopeChanged)
                 {
@@ -908,6 +938,7 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.SaveFriendGameDefinition(providerKey, definition);
                 if (result?.Success == true)
                 {
+                    ApplyDefinitionRenamesToCustomData(result.RenamedPlayniteGameId, result.RenamedApiNames);
                     RaiseOrDeferFriendCacheInvalidatedEvent();
                 }
 
@@ -944,6 +975,17 @@ namespace PlayniteAchievements.Services.Cache
                 EnsureReady_Locked("LoadFriendGameDefinitionStates");
                 return _store.LoadFriendGameDefinitionStates(providerKey, providerGameKeys) ??
                        new Dictionary<string, FriendGameDefinitionState>(StringComparer.OrdinalIgnoreCase);
+            }
+        }
+
+        List<string> IFriendCacheManager.LoadLegacyKeyedDefinitionGameKeys(
+            string providerKey,
+            IReadOnlyCollection<string> providerGameKeys)
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("LoadLegacyKeyedDefinitionGameKeys");
+                return _store.LoadLegacyKeyedDefinitionGameKeys(providerKey, providerGameKeys) ?? new List<string>();
             }
         }
 
@@ -1039,6 +1081,7 @@ namespace PlayniteAchievements.Services.Cache
                 var result = _store.SaveFriendGameAchievements(providerKey, externalUserId, providerGameKey, appId, achievements);
                 if (result?.Success == true)
                 {
+                    ApplyDefinitionRenamesToCustomData(result.RenamedPlayniteGameId, result.RenamedApiNames);
                     RaiseOrDeferFriendCacheInvalidatedEvent();
                 }
 
