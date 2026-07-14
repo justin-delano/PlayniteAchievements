@@ -88,6 +88,7 @@ namespace PlayniteAchievements
 
         private readonly BackgroundUpdater _backgroundUpdates;
         private readonly InGameAchievementPoller _inGamePoller;
+        private readonly ActiveGameWindowTracker _windowTracker;
         private readonly ToastNotificationService _toastNotifications;
         private readonly Services.Recording.UnlockRecordingService _unlockRecordings;
 
@@ -392,12 +393,14 @@ namespace PlayniteAchievements
                         _refreshService,
                         _logger,
                         runWithProgressWindow: ShowRefreshProgressControlAndRun);
+                    _windowTracker = new ActiveGameWindowTracker(_logger);
                     _toastNotifications = new ToastNotificationService(
                         PlayniteApi,
                         settings,
                         _logger,
                         () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
-                        GetProcessIdForGame);
+                        GetProcessIdForGame,
+                        _windowTracker);
                     _unlockRecordings = new Services.Recording.UnlockRecordingService(
                         PlayniteApi,
                         settings,
@@ -405,7 +408,8 @@ namespace PlayniteAchievements
                         pluginUserDataPath,
                         GetProcessIdForGame,
                         _toastNotifications,
-                        key => Services.UI.ProviderNotificationPolicy.Resolve(settings?.Persisted, key).Recordings);
+                        key => Services.UI.ProviderNotificationPolicy.Resolve(settings?.Persisted, key).Recordings,
+                        _windowTracker);
                     _inGamePoller = new InGameAchievementPoller(
                         PlayniteApi,
                         settings,
@@ -595,13 +599,24 @@ namespace PlayniteAchievements
         /// </summary>
         private int? GetProcessIdForGame(Guid? gameId)
         {
-            lock (_runningGamesLock)
+            if (gameId.HasValue && gameId.Value != Guid.Empty)
             {
-                if (gameId.HasValue && gameId.Value != Guid.Empty)
+                // The tracker's learned pid (the process owning the game's foreground window)
+                // beats the started pid, which is a dead bootstrapper for launcher-wrapped games.
+                var learnedPid = _windowTracker?.TryGetProcessId(gameId.Value);
+                if (learnedPid.HasValue)
+                {
+                    return learnedPid;
+                }
+
+                lock (_runningGamesLock)
                 {
                     return _startedProcessIds.TryGetValue(gameId.Value, out var pid) ? pid : null;
                 }
+            }
 
+            lock (_runningGamesLock)
+            {
                 return _runningGameOrder.Count > 0 &&
                        _startedProcessIds.TryGetValue(_runningGameOrder[0], out var newestPid)
                     ? newestPid
@@ -651,6 +666,7 @@ namespace PlayniteAchievements
             try
             {
                 TrackStartedGame(args?.Game, args?.StartedProcessId);
+                _windowTracker?.OnGameStarted(args?.Game, args?.StartedProcessId);
                 _libraryProjectionService?.SetGameSessionActive(true);
                 _achievementHotkeyTargetResolver?.NotifyGameStarted(args?.Game);
                 _inGamePoller?.Start(args?.Game);
@@ -667,11 +683,16 @@ namespace PlayniteAchievements
             try
             {
                 UntrackStoppedGame(args?.Game);
+                if (args?.Game != null)
+                {
+                    _windowTracker?.OnGameStopped(args.Game.Id);
+                }
+
                 _libraryProjectionService?.SetGameSessionActive(AnyGameRunning());
                 if (args?.Game != null)
                 {
                     _toastNotifications?.ClearPending(args.Game.Id);
-                    _unlockRecordings?.OnGameStopped(args.Game, ResolveMostRecentRunningGame());
+                    _unlockRecordings?.OnGameStopped(args.Game, ResolveRecordingHandoffGame());
                 }
                 else
                 {
@@ -690,15 +711,26 @@ namespace PlayniteAchievements
         }
 
         /// <summary>
-        /// The most recently started game that is still running (per the tracked start order),
-        /// used as the recording handoff target when the capture-owning game stops.
+        /// The recording handoff target when the capture-owning game stops: the still-running
+        /// game the user last had in the foreground, else the most recently started still-running
+        /// game (per the tracked start order).
         /// </summary>
-        private Game ResolveMostRecentRunningGame()
+        private Game ResolveRecordingHandoffGame()
         {
             List<Guid> order;
             lock (_runningGamesLock)
             {
                 order = _runningGameOrder.ToList();
+            }
+
+            var stableForeground = _windowTracker?.StableForegroundGameId;
+            if (stableForeground.HasValue && order.Contains(stableForeground.Value))
+            {
+                var foregroundGame = PlayniteApi?.Database?.Games?.Get(stableForeground.Value);
+                if (foregroundGame != null)
+                {
+                    return foregroundGame;
+                }
             }
 
             foreach (var gameId in order)
@@ -978,6 +1010,7 @@ namespace PlayniteAchievements
             try { _inGamePoller?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGamePoller"); }
             try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
             try { _unlockRecordings?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockRecordings"); }
+            try { _windowTracker?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowTracker"); }
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
             try { _windowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowService"); }

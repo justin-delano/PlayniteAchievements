@@ -58,6 +58,9 @@ namespace PlayniteAchievements.Services.Recording
         private readonly Func<Guid?, int?> _getGameProcessId;
         private readonly Func<string, bool> _isProviderRecordingEnabled;
         private readonly ToastNotificationService _toastNotifications;
+        // Optional foreground tracker: supplies learned game window handles and drives capture
+        // ownership switches when the user moves between running games.
+        private readonly ActiveGameWindowTracker _windowTracker;
         private readonly UnlockScreenshotService _screenshotService;
         private readonly FfmpegValidationService _validation;
 
@@ -86,7 +89,8 @@ namespace PlayniteAchievements.Services.Recording
             string pluginUserDataPath,
             Func<Guid?, int?> getGameProcessId,
             ToastNotificationService toastNotifications = null,
-            Func<string, bool> isProviderRecordingEnabled = null)
+            Func<string, bool> isProviderRecordingEnabled = null,
+            ActiveGameWindowTracker windowTracker = null)
         {
             _api = api;
             _settings = settings;
@@ -95,6 +99,7 @@ namespace PlayniteAchievements.Services.Recording
             _getGameProcessId = getGameProcessId;
             _toastNotifications = toastNotifications;
             _isProviderRecordingEnabled = isProviderRecordingEnabled;
+            _windowTracker = windowTracker;
             _screenshotService = new UnlockScreenshotService(logger);
             _validation = new FfmpegValidationService(logger);
 
@@ -102,6 +107,11 @@ namespace PlayniteAchievements.Services.Recording
             if (_toastNotifications != null)
             {
                 _toastNotifications.WaveDisplayed += OnToastWaveDisplayed;
+            }
+
+            if (_windowTracker != null)
+            {
+                _windowTracker.StableForegroundGameChanged += OnStableForegroundGameChanged;
             }
         }
 
@@ -225,6 +235,67 @@ namespace PlayniteAchievements.Services.Recording
             }
         }
 
+        /// <summary>
+        /// Follows the user's attention between running games. Same monitor as the current
+        /// capture: cheap switch — the ffmpeg process and rolling buffer are kept and only the
+        /// session's owner flips, so clip gating and cropping immediately target the new game.
+        /// Different monitor: full handoff (fresh session and buffer) since the buffer footage
+        /// shows the wrong screen. The tracker debounces, so alt-tab flicker never lands here.
+        /// </summary>
+        private void OnStableForegroundGameChanged(object sender, StableForegroundGameChangedEventArgs e)
+        {
+            try
+            {
+                if (_disposed || e?.Game == null)
+                {
+                    return;
+                }
+
+                CaptureSession session;
+                lock (_gate)
+                {
+                    session = _session;
+                }
+
+                if (session == null || session.Stopping || session.OwnerGameId == e.Game.Id)
+                {
+                    return;
+                }
+
+                var hwnd = _windowTracker?.TryGetWindowHandle(e.Game.Id) ?? IntPtr.Zero;
+                var newBounds = _screenshotService.TryGetGameMonitorBounds(
+                    hwnd,
+                    _getGameProcessId?.Invoke(e.Game.Id));
+
+                if (session.CaptureHost != null &&
+                    newBounds.HasValue &&
+                    newBounds.Value != session.MonitorBounds)
+                {
+                    _logger?.Info(
+                        $"[Recording] Foreground moved to '{e.Game.Name}' on monitor {newBounds.Value}; restarting capture there.");
+                    OnGameStarted(e.Game);
+                    return;
+                }
+
+                lock (_gate)
+                {
+                    if (!ReferenceEquals(_session, session) || session.Stopping)
+                    {
+                        return;
+                    }
+
+                    session.OwnerGameId = e.Game.Id;
+                    session.GameName = e.Game.Name;
+                }
+
+                _logger?.Info($"[Recording] Capture owner switched to '{e.Game.Name}' (same monitor, no restart).");
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[Recording] Foreground-switch handling failed.");
+            }
+        }
+
         private void StopCurrentSession()
         {
             CaptureSession session;
@@ -273,8 +344,10 @@ namespace PlayniteAchievements.Services.Recording
                 System.Drawing.Rectangle? bounds = null;
                 while (!token.IsCancellationRequested)
                 {
+                    var trackedHwnd = _windowTracker?.TryGetWindowHandle(session.OwnerGameId) ?? IntPtr.Zero;
                     var processId = _getGameProcessId?.Invoke(session.OwnerGameId);
-                    mainWindowResolved = processId.HasValue && ProcessHasMainWindow(processId.Value);
+                    mainWindowResolved = trackedHwnd != IntPtr.Zero ||
+                                         (processId.HasValue && ProcessHasMainWindow(processId.Value));
                     // Give the started process a short grace to open its main window before
                     // falling back to the foreground window's monitor (usually the same monitor
                     // the game is launching on). A later-appearing game window on a different
@@ -284,7 +357,7 @@ namespace PlayniteAchievements.Services.Recording
                                          DateTime.UtcNow < graceDeadline;
                     if (!stillLaunching)
                     {
-                        bounds = _screenshotService.TryGetGameMonitorBounds(processId);
+                        bounds = _screenshotService.TryGetGameMonitorBounds(trackedHwnd, processId);
                         if (bounds.HasValue || DateTime.UtcNow >= deadline)
                         {
                             break;
@@ -409,13 +482,15 @@ namespace PlayniteAchievements.Services.Recording
                 {
                     await Task.Delay(WindowResolvePollMs, token).ConfigureAwait(false);
 
+                    var trackedHwnd = _windowTracker?.TryGetWindowHandle(session.OwnerGameId) ?? IntPtr.Zero;
                     var processId = _getGameProcessId?.Invoke(session.OwnerGameId);
-                    if (!processId.HasValue || !ProcessHasMainWindow(processId.Value))
+                    if (trackedHwnd == IntPtr.Zero &&
+                        (!processId.HasValue || !ProcessHasMainWindow(processId.Value)))
                     {
                         continue;
                     }
 
-                    var resolved = _screenshotService.TryGetGameMonitorBounds(processId);
+                    var resolved = _screenshotService.TryGetGameMonitorBounds(trackedHwnd, processId);
                     if (!resolved.HasValue || resolved.Value == capturedBounds)
                     {
                         return;
@@ -985,8 +1060,9 @@ namespace PlayniteAchievements.Services.Recording
         {
             try
             {
+                var trackedHwnd = _windowTracker?.TryGetWindowHandle(session.OwnerGameId) ?? IntPtr.Zero;
                 var processId = _getGameProcessId?.Invoke(session.OwnerGameId);
-                var client = _screenshotService.TryGetGameWindowBounds(processId);
+                var client = _screenshotService.TryGetGameWindowBounds(trackedHwnd, processId);
                 if (client == null)
                 {
                     return null;
@@ -1459,6 +1535,11 @@ namespace PlayniteAchievements.Services.Recording
             if (_toastNotifications != null)
             {
                 _toastNotifications.WaveDisplayed -= OnToastWaveDisplayed;
+            }
+
+            if (_windowTracker != null)
+            {
+                _windowTracker.StableForegroundGameChanged -= OnStableForegroundGameChanged;
             }
 
             CaptureSession session;
