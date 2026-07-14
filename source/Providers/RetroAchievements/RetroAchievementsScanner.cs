@@ -4,7 +4,6 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
-using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
@@ -499,40 +498,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
         }
 
-        // Plans one default image pair per subset category: (normalized label -> icon/cover URLs).
-        // Base-game achievements keep the game-image fallback; only fetched subsets are passed in.
-        // Dedupe is first-wins by label to match the achievement assignment order above.
-        internal static IReadOnlyList<(string Label, string IconUrl, string CoverUrl)> BuildSubsetImagePlan(
-            IReadOnlyList<(string CategoryLabel, Models.RaGameInfoUserProgress Info)> subsets)
-        {
-            var plan = new List<(string Label, string IconUrl, string CoverUrl)>();
-            if (subsets == null || subsets.Count == 0)
-            {
-                return plan;
-            }
-
-            var seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var subset in subsets)
-            {
-                var iconUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(subset.Info?.ImageIcon);
-                if (iconUrl == null)
-                {
-                    continue;
-                }
-
-                var label = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(subset.CategoryLabel);
-                if (!seenLabels.Add(label))
-                {
-                    continue;
-                }
-
-                var coverUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(subset.Info?.ImageBoxArt);
-                plan.Add((label, iconUrl, coverUrl));
-            }
-
-            return plan;
-        }
-
         // Downloads default category art for subsets to deterministic per-game cache paths.
         // Best-effort: failures never fail the scan. Existing targets are skipped, so re-scans
         // cost nothing.
@@ -552,7 +517,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 return;
             }
 
-            var plan = BuildSubsetImagePlan(subsets);
+            var plan = RetroAchievementsSubsetImagePlanner.BuildSubsetImagePlan(subsets);
             if (plan.Count == 0)
             {
                 return;
