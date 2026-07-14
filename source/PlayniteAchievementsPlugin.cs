@@ -704,8 +704,7 @@ namespace PlayniteAchievements
                         if (selectedGames?.Count == 1)
                         {
                             var game = selectedGames[0];
-                            _logger.Debug($"Populating initial theme data for selected game: {game.Name}");
-                            _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
+                            _logger.Debug($"Requesting initial theme data for selected game: {game.Name}");
                             _settingsViewModel.Settings.SetSelectedGame(game);
                             _themeIntegrationService?.RequestUpdate(game.Id);
                         }
@@ -912,8 +911,6 @@ namespace PlayniteAchievements
                     }
 
                     _themeIntegrationService?.NotifySelectionChanged(game.Id);
-                    // Populate cached single-game data immediately, then let the async pass reconcile if needed.
-                    _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
                     _settingsViewModel.Settings.SetSelectedGame(game);
                     _themeIntegrationService?.RequestUpdate(game.Id);
                 }
