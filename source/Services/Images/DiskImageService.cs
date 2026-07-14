@@ -333,6 +333,38 @@ namespace PlayniteAchievements.Services.Images
             return Path.Combine(_cacheRoot, relativePath);
         }
 
+        // Probes the default category image across supported extensions. Downloads with
+        // decodeSize 0 preserve the source format, so the stored extension follows the
+        // source (e.g. RetroAchievements badges are .png) rather than the canonical .jpg
+        // of the relative path.
+        internal string FindExistingDefaultCategoryImagePath(
+            string gameId,
+            string categoryLabel,
+            CategoryImageKind kind)
+        {
+            var canonicalPath = GetDefaultCategoryImagePath(gameId, categoryLabel, kind);
+            if (string.IsNullOrWhiteSpace(canonicalPath))
+            {
+                return null;
+            }
+
+            if (File.Exists(canonicalPath))
+            {
+                return canonicalPath;
+            }
+
+            foreach (var extension in SupportedImageExtensions)
+            {
+                var candidate = Path.ChangeExtension(canonicalPath, extension);
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
         public bool TryMigrateLegacyAchievementIcon(
             string legacySourceIdentifier,
             string targetPath,
