@@ -1,5 +1,7 @@
 using Playnite.SDK;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Images;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,6 +22,7 @@ namespace PlayniteAchievements.Providers.Steam
 
         private readonly SteamHuntersApiClient _apiClient;
         private readonly ILogger _logger;
+        private readonly Func<DiskImageService> _diskImageServiceResolver;
         private readonly object _cacheLock = new object();
         private readonly Dictionary<int, Task<SteamHuntersAchievementGroupsResponse>> _groupsByAppId =
             new Dictionary<int, Task<SteamHuntersAchievementGroupsResponse>>();
@@ -27,10 +30,12 @@ namespace PlayniteAchievements.Providers.Steam
 
         public SteamHuntersCategoryEnricher(
             SteamHuntersApiClient apiClient,
-            ILogger logger)
+            ILogger logger,
+            Func<DiskImageService> diskImageServiceResolver = null)
         {
             _apiClient = apiClient ?? throw new ArgumentNullException(nameof(apiClient));
             _logger = logger;
+            _diskImageServiceResolver = diskImageServiceResolver;
         }
 
         public void ClearCache()
@@ -47,6 +52,7 @@ namespace PlayniteAchievements.Providers.Steam
             int appId,
             string gameName,
             IList<AchievementDetail> achievements,
+            Guid? playniteGameId,
             CancellationToken cancel)
         {
             if (appId <= 0 || achievements == null || achievements.Count == 0)
@@ -75,6 +81,105 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             ApplyGroups(achievements, response.Groups, response.GroupBy, gameName);
+
+            if (playniteGameId.HasValue && playniteGameId.Value != Guid.Empty)
+            {
+                await DownloadDlcCategoryImagesAsync(playniteGameId.Value, response, cancel)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        // Plans one default image per DLC group: (normalized category label -> dlcAppId).
+        // Base-game and name-only update groups are excluded; they keep the game-image fallback.
+        // Dedupe is first-wins by label to match the assignment order in ApplyGroups.
+        internal static IReadOnlyList<KeyValuePair<string, int>> BuildDlcImagePlan(
+            IList<SteamHuntersAchievementGroup> groups,
+            string groupBy)
+        {
+            var plan = new List<KeyValuePair<string, int>>();
+            if (groups == null || groups.Count == 0)
+            {
+                return plan;
+            }
+
+            var seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var group in groups)
+            {
+                if (group?.DlcAppId == null ||
+                    group.DlcAppId.Value <= 0 ||
+                    !string.Equals(ResolveCategoryType(groupBy, group), DlcCategoryType, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                var label = NormalizeGroupLabel(group);
+                if (label == null || !seenLabels.Add(label))
+                {
+                    continue;
+                }
+
+                plan.Add(new KeyValuePair<string, int>(
+                    AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(label),
+                    group.DlcAppId.Value));
+            }
+
+            return plan;
+        }
+
+        // Downloads default category art for DLC groups to deterministic per-game cache paths.
+        // Best-effort: failures never fail enrichment and never count toward the SteamHunters
+        // fetch backoff. Existing targets are skipped, so re-scans cost nothing.
+        private async Task DownloadDlcCategoryImagesAsync(
+            Guid playniteGameId,
+            SteamHuntersAchievementGroupsResponse response,
+            CancellationToken cancel)
+        {
+            var diskImageService = _diskImageServiceResolver?.Invoke();
+            if (diskImageService == null)
+            {
+                return;
+            }
+
+            var plan = BuildDlcImagePlan(response?.Groups, response?.GroupBy);
+            if (plan.Count == 0)
+            {
+                return;
+            }
+
+            var gameIdText = playniteGameId.ToString("D");
+            foreach (var entry in plan)
+            {
+                cancel.ThrowIfCancellationRequested();
+                var label = entry.Key;
+                var dlcAppId = entry.Value;
+                try
+                {
+                    var iconTarget = diskImageService.GetDefaultCategoryImagePath(
+                        gameIdText, label, CategoryImageKind.Icon);
+                    // decodeSize 0 stores the original bytes: no square crop, original aspect.
+                    await diskImageService.GetOrDownloadIconToPathAsync(
+                        SteamImageUrls.Header(dlcAppId), iconTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+
+                    var coverTarget = diskImageService.GetDefaultCategoryImagePath(
+                        gameIdText, label, CategoryImageKind.Cover);
+                    var coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
+                        SteamImageUrls.Cover(dlcAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                    if (coverResult == null)
+                    {
+                        // Many DLC apps have no library_600x900 asset; reuse the header art.
+                        await diskImageService.GetOrDownloadIconToPathAsync(
+                            SteamImageUrls.Header(dlcAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                    }
+                }
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"[SteamHunters] Default category image download failed for dlcAppId={dlcAppId}.");
+                }
+            }
         }
 
         internal static int ApplyGroups(
