@@ -94,11 +94,10 @@ namespace PlayniteAchievements.Providers.Steam
                         return AuthProbeResult.AlreadyAuthenticated(session.SteamId64);
                     }
 
-                    if (!string.IsNullOrWhiteSpace(session?.SteamId64))
-                    {
-                        PersistSteamUserId(session.SteamId64);
-                    }
-                    else if (session?.HasSteamSessionCookies != true)
+                    // Only clear the persisted ID when no session cookies remain at all.
+                    // An incomplete session (ID without a web API token) must not update
+                    // the persisted identity: it can carry a stale account's ID.
+                    if (session?.HasSteamSessionCookies != true)
                     {
                         PersistSteamUserId(null);
                     }
@@ -195,11 +194,6 @@ namespace PlayniteAchievements.Providers.Steam
 
                 if (session?.IsComplete != true)
                 {
-                    if (!string.IsNullOrWhiteSpace(session?.SteamId64))
-                    {
-                        PersistSteamUserId(session.SteamId64);
-                    }
-
                     progress?.Report(AuthProgressStep.Failed);
                     return AuthProbeResult.Cancelled(windowOpened);
                 }
@@ -376,7 +370,56 @@ namespace PlayniteAchievements.Providers.Steam
                 _logger?.Debug(ex, "[SteamAuth] Failed to read Steam WebView page source.");
             }
 
-            return SteamWebAuthParser.Parse(source, cookieSteamId, hasSessionCookies);
+            var session = SteamWebAuthParser.Parse(source, cookieSteamId, hasSessionCookies);
+            ClearStaleSteamPoweredCookies(view, cookies, session.SteamId64);
+            return session;
+        }
+
+        /// <summary>
+        /// Deletes steampowered.com cookies whose steamLoginSecure identifies a different
+        /// account than the resolved community session. Such cookies survive an account
+        /// switch performed through another login flow (e.g. the Steam library extension)
+        /// and would otherwise keep authenticating requests as the previous account.
+        /// </summary>
+        private void ClearStaleSteamPoweredCookies(
+            IWebView view,
+            IEnumerable<HttpCookie> cookies,
+            string resolvedSteamId64)
+        {
+            if (view == null || cookies == null || string.IsNullOrWhiteSpace(resolvedSteamId64))
+            {
+                return;
+            }
+
+            var staleDomains = cookies
+                .Where(c => c != null &&
+                            !string.IsNullOrWhiteSpace(c.Domain) &&
+                            IsSteamPoweredDomain(c.Domain) &&
+                            c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase))
+                .Select(c => new
+                {
+                    c.Domain,
+                    SteamId = TryExtractSteamId64FromSteamLoginSecure(c.Value)
+                })
+                .Where(c => !string.IsNullOrWhiteSpace(c.SteamId) &&
+                            !string.Equals(c.SteamId, resolvedSteamId64, StringComparison.Ordinal))
+                .Select(c => c.Domain.Trim().TrimStart('.'))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var domain in staleDomains)
+            {
+                try
+                {
+                    _logger?.Info($"[SteamAuth] Clearing stale Steam cookies on '{domain}' (login cookie belongs to a different account than the active session).");
+                    view.DeleteDomainCookies("." + domain);
+                    view.DeleteDomainCookies(domain);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"[SteamAuth] Failed to clear stale Steam cookies on '{domain}'.");
+                }
+            }
         }
 
         /// <summary>
@@ -509,6 +552,20 @@ namespace PlayniteAchievements.Providers.Steam
                    d.EndsWith("steampowered.com", StringComparison.OrdinalIgnoreCase);
         }
 
+        private static bool IsSteamCommunityDomain(string domain)
+        {
+            if (string.IsNullOrWhiteSpace(domain)) return false;
+            var d = domain.Trim().TrimStart('.');
+            return d.EndsWith("steamcommunity.com", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsSteamPoweredDomain(string domain)
+        {
+            if (string.IsNullOrWhiteSpace(domain)) return false;
+            var d = domain.Trim().TrimStart('.');
+            return d.EndsWith("steampowered.com", StringComparison.OrdinalIgnoreCase);
+        }
+
         public static string TryExtractSteamId64FromSteamLoginSecure(string value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -530,10 +587,13 @@ namespace PlayniteAchievements.Providers.Steam
 
         private static string TryExtractSteamId64FromCookies(IEnumerable<HttpCookie> cookies)
         {
+            // Only the steamcommunity.com login cookie identifies the session the
+            // community scrapes run as. Cookies on steampowered.com domains can belong
+            // to a previously logged-in account and must not determine identity.
             var authCookie = cookies?.FirstOrDefault(c =>
                 c != null &&
                 !string.IsNullOrWhiteSpace(c.Domain) &&
-                IsSteamDomain(c.Domain) &&
+                IsSteamCommunityDomain(c.Domain) &&
                 c.Name.Equals("steamLoginSecure", StringComparison.OrdinalIgnoreCase));
 
             return authCookie == null
