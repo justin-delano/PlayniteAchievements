@@ -13,11 +13,18 @@ namespace PlayniteAchievements.Providers.Steam
         internal const string BaseCategoryType = "Base";
         internal const string DlcCategoryType = "DLC";
 
+        // Enrichment is best-effort: bound each request well below the HttpClient timeout so an
+        // unresponsive steamhunters.com cannot stall every game's scan, and stop calling out for
+        // the rest of the session (until ClearCache) after consecutive timeouts.
+        private const int RequestTimeoutSeconds = 8;
+        private const int MaxConsecutiveTimeouts = 2;
+
         private readonly SteamHuntersApiClient _apiClient;
         private readonly ILogger _logger;
         private readonly object _cacheLock = new object();
         private readonly Dictionary<int, Task<SteamHuntersAchievementGroupsResponse>> _groupsByAppId =
             new Dictionary<int, Task<SteamHuntersAchievementGroupsResponse>>();
+        private int _consecutiveTimeouts;
 
         public SteamHuntersCategoryEnricher(
             SteamHuntersApiClient apiClient,
@@ -33,6 +40,8 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 _groupsByAppId.Clear();
             }
+
+            Interlocked.Exchange(ref _consecutiveTimeouts, 0);
         }
 
         public async Task EnrichAsync(
@@ -51,7 +60,7 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 response = await GetGroupsAsync(appId, cancel).ConfigureAwait(false);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
             {
                 throw;
             }
@@ -157,11 +166,47 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 if (!_groupsByAppId.TryGetValue(appId, out var task))
                 {
-                    task = _apiClient.GetAchievementGroupsAsync(appId, cancel);
+                    task = FetchGroupsBoundedAsync(appId, cancel);
                     _groupsByAppId[appId] = task;
                 }
 
                 return task;
+            }
+        }
+
+        private async Task<SteamHuntersAchievementGroupsResponse> FetchGroupsBoundedAsync(
+            int appId,
+            CancellationToken cancel)
+        {
+            if (Volatile.Read(ref _consecutiveTimeouts) >= MaxConsecutiveTimeouts)
+            {
+                return null;
+            }
+
+            using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancel))
+            {
+                timeoutCts.CancelAfter(TimeSpan.FromSeconds(RequestTimeoutSeconds));
+                try
+                {
+                    var response = await _apiClient
+                        .GetAchievementGroupsAsync(appId, timeoutCts.Token)
+                        .ConfigureAwait(false);
+                    Interlocked.Exchange(ref _consecutiveTimeouts, 0);
+                    return response;
+                }
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (OperationCanceledException)
+                {
+                    var timeouts = Interlocked.Increment(ref _consecutiveTimeouts);
+                    var suffix = timeouts >= MaxConsecutiveTimeouts
+                        ? " Skipping SteamHunters enrichment for the rest of this session."
+                        : string.Empty;
+                    _logger?.Warn($"[SteamHunters] Group request timed out after {RequestTimeoutSeconds}s for appId={appId}; category enrichment skipped.{suffix}");
+                    return null;
+                }
             }
         }
 
