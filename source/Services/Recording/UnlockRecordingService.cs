@@ -97,6 +97,7 @@ namespace PlayniteAchievements.Services.Recording
             public string GameName;
             public DateTime CaptureStartUtc;
             public FfmpegProcessHost CaptureHost;
+            public AudioLoopbackRecorder AudioRecorder;
             public CancellationTokenSource Cts;
             public Timer PruneTimer;
             public int RestartCount;
@@ -277,6 +278,21 @@ namespace PlayniteAchievements.Services.Recording
                     return;
                 }
 
+                if (persisted.RecordingIncludeAudio)
+                {
+                    // Best-effort: a recorder that fails to start is dropped and the clips stay
+                    // video-only (the recorder logs its own warning).
+                    var recorder = new AudioLoopbackRecorder(session.BufferDirectory, _logger);
+                    if (recorder.Start())
+                    {
+                        session.AudioRecorder = recorder;
+                    }
+                    else
+                    {
+                        recorder.Dispose();
+                    }
+                }
+
                 session.PruneTimer = new Timer(
                     _ => PruneTick(session),
                     null,
@@ -366,6 +382,9 @@ namespace PlayniteAchievements.Services.Recording
                     await host.StopGracefullyAsync(TimeSpan.FromSeconds(StopGraceSeconds)).ConfigureAwait(false);
                 }
 
+                // Close the current audio chunk before pending clips read the buffer.
+                session.AudioRecorder?.Stop();
+
                 // Toasts queued for this session were just cleared; produce any still-pending
                 // clips with the no-toast end anchor before the buffer goes away.
                 List<ClipRequest> pending;
@@ -395,6 +414,8 @@ namespace PlayniteAchievements.Services.Recording
 
                 host?.Dispose();
                 session.CaptureHost = null;
+                session.AudioRecorder?.Dispose();
+                session.AudioRecorder = null;
                 lock (_gate)
                 {
                     _inFlightByWindow.Clear();
@@ -634,7 +655,12 @@ namespace PlayniteAchievements.Services.Recording
                 await Task.Delay(wait).ConfigureAwait(false);
             }
 
-            var segments = SegmentTimeline.ParseSegments(ListSegments(session.BufferDirectory), TimeZoneInfo.Local);
+            var segments = SegmentTimeline.ParseSegments(
+                ListBufferFiles(
+                    session.BufferDirectory,
+                    RecordingCommandBuilder.SegmentFilePrefix,
+                    RecordingCommandBuilder.SegmentFileExtension),
+                TimeZoneInfo.Local);
             var plan = SegmentTimeline.PlanClip(segments, windowStart, windowEnd, SegmentSeconds);
             if (plan == null)
             {
@@ -642,23 +668,65 @@ namespace PlayniteAchievements.Services.Recording
                 return null;
             }
 
-            LogRecordingTiming(session, request, toastShownUtc, windowStart, windowEnd, plan.Segments.Count);
+            // Audio rides the same window: plan the loopback WAV chunks over it and fall back to
+            // video-only whenever the recorder never ran or no chunk overlaps.
+            SegmentTimeline.ClipPlan audioPlan = null;
+            if (session.AudioRecorder != null)
+            {
+                var audioChunks = SegmentTimeline.ParseSegments(
+                    ListBufferFiles(
+                        session.BufferDirectory,
+                        RecordingCommandBuilder.AudioChunkFilePrefix,
+                        RecordingCommandBuilder.AudioChunkFileExtension),
+                    TimeZoneInfo.Local,
+                    RecordingCommandBuilder.AudioChunkFilePrefix,
+                    RecordingCommandBuilder.AudioChunkFileExtension);
+                audioPlan = SegmentTimeline.PlanClip(audioChunks, windowStart, windowEnd, SegmentSeconds);
+            }
+
+            LogRecordingTiming(session, request, toastShownUtc, windowStart, windowEnd, plan.Segments.Count, audioPlan != null);
 
             var listPath = Path.Combine(session.BufferDirectory, $"clip_{Guid.NewGuid():N}.txt");
+            var audioListPath = audioPlan != null
+                ? Path.Combine(session.BufferDirectory, $"clipaud_{Guid.NewGuid():N}.txt")
+                : null;
             var tempPath = Path.Combine(session.BufferDirectory, $"clip_{Guid.NewGuid():N}.mp4");
             try
             {
                 File.WriteAllText(
                     listPath,
                     RecordingCommandBuilder.BuildConcatListContent(plan.Segments.Select(s => s.Path)));
+                if (audioPlan != null)
+                {
+                    File.WriteAllText(
+                        audioListPath,
+                        RecordingCommandBuilder.BuildConcatListContent(audioPlan.Segments.Select(s => s.Path)));
+                }
 
                 // Stream-copy first (near-zero CPU while the game runs); one re-encode retry when
                 // the copy fails or produces an empty file.
-                var ok = await RunTrimAsync(session, listPath, plan, tempPath, reencode: false).ConfigureAwait(false);
+                var ok = await RunTrimAsync(session, listPath, plan, audioListPath, audioPlan, tempPath, reencode: false)
+                    .ConfigureAwait(false);
                 if (!ok)
                 {
                     TryDeleteFile(tempPath);
-                    ok = await RunTrimAsync(session, listPath, plan, tempPath, reencode: true).ConfigureAwait(false);
+                    ok = await RunTrimAsync(session, listPath, plan, audioListPath, audioPlan, tempPath, reencode: true)
+                        .ConfigureAwait(false);
+                }
+
+                if (!ok && audioPlan != null)
+                {
+                    // Audio must never cost the clip: retry the whole ladder without it.
+                    _logger?.Debug($"[Recording] Clip export with audio failed for '{request.AchievementName}'; retrying video-only.");
+                    TryDeleteFile(tempPath);
+                    ok = await RunTrimAsync(session, listPath, plan, null, null, tempPath, reencode: false)
+                        .ConfigureAwait(false);
+                    if (!ok)
+                    {
+                        TryDeleteFile(tempPath);
+                        ok = await RunTrimAsync(session, listPath, plan, null, null, tempPath, reencode: true)
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 if (!ok)
@@ -674,6 +742,11 @@ namespace PlayniteAchievements.Services.Recording
             finally
             {
                 TryDeleteFile(listPath);
+                if (audioListPath != null)
+                {
+                    TryDeleteFile(audioListPath);
+                }
+
                 TryDeleteFile(tempPath);
             }
         }
@@ -682,6 +755,8 @@ namespace PlayniteAchievements.Services.Recording
             CaptureSession session,
             string listPath,
             SegmentTimeline.ClipPlan plan,
+            string audioListPath,
+            SegmentTimeline.ClipPlan audioPlan,
             string tempPath,
             bool reencode)
         {
@@ -690,7 +765,9 @@ namespace PlayniteAchievements.Services.Recording
                 plan.StartOffsetSeconds,
                 plan.DurationSeconds,
                 tempPath,
-                reencode);
+                reencode,
+                audioListPath,
+                audioPlan?.StartOffsetSeconds ?? 0);
             using (var host = new FfmpegProcessHost(session.FfmpegPath, arguments, _logger))
             {
                 if (!host.Start(EnsureJobObject()))
@@ -728,7 +805,8 @@ namespace PlayniteAchievements.Services.Recording
             DateTime? toastShownUtc,
             DateTime windowStart,
             DateTime windowEnd,
-            int segmentCount)
+            int segmentCount,
+            bool hasAudio)
         {
             try
             {
@@ -746,7 +824,7 @@ namespace PlayniteAchievements.Services.Recording
                     $"[RecordingTiming] unlock={unlockText} detected={Stamp(request.DetectionUtc)} " +
                     $"(unlock→detect {unlockToDetect}s) toastShown={toastText} (detect→toast {detectToToast}s) " +
                     $"window=[{Stamp(windowStart)}..{Stamp(windowEnd)}] ({(windowEnd - windowStart).TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)}s) " +
-                    $"segments={segmentCount}");
+                    $"segments={segmentCount} audio={(hasAudio ? "yes" : "no")}");
 
                 // Verification: the toast (plus tail) must sit inside the clip window.
                 if (toastShownUtc.HasValue && toastShownUtc.Value.AddSeconds(SegmentTimeline.TailSeconds) > windowEnd)
@@ -819,7 +897,12 @@ namespace PlayniteAchievements.Services.Recording
             {
                 var persisted = _settings?.Persisted;
                 var pollInterval = Math.Max(10, persisted?.InGamePollIntervalSeconds ?? 15);
-                var segments = SegmentTimeline.ParseSegments(ListSegments(session.BufferDirectory), TimeZoneInfo.Local);
+                var segments = SegmentTimeline.ParseSegments(
+                    ListBufferFiles(
+                        session.BufferDirectory,
+                        RecordingCommandBuilder.SegmentFilePrefix,
+                        RecordingCommandBuilder.SegmentFileExtension),
+                    TimeZoneInfo.Local);
                 var prunable = SegmentTimeline.SelectPrunable(
                     segments,
                     pollInterval,
@@ -829,6 +912,26 @@ namespace PlayniteAchievements.Services.Recording
                 foreach (var segment in prunable)
                 {
                     TryDeleteFile(segment.Path);
+                }
+
+                // Audio chunks share the retention policy (their bytes are negligible next to
+                // the video's, so reusing the same cap is safe).
+                var audioChunks = SegmentTimeline.ParseSegments(
+                    ListBufferFiles(
+                        session.BufferDirectory,
+                        RecordingCommandBuilder.AudioChunkFilePrefix,
+                        RecordingCommandBuilder.AudioChunkFileExtension),
+                    TimeZoneInfo.Local,
+                    RecordingCommandBuilder.AudioChunkFilePrefix,
+                    RecordingCommandBuilder.AudioChunkFileExtension);
+                foreach (var chunk in SegmentTimeline.SelectPrunable(
+                             audioChunks,
+                             pollInterval,
+                             persisted?.RecordingClipSeconds ?? 15,
+                             SegmentSeconds,
+                             MaxBufferBytes))
+                {
+                    TryDeleteFile(chunk.Path);
                 }
 
                 if (!HasFreeSpace(session.BufferDirectory, MinFreeBytesToContinue))
@@ -851,7 +954,10 @@ namespace PlayniteAchievements.Services.Recording
             }
         }
 
-        private static IEnumerable<(string Path, long SizeBytes)> ListSegments(string bufferDirectory)
+        private static IEnumerable<(string Path, long SizeBytes)> ListBufferFiles(
+            string bufferDirectory,
+            string prefix,
+            string extension)
         {
             var result = new List<(string, long)>();
             try
@@ -861,9 +967,7 @@ namespace PlayniteAchievements.Services.Recording
                     return result;
                 }
 
-                foreach (var file in Directory.GetFiles(
-                             bufferDirectory,
-                             RecordingCommandBuilder.SegmentFilePrefix + "*" + RecordingCommandBuilder.SegmentFileExtension))
+                foreach (var file in Directory.GetFiles(bufferDirectory, prefix + "*" + extension))
                 {
                     long size = 0;
                     try
@@ -1100,6 +1204,7 @@ namespace PlayniteAchievements.Services.Recording
 
                 session.PruneTimer?.Dispose();
                 session.CaptureHost?.Dispose();
+                session.AudioRecorder?.Dispose();
             }
 
             // Closing the job object kills any ffmpeg process that somehow survived disposal.
