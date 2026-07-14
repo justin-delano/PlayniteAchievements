@@ -70,5 +70,19 @@ namespace PlayniteAchievements.Tests.Common
         {
             Assert.AreEqual(RelativeDateBucket.LongAgo, RelativeDateFormatter.GetBucket(new DateTime(2025, 6, 15), Now));
         }
+
+        [TestMethod]
+        public void GetYearsAgo_PriorCalendarYear_ReturnsOne()
+        {
+            // Calendar-year difference, consistent with the bucketing: late December of the
+            // prior year is still "1 year ago" in early January.
+            Assert.AreEqual(1, RelativeDateFormatter.GetYearsAgo(new DateTime(2025, 12, 31), new DateTime(2026, 1, 1)));
+        }
+
+        [TestMethod]
+        public void GetYearsAgo_SeveralYearsBack_ReturnsCalendarYearDifference()
+        {
+            Assert.AreEqual(8, RelativeDateFormatter.GetYearsAgo(new DateTime(2018, 6, 15), Now));
+        }
     }
 }

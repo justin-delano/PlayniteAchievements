@@ -63,19 +63,20 @@ namespace PlayniteAchievements.Common
         }
 
         /// <summary>
+        /// Number of whole calendar years between <paramref name="localValue"/> and <paramref name="localNow"/>;
+        /// 1 for any date in the immediately prior calendar year, matching the calendar-based bucketing.
+        /// </summary>
+        public static int GetYearsAgo(DateTime localValue, DateTime localNow)
+        {
+            return localNow.Year - localValue.Year;
+        }
+
+        /// <summary>
         /// Returns the localized label for <paramref name="localValue"/> relative to <paramref name="localNow"/>.
         /// </summary>
         public static string ToRelativeLabel(DateTime localValue, DateTime localNow)
         {
-            return GetLabel(GetBucket(localValue, localNow));
-        }
-
-        /// <summary>
-        /// Resolves the localized label for a bucket via the plugin resource dictionary.
-        /// </summary>
-        public static string GetLabel(RelativeDateBucket bucket)
-        {
-            switch (bucket)
+            switch (GetBucket(localValue, localNow))
             {
                 case RelativeDateBucket.Today:
                     return ResourceProvider.GetString("LOCPlayAch_Common_Date_Today");
@@ -88,7 +89,10 @@ namespace PlayniteAchievements.Common
                 case RelativeDateBucket.ThisYear:
                     return ResourceProvider.GetString("LOCPlayAch_Common_Date_ThisYear");
                 default:
-                    return ResourceProvider.GetString("LOCPlayAch_Common_Date_LongAgo");
+                    var years = GetYearsAgo(localValue, localNow);
+                    return years == 1
+                        ? ResourceProvider.GetString("LOCPlayAch_Common_Date_OneYearAgo")
+                        : string.Format(CultureInfo.CurrentCulture, ResourceProvider.GetString("LOCPlayAch_Common_Date_YearsAgo"), years);
             }
         }
 

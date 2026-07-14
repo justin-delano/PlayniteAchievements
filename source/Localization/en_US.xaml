@@ -64,7 +64,8 @@
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisWeek">This Week</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisMonth">This Month</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisYear">This Year</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_LongAgo">Long ago</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">1 year ago</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_YearsAgo">{0} years ago</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_View">View</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">Completed</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Counts">{0}/{1}</sys:String>
