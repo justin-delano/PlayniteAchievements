@@ -309,7 +309,7 @@ namespace PlayniteAchievements.Providers.Steam
                     gameData.Achievements.Add(detail);
                 }
 
-                await EnrichSteamHuntersCategoriesAsync(appId, gameData.GameName, gameData.Achievements, cancel).ConfigureAwait(false);
+                await EnrichSteamHuntersCategoriesAsync(appId, gameData.GameName, gameData.Achievements, gameData.PlayniteGameId, cancel).ConfigureAwait(false);
             }
 
             return gameData;
@@ -319,6 +319,7 @@ namespace PlayniteAchievements.Providers.Steam
             int appId,
             string gameName,
             IList<AchievementDetail> achievements,
+            Guid? playniteGameId,
             CancellationToken cancel)
         {
             if (_steamHuntersCategoryEnricher == null ||
@@ -327,7 +328,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return Task.CompletedTask;
             }
 
-            return _steamHuntersCategoryEnricher.EnrichAsync(appId, gameName, achievements, cancel);
+            return _steamHuntersCategoryEnricher.EnrichAsync(appId, gameName, achievements, playniteGameId, cancel);
         }
 
         private static bool ShouldUseSteamHuntersForCategories()
