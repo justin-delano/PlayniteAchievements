@@ -84,26 +84,38 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (playniteGameId.HasValue && playniteGameId.Value != Guid.Empty)
             {
-                await DownloadDlcCategoryImagesAsync(playniteGameId.Value, response, gameName, cancel)
+                await DownloadCategoryCoverImagesAsync(playniteGameId.Value, response, gameName, appId, cancel)
                     .ConfigureAwait(false);
             }
         }
 
-        // Plans one default image per DLC group: (normalized category label -> dlcAppId).
-        // Base-game and name-only update groups are excluded; they keep the game-image fallback.
-        // Dedupe is first-wins by label to match the assignment order in ApplyGroups.
-        internal static IReadOnlyList<KeyValuePair<string, int>> BuildDlcImagePlan(
+        // Plans one default cover per category: (normalized category label -> Steam appId).
+        // The base category maps to the game's own appId; DLC groups map to their dlcAppId.
+        // Name-only update groups are excluded; they keep the game-image fallback.
+        // Dedupe is first-wins by label to match the assignment order in ApplyGroups, with
+        // the base entry first so a DLC label colliding with the game name cannot hijack it.
+        internal static IReadOnlyList<KeyValuePair<string, int>> BuildCategoryImagePlan(
             IList<SteamHuntersAchievementGroup> groups,
             string groupBy,
-            string gameName = null)
+            string gameName = null,
+            int appId = 0)
         {
             var plan = new List<KeyValuePair<string, int>>();
+            var seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var baseLabel = string.IsNullOrWhiteSpace(gameName) ? null : gameName.Trim();
+            if (baseLabel != null && appId > 0 && seenLabels.Add(baseLabel))
+            {
+                plan.Add(new KeyValuePair<string, int>(
+                    AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(baseLabel),
+                    appId));
+            }
+
             if (groups == null || groups.Count == 0)
             {
                 return plan;
             }
 
-            var seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var group in groups)
             {
                 if (group?.DlcAppId == null ||
@@ -127,13 +139,16 @@ namespace PlayniteAchievements.Providers.Steam
             return plan;
         }
 
-        // Downloads default category art for DLC groups to deterministic per-game cache paths.
-        // Best-effort: failures never fail enrichment and never count toward the SteamHunters
-        // fetch backoff. Existing targets are skipped, so re-scans cost nothing.
-        private async Task DownloadDlcCategoryImagesAsync(
+        // Downloads default category cover art (base game + DLC groups) to deterministic
+        // per-game cache paths. Only the cover slot gets provider art; the icon slot always
+        // falls back to Playnite game metadata. Best-effort: failures never fail enrichment
+        // and never count toward the SteamHunters fetch backoff. Existing targets are
+        // skipped, so re-scans cost nothing.
+        private async Task DownloadCategoryCoverImagesAsync(
             Guid playniteGameId,
             SteamHuntersAchievementGroupsResponse response,
             string gameName,
+            int appId,
             CancellationToken cancel)
         {
             var diskImageService = _diskImageServiceResolver?.Invoke();
@@ -142,7 +157,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return;
             }
 
-            var plan = BuildDlcImagePlan(response?.Groups, response?.GroupBy, gameName);
+            var plan = BuildCategoryImagePlan(response?.Groups, response?.GroupBy, gameName, appId);
             if (plan.Count == 0)
             {
                 return;
@@ -153,24 +168,19 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 cancel.ThrowIfCancellationRequested();
                 var label = entry.Key;
-                var dlcAppId = entry.Value;
+                var entryAppId = entry.Value;
                 try
                 {
-                    var iconTarget = diskImageService.GetDefaultCategoryImagePath(
-                        gameIdText, label, CategoryImageKind.Icon);
-                    // decodeSize 0 stores the original bytes: no square crop, original aspect.
-                    await diskImageService.GetOrDownloadIconToPathAsync(
-                        SteamImageUrls.Header(dlcAppId), iconTarget, decodeSize: 0, cancel).ConfigureAwait(false);
-
                     var coverTarget = diskImageService.GetDefaultCategoryImagePath(
                         gameIdText, label, CategoryImageKind.Cover);
+                    // decodeSize 0 stores the original bytes: no square crop, original aspect.
                     var coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
-                        SteamImageUrls.Cover(dlcAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                        SteamImageUrls.Cover(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     if (coverResult == null)
                     {
                         // Many DLC apps have no library_600x900 asset; reuse the header art.
                         await diskImageService.GetOrDownloadIconToPathAsync(
-                            SteamImageUrls.Header(dlcAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                            SteamImageUrls.Header(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) when (cancel.IsCancellationRequested)
@@ -179,7 +189,7 @@ namespace PlayniteAchievements.Providers.Steam
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, $"[SteamHunters] Default category image download failed for dlcAppId={dlcAppId}.");
+                    _logger?.Debug(ex, $"[SteamHunters] Default category cover download failed for appId={entryAppId}.");
                 }
             }
         }
