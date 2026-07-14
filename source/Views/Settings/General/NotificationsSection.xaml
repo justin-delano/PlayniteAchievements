@@ -321,6 +321,14 @@
                                 </ComboBox>
                             </Grid>
 
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RecordingIncludeAudio}"
+                                      IsChecked="{Binding Persisted.RecordingIncludeAudio}"
+                                      Margin="0,10,0,0"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecordingIncludeAudioHint}"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0"/>
+
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RecordingHint}"
                                        Style="{StaticResource MutedTextStyle}"
                                        TextWrapping="Wrap"
