@@ -566,7 +566,7 @@
                                                 Style="{StaticResource PreviewBorderStyle}">
                                             <Image Stretch="Uniform"
                                                    helpers:AsyncImage.Uri="{Binding IconPreviewPath}"
-                                                   helpers:AsyncImage.DecodePixel="176" />
+                                                   helpers:AsyncImage.DecodePixel="-1" />
                                         </Border>
 
                                         <Grid Grid.Column="1"
@@ -624,7 +624,7 @@
                                                 Style="{StaticResource PreviewBorderStyle}">
                                             <Image Stretch="Uniform"
                                                    helpers:AsyncImage.Uri="{Binding CoverPreviewPath}"
-                                                   helpers:AsyncImage.DecodePixel="176" />
+                                                   helpers:AsyncImage.DecodePixel="-1" />
                                         </Border>
 
                                         <Grid Grid.Column="1"
