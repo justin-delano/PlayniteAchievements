@@ -591,6 +591,7 @@ namespace PlayniteAchievements
             try
             {
                 _startedProcessId = args?.StartedProcessId;
+                _libraryProjectionService?.SetGameSessionActive(true);
                 _achievementHotkeyTargetResolver?.NotifyGameStarted(args?.Game);
                 _inGamePoller?.Start(args?.Game);
                 _unlockRecordings?.OnGameStarted(args?.Game);
@@ -606,6 +607,7 @@ namespace PlayniteAchievements
             try
             {
                 _startedProcessId = null;
+                _libraryProjectionService?.SetGameSessionActive(false);
                 _toastNotifications?.ClearPending();
                 _unlockRecordings?.OnGameStopped();
                 _achievementHotkeyTargetResolver?.NotifyGameStopped(args?.Game);
