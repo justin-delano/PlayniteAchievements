@@ -9,6 +9,10 @@ namespace PlayniteAchievements.Services.Images
     // exists. Defaults sit below user overrides and above the game icon/cover fallback.
     internal static class CategoryDefaultImageResolver
     {
+        // Set by the plugin at startup. An accessor rather than a direct plugin reference keeps
+        // this file compilable in the test project, which does not include the plugin entry point.
+        internal static Func<DiskImageService> DiskImageServiceAccessor { get; set; }
+
         public static string Resolve(Guid? playniteGameId, string categoryLabel, CategoryImageKind kind)
         {
             if (!playniteGameId.HasValue || playniteGameId.Value == Guid.Empty)
@@ -25,7 +29,7 @@ namespace PlayniteAchievements.Services.Images
                 return null;
             }
 
-            var diskImageService = PlayniteAchievementsPlugin.Instance?.DiskImageService;
+            var diskImageService = DiskImageServiceAccessor?.Invoke();
             if (diskImageService == null)
             {
                 return null;
