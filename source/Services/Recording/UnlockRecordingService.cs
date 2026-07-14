@@ -43,6 +43,9 @@ namespace PlayniteAchievements.Services.Recording
         private const int WindowResolvePollMs = 2000;
         private const int ToastWaitTimeoutSeconds = 30;
         private const int ToastWaitPollSeconds = 5;
+        // Longest detection-to-toast gap a clip's end anchor may honor; later toasts fall back to
+        // the detection anchor so queued/held toast waves can't stretch clips indefinitely.
+        private const int MaxToastAnchorDelaySeconds = 30;
         private const int MaxCaptureRestarts = 3;
         private const int RestartBackoffSeconds = 5;
         private const int PruneIntervalSeconds = 30;
@@ -854,6 +857,18 @@ namespace PlayniteAchievements.Services.Recording
 
         private void StartClipProduction(ClipRequest request, DateTime? toastShownUtc)
         {
+            // A toast can display long after detection (queued behind a burst of other waves, or
+            // held until the game regains focus). Footage between detection and such a late toast
+            // is unrelated gameplay that only bloats the clip, so a too-late toast falls back to
+            // the detection anchor instead of stretching the clip to a minute or more.
+            if (toastShownUtc.HasValue &&
+                (toastShownUtc.Value - request.DetectionUtc).TotalSeconds > MaxToastAnchorDelaySeconds)
+            {
+                _logger?.Debug(
+                    $"[Recording] Toast for '{request.AchievementName}' displayed {(toastShownUtc.Value - request.DetectionUtc).TotalSeconds:F0}s after detection; anchoring the clip on detection instead.");
+                toastShownUtc = null;
+            }
+
             var task = Task.Run(() => ProduceClipAsync(request, toastShownUtc));
             lock (_gate)
             {
