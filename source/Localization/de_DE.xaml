@@ -59,11 +59,11 @@
     <sys:String x:Key="LOCPlayAch_Common_Unknown">Unknown</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Unlocked">Freischaltung</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_UnlockedCount">Anzahl freigeschaltet</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_Today">Today</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_Yesterday">Yesterday</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_ThisWeek">This Week</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_ThisMonth">This Month</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_ThisYear">This Year</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_Today">Heute</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_Yesterday">Gestern</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_ThisWeek">Diese Woche</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_ThisMonth">Diesen Monat</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_ThisYear">Dieses Jahr</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_LongAgo">Long ago</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_View">Ansehen</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">Vervollständigt</sys:String>
@@ -99,21 +99,21 @@
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Column_Icon">Symbol</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Avatar">Avatar</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Accounts">Accounts</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Accounts">Konten</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Status">Status</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Cover">Cover</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Achievement">Erfolg</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AppId">ID</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">Collection Level</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Friend">Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CollectionLevel">Sammelstufe</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Friend">Freund</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Game">Spiel</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_SharedGames">Games</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_SharedGames">Spiele</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Unlocks">Unlocks</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Ignore">Ignore</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_LastPlayed">Gespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Name">Name</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Points">Punkte</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_PrestigeLevel">Prestige Level</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_PrestigeLevel">Prestigestufe</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Rarity">Seltenheit</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_AchievementName">Erfolgstitel</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_RarityTier">Seltenheitsstufe</sys:String>
@@ -123,30 +123,30 @@
     <sys:String x:Key="LOCPlayAch_Column_UnlockToasts">Unlock toasts</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_FriendToasts">Friend toasts</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">Screenshots</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Recordings">Recordings</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_CategoryIcon">Category Icon</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Recordings">Aufnahmen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CategoryIcon">Kategoriesymbol</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
     <!-- ================================================================= -->
-    <sys:String x:Key="LOCPlayAch_Button_Add">Add</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Add">Hinzufügen</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Apply">Anwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Browse">Durchsuchen</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Cancel">Abbrechen</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Clear">Entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Configure">Konfigurieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Login">Anmelden</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Remove">Remove</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Remove">Entfernen</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Next">Weiter</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Ok">OK</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Pick">Pick</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Pick">Auswählen</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Refresh">Aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Reset">Zurücksetzen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_ResetAll">Reset all</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Run">Run</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_ResetAll">Alle zurücksetzen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Run">Ausführen</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Save">Speichern</sys:String>
     <sys:String x:Key="LOCPlayAch_Button_Search">Suche</sys:String>
-    <sys:String x:Key="LOCPlayAch_Button_Test">Test</sys:String>
+    <sys:String x:Key="LOCPlayAch_Button_Test">Testen</sys:String>
 
     <!-- ================================================================= -->
     <!-- 05 Provider Names -->
@@ -201,7 +201,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInLibrary">In Bibliothek anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenOverview">Erfolgsübersicht</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_OpenGameInOverview">In Übersicht anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">Ignore Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend">Freund ignorieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_UnignoreFriend">Unignore Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_IgnoreFriend_Confirm">Ignore {0}? Their cached friend achievement data will be deleted and they will be skipped during friend refreshes.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_ClearFriend">Clear Friend</sys:String>
@@ -215,7 +215,7 @@ This will remove the game from the achievements view, delete its cached data, an
     <sys:String x:Key="LOCPlayAch_Menu_PsnNpCommId_InvalidId">Please enter a valid PSN NP Communication ID such as NPWR12345_00.</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_XboxTitleId_InvalidId">Please enter a valid Xbox Title ID (8-character hex or decimal).</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshGame">Erfolgsdaten aktualisieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Refresh Friend</sys:String>
+    <sys:String x:Key="LOCPlayAch_Menu_RefreshFriend">Freund aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshInProgress">[Aktualisierung läuft]</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_RefreshSelected">Erfolgsdaten der ausgewählten Spiele aktualisieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Menu_SetCapstone">Als Vollendungserfolg festlegen</sys:String>
