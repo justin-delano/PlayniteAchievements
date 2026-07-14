@@ -1102,6 +1102,40 @@ namespace PlayniteAchievements.Services.Images.Tests
             Assert.IsTrue(copyTarget.SeparateLockedIconEnabledGameIds.Contains(gameId));
         }
 
+        [TestMethod]
+        public void FindExistingDefaultCategoryImagePath_ProbesSourceFormatExtensions()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var gameId = Guid.NewGuid().ToString("D");
+
+                Assert.IsNull(diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus", CategoryImageKind.Icon));
+
+                // decodeSize 0 downloads keep the source extension, so a .png source lands
+                // beside the canonical .jpg path with its extension swapped.
+                var canonicalPath = diskImageService.GetDefaultCategoryImagePath(
+                    gameId, "Bonus", CategoryImageKind.Icon);
+                var pngPath = Path.ChangeExtension(canonicalPath, ".png");
+                WritePlaceholderFile(pngPath);
+
+                Assert.AreEqual(pngPath, diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus", CategoryImageKind.Icon));
+
+                // The canonical .jpg wins when both exist.
+                WritePlaceholderFile(canonicalPath);
+                Assert.AreEqual(canonicalPath, diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus", CategoryImageKind.Icon));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
         private static string CreateTempDirectory()
         {
             var path = Path.Combine(Path.GetTempPath(), "PlayniteAchievementsTests", Guid.NewGuid().ToString("N"));
