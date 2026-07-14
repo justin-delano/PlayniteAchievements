@@ -8,14 +8,40 @@ namespace PlayniteAchievements.Tests.Providers
     [TestClass]
     public class RetroAchievementsCategoryImagePlannerTests
     {
-        private static IReadOnlyList<(string Label, string IconUrl, string CoverUrl)> Plan(
-            params (string CategoryLabel, RaGameInfoUserProgress Info)[] subsets)
+        private static IReadOnlyList<(string Label, string IconUrl)> Plan(
+            params (string CategoryLabel, RaGameInfoUserProgress Info)[] sources)
         {
-            return RetroAchievementsCategoryImagePlanner.BuildCategoryImagePlan(subsets);
+            return RetroAchievementsCategoryImagePlanner.BuildCategoryImagePlan(sources);
         }
 
         [TestMethod]
-        public void BuildCategoryImagePlan_NormalizesRelativeImagePathsToAbsoluteUrls()
+        public void BuildCategoryImagePlan_NormalizesRelativeIconPathsToAbsoluteUrls()
+        {
+            var plan = Plan(("Bonus", new RaGameInfoUserProgress
+            {
+                ImageIcon = "/Images/085573.png"
+            }));
+
+            Assert.AreEqual(1, plan.Count);
+            Assert.AreEqual("Bonus", plan[0].Label);
+            Assert.AreEqual("https://retroachievements.org/Images/085573.png", plan[0].IconUrl);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_SkipsSourcesWithoutIcon()
+        {
+            var plan = Plan(
+                ("Bonus", new RaGameInfoUserProgress()),
+                ("Multi", new RaGameInfoUserProgress { ImageIcon = "/Images/000001.png" }),
+                ("Professor Oak Challenge", null),
+                ("Stadium Freak", new RaGameInfoUserProgress { ImageIcon = "/Images/123202.png" }));
+
+            Assert.AreEqual(1, plan.Count);
+            Assert.AreEqual("Stadium Freak", plan[0].Label);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_IgnoresBoxArt()
         {
             var plan = Plan(("Bonus", new RaGameInfoUserProgress
             {
@@ -24,30 +50,7 @@ namespace PlayniteAchievements.Tests.Providers
             }));
 
             Assert.AreEqual(1, plan.Count);
-            Assert.AreEqual("Bonus", plan[0].Label);
             Assert.AreEqual("https://retroachievements.org/Images/085573.png", plan[0].IconUrl);
-            Assert.AreEqual("https://retroachievements.org/Images/051007.png", plan[0].CoverUrl);
-        }
-
-        [TestMethod]
-        public void BuildCategoryImagePlan_SkipsSubsetsWithoutIcon()
-        {
-            var plan = Plan(
-                ("Bonus", new RaGameInfoUserProgress { ImageBoxArt = "/Images/051007.png" }),
-                ("Multi", new RaGameInfoUserProgress { ImageIcon = "/Images/000001.png" }),
-                ("Professor Oak Challenge", null));
-
-            Assert.AreEqual(1, plan.Count);
-            Assert.AreEqual("Multi", plan[0].Label);
-        }
-
-        [TestMethod]
-        public void BuildCategoryImagePlan_LeavesCoverNullWhenBoxArtMissing()
-        {
-            var plan = Plan(("Bonus", new RaGameInfoUserProgress { ImageIcon = "/Images/085573.png" }));
-
-            Assert.AreEqual(1, plan.Count);
-            Assert.IsNull(plan[0].CoverUrl);
         }
 
         [TestMethod]
@@ -74,32 +77,6 @@ namespace PlayniteAchievements.Tests.Providers
 
             Assert.AreEqual(1, plan.Count);
             Assert.AreEqual("Bonus", plan[0].Label);
-        }
-
-        [TestMethod]
-        public void BuildCategoryImagePlan_TreatsPlaceholderBoxArtAsMissing()
-        {
-            var plan = Plan(("Stadium Freak", new RaGameInfoUserProgress
-            {
-                ImageIcon = "/Images/123202.png",
-                ImageBoxArt = "/Images/000002.png"
-            }));
-
-            Assert.AreEqual(1, plan.Count);
-            Assert.AreEqual("https://retroachievements.org/Images/123202.png", plan[0].IconUrl);
-            Assert.IsNull(plan[0].CoverUrl);
-        }
-
-        [TestMethod]
-        public void BuildCategoryImagePlan_SkipsEntriesWithPlaceholderIcon()
-        {
-            var plan = Plan(("Bonus", new RaGameInfoUserProgress
-            {
-                ImageIcon = "/Images/000001.png",
-                ImageBoxArt = "/Images/051007.png"
-            }));
-
-            Assert.AreEqual(0, plan.Count);
         }
 
         [TestMethod]
