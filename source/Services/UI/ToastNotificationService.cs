@@ -342,7 +342,10 @@ namespace PlayniteAchievements.Services.UI
                 return true;
             }
 
-            return _windowTracker.ForegroundGameId == vm.PlayniteGameId;
+            // Live check rather than the last hook event: out-of-context WinEvents can be dropped
+            // while the UI thread is busy (typical during game launch), and a stale foreground
+            // state would hold toasts until the user happens to alt-tab.
+            return _windowTracker.IsGameForeground(vm.PlayniteGameId);
         }
 
         private async Task ShowWaveAsync(IReadOnlyList<AchievementToastViewModel> wave)

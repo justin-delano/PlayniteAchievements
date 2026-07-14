@@ -108,6 +108,56 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
+        /// <summary>
+        /// Live foreground check: resolves the CURRENT foreground window and classifies it,
+        /// rather than trusting the last hook event. Out-of-context WinEvents can be dropped
+        /// while the UI thread is busy (typical during game launch), which would otherwise leave
+        /// <see cref="ForegroundGameId"/> stale until the user alt-tabs. Cheap: one syscall plus
+        /// a cached pid lookup.
+        /// </summary>
+        public bool IsGameForeground(Guid gameId)
+        {
+            try
+            {
+                var hwnd = GetForegroundWindow();
+                if (hwnd == IntPtr.Zero)
+                {
+                    return false;
+                }
+
+                GetWindowThreadProcessId(hwnd, out var pid);
+                if (pid == 0)
+                {
+                    return false;
+                }
+
+                lock (_sync)
+                {
+                    if (_disposed || !_tracked.ContainsKey(gameId))
+                    {
+                        return false;
+                    }
+
+                    var classified = ClassifyProcessLocked((int)pid);
+                    // Keep the event-driven state honest too, so consumers of ForegroundGameId
+                    // benefit from this reconciliation.
+                    _foregroundGameId = classified;
+                    if (classified == gameId && _tracked.TryGetValue(gameId, out var tracked))
+                    {
+                        tracked.LearnedHwnd = hwnd;
+                        tracked.LearnedProcessId = (int)pid;
+                    }
+
+                    return classified == gameId;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[WindowTracker] Live foreground check failed.");
+                return false;
+            }
+        }
+
         public void OnGameStarted(Game game, int? startedProcessId)
         {
             if (_disposed || game == null || game.Id == Guid.Empty)
@@ -469,13 +519,22 @@ namespace PlayniteAchievements.Services.UI
                 return cached;
             }
 
-            var result = ClassifyProcessCore(pid);
-            _pidGameCache[pid] = result;
+            var result = ClassifyProcessCore(pid, out var conclusive);
+            // A transient inspection failure (process still initializing, access denied for one
+            // moment) must not poison the pid for the whole session; only conclusive answers are
+            // cached, inconclusive ones are re-tried on the next event.
+            if (conclusive)
+            {
+                _pidGameCache[pid] = result;
+            }
+
             return result;
         }
 
-        private Guid? ClassifyProcessCore(int pid)
+        private Guid? ClassifyProcessCore(int pid, out bool conclusive)
         {
+            conclusive = true;
+
             // 1. Direct pid match against started or previously learned pids (direct-exe games
             //    and emulators, where Playnite started the process itself).
             foreach (var entry in _tracked)
@@ -503,12 +562,17 @@ namespace PlayniteAchievements.Services.UI
                     }
                 }
             }
+            else
+            {
+                conclusive = false;
+            }
 
             // 3. Parent chain up to a tracked started pid (launcher alive with the game exe
             //    outside the install directory).
             var ancestorGame = ClassifyByParentChain(pid);
             if (ancestorGame.HasValue)
             {
+                conclusive = true;
                 return ancestorGame;
             }
 
