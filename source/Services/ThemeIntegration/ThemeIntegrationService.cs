@@ -1367,6 +1367,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         /// <param name="gameId">The ID of the game to populate data for.</param>
         internal void PopulateSingleGameDataSync(Guid gameId)
         {
+            // UI-thread cache read: when this stalls for seconds it is usually waiting on the
+            // store lock held by a background projection warm, not doing its own work.
+            using (PerfScope.Start(_logger, "ThemeIntegration.PopulateSingleGameDataSync", thresholdMs: 250))
             try
             {
                 var gameData = _achievementDataService.GetVisibleGameAchievementData(gameId);
