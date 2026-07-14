@@ -736,7 +736,9 @@ namespace PlayniteAchievements.Services.Images
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                // IgnoreImageCache bypasses WPF's URI-keyed decode cache, which would
+                // otherwise serve stale pixels for files overwritten at the same path.
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
                 if (decodePixel > 0)
                 {
                     bitmap.DecodePixelWidth = decodePixel;

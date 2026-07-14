@@ -345,7 +345,10 @@ namespace PlayniteAchievements.Services.Images
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                // IgnoreImageCache bypasses WPF's URI-keyed decode cache, which would
+                // otherwise serve stale pixels for files overwritten at the same path.
+                // This service is the caching layer, so the WPF cache is redundant here.
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
 
                 if (!isGif && decodePixel > 0)
                 {
@@ -395,7 +398,7 @@ namespace PlayniteAchievements.Services.Images
                     var bitmap = new BitmapImage();
                     bitmap.BeginInit();
                     bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                    bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
                     if (!isGif && decodePixel > 0)
                     {
                         bitmap.DecodePixelWidth = decodePixel;
