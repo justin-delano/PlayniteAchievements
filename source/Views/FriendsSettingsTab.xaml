@@ -32,11 +32,16 @@
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Style="{StaticResource SectionBorderStyle}">
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,20">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_FriendsSettings_AutoDiscover}"
                                Style="{StaticResource SectionHeaderStyle}"/>
@@ -47,12 +52,17 @@
                                Margin="0,0,0,10"/>
 
                     <ItemsControl ItemsSource="{Binding AutoDiscoverProviders}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <CheckBox Content="{Binding DisplayName}"
                                           IsChecked="{Binding IsSelected, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                           IsEnabled="{Binding IsAvailable}"
-                                          Margin="0,0,0,6"/>
+                                          Margin="0,0,16,6"/>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -74,14 +84,14 @@
                 </StackPanel>
             </Border>
 
-        <Border Grid.Row="1" Style="{StaticResource SectionBorderStyle}">
+            <Border Grid.Column="1" Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_FriendsSettings_ManualAdd}"
                                Style="{StaticResource SectionHeaderStyle}"/>
 
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
@@ -96,7 +106,7 @@
                         <TextBox Grid.Column="1"
                                  Text="{Binding ManualExophaseUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  VerticalAlignment="Center"
-                                 MinWidth="220"
+                                 MinWidth="160"
                                  Margin="0,0,12,0"/>
 
                         <Button Grid.Column="2"
@@ -106,8 +116,9 @@
                     </Grid>
                 </StackPanel>
             </Border>
+        </Grid>
 
-        <Border Grid.Row="2" Style="{StaticResource SectionBorderStyle}">
+        <Border Grid.Row="1" Style="{StaticResource SectionBorderStyle}">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -151,7 +162,7 @@
                               RowStyle="{StaticResource FriendsSettingsGridRowStyle}"
                               MinHeight="160"
                               VerticalAlignment="Stretch"
-                              VirtualizingPanel.ScrollUnit="Pixel"
+                              VirtualizingPanel.ScrollUnit="Item"
                               ScrollViewer.VerticalScrollBarVisibility="Auto"
                               ScrollViewer.HorizontalScrollBarVisibility="Auto">
                         <DataGrid.Columns>
