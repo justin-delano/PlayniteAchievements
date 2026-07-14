@@ -119,7 +119,9 @@ namespace PlayniteAchievements.Providers.Steam
                     onGameError: (game, ex, consecutiveErrors) =>
                     {
                         var appIdText = TryGetPlatformAppId(game, out var appId) ? appId.ToString() : "?";
-                        _logger?.Warn($"[SteamAch] Skipping game after retries: {game?.Name} (appId={appIdText}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
+                        // Log the exception object so the stack trace identifies where a silent
+                        // timeout (e.g. HttpClient's TaskCanceledException) actually originated.
+                        _logger?.Warn(ex, $"[SteamAch] Skipping game after retries: {game?.Name} (appId={appIdText}). Consecutive errors={consecutiveErrors}. {ex.GetType().Name}: {ex.Message}");
                     },
                     rateLimiter,
                     cancel).ConfigureAwait(false);
