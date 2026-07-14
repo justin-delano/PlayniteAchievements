@@ -77,6 +77,32 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
+        public void BuildCategoryImagePlan_TreatsPlaceholderBoxArtAsMissing()
+        {
+            var plan = Plan(("Stadium Freak", new RaGameInfoUserProgress
+            {
+                ImageIcon = "/Images/123202.png",
+                ImageBoxArt = "/Images/000002.png"
+            }));
+
+            Assert.AreEqual(1, plan.Count);
+            Assert.AreEqual("https://retroachievements.org/Images/123202.png", plan[0].IconUrl);
+            Assert.IsNull(plan[0].CoverUrl);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_SkipsEntriesWithPlaceholderIcon()
+        {
+            var plan = Plan(("Bonus", new RaGameInfoUserProgress
+            {
+                ImageIcon = "/Images/000001.png",
+                ImageBoxArt = "/Images/051007.png"
+            }));
+
+            Assert.AreEqual(0, plan.Count);
+        }
+
+        [TestMethod]
         public void BuildCategoryImagePlan_ReturnsEmptyForNullOrEmptyInput()
         {
             Assert.AreEqual(0, RetroAchievementsCategoryImagePlanner.BuildCategoryImagePlan(null).Count);
