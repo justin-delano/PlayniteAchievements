@@ -19,6 +19,14 @@ namespace PlayniteAchievements.Services.Recording
 
         public const string SegmentFileExtension = ".ts";
 
+        /// <summary>
+        /// Audio chunk filename pattern written by <see cref="AudioLoopbackRecorder"/> into the
+        /// same buffer directory (local wall-clock names, mirroring the video segments).
+        /// </summary>
+        public const string AudioChunkFilePrefix = "aud_";
+
+        public const string AudioChunkFileExtension = ".wav";
+
         private const string SegmentStrftimePattern = "seg_%Y%m%d-%H%M%S.ts";
 
         public sealed class CaptureOptions
@@ -155,24 +163,46 @@ namespace PlayniteAchievements.Services.Recording
         /// The clip export command: concat demuxer over the selected segments, seek/trim, and an
         /// mp4 with faststart. The default stream-copy is near-free while a game runs (trim start
         /// snaps at most 1s early thanks to the forced keyframes); the re-encode variant is the
-        /// retry path when the copy produces a broken or empty file.
+        /// retry path when the copy produces a broken or empty file. When an audio concat list is
+        /// given, the loopback WAV chunks are muxed in as a second concat input with its own seek
+        /// (audio re-encodes to AAC — WAV can't live in mp4 — while video stays copied);
+        /// <c>-map 1:a?</c> keeps the audio optional so a chunk list that yields no usable audio
+        /// stream degrades to a silent clip instead of failing the export.
         /// </summary>
         public static string BuildTrimArguments(
             string concatListPath,
             double startOffsetSeconds,
             double durationSeconds,
             string outputPath,
-            bool reencode = false)
+            bool reencode = false,
+            string audioConcatListPath = null,
+            double audioStartOffsetSeconds = 0)
         {
-            var codec = reencode
+            if (string.IsNullOrWhiteSpace(audioConcatListPath))
+            {
+                var codec = reencode
+                    ? "-c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p"
+                    : "-c copy";
+                return Invariant(
+                    "-hide_banner -loglevel warning -y -f concat -safe 0 -ss {0} -i \"{1}\" -t {2} {3} -movflags +faststart \"{4}\"",
+                    Seconds(startOffsetSeconds),
+                    concatListPath,
+                    Seconds(durationSeconds),
+                    codec,
+                    outputPath);
+            }
+
+            var videoCodec = reencode
                 ? "-c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p"
-                : "-c copy";
+                : "-c:v copy";
             return Invariant(
-                "-hide_banner -loglevel warning -y -f concat -safe 0 -ss {0} -i \"{1}\" -t {2} {3} -movflags +faststart \"{4}\"",
+                "-hide_banner -loglevel warning -y -f concat -safe 0 -ss {0} -i \"{1}\" -f concat -safe 0 -ss {2} -i \"{3}\" -t {4} -map 0:v -map 1:a? {5} -c:a aac -b:a 160k -movflags +faststart \"{6}\"",
                 Seconds(startOffsetSeconds),
                 concatListPath,
+                Seconds(audioStartOffsetSeconds),
+                audioConcatListPath,
                 Seconds(durationSeconds),
-                codec,
+                videoCodec,
                 outputPath);
         }
 
