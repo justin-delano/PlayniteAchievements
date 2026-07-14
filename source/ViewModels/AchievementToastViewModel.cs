@@ -66,8 +66,11 @@ namespace PlayniteAchievements.ViewModels
         private DateTime? UnlockTimeLocal => Common.DateTimeUtilities.AsLocalFromUtc(_args.UnlockTimeUtc);
         public bool HasUnlockTime => UnlockTimeLocal.HasValue;
         // Toast-scoped visibility for the unlock datetime on the header line (off by default).
+        // The header toggle governs only the "Achievement unlocked" text; the datetime is
+        // independent, and the separator needs both.
         public bool ShowUnlockTime => _settings.ToastShowUnlockTime && HasUnlockTime;
         public bool ShowHeaderDateSeparator => ShowHeader && ShowUnlockTime;
+        public bool ShowFriendAvatar => ShowHeader && HasFriendAvatar;
         public string UnlockDateText => UnlockTimeLocal?.ToString("d") ?? string.Empty;
         public string UnlockTimeText => UnlockTimeLocal.HasValue && UnlockTimeLocal.Value.TimeOfDay != TimeSpan.Zero
             ? UnlockTimeLocal.Value.ToString("t")
@@ -78,8 +81,10 @@ namespace PlayniteAchievements.ViewModels
                 : UnlockTimeLocal.Value.ToString("d")
             : string.Empty;
 
-        // The frame's header row shows "header • unlock datetime"; the separator needs both.
-        public bool FrameShowHeaderDateSeparator => FrameShowHeader && HasUnlockTime;
+        // Frame-scoped equivalents: the frame's header row shows "header • unlock datetime";
+        // the separator needs both, and the datetime honors its own toggle.
+        public bool FrameShowUnlockTime => _settings.FrameShowUnlockTime && HasUnlockTime;
+        public bool FrameShowHeaderDateSeparator => FrameShowHeader && FrameShowUnlockTime;
 
         // Frame-scoped visibility/appearance: the screenshot frame honors its own FrameShow*
         // settings so the saved image can show different fields than the on-screen toast.

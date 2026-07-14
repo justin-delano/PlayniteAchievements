@@ -488,6 +488,9 @@
                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastRarityColoredName}"
                                       IsChecked="{Binding Persisted.FrameRarityColoredName}"
                                       Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_UnlockTime}"
+                                      IsChecked="{Binding Persisted.FrameShowUnlockTime}"
+                                      Margin="0,0,14,8"/>
                         </WrapPanel>
 
                         <WrapPanel>

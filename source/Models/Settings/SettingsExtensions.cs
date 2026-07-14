@@ -109,6 +109,7 @@ namespace PlayniteAchievements.Models.Settings
             target.FrameShowRarityPercent = source.FrameShowRarityPercent;
             target.FrameShowRarityGlow = source.FrameShowRarityGlow;
             target.FrameRarityColoredName = source.FrameRarityColoredName;
+            target.FrameShowUnlockTime = source.FrameShowUnlockTime;
             target.UnlockScreenshotDirectory = source.UnlockScreenshotDirectory;
             target.EnableUnlockRecordings = source.EnableUnlockRecordings;
             target.FfmpegPath = source.FfmpegPath;

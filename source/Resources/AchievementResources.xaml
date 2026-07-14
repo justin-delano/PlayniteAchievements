@@ -135,15 +135,16 @@
                 <!-- Right: header, name, description, game/category -->
                 <StackPanel Grid.Column="1"
                             VerticalAlignment="Center">
+                    <!-- Header row: the ShowHeader toggle governs only the avatar + header text;
+                         the unlock datetime is independently toggled. -->
                     <StackPanel Orientation="Horizontal"
-                                VerticalAlignment="Center"
-                                Visibility="{Binding ShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                VerticalAlignment="Center">
                         <Border Width="16"
                                 Height="16"
                                 CornerRadius="8"
                                 Margin="0,0,5,0"
                                 ClipToBounds="True"
-                                Visibility="{Binding HasFriendAvatar, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                Visibility="{Binding ShowFriendAvatar, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <Image Stretch="UniformToFill"
                                    helpers:AsyncImage.Uri="{Binding FriendAvatar}"
                                    helpers:AsyncImage.DecodePixel="64"/>
@@ -152,7 +153,8 @@
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
-                                   TextTrimming="CharacterEllipsis"/>
+                                   TextTrimming="CharacterEllipsis"
+                                   Visibility="{Binding ShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         <!-- Optional unlock datetime (the Unlock Time appearance toggle, off by
                              default) -->
                         <TextBlock Text="  &#8226;  "
@@ -354,7 +356,7 @@
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                        Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                        FontSize="17"
-                                       Visibility="{Binding HasUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                       Visibility="{Binding FrameShowUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                         </StackPanel>
                         <TextBlock Text="{Binding TitleText}"
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"

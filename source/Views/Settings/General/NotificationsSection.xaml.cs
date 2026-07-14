@@ -49,7 +49,8 @@ namespace PlayniteAchievements.Views.Settings.General
             nameof(PersistedSettings.FrameShowRarityBadge),
             nameof(PersistedSettings.FrameShowRarityPercent),
             nameof(PersistedSettings.FrameShowRarityGlow),
-            nameof(PersistedSettings.FrameRarityColoredName)
+            nameof(PersistedSettings.FrameRarityColoredName),
+            nameof(PersistedSettings.FrameShowUnlockTime)
         };
 
         private readonly PlayniteAchievementsSettings _settings;

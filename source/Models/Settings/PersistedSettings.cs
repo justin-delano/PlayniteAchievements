@@ -91,6 +91,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _frameShowRarityPercent = true;
         private bool _frameShowRarityGlow = true;
         private bool _frameRarityColoredName = true;
+        private bool _frameShowUnlockTime = true;
         private string _unlockScreenshotDirectory;
         private bool _enableUnlockRecordings = false;
         private string _ffmpegPath;
@@ -1054,6 +1055,15 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _frameRarityColoredName;
             set => SetValue(ref _frameRarityColoredName, value);
+        }
+
+        /// <summary>
+        /// Shows the localized unlock datetime on the frame's header line.
+        /// </summary>
+        public bool FrameShowUnlockTime
+        {
+            get => _frameShowUnlockTime;
+            set => SetValue(ref _frameShowUnlockTime, value);
         }
 
         /// <summary>
@@ -2224,6 +2234,7 @@ namespace PlayniteAchievements.Models.Settings
                 FrameShowRarityPercent = this.FrameShowRarityPercent,
                 FrameShowRarityGlow = this.FrameShowRarityGlow,
                 FrameRarityColoredName = this.FrameRarityColoredName,
+                FrameShowUnlockTime = this.FrameShowUnlockTime,
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
                 EnableUnlockRecordings = this.EnableUnlockRecordings,
                 FfmpegPath = this.FfmpegPath,
