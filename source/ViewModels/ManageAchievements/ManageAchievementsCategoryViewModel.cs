@@ -1748,18 +1748,20 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ManagedCustomIconService managedCustomIconService)
         {
             var normalizedLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryLabel);
+            var normalizedProviderLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(providerCategoryLabel);
             var playniteGameId = Guid.TryParse(gameIdText, out var parsedGameId) ? parsedGameId : (Guid?)null;
             var row = new ManageAchievementsCategoryMetadataItem(gameIdText, fileStem, managedCustomIconService)
             {
                 CategoryLabel = normalizedLabel,
-                ProviderCategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(providerCategoryLabel),
+                ProviderCategoryLabel = normalizedProviderLabel,
                 TotalAchievements = achievements?.Count ?? 0,
                 UnlockedAchievements = achievements?.Count(item => item?.Unlocked == true) ?? 0,
                 // Provider-supplied defaults are the true revert target, ahead of game art.
-                DefaultIconPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedLabel, CategoryImageKind.Icon) ??
+                // They are keyed by the provider label so renamed rows still find them.
+                DefaultIconPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedProviderLabel, CategoryImageKind.Icon) ??
                                   ResolveSharedImage(achievements, item => item?.GameIconPath) ??
                                   ResolveSharedImage(achievements, item => item?.CategoryIconPath),
-                DefaultCoverPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedLabel, CategoryImageKind.Cover) ??
+                DefaultCoverPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedProviderLabel, CategoryImageKind.Cover) ??
                                    ResolveSharedImage(achievements, item => item?.GameCoverPath) ??
                                    ResolveSharedImage(achievements, item => item?.CategoryCoverPath)
             };
