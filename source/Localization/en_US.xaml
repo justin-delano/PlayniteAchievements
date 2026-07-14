@@ -534,7 +534,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_RecordingClipSeconds">Clip length (seconds)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingFps">Frame rate (FPS)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingResolution">Resolution</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RecordingResolutionNative">Same as monitor</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RecordingResolutionNative">Native</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingEncoder">Encoder</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingCaptureBackend">Capture method</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RecordingAuto">Automatic</sys:String>
