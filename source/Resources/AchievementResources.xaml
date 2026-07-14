@@ -153,6 +153,18 @@
                                    Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
                                    FontSize="{DynamicResource PlayAch.FontSize.Caption}"
                                    TextTrimming="CharacterEllipsis"/>
+                        <!-- Optional unlock datetime (the Unlock Time appearance toggle, off by
+                             default) -->
+                        <TextBlock Text="  &#8226;  "
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                   Visibility="{Binding ShowHeaderDateSeparator, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <TextBlock Text="{Binding UnlockDateTimeText}"
+                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                   Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                   FontSize="{DynamicResource PlayAch.FontSize.Caption}"
+                                   Visibility="{Binding ShowUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     </StackPanel>
 
                     <TextBlock Text="{Binding TitleText}"

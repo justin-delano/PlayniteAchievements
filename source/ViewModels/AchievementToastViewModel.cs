@@ -65,9 +65,9 @@ namespace PlayniteAchievements.ViewModels
         // time portion is suppressed. Available to both toast and frame templates.
         private DateTime? UnlockTimeLocal => Common.DateTimeUtilities.AsLocalFromUtc(_args.UnlockTimeUtc);
         public bool HasUnlockTime => UnlockTimeLocal.HasValue;
-        // Toast-scoped visibility for theme templates that render the unlock datetime (the
-        // bundled toast template does not).
+        // Toast-scoped visibility for the unlock datetime on the header line (off by default).
         public bool ShowUnlockTime => _settings.ToastShowUnlockTime && HasUnlockTime;
+        public bool ShowHeaderDateSeparator => ShowHeader && ShowUnlockTime;
         public string UnlockDateText => UnlockTimeLocal?.ToString("d") ?? string.Empty;
         public string UnlockTimeText => UnlockTimeLocal.HasValue && UnlockTimeLocal.Value.TimeOfDay != TimeSpan.Zero
             ? UnlockTimeLocal.Value.ToString("t")

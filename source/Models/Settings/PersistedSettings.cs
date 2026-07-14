@@ -75,7 +75,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _toastShowDescription = true;
         private bool _toastShowCategory = true;
         private bool _toastShowGameName = true;
-        private bool _toastShowUnlockTime = true;
+        private bool _toastShowUnlockTime = false;
         private int _toastDurationSeconds = 6;
         private int _maxConcurrentToasts = 3;
         private bool _enableUnlockScreenshots = false;
@@ -934,8 +934,8 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
-        /// Gates the toast's ShowUnlockTime binding. The bundled toast template does not render
-        /// the unlock datetime; this exists for theme templates that bind it.
+        /// Shows the unlock datetime on the toast's header line. Off by default; the frame has
+        /// its own always-on datetime row.
         /// </summary>
         public bool ToastShowUnlockTime
         {
