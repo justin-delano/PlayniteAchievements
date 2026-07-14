@@ -252,29 +252,24 @@
     <DataTemplate x:Key="PlayAch.Template.ScreenshotFrame"
                   DataType="{x:Type vm:AchievementToastViewModel}">
         <Grid>
-            <!-- Frame chrome: a slim accent line whose diagonal opacity mask makes the bound
-                 rarity/capstone color read as a gradient, matted by a dark outer edge and a faint
-                 inner hairline. -->
-            <Border BorderBrush="#E6000000"
-                    BorderThickness="2"/>
-            <Border Margin="2"
-                    BorderBrush="{Binding AccentBrush}"
-                    BorderThickness="5">
-                <Border.OpacityMask>
-                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                        <GradientStop Color="#FFFFFFFF" Offset="0"/>
-                        <GradientStop Color="#66FFFFFF" Offset="1"/>
-                    </LinearGradientBrush>
-                </Border.OpacityMask>
-            </Border>
-            <Border Margin="7"
-                    BorderBrush="{DynamicResource PlayAch.Brush.PopupBorder}"
-                    BorderThickness="1"/>
+            <!-- Frame chrome: a soft vignette fades the edges to dark instead of drawing border
+                 lines, so the frame reads as a finish on the shot rather than a box. -->
+            <Rectangle IsHitTestVisible="False">
+                <Rectangle.Fill>
+                    <RadialGradientBrush Center="0.5,0.5"
+                                         GradientOrigin="0.5,0.5"
+                                         RadiusX="0.85"
+                                         RadiusY="0.85">
+                        <GradientStop Color="#00000000" Offset="0"/>
+                        <GradientStop Color="#00000000" Offset="0.62"/>
+                        <GradientStop Color="#99000000" Offset="1"/>
+                    </RadialGradientBrush>
+                </Rectangle.Fill>
+            </Rectangle>
 
             <!-- Bottom contrast wash so the banner reads over any game footage -->
             <Rectangle VerticalAlignment="Bottom"
                        Height="200"
-                       Margin="7,0,7,7"
                        IsHitTestVisible="False">
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
@@ -284,11 +279,9 @@
                 </Rectangle.Fill>
             </Rectangle>
 
-            <!-- Bottom banner: flush with the frame edge (not a floating card), gradient surface,
-                 accent rule on top. Binds the FrameShow*/Frame* properties (its own settings), not
-                 the toast's Show* toggles. -->
+            <!-- Bottom banner: full-bleed across the frame, accent rule on top. Binds the
+                 FrameShow*/Frame* properties (its own settings), not the toast's Show* toggles. -->
             <Border VerticalAlignment="Bottom"
-                    Margin="7,0,7,7"
                     BorderBrush="{Binding AccentBrush}"
                     BorderThickness="0,3,0,0"
                     Background="{DynamicResource PlayAch.Brush.PopupSurface}">
