@@ -4956,6 +4956,7 @@ namespace PlayniteAchievements.Services.Database
                     customData?.AchievementCategoryOrder,
                     customData?.AchievementCategoryImageOverrides,
                     item.CategoryLabel,
+                    detail.Category,
                     item.GameIconPath,
                     item.GameCoverPath,
                     playniteGameId);
