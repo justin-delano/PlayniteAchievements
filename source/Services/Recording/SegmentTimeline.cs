@@ -14,14 +14,11 @@ namespace PlayniteAchievements.Services.Recording
     /// </summary>
     internal static class SegmentTimeline
     {
-        /// <summary>Seconds of lead kept before a precise unlock timestamp.</summary>
+        /// <summary>Tolerance (seconds past detection) a trusted unlock timestamp may carry.</summary>
         public const int PreciseLeadSeconds = 5;
 
-        /// <summary>Extra seconds behind the worst-case coarse unlock position (detection - N).</summary>
-        public const int CoarseLeadSeconds = 2;
-
-        /// <summary>Seconds kept after the toast appears (end anchor tail).</summary>
-        public const int TailSeconds = 3;
+        /// <summary>Seconds kept after the toast is expected to have fully dismissed.</summary>
+        public const int ToastDismissTailSeconds = 1;
 
         /// <summary>End-anchor fallback (seconds after detection) when no toast ever shows.</summary>
         public const int NoToastEndFallbackSeconds = 5;
@@ -140,12 +137,12 @@ namespace PlayniteAchievements.Services.Recording
 
         /// <summary>
         /// Computes the clip window in UTC.
-        /// End anchor: the toast on screen plus a tail; when no toast arrived, detection plus a
-        /// fallback tail. Start anchor: the unlock moment — a precise timestamp minus the lead,
-        /// or (coarse/null) the worst case within the last poll interval. The window then
-        /// stretches backwards to reach the target clip length (it may EXCEED the target when
-        /// the unlock-to-toast gap requires it, and is never shortened below the two anchors),
-        /// is hard-capped at the rolling buffer depth, and finally clamped to recorded data.
+        /// Start anchor: preRollSeconds (the user's setting) before the unlock moment — the
+        /// precise timestamp when trusted, else the worst case within the last poll interval.
+        /// End anchor: guaranteed past the toast's dismissal (shown + display duration + tail);
+        /// when no toast ever shows, detection plus a short fallback tail. Clip length emerges
+        /// from the two anchors (pre-roll + detection gap + toast time), hard-capped at the
+        /// rolling buffer depth and clamped to recorded data.
         /// </summary>
         public static (DateTime StartUtc, DateTime EndUtc) ComputeClipWindow(
             DateTime? unlockTimeUtc,
@@ -154,24 +151,21 @@ namespace PlayniteAchievements.Services.Recording
             DateTime captureStartUtc,
             DateTime? oldestSegmentStartUtc,
             int pollIntervalSeconds,
-            int targetClipSeconds)
+            int preRollSeconds,
+            int toastVisibleSeconds)
         {
             var end = toastShownUtc.HasValue
-                ? toastShownUtc.Value.AddSeconds(TailSeconds)
+                ? toastShownUtc.Value.AddSeconds(Math.Max(0, toastVisibleSeconds) + ToastDismissTailSeconds)
                 : detectionUtc.AddSeconds(NoToastEndFallbackSeconds);
 
+            var preRoll = Math.Max(0, preRollSeconds);
             var start = IsPreciseUnlockTime(unlockTimeUtc, captureStartUtc, detectionUtc)
-                ? unlockTimeUtc.Value.AddSeconds(-PreciseLeadSeconds)
-                : detectionUtc.AddSeconds(-(Math.Max(0, pollIntervalSeconds) + CoarseLeadSeconds));
+                ? unlockTimeUtc.Value.AddSeconds(-preRoll)
+                : detectionUtc.AddSeconds(-(Math.Max(0, pollIntervalSeconds) + preRoll));
 
-            // Stretch backwards to the target/minimum length; never shrink an already-long window.
-            if ((end - start).TotalSeconds < targetClipSeconds)
-            {
-                start = end.AddSeconds(-targetClipSeconds);
-            }
-
-            // Hard cap: the rolling buffer can never serve more than its depth.
-            var depth = BufferDepthSeconds(pollIntervalSeconds, targetClipSeconds);
+            // Hard cap: the rolling buffer can never serve more than its depth. The end anchor
+            // (toast dismissal) wins; the start slides forward.
+            var depth = BufferDepthSeconds(pollIntervalSeconds, preRollSeconds);
             if ((end - start).TotalSeconds > depth)
             {
                 start = end.AddSeconds(-depth);
@@ -198,13 +192,13 @@ namespace PlayniteAchievements.Services.Recording
         }
 
         /// <summary>
-        /// Rolling buffer depth in seconds: covers the worst-case precise-unlock clip span
-        /// (lead + poll interval + tail) plus refresh-tick and toast-queue latency margin.
+        /// Rolling buffer depth in seconds: covers the worst-case clip span (pre-roll + poll
+        /// interval + toast display) plus refresh-tick and toast-queue latency margin.
         /// </summary>
-        public static int BufferDepthSeconds(int pollIntervalSeconds, int targetClipSeconds)
+        public static int BufferDepthSeconds(int pollIntervalSeconds, int preRollSeconds)
         {
             var interval = Math.Max(0, pollIntervalSeconds);
-            return Math.Max(3 * interval, interval + Math.Max(0, targetClipSeconds) + 15);
+            return Math.Max(3 * interval, interval + Math.Max(0, preRollSeconds) + 30);
         }
 
         /// <summary>Segments kept by the pruner for the given depth: ceil(depth/K) + 2.</summary>

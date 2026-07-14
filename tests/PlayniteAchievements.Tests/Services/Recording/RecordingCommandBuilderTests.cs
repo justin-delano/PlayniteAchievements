@@ -250,5 +250,119 @@ namespace PlayniteAchievements.Services.Tests.Recording
             StringAssert.Contains(args, "-video_size 64x64");
             StringAssert.Contains(args, "-t 1 -f null -");
         }
+
+        // === Cropped exports ===
+
+        [TestMethod]
+        public void Trim_WithCrop_UsesFilterAndSessionEncoderInsteadOfCopy()
+        {
+            var args = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\clip.txt", 3, 15, @"C:\out\clip.mp4",
+                reencode: false,
+                crop: new System.Drawing.Rectangle(100, 50, 1280, 720),
+                cropEncoderArguments: "-c:v h264_nvenc -preset p4");
+
+            StringAssert.Contains(args, "-filter:v \"crop=1280:720:100:50\"");
+            StringAssert.Contains(args, "-c:v h264_nvenc -preset p4");
+            Assert.IsFalse(args.Contains("-c copy"));
+        }
+
+        [TestMethod]
+        public void Trim_WithCrop_ReencodeRetryFallsBackToSoftwareEncoder()
+        {
+            var args = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\clip.txt", 3, 15, @"C:\out\clip.mp4",
+                reencode: true,
+                crop: new System.Drawing.Rectangle(100, 50, 1280, 720),
+                cropEncoderArguments: "-c:v h264_nvenc -preset p4");
+
+            StringAssert.Contains(args, "-filter:v \"crop=1280:720:100:50\"");
+            StringAssert.Contains(args, "-c:v libx264");
+            Assert.IsFalse(args.Contains("h264_nvenc"));
+        }
+
+        [TestMethod]
+        public void Trim_WithCropAndAudio_KeepsAudioMappingAndFilter()
+        {
+            var args = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\clip.txt", 3, 15, @"C:\out\clip.mp4",
+                reencode: false,
+                audioConcatListPath: @"C:\buf\clipaud.txt",
+                audioStartOffsetSeconds: 2,
+                crop: new System.Drawing.Rectangle(0, 0, 640, 480),
+                cropEncoderArguments: "-c:v h264_nvenc -preset p4");
+
+            StringAssert.Contains(args, "-filter:v \"crop=640:480:0:0\"");
+            StringAssert.Contains(args, "-map 0:v -map 1:a?");
+            StringAssert.Contains(args, "-c:a aac");
+        }
+
+        [TestMethod]
+        public void Trim_WithoutCrop_IsUnchanged()
+        {
+            var baseline = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\clip.txt", 3, 15, @"C:\out\clip.mp4");
+            var explicitNull = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\clip.txt", 3, 15, @"C:\out\clip.mp4",
+                reencode: false, audioConcatListPath: null, audioStartOffsetSeconds: 0,
+                crop: null, cropEncoderArguments: "-c:v h264_nvenc");
+
+            Assert.AreEqual(baseline, explicitNull);
+            StringAssert.Contains(baseline, "-c copy");
+        }
+
+        [TestMethod]
+        public void ComputeCropRectangle_WindowedGame_MapsToMonitorRelativeEvenRect()
+        {
+            var crop = RecordingCommandBuilder.ComputeCropRectangle(
+                new System.Drawing.Rectangle(-1920, 120, 1920, 1080),
+                new System.Drawing.Rectangle(-1820, 221, 1280, 721),
+                RecordingResolution.Native);
+
+            Assert.IsTrue(crop.HasValue);
+            Assert.AreEqual(100, crop.Value.X);
+            Assert.AreEqual(100, crop.Value.Y);
+            Assert.AreEqual(1280, crop.Value.Width);
+            Assert.AreEqual(720, crop.Value.Height);
+        }
+
+        [TestMethod]
+        public void ComputeCropRectangle_FullscreenWindow_ReturnsNullToKeepStreamCopy()
+        {
+            var monitor = new System.Drawing.Rectangle(0, 0, 2880, 1920);
+
+            Assert.IsNull(RecordingCommandBuilder.ComputeCropRectangle(
+                monitor, monitor, RecordingResolution.Native));
+            // Borderless with a stray pixel row still counts as fullscreen.
+            Assert.IsNull(RecordingCommandBuilder.ComputeCropRectangle(
+                monitor, new System.Drawing.Rectangle(0, 1, 2880, 1919), RecordingResolution.Native));
+        }
+
+        [TestMethod]
+        public void ComputeCropRectangle_DownscaledCapture_ScalesTheRegion()
+        {
+            // 2160p monitor captured at 1080p: everything halves.
+            var crop = RecordingCommandBuilder.ComputeCropRectangle(
+                new System.Drawing.Rectangle(0, 0, 3840, 2160),
+                new System.Drawing.Rectangle(400, 200, 1920, 1080),
+                RecordingResolution.P1080);
+
+            Assert.IsTrue(crop.HasValue);
+            Assert.AreEqual(200, crop.Value.X);
+            Assert.AreEqual(100, crop.Value.Y);
+            Assert.AreEqual(960, crop.Value.Width);
+            Assert.AreEqual(540, crop.Value.Height);
+        }
+
+        [TestMethod]
+        public void ComputeCropRectangle_DegenerateOrOffMonitorWindow_ReturnsNull()
+        {
+            var monitor = new System.Drawing.Rectangle(0, 0, 1920, 1080);
+
+            Assert.IsNull(RecordingCommandBuilder.ComputeCropRectangle(
+                monitor, new System.Drawing.Rectangle(5000, 5000, 800, 600), RecordingResolution.Native));
+            Assert.IsNull(RecordingCommandBuilder.ComputeCropRectangle(
+                monitor, new System.Drawing.Rectangle(10, 10, 40, 30), RecordingResolution.Native));
+        }
     }
 }

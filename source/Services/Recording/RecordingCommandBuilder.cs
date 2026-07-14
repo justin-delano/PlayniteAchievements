@@ -176,34 +176,114 @@ namespace PlayniteAchievements.Services.Recording
             string outputPath,
             bool reencode = false,
             string audioConcatListPath = null,
-            double audioStartOffsetSeconds = 0)
+            double audioStartOffsetSeconds = 0,
+            System.Drawing.Rectangle? crop = null,
+            string cropEncoderArguments = null)
         {
+            const string SoftwareEncode = "-c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p";
+
+            // A crop filter is incompatible with stream copy, so cropped exports always encode:
+            // with the session's (typically hardware) encoder on the first attempt and the
+            // software fallback on the re-encode retry.
+            var cropFilter = crop.HasValue
+                ? Invariant(
+                    "-filter:v \"crop={0}:{1}:{2}:{3}\" ",
+                    crop.Value.Width, crop.Value.Height, crop.Value.X, crop.Value.Y)
+                : string.Empty;
+
             if (string.IsNullOrWhiteSpace(audioConcatListPath))
             {
-                var codec = reencode
-                    ? "-c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p"
-                    : "-c copy";
+                var codec = crop.HasValue
+                    ? (reencode || string.IsNullOrWhiteSpace(cropEncoderArguments)
+                        ? SoftwareEncode
+                        : cropEncoderArguments + " -pix_fmt yuv420p")
+                    : (reencode ? SoftwareEncode : "-c copy");
                 return Invariant(
-                    "-hide_banner -loglevel warning -y -f concat -safe 0 -ss {0} -i \"{1}\" -t {2} {3} -movflags +faststart \"{4}\"",
+                    "-hide_banner -loglevel warning -y -f concat -safe 0 -ss {0} -i \"{1}\" -t {2} {3}{4} -movflags +faststart \"{5}\"",
                     Seconds(startOffsetSeconds),
                     concatListPath,
                     Seconds(durationSeconds),
+                    cropFilter,
                     codec,
                     outputPath);
             }
 
-            var videoCodec = reencode
-                ? "-c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p"
-                : "-c:v copy";
+            var videoCodec = crop.HasValue
+                ? (reencode || string.IsNullOrWhiteSpace(cropEncoderArguments)
+                    ? SoftwareEncode
+                    : cropEncoderArguments + " -pix_fmt yuv420p")
+                : (reencode ? SoftwareEncode : "-c:v copy");
             return Invariant(
-                "-hide_banner -loglevel warning -y -f concat -safe 0 -ss {0} -i \"{1}\" -f concat -safe 0 -ss {2} -i \"{3}\" -t {4} -map 0:v -map 1:a? {5} -c:a aac -b:a 160k -movflags +faststart \"{6}\"",
+                "-hide_banner -loglevel warning -y -f concat -safe 0 -ss {0} -i \"{1}\" -f concat -safe 0 -ss {2} -i \"{3}\" -t {4} -map 0:v -map 1:a? {5}{6} -c:a aac -b:a 160k -movflags +faststart \"{7}\"",
                 Seconds(startOffsetSeconds),
                 concatListPath,
                 Seconds(audioStartOffsetSeconds),
                 audioConcatListPath,
                 Seconds(durationSeconds),
+                cropFilter,
                 videoCodec,
                 outputPath);
+        }
+
+        /// <summary>
+        /// Maps the game window's client rectangle (physical screen coordinates) into the
+        /// captured video's pixel space so exports can be cropped to the game like screenshots
+        /// are — accounting for the even-rounded capture size and the optional downscale filter.
+        /// Returns null when the window effectively fills the monitor (keep stream copy) or the
+        /// resulting region is degenerate.
+        /// </summary>
+        public static System.Drawing.Rectangle? ComputeCropRectangle(
+            System.Drawing.Rectangle monitorBounds,
+            System.Drawing.Rectangle clientBounds,
+            RecordingResolution resolution)
+        {
+            if (monitorBounds.Width <= 0 || monitorBounds.Height <= 0 ||
+                clientBounds.Width <= 0 || clientBounds.Height <= 0)
+            {
+                return null;
+            }
+
+            var client = System.Drawing.Rectangle.Intersect(clientBounds, monitorBounds);
+            if (client.Width <= 0 || client.Height <= 0)
+            {
+                return null;
+            }
+
+            // Borderless/fullscreen windows cover (almost) the whole monitor: no crop, so the
+            // export keeps the cheap stream copy.
+            var coverage = (double)client.Width * client.Height / ((double)monitorBounds.Width * monitorBounds.Height);
+            if (coverage >= 0.97)
+            {
+                return null;
+            }
+
+            var capturedWidth = Math.Max(2, monitorBounds.Width & ~1);
+            var capturedHeight = Math.Max(2, monitorBounds.Height & ~1);
+
+            var targetHeight = resolution == RecordingResolution.P1080 ? 1080
+                : resolution == RecordingResolution.P720 ? 720
+                : 0;
+            var scale = targetHeight > 0 && capturedHeight > targetHeight
+                ? targetHeight / (double)capturedHeight
+                : 1.0;
+            var scaledWidth = scale < 1.0
+                ? Math.Max(2, (int)Math.Round(capturedWidth * scale / 2.0) * 2)
+                : capturedWidth;
+            var scaledHeight = scale < 1.0 ? targetHeight : capturedHeight;
+
+            var x = Math.Max(0, (int)Math.Floor((client.X - monitorBounds.X) * scale)) & ~1;
+            var y = Math.Max(0, (int)Math.Floor((client.Y - monitorBounds.Y) * scale)) & ~1;
+            var width = ((int)Math.Floor(client.Width * scale)) & ~1;
+            var height = ((int)Math.Floor(client.Height * scale)) & ~1;
+
+            width = Math.Min(width, scaledWidth - x);
+            height = Math.Min(height, scaledHeight - y);
+            if (width < 64 || height < 64)
+            {
+                return null;
+            }
+
+            return new System.Drawing.Rectangle(x, y, width, height);
         }
 
         /// <summary>

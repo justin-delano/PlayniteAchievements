@@ -138,7 +138,7 @@ namespace PlayniteAchievements.Services.Tests.Recording
         // === Clip window ===
 
         [TestMethod]
-        public void ComputeClipWindow_PreciseUnlock_CoversUnlockLeadThroughToastTail()
+        public void ComputeClipWindow_PreciseUnlock_PreRollThroughToastDismissal()
         {
             var captureStart = T0;
             var unlock = T0.AddSeconds(60);
@@ -147,16 +147,17 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (start, end) = SegmentTimeline.ComputeClipWindow(
                 unlock, detection, toast, captureStart, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
-            Assert.AreEqual(unlock.AddSeconds(-5), start);
-            Assert.AreEqual(toast.AddSeconds(3), end);
-            // 19s window: longer than the 15s target because the unlock-to-toast gap demands it.
-            Assert.AreEqual(19, (end - start).TotalSeconds, 0.001);
+            Assert.AreEqual(unlock.AddSeconds(-15), start);
+            // End is guaranteed past the toast's dismissal: shown + 6s display + 1s tail.
+            Assert.AreEqual(toast.AddSeconds(7), end);
+            // Length emerges from the anchors: 15 pre-roll + 11 gap + 7 toast = 33s.
+            Assert.AreEqual(33, (end - start).TotalSeconds, 0.001);
         }
 
         [TestMethod]
-        public void ComputeClipWindow_CoarseUnlock_GuaranteesWorstCasePollInterval()
+        public void ComputeClipWindow_CoarseUnlock_PreRollBehindWorstCasePollInterval()
         {
             var captureStart = T0;
             var detection = T0.AddSeconds(120);
@@ -164,14 +165,16 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (start, end) = SegmentTimeline.ComputeClipWindow(
                 null, detection, toast, captureStart, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
-            Assert.AreEqual(detection.AddSeconds(-17), start);
-            Assert.AreEqual(toast.AddSeconds(3), end);
+            // Unlock is somewhere in [detection - N, detection]; the pre-roll applies behind
+            // the worst case, so the clip still has 15s before the true unlock moment.
+            Assert.AreEqual(detection.AddSeconds(-30), start);
+            Assert.AreEqual(toast.AddSeconds(7), end);
         }
 
         [TestMethod]
-        public void ComputeClipWindow_ShortGap_StretchesBackToTargetLength()
+        public void ComputeClipWindow_LongerToastDurationExtendsTheEnd()
         {
             var captureStart = T0;
             var unlock = T0.AddSeconds(60);
@@ -180,14 +183,10 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (start, end) = SegmentTimeline.ComputeClipWindow(
                 unlock, detection, toast, captureStart, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 10);
 
-            // Anchors alone give 10s (unlock-5 .. toast+3); the target stretches it to 15s.
-            Assert.AreEqual(end.AddSeconds(-15), start);
-            Assert.AreEqual(15, (end - start).TotalSeconds, 0.001);
-            // Both anchors are inside the window.
-            Assert.IsTrue(start <= unlock && unlock <= end);
-            Assert.IsTrue(start <= toast && toast.AddSeconds(3) <= end);
+            Assert.AreEqual(unlock.AddSeconds(-15), start);
+            Assert.AreEqual(toast.AddSeconds(11), end);
         }
 
         [TestMethod]
@@ -197,7 +196,7 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (_, end) = SegmentTimeline.ComputeClipWindow(
                 null, detection, null, T0, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
             Assert.AreEqual(detection.AddSeconds(5), end);
         }
@@ -212,10 +211,10 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (start, _) = SegmentTimeline.ComputeClipWindow(
                 unlock, detection, toast, captureStart, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
-            // Coarse anchor: detection - N - 2, not unlock - 5.
-            Assert.AreEqual(detection.AddSeconds(-17), start);
+            // Coarse anchor: detection - N - preRoll, not unlock - preRoll.
+            Assert.AreEqual(detection.AddSeconds(-30), start);
         }
 
         [TestMethod]
@@ -228,9 +227,9 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (start, _) = SegmentTimeline.ComputeClipWindow(
                 unlock, detection, toast, captureStart, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
-            Assert.AreEqual(detection.AddSeconds(-17), start);
+            Assert.AreEqual(detection.AddSeconds(-30), start);
         }
 
         [TestMethod]
@@ -243,9 +242,9 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (start, _) = SegmentTimeline.ComputeClipWindow(
                 unlock, detection, toast, captureStart, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
-            Assert.AreEqual(detection.AddSeconds(-17), start);
+            Assert.AreEqual(detection.AddSeconds(-30), start);
         }
 
         [TestMethod]
@@ -258,7 +257,7 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (start, _) = SegmentTimeline.ComputeClipWindow(
                 unlock, detection, toast, captureStart, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
             Assert.AreEqual(captureStart, start);
         }
@@ -274,24 +273,26 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             var (start, _) = SegmentTimeline.ComputeClipWindow(
                 unlock, detection, toast, captureStart, oldestSegment,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
             Assert.AreEqual(oldestSegment, start);
         }
 
         [TestMethod]
-        public void ComputeClipWindow_HardCapsAtBufferDepth()
+        public void ComputeClipWindow_HardCapsAtBufferDepth_EndAnchorWins()
         {
             var captureStart = T0;
             var detection = T0.AddSeconds(300);
-            // Pathologically late toast: raw window would be N + 2 + 60 + 3 = 80s > depth (45s).
-            var toast = detection.AddSeconds(60);
+            // Pathologically late toast: raw window would be 30 + 90 + 7 = 127s > depth (60s).
+            var toast = detection.AddSeconds(90);
 
             var (start, end) = SegmentTimeline.ComputeClipWindow(
                 null, detection, toast, captureStart, null,
-                pollIntervalSeconds: 15, targetClipSeconds: 15);
+                pollIntervalSeconds: 15, preRollSeconds: 15, toastVisibleSeconds: 6);
 
-            Assert.AreEqual(45, (end - start).TotalSeconds, 0.001);
+            Assert.AreEqual(60, (end - start).TotalSeconds, 0.001);
+            // The toast end anchor is preserved; the start slides forward.
+            Assert.AreEqual(toast.AddSeconds(7), end);
         }
 
         // === Depth math ===
@@ -299,8 +300,8 @@ namespace PlayniteAchievements.Services.Tests.Recording
         [TestMethod]
         public void BufferDepthSeconds_TakesMaxOfTripleIntervalAndClipSpan()
         {
-            Assert.AreEqual(45, SegmentTimeline.BufferDepthSeconds(15, 15));
-            Assert.AreEqual(55, SegmentTimeline.BufferDepthSeconds(10, 30));
+            Assert.AreEqual(60, SegmentTimeline.BufferDepthSeconds(15, 15));
+            Assert.AreEqual(70, SegmentTimeline.BufferDepthSeconds(10, 30));
             Assert.AreEqual(180, SegmentTimeline.BufferDepthSeconds(60, 15));
         }
 
@@ -383,8 +384,8 @@ namespace PlayniteAchievements.Services.Tests.Recording
         [TestMethod]
         public void SelectPrunable_KeepsBufferDepthNewestSegments()
         {
-            // N=15, C=15 -> depth 45s -> retain ceil(45/5)+2 = 11.
-            var segments = Enumerable.Range(0, 15)
+            // N=15, preRoll=15 -> depth 60s -> retain ceil(60/5)+2 = 14.
+            var segments = Enumerable.Range(0, 18)
                 .Select(i => Segment(T0.AddSeconds(i * 5)))
                 .ToList();
 
@@ -427,9 +428,9 @@ namespace PlayniteAchievements.Services.Tests.Recording
         [TestMethod]
         public void SelectPrunable_AudioChunks_UseSameRetentionAsVideo()
         {
-            // Same 5s cadence as the video test: N=15, C=15 -> retain 11 of 15.
+            // Same 5s cadence as the video test: N=15, preRoll=15 -> retain 14 of 18.
             var chunks = SegmentTimeline.ParseSegments(
-                Enumerable.Range(0, 15)
+                Enumerable.Range(0, 18)
                     .Select(i => ($@"C:\buf\aud_{T0.AddHours(2).AddSeconds(i * 5):yyyyMMdd-HHmmss}.wav", 1L))
                     .ToList(),
                 PlusTwo,

@@ -42,6 +42,7 @@ namespace PlayniteAchievements.Services.Recording
         private const int WindowResolveGraceSeconds = 15;
         private const int WindowResolvePollMs = 2000;
         private const int ToastWaitTimeoutSeconds = 30;
+        private const int ToastWaitPollSeconds = 5;
         private const int MaxCaptureRestarts = 3;
         private const int RestartBackoffSeconds = 5;
         private const int PruneIntervalSeconds = 30;
@@ -69,6 +70,9 @@ namespace PlayniteAchievements.Services.Recording
         private WindowsJobObject _jobObject;
         private bool _sessionNotified;
         private bool _disposed;
+        // Last time any toast wave went on screen (guarded by _gate). Extends the toast-wait
+        // fallback so queued waves far beyond the base timeout still anchor their clips.
+        private DateTime _lastWaveDisplayedUtc;
 
         public UnlockRecordingService(
             IPlayniteAPI api,
@@ -103,6 +107,7 @@ namespace PlayniteAchievements.Services.Recording
             public string CaptureArguments;
             public string EncoderArguments;
             public RecordingCaptureBackend Backend;
+            public System.Drawing.Rectangle MonitorBounds;
             public string GameName;
             public DateTime CaptureStartUtc;
             public FfmpegProcessHost CaptureHost;
@@ -272,6 +277,7 @@ namespace PlayniteAchievements.Services.Recording
 
                 session.EncoderArguments = encoderArgs;
                 session.Backend = backend;
+                session.MonitorBounds = bounds.Value;
                 session.CaptureArguments = BuildCaptureArgumentsFor(session, persisted, bounds.Value);
 
                 Directory.CreateDirectory(session.BufferDirectory);
@@ -394,6 +400,7 @@ namespace PlayniteAchievements.Services.Recording
                     {
                     }
 
+                    session.MonitorBounds = resolved.Value;
                     session.CaptureArguments = BuildCaptureArgumentsFor(session, persisted, resolved.Value);
                     if (!session.Stopping)
                     {
@@ -592,15 +599,39 @@ namespace PlayniteAchievements.Services.Recording
         }
 
         /// <summary>
-        /// End-anchor fallback: when no toast arrives within 30s of detection (toasts disabled
-        /// for the provider, or queue starvation) the clip is produced anchored on detection.
+        /// End-anchor fallback: the clip is produced detection-anchored only after 30s of toast
+        /// SILENCE (no wave displayed at all), not 30s after detection. A burst of unlocks queues
+        /// many waves that display far beyond 30s; as long as waves keep appearing, later
+        /// requests keep waiting so their clip tail stretches to include their own toast popping.
         /// </summary>
         private async Task ToastWaitFallbackAsync(ClipRequest request)
         {
             try
             {
-                await Task.Delay(TimeSpan.FromSeconds(ToastWaitTimeoutSeconds), request.Session.Cts.Token)
-                    .ConfigureAwait(false);
+                while (true)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(ToastWaitPollSeconds), request.Session.Cts.Token)
+                        .ConfigureAwait(false);
+
+                    bool pending;
+                    DateTime lastWaveUtc;
+                    lock (_gate)
+                    {
+                        pending = _pending.Contains(request);
+                        lastWaveUtc = _lastWaveDisplayedUtc;
+                    }
+
+                    if (!pending)
+                    {
+                        return;
+                    }
+
+                    var silenceAnchor = lastWaveUtc > request.DetectionUtc ? lastWaveUtc : request.DetectionUtc;
+                    if ((DateTime.UtcNow - silenceAnchor).TotalSeconds >= ToastWaitTimeoutSeconds)
+                    {
+                        break;
+                    }
+                }
             }
             catch (OperationCanceledException)
             {
@@ -619,7 +650,7 @@ namespace PlayniteAchievements.Services.Recording
             }
 
             _logger?.Debug(
-                $"[Recording] No toast within {ToastWaitTimeoutSeconds}s for '{request.AchievementName}'; using the detection-anchored clip end.");
+                $"[Recording] No toast after {ToastWaitTimeoutSeconds}s of toast silence for '{request.AchievementName}'; using the detection-anchored clip end.");
             StartClipProduction(request, toastShownUtc: null);
         }
 
@@ -633,6 +664,7 @@ namespace PlayniteAchievements.Services.Recording
             var matches = new List<ClipRequest>();
             lock (_gate)
             {
+                _lastWaveDisplayedUtc = DateTime.UtcNow;
                 foreach (var vm in e.Wave)
                 {
                     var match = _pending.FirstOrDefault(r =>
@@ -692,7 +724,8 @@ namespace PlayniteAchievements.Services.Recording
                     session.CaptureStartUtc,
                     oldestSegmentStartUtc: null,
                     pollIntervalSeconds: pollInterval,
-                    targetClipSeconds: persisted.RecordingClipSeconds);
+                    preRollSeconds: persisted.RecordingClipSeconds,
+                    toastVisibleSeconds: Math.Max(2, persisted.ToastDurationSeconds));
 
                 if ((windowEnd - windowStart).TotalSeconds < SegmentTimeline.MinimumWindowSeconds)
                 {
@@ -815,15 +848,35 @@ namespace PlayniteAchievements.Services.Recording
                         RecordingCommandBuilder.BuildConcatListContent(audioPlan.Segments.Select(s => s.Path)));
                 }
 
-                // Stream-copy first (near-zero CPU while the game runs); one re-encode retry when
-                // the copy fails or produces an empty file.
-                var ok = await RunTrimAsync(session, listPath, plan, audioListPath, audioPlan, tempPath, reencode: false)
+                // Crop the export to the game window's client area (like screenshots) when the
+                // window doesn't already fill the monitor. Cropping forces a re-encode, so a
+                // fullscreen game keeps the cheap stream copy.
+                var crop = ResolveCropRectangle(session);
+
+                // Ladder: preferred form first, then degrade — re-encode retry, then uncropped,
+                // then (below) audio-less. A worse clip always beats no clip.
+                var ok = await RunTrimAsync(session, listPath, plan, audioListPath, audioPlan, tempPath, reencode: false, crop)
                     .ConfigureAwait(false);
                 if (!ok)
                 {
                     TryDeleteFile(tempPath);
-                    ok = await RunTrimAsync(session, listPath, plan, audioListPath, audioPlan, tempPath, reencode: true)
+                    ok = await RunTrimAsync(session, listPath, plan, audioListPath, audioPlan, tempPath, reencode: true, crop)
                         .ConfigureAwait(false);
+                }
+
+                if (!ok && crop.HasValue)
+                {
+                    _logger?.Debug($"[Recording] Cropped export failed for '{request.AchievementName}'; retrying uncropped.");
+                    TryDeleteFile(tempPath);
+                    crop = null;
+                    ok = await RunTrimAsync(session, listPath, plan, audioListPath, audioPlan, tempPath, reencode: false, crop)
+                        .ConfigureAwait(false);
+                    if (!ok)
+                    {
+                        TryDeleteFile(tempPath);
+                        ok = await RunTrimAsync(session, listPath, plan, audioListPath, audioPlan, tempPath, reencode: true, crop)
+                            .ConfigureAwait(false);
+                    }
                 }
 
                 if (!ok && audioPlan != null)
@@ -831,12 +884,12 @@ namespace PlayniteAchievements.Services.Recording
                     // Audio must never cost the clip: retry the whole ladder without it.
                     _logger?.Debug($"[Recording] Clip export with audio failed for '{request.AchievementName}'; retrying video-only.");
                     TryDeleteFile(tempPath);
-                    ok = await RunTrimAsync(session, listPath, plan, null, null, tempPath, reencode: false)
+                    ok = await RunTrimAsync(session, listPath, plan, null, null, tempPath, reencode: false, crop)
                         .ConfigureAwait(false);
                     if (!ok)
                     {
                         TryDeleteFile(tempPath);
-                        ok = await RunTrimAsync(session, listPath, plan, null, null, tempPath, reencode: true)
+                        ok = await RunTrimAsync(session, listPath, plan, null, null, tempPath, reencode: true, crop)
                             .ConfigureAwait(false);
                     }
                 }
@@ -863,6 +916,33 @@ namespace PlayniteAchievements.Services.Recording
             }
         }
 
+        /// <summary>
+        /// Crop region for exports: the game window's client rect (same Win32 resolution the
+        /// screenshots use) mapped into the captured video's pixel space. Null when the window
+        /// can't be resolved, fills the monitor, or the game already exited.
+        /// </summary>
+        private System.Drawing.Rectangle? ResolveCropRectangle(CaptureSession session)
+        {
+            try
+            {
+                var processId = _getRunningGameProcessId?.Invoke();
+                var client = _screenshotService.TryGetGameWindowBounds(processId);
+                if (client == null)
+                {
+                    return null;
+                }
+
+                return RecordingCommandBuilder.ComputeCropRectangle(
+                    session.MonitorBounds,
+                    client.Value,
+                    _settings?.Persisted?.RecordingResolution ?? RecordingResolution.Native);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         private async Task<bool> RunTrimAsync(
             CaptureSession session,
             string listPath,
@@ -870,7 +950,8 @@ namespace PlayniteAchievements.Services.Recording
             string audioListPath,
             SegmentTimeline.ClipPlan audioPlan,
             string tempPath,
-            bool reencode)
+            bool reencode,
+            System.Drawing.Rectangle? crop = null)
         {
             var arguments = RecordingCommandBuilder.BuildTrimArguments(
                 listPath,
@@ -879,7 +960,9 @@ namespace PlayniteAchievements.Services.Recording
                 tempPath,
                 reencode,
                 audioListPath,
-                audioPlan?.StartOffsetSeconds ?? 0);
+                audioPlan?.StartOffsetSeconds ?? 0,
+                crop,
+                session.EncoderArguments);
             using (var host = new FfmpegProcessHost(session.FfmpegPath, arguments, _logger))
             {
                 if (!host.Start(EnsureJobObject()))
@@ -938,10 +1021,11 @@ namespace PlayniteAchievements.Services.Recording
                     $"window=[{Stamp(windowStart)}..{Stamp(windowEnd)}] ({(windowEnd - windowStart).TotalSeconds.ToString("F1", CultureInfo.InvariantCulture)}s) " +
                     $"segments={segmentCount} audio={(hasAudio ? "yes" : "no")}");
 
-                // Verification: the toast (plus tail) must sit inside the clip window.
-                if (toastShownUtc.HasValue && toastShownUtc.Value.AddSeconds(SegmentTimeline.TailSeconds) > windowEnd)
+                // Verification: the toast's full display time must sit inside the clip window.
+                var toastVisible = Math.Max(2, _settings?.Persisted?.ToastDurationSeconds ?? 6);
+                if (toastShownUtc.HasValue && toastShownUtc.Value.AddSeconds(toastVisible) > windowEnd)
                 {
-                    _logger?.Debug("[RecordingTiming] toast tail extends past the window end; the toast may be cut off in the clip.");
+                    _logger?.Debug("[RecordingTiming] toast display extends past the window end; the toast may be cut off in the clip.");
                 }
             }
             catch
@@ -1007,6 +1091,16 @@ namespace PlayniteAchievements.Services.Recording
 
             try
             {
+                // While clip requests are waiting (e.g. many toast waves queued) or encodes are
+                // running, age-based pruning would delete the very segments those clips need —
+                // a late wave's window reaches back to its detection time. Pause the age policy
+                // and keep only the byte cap until the pipeline is idle again.
+                bool clipsOutstanding;
+                lock (_gate)
+                {
+                    clipsOutstanding = _pending.Count > 0 || _inFlightByWindow.Count > 0;
+                }
+
                 var persisted = _settings?.Persisted;
                 var pollInterval = Math.Max(10, persisted?.InGamePollIntervalSeconds ?? 15);
                 var segments = SegmentTimeline.ParseSegments(
@@ -1015,9 +1109,11 @@ namespace PlayniteAchievements.Services.Recording
                         RecordingCommandBuilder.SegmentFilePrefix,
                         RecordingCommandBuilder.SegmentFileExtension),
                     TimeZoneInfo.Local);
+                // 3600 stands in for "don't age-prune" without overflowing the 3x depth math;
+                // the byte cap below still applies.
                 var prunable = SegmentTimeline.SelectPrunable(
                     segments,
-                    pollInterval,
+                    clipsOutstanding ? 3600 : pollInterval,
                     persisted?.RecordingClipSeconds ?? 15,
                     SegmentSeconds,
                     MaxBufferBytes);
