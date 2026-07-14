@@ -57,6 +57,42 @@ namespace PlayniteAchievements.Services.Tests.Recording
             Assert.IsTrue(segments[0].StartUtc < segments[1].StartUtc);
         }
 
+        [TestMethod]
+        public void ParseSegments_AudioPrefixAndExtension_ParsesOnlyAudioChunks()
+        {
+            var chunks = SegmentTimeline.ParseSegments(
+                new[]
+                {
+                    (@"C:\buf\aud_20260101-140005.wav", 2L),
+                    (@"C:\buf\seg_20260101-140000.ts", 1L),
+                    (@"C:\buf\aud_20260101-140000.wav", 1L),
+                    (@"C:\buf\aud_garbage.wav", 1L),
+                    (@"C:\buf\clipaud_abc.txt", 1L)
+                },
+                PlusTwo,
+                "aud_",
+                ".wav");
+
+            Assert.AreEqual(2, chunks.Count);
+            Assert.AreEqual(new DateTime(2026, 1, 1, 12, 0, 0), chunks[0].StartUtc);
+            Assert.AreEqual(new DateTime(2026, 1, 1, 12, 0, 5), chunks[1].StartUtc);
+        }
+
+        [TestMethod]
+        public void ParseSegments_DefaultFilterStillParsesVideoSegmentsOnly()
+        {
+            var segments = SegmentTimeline.ParseSegments(
+                new[]
+                {
+                    (@"C:\buf\seg_20260101-140000.ts", 1L),
+                    (@"C:\buf\aud_20260101-140000.wav", 1L)
+                },
+                PlusTwo);
+
+            Assert.AreEqual(1, segments.Count);
+            StringAssert.EndsWith(segments[0].Path, "seg_20260101-140000.ts");
+        }
+
         // === Precise-unlock detection ===
 
         [TestMethod]
@@ -386,6 +422,25 @@ namespace PlayniteAchievements.Services.Tests.Recording
 
             Assert.AreEqual(1, prunable.Count);
             Assert.AreSame(segments[0], prunable[0]);
+        }
+
+        [TestMethod]
+        public void SelectPrunable_AudioChunks_UseSameRetentionAsVideo()
+        {
+            // Same 5s cadence as the video test: N=15, C=15 -> retain 11 of 15.
+            var chunks = SegmentTimeline.ParseSegments(
+                Enumerable.Range(0, 15)
+                    .Select(i => ($@"C:\buf\aud_{T0.AddHours(2).AddSeconds(i * 5):yyyyMMdd-HHmmss}.wav", 1L))
+                    .ToList(),
+                PlusTwo,
+                "aud_",
+                ".wav");
+
+            var prunable = SegmentTimeline.SelectPrunable(chunks, 15, 15, 5, maxTotalBytes: 0);
+
+            Assert.AreEqual(4, prunable.Count);
+            CollectionAssert.AreEqual(chunks.Take(4).ToList(), prunable);
+            Assert.IsTrue(prunable.All(c => c.Path.Contains("aud_")));
         }
 
         [TestMethod]

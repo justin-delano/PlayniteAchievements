@@ -171,6 +171,55 @@ namespace PlayniteAchievements.Services.Tests.Recording
         }
 
         [TestMethod]
+        public void Trim_WithAudio_SeeksBothInputsAndMuxesAac()
+        {
+            var args = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\video.txt", 2.5, 17.25, @"D:\out\clip.mp4",
+                reencode: false,
+                audioConcatListPath: @"C:\buf\audio.txt",
+                audioStartOffsetSeconds: 1.75);
+
+            StringAssert.Contains(args, "-f concat -safe 0 -ss 2.5 -i \"C:\\buf\\video.txt\"");
+            StringAssert.Contains(args, "-f concat -safe 0 -ss 1.75 -i \"C:\\buf\\audio.txt\"");
+            StringAssert.Contains(
+                args,
+                "-t 17.25 -map 0:v -map 1:a? -c:v copy -c:a aac -b:a 160k -movflags +faststart \"D:\\out\\clip.mp4\"");
+            Assert.IsFalse(args.Contains("libx264"), args);
+        }
+
+        [TestMethod]
+        public void Trim_WithAudio_ReencodeKeepsAudioInputsAndAac()
+        {
+            var args = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\video.txt", 0, 15, @"D:\out\clip.mp4",
+                reencode: true,
+                audioConcatListPath: @"C:\buf\audio.txt",
+                audioStartOffsetSeconds: 3);
+
+            StringAssert.Contains(args, "-ss 3 -i \"C:\\buf\\audio.txt\"");
+            StringAssert.Contains(
+                args,
+                "-map 0:v -map 1:a? -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -c:a aac -b:a 160k");
+            Assert.IsFalse(args.Contains("-c copy"), args);
+        }
+
+        [TestMethod]
+        public void Trim_WithoutAudioList_MatchesVideoOnlyArguments()
+        {
+            var baseline = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\list.txt", 2.5, 17.25, @"D:\out\clip.mp4");
+            var withNullAudio = RecordingCommandBuilder.BuildTrimArguments(
+                @"C:\buf\list.txt", 2.5, 17.25, @"D:\out\clip.mp4",
+                reencode: false,
+                audioConcatListPath: null,
+                audioStartOffsetSeconds: 3);
+
+            Assert.AreEqual(baseline, withNullAudio);
+            Assert.IsFalse(baseline.Contains("-map"), baseline);
+            Assert.IsFalse(baseline.Contains("aac"), baseline);
+        }
+
+        [TestMethod]
         public void ConcatList_QuotesAndEscapesApostrophes()
         {
             var content = RecordingCommandBuilder.BuildConcatListContent(new[]
