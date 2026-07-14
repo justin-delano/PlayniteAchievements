@@ -459,7 +459,10 @@ namespace PlayniteAchievements.Providers.Steam
                 return Task.CompletedTask;
             }
 
-            return _steamHuntersCategoryEnricher.EnrichAsync(appId, gameName, achievements, cancel);
+            // Friends refreshes never download default category images (playniteGameId: null):
+            // friend grids do not render category grouping, and owned games get their images
+            // from the owner's own library scan.
+            return _steamHuntersCategoryEnricher.EnrichAsync(appId, gameName, achievements, playniteGameId: null, cancel);
         }
 
         private static bool ShouldUseSteamHuntersForCategories()
