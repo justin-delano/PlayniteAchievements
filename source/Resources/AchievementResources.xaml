@@ -324,12 +324,26 @@
                     <StackPanel Grid.Column="1"
                                 VerticalAlignment="Center"
                                 Margin="26,0,22,0">
-                        <TextBlock Text="{Binding HeaderText}"
-                                   Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
-                                   Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
-                                   FontSize="17"
-                                   TextTrimming="CharacterEllipsis"
-                                   Visibility="{Binding FrameShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <!-- Header row: "Achievement unlocked  •  1/1/1999 10:00 PM" (the
+                             datetime is current-culture localized; separator needs both parts) -->
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding HeaderText}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="{Binding FrameShowHeader, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="  &#8226;  "
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       Visibility="{Binding FrameShowHeaderDateSeparator, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="{Binding UnlockDateTimeText}"
+                                       Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text.Secondary}"
+                                       FontSize="17"
+                                       Visibility="{Binding HasUnlockTime, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </StackPanel>
                         <TextBlock Text="{Binding TitleText}"
                                    Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                    Foreground="{Binding FrameTitleBrush}"

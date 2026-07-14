@@ -60,6 +60,24 @@ namespace PlayniteAchievements.ViewModels
             !string.IsNullOrWhiteSpace(_args.Category) &&
             !string.Equals(_args.Category?.Trim(), _args.GameName?.Trim(), StringComparison.OrdinalIgnoreCase);
 
+        // Unlock timestamp bindings (local time, current-culture formatting like the grids'
+        // UnlockTimeText). A midnight time-of-day means a date-only provider timestamp, so the
+        // time portion is suppressed. Available to both toast and frame templates.
+        private DateTime? UnlockTimeLocal => Common.DateTimeUtilities.AsLocalFromUtc(_args.UnlockTimeUtc);
+        public bool HasUnlockTime => UnlockTimeLocal.HasValue;
+        public string UnlockDateText => UnlockTimeLocal?.ToString("d") ?? string.Empty;
+        public string UnlockTimeText => UnlockTimeLocal.HasValue && UnlockTimeLocal.Value.TimeOfDay != TimeSpan.Zero
+            ? UnlockTimeLocal.Value.ToString("t")
+            : string.Empty;
+        public string UnlockDateTimeText => UnlockTimeLocal.HasValue
+            ? UnlockTimeLocal.Value.TimeOfDay != TimeSpan.Zero
+                ? UnlockTimeLocal.Value.ToString("g")
+                : UnlockTimeLocal.Value.ToString("d")
+            : string.Empty;
+
+        // The frame's header row shows "header • unlock datetime"; the separator needs both.
+        public bool FrameShowHeaderDateSeparator => FrameShowHeader && HasUnlockTime;
+
         // Frame-scoped visibility/appearance: the screenshot frame honors its own FrameShow*
         // settings so the saved image can show different fields than the on-screen toast.
         public bool FrameShowHeader => IsFriendUnlock || _settings.FrameShowHeader;

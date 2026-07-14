@@ -295,7 +295,8 @@ namespace PlayniteAchievements.Views.Settings.General
                     GlobalPercent = percent,
                     IsCapstone = capstone,
                     UnlockedCount = 27,
-                    TotalCount = 40
+                    TotalCount = 40,
+                    UnlockTimeUtc = DateTime.UtcNow.AddMinutes(-3)
                 };
             }
         }
