@@ -38,6 +38,7 @@ namespace PlayniteAchievements.ViewModels
         internal string AchievementName => _args.DisplayName;
         internal int AchievementNumber => _args.AchievementNumber;
         internal int TotalCount => _args.TotalCount;
+        internal Guid PlayniteGameId => _args.PlayniteGameId;
 
         // The header identifies who unlocked the achievement, so it is mandatory for friend
         // unlocks; for your own unlocks it honors the user's toggle.

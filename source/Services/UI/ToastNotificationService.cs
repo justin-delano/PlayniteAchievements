@@ -34,6 +34,10 @@ namespace PlayniteAchievements.Services.UI
         // The corner the current wave uses, resolved once per wave (theme override or plugin
         // setting). Read by the per-frame positioning path so it isn't re-resolved every frame.
         private ToastScreenCorner _activePosition = ToastScreenCorner.BottomRight;
+        // The game the current wave belongs to, resolved once per wave. Screenshot capture and
+        // toast placement key window resolution off this game so a wave from one running game
+        // never anchors to another running game's window.
+        private Guid? _activeWaveGameId;
 
         public ToastNotificationService(
             IPlayniteAPI api,
@@ -180,6 +184,48 @@ namespace PlayniteAchievements.Services.UI
             dispatcher.BeginInvoke(new Action(() => _queue.Clear()), DispatcherPriority.Background);
         }
 
+        /// <summary>
+        /// Drops queued (not-yet-shown) unlock toasts belonging to one game. Called when that game
+        /// stops so its stale unlocks don't pop after it closed, while queued toasts from other
+        /// still-running games stay untouched.
+        /// </summary>
+        public void ClearPending(Guid gameId)
+        {
+            if (_disposed || gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var dispatcher = GetDispatcher();
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                RemovePendingForGame(gameId);
+                return;
+            }
+
+            dispatcher.BeginInvoke(new Action(() => RemovePendingForGame(gameId)), DispatcherPriority.Background);
+        }
+
+        private void RemovePendingForGame(Guid gameId)
+        {
+            if (_queue.Count == 0)
+            {
+                return;
+            }
+
+            var kept = _queue.Where(vm => vm.PlayniteGameId != gameId).ToList();
+            if (kept.Count == _queue.Count)
+            {
+                return;
+            }
+
+            _queue.Clear();
+            foreach (var vm in kept)
+            {
+                _queue.Enqueue(vm);
+            }
+        }
+
         private async Task ProcessQueueAsync()
         {
             try
@@ -221,8 +267,14 @@ namespace PlayniteAchievements.Services.UI
                 return result;
             }
 
+            // Waves batch by friend/own and by game: a cross-game wave would share one screenshot
+            // window and one placement anchor between two different game windows.
             var isFriendWave = _queue.Peek().IsFriendUnlock;
-            while (_queue.Count > 0 && result.Count < max && _queue.Peek().IsFriendUnlock == isFriendWave)
+            var waveGameId = _queue.Peek().PlayniteGameId;
+            while (_queue.Count > 0 &&
+                   result.Count < max &&
+                   _queue.Peek().IsFriendUnlock == isFriendWave &&
+                   _queue.Peek().PlayniteGameId == waveGameId)
             {
                 result.Add(_queue.Dequeue());
             }
@@ -243,6 +295,8 @@ namespace PlayniteAchievements.Services.UI
             // setting. Positioning (including the per-frame game-window follow) and slide direction
             // both read the resolved value.
             _activePosition = EffectivePosition();
+            var waveGameId = wave[0].PlayniteGameId;
+            _activeWaveGameId = waveGameId != Guid.Empty ? waveGameId : (Guid?)null;
 
             // Toasts and screenshots gate independently: a wave can contain items that toast,
             // items that only produce screenshots, or a mix (waves batch by friend/own only).
@@ -257,7 +311,7 @@ namespace PlayniteAchievements.Services.UI
             Task<System.Drawing.Bitmap> cleanCaptureTask = null;
             if (plan != null && plan.NeedsCleanCapture)
             {
-                var processId = _getGameProcessId?.Invoke(null);
+                var processId = _getGameProcessId?.Invoke(_activeWaveGameId);
                 cleanCaptureTask = Task.Run(() => _screenshotService.CaptureGameWindow(processId));
             }
 
@@ -340,7 +394,7 @@ namespace PlayniteAchievements.Services.UI
                 System.Drawing.Bitmap toastBitmap = null;
                 if (plan != null && plan.NeedsToastCapture)
                 {
-                    var processId = _getGameProcessId?.Invoke(null);
+                    var processId = _getGameProcessId?.Invoke(_activeWaveGameId);
                     toastBitmap = await Task.Run(() => _screenshotService.CaptureGameWindow(processId))
                         .ConfigureAwait(true);
                 }
@@ -354,7 +408,7 @@ namespace PlayniteAchievements.Services.UI
                 // Follow the game window every rendered frame (smooth while dragging). The handle
                 // is resolved once — for launcher games that's the foreground game window at show
                 // time, which stays valid even if focus later changes.
-                var gameHwnd = _screenshotService.ResolveGameWindowHandle(_getGameProcessId?.Invoke(null));
+                var gameHwnd = _screenshotService.ResolveGameWindowHandle(_getGameProcessId?.Invoke(_activeWaveGameId));
                 if (gameHwnd != IntPtr.Zero)
                 {
                     onRendering = (s, e) =>
@@ -711,7 +765,7 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private Rect ResolvePlacementArea(Window window)
         {
-            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(_getGameProcessId?.Invoke(null));
+            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(_getGameProcessId?.Invoke(_activeWaveGameId));
             if (pixelBounds.HasValue)
             {
                 var dip = ConvertPhysicalToDip(window, pixelBounds.Value);
