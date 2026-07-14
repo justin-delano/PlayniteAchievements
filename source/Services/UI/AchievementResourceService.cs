@@ -10,6 +10,7 @@ namespace PlayniteAchievements.Services.UI
     internal sealed class AchievementResourceService
     {
         private readonly ILogger _logger;
+        private volatile bool _loaded;
 
         public AchievementResourceService(ILogger logger)
         {
@@ -18,6 +19,15 @@ namespace PlayniteAchievements.Services.UI
 
         public void EnsureAchievementResourcesLoaded(PlayniteAchievementsSettings settings)
         {
+            // This runs per theme-control creation (once per visible library tile), and the
+            // token/badge writes below mutate Application.Current.Resources — an app-wide
+            // DynamicResource invalidation. Apply once; settings changes reapply through
+            // SettingsViewModel.ApplyThemeResources and PersistedSettings_PropertyChanged.
+            if (_loaded)
+            {
+                return;
+            }
+
             try
             {
                 var app = Application.Current;
@@ -51,6 +61,8 @@ namespace PlayniteAchievements.Services.UI
                 {
                     app.Dispatcher.Invoke(LoadResources, DispatcherPriority.Normal);
                 }
+
+                _loaded = true;
             }
             catch (Exception ex)
             {
