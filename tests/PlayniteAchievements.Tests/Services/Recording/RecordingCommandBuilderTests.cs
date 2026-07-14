@@ -320,8 +320,10 @@ namespace PlayniteAchievements.Services.Tests.Recording
                 RecordingResolution.Native);
 
             Assert.IsTrue(crop.HasValue);
+            // The origin rounds UP to even (101 -> 102) so no border pixel above the client
+            // area leaks into the crop; the far edges round down.
             Assert.AreEqual(100, crop.Value.X);
-            Assert.AreEqual(100, crop.Value.Y);
+            Assert.AreEqual(102, crop.Value.Y);
             Assert.AreEqual(1280, crop.Value.Width);
             Assert.AreEqual(720, crop.Value.Height);
         }

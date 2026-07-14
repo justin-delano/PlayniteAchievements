@@ -271,13 +271,20 @@ namespace PlayniteAchievements.Services.Recording
                 : capturedWidth;
             var scaledHeight = scale < 1.0 ? targetHeight : capturedHeight;
 
-            var x = Math.Max(0, (int)Math.Floor((client.X - monitorBounds.X) * scale)) & ~1;
-            var y = Math.Max(0, (int)Math.Floor((client.Y - monitorBounds.Y) * scale)) & ~1;
-            var width = ((int)Math.Floor(client.Width * scale)) & ~1;
-            var height = ((int)Math.Floor(client.Height * scale)) & ~1;
+            // The crop must sit strictly INSIDE the client area: the origin rounds UP to even
+            // and the far edge rounds DOWN, so no window-border pixels bleed into the clip
+            // (a floor-rounded origin lets a 1px sliver of chrome show as a line at the edge).
+            var left = (client.X - monitorBounds.X) * scale;
+            var top = (client.Y - monitorBounds.Y) * scale;
+            var right = (client.Right - monitorBounds.X) * scale;
+            var bottom = (client.Bottom - monitorBounds.Y) * scale;
 
-            width = Math.Min(width, scaledWidth - x);
-            height = Math.Min(height, scaledHeight - y);
+            var x = Math.Max(0, ((int)Math.Ceiling(left) + 1) & ~1);
+            var y = Math.Max(0, ((int)Math.Ceiling(top) + 1) & ~1);
+            var width = Math.Min((int)Math.Floor(right), scaledWidth) - x;
+            var height = Math.Min((int)Math.Floor(bottom), scaledHeight) - y;
+            width &= ~1;
+            height &= ~1;
             if (width < 64 || height < 64)
             {
                 return null;
