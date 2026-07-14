@@ -84,7 +84,7 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (playniteGameId.HasValue && playniteGameId.Value != Guid.Empty)
             {
-                await DownloadDlcCategoryImagesAsync(playniteGameId.Value, response, cancel)
+                await DownloadDlcCategoryImagesAsync(playniteGameId.Value, response, gameName, cancel)
                     .ConfigureAwait(false);
             }
         }
@@ -94,7 +94,8 @@ namespace PlayniteAchievements.Providers.Steam
         // Dedupe is first-wins by label to match the assignment order in ApplyGroups.
         internal static IReadOnlyList<KeyValuePair<string, int>> BuildDlcImagePlan(
             IList<SteamHuntersAchievementGroup> groups,
-            string groupBy)
+            string groupBy,
+            string gameName = null)
         {
             var plan = new List<KeyValuePair<string, int>>();
             if (groups == null || groups.Count == 0)
@@ -112,7 +113,7 @@ namespace PlayniteAchievements.Providers.Steam
                     continue;
                 }
 
-                var label = NormalizeGroupLabel(group);
+                var label = NormalizeGroupLabel(group, gameName);
                 if (label == null || !seenLabels.Add(label))
                 {
                     continue;
@@ -132,6 +133,7 @@ namespace PlayniteAchievements.Providers.Steam
         private async Task DownloadDlcCategoryImagesAsync(
             Guid playniteGameId,
             SteamHuntersAchievementGroupsResponse response,
+            string gameName,
             CancellationToken cancel)
         {
             var diskImageService = _diskImageServiceResolver?.Invoke();
@@ -140,7 +142,7 @@ namespace PlayniteAchievements.Providers.Steam
                 return;
             }
 
-            var plan = BuildDlcImagePlan(response?.Groups, response?.GroupBy);
+            var plan = BuildDlcImagePlan(response?.Groups, response?.GroupBy, gameName);
             if (plan.Count == 0)
             {
                 return;
@@ -224,7 +226,7 @@ namespace PlayniteAchievements.Providers.Steam
             {
                 var group = groups[i];
                 var type = ResolveCategoryType(groupBy, group);
-                var label = NormalizeGroupLabel(group)
+                var label = NormalizeGroupLabel(group, gameName)
                     ?? (string.Equals(type, BaseCategoryType, StringComparison.Ordinal)
                         ? baseFallbackLabel
                         : null);
@@ -348,7 +350,7 @@ namespace PlayniteAchievements.Providers.Steam
             return string.IsNullOrWhiteSpace(normalized) ? null : normalized;
         }
 
-        private static string NormalizeGroupLabel(SteamHuntersAchievementGroup group)
+        private static string NormalizeGroupLabel(SteamHuntersAchievementGroup group, string gameName)
         {
             var label = group?.Name;
             if (string.IsNullOrWhiteSpace(label))
@@ -357,7 +359,32 @@ namespace PlayniteAchievements.Providers.Steam
             }
 
             label = label?.Trim();
-            return string.IsNullOrWhiteSpace(label) ? null : label;
+            return string.IsNullOrWhiteSpace(label) ? null : StripGameNamePrefix(label, gameName);
+        }
+
+        // Steam store DLC names usually repeat the game name ("Cyberpunk 2077: Phantom
+        // Liberty"); drop that prefix so category labels read as just the DLC/update name.
+        // Only strips when a separator follows the game name, so labels that merely start
+        // with the game name ("Cyberpunk 2077 Ultimate") are left alone.
+        internal static string StripGameNamePrefix(string label, string gameName)
+        {
+            var normalizedGameName = gameName?.Trim();
+            if (string.IsNullOrWhiteSpace(label) ||
+                string.IsNullOrWhiteSpace(normalizedGameName) ||
+                label.Length <= normalizedGameName.Length ||
+                !label.StartsWith(normalizedGameName, StringComparison.OrdinalIgnoreCase))
+            {
+                return label;
+            }
+
+            var remainder = label.Substring(normalizedGameName.Length).TrimStart();
+            if (remainder.Length == 0 || (remainder[0] != ':' && remainder[0] != '-' && remainder[0] != '–' && remainder[0] != '—'))
+            {
+                return label;
+            }
+
+            var stripped = remainder.TrimStart(':', '-', '–', '—', ' ', '\t');
+            return string.IsNullOrWhiteSpace(stripped) ? label : stripped;
         }
     }
 }
