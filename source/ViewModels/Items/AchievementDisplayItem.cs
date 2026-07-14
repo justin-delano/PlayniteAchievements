@@ -11,6 +11,7 @@ using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Images;
 using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
@@ -1402,9 +1403,11 @@ namespace PlayniteAchievements.ViewModels.Items
 
             item.CategoryIconPath =
                 ResolveCategoryImageOverridePath(imageOverride?.Icon, playniteGameId) ??
+                CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedCategory, CategoryImageKind.Icon) ??
                 defaultIconPath;
             item.CategoryCoverPath =
                 ResolveCategoryImageOverridePath(imageOverride?.Cover, playniteGameId) ??
+                CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedCategory, CategoryImageKind.Cover) ??
                 defaultCoverPath;
         }
 
