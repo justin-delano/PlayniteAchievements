@@ -537,18 +537,10 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     var iconTarget = diskImageService.GetDefaultCategoryImagePath(
                         gameIdText, entry.Label, CategoryImageKind.Icon);
                     // decodeSize 0 stores the original bytes: no square crop, original aspect.
+                    // Icons only: no cover file is ever written, so the cover slot keeps the
+                    // natural Playnite game-cover fallback.
                     await diskImageService.GetOrDownloadIconToPathAsync(
                         entry.IconUrl, iconTarget, decodeSize: 0, cancel).ConfigureAwait(false);
-
-                    // Sets without real box art get no cover file; the display then falls
-                    // back to the Playnite game cover naturally.
-                    if (entry.CoverUrl != null)
-                    {
-                        var coverTarget = diskImageService.GetDefaultCategoryImagePath(
-                            gameIdText, entry.Label, CategoryImageKind.Cover);
-                        await diskImageService.GetOrDownloadIconToPathAsync(
-                            entry.CoverUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
-                    }
                 }
                 catch (OperationCanceledException) when (cancel.IsCancellationRequested)
                 {
