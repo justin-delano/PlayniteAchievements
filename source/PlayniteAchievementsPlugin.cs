@@ -336,6 +336,7 @@ namespace PlayniteAchievements
                 using (PerfScope.StartStartup(_logger, "PluginCtor.RefreshServiceCreation", thresholdMs: 50))
                 {
                     _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
+                    CategoryDefaultImageResolver.DiskImageServiceAccessor = () => _diskImageService;
                     _managedCustomIconService = new ManagedCustomIconService(_diskImageService, _logger);
                     _imageService = new MemoryImageService(_logger, _diskImageService);
                     _gameCustomDataStore.AttachManagedCustomIconService(_managedCustomIconService);
