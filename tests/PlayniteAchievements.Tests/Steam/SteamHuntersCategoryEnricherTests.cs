@@ -257,6 +257,77 @@ namespace PlayniteAchievements.Steam.Tests
         }
 
         [TestMethod]
+        public void ApplyGroups_LabelWithGameNamePrefix_StripsPrefix()
+        {
+            var achievements = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "dlc_ach" }
+            };
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 2138330,
+                    DlcAppName = "Cyberpunk 2077: Phantom Liberty",
+                    AchievementApiNames = new List<string> { "dlc_ach" }
+                }
+            };
+
+            SteamHuntersCategoryEnricher.ApplyGroups(achievements, groups, "dlcandupdate", "Cyberpunk 2077");
+
+            Assert.AreEqual("Phantom Liberty", achievements[0].Category);
+        }
+
+        [TestMethod]
+        public void BuildDlcImagePlan_LabelWithGameNamePrefix_KeysByStrippedLabel()
+        {
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 2138330,
+                    DlcAppName = "Cyberpunk 2077: Phantom Liberty"
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "dlcandupdate", "Cyberpunk 2077");
+
+            Assert.AreEqual(1, plan.Count);
+            Assert.AreEqual("Phantom Liberty", plan[0].Key);
+        }
+
+        [TestMethod]
+        public void StripGameNamePrefix_HandlesSeparatorsAndGuards()
+        {
+            Assert.AreEqual(
+                "Phantom Liberty",
+                SteamHuntersCategoryEnricher.StripGameNamePrefix("Cyberpunk 2077: Phantom Liberty", "Cyberpunk 2077"));
+            Assert.AreEqual(
+                "Trapped in Limbo",
+                SteamHuntersCategoryEnricher.StripGameNamePrefix("Atomic Heart - Trapped in Limbo", "Atomic Heart"));
+            Assert.AreEqual(
+                "Endgame",
+                SteamHuntersCategoryEnricher.StripGameNamePrefix("Deep Rock Galactic – Endgame", "deep rock galactic"));
+
+            // No separator after the game name: leave the label alone.
+            Assert.AreEqual(
+                "Cyberpunk 2077 Ultimate",
+                SteamHuntersCategoryEnricher.StripGameNamePrefix("Cyberpunk 2077 Ultimate", "Cyberpunk 2077"));
+            // Label identical to the game name: leave the label alone.
+            Assert.AreEqual(
+                "Cyberpunk 2077",
+                SteamHuntersCategoryEnricher.StripGameNamePrefix("Cyberpunk 2077", "Cyberpunk 2077"));
+            // Nothing left after stripping: leave the label alone.
+            Assert.AreEqual(
+                "Cyberpunk 2077:",
+                SteamHuntersCategoryEnricher.StripGameNamePrefix("Cyberpunk 2077:", "Cyberpunk 2077"));
+            // Missing game name: leave the label alone.
+            Assert.AreEqual(
+                "Game: DLC",
+                SteamHuntersCategoryEnricher.StripGameNamePrefix("Game: DLC", null));
+        }
+
+        [TestMethod]
         public void BuildDlcImagePlan_NullOrEmptyGroups_YieldsNothing()
         {
             Assert.AreEqual(0, SteamHuntersCategoryEnricher.BuildDlcImagePlan(null, "dlcandupdate").Count);
