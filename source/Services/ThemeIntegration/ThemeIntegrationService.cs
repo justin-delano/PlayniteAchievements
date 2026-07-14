@@ -3437,7 +3437,7 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             source = source.Where(friend => FriendMatchesProvider(friend, scope.ProviderKey));
             if (selectedGame != null)
             {
-                source = source.Where(friend => projection.HasUnlocksForFriendGame(friend, selectedGame));
+                source = source.Where(friend => projection.HasFriendGamePairData(friend, selectedGame));
             }
 
             source = ApplyDynamicFilterPredicates(source, viewState.FilterKey, FriendSummaryFilterPredicates);
