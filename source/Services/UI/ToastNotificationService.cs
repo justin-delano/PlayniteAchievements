@@ -24,6 +24,9 @@ namespace PlayniteAchievements.Services.UI
         private readonly Action _ensureResourcesLoaded;
         // Resolves the started process id for a game (null game id: most recently started game).
         private readonly Func<Guid?, int?> _getGameProcessId;
+        // Optional foreground tracker: supplies the learned game window handle, which beats the
+        // pid-based resolve for launcher-wrapped titles.
+        private readonly ActiveGameWindowTracker _windowTracker;
         private readonly UnlockScreenshotService _screenshotService;
         private readonly ScreenshotFrameCompositor _frameCompositor;
         private readonly AchievementToastTemplateResolver _templateResolver;
@@ -44,13 +47,15 @@ namespace PlayniteAchievements.Services.UI
             PlayniteAchievementsSettings settings,
             ILogger logger,
             Action ensureResourcesLoaded,
-            Func<Guid?, int?> getGameProcessId = null)
+            Func<Guid?, int?> getGameProcessId = null,
+            ActiveGameWindowTracker windowTracker = null)
         {
             _api = api;
             _settings = settings;
             _logger = logger;
             _ensureResourcesLoaded = ensureResourcesLoaded;
             _getGameProcessId = getGameProcessId;
+            _windowTracker = windowTracker;
             _screenshotService = new UnlockScreenshotService(logger);
             _frameCompositor = new ScreenshotFrameCompositor(logger);
             _templateResolver = new AchievementToastTemplateResolver(api, logger);
@@ -226,6 +231,17 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
+        /// <summary>
+        /// The current wave's game window handle as learned by the foreground tracker, or
+        /// IntPtr.Zero when no tracker/game is available (callers fall back to pid resolution).
+        /// </summary>
+        private IntPtr ResolveWaveWindowHandle()
+        {
+            return _activeWaveGameId.HasValue && _windowTracker != null
+                ? _windowTracker.TryGetWindowHandle(_activeWaveGameId.Value)
+                : IntPtr.Zero;
+        }
+
         private async Task ProcessQueueAsync()
         {
             try
@@ -311,8 +327,9 @@ namespace PlayniteAchievements.Services.UI
             Task<System.Drawing.Bitmap> cleanCaptureTask = null;
             if (plan != null && plan.NeedsCleanCapture)
             {
+                var waveHwnd = ResolveWaveWindowHandle();
                 var processId = _getGameProcessId?.Invoke(_activeWaveGameId);
-                cleanCaptureTask = Task.Run(() => _screenshotService.CaptureGameWindow(processId));
+                cleanCaptureTask = Task.Run(() => _screenshotService.CaptureGameWindow(waveHwnd, processId));
             }
 
             // Screenshot-only wave: no sound, no window, no delays — capture and save. Running
@@ -394,8 +411,9 @@ namespace PlayniteAchievements.Services.UI
                 System.Drawing.Bitmap toastBitmap = null;
                 if (plan != null && plan.NeedsToastCapture)
                 {
+                    var waveHwnd = ResolveWaveWindowHandle();
                     var processId = _getGameProcessId?.Invoke(_activeWaveGameId);
-                    toastBitmap = await Task.Run(() => _screenshotService.CaptureGameWindow(processId))
+                    toastBitmap = await Task.Run(() => _screenshotService.CaptureGameWindow(waveHwnd, processId))
                         .ConfigureAwait(true);
                 }
 
@@ -408,7 +426,9 @@ namespace PlayniteAchievements.Services.UI
                 // Follow the game window every rendered frame (smooth while dragging). The handle
                 // is resolved once — for launcher games that's the foreground game window at show
                 // time, which stays valid even if focus later changes.
-                var gameHwnd = _screenshotService.ResolveGameWindowHandle(_getGameProcessId?.Invoke(_activeWaveGameId));
+                var gameHwnd = _screenshotService.ResolveGameWindowHandle(
+                    ResolveWaveWindowHandle(),
+                    _getGameProcessId?.Invoke(_activeWaveGameId));
                 if (gameHwnd != IntPtr.Zero)
                 {
                     onRendering = (s, e) =>
@@ -765,7 +785,9 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private Rect ResolvePlacementArea(Window window)
         {
-            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(_getGameProcessId?.Invoke(_activeWaveGameId));
+            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(
+                ResolveWaveWindowHandle(),
+                _getGameProcessId?.Invoke(_activeWaveGameId));
             if (pixelBounds.HasValue)
             {
                 var dip = ConvertPhysicalToDip(window, pixelBounds.Value);

@@ -150,9 +150,19 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         public Bitmap CaptureGameWindow(int? startedProcessId)
         {
+            return CaptureGameWindow(IntPtr.Zero, startedProcessId);
+        }
+
+        /// <summary>
+        /// Capture overload for callers that already resolved the game window (e.g. via the
+        /// foreground tracker): a valid <paramref name="knownHwnd"/> wins, the started-process
+        /// resolution is the fallback.
+        /// </summary>
+        public Bitmap CaptureGameWindow(IntPtr knownHwnd, int? startedProcessId)
+        {
             try
             {
-                var bounds = TryResolveGameWindowBounds(startedProcessId, out var rect, out var hwnd)
+                var bounds = TryResolveGameWindowBounds(knownHwnd, startedProcessId, out var rect, out var hwnd)
                     ? rect
                     : ResolveMonitorBounds(hwnd);
                 if (bounds.Width <= 0 || bounds.Height <= 0)
@@ -307,13 +317,22 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         public Rectangle? TryGetGameWindowBounds(int? startedProcessId)
         {
-            // No game running -> caller (toast placement) uses the work area.
-            if (!startedProcessId.HasValue)
+            return TryGetGameWindowBounds(IntPtr.Zero, startedProcessId);
+        }
+
+        /// <summary>
+        /// Bounds overload for callers with a known game window handle; the started-process
+        /// resolution is the fallback.
+        /// </summary>
+        public Rectangle? TryGetGameWindowBounds(IntPtr knownHwnd, int? startedProcessId)
+        {
+            // No game window and no game running -> caller (toast placement) uses the work area.
+            if (knownHwnd == IntPtr.Zero && !startedProcessId.HasValue)
             {
                 return null;
             }
 
-            return TryResolveGameWindowBounds(startedProcessId, out var bounds, out _)
+            return TryResolveGameWindowBounds(knownHwnd, startedProcessId, out var bounds, out _)
                 ? bounds
                 : (Rectangle?)null;
         }
@@ -326,7 +345,16 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         public Rectangle? TryGetGameMonitorBounds(int? startedProcessId)
         {
-            var hwnd = ResolveWindow(startedProcessId);
+            return TryGetGameMonitorBounds(IntPtr.Zero, startedProcessId);
+        }
+
+        /// <summary>
+        /// Monitor-bounds overload for callers with a known game window handle; the
+        /// started-process resolution is the fallback.
+        /// </summary>
+        public Rectangle? TryGetGameMonitorBounds(IntPtr knownHwnd, int? startedProcessId)
+        {
+            var hwnd = ResolveWindow(knownHwnd, startedProcessId);
             if (hwnd == IntPtr.Zero)
             {
                 return null;
@@ -343,6 +371,20 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         public IntPtr ResolveGameWindowHandle(int? startedProcessId)
         {
+            return ResolveGameWindowHandle(IntPtr.Zero, startedProcessId);
+        }
+
+        /// <summary>
+        /// Handle-resolution overload for callers with a known game window handle; the
+        /// started-process resolution is the fallback.
+        /// </summary>
+        public IntPtr ResolveGameWindowHandle(IntPtr knownHwnd, int? startedProcessId)
+        {
+            if (knownHwnd != IntPtr.Zero && TryGetWindowRectangle(knownHwnd, out _))
+            {
+                return knownHwnd;
+            }
+
             return startedProcessId.HasValue ? ResolveWindow(startedProcessId) : IntPtr.Zero;
         }
 
@@ -381,8 +423,17 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private static bool TryResolveGameWindowBounds(int? startedProcessId, out Rectangle bounds, out IntPtr hwnd)
         {
+            return TryResolveGameWindowBounds(IntPtr.Zero, startedProcessId, out bounds, out hwnd);
+        }
+
+        private static bool TryResolveGameWindowBounds(
+            IntPtr knownHwnd,
+            int? startedProcessId,
+            out Rectangle bounds,
+            out IntPtr hwnd)
+        {
             bounds = Rectangle.Empty;
-            hwnd = ResolveWindow(startedProcessId);
+            hwnd = ResolveWindow(knownHwnd, startedProcessId);
             if (hwnd == IntPtr.Zero || !TryGetWindowRectangle(hwnd, out var window))
             {
                 return false;
@@ -401,6 +452,18 @@ namespace PlayniteAchievements.Services.UI
 
             bounds = window;
             return true;
+        }
+
+        private static IntPtr ResolveWindow(IntPtr knownHwnd, int? startedProcessId)
+        {
+            // A caller-supplied handle (foreground tracker) beats pid resolution: for
+            // launcher-wrapped titles the started process often has no (or the wrong) window.
+            if (knownHwnd != IntPtr.Zero && TryGetWindowRectangle(knownHwnd, out _))
+            {
+                return knownHwnd;
+            }
+
+            return ResolveWindow(startedProcessId);
         }
 
         private static IntPtr ResolveWindow(int? startedProcessId)
