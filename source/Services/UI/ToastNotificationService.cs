@@ -249,10 +249,14 @@ namespace PlayniteAchievements.Services.UI
                 await Task.Delay(125).ConfigureAwait(true);
                 while (!_disposed && _queue.Count > 0)
                 {
-                    var wave = DequeueNextWave();
+                    var wave = DequeueNextReadyWave();
                     if (wave.Count == 0)
                     {
-                        break;
+                        // Every queued wave belongs to a running game that isn't focused right now
+                        // (another window or an overlay is on top). Hold and re-check; a game's
+                        // pending toasts are dropped by ClearPending when it stops.
+                        await Task.Delay(1000).ConfigureAwait(true);
+                        continue;
                     }
 
                     await ShowWaveAsync(wave).ConfigureAwait(true);
@@ -274,7 +278,14 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        private List<AchievementToastViewModel> DequeueNextWave()
+        /// <summary>
+        /// Dequeues the next wave whose game is ready to receive it (focused, or not a running
+        /// game at all). Waves batch by friend/own and by game: a cross-game wave would share one
+        /// screenshot window and one placement anchor between two different game windows. A held
+        /// wave (its game running but not focused) is skipped over so it never blocks another
+        /// game's ready toasts; per-game ordering is preserved.
+        /// </summary>
+        private List<AchievementToastViewModel> DequeueNextReadyWave()
         {
             var max = Math.Max(1, _settings?.Persisted?.MaxConcurrentToasts ?? 3);
             var result = new List<AchievementToastViewModel>(max);
@@ -283,19 +294,55 @@ namespace PlayniteAchievements.Services.UI
                 return result;
             }
 
-            // Waves batch by friend/own and by game: a cross-game wave would share one screenshot
-            // window and one placement anchor between two different game windows.
-            var isFriendWave = _queue.Peek().IsFriendUnlock;
-            var waveGameId = _queue.Peek().PlayniteGameId;
-            while (_queue.Count > 0 &&
-                   result.Count < max &&
-                   _queue.Peek().IsFriendUnlock == isFriendWave &&
-                   _queue.Peek().PlayniteGameId == waveGameId)
+            var items = _queue.ToList();
+            var anchorIndex = items.FindIndex(IsWaveGameReady);
+            if (anchorIndex < 0)
             {
-                result.Add(_queue.Dequeue());
+                return result;
+            }
+
+            var anchor = items[anchorIndex];
+            var end = anchorIndex;
+            while (end < items.Count &&
+                   result.Count < max &&
+                   items[end].IsFriendUnlock == anchor.IsFriendUnlock &&
+                   items[end].PlayniteGameId == anchor.PlayniteGameId)
+            {
+                result.Add(items[end]);
+                end++;
+            }
+
+            _queue.Clear();
+            for (var i = 0; i < items.Count; i++)
+            {
+                if (i < anchorIndex || i >= end)
+                {
+                    _queue.Enqueue(items[i]);
+                }
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// A wave may show when its game's window is focused. Previews, unlocks without a game
+        /// id, and games that aren't running (e.g. friend unlocks for unowned titles) are always
+        /// ready; a running game that is backgrounded — or covered by an overlay, which
+        /// classifies as no-game-foreground — holds its toasts until it has focus again.
+        /// </summary>
+        private bool IsWaveGameReady(AchievementToastViewModel vm)
+        {
+            if (vm == null || vm.IsPreview || vm.PlayniteGameId == Guid.Empty || _windowTracker == null)
+            {
+                return true;
+            }
+
+            if (!_windowTracker.IsTracked(vm.PlayniteGameId))
+            {
+                return true;
+            }
+
+            return _windowTracker.ForegroundGameId == vm.PlayniteGameId;
         }
 
         private async Task ShowWaveAsync(IReadOnlyList<AchievementToastViewModel> wave)

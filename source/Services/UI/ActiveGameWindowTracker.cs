@@ -99,6 +99,15 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
+        /// <summary>Whether the game is currently tracked as running.</summary>
+        public bool IsTracked(Guid gameId)
+        {
+            lock (_sync)
+            {
+                return _tracked.ContainsKey(gameId);
+            }
+        }
+
         public void OnGameStarted(Game game, int? startedProcessId)
         {
             if (_disposed || game == null || game.Id == Guid.Empty)
@@ -339,6 +348,11 @@ namespace PlayniteAchievements.Services.UI
                 var gameId = ClassifyProcess((int)pid);
                 lock (_sync)
                 {
+                    if (_disposed)
+                    {
+                        return;
+                    }
+
                     _foregroundGameId = gameId;
                     if (!gameId.HasValue)
                     {
