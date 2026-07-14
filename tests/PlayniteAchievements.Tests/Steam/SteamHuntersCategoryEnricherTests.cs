@@ -174,7 +174,7 @@ namespace PlayniteAchievements.Steam.Tests
         }
 
         [TestMethod]
-        public void BuildDlcImagePlan_DlcGroupsOnly_ExcludesUpdateAndBaseGroups()
+        public void BuildCategoryImagePlan_DlcGroupsOnly_ExcludesUpdateAndBaseGroups()
         {
             var groups = new List<SteamHuntersAchievementGroup>
             {
@@ -191,7 +191,7 @@ namespace PlayniteAchievements.Steam.Tests
                 }
             };
 
-            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "dlcandupdate");
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(groups, "dlcandupdate");
 
             Assert.AreEqual(1, plan.Count);
             Assert.AreEqual("Phantom Liberty", plan[0].Key);
@@ -199,7 +199,7 @@ namespace PlayniteAchievements.Steam.Tests
         }
 
         [TestMethod]
-        public void BuildDlcImagePlan_GameGroupBy_YieldsNothing()
+        public void BuildCategoryImagePlan_GameGroupBy_YieldsNothing()
         {
             var groups = new List<SteamHuntersAchievementGroup>
             {
@@ -211,13 +211,13 @@ namespace PlayniteAchievements.Steam.Tests
                 }
             };
 
-            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "game");
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(groups, "game");
 
             Assert.AreEqual(0, plan.Count);
         }
 
         [TestMethod]
-        public void BuildDlcImagePlan_DuplicateLabels_KeepsFirstDlcAppId()
+        public void BuildCategoryImagePlan_DuplicateLabels_KeepsFirstDlcAppId()
         {
             var groups = new List<SteamHuntersAchievementGroup>
             {
@@ -233,14 +233,14 @@ namespace PlayniteAchievements.Steam.Tests
                 }
             };
 
-            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "dlcandupdate");
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(groups, "dlcandupdate");
 
             Assert.AreEqual(1, plan.Count);
             Assert.AreEqual(111, plan[0].Value);
         }
 
         [TestMethod]
-        public void BuildDlcImagePlan_MissingLabelOrInvalidAppId_Excluded()
+        public void BuildCategoryImagePlan_MissingLabelOrInvalidAppId_Excluded()
         {
             var groups = new List<SteamHuntersAchievementGroup>
             {
@@ -249,7 +249,7 @@ namespace PlayniteAchievements.Steam.Tests
                 new SteamHuntersAchievementGroup { DlcAppId = 444, DlcAppName = "Fallback Name" }
             };
 
-            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "dlcandupdate");
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(groups, "dlcandupdate");
 
             Assert.AreEqual(1, plan.Count);
             Assert.AreEqual("Fallback Name", plan[0].Key);
@@ -279,7 +279,7 @@ namespace PlayniteAchievements.Steam.Tests
         }
 
         [TestMethod]
-        public void BuildDlcImagePlan_LabelWithGameNamePrefix_KeysByStrippedLabel()
+        public void BuildCategoryImagePlan_LabelWithGameNamePrefix_KeysByStrippedLabel()
         {
             var groups = new List<SteamHuntersAchievementGroup>
             {
@@ -290,7 +290,7 @@ namespace PlayniteAchievements.Steam.Tests
                 }
             };
 
-            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "dlcandupdate", "Cyberpunk 2077");
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(groups, "dlcandupdate", "Cyberpunk 2077");
 
             Assert.AreEqual(1, plan.Count);
             Assert.AreEqual("Phantom Liberty", plan[0].Key);
@@ -328,12 +328,62 @@ namespace PlayniteAchievements.Steam.Tests
         }
 
         [TestMethod]
-        public void BuildDlcImagePlan_NullOrEmptyGroups_YieldsNothing()
+        public void BuildCategoryImagePlan_WithGameNameAndAppId_IncludesBaseEntryFirst()
         {
-            Assert.AreEqual(0, SteamHuntersCategoryEnricher.BuildDlcImagePlan(null, "dlcandupdate").Count);
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 2138330,
+                    DlcAppName = "Cyberpunk 2077: Phantom Liberty"
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(
+                groups, "dlcandupdate", "Cyberpunk 2077", appId: 1091500);
+
+            Assert.AreEqual(2, plan.Count);
+            Assert.AreEqual("Cyberpunk 2077", plan[0].Key);
+            Assert.AreEqual(1091500, plan[0].Value);
+            Assert.AreEqual("Phantom Liberty", plan[1].Key);
+            Assert.AreEqual(2138330, plan[1].Value);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_DlcLabelCollidingWithGameName_KeepsBaseEntry()
+        {
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 555,
+                    Name = "My Game"
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(
+                groups, "dlcandupdate", "My Game", appId: 111);
+
+            Assert.AreEqual(1, plan.Count);
+            Assert.AreEqual(111, plan[0].Value);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_NoAppId_OmitsBaseEntry()
+        {
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(
+                new List<SteamHuntersAchievementGroup>(), "dlcandupdate", "My Game");
+
+            Assert.AreEqual(0, plan.Count);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_NullOrEmptyGroups_YieldsNothing()
+        {
+            Assert.AreEqual(0, SteamHuntersCategoryEnricher.BuildCategoryImagePlan(null, "dlcandupdate").Count);
             Assert.AreEqual(
                 0,
-                SteamHuntersCategoryEnricher.BuildDlcImagePlan(
+                SteamHuntersCategoryEnricher.BuildCategoryImagePlan(
                     new List<SteamHuntersAchievementGroup>(), "dlcandupdate").Count);
         }
 
