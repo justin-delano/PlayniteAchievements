@@ -13,18 +13,17 @@ namespace PlayniteAchievements.Providers.Steam
         internal const string BaseCategoryType = "Base";
         internal const string DlcCategoryType = "DLC";
 
-        // Enrichment is best-effort: bound each request well below the HttpClient timeout so an
-        // unresponsive steamhunters.com cannot stall every game's scan, and stop calling out for
-        // the rest of the session (until ClearCache) after consecutive timeouts.
-        private const int RequestTimeoutSeconds = 8;
-        private const int MaxConsecutiveTimeouts = 2;
+        // Enrichment is best-effort: after consecutive failed fetches, stop calling out for the
+        // rest of the session (until ClearCache) so an unreachable steamhunters.com cannot stall
+        // every game's scan.
+        private const int MaxConsecutiveFailures = 2;
 
         private readonly SteamHuntersApiClient _apiClient;
         private readonly ILogger _logger;
         private readonly object _cacheLock = new object();
         private readonly Dictionary<int, Task<SteamHuntersAchievementGroupsResponse>> _groupsByAppId =
             new Dictionary<int, Task<SteamHuntersAchievementGroupsResponse>>();
-        private int _consecutiveTimeouts;
+        private int _consecutiveFailures;
 
         public SteamHuntersCategoryEnricher(
             SteamHuntersApiClient apiClient,
@@ -41,7 +40,7 @@ namespace PlayniteAchievements.Providers.Steam
                 _groupsByAppId.Clear();
             }
 
-            Interlocked.Exchange(ref _consecutiveTimeouts, 0);
+            Interlocked.Exchange(ref _consecutiveFailures, 0);
         }
 
         public async Task EnrichAsync(
@@ -178,35 +177,42 @@ namespace PlayniteAchievements.Providers.Steam
             int appId,
             CancellationToken cancel)
         {
-            if (Volatile.Read(ref _consecutiveTimeouts) >= MaxConsecutiveTimeouts)
+            if (Volatile.Read(ref _consecutiveFailures) >= MaxConsecutiveFailures)
             {
                 return null;
             }
 
-            using (var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancel))
+            try
             {
-                timeoutCts.CancelAfter(TimeSpan.FromSeconds(RequestTimeoutSeconds));
-                try
+                var response = await _apiClient
+                    .GetAchievementGroupsAsync(appId, cancel)
+                    .ConfigureAwait(false);
+                if (response != null)
                 {
-                    var response = await _apiClient
-                        .GetAchievementGroupsAsync(appId, timeoutCts.Token)
-                        .ConfigureAwait(false);
-                    Interlocked.Exchange(ref _consecutiveTimeouts, 0);
+                    Interlocked.Exchange(ref _consecutiveFailures, 0);
                     return response;
                 }
-                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
-                {
-                    throw;
-                }
-                catch (OperationCanceledException)
-                {
-                    var timeouts = Interlocked.Increment(ref _consecutiveTimeouts);
-                    var suffix = timeouts >= MaxConsecutiveTimeouts
-                        ? " Skipping SteamHunters enrichment for the rest of this session."
-                        : string.Empty;
-                    _logger?.Warn($"[SteamHunters] Group request timed out after {RequestTimeoutSeconds}s for appId={appId}; category enrichment skipped.{suffix}");
-                    return null;
-                }
+
+                RecordFailure();
+                return null;
+            }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"[SteamHunters] Group fetch failed for appId={appId}; category enrichment skipped.");
+                RecordFailure();
+                return null;
+            }
+        }
+
+        private void RecordFailure()
+        {
+            if (Interlocked.Increment(ref _consecutiveFailures) == MaxConsecutiveFailures)
+            {
+                _logger?.Warn("[SteamHunters] Skipping SteamHunters category enrichment for the rest of this session after repeated failures.");
             }
         }
 
