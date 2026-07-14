@@ -1597,7 +1597,7 @@ namespace PlayniteAchievements.ViewModels
                 }
                 else
                 {
-                    StatusText = "No game selected in the overview.";
+                    StatusText = ResourceProvider.GetString("LOCPlayAch_Overview_NoGameSelected");
                     return null;
                 }
             }
