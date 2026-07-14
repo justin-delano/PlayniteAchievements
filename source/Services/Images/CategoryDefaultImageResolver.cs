@@ -1,6 +1,5 @@
 using PlayniteAchievements.Services.Achievements;
 using System;
-using System.IO;
 
 namespace PlayniteAchievements.Services.Images
 {
