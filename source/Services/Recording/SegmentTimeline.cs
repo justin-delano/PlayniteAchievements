@@ -49,18 +49,21 @@ namespace PlayniteAchievements.Services.Recording
         }
 
         /// <summary>
-        /// Parses capture segments from their strftime filenames (seg_yyyyMMdd-HHmmss.ts, written
-        /// in the machine's local time zone — injected for tests) into UTC-stamped infos ordered
+        /// Parses buffer files from their wall-clock filenames (default: the video segments,
+        /// seg_yyyyMMdd-HHmmss.ts; pass the aud_/.wav pair for audio chunks — both are written in
+        /// the machine's local time zone, injected for tests) into UTC-stamped infos ordered
         /// oldest-first. Unparseable names (and local times invalidated by DST) are skipped.
         /// </summary>
         public static List<SegmentInfo> ParseSegments(
             IEnumerable<(string Path, long SizeBytes)> files,
-            TimeZoneInfo localTimeZone)
+            TimeZoneInfo localTimeZone,
+            string filePrefix = null,
+            string fileExtension = null)
         {
             var result = new List<SegmentInfo>();
             foreach (var file in files ?? Enumerable.Empty<(string, long)>())
             {
-                if (TryParseSegmentStartUtc(file.Path, localTimeZone, out var startUtc))
+                if (TryParseSegmentStartUtc(file.Path, localTimeZone, out var startUtc, filePrefix, fileExtension))
                 {
                     result.Add(new SegmentInfo
                     {
@@ -75,19 +78,26 @@ namespace PlayniteAchievements.Services.Recording
             return result;
         }
 
-        public static bool TryParseSegmentStartUtc(string path, TimeZoneInfo localTimeZone, out DateTime startUtc)
+        public static bool TryParseSegmentStartUtc(
+            string path,
+            TimeZoneInfo localTimeZone,
+            out DateTime startUtc,
+            string filePrefix = null,
+            string fileExtension = null)
         {
             startUtc = default;
+            var prefix = filePrefix ?? RecordingCommandBuilder.SegmentFilePrefix;
+            var extension = fileExtension ?? RecordingCommandBuilder.SegmentFileExtension;
             var name = Path.GetFileName(path ?? string.Empty);
-            if (!name.StartsWith(RecordingCommandBuilder.SegmentFilePrefix, StringComparison.OrdinalIgnoreCase) ||
-                !name.EndsWith(RecordingCommandBuilder.SegmentFileExtension, StringComparison.OrdinalIgnoreCase))
+            if (!name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+                !name.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
             var stamp = name.Substring(
-                RecordingCommandBuilder.SegmentFilePrefix.Length,
-                name.Length - RecordingCommandBuilder.SegmentFilePrefix.Length - RecordingCommandBuilder.SegmentFileExtension.Length);
+                prefix.Length,
+                name.Length - prefix.Length - extension.Length);
             if (!DateTime.TryParseExact(
                     stamp,
                     "yyyyMMdd-HHmmss",
