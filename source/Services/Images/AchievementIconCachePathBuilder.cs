@@ -163,8 +163,7 @@ namespace PlayniteAchievements.Services.Images
             }
 
             var stem = string.IsNullOrWhiteSpace(fileStem) ? FallbackStem : fileStem.Trim();
-            var suffix = kind == CategoryImageKind.Cover ? ".cover.png" : ".icon.png";
-            var fileName = "category_" + stem + suffix;
+            var fileName = "category_" + stem + ".png";
 
             return Path.Combine(
                 "icon_cache",
@@ -190,8 +189,7 @@ namespace PlayniteAchievements.Services.Images
             var normalizedLabel = (categoryLabel ?? string.Empty).Trim();
             var stem = SanitizeSegment(normalizedLabel);
             var suffix = "_" + GetApiNameHashSuffix(normalizedLabel.ToLowerInvariant());
-            var extension = kind == CategoryImageKind.Cover ? ".cover.jpg" : ".icon.jpg";
-            var fileName = "category_" + TrimStemForSuffix(stem, suffix.Length) + suffix + extension;
+            var fileName = "category_" + TrimStemForSuffix(stem, suffix.Length) + suffix + ".jpg";
 
             return Path.Combine(
                 "icon_cache",
