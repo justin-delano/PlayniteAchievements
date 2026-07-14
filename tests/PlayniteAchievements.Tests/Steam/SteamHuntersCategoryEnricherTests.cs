@@ -174,7 +174,7 @@ namespace PlayniteAchievements.Steam.Tests
         }
 
         [TestMethod]
-        public void BuildCategoryImagePlan_DlcGroupsOnly_ExcludesUpdateAndBaseGroups()
+        public void BuildCategoryImagePlan_WithoutBaseAppId_OnlyDlcGroupsGetEntries()
         {
             var groups = new List<SteamHuntersAchievementGroup>
             {
@@ -196,6 +196,57 @@ namespace PlayniteAchievements.Steam.Tests
             Assert.AreEqual(1, plan.Count);
             Assert.AreEqual("Phantom Liberty", plan[0].Key);
             Assert.AreEqual(2138330, plan[0].Value);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_UpdateGroups_MapToBaseAppId()
+        {
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 2138330,
+                    DlcAppName = "Phantom Liberty"
+                },
+                new SteamHuntersAchievementGroup
+                {
+                    Name = "Update #1"
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(
+                groups, "dlcandupdate", "Cyberpunk 2077", appId: 1091500);
+
+            Assert.AreEqual(3, plan.Count);
+            Assert.AreEqual("Cyberpunk 2077", plan[0].Key);
+            Assert.AreEqual(1091500, plan[0].Value);
+            Assert.AreEqual("Phantom Liberty", plan[1].Key);
+            Assert.AreEqual(2138330, plan[1].Value);
+            Assert.AreEqual("Update #1", plan[2].Key);
+            Assert.AreEqual(1091500, plan[2].Value);
+        }
+
+        [TestMethod]
+        public void BuildCategoryImagePlan_GameGroupBy_MapsSubGamesToBaseAppId()
+        {
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    // groupBy "game" forces Base even with a DlcAppId present.
+                    DlcAppId = 12345,
+                    Name = "Halo 2: Anniversary"
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildCategoryImagePlan(
+                groups, "game", "Halo: The Master Chief Collection", appId: 976730);
+
+            Assert.AreEqual(2, plan.Count);
+            Assert.AreEqual("Halo: The Master Chief Collection", plan[0].Key);
+            Assert.AreEqual(976730, plan[0].Value);
+            Assert.AreEqual("Halo 2: Anniversary", plan[1].Key);
+            Assert.AreEqual(976730, plan[1].Value);
         }
 
         [TestMethod]
