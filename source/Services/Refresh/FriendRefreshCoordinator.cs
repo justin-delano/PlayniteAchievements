@@ -587,6 +587,32 @@ namespace PlayniteAchievements.Services.Refresh
             }
         }
 
+        private static IReadOnlyDictionary<string, Guid> BuildCurrentUserLabelIndex(
+            string providerKey,
+            IReadOnlyList<CurrentUserGameLabel> labels)
+        {
+            var index = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase);
+            foreach (var label in labels ?? Enumerable.Empty<CurrentUserGameLabel>())
+            {
+                if (label == null ||
+                    label.PlayniteGameId == Guid.Empty ||
+                    !string.Equals(label.ProviderKey, providerKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var cacheKey = GetProviderGameCacheKey(label.AppId, label.ProviderGameKey);
+                if (string.IsNullOrWhiteSpace(cacheKey) || index.ContainsKey(cacheKey))
+                {
+                    continue;
+                }
+
+                index.Add(cacheKey, label.PlayniteGameId);
+            }
+
+            return index;
+        }
+
         internal async Task<FriendProviderRefreshContext> PrepareProviderRefreshAsync(
             IFriendsProvider friendsProvider,
             FriendRefreshOptions options,
@@ -634,6 +660,9 @@ namespace PlayniteAchievements.Services.Refresh
 
             var currentUserLabels = LoadCurrentUserGameLabelsForFriendMatching();
             context.CurrentUserLabels = currentUserLabels;
+            context.CurrentUserLabelIndex = FriendRefreshWorkPolicy.ShouldMapOwnershipFromCurrentUserLabels(providerKey)
+                ? BuildCurrentUserLabelIndex(providerKey, currentUserLabels)
+                : null;
             PromoteProviderOnlyFriendGamesFromCurrentUserLabels(providerKey, currentUserLabels);
 
             if (friendsProvider is ICurrentUserGameLabelReceiver labelReceiver)
@@ -745,6 +774,7 @@ namespace PlayniteAchievements.Services.Refresh
                     context.OwnershipSnapshots,
                     context.RecencyFreshKeys,
                     context.OwnershipFetchedFriendIds,
+                    context.CurrentUserLabelIndex,
                     cancel).ConfigureAwait(false);
                 if (!shouldContinue)
                 {
@@ -1328,6 +1358,7 @@ namespace PlayniteAchievements.Services.Refresh
             List<FriendOwnershipSnapshot> ownershipSnapshots,
             HashSet<string> recencyFreshKeys,
             HashSet<string> ownershipFetchedFriendIds,
+            IReadOnlyDictionary<string, Guid> currentUserLabelIndex,
             CancellationToken cancel)
         {
             if (friend == null || string.IsNullOrWhiteSpace(friend.ExternalUserId))
@@ -1376,6 +1407,7 @@ namespace PlayniteAchievements.Services.Refresh
 
             var scopedOwnedGames = ScopeOwnedGamesForRefresh(ownershipResult.Data, options);
             var ownedGames = FilterOwnedGamesForProviderRefresh(providerKey, scopedOwnedGames);
+            StampPlayniteGameIdsFromCurrentUserLabels(ownedGames, currentUserLabelIndex);
             _logger?.Debug(
                 $"[RefreshPerf] phase=friend.ownership.provider provider={providerKey} friend={friend.ExternalUserId} returned={ownershipResult.Data?.Count ?? 0} scoped={scopedOwnedGames?.Count ?? 0} filtered={ownedGames.Count} scope={options?.Scope}.");
             // Retain the fresh, hint-bearing ownership snapshot for the game-centric candidate builder.
@@ -2963,6 +2995,37 @@ namespace PlayniteAchievements.Services.Refresh
                 : $"{providerKey} Game {providerGameKey}";
         }
 
+        // Stamps the current-user library mapping onto freshly-fetched ownership items so the shared
+        // ownership save can create/upgrade a library-mapped Games row (via the same inline-id channel
+        // Exophase uses) instead of silently skipping games that have no pre-existing mapped row. This
+        // is what makes a shared game appear in the friends overview even when the friend has no
+        // unlocks, and what routes it through the mapped scrape instead of the provider-only probe.
+        private static void StampPlayniteGameIdsFromCurrentUserLabels(
+            IReadOnlyList<FriendGameOwnership> ownedGames,
+            IReadOnlyDictionary<string, Guid> currentUserLabelIndex)
+        {
+            if (ownedGames == null || currentUserLabelIndex == null || currentUserLabelIndex.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var item in ownedGames)
+            {
+                if (item == null ||
+                    (item.PlayniteGameId.HasValue && item.PlayniteGameId.Value != Guid.Empty))
+                {
+                    continue;
+                }
+
+                var cacheKey = GetProviderGameCacheKey(item);
+                if (!string.IsNullOrWhiteSpace(cacheKey) &&
+                    currentUserLabelIndex.TryGetValue(cacheKey, out var playniteGameId))
+                {
+                    item.PlayniteGameId = playniteGameId;
+                }
+            }
+        }
+
         private static string GetProviderGameCacheKey(FriendGameOwnership ownership)
         {
             return ownership == null ? null : GetProviderGameCacheKey(ownership.AppId, ownership.ProviderGameKey);
@@ -3123,6 +3186,11 @@ namespace PlayniteAchievements.Services.Refresh
             public List<FriendIdentity> ScopedFriends { get; set; } = new List<FriendIdentity>();
             public IReadOnlyList<CurrentUserGameLabel> CurrentUserLabels { get; set; } =
                 new List<CurrentUserGameLabel>();
+            // (AppId/ProviderGameKey) cache key -> PlayniteGameId, for providers where friend
+            // ownership items are stamped with the current-user library mapping before the shared
+            // ownership save (see FriendRefreshWorkPolicy.ShouldMapOwnershipFromCurrentUserLabels).
+            // Built once in the sequential prepare phase; read-only afterwards.
+            public IReadOnlyDictionary<string, Guid> CurrentUserLabelIndex { get; set; }
             public string RosterSource { get; set; } = "unknown";
             public bool DiscoverUnowned { get; set; }
             public bool CanContinue { get; set; }
