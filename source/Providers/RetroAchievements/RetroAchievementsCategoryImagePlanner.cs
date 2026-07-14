@@ -9,20 +9,22 @@ namespace PlayniteAchievements.Providers.RetroAchievements
     {
         // RetroAchievements serves literal placeholder art for missing media instead of
         // omitting the field: /Images/000001.png (icon) and /Images/000002.png ("No
-        // Screenshot Found"). Treat them as absent so covers fall back to the set icon.
+        // Screenshot Found"). Treat them as absent.
         private static readonly string[] PlaceholderImagePaths =
         {
             "/Images/000001.png",
             "/Images/000002.png"
         };
 
-        // Plans one default image pair per category: (normalized label -> icon/cover URLs).
-        // Sources are (label, game info) pairs for the base game and each fetched subset.
-        // Dedupe is first-wins by label to match the achievement assignment order.
-        internal static IReadOnlyList<(string Label, string IconUrl, string CoverUrl)> BuildCategoryImagePlan(
+        // Plans one default icon per category: (normalized label -> icon URL). Sources are
+        // (label, game info) pairs for the base game and each fetched subset. Covers are
+        // never planned: RA box art is inconsistent across sets, so the cover slot keeps
+        // the natural Playnite game-cover fallback. Dedupe is first-wins by label to match
+        // the achievement assignment order.
+        internal static IReadOnlyList<(string Label, string IconUrl)> BuildCategoryImagePlan(
             IReadOnlyList<(string CategoryLabel, RaGameInfoUserProgress Info)> sources)
         {
-            var plan = new List<(string Label, string IconUrl, string CoverUrl)>();
+            var plan = new List<(string Label, string IconUrl)>();
             if (sources == null || sources.Count == 0)
             {
                 return plan;
@@ -47,8 +49,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     continue;
                 }
 
-                var coverUrl = NormalizeMediaUrl(source.Info?.ImageBoxArt);
-                plan.Add((label, iconUrl, coverUrl));
+                plan.Add((label, iconUrl));
             }
 
             return plan;
