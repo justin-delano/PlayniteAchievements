@@ -99,7 +99,22 @@ namespace PlayniteAchievements.Models.Settings
             target.UnlockScreenshotClean = source.UnlockScreenshotClean;
             target.UnlockScreenshotWithToast = source.UnlockScreenshotWithToast;
             target.UnlockScreenshotFramed = source.UnlockScreenshotFramed;
+            target.FrameShowHeader = source.FrameShowHeader;
+            target.FrameShowName = source.FrameShowName;
+            target.FrameShowDescription = source.FrameShowDescription;
+            target.FrameShowCategory = source.FrameShowCategory;
+            target.FrameShowGameName = source.FrameShowGameName;
+            target.FrameShowRarityBadge = source.FrameShowRarityBadge;
+            target.FrameShowRarityPercent = source.FrameShowRarityPercent;
+            target.FrameShowRarityGlow = source.FrameShowRarityGlow;
+            target.FrameRarityColoredName = source.FrameRarityColoredName;
             target.UnlockScreenshotDirectory = source.UnlockScreenshotDirectory;
+            target.ProviderNotificationOverrides = source.ProviderNotificationOverrides != null
+                ? source.ProviderNotificationOverrides.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => kvp.Value?.Clone(),
+                    StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
 
             // Display Preferences
             target.ShowHiddenIcon = source.ShowHiddenIcon;

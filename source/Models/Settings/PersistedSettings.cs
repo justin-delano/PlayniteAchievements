@@ -81,7 +81,18 @@ namespace PlayniteAchievements.Models.Settings
         private bool _unlockScreenshotClean = false;
         private bool _unlockScreenshotWithToast = true;
         private bool _unlockScreenshotFramed = false;
+        private bool _frameShowHeader = true;
+        private bool _frameShowName = true;
+        private bool _frameShowDescription = true;
+        private bool _frameShowCategory = true;
+        private bool _frameShowGameName = true;
+        private bool _frameShowRarityBadge = true;
+        private bool _frameShowRarityPercent = true;
+        private bool _frameShowRarityGlow = true;
+        private bool _frameRarityColoredName = true;
         private string _unlockScreenshotDirectory;
+        private Dictionary<string, ProviderNotificationOverride> _providerNotificationOverrides =
+            new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
         private ToastScreenCorner _toastPosition = ToastScreenCorner.BottomRight;
         private int _recentRefreshGamesCount = 10;
         private RefreshModeType _defaultOverviewRefreshMode = RefreshModeType.Installed;
@@ -968,6 +979,62 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _unlockScreenshotFramed, value);
         }
 
+        // Frame appearance toggles: which fields the screenshot frame renders. Independent of
+        // the ToastShow* toggles so the saved image can differ from the on-screen toast.
+        public bool FrameShowHeader
+        {
+            get => _frameShowHeader;
+            set => SetValue(ref _frameShowHeader, value);
+        }
+
+        public bool FrameShowName
+        {
+            get => _frameShowName;
+            set => SetValue(ref _frameShowName, value);
+        }
+
+        public bool FrameShowDescription
+        {
+            get => _frameShowDescription;
+            set => SetValue(ref _frameShowDescription, value);
+        }
+
+        public bool FrameShowCategory
+        {
+            get => _frameShowCategory;
+            set => SetValue(ref _frameShowCategory, value);
+        }
+
+        public bool FrameShowGameName
+        {
+            get => _frameShowGameName;
+            set => SetValue(ref _frameShowGameName, value);
+        }
+
+        public bool FrameShowRarityBadge
+        {
+            get => _frameShowRarityBadge;
+            set => SetValue(ref _frameShowRarityBadge, value);
+        }
+
+        public bool FrameShowRarityPercent
+        {
+            get => _frameShowRarityPercent;
+            set => SetValue(ref _frameShowRarityPercent, value);
+        }
+
+        public bool FrameShowRarityGlow
+        {
+            get => _frameShowRarityGlow;
+            set => SetValue(ref _frameShowRarityGlow, value);
+        }
+
+        public bool FrameRarityColoredName
+        {
+            get => _frameRarityColoredName;
+            set => SetValue(ref _frameRarityColoredName, value);
+        }
+
         /// <summary>
         /// Base directory for unlock screenshots. Files are written to
         /// &lt;dir&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png.
@@ -976,6 +1043,62 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _unlockScreenshotDirectory;
             set => SetValue(ref _unlockScreenshotDirectory, value);
+        }
+
+        /// <summary>
+        /// Per-provider notification overrides keyed by provider key. Only deviating providers
+        /// are stored; absent providers inherit the global notification defaults, so new
+        /// providers pick up the globals automatically.
+        /// </summary>
+        public Dictionary<string, ProviderNotificationOverride> ProviderNotificationOverrides
+        {
+            get => _providerNotificationOverrides ??
+                   (_providerNotificationOverrides =
+                       new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase));
+            set => SetValue(ref _providerNotificationOverrides, NormalizeProviderNotificationOverrides(value));
+        }
+
+        /// <summary>
+        /// The stored override for a provider, or null when the provider has no deviation and
+        /// inherits the global notification defaults.
+        /// </summary>
+        public ProviderNotificationOverride GetProviderNotificationOverride(string providerKey)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            return providerKey != null &&
+                   ProviderNotificationOverrides.TryGetValue(providerKey, out var value)
+                ? value
+                : null;
+        }
+
+        /// <summary>
+        /// Stores a clone of the override for a provider, removing the entry when the override
+        /// is null or all-inherit. Reassigns the dictionary so PropertyChanged is raised.
+        /// </summary>
+        public void SetProviderNotificationOverride(string providerKey, ProviderNotificationOverride value)
+        {
+            providerKey = NormalizeProviderKeyToken(providerKey);
+            if (string.IsNullOrWhiteSpace(providerKey))
+            {
+                return;
+            }
+
+            var overrides = new Dictionary<string, ProviderNotificationOverride>(
+                ProviderNotificationOverrides,
+                StringComparer.OrdinalIgnoreCase);
+            if (value == null || value.IsAllInherit)
+            {
+                if (!overrides.Remove(providerKey))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                overrides[providerKey] = value.Clone();
+            }
+
+            ProviderNotificationOverrides = overrides;
         }
 
         #endregion
@@ -1994,7 +2117,22 @@ namespace PlayniteAchievements.Models.Settings
                 UnlockScreenshotClean = this.UnlockScreenshotClean,
                 UnlockScreenshotWithToast = this.UnlockScreenshotWithToast,
                 UnlockScreenshotFramed = this.UnlockScreenshotFramed,
+                FrameShowHeader = this.FrameShowHeader,
+                FrameShowName = this.FrameShowName,
+                FrameShowDescription = this.FrameShowDescription,
+                FrameShowCategory = this.FrameShowCategory,
+                FrameShowGameName = this.FrameShowGameName,
+                FrameShowRarityBadge = this.FrameShowRarityBadge,
+                FrameShowRarityPercent = this.FrameShowRarityPercent,
+                FrameShowRarityGlow = this.FrameShowRarityGlow,
+                FrameRarityColoredName = this.FrameRarityColoredName,
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
+                ProviderNotificationOverrides = this.ProviderNotificationOverrides != null
+                    ? this.ProviderNotificationOverrides.ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Clone(),
+                        StringComparer.OrdinalIgnoreCase)
+                    : new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase),
 
                 // Display Preferences
                 ShowHiddenIcon = this.ShowHiddenIcon,
@@ -2312,6 +2450,24 @@ namespace PlayniteAchievements.Models.Settings
                         };
                         break;
                 }
+            }
+
+            return normalized;
+        }
+
+        private static Dictionary<string, ProviderNotificationOverride> NormalizeProviderNotificationOverrides(
+            IEnumerable<KeyValuePair<string, ProviderNotificationOverride>> value)
+        {
+            var normalized = new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in value ?? Enumerable.Empty<KeyValuePair<string, ProviderNotificationOverride>>())
+            {
+                var key = NormalizeProviderKeyToken(pair.Key);
+                if (key == null || pair.Value == null || pair.Value.IsAllInherit)
+                {
+                    continue;
+                }
+
+                normalized[key] = pair.Value;
             }
 
             return normalized;

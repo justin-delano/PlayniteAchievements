@@ -83,15 +83,12 @@ namespace PlayniteAchievements.Services.UI
                 return true;
             }
 
-            var persisted = _settings?.Persisted;
-            if (persisted?.EnableNotifications != true)
-            {
-                return false;
-            }
-
+            // The policy ANDs the EnableNotifications master switch into both toast flags and
+            // resolves all-false for null settings.
+            var effective = ProviderNotificationPolicy.Resolve(_settings?.Persisted, args.ProviderKey);
             return args.IsFriendUnlock
-                ? persisted.EnableFriendUnlockToasts
-                : persisted.EnableUnlockToasts;
+                ? effective.FriendUnlockToasts
+                : effective.UnlockToasts;
         }
 
         private void EnqueueOnUi(AchievementUnlockedEventArgs args)
@@ -387,8 +384,10 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// Decides which screenshot variants this wave should produce. Returns null when nothing
-        /// should be captured (previews, friend waves, screenshots disabled, or no directory).
+        /// Decides which screenshot variants each item in this wave should produce, resolving the
+        /// per-provider notification policy per item (a wave can mix providers). Returns null when
+        /// nothing should be captured (previews, friend waves, screenshots disabled, no directory,
+        /// or every item resolved to no variants).
         /// </summary>
         private WaveScreenshotPlan BuildScreenshotPlan(IReadOnlyList<AchievementToastViewModel> wave)
         {
@@ -410,34 +409,34 @@ namespace PlayniteAchievements.Services.UI
                 return null;
             }
 
-            var variants = ScreenshotVariants.None;
-            if (persisted.UnlockScreenshotClean)
-            {
-                variants |= ScreenshotVariants.Clean;
-            }
-
-            if (persisted.UnlockScreenshotWithToast)
-            {
-                variants |= ScreenshotVariants.WithToast;
-            }
-
-            if (persisted.UnlockScreenshotFramed)
-            {
-                variants |= ScreenshotVariants.Framed;
-            }
-
-            if (variants == ScreenshotVariants.None)
-            {
-                return null;
-            }
-
             var plan = new WaveScreenshotPlan { BaseDirectory = baseDir };
             foreach (var vm in wave)
             {
-                plan.Items.Add((vm, variants));
+                // The policy ANDs the EnableUnlockScreenshots master switch into each variant flag.
+                var effective = ProviderNotificationPolicy.Resolve(persisted, vm.ProviderKey);
+                var variants = ScreenshotVariants.None;
+                if (effective.ScreenshotClean)
+                {
+                    variants |= ScreenshotVariants.Clean;
+                }
+
+                if (effective.ScreenshotWithToast)
+                {
+                    variants |= ScreenshotVariants.WithToast;
+                }
+
+                if (effective.ScreenshotFramed)
+                {
+                    variants |= ScreenshotVariants.Framed;
+                }
+
+                if (variants != ScreenshotVariants.None)
+                {
+                    plan.Items.Add((vm, variants));
+                }
             }
 
-            return plan;
+            return plan.Items.Count > 0 ? plan : null;
         }
 
         /// <summary>
