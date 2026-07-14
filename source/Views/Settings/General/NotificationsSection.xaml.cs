@@ -40,6 +40,7 @@ namespace PlayniteAchievements.Views.Settings.General
             nameof(PersistedSettings.ToastShowDescription),
             nameof(PersistedSettings.ToastShowCategory),
             nameof(PersistedSettings.ToastShowGameName),
+            nameof(PersistedSettings.ToastShowUnlockTime),
             nameof(PersistedSettings.FrameShowHeader),
             nameof(PersistedSettings.FrameShowName),
             nameof(PersistedSettings.FrameShowDescription),

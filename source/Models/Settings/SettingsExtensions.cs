@@ -92,6 +92,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ToastShowDescription = source.ToastShowDescription;
             target.ToastShowCategory = source.ToastShowCategory;
             target.ToastShowGameName = source.ToastShowGameName;
+            target.ToastShowUnlockTime = source.ToastShowUnlockTime;
             target.ToastDurationSeconds = source.ToastDurationSeconds;
             target.MaxConcurrentToasts = source.MaxConcurrentToasts;
             target.ToastPosition = source.ToastPosition;

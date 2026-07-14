@@ -373,6 +373,9 @@
                             <CheckBox Content="{DynamicResource LOCPlayAch_Common_Label_Category}"
                                       IsChecked="{Binding Persisted.ToastShowCategory}"
                                       Margin="0,0,14,8"/>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Common_UnlockTime}"
+                                      IsChecked="{Binding Persisted.ToastShowUnlockTime}"
+                                      Margin="0,0,14,8"/>
                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ToastShowRarityBadge}"
                                       IsChecked="{Binding Persisted.ToastShowRarityBadge}"
                                       Margin="0,0,14,8"/>
