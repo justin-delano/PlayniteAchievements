@@ -34,7 +34,6 @@ namespace PlayniteAchievements.Services.Library
         private int _cacheGeneration;
         private int _warmGeneration;
         private bool _warmSuppressed;
-        private bool _warmPending;
         private bool _disposed;
 
         public LibraryProjectionService(
@@ -133,25 +132,19 @@ namespace PlayniteAchievements.Services.Library
             ScheduleWarm();
         }
 
-        // While a game session is active the background warm is deferred: the in-game poller's
+        // While a game session is active the background warm is skipped: the in-game poller's
         // periodic saves would otherwise rebuild the whole-library projection every tick, and that
         // rebuild holds the store lock long enough to stall UI-thread cache reads. Invalidate()
         // still clears the snapshot cache on every delta, so on-demand consumers always rebuild
-        // with fresh data; only the precompute waits until the session ends.
+        // with fresh data; only the precompute is dropped. The post-session warm comes from the
+        // stopped-game refresh's own cache delta (or an explicit Warm() when that refresh is
+        // skipped), so deactivation itself schedules nothing.
         public void SetGameSessionActive(bool active)
         {
             lock (_sync)
             {
                 _warmSuppressed = active;
-                if (active || !_warmPending)
-                {
-                    return;
-                }
-
-                _warmPending = false;
             }
-
-            ScheduleWarm();
         }
 
         public void Dispose()
@@ -299,7 +292,6 @@ namespace PlayniteAchievements.Services.Library
             {
                 if (_warmSuppressed)
                 {
-                    _warmPending = true;
                     return;
                 }
             }

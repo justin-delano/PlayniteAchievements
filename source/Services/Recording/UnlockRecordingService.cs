@@ -215,20 +215,28 @@ namespace PlayniteAchievements.Services.Recording
             Playnite.SDK.Models.Game stoppedGame,
             Playnite.SDK.Models.Game handoffGame = null)
         {
+            CaptureSession observed;
             lock (_gate)
             {
-                if (_session != null &&
+                observed = _session;
+                if (observed != null &&
                     stoppedGame != null &&
-                    _session.OwnerGameId != Guid.Empty &&
-                    _session.OwnerGameId != stoppedGame.Id)
+                    observed.OwnerGameId != Guid.Empty &&
+                    observed.OwnerGameId != stoppedGame.Id)
                 {
                     _logger?.Debug(
-                        $"[Recording] '{stoppedGame.Name}' stopped but '{_session.GameName}' owns the capture; session continues.");
+                        $"[Recording] '{stoppedGame.Name}' stopped but '{observed.GameName}' owns the capture; session continues.");
                     return;
                 }
             }
 
-            StopCurrentSession();
+            // Stop only the session the owner check saw: a concurrent start or foreground switch
+            // may already have swapped in a session for a still-running game, which must survive.
+            if (observed != null)
+            {
+                StopSession(observed);
+            }
+
             if (handoffGame != null && !_disposed)
             {
                 OnGameStarted(handoffGame);
@@ -271,6 +279,16 @@ namespace PlayniteAchievements.Services.Recording
                     newBounds.HasValue &&
                     newBounds.Value != session.MonitorBounds)
                 {
+                    lock (_gate)
+                    {
+                        // A concurrent start/stop may have replaced the session since it was
+                        // observed; restarting on top of the replacement would kill it.
+                        if (!ReferenceEquals(_session, session) || session.Stopping)
+                        {
+                            return;
+                        }
+                    }
+
                     _logger?.Info(
                         $"[Recording] Foreground moved to '{e.Game.Name}' on monitor {newBounds.Value}; restarting capture there.");
                     OnGameStarted(e.Game);
@@ -298,16 +316,21 @@ namespace PlayniteAchievements.Services.Recording
 
         private void StopCurrentSession()
         {
+            StopSession(expected: null);
+        }
+
+        private void StopSession(CaptureSession expected)
+        {
             CaptureSession session;
             lock (_gate)
             {
+                if (_session == null || (expected != null && !ReferenceEquals(_session, expected)))
+                {
+                    return;
+                }
+
                 session = _session;
                 _session = null;
-            }
-
-            if (session == null)
-            {
-                return;
             }
 
             session.Stopping = true;
@@ -644,7 +667,15 @@ namespace PlayniteAchievements.Services.Recording
                 session.AudioRecorder = null;
                 lock (_gate)
                 {
-                    _inFlightByWindow.Clear();
+                    // Only this session's dedup entries (keys are prefixed with the session's
+                    // buffer dir): a handoff session may already be producing its own clips.
+                    var stale = _inFlightByWindow.Keys
+                        .Where(key => key.StartsWith(session.BufferDirectory + "|", StringComparison.OrdinalIgnoreCase))
+                        .ToList();
+                    foreach (var key in stale)
+                    {
+                        _inFlightByWindow.Remove(key);
+                    }
                 }
 
                 TryDeleteDirectory(session.BufferDirectory);

@@ -764,12 +764,16 @@ namespace PlayniteAchievements
             if (!AnyProviderCapable(game))
             {
                 _logger.Info($"Game stopped: {game.Name}; no enabled provider is capable, skipping refresh.");
+                // No refresh delta will arrive to rebuild the projection after the session's
+                // suppressed warms; schedule it explicitly (no-op while other games still run).
+                _libraryProjectionService?.Warm();
                 return;
             }
 
-            // With other games still running the poller may have a tick in flight; give it a
-            // moment to finish so the stopped-game refresh isn't rejected as a concurrent run.
-            if (_refreshService?.IsRebuilding == true)
+            // With other games still running the poller may have a tick in flight; wait for it
+            // (bounded) because RefreshRuntime rejects concurrent runs rather than queueing them —
+            // a blind execute would silently drop this game's final refresh.
+            for (var waited = 0; waited < 60 && _refreshService?.IsRebuilding == true; waited += 5)
             {
                 await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             }
