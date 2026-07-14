@@ -242,7 +242,14 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 _apiClient = new RetroAchievementsApiClient(_logger, username, apiKey, language);
                 _hashIndexStore = new RetroAchievementsHashIndexStore(_logger, _settings, _apiClient, _pluginUserDataPath);
                 _hashCacheStore = new RetroAchievementsHashCacheStore(_logger, _pluginUserDataPath);
-                _scanner = new RetroAchievementsScanner(_logger, _settings, _apiClient, _hashIndexStore, _pathResolver, _hashCacheStore);
+                _scanner = new RetroAchievementsScanner(
+                    _logger,
+                    _settings,
+                    _apiClient,
+                    _hashIndexStore,
+                    _pathResolver,
+                    _hashCacheStore,
+                    () => PlayniteAchievementsPlugin.Instance?.DiskImageService);
 
                 _clientUsername = username;
                 _clientApiKey = apiKey;
