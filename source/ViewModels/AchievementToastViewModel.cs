@@ -44,7 +44,7 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowHeader => IsFriendUnlock || _settings.ToastShowHeader;
         public bool ShowName => _settings.ToastShowName && !string.IsNullOrWhiteSpace(TitleText);
         public bool ShowDescription => _settings.ToastShowDescription && !string.IsNullOrWhiteSpace(_args.Description);
-        public bool ShowCategory => _settings.ToastShowCategory && !string.IsNullOrWhiteSpace(_args.Category);
+        public bool ShowCategory => _settings.ToastShowCategory && HasDistinctCategory;
         public bool ShowPercent => _settings.ToastShowRarityPercent && _args.GlobalPercent.HasValue;
         public bool IsCapstone => _args.IsCapstone;
         public bool HasTrophy => !string.IsNullOrWhiteSpace(_args.TrophyType);
@@ -54,12 +54,18 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowGameCategorySeparator => ShowGameName && ShowCategory;
         public bool HasFriendAvatar => !string.IsNullOrWhiteSpace(FriendAvatar);
 
+        // A category that just repeats the game name (common for single-list providers) reads as
+        // a duplicate, so it is force-hidden in both the toast and the frame.
+        private bool HasDistinctCategory =>
+            !string.IsNullOrWhiteSpace(_args.Category) &&
+            !string.Equals(_args.Category?.Trim(), _args.GameName?.Trim(), StringComparison.OrdinalIgnoreCase);
+
         // Frame-scoped visibility/appearance: the screenshot frame honors its own FrameShow*
         // settings so the saved image can show different fields than the on-screen toast.
         public bool FrameShowHeader => IsFriendUnlock || _settings.FrameShowHeader;
         public bool FrameShowName => _settings.FrameShowName && !string.IsNullOrWhiteSpace(TitleText);
         public bool FrameShowDescription => _settings.FrameShowDescription && !string.IsNullOrWhiteSpace(_args.Description);
-        public bool FrameShowCategory => _settings.FrameShowCategory && !string.IsNullOrWhiteSpace(_args.Category);
+        public bool FrameShowCategory => _settings.FrameShowCategory && HasDistinctCategory;
         public bool FrameShowPercent => _settings.FrameShowRarityPercent && _args.GlobalPercent.HasValue;
         public bool FrameShowBadge => _settings.FrameShowRarityBadge && (IsCapstone || HasTrophy || HasRarityData);
         public bool FrameShowGameName => _settings.FrameShowGameName && !string.IsNullOrWhiteSpace(_args.GameName);
