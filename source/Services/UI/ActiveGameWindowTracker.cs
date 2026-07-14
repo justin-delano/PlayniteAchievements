@@ -5,7 +5,6 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 
@@ -22,20 +21,27 @@ namespace PlayniteAchievements.Services.UI
     }
 
     /// <summary>
-    /// Maps the foreground window to a running Playnite game so screenshots and video capture
-    /// follow the game the user is actually playing. Event-driven: a WinEvent hook (installed on
-    /// the WPF dispatcher thread, which already pumps messages) fires only on real foreground
-    /// changes, so there is no steady-state polling. Classification of an unseen process id
-    /// (started-pid match, executable path under the game's install directory, bounded
-    /// parent-process walk) runs once per pid and is cached until the tracked set changes.
+    /// Maps the foreground window to a running Playnite game so screenshots, toasts, and video
+    /// capture follow the game the user is actually playing.
     ///
-    /// A foreground change to a different game is debounced: the switch is only reported after
-    /// the same game has stayed foreground for <see cref="StableSwitchDelayMs"/>, so alt-tabbing
-    /// never thrashes consumers that restart an ffmpeg capture on switch.
+    /// The source of truth is one synchronous question — "which tracked game owns the current
+    /// foreground window?" — answered on demand by <see cref="IsGameForeground"/> (a
+    /// GetForegroundWindow syscall plus a cached pid lookup). Classification of an unseen
+    /// process id (started-pid match, executable path under the game's install directory,
+    /// bounded parent-process walk) runs once per pid and is cached until the tracked set
+    /// changes.
+    ///
+    /// Only when two or more games run at once does a light poll (every
+    /// <see cref="MultiGamePollMs"/> ms) watch for the foreground moving between games, raising
+    /// <see cref="StableForegroundGameChanged"/> after the same game holds focus for
+    /// <see cref="StableConfirmationPolls"/> consecutive polls so alt-tab flicker never thrashes
+    /// consumers that restart an ffmpeg capture on switch. With a single game running there is
+    /// no background work at all.
     /// </summary>
     internal sealed class ActiveGameWindowTracker : IDisposable
     {
-        private const int StableSwitchDelayMs = 5000;
+        private const int MultiGamePollMs = 3000;
+        private const int StableConfirmationPolls = 2;
         private const int MaxParentChainDepth = 10;
 
         private sealed class TrackedGame
@@ -51,17 +57,14 @@ namespace PlayniteAchievements.Services.UI
         private readonly object _sync = new object();
         private readonly Dictionary<Guid, TrackedGame> _tracked = new Dictionary<Guid, TrackedGame>();
         // Foreground pid -> owning game id (null: classified as not a tracked game). Cleared
-        // whenever the tracked set changes so stale attributions never outlive a session.
+        // whenever the tracked set changes so stale attributions never outlive a session. Only
+        // conclusive classifications are cached (see ClassifyProcessLocked).
         private readonly Dictionary<int, Guid?> _pidGameCache = new Dictionary<int, Guid?>();
 
-        private Dispatcher _hookDispatcher;
-        private IntPtr _hook;
-        // Kept in a field so the unmanaged hook can't call into a collected delegate.
-        private WinEventDelegate _hookDelegate;
-        private Timer _stableTimer;
-        private Guid? _foregroundGameId;
+        private Timer _pollTimer;
         private Guid? _stableForegroundGameId;
         private Guid? _pendingStableGameId;
+        private int _pendingStreak;
         private bool _disposed;
 
         public ActiveGameWindowTracker(ILogger logger)
@@ -70,24 +73,15 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// Raised (on a thread-pool thread) after the foreground has settled on a different
-        /// tracked game for <see cref="StableSwitchDelayMs"/>.
+        /// Raised (on a timer thread) after the foreground has stayed on a different tracked
+        /// game for <see cref="StableConfirmationPolls"/> consecutive multi-game polls.
         /// </summary>
         public event EventHandler<StableForegroundGameChangedEventArgs> StableForegroundGameChanged;
 
-        /// <summary>The tracked game the current foreground window belongs to, if any.</summary>
-        public Guid? ForegroundGameId
-        {
-            get
-            {
-                lock (_sync)
-                {
-                    return _foregroundGameId;
-                }
-            }
-        }
-
-        /// <summary>The debounced foreground game. Does not decay when no game is foreground.</summary>
+        /// <summary>
+        /// The game whose focus has been confirmed stable. Seeded to the most recently started
+        /// game and does not decay when no game is foreground.
+        /// </summary>
         public Guid? StableForegroundGameId
         {
             get
@@ -109,53 +103,12 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// Live foreground check: resolves the CURRENT foreground window and classifies it,
-        /// rather than trusting the last hook event. Out-of-context WinEvents can be dropped
-        /// while the UI thread is busy (typical during game launch), which would otherwise leave
-        /// <see cref="ForegroundGameId"/> stale until the user alt-tabs. Cheap: one syscall plus
-        /// a cached pid lookup.
+        /// Live check: does the game own the CURRENT foreground window? Also learns the game's
+        /// window handle and pid as a side effect, keeping later handle lookups fresh.
         /// </summary>
         public bool IsGameForeground(Guid gameId)
         {
-            try
-            {
-                var hwnd = GetForegroundWindow();
-                if (hwnd == IntPtr.Zero)
-                {
-                    return false;
-                }
-
-                GetWindowThreadProcessId(hwnd, out var pid);
-                if (pid == 0)
-                {
-                    return false;
-                }
-
-                lock (_sync)
-                {
-                    if (_disposed || !_tracked.ContainsKey(gameId))
-                    {
-                        return false;
-                    }
-
-                    var classified = ClassifyProcessLocked((int)pid);
-                    // Keep the event-driven state honest too, so consumers of ForegroundGameId
-                    // benefit from this reconciliation.
-                    _foregroundGameId = classified;
-                    if (classified == gameId && _tracked.TryGetValue(gameId, out var tracked))
-                    {
-                        tracked.LearnedHwnd = hwnd;
-                        tracked.LearnedProcessId = (int)pid;
-                    }
-
-                    return classified == gameId;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[WindowTracker] Live foreground check failed.");
-                return false;
-            }
+            return QueryForegroundGame() == gameId;
         }
 
         public void OnGameStarted(Game game, int? startedProcessId)
@@ -176,14 +129,13 @@ namespace PlayniteAchievements.Services.UI
                 _pidGameCache.Clear();
 
                 // A game that just started is what the user is about to play; seed the stable
-                // owner so consumers don't wait a full debounce for the obvious answer.
-                _foregroundGameId = game.Id;
+                // owner so consumers don't wait a full confirmation cycle for the obvious answer.
                 _stableForegroundGameId = game.Id;
                 _pendingStableGameId = null;
-                _stableTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-            }
+                _pendingStreak = 0;
 
-            EnsureHookInstalled();
+                UpdatePollTimerLocked();
+            }
         }
 
         public void OnGameStopped(Guid gameId)
@@ -193,7 +145,6 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            var trackedRemaining = true;
             lock (_sync)
             {
                 if (!_tracked.Remove(gameId))
@@ -202,11 +153,6 @@ namespace PlayniteAchievements.Services.UI
                 }
 
                 _pidGameCache.Clear();
-                if (_foregroundGameId == gameId)
-                {
-                    _foregroundGameId = null;
-                }
-
                 if (_stableForegroundGameId == gameId)
                 {
                     _stableForegroundGameId = null;
@@ -215,15 +161,10 @@ namespace PlayniteAchievements.Services.UI
                 if (_pendingStableGameId == gameId)
                 {
                     _pendingStableGameId = null;
-                    _stableTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+                    _pendingStreak = 0;
                 }
 
-                trackedRemaining = _tracked.Count > 0;
-            }
-
-            if (!trackedRemaining)
-            {
-                RemoveHook();
+                UpdatePollTimerLocked();
             }
         }
 
@@ -283,119 +224,60 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        // === Foreground hook ===
+        // === Foreground resolution ===
 
-        private void EnsureHookInstalled()
-        {
-            var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher == null)
-            {
-                return;
-            }
-
-            if (dispatcher.CheckAccess())
-            {
-                InstallHookOnDispatcher(dispatcher);
-            }
-            else
-            {
-                dispatcher.BeginInvoke(new Action(() => InstallHookOnDispatcher(dispatcher)));
-            }
-        }
-
-        private void InstallHookOnDispatcher(Dispatcher dispatcher)
-        {
-            lock (_sync)
-            {
-                if (_disposed || _hook != IntPtr.Zero || _tracked.Count == 0)
-                {
-                    return;
-                }
-
-                _hookDispatcher = dispatcher;
-                _hookDelegate = OnForegroundWinEvent;
-                _hook = SetWinEventHook(
-                    EVENT_SYSTEM_FOREGROUND,
-                    EVENT_SYSTEM_FOREGROUND,
-                    IntPtr.Zero,
-                    _hookDelegate,
-                    0,
-                    0,
-                    WINEVENT_OUTOFCONTEXT);
-                if (_hook == IntPtr.Zero)
-                {
-                    _logger?.Debug("[WindowTracker] SetWinEventHook failed; foreground tracking disabled.");
-                    _hookDelegate = null;
-                }
-            }
-        }
-
-        private void RemoveHook()
-        {
-            Dispatcher dispatcher;
-            lock (_sync)
-            {
-                dispatcher = _hookDispatcher;
-            }
-
-            if (dispatcher == null)
-            {
-                return;
-            }
-
-            if (dispatcher.CheckAccess())
-            {
-                RemoveHookOnDispatcher();
-            }
-            else
-            {
-                dispatcher.BeginInvoke(new Action(RemoveHookOnDispatcher));
-            }
-        }
-
-        private void RemoveHookOnDispatcher()
-        {
-            lock (_sync)
-            {
-                if (_hook != IntPtr.Zero)
-                {
-                    try
-                    {
-                        UnhookWinEvent(_hook);
-                    }
-                    catch
-                    {
-                    }
-
-                    _hook = IntPtr.Zero;
-                    _hookDelegate = null;
-                }
-            }
-        }
-
-        private void OnForegroundWinEvent(
-            IntPtr hWinEventHook,
-            uint eventType,
-            IntPtr hwnd,
-            int idObject,
-            int idChild,
-            uint dwEventThread,
-            uint dwmsEventTime)
+        /// <summary>
+        /// Resolves and classifies the current foreground window. Learns the owning game's
+        /// hwnd/pid on success. Null when the foreground isn't a tracked game.
+        /// </summary>
+        private Guid? QueryForegroundGame()
         {
             try
             {
-                if (_disposed || hwnd == IntPtr.Zero)
+                var hwnd = GetForegroundWindow();
+                if (hwnd == IntPtr.Zero)
                 {
-                    return;
+                    return null;
                 }
 
                 GetWindowThreadProcessId(hwnd, out var pid);
                 if (pid == 0)
                 {
-                    return;
+                    return null;
                 }
 
-                var gameId = ClassifyProcess((int)pid);
+                lock (_sync)
+                {
+                    if (_disposed || _tracked.Count == 0)
+                    {
+                        return null;
+                    }
+
+                    var gameId = ClassifyProcessLocked((int)pid);
+                    if (gameId.HasValue && _tracked.TryGetValue(gameId.Value, out var tracked))
+                    {
+                        tracked.LearnedHwnd = hwnd;
+                        tracked.LearnedProcessId = (int)pid;
+                    }
+
+                    return gameId;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[WindowTracker] Foreground resolution failed.");
+                return null;
+            }
+        }
+
+        // Runs only while 2+ games are tracked: watches for the user's focus settling on a
+        // different running game and promotes it to the stable owner.
+        private void PollTick(object state)
+        {
+            try
+            {
+                var foreground = QueryForegroundGame();
+                Game switchedTo = null;
                 lock (_sync)
                 {
                     if (_disposed)
@@ -403,89 +285,37 @@ namespace PlayniteAchievements.Services.UI
                         return;
                     }
 
-                    _foregroundGameId = gameId;
-                    if (!gameId.HasValue)
+                    if (!foreground.HasValue || foreground == _stableForegroundGameId)
                     {
-                        // Non-game foreground (Playnite, browser, ...): the stable owner does not
-                        // decay, and any pending switch is abandoned.
-                        if (_pendingStableGameId.HasValue)
-                        {
-                            _pendingStableGameId = null;
-                            _stableTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-                        }
-
+                        // Non-game foreground never decays the stable owner; it only resets any
+                        // switch in progress.
+                        _pendingStableGameId = null;
+                        _pendingStreak = 0;
                         return;
                     }
 
-                    if (_tracked.TryGetValue(gameId.Value, out var tracked))
+                    if (_pendingStableGameId == foreground)
                     {
-                        tracked.LearnedHwnd = hwnd;
-                        tracked.LearnedProcessId = (int)pid;
-                    }
-
-                    if (gameId == _stableForegroundGameId)
-                    {
-                        if (_pendingStableGameId.HasValue)
-                        {
-                            _pendingStableGameId = null;
-                            _stableTimer?.Change(Timeout.Infinite, Timeout.Infinite);
-                        }
-
-                        return;
-                    }
-
-                    if (_pendingStableGameId == gameId)
-                    {
-                        return;
-                    }
-
-                    _pendingStableGameId = gameId;
-                    if (_stableTimer == null)
-                    {
-                        _stableTimer = new Timer(OnStableTimer, null, StableSwitchDelayMs, Timeout.Infinite);
+                        _pendingStreak++;
                     }
                     else
                     {
-                        _stableTimer.Change(StableSwitchDelayMs, Timeout.Infinite);
+                        _pendingStableGameId = foreground;
+                        _pendingStreak = 1;
                     }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger?.Debug(ex, "[WindowTracker] Foreground event handling failed.");
-            }
-        }
 
-        private void OnStableTimer(object state)
-        {
-            try
-            {
-                Game switchedTo = null;
-                lock (_sync)
-                {
-                    if (_disposed || !_pendingStableGameId.HasValue)
+                    if (_pendingStreak < StableConfirmationPolls)
                     {
                         return;
                     }
 
-                    var candidate = _pendingStableGameId.Value;
                     _pendingStableGameId = null;
-
-                    // One re-check at fire time: the switch only stands if the candidate's game is
-                    // still the foreground classification.
-                    GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
-                    if (pid == 0 || ClassifyProcessLocked((int)pid) != candidate)
+                    _pendingStreak = 0;
+                    _stableForegroundGameId = foreground;
+                    if (_tracked.TryGetValue(foreground.Value, out var tracked))
                     {
-                        return;
+                        switchedTo = tracked.Game;
                     }
-
-                    if (!_tracked.TryGetValue(candidate, out var tracked))
-                    {
-                        return;
-                    }
-
-                    _stableForegroundGameId = candidate;
-                    switchedTo = tracked.Game;
                 }
 
                 if (switchedTo != null)
@@ -498,19 +328,33 @@ namespace PlayniteAchievements.Services.UI
             }
             catch (Exception ex)
             {
-                _logger?.Debug(ex, "[WindowTracker] Stable switch handling failed.");
+                _logger?.Debug(ex, "[WindowTracker] Foreground poll failed.");
+            }
+        }
+
+        private void UpdatePollTimerLocked()
+        {
+            var shouldRun = !_disposed && _tracked.Count >= 2;
+            if (shouldRun)
+            {
+                if (_pollTimer == null)
+                {
+                    _pollTimer = new Timer(PollTick, null, MultiGamePollMs, MultiGamePollMs);
+                }
+                else
+                {
+                    _pollTimer.Change(MultiGamePollMs, MultiGamePollMs);
+                }
+            }
+            else
+            {
+                _pollTimer?.Change(Timeout.Infinite, Timeout.Infinite);
+                _pendingStableGameId = null;
+                _pendingStreak = 0;
             }
         }
 
         // === pid -> game classification ===
-
-        private Guid? ClassifyProcess(int pid)
-        {
-            lock (_sync)
-            {
-                return ClassifyProcessLocked(pid);
-            }
-        }
 
         private Guid? ClassifyProcessLocked(int pid)
         {
@@ -522,7 +366,7 @@ namespace PlayniteAchievements.Services.UI
             var result = ClassifyProcessCore(pid, out var conclusive);
             // A transient inspection failure (process still initializing, access denied for one
             // moment) must not poison the pid for the whole session; only conclusive answers are
-            // cached, inconclusive ones are re-tried on the next event.
+            // cached, inconclusive ones are re-tried on the next lookup.
             if (conclusive)
             {
                 _pidGameCache[pid] = result;
@@ -712,12 +556,11 @@ namespace PlayniteAchievements.Services.UI
                 return;
             }
 
-            _disposed = true;
-            RemoveHook();
             lock (_sync)
             {
-                _stableTimer?.Dispose();
-                _stableTimer = null;
+                _disposed = true;
+                _pollTimer?.Dispose();
+                _pollTimer = null;
                 _tracked.Clear();
                 _pidGameCache.Clear();
             }
@@ -725,33 +568,9 @@ namespace PlayniteAchievements.Services.UI
 
         // === P/Invoke ===
 
-        private delegate void WinEventDelegate(
-            IntPtr hWinEventHook,
-            uint eventType,
-            IntPtr hwnd,
-            int idObject,
-            int idChild,
-            uint dwEventThread,
-            uint dwmsEventTime);
-
-        private const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
-        private const uint WINEVENT_OUTOFCONTEXT = 0x0000;
         private const uint PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
         private const uint TH32CS_SNAPPROCESS = 0x00000002;
         private static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
-
-        [DllImport("user32.dll")]
-        private static extern IntPtr SetWinEventHook(
-            uint eventMin,
-            uint eventMax,
-            IntPtr hmodWinEventProc,
-            WinEventDelegate lpfnWinEventProc,
-            uint idProcess,
-            uint idThread,
-            uint dwFlags);
-
-        [DllImport("user32.dll")]
-        private static extern bool UnhookWinEvent(IntPtr hWinEventHook);
 
         [DllImport("user32.dll")]
         private static extern IntPtr GetForegroundWindow();
