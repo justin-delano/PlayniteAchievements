@@ -179,8 +179,23 @@ namespace PlayniteAchievements.Providers.Steam
                     if (coverResult == null)
                     {
                         // Many DLC apps have no library_600x900 asset; reuse the header art.
-                        await diskImageService.GetOrDownloadIconToPathAsync(
+                        coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
                             SteamImageUrls.Header(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                    }
+
+                    if (coverResult == null)
+                    {
+                        // Newer apps serve art only from content-hashed store_item_assets URLs
+                        // that cannot be derived from the appId; resolve them via the storefront
+                        // appdetails API. Only reached when both static URLs are missing.
+                        var storeUrls = await SteamImageUrls
+                            .GetStoreFallbackAsync(entryAppId, cancel, _logger)
+                            .ConfigureAwait(false);
+                        if (!string.IsNullOrWhiteSpace(storeUrls?.CoverUrl))
+                        {
+                            await diskImageService.GetOrDownloadIconToPathAsync(
+                                storeUrls.CoverUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                        }
                     }
                 }
                 catch (OperationCanceledException) when (cancel.IsCancellationRequested)
