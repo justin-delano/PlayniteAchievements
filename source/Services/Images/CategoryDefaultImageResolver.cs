@@ -45,11 +45,10 @@ namespace PlayniteAchievements.Services.Images
 
             try
             {
-                var path = diskImageService.GetDefaultCategoryImagePath(
+                return diskImageService.FindExistingDefaultCategoryImagePath(
                     playniteGameId.Value.ToString("D"),
                     normalizedLabel,
                     kind);
-                return !string.IsNullOrWhiteSpace(path) && File.Exists(path) ? path : null;
             }
             catch
             {
