@@ -1273,15 +1273,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private static string BuildPreviewPath(string value)
         {
             var normalized = NormalizePreviewSourceValue(value);
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return AchievementIconResolver.GetDefaultIcon();
-            }
-
-            var cacheBustToken = TryGetPreviewCacheBustToken(normalized);
-            return string.IsNullOrWhiteSpace(cacheBustToken)
-                ? normalized
-                : $"cachebust|{cacheBustToken}|{normalized}";
+            return string.IsNullOrWhiteSpace(normalized)
+                ? AchievementIconResolver.GetDefaultIcon()
+                : AchievementIconResolver.ApplyCacheBust(normalized);
         }
 
         private static string NormalizePreviewSourceValue(string value)
@@ -1348,34 +1342,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
 
             return PreviewHttpPrefix + normalized;
-        }
-
-        private static string TryGetPreviewCacheBustToken(string value)
-        {
-            var normalized = NormalizeOverrideValue(value);
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return null;
-            }
-
-            if (normalized.StartsWith("gray:", StringComparison.OrdinalIgnoreCase))
-            {
-                normalized = normalized.Substring("gray:".Length);
-            }
-
-            if (!Path.IsPathRooted(normalized) || !File.Exists(normalized))
-            {
-                return null;
-            }
-
-            try
-            {
-                return File.GetLastWriteTimeUtc(normalized).Ticks.ToString();
-            }
-            catch
-            {
-                return null;
-            }
         }
 
         private static string BuildBackupPath(string targetPath)
