@@ -175,30 +175,29 @@ namespace PlayniteAchievements.Providers.Steam
                 {
                     var coverTarget = diskImageService.GetDefaultCategoryImagePath(
                         gameIdText, label, CategoryImageKind.Cover);
-                    // Wide banner art is preferred for visual consistency across categories;
-                    // portrait library art is only used when no banner exists.
+                    // Wide banner art is preferred for visual consistency across categories:
+                    // static header, then the appdetails content-hashed header (newer apps
+                    // serve art only from hashed store_item_assets URLs that cannot be derived
+                    // from the appId), then portrait library art as the last downloadable tier.
                     // decodeSize 0 stores the original bytes: no square crop, original aspect.
                     var coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
                         SteamImageUrls.Header(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     if (coverResult == null)
                     {
-                        coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
-                            SteamImageUrls.Cover(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
-                    }
-
-                    if (coverResult == null)
-                    {
-                        // Newer apps serve art only from content-hashed store_item_assets URLs
-                        // that cannot be derived from the appId; resolve them via the storefront
-                        // appdetails API. Only reached when both static URLs are missing.
                         var storeUrls = await SteamImageUrls
                             .GetStoreFallbackAsync(entryAppId, cancel, _logger)
                             .ConfigureAwait(false);
                         if (!string.IsNullOrWhiteSpace(storeUrls?.CoverUrl))
                         {
-                            await diskImageService.GetOrDownloadIconToPathAsync(
+                            coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
                                 storeUrls.CoverUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                         }
+                    }
+
+                    if (coverResult == null)
+                    {
+                        await diskImageService.GetOrDownloadIconToPathAsync(
+                            SteamImageUrls.Cover(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) when (cancel.IsCancellationRequested)
