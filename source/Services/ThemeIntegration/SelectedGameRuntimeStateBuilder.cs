@@ -4,6 +4,7 @@ using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.Models.ThemeIntegration;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.ViewModels.Items;
 using System;
@@ -151,8 +152,12 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 data.AchievementCategoryImageOverrides.TryGetValue(category, out imageOverride);
             }
 
-            achievement.CategoryIconPath = NormalizeImageOverridePath(imageOverride?.Icon);
-            achievement.CategoryCoverPath = NormalizeImageOverridePath(imageOverride?.Cover);
+            achievement.CategoryIconPath =
+                NormalizeImageOverridePath(imageOverride?.Icon) ??
+                CategoryDefaultImageResolver.Resolve(data?.PlayniteGameId, category, CategoryImageKind.Icon);
+            achievement.CategoryCoverPath =
+                NormalizeImageOverridePath(imageOverride?.Cover) ??
+                CategoryDefaultImageResolver.Resolve(data?.PlayniteGameId, category, CategoryImageKind.Cover);
         }
 
         private static string NormalizeImageOverridePath(string value)
