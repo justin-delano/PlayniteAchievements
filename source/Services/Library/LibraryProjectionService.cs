@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
@@ -32,6 +33,7 @@ namespace PlayniteAchievements.Services.Library
             new Dictionary<string, LibraryProjectionSnapshot>(StringComparer.Ordinal);
         private int _cacheGeneration;
         private int _warmGeneration;
+        private bool _warmSuppressed;
         private bool _disposed;
 
         public LibraryProjectionService(
@@ -128,6 +130,21 @@ namespace PlayniteAchievements.Services.Library
         public void Warm()
         {
             ScheduleWarm();
+        }
+
+        // While a game session is active the background warm is skipped: the in-game poller's
+        // periodic saves would otherwise rebuild the whole-library projection every tick, and that
+        // rebuild holds the store lock long enough to stall UI-thread cache reads. Invalidate()
+        // still clears the snapshot cache on every delta, so on-demand consumers always rebuild
+        // with fresh data; only the precompute is dropped. The post-session warm comes from the
+        // stopped-game refresh's own cache delta (or an explicit Warm() when that refresh is
+        // skipped), so deactivation itself schedules nothing.
+        public void SetGameSessionActive(bool active)
+        {
+            lock (_sync)
+            {
+                _warmSuppressed = active;
+            }
         }
 
         public void Dispose()
@@ -271,6 +288,14 @@ namespace PlayniteAchievements.Services.Library
 
         private void ScheduleWarm()
         {
+            lock (_sync)
+            {
+                if (_warmSuppressed)
+                {
+                    return;
+                }
+            }
+
             var generation = Interlocked.Increment(ref _warmGeneration);
             _ = WarmAfterDelayAsync(generation);
         }
@@ -285,10 +310,13 @@ namespace PlayniteAchievements.Services.Library
                     return;
                 }
 
-                GetOverviewSnapshot(
-                    _settings,
-                    new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                    CancellationToken.None);
+                using (PerfScope.StartStartup(_logger, "Warm.OverviewProjection", thresholdMs: 250))
+                {
+                    GetOverviewSnapshot(
+                        _settings,
+                        new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                        CancellationToken.None);
+                }
             }
             catch (Exception ex)
             {

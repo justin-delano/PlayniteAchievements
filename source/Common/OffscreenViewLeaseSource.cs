@@ -168,6 +168,38 @@ namespace PlayniteAchievements.Common
         }
 
         /// <summary>
+        /// Navigates an offscreen view to a URL and returns the page's text content (e.g. a
+        /// JSON API response rendered as a plain-text document). Useful when a site's WAF
+        /// tarpits the .NET HTTP stack's TLS fingerprint but accepts the browser's. Returns
+        /// null on failure; a real caller cancellation still propagates.
+        /// </summary>
+        public async Task<string> GetPageTextAsync(string url, CancellationToken ct, int timeoutMs = 15000)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                return null;
+            }
+
+            try
+            {
+                return await WithNavigableViewAsync(async view =>
+                {
+                    await view.NavigateAndWaitAsync(url, timeoutMs).ConfigureAwait(false);
+                    return await view.GetPageTextAsync().ConfigureAwait(false);
+                }, ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger?.Warn(ex, $"Offscreen page-text fetch failed for {url}");
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Runs navigation work against an offscreen view; callable from any thread.
         /// Navigations on the shared leased view are serialized through a gate; per-call
         /// views run unguarded. An exception from the work marks the view faulted.

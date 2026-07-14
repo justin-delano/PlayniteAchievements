@@ -248,6 +248,12 @@ namespace PlayniteAchievements.Providers.Steam
         /// </summary>
         public IDisposable BeginOffscreenViewLease() => _offscreenViews.BeginLease();
 
+        /// <summary>
+        /// The shared offscreen view source, for callers that fetch non-Steam pages through
+        /// the same leased view (e.g. SteamHunters enrichment during a scan).
+        /// </summary>
+        internal OffscreenViewLeaseSource OffscreenViews => _offscreenViews;
+
         // ---------------------------------------------------------------------
         // Internal methods for SteamHttpClient
         // ---------------------------------------------------------------------

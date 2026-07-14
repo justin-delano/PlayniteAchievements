@@ -319,6 +319,20 @@ namespace PlayniteAchievements.Services.Images
             return Path.Combine(_cacheRoot, relativePath);
         }
 
+        // Absolute path for a provider-supplied default category image. Deterministic per
+        // (gameId, normalized category label); see AchievementIconCachePathBuilder for the layout.
+        internal string GetDefaultCategoryImagePath(
+            string gameId,
+            string categoryLabel,
+            CategoryImageKind kind)
+        {
+            var relativePath = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
+                gameId,
+                categoryLabel,
+                kind);
+            return Path.Combine(_cacheRoot, relativePath);
+        }
+
         public bool TryMigrateLegacyAchievementIcon(
             string legacySourceIdentifier,
             string targetPath,
@@ -736,7 +750,9 @@ namespace PlayniteAchievements.Services.Images
                 var bitmap = new BitmapImage();
                 bitmap.BeginInit();
                 bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                // IgnoreImageCache bypasses WPF's URI-keyed decode cache, which would
+                // otherwise serve stale pixels for files overwritten at the same path.
+                bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
                 if (decodePixel > 0)
                 {
                     bitmap.DecodePixelWidth = decodePixel;

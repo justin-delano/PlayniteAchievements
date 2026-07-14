@@ -36,7 +36,7 @@
                             <Setter.Value>
                                 <ImageBrush Stretch="Uniform"
                                             helpers:AsyncImage.Uri="{Binding GameLogo, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                                            helpers:AsyncImage.DecodePixel="1024"/>
+                                            helpers:AsyncImage.DecodePixel="-1"/>
                             </Setter.Value>
                         </Setter>
                     </MultiDataTrigger>
@@ -49,7 +49,7 @@
                             <Setter.Value>
                                 <ImageBrush Stretch="Uniform"
                                             helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
-                                            helpers:AsyncImage.DecodePixel="1024"/>
+                                            helpers:AsyncImage.DecodePixel="-1"/>
                             </Setter.Value>
                         </Setter>
                     </MultiDataTrigger>

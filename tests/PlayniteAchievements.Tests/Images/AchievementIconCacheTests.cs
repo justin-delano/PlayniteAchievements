@@ -40,6 +40,46 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
+        public void BuildDefaultCategoryRelativePath_UsesDefaultsFolderAndKindSuffix()
+        {
+            var iconPath = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
+                "game-123", "Phantom Liberty", CategoryImageKind.Icon);
+            var coverPath = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
+                "game-123", "Phantom Liberty", CategoryImageKind.Cover);
+
+            StringAssert.StartsWith(iconPath, Path.Combine("icon_cache", "game-123", "category_defaults", "category_Phantom Liberty_"));
+            StringAssert.EndsWith(iconPath, ".icon.jpg");
+            StringAssert.EndsWith(coverPath, ".cover.jpg");
+        }
+
+        [TestMethod]
+        public void BuildDefaultCategoryRelativePath_IsDeterministicAndCaseStable()
+        {
+            var first = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
+                "game-123", "Expansion", CategoryImageKind.Icon);
+            var second = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
+                "game-123", "Expansion", CategoryImageKind.Icon);
+            var upper = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
+                "game-123", "EXPANSION", CategoryImageKind.Icon);
+
+            Assert.AreEqual(first, second);
+            // The hash suffix is case-insensitive so write/read label casing differences
+            // still land on the same file (paths differ only by the sanitized stem casing).
+            StringAssert.EndsWith(upper, first.Substring(first.LastIndexOf('_')));
+        }
+
+        [TestMethod]
+        public void BuildDefaultCategoryRelativePath_SanitizesLabelsOutsideCustomFolder()
+        {
+            var path = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
+                "game-123", "Blood/On:Crystal", CategoryImageKind.Icon);
+
+            StringAssert.Contains(path, Path.Combine("game-123", "category_defaults") + Path.DirectorySeparatorChar);
+            StringAssert.Contains(path, "category_Blood_On_Crystal_");
+            Assert.IsFalse(path.Contains(Path.Combine("game-123", "custom")));
+        }
+
+        [TestMethod]
         public void BuildFileStems_AppendsSuffixesForSanitizedCollisions()
         {
             var stems = AchievementIconCachePathBuilder.BuildFileStems(new[] { "boss:win", "boss/win", "CON" });

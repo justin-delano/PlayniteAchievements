@@ -11,6 +11,7 @@ using PlayniteAchievements.Providers.RetroAchievements;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Services.Images;
 using Playnite.SDK;
 
 using ObservableObject = PlayniteAchievements.Common.ObservableObject;
@@ -1402,9 +1403,11 @@ namespace PlayniteAchievements.ViewModels.Items
 
             item.CategoryIconPath =
                 ResolveCategoryImageOverridePath(imageOverride?.Icon, playniteGameId) ??
+                CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedCategory, CategoryImageKind.Icon) ??
                 defaultIconPath;
             item.CategoryCoverPath =
                 ResolveCategoryImageOverridePath(imageOverride?.Cover, playniteGameId) ??
+                CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedCategory, CategoryImageKind.Cover) ??
                 defaultCoverPath;
         }
 
@@ -1438,9 +1441,12 @@ namespace PlayniteAchievements.ViewModels.Items
             }
 
             var managedCustomIconService = PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService;
-            return playniteGameId.HasValue
+            var resolved = playniteGameId.HasValue
                 ? managedCustomIconService?.ResolveManagedDisplayPath(normalized, playniteGameId.Value.ToString("D")) ?? normalized
                 : normalized;
+            // Category graphics are overwritten in place at a stable managed path, so the
+            // display path needs a cache-bust token or stale bitmaps are served after replacement.
+            return AchievementIconResolver.ApplyCacheBust(resolved);
         }
 
         private static string ResolveGameAssetPath(string value)

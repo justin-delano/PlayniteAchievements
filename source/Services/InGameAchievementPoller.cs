@@ -42,20 +42,31 @@ namespace PlayniteAchievements.Services
         private readonly RefreshRuntime _refreshRuntime;
         private readonly IReadOnlyList<IDataProvider> _providers;
         private readonly Func<RefreshRequest, RefreshExecutionPolicy, Task> _executeRefreshAsync;
+        /// <summary>
+        /// Per-game polling state. Each running game keeps its own session start, startup grace,
+        /// tick counter, friend cursor, and friend toast/baseline dedup so starting or stopping
+        /// one game never disturbs another game's session.
+        /// </summary>
+        private sealed class GamePollState
+        {
+            public Game Game;
+            public DateTime SessionStartUtc;
+            public DateTime FirstPollUtc;
+            public int FriendCursor;
+            public int TickCount;
+            public readonly Dictionary<string, HashSet<string>> ToastedFriendKeys =
+                new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+            public readonly Dictionary<string, List<FriendAchievementRow>> FriendBaselines =
+                new Dictionary<string, List<FriendAchievementRow>>(StringComparer.OrdinalIgnoreCase);
+        }
+
         private readonly Action<AchievementUnlockedEventArgs> _notifyUnlocked;
         private readonly AchievementUnlockDiffer _differ;
         private readonly object _stateLock = new object();
         private readonly SemaphoreSlim _tickSemaphore = new SemaphoreSlim(1, 1);
-        private readonly Dictionary<string, HashSet<string>> _toastedFriendKeys =
-            new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, List<FriendAchievementRow>> _friendBaselines =
-            new Dictionary<string, List<FriendAchievementRow>>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<Guid, GamePollState> _games = new Dictionary<Guid, GamePollState>();
 
         private CancellationTokenSource _cts;
-        private Game _currentGame;
-        private DateTime _sessionStartUtc;
-        private int _friendCursor;
-        private int _tickCount;
         private Task _loopTask;
 
         public InGameAchievementPoller(
@@ -81,13 +92,13 @@ namespace PlayniteAchievements.Services
             _differ = differ ?? new AchievementUnlockDiffer();
         }
 
-        public Game CurrentGame
+        public IReadOnlyList<Game> RunningGames
         {
             get
             {
                 lock (_stateLock)
                 {
-                    return _currentGame;
+                    return _games.Values.Select(state => state.Game).ToList();
                 }
             }
         }
@@ -99,77 +110,97 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            CancellationTokenSource oldCts = null;
+            if (!ShouldPollGame(game, logReason: true))
+            {
+                return;
+            }
+
             lock (_stateLock)
             {
-                oldCts = _cts;
-                _cts = null;
-                _loopTask = null;
-                _currentGame = game;
-                _sessionStartUtc = DateTime.UtcNow;
-                _friendCursor = 0;
-                _tickCount = 0;
-                _toastedFriendKeys.Clear();
-                _friendBaselines.Clear();
-
-                if (!ShouldPollGame(game, logReason: true))
+                var now = DateTime.UtcNow;
+                _games[game.Id] = new GamePollState
                 {
-                    _currentGame = null;
+                    Game = game,
+                    SessionStartUtc = now,
+                    FirstPollUtc = now.AddSeconds(StartupDelaySeconds)
+                };
+
+                if (_cts == null)
+                {
+                    _cts = new CancellationTokenSource();
+                    var token = _cts.Token;
+                    _loopTask = Task.Run(() => PollLoopAsync(token), token);
+                }
+            }
+
+            _logger?.Info(
+                $"[InGamePolling] Started for {game.Name}; startup delay={StartupDelaySeconds}s, interval={GetPollInterval().TotalSeconds:F0}s.");
+        }
+
+        public void Stop(Game game)
+        {
+            if (game == null || game.Id == Guid.Empty)
+            {
+                return;
+            }
+
+            CancellationTokenSource cts = null;
+            lock (_stateLock)
+            {
+                if (!_games.Remove(game.Id))
+                {
                     return;
                 }
 
-                _cts = new CancellationTokenSource();
-                var token = _cts.Token;
-                _loopTask = Task.Run(() => PollLoopAsync(game, token), token);
+                if (_games.Count == 0)
+                {
+                    cts = _cts;
+                    _cts = null;
+                    _loopTask = null;
+                }
             }
 
-            oldCts?.Cancel();
-            oldCts?.Dispose();
+            _logger?.Info($"[InGamePolling] Stopped for {game.Name}.");
+            cts?.Cancel();
+            cts?.Dispose();
         }
 
-        public void Stop()
+        public void StopAll()
         {
             CancellationTokenSource cts;
             lock (_stateLock)
             {
+                _games.Clear();
                 cts = _cts;
-                ClearStateLocked();
+                _cts = null;
+                _loopTask = null;
             }
 
             cts?.Cancel();
             cts?.Dispose();
         }
 
-        public void RestartCurrentGame()
+        private bool IsTracked(Guid gameId)
         {
-            var game = CurrentGame;
-            if (game != null)
+            lock (_stateLock)
             {
-                Start(game);
+                return _games.ContainsKey(gameId);
             }
         }
 
-        private void ClearStateLocked()
+        private async Task PollLoopAsync(CancellationToken token)
         {
-            _cts = null;
-            _loopTask = null;
-            _currentGame = null;
-        }
-
-        private async Task PollLoopAsync(Game game, CancellationToken token)
-        {
-            var interval = GetPollInterval();
-            _logger?.Info($"[InGamePolling] Started for {game.Name}; startup delay={StartupDelaySeconds}s, interval={interval.TotalSeconds:F0}s.");
-
-            // Give the game time to launch and settle before the first poll so startup churn
+            // Give games time to launch and settle before their first poll so startup churn
             // (splash screens, initial sync) doesn't trigger a wave of stale unlock toasts.
+            // Each game carries its own grace via FirstPollUtc; this initial delay lines the
+            // first tick up with the first game's grace expiring.
             try
             {
                 await Task.Delay(TimeSpan.FromSeconds(StartupDelaySeconds), token).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
-                _logger?.Info($"[InGamePolling] Stopped for {game.Name} during startup delay.");
+                _logger?.Info("[InGamePolling] Stopped during startup delay.");
                 return;
             }
 
@@ -180,7 +211,7 @@ namespace PlayniteAchievements.Services
                     await _tickSemaphore.WaitAsync(token).ConfigureAwait(false);
                     try
                     {
-                        await RunTickAsync(game, token).ConfigureAwait(false);
+                        await RunTickAsync(token).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -193,13 +224,12 @@ namespace PlayniteAchievements.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, $"[InGamePolling] Tick failed for {game.Name}.");
+                    _logger?.Debug(ex, "[InGamePolling] Tick failed.");
                 }
 
-                interval = GetPollInterval();
                 try
                 {
-                    await Task.Delay(interval, token).ConfigureAwait(false);
+                    await Task.Delay(GetPollInterval(), token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
@@ -207,27 +237,42 @@ namespace PlayniteAchievements.Services
                 }
             }
 
-            _logger?.Info($"[InGamePolling] Stopped for {game.Name}.");
+            _logger?.Info("[InGamePolling] Poll loop exited.");
         }
 
-        private async Task RunTickAsync(Game game, CancellationToken token)
+        private async Task RunTickAsync(CancellationToken token)
         {
-            if (!ShouldPollGame(game, logReason: false))
+            List<GamePollState> eligible;
+            lock (_stateLock)
+            {
+                var now = DateTime.UtcNow;
+                eligible = _games.Values.Where(state => state.FirstPollUtc <= now).ToList();
+            }
+
+            eligible = eligible.Where(state => ShouldPollGame(state.Game, logReason: false)).ToList();
+            if (eligible.Count == 0)
             {
                 return;
             }
 
-            _tickCount++;
-            var tick = _tickCount;
-            await RunUserTickAsync(game, token).ConfigureAwait(false);
+            await RunUserTickAsync(eligible, token).ConfigureAwait(false);
 
-            if (ShouldRunFriendTick(tick))
+            foreach (var state in eligible)
             {
-                await RunFriendTickAsync(game, token).ConfigureAwait(false);
+                if (!IsTracked(state.Game.Id))
+                {
+                    continue;
+                }
+
+                state.TickCount++;
+                if (ShouldRunFriendTick(state.TickCount))
+                {
+                    await RunFriendTickAsync(state, token).ConfigureAwait(false);
+                }
             }
         }
 
-        private async Task RunUserTickAsync(Game game, CancellationToken token)
+        private async Task RunUserTickAsync(IReadOnlyList<GamePollState> states, CancellationToken token)
         {
             if (_refreshRuntime?.IsRebuilding == true)
             {
@@ -236,31 +281,70 @@ namespace PlayniteAchievements.Services
             }
 
             var interval = GetPollInterval();
-            var before = _cacheManager?.LoadGameData(game.Id.ToString());
-            var timer = Stopwatch.StartNew();
-            await _executeRefreshAsync(
-                new RefreshRequest
+            var beforeByGame = new Dictionary<Guid, GameAchievementData>();
+            foreach (var state in states)
+            {
+                beforeByGame[state.Game.Id] = _cacheManager?.LoadGameData(state.Game.Id.ToString());
+            }
+
+            // One refresh execution covers every polled game so each tick produces a single
+            // save/invalidation cycle regardless of how many games are running.
+            var request = states.Count == 1
+                ? new RefreshRequest
                 {
                     Mode = RefreshModeType.Single,
-                    SingleGameId = game.Id
-                },
+                    SingleGameId = states[0].Game.Id
+                }
+                : new RefreshRequest
+                {
+                    GameIds = states.Select(state => state.Game.Id).ToList()
+                };
+
+            var timer = Stopwatch.StartNew();
+            await _executeRefreshAsync(
+                request,
                 new RefreshExecutionPolicy
                 {
                     ValidateAuthentication = false,
                     UseProgressWindow = false,
                     SwallowExceptions = true,
                     ExternalCancellationToken = token,
-                    ErrorLogMessage = "[InGamePolling] Single-game refresh failed."
+                    ErrorLogMessage = "[InGamePolling] Poll refresh failed."
                 }).ConfigureAwait(false);
 
             timer.Stop();
+
+            // Slow ticks widen the unlock-to-toast gap and therefore stretch recording clips;
+            // the Warn makes over-interval ticks visible in the plugin log.
+            _logger?.Debug(
+                $"[PollerTiming] tick took {timer.Elapsed.TotalSeconds:F1}s, interval {interval.TotalSeconds:F0}s, games={states.Count}");
+            if (timer.Elapsed > interval)
+            {
+                _logger?.Warn(
+                    $"[PollerTiming] tick took {timer.Elapsed.TotalSeconds:F1}s, exceeding the {interval.TotalSeconds:F0}s poll interval; unlock detection (and clip length) lags accordingly.");
+            }
+
+            foreach (var state in states)
+            {
+                // A game stopped mid-tick must not toast unlocks from its final refresh.
+                if (!IsTracked(state.Game.Id))
+                {
+                    continue;
+                }
+
+                EmitUserUnlocks(state.Game, beforeByGame[state.Game.Id], interval, timer.ElapsedMilliseconds);
+            }
+        }
+
+        private void EmitUserUnlocks(Game game, GameAchievementData before, TimeSpan interval, long elapsedMs)
+        {
             var after = _cacheManager?.LoadGameData(game.Id.ToString());
             HydrateForToast(after);
             var unlocks = _differ.DiffUserUnlocks(before, after)
                 .Where(a => a?.IsFiltered != true)
                 .ToList();
             _logger?.Debug(
-                $"[InGamePolling] User tick complete: game={game.Name}, interval={interval.TotalSeconds:F0}s, elapsedMs={timer.ElapsedMilliseconds}, unlocks={unlocks.Count}.");
+                $"[InGamePolling] User tick complete: game={game.Name}, interval={interval.TotalSeconds:F0}s, elapsedMs={elapsedMs}, unlocks={unlocks.Count}.");
 
             var numberByApiName = BuildAchievementNumberMap(after);
             foreach (var achievement in unlocks)
@@ -308,8 +392,9 @@ namespace PlayniteAchievements.Services
                 : 0;
         }
 
-        private async Task RunFriendTickAsync(Game game, CancellationToken token)
+        private async Task RunFriendTickAsync(GamePollState state, CancellationToken token)
         {
+            var game = state.Game;
             if (_friendCache == null)
             {
                 return;
@@ -328,7 +413,7 @@ namespace PlayniteAchievements.Services
                 return;
             }
 
-            var batch = SelectFriendBatch(roster);
+            var batch = SelectFriendBatch(state, roster);
             if (batch.Count == 0)
             {
                 return;
@@ -376,11 +461,11 @@ namespace PlayniteAchievements.Services
             var totalUnlocks = 0;
             foreach (var target in batch)
             {
-                totalUnlocks += EmitFriendUnlocks(game, target);
+                totalUnlocks += EmitFriendUnlocks(state, target);
             }
 
             _logger?.Debug(
-                $"[InGamePolling] Friend tick complete: game={game.Name}, elapsedMs={timer.ElapsedMilliseconds}, batch={batch.Count}, roster={roster.Count}, cursor={_friendCursor}, unlocks={totalUnlocks}.");
+                $"[InGamePolling] Friend tick complete: game={game.Name}, elapsedMs={timer.ElapsedMilliseconds}, batch={batch.Count}, roster={roster.Count}, cursor={state.FriendCursor}, unlocks={totalUnlocks}.");
         }
 
         private List<FriendPollTarget> LoadFriendRoster(Game game)
@@ -422,7 +507,7 @@ namespace PlayniteAchievements.Services
                 .ToList();
         }
 
-        private List<FriendPollTarget> SelectFriendBatch(List<FriendPollTarget> roster)
+        private List<FriendPollTarget> SelectFriendBatch(GamePollState state, List<FriendPollTarget> roster)
         {
             if (roster == null || roster.Count == 0)
             {
@@ -432,22 +517,22 @@ namespace PlayniteAchievements.Services
             var batchSize = Math.Max(0, _settings?.Persisted?.InGameFriendBatchSize ?? 10);
             if (batchSize == 0 || batchSize >= roster.Count)
             {
-                _friendCursor = 0;
+                state.FriendCursor = 0;
                 return roster.ToList();
             }
 
             var result = new List<FriendPollTarget>(batchSize);
-            var start = _friendCursor % roster.Count;
+            var start = state.FriendCursor % roster.Count;
             for (var i = 0; i < batchSize; i++)
             {
                 result.Add(roster[(start + i) % roster.Count]);
             }
 
-            _friendCursor = (start + batchSize) % roster.Count;
+            state.FriendCursor = (start + batchSize) % roster.Count;
             return result;
         }
 
-        private int EmitFriendUnlocks(Game game, FriendPollTarget target)
+        private int EmitFriendUnlocks(GamePollState state, FriendPollTarget target)
         {
             var rows = _friendCache.LoadFriendGameAchievements(
                 target.ProviderKey,
@@ -455,9 +540,9 @@ namespace PlayniteAchievements.Services
                 target.AppId,
                 target.ProviderGameKey) ?? new List<FriendAchievementRow>();
 
-            var toasted = GetToastedFriendSet(target);
+            var toasted = GetToastedFriendSet(state, target);
             var timestampRows = rows.Where(row => row?.UnlockTimeUtc.HasValue == true).ToList();
-            var fresh = _differ.DiffFriendSessionUnlocks(timestampRows, _sessionStartUtc, toasted).ToList();
+            var fresh = _differ.DiffFriendSessionUnlocks(timestampRows, state.SessionStartUtc, toasted).ToList();
 
             var nullTimestampRows = rows
                 .Where(row => row?.Unlocked == true && !row.UnlockTimeUtc.HasValue)
@@ -465,14 +550,14 @@ namespace PlayniteAchievements.Services
             var baselineKey = BuildFriendTargetKey(target);
             if (nullTimestampRows.Count > 0)
             {
-                if (_friendBaselines.TryGetValue(baselineKey, out var baseline))
+                if (state.FriendBaselines.TryGetValue(baselineKey, out var baseline))
                 {
                     fresh.AddRange(_differ.DiffFriendBaselineUnlocks(baseline, nullTimestampRows, toasted));
-                    _friendBaselines[baselineKey] = rows;
+                    state.FriendBaselines[baselineKey] = rows;
                 }
                 else
                 {
-                    _friendBaselines[baselineKey] = rows;
+                    state.FriendBaselines[baselineKey] = rows;
                 }
             }
 
@@ -483,19 +568,19 @@ namespace PlayniteAchievements.Services
 
             foreach (var row in fresh)
             {
-                _notifyUnlocked?.Invoke(CreateFriendEventArgs(game, target, rows, row));
+                _notifyUnlocked?.Invoke(CreateFriendEventArgs(state.Game, target, rows, row));
             }
 
             return fresh.Count;
         }
 
-        private HashSet<string> GetToastedFriendSet(FriendPollTarget target)
+        private HashSet<string> GetToastedFriendSet(GamePollState state, FriendPollTarget target)
         {
             var key = BuildFriendTargetKey(target);
-            if (!_toastedFriendKeys.TryGetValue(key, out var set))
+            if (!state.ToastedFriendKeys.TryGetValue(key, out var set))
             {
                 set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                _toastedFriendKeys[key] = set;
+                state.ToastedFriendKeys[key] = set;
             }
 
             return set;
@@ -685,7 +770,7 @@ namespace PlayniteAchievements.Services
 
         public void Dispose()
         {
-            Stop();
+            StopAll();
             _tickSemaphore.Dispose();
         }
     }

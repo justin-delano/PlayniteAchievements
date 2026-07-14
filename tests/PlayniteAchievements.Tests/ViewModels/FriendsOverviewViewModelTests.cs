@@ -172,7 +172,7 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void ScopedFriendAchievementsUseFullRowsButRecentStaysUnlockedOnly()
+        public void LockedRowsShowOnlyForSingleFriendGamePair()
         {
             var data = CreateData();
             var locked = CreateAchievement(
@@ -194,15 +194,31 @@ namespace PlayniteAchievements.Tests.ViewModels
             var viewModel = CreateViewModel(data);
             viewModel.LoadAsync().GetAwaiter().GetResult();
 
+            // No selection: recent unlocks only.
             CollectionAssert.AreEqual(
                 new[] { "Recent Only" },
                 viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
 
+            // Friend-only selection is an aggregated view: unlocked rows only.
             viewModel.SelectedFriend = data.Friends[0];
+            Assert.IsFalse(viewModel.DisplayedAchievements.Any(item => item.DisplayName == "Alice Locked"));
+            CollectionAssert.AreEquivalent(
+                new[] { "Recent Only", "Alice Game Two" },
+                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
 
+            // Single friend + single game pair: full comparison view including locked rows.
+            viewModel.SelectedGame = data.Games[0];
             Assert.IsTrue(viewModel.DisplayedAchievements.Any(item =>
                 item.DisplayName == "Alice Locked" &&
                 !item.Unlocked));
+
+            // Game-only selection is aggregated again: locked rows disappear.
+            viewModel.ClearFriendSelection();
+            Assert.IsNotNull(viewModel.SelectedGame);
+            Assert.IsFalse(viewModel.DisplayedAchievements.Any(item => item.DisplayName == "Alice Locked"));
+            CollectionAssert.AreEquivalent(
+                new[] { "Recent Only", "Bob Game One" },
+                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
         }
 
         [TestMethod]
@@ -310,7 +326,7 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
-        public void FriendGameFiltersIgnoreOwnershipOnlyLinks()
+        public void OwnedGamesShowWithoutUnlocks_GamesWithoutPairDataClearFriendLists()
         {
             var data = CreateData();
             var ownedOnlyGameId = Guid.Parse("44444444-4444-4444-4444-444444444444");
@@ -331,24 +347,44 @@ namespace PlayniteAchievements.Tests.ViewModels
                 ProviderKey = "Steam",
                 ExternalUserId = "alice",
                 AppId = 40,
-                PlayniteGameId = ownedOnlyGameId
+                PlayniteGameId = ownedOnlyGameId,
+                PlaytimeForeverMinutes = 45
             });
+            // A game no friend has any data for (no link, no rows) — e.g. stale aggregate row; the
+            // refresh/cleanup invariant means ownership rows imply displayability, so the games list
+            // shows whatever the cache holds, but no friend can pair with this game.
+            var noPairDataGame = new FriendGameSummaryItem
+            {
+                ProviderKey = "Steam",
+                AppId = 50,
+                GameName = "No Pair Data",
+                TotalAchievements = 3
+            };
+            data.Games.Add(noPairDataGame);
 
             var viewModel = CreateViewModel(data);
             viewModel.LoadAsync().GetAwaiter().GetResult();
 
-            Assert.IsFalse(viewModel.FilteredGames.Any(item => item.GameName == "Owned Only"));
+            // Owned + friend-owned with zero unlocks appears in the games overview.
+            Assert.IsTrue(viewModel.FilteredGames.Any(item => item.GameName == "Owned Only"));
 
+            // And in the selected friend's per-friend games list, as a 0/N ownership row.
             viewModel.SelectedFriend = data.Friends[0];
+            var ownedRow = viewModel.FilteredGames.Single(item => item.GameName == "Owned Only");
+            Assert.AreEqual(0, ownedRow.UnlockedAchievements);
+            Assert.AreEqual(12, ownedRow.TotalAchievements);
+            Assert.IsFalse(viewModel.FilteredGames.Any(item => item.GameName == "No Pair Data"));
 
-            Assert.IsFalse(viewModel.FilteredGames.Any(item => item.GameName == "Owned Only"));
+            // Selecting the ownership-only pair sticks and shows an empty pair grid.
+            viewModel.SelectedGame = ownedRow;
+            Assert.IsNotNull(viewModel.SelectedGame);
+            Assert.AreEqual(0, viewModel.DisplayedAchievements.Count);
 
-            viewModel.SelectedGame = ownedOnlyGame;
-
-            Assert.IsNull(viewModel.SelectedGame);
-            CollectionAssert.AreEquivalent(
-                new[] { "Recent Only", "Alice Game Two" },
-                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
+            // A game with no pair data lists no friends when selected on its own.
+            viewModel.ClearFriendSelection();
+            viewModel.SelectedGame = noPairDataGame;
+            Assert.AreEqual(0, viewModel.FilteredFriends.Count);
+            Assert.AreEqual(0, viewModel.DisplayedAchievements.Count);
         }
 
         [TestMethod]

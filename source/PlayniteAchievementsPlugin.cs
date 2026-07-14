@@ -88,13 +88,18 @@ namespace PlayniteAchievements
 
         private readonly BackgroundUpdater _backgroundUpdates;
         private readonly InGameAchievementPoller _inGamePoller;
+        private readonly ActiveGameWindowTracker _windowTracker;
         private readonly ToastNotificationService _toastNotifications;
+        private readonly Services.Recording.UnlockRecordingService _unlockRecordings;
 
         /// <summary>
-        /// Process id of the currently running game (from OnGameStarted), used to identify the
-        /// game's window/monitor for unlock screenshots. Null when no game is running.
+        /// Started process ids of currently running games (from OnGameStarted), used to identify
+        /// each game's window/monitor for unlock screenshots and recordings. Order tracks most
+        /// recently started first. Guarded by <see cref="_runningGamesLock"/>.
         /// </summary>
-        private int? _startedProcessId;
+        private readonly object _runningGamesLock = new object();
+        private readonly List<Guid> _runningGameOrder = new List<Guid>();
+        private readonly Dictionary<Guid, int?> _startedProcessIds = new Dictionary<Guid, int?>();
         private readonly RefreshEntryPoint _refreshCoordinator;
         private bool _applicationStarted;
 
@@ -331,6 +336,7 @@ namespace PlayniteAchievements
                 using (PerfScope.StartStartup(_logger, "PluginCtor.RefreshServiceCreation", thresholdMs: 50))
                 {
                     _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
+                    CategoryDefaultImageResolver.DiskImageServiceAccessor = () => _diskImageService;
                     _managedCustomIconService = new ManagedCustomIconService(_diskImageService, _logger);
                     _imageService = new MemoryImageService(_logger, _diskImageService);
                     _gameCustomDataStore.AttachManagedCustomIconService(_managedCustomIconService);
@@ -388,12 +394,23 @@ namespace PlayniteAchievements
                         _refreshService,
                         _logger,
                         runWithProgressWindow: ShowRefreshProgressControlAndRun);
+                    _windowTracker = new ActiveGameWindowTracker(_logger);
                     _toastNotifications = new ToastNotificationService(
                         PlayniteApi,
                         settings,
                         _logger,
                         () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
-                        () => _startedProcessId);
+                        GetProcessIdForGame,
+                        _windowTracker);
+                    _unlockRecordings = new Services.Recording.UnlockRecordingService(
+                        PlayniteApi,
+                        settings,
+                        _logger,
+                        pluginUserDataPath,
+                        GetProcessIdForGame,
+                        _toastNotifications,
+                        key => Services.UI.ProviderNotificationPolicy.Resolve(settings?.Persisted, key).Recordings,
+                        _windowTracker);
                     _inGamePoller = new InGameAchievementPoller(
                         PlayniteApi,
                         settings,
@@ -577,13 +594,84 @@ namespace PlayniteAchievements
             }
         }
 
+        /// <summary>
+        /// Resolves the started process id for a specific running game, or for the most recently
+        /// started still-running game when <paramref name="gameId"/> is null or empty.
+        /// </summary>
+        private int? GetProcessIdForGame(Guid? gameId)
+        {
+            if (gameId.HasValue && gameId.Value != Guid.Empty)
+            {
+                // The tracker's learned pid (the process owning the game's foreground window)
+                // beats the started pid, which is a dead bootstrapper for launcher-wrapped games.
+                var learnedPid = _windowTracker?.TryGetProcessId(gameId.Value);
+                if (learnedPid.HasValue)
+                {
+                    return learnedPid;
+                }
+
+                lock (_runningGamesLock)
+                {
+                    return _startedProcessIds.TryGetValue(gameId.Value, out var pid) ? pid : null;
+                }
+            }
+
+            lock (_runningGamesLock)
+            {
+                return _runningGameOrder.Count > 0 &&
+                       _startedProcessIds.TryGetValue(_runningGameOrder[0], out var newestPid)
+                    ? newestPid
+                    : null;
+            }
+        }
+
+        private void TrackStartedGame(Game game, int? processId)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            lock (_runningGamesLock)
+            {
+                _runningGameOrder.Remove(game.Id);
+                _runningGameOrder.Insert(0, game.Id);
+                _startedProcessIds[game.Id] = processId;
+            }
+        }
+
+        private void UntrackStoppedGame(Game game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            lock (_runningGamesLock)
+            {
+                _runningGameOrder.Remove(game.Id);
+                _startedProcessIds.Remove(game.Id);
+            }
+        }
+
+        private bool AnyGameRunning()
+        {
+            lock (_runningGamesLock)
+            {
+                return _runningGameOrder.Count > 0;
+            }
+        }
+
         public override void OnGameStarted(OnGameStartedEventArgs args)
         {
             try
             {
-                _startedProcessId = args?.StartedProcessId;
+                TrackStartedGame(args?.Game, args?.StartedProcessId);
+                _windowTracker?.OnGameStarted(args?.Game, args?.StartedProcessId);
+                _libraryProjectionService?.SetGameSessionActive(true);
                 _achievementHotkeyTargetResolver?.NotifyGameStarted(args?.Game);
                 _inGamePoller?.Start(args?.Game);
+                _unlockRecordings?.OnGameStarted(args?.Game);
             }
             catch (Exception ex)
             {
@@ -595,8 +683,24 @@ namespace PlayniteAchievements
         {
             try
             {
-                _startedProcessId = null;
-                _toastNotifications?.ClearPending();
+                UntrackStoppedGame(args?.Game);
+                if (args?.Game != null)
+                {
+                    _windowTracker?.OnGameStopped(args.Game.Id);
+                }
+
+                _libraryProjectionService?.SetGameSessionActive(AnyGameRunning());
+                if (args?.Game != null)
+                {
+                    _toastNotifications?.ClearPending(args.Game.Id);
+                    _unlockRecordings?.OnGameStopped(args.Game, ResolveRecordingHandoffGame());
+                }
+                else
+                {
+                    _toastNotifications?.ClearPending();
+                    _unlockRecordings?.OnGameStopped(null);
+                }
+
                 _achievementHotkeyTargetResolver?.NotifyGameStopped(args?.Game);
             }
             catch (Exception ex)
@@ -605,6 +709,41 @@ namespace PlayniteAchievements
             }
 
             _ = StopPollingAndRefreshStoppedGameAsync(args?.Game);
+        }
+
+        /// <summary>
+        /// The recording handoff target when the capture-owning game stops: the still-running
+        /// game the user last had in the foreground, else the most recently started still-running
+        /// game (per the tracked start order).
+        /// </summary>
+        private Game ResolveRecordingHandoffGame()
+        {
+            List<Guid> order;
+            lock (_runningGamesLock)
+            {
+                order = _runningGameOrder.ToList();
+            }
+
+            var stableForeground = _windowTracker?.StableForegroundGameId;
+            if (stableForeground.HasValue && order.Contains(stableForeground.Value))
+            {
+                var foregroundGame = PlayniteApi?.Database?.Games?.Get(stableForeground.Value);
+                if (foregroundGame != null)
+                {
+                    return foregroundGame;
+                }
+            }
+
+            foreach (var gameId in order)
+            {
+                var game = PlayniteApi?.Database?.Games?.Get(gameId);
+                if (game != null)
+                {
+                    return game;
+                }
+            }
+
+            return null;
         }
 
         private async Task StopPollingAndRefreshStoppedGameAsync(Game game)
@@ -616,7 +755,7 @@ namespace PlayniteAchievements
 
             try
             {
-                _inGamePoller?.Stop();
+                _inGamePoller?.Stop(game);
             }
             catch (Exception ex)
             {
@@ -626,7 +765,18 @@ namespace PlayniteAchievements
             if (!AnyProviderCapable(game))
             {
                 _logger.Info($"Game stopped: {game.Name}; no enabled provider is capable, skipping refresh.");
+                // No refresh delta will arrive to rebuild the projection after the session's
+                // suppressed warms; schedule it explicitly (no-op while other games still run).
+                _libraryProjectionService?.Warm();
                 return;
+            }
+
+            // With other games still running the poller may have a tick in flight; wait for it
+            // (bounded) because RefreshRuntime rejects concurrent runs rather than queueing them —
+            // a blind execute would silently drop this game's final refresh.
+            for (var waited = 0; waited < 60 && _refreshService?.IsRebuilding == true; waited += 5)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             }
 
             _logger.Info($"Game stopped: {game.Name}. Triggering refresh.");
@@ -693,8 +843,7 @@ namespace PlayniteAchievements
                         if (selectedGames?.Count == 1)
                         {
                             var game = selectedGames[0];
-                            _logger.Debug($"Populating initial theme data for selected game: {game.Name}");
-                            _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
+                            _logger.Debug($"Requesting initial theme data for selected game: {game.Name}");
                             _settingsViewModel.Settings.SetSelectedGame(game);
                             _themeIntegrationService?.RequestUpdate(game.Id);
                         }
@@ -748,7 +897,7 @@ namespace PlayniteAchievements
                 e.PropertyName == nameof(PersistedSettings.InGameFriendRefreshMultiplier) ||
                 e.PropertyName == nameof(PersistedSettings.InGameFriendBatchSize))
             {
-                RestartInGamePollerForRunningGame();
+                RestartInGamePollerForRunningGames();
             }
 
             if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges) ||
@@ -819,23 +968,26 @@ namespace PlayniteAchievements
             }
         }
 
-        private void RestartInGamePollerForRunningGame()
+        private void RestartInGamePollerForRunningGames()
         {
             try
             {
-                var current = _inGamePoller?.CurrentGame;
-                if (current == null || current.Id == Guid.Empty)
+                var running = _inGamePoller?.RunningGames?.ToList() ?? new List<Game>();
+                if (running.Count == 0)
                 {
-                    current = PlayniteApi?.Database?.Games?
+                    running = PlayniteApi?.Database?.Games?
                         .Where(game => game?.IsRunning == true)
                         .OrderByDescending(game => game.LastActivity)
-                        .FirstOrDefault();
+                        .ToList() ?? new List<Game>();
                 }
 
-                _inGamePoller?.Stop();
-                if (_applicationStarted && current != null)
+                _inGamePoller?.StopAll();
+                if (_applicationStarted)
                 {
-                    _inGamePoller?.Start(current);
+                    foreach (var game in running)
+                    {
+                        _inGamePoller?.Start(game);
+                    }
                 }
             }
             catch (Exception ex)
@@ -862,6 +1014,8 @@ namespace PlayniteAchievements
             _backgroundUpdates.Stop();
             try { _inGamePoller?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose inGamePoller"); }
             try { _toastNotifications?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose toastNotifications"); }
+            try { _unlockRecordings?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose unlockRecordings"); }
+            try { _windowTracker?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowTracker"); }
 
             try { _achievementHotkeyService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose achievementHotkeyService"); }
             try { _windowService?.Dispose(); } catch (Exception ex) { _logger?.Debug(ex, "Failed to dispose windowService"); }
@@ -900,8 +1054,6 @@ namespace PlayniteAchievements
                     }
 
                     _themeIntegrationService?.NotifySelectionChanged(game.Id);
-                    // Populate cached single-game data immediately, then let the async pass reconcile if needed.
-                    _themeIntegrationService?.PopulateSingleGameDataSync(game.Id);
                     _settingsViewModel.Settings.SetSelectedGame(game);
                     _themeIntegrationService?.RequestUpdate(game.Id);
                 }

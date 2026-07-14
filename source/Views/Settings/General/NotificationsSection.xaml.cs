@@ -40,6 +40,7 @@ namespace PlayniteAchievements.Views.Settings.General
             nameof(PersistedSettings.ToastShowDescription),
             nameof(PersistedSettings.ToastShowCategory),
             nameof(PersistedSettings.ToastShowGameName),
+            nameof(PersistedSettings.ToastShowUnlockTime),
             nameof(PersistedSettings.FrameShowHeader),
             nameof(PersistedSettings.FrameShowName),
             nameof(PersistedSettings.FrameShowDescription),
@@ -48,7 +49,8 @@ namespace PlayniteAchievements.Views.Settings.General
             nameof(PersistedSettings.FrameShowRarityBadge),
             nameof(PersistedSettings.FrameShowRarityPercent),
             nameof(PersistedSettings.FrameShowRarityGlow),
-            nameof(PersistedSettings.FrameRarityColoredName)
+            nameof(PersistedSettings.FrameRarityColoredName),
+            nameof(PersistedSettings.FrameShowUnlockTime)
         };
 
         private readonly PlayniteAchievementsSettings _settings;
@@ -56,6 +58,7 @@ namespace PlayniteAchievements.Views.Settings.General
         private readonly AchievementToastTemplateResolver _toastTemplateResolver;
         private readonly PersistedSettingsSubscription _persistedSubscription;
         private readonly ProviderNotificationSettingsViewModel _providerOverridesViewModel;
+        private readonly Services.Recording.FfmpegValidationService _ffmpegValidation;
         private Window _framePreviewWindow;
 
         public NotificationsSection()
@@ -73,6 +76,7 @@ namespace PlayniteAchievements.Views.Settings.General
             _plugin = plugin ?? throw new ArgumentNullException(nameof(plugin));
 
             _toastTemplateResolver = new AchievementToastTemplateResolver(plugin.PlayniteApi, logger);
+            _ffmpegValidation = new Services.Recording.FfmpegValidationService(logger);
 
             _persistedSubscription = new PersistedSettingsSubscription(
                 _settings,
@@ -293,7 +297,8 @@ namespace PlayniteAchievements.Views.Settings.General
                     GlobalPercent = percent,
                     IsCapstone = capstone,
                     UnlockedCount = 27,
-                    TotalCount = 40
+                    TotalCount = 40,
+                    UnlockTimeUtc = DateTime.UtcNow.AddMinutes(-3)
                 };
             }
         }
@@ -318,6 +323,85 @@ namespace PlayniteAchievements.Views.Settings.General
             if (!string.IsNullOrWhiteSpace(selected))
             {
                 settings.UnlockScreenshotDirectory = selected;
+            }
+        }
+
+        private void RecordingDirectory_Browse_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = _settings?.Persisted;
+            if (settings == null)
+            {
+                return;
+            }
+
+            var selected = _plugin?.PlayniteApi?.Dialogs?.SelectFolder();
+            if (!string.IsNullOrWhiteSpace(selected))
+            {
+                settings.UnlockRecordingDirectory = selected;
+            }
+        }
+
+        private void FfmpegPath_Browse_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = _settings?.Persisted;
+            if (settings == null)
+            {
+                return;
+            }
+
+            var selected = _plugin?.PlayniteApi?.Dialogs?.SelectFile("ffmpeg|ffmpeg.exe|Executable|*.exe");
+            if (!string.IsNullOrWhiteSpace(selected))
+            {
+                settings.FfmpegPath = selected;
+            }
+        }
+
+        /// <summary>
+        /// Runs the ffmpeg validation (version + encoder probes + a 1s screen-capture smoke
+        /// test) and reports the outcome in the status line. The button is disabled while the
+        /// probes run; results are cached per path for the session.
+        /// </summary>
+        private async void FfmpegTest_Click(object sender, RoutedEventArgs e)
+        {
+            var path = _settings?.Persisted?.FfmpegPath;
+            if (_ffmpegValidation == null || FfmpegTestButton == null || FfmpegStatusText == null)
+            {
+                return;
+            }
+
+            FfmpegTestButton.IsEnabled = false;
+            try
+            {
+                var result = await _ffmpegValidation.ValidateAsync(path, runSmokeTest: true);
+                if (result?.IsValid == true)
+                {
+                    FfmpegStatusText.Text = string.Format(
+                        ResourceProvider.GetString("LOCPlayAch_Settings_RecordingFfmpegValid"),
+                        result.Version,
+                        string.Join(", ", result.AvailableEncoders));
+                    // Back to the muted style's own foreground for the success case.
+                    FfmpegStatusText.ClearValue(TextBlock.ForegroundProperty);
+                }
+                else
+                {
+                    FfmpegStatusText.Text = string.Format(
+                        ResourceProvider.GetString("LOCPlayAch_Settings_RecordingFfmpegInvalid"),
+                        result?.Error ?? string.Empty);
+                    if (TryFindResource("PlayAch.Brush.ErrorText") is System.Windows.Media.Brush errorBrush)
+                    {
+                        FfmpegStatusText.Foreground = errorBrush;
+                    }
+                }
+
+                FfmpegStatusText.Visibility = Visibility.Visible;
+            }
+            catch (Exception)
+            {
+                // Validation never throws by design; guard the async-void boundary anyway.
+            }
+            finally
+            {
+                FfmpegTestButton.IsEnabled = true;
             }
         }
 

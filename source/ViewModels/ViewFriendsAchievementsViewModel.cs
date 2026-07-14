@@ -486,12 +486,13 @@ namespace PlayniteAchievements.ViewModels
                 .ToList();
             Friends.ReplaceAll(friends);
 
-            IEnumerable<FriendAchievementDisplayItem> source = _allAchievements;
-            if (SelectedFriend != null)
-            {
-                source = source.Where(achievement =>
-                    FriendOverviewProjection.IsSameFriend(achievement, SelectedFriend));
-            }
+            // The game is fixed here, so a selected friend forms a single friend+game pair: show the
+            // full comparison list including the friend's locked achievements. The all-friends view is
+            // aggregated and shows unlocked rows only.
+            IEnumerable<FriendAchievementDisplayItem> source = SelectedFriend != null
+                ? _allAchievements.Where(achievement =>
+                    FriendOverviewProjection.IsSameFriend(achievement, SelectedFriend))
+                : _allAchievements.Where(achievement => achievement?.Unlocked == true);
 
             var filtered = _achievementControlBar
                 .Apply(source)

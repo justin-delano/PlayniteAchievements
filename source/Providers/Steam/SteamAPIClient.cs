@@ -66,7 +66,7 @@ namespace PlayniteAchievements.Providers.Steam
                     return achievements != null && achievements.Count > 0;
                 }
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "GetGameAchievements API availability check failed for appId={appId}");
@@ -126,7 +126,7 @@ namespace PlayniteAchievements.Providers.Steam
                         : null;
                 }
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, $"GetOwnedGames API request failed for steamId={steamId64}");
@@ -206,7 +206,7 @@ namespace PlayniteAchievements.Providers.Steam
                     };
                 }
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "GetGameAchievements API request failed for appId={appId}");

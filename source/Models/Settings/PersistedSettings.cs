@@ -75,6 +75,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _toastShowDescription = true;
         private bool _toastShowCategory = true;
         private bool _toastShowGameName = true;
+        private bool _toastShowUnlockTime = false;
         private int _toastDurationSeconds = 6;
         private int _maxConcurrentToasts = 3;
         private bool _enableUnlockScreenshots = false;
@@ -90,7 +91,17 @@ namespace PlayniteAchievements.Models.Settings
         private bool _frameShowRarityPercent = true;
         private bool _frameShowRarityGlow = true;
         private bool _frameRarityColoredName = true;
+        private bool _frameShowUnlockTime = true;
         private string _unlockScreenshotDirectory;
+        private bool _enableUnlockRecordings = false;
+        private string _ffmpegPath;
+        private string _unlockRecordingDirectory;
+        private int _recordingClipSeconds = 15;
+        private int _recordingFps = 30;
+        private RecordingResolution _recordingResolution = RecordingResolution.Native;
+        private RecordingEncoder _recordingEncoder = RecordingEncoder.Auto;
+        private RecordingCaptureBackend _recordingCaptureBackend = RecordingCaptureBackend.Auto;
+        private bool _recordingIncludeAudio = false;
         private Dictionary<string, ProviderNotificationOverride> _providerNotificationOverrides =
             new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
         private ToastScreenCorner _toastPosition = ToastScreenCorner.BottomRight;
@@ -923,6 +934,16 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _toastShowGameName, value);
         }
 
+        /// <summary>
+        /// Shows the unlock datetime on the toast's header line. Off by default; the frame has
+        /// its own always-on datetime row.
+        /// </summary>
+        public bool ToastShowUnlockTime
+        {
+            get => _toastShowUnlockTime;
+            set => SetValue(ref _toastShowUnlockTime, value);
+        }
+
         public int ToastDurationSeconds
         {
             get => _toastDurationSeconds;
@@ -943,7 +964,8 @@ namespace PlayniteAchievements.Models.Settings
 
         /// <summary>
         /// When true, a screenshot of the game's monitor is saved for each of your own unlock
-        /// waves (requires unlock toasts to be enabled). Opt-in since it writes files to disk.
+        /// waves. Independent of unlock toasts (the with-toast variant is skipped when no toast
+        /// shows). Opt-in since it writes files to disk.
         /// </summary>
         public bool EnableUnlockScreenshots
         {
@@ -1036,6 +1058,15 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Shows the localized unlock datetime on the frame's header line.
+        /// </summary>
+        public bool FrameShowUnlockTime
+        {
+            get => _frameShowUnlockTime;
+            set => SetValue(ref _frameShowUnlockTime, value);
+        }
+
+        /// <summary>
         /// Base directory for unlock screenshots. Files are written to
         /// &lt;dir&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png.
         /// </summary>
@@ -1043,6 +1074,82 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _unlockScreenshotDirectory;
             set => SetValue(ref _unlockScreenshotDirectory, value);
+        }
+
+        /// <summary>
+        /// When true, a video clip of the game's monitor is saved for each of your own unlocks
+        /// while a game is running, via a rolling ffmpeg screen capture. Requires a valid
+        /// <see cref="FfmpegPath"/>; the plugin never downloads ffmpeg.
+        /// </summary>
+        public bool EnableUnlockRecordings
+        {
+            get => _enableUnlockRecordings;
+            set => SetValue(ref _enableUnlockRecordings, value);
+        }
+
+        /// <summary>
+        /// Full path to a user-supplied ffmpeg.exe used for unlock recordings.
+        /// </summary>
+        public string FfmpegPath
+        {
+            get => _ffmpegPath;
+            set => SetValue(ref _ffmpegPath, value);
+        }
+
+        /// <summary>
+        /// Base directory for unlock recordings. Blank falls back to
+        /// <see cref="UnlockScreenshotDirectory"/> at runtime. Files are written to
+        /// &lt;dir&gt;\Game\NNN_AchievementName.mp4.
+        /// </summary>
+        public string UnlockRecordingDirectory
+        {
+            get => _unlockRecordingDirectory;
+            set => SetValue(ref _unlockRecordingDirectory, value);
+        }
+
+        /// <summary>
+        /// Seconds recorded before the unlock moment (pre-roll). The clip end is anchored past
+        /// the toast's dismissal, so total length = pre-roll + detection gap + toast time.
+        /// </summary>
+        public int RecordingClipSeconds
+        {
+            get => _recordingClipSeconds;
+            set => SetValue(ref _recordingClipSeconds, Math.Min(60, Math.Max(5, value)));
+        }
+
+        public int RecordingFps
+        {
+            get => _recordingFps;
+            set => SetValue(ref _recordingFps, Math.Min(60, Math.Max(10, value)));
+        }
+
+        public RecordingResolution RecordingResolution
+        {
+            get => _recordingResolution;
+            set => SetValue(ref _recordingResolution, value);
+        }
+
+        public RecordingEncoder RecordingEncoder
+        {
+            get => _recordingEncoder;
+            set => SetValue(ref _recordingEncoder, value);
+        }
+
+        public RecordingCaptureBackend RecordingCaptureBackend
+        {
+            get => _recordingCaptureBackend;
+            set => SetValue(ref _recordingCaptureBackend, value);
+        }
+
+        /// <summary>
+        /// When true, unlock clips include system audio (everything the PC is playing) captured
+        /// alongside the rolling screen capture. Off by default; audio capture is best-effort
+        /// and never blocks the video pipeline.
+        /// </summary>
+        public bool RecordingIncludeAudio
+        {
+            get => _recordingIncludeAudio;
+            set => SetValue(ref _recordingIncludeAudio, value);
         }
 
         /// <summary>
@@ -2110,6 +2217,7 @@ namespace PlayniteAchievements.Models.Settings
                 ToastShowDescription = this.ToastShowDescription,
                 ToastShowCategory = this.ToastShowCategory,
                 ToastShowGameName = this.ToastShowGameName,
+                ToastShowUnlockTime = this.ToastShowUnlockTime,
                 ToastDurationSeconds = this.ToastDurationSeconds,
                 MaxConcurrentToasts = this.MaxConcurrentToasts,
                 ToastPosition = this.ToastPosition,
@@ -2126,7 +2234,17 @@ namespace PlayniteAchievements.Models.Settings
                 FrameShowRarityPercent = this.FrameShowRarityPercent,
                 FrameShowRarityGlow = this.FrameShowRarityGlow,
                 FrameRarityColoredName = this.FrameRarityColoredName,
+                FrameShowUnlockTime = this.FrameShowUnlockTime,
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
+                EnableUnlockRecordings = this.EnableUnlockRecordings,
+                FfmpegPath = this.FfmpegPath,
+                UnlockRecordingDirectory = this.UnlockRecordingDirectory,
+                RecordingClipSeconds = this.RecordingClipSeconds,
+                RecordingFps = this.RecordingFps,
+                RecordingResolution = this.RecordingResolution,
+                RecordingEncoder = this.RecordingEncoder,
+                RecordingCaptureBackend = this.RecordingCaptureBackend,
+                RecordingIncludeAudio = this.RecordingIncludeAudio,
                 ProviderNotificationOverrides = this.ProviderNotificationOverrides != null
                     ? this.ProviderNotificationOverrides.ToDictionary(
                         kvp => kvp.Key,

@@ -850,7 +850,8 @@ namespace PlayniteAchievements.Services.Tests
         {
             // A provider that supplies no unlock hint (e.g. Steam via community page parse failure)
             // must still have its provider-only games scraped under Full scope rather than silently
-            // dropped; the post-scrape guard prunes any that turn out empty.
+            // dropped. The flow is probe-first: the friend achievements page is scraped, and because
+            // it confirms unlocks the game definition is then fetched and everything persists.
             var cache = new FakeFriendCache
             {
                 ProviderGamesMappedToPlayniteLibrary = false
@@ -892,6 +893,315 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
             Assert.AreEqual(1, friends.GetFriendGameAchievementsCalls);
             Assert.AreEqual(1, cache.SaveFriendGameAchievementsCalls);
+
+            // Probe-first: the definition is only fetched after the probe confirms unlocks.
+            var order = friends.NetworkCallOrder.ToList();
+            Assert.IsTrue(
+                order.IndexOf("achievements:1") < order.IndexOf("definition:100"),
+                $"Expected the achievements probe before the definition fetch but got: {string.Join(", ", order)}");
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_FullProviderOnlyGameWithUnknownHintAndZeroUnlocks_LeavesNoTrace()
+        {
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") },
+                OwnedGamesToReturn = new List<FriendGameOwnership>
+                {
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "1",
+                        AppId = 100,
+                        PlaytimeForeverMinutes = 1
+                        // AchievementUnlocksHint intentionally unset (null).
+                    }
+                },
+                AchievementRowsToReturn = new List<FriendAchievementRow>()
+            };
+            SeedCachedFriends(cache, "Steam", "1");
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            // One probe is unavoidable to learn the unlock count; with zero unlocks nothing else is
+            // fetched and nothing is persisted (no definition rows, no ownership, no achievements).
+            Assert.AreEqual(1, friends.GetFriendGameAchievementsCalls);
+            Assert.AreEqual(0, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(0, cache.SaveFriendGameDefinitionCalls);
+            Assert.AreEqual(0, cache.SaveProviderOnlyOwnershipCalls);
+            Assert.AreEqual(0, cache.SaveFriendGameAchievementsCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_FullSharedUnknownHintGame_FetchesDefinitionOnceForConfirmedFriendOnly()
+        {
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1"), MakeFriend("2") },
+                // The fake returns the same owned-games list for every friend, so this models one
+                // unknown-hint game both friends own.
+                OwnedGamesToReturn = new List<FriendGameOwnership>
+                {
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "Steam",
+                        AppId = 100,
+                        PlaytimeForeverMinutes = 1
+                    }
+                },
+                AchievementRowsByFriend = new Dictionary<string, List<FriendAchievementRow>>
+                {
+                    ["1"] = new List<FriendAchievementRow>(),
+                    ["2"] = new List<FriendAchievementRow>
+                    {
+                        new FriendAchievementRow { ApiName = "A", DisplayName = "A", Unlocked = true }
+                    }
+                }
+            };
+            SeedCachedFriends(cache, "Steam", "1", "2");
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            // Both owners are probed; the shared definition is fetched exactly once (triggered by the
+            // friend with unlocks) and only that friend's ownership/achievements persist.
+            Assert.AreEqual(2, friends.GetFriendGameAchievementsCalls);
+            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(1, cache.SaveFriendGameDefinitionCalls);
+            Assert.AreEqual(1, cache.SaveProviderOnlyOwnershipCalls);
+            Assert.AreEqual(1, cache.SaveFriendGameAchievementsCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_FullMixedHintOwnersOfOneGame_FetchDefinitionEagerly()
+        {
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1"), MakeFriend("2") },
+                OwnedGamesToReturn = new List<FriendGameOwnership>
+                {
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "1",
+                        AppId = 100,
+                        PlaytimeForeverMinutes = 1,
+                        AchievementUnlocksHint = 1
+                    },
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "2",
+                        AppId = 100,
+                        PlaytimeForeverMinutes = 1
+                        // AchievementUnlocksHint intentionally unset (null).
+                    }
+                },
+                AchievementRowsToReturn = new List<FriendAchievementRow>
+                {
+                    new FriendAchievementRow { ApiName = "A", DisplayName = "A", Unlocked = true }
+                }
+            };
+            SeedCachedFriends(cache, "Steam", "1", "2");
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Full
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            // Any owner with a positive unlock hint keeps the game's definition fetch eager: the
+            // definition is fetched once, before any probe.
+            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
+            var order = friends.NetworkCallOrder.ToList();
+            var definitionIndex = order.IndexOf("definition:100");
+            var firstProbeIndex = order.FindIndex(entry => entry.StartsWith("achievements:", StringComparison.Ordinal));
+            Assert.IsTrue(
+                definitionIndex >= 0 && firstProbeIndex >= 0 && definitionIndex < firstProbeIndex,
+                $"Expected the definition fetch before any probe but got: {string.Join(", ", order)}");
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_SharedSteamGameMatchingCurrentUserLabel_SavesOwnershipEvenWithZeroUnlocks()
+        {
+            var playniteGameId = Guid.NewGuid();
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false,
+                CurrentUserGameLabels = new List<CurrentUserGameLabel>
+                {
+                    new CurrentUserGameLabel
+                    {
+                        ProviderKey = "Steam",
+                        PlayniteGameId = playniteGameId,
+                        AppId = 100,
+                        GameName = "Game 100"
+                    }
+                }
+            };
+            var friends = new FakeFriendsProvider("Steam")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1") },
+                OwnedGamesToReturn = new List<FriendGameOwnership>
+                {
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "Steam",
+                        ExternalUserId = "1",
+                        AppId = 100,
+                        PlaytimeForeverMinutes = 1,
+                        AchievementUnlocksHint = 0
+                    }
+                }
+            };
+            SeedCachedFriends(cache, "Steam", "1");
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Steam", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Shared
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            // The current-user label stamps the Playnite mapping onto the fetched ownership item, so
+            // the shared save persists the game even though the friend has zero unlocks — this is what
+            // makes shared library games appear in the friends overview.
+            var saved = cache.SavedOwnershipRows.Single(row => row.AppId == 100);
+            Assert.AreEqual(playniteGameId, saved.PlayniteGameId);
+            Assert.AreEqual(0, cache.SaveProviderOnlyOwnershipCalls);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_SharedRetroAchievementsGameMatchingCurrentUserLabel_StampsPlayniteMapping()
+        {
+            var playniteGameId = Guid.NewGuid();
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false,
+                CurrentUserGameLabels = new List<CurrentUserGameLabel>
+                {
+                    new CurrentUserGameLabel
+                    {
+                        ProviderKey = "RetroAchievements",
+                        PlayniteGameId = playniteGameId,
+                        AppId = 4111,
+                        GameName = "RA Game"
+                    }
+                }
+            };
+            var friends = new FakeFriendsProvider("RetroAchievements")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1", "RetroAchievements") },
+                OwnedGamesToReturn = new List<FriendGameOwnership>
+                {
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "RetroAchievements",
+                        ExternalUserId = "1",
+                        AppId = 4111,
+                        PlaytimeForeverMinutes = 1,
+                        AchievementUnlocksHint = 0
+                    }
+                }
+            };
+            SeedCachedFriends(cache, "RetroAchievements", "1");
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("RetroAchievements", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Shared
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            var saved = cache.SavedOwnershipRows.Single(row => row.AppId == 4111);
+            Assert.AreEqual(playniteGameId, saved.PlayniteGameId);
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_ExophaseOwnershipNeverStampedFromCurrentUserLabels()
+        {
+            // Exophase resolves inline Playnite ids itself with platform-aware name matching; naive
+            // (AppId/key) stamping must not apply to it.
+            var cache = new FakeFriendCache
+            {
+                ProviderGamesMappedToPlayniteLibrary = false,
+                CurrentUserGameLabels = new List<CurrentUserGameLabel>
+                {
+                    new CurrentUserGameLabel
+                    {
+                        ProviderKey = "Exophase",
+                        PlayniteGameId = Guid.NewGuid(),
+                        ProviderGameKey = "exo-game",
+                        GameName = "Exo Game"
+                    }
+                }
+            };
+            var friends = new FakeFriendsProvider("Exophase")
+            {
+                FriendsToReturn = new List<FriendIdentity> { MakeFriend("1", "Exophase") },
+                OwnedGamesToReturn = new List<FriendGameOwnership>
+                {
+                    new FriendGameOwnership
+                    {
+                        ProviderKey = "Exophase",
+                        ExternalUserId = "1",
+                        ProviderGameKey = "exo-game",
+                        PlaytimeForeverMinutes = 1,
+                        AchievementUnlocksHint = 0
+                    }
+                }
+            };
+            SeedCachedFriends(cache, "Exophase", "1");
+
+            await CreateRuntime(cache)
+                .RefreshAsync(
+                    new IDataProvider[] { new FakeDataProvider("Exophase", friends) },
+                    new FriendRefreshOptions
+                    {
+                        Scope = FriendRefreshScope.Shared
+                    },
+                    reportProgress: null)
+                .ConfigureAwait(false);
+
+            Assert.IsFalse(cache.SavedOwnershipRows.Any(row => row.PlayniteGameId.HasValue));
         }
 
         [TestMethod]
@@ -2505,6 +2815,7 @@ namespace PlayniteAchievements.Services.Tests
             private int _currentAchievementCalls;
             private int _maxConcurrentAchievementCalls;
             private readonly List<int> _definitionAppIds = new List<int>();
+            private readonly List<string> _networkCallOrder = new List<string>();
 
             public FakeFriendsProvider(string providerKey)
             {
@@ -2523,6 +2834,8 @@ namespace PlayniteAchievements.Services.Tests
             public FriendsProviderResult<IReadOnlyList<FriendGameOwnership>> SteamOwnedGamesSupplementResult { get; set; }
             public FriendGameDefinitionStatus DefinitionStatusToReturn { get; set; } = FriendGameDefinitionStatus.Ok;
             public List<FriendAchievementRow> AchievementRowsToReturn { get; set; }
+            // Per-friend achievement rows keyed by ExternalUserId; falls back to AchievementRowsToReturn.
+            public Dictionary<string, List<FriendAchievementRow>> AchievementRowsByFriend { get; set; }
             public Action<string> OperationLog { get; set; }
             public int OwnershipDelayMs { get; set; }
             public int AchievementDelayMs { get; set; }
@@ -2543,6 +2856,26 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         return _definitionAppIds.ToList();
                     }
+                }
+            }
+
+            // Ordered log of achievement/definition network calls, e.g. "achievements:1", "definition:100".
+            public IReadOnlyList<string> NetworkCallOrder
+            {
+                get
+                {
+                    lock (_networkCallOrder)
+                    {
+                        return _networkCallOrder.ToList();
+                    }
+                }
+            }
+
+            private void RecordNetworkCall(string entry)
+            {
+                lock (_networkCallOrder)
+                {
+                    _networkCallOrder.Add(entry);
                 }
             }
 
@@ -2627,6 +2960,7 @@ namespace PlayniteAchievements.Services.Tests
                 CancellationToken cancel)
             {
                 Interlocked.Increment(ref _getFriendGameAchievementsCalls);
+                RecordNetworkCall($"achievements:{friend?.ExternalUserId}");
                 var current = Interlocked.Increment(ref _currentAchievementCalls);
                 UpdateMaxConcurrentAchievementCalls(current);
                 try
@@ -2636,6 +2970,11 @@ namespace PlayniteAchievements.Services.Tests
                         await Task.Delay(AchievementDelayMs, cancel).ConfigureAwait(false);
                     }
 
+                    var rows = AchievementRowsByFriend != null &&
+                               friend?.ExternalUserId != null &&
+                               AchievementRowsByFriend.TryGetValue(friend.ExternalUserId, out var perFriendRows)
+                        ? perFriendRows
+                        : AchievementRowsToReturn;
                     return FriendsProviderResult<FriendGameAchievements>.FromData(
                         new FriendGameAchievements
                         {
@@ -2643,7 +2982,7 @@ namespace PlayniteAchievements.Services.Tests
                             AppId = appId,
                             ProviderGameKey = providerGameKey,
                             LastUpdatedUtc = DateTime.UtcNow,
-                            Rows = AchievementRowsToReturn?
+                            Rows = rows?
                                 .Select(row => new FriendAchievementRow
                                 {
                                     ApiName = row.ApiName,
@@ -2680,6 +3019,7 @@ namespace PlayniteAchievements.Services.Tests
                 CancellationToken cancel)
             {
                 Interlocked.Increment(ref _getFriendGameDefinitionCalls);
+                RecordNetworkCall($"definition:{appId}");
                 lock (_definitionAppIds)
                 {
                     _definitionAppIds.Add(appId);

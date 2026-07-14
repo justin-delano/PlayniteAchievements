@@ -56,6 +56,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["Icon"] = DefaultIconColumnWidth,
                 ["Game"] = DefaultGameImageColumnWidth,
                 ["Avatar"] = DefaultFriendAvatarColumnWidth,
+                ["CategoryIcon"] = DefaultGameImageColumnWidth,
                 ["Trophy"] = DefaultTrophyIconColumnWidth,
                 ["RarityTier"] = DefaultTrophyIconColumnWidth
             };
@@ -117,6 +118,7 @@ namespace PlayniteAchievements.Views.Controls
             bool unlockDate = true,
             bool categoryType = false,
             bool categoryLabel = false,
+            bool categoryIcon = false,
             bool trophy = false,
             bool rarity = true,
             bool rarityTier = false,
@@ -138,6 +140,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["UnlockDate"] = unlockDate,
                 ["CategoryType"] = categoryType,
                 ["CategoryLabel"] = categoryLabel,
+                ["CategoryIcon"] = categoryIcon,
                 ["Trophy"] = trophy,
                 ["Rarity"] = rarity,
                 ["RarityTier"] = rarityTier,

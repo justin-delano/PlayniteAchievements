@@ -92,6 +92,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ToastShowDescription = source.ToastShowDescription;
             target.ToastShowCategory = source.ToastShowCategory;
             target.ToastShowGameName = source.ToastShowGameName;
+            target.ToastShowUnlockTime = source.ToastShowUnlockTime;
             target.ToastDurationSeconds = source.ToastDurationSeconds;
             target.MaxConcurrentToasts = source.MaxConcurrentToasts;
             target.ToastPosition = source.ToastPosition;
@@ -108,7 +109,17 @@ namespace PlayniteAchievements.Models.Settings
             target.FrameShowRarityPercent = source.FrameShowRarityPercent;
             target.FrameShowRarityGlow = source.FrameShowRarityGlow;
             target.FrameRarityColoredName = source.FrameRarityColoredName;
+            target.FrameShowUnlockTime = source.FrameShowUnlockTime;
             target.UnlockScreenshotDirectory = source.UnlockScreenshotDirectory;
+            target.EnableUnlockRecordings = source.EnableUnlockRecordings;
+            target.FfmpegPath = source.FfmpegPath;
+            target.UnlockRecordingDirectory = source.UnlockRecordingDirectory;
+            target.RecordingClipSeconds = source.RecordingClipSeconds;
+            target.RecordingFps = source.RecordingFps;
+            target.RecordingResolution = source.RecordingResolution;
+            target.RecordingEncoder = source.RecordingEncoder;
+            target.RecordingCaptureBackend = source.RecordingCaptureBackend;
+            target.RecordingIncludeAudio = source.RecordingIncludeAudio;
             target.ProviderNotificationOverrides = source.ProviderNotificationOverrides != null
                 ? source.ProviderNotificationOverrides.ToDictionary(
                     kvp => kvp.Key,

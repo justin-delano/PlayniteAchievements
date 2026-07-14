@@ -11,7 +11,7 @@ namespace PlayniteAchievements.Services.Database
 {
     internal sealed class SqlNadoSchemaManager
     {
-        public const int SchemaVersion = 15;
+        public const int SchemaVersion = 16;
         private const string LegacyGamesProviderGameIdIndexName = "UX_Games_Provider_GameId";
         private const string GamesProviderGameIdNonRaIndexName = "UX_Games_Provider_GameId_NonRA";
         private const string GamesProviderGameIdLookupIndexName = "IX_Games_Provider_GameId";
@@ -164,6 +164,7 @@ namespace PlayniteAchievements.Services.Database
                 // Schema is correct - ensure version is set if needed
                 if (storedVersion < SchemaVersion)
                 {
+                    RunVersionedDataCleanups(db, storedVersion);
                     db.ExecuteNonQuery(
                         "INSERT OR REPLACE INTO CacheMetadata (Key, Value) VALUES (?, ?);",
                         "schema_version",
@@ -202,12 +203,66 @@ namespace PlayniteAchievements.Services.Database
             // Create ProviderKey-dependent indexes after successful migration
             CreateProviderKeyIndexes(db);
 
+            RunVersionedDataCleanups(db, storedVersion);
             db.ExecuteNonQuery(
                 "INSERT OR REPLACE INTO CacheMetadata (Key, Value) VALUES (?, ?);",
                 "schema_version",
                 SchemaVersion.ToString(CultureInfo.InvariantCulture));
 
             BackfillRequiredAchievementCategoryValues(db);
+        }
+
+        // One-time data cleanups tied to schema version upgrades. Runs before the stored version is
+        // advanced; fresh databases (storedVersion 0) have nothing to clean.
+        private void RunVersionedDataCleanups(SQLiteDatabase db, int storedVersion)
+        {
+            if (storedVersion <= 0)
+            {
+                return;
+            }
+
+            if (storedVersion < 16)
+            {
+                CleanupZeroUnlockProviderOnlyFriendOwnership(db);
+            }
+        }
+
+        // v16: friend ownership rows for provider-only games (no PlayniteGameId) are only written once
+        // a probe has confirmed the friend has unlocked achievements. Older caches persisted them
+        // unconditionally; delete the rows whose friend has no unlocked achievement for that game so
+        // the ownership-driven friends overview matches the refresh-side invariant without display
+        // filtering. Mirrors the unlocks predicate of LoadFriendGameSummaryRows (UserGameProgress ->
+        // UserAchievements with Unlocked = 1).
+        private void CleanupZeroUnlockProviderOnlyFriendOwnership(SQLiteDatabase db)
+        {
+            try
+            {
+                db.ExecuteNonQuery(@"DELETE FROM FriendOwnership
+                    WHERE Id IN (
+                        SELECT fo.Id
+                        FROM FriendOwnership fo
+                        INNER JOIN Users u ON u.Id = fo.UserId
+                        INNER JOIN Games g ON g.Id = fo.GameId
+                        WHERE g.PlayniteGameId IS NULL
+                          AND u.IsCurrentUser = 0
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM UserGameProgress ugp
+                              INNER JOIN UserAchievements ua
+                                  ON ua.UserGameProgressId = ugp.Id AND ua.Unlocked = 1
+                              WHERE ugp.UserId = fo.UserId AND ugp.GameId = fo.GameId
+                          )
+                    );");
+                var deleted = db.ExecuteScalar<long>("SELECT changes();");
+                if (deleted > 0)
+                {
+                    _logger?.Info($"[Schema] v16 cleanup removed {deleted} zero-unlock provider-only friend ownership row(s).");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                _logger?.Error(ex, "[Schema] v16 zero-unlock provider-only friend ownership cleanup failed.");
+            }
         }
 
         private void ExecuteSafe(SQLiteDatabase db, string sql)

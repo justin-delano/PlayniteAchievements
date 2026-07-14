@@ -1356,7 +1356,7 @@ namespace PlayniteAchievements.ViewModels
                 if (!preserveSelections &&
                     SelectedFriend != null &&
                     SelectedGame != null &&
-                    !HasUnlocksForFriendGame(SelectedFriend, SelectedGame))
+                    !HasFriendGamePairData(SelectedFriend, SelectedGame))
                 {
                     _selectedGame = null;
                     OnPropertyChanged(nameof(SelectedGame));
@@ -1372,7 +1372,7 @@ namespace PlayniteAchievements.ViewModels
                     .Where(friend => _friendSearchIndex.Matches(friend, friendQuery));
                 if (SelectedGame != null)
                 {
-                    friends = friends.Where(friend => HasUnlocksForFriendGame(friend, SelectedGame));
+                    friends = friends.Where(friend => HasFriendGamePairData(friend, SelectedGame));
                 }
 
                 var friendList = friends.ToList();
@@ -1381,9 +1381,11 @@ namespace PlayniteAchievements.ViewModels
                     ? GetSelectedFriendGames(SelectedFriend)
                     : _allGames;
 
+                // No unlock gating here: the games list is ownership-driven and the cache only holds
+                // ownership rows that should display (owned games unconditionally; provider-only games
+                // once the friend has confirmed unlocks).
                 var games = gameSource
                     .Where(game => MatchesProvider(game?.ProviderKey))
-                    .Where(game => HasAnyFriendUnlocks(game))
                     .Where(game => _gameSearchIndex.Matches(game, gameQuery));
 
                 var gameList = games.ToList();
@@ -1449,9 +1451,14 @@ namespace PlayniteAchievements.ViewModels
                 // Rescope the type/category dropdowns to the now-resolved friend/game selection.
                 UpdateScopedFilterOptions();
 
-                var achievementSource = HasAnySelection
+                // Locked rows only make sense in the single friend + single game comparison view;
+                // every aggregated view (friend-only, game-only) shows unlocked rows, and no
+                // selection keeps the recent-unlocks feed.
+                var achievementSource = HasFriendGameSelection
                     ? _allAchievements
-                    : _allRecentUnlocks;
+                    : HasAnySelection
+                        ? _allUnlockedAchievements
+                        : _allRecentUnlocks;
 
                 var achievements = achievementSource
                     .Where(achievement => MatchesProvider(achievement?.ProviderKey))
@@ -1741,14 +1748,9 @@ namespace PlayniteAchievements.ViewModels
                    SelectedGame;
         }
 
-        private bool HasAnyFriendUnlocks(FriendGameSummaryItem game)
+        private bool HasFriendGamePairData(FriendSummaryItem friend, FriendGameSummaryItem game)
         {
-            return _projection?.HasAnyFriendUnlocks(game) == true;
-        }
-
-        private bool HasUnlocksForFriendGame(FriendSummaryItem friend, FriendGameSummaryItem game)
-        {
-            return _projection?.HasUnlocksForFriendGame(friend, game) == true;
+            return _projection?.HasFriendGamePairData(friend, game) == true;
         }
 
         private static bool IsSameFriend(FriendSummaryItem left, FriendSummaryItem right)
@@ -1872,7 +1874,8 @@ namespace PlayniteAchievements.ViewModels
                 return;
             }
 
-            var scoped = (HasAnySelection ? _allAchievements : _allRecentUnlocks)
+            // Mirror the grid's source pick so the dropdowns only offer values the grid can show.
+            var scoped = (HasFriendGameSelection ? _allAchievements : _allUnlockedAchievements)
                 .Where(achievement => MatchesProvider(achievement?.ProviderKey))
                 .Where(achievement => IsSameGame(achievement, SelectedGame));
             if (SelectedFriend != null)

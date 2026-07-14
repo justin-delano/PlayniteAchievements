@@ -22,7 +22,11 @@ namespace PlayniteAchievements.Services.UI
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly Action _ensureResourcesLoaded;
-        private readonly Func<int?> _getRunningGameProcessId;
+        // Resolves the started process id for a game (null game id: most recently started game).
+        private readonly Func<Guid?, int?> _getGameProcessId;
+        // Optional foreground tracker: supplies the learned game window handle, which beats the
+        // pid-based resolve for launcher-wrapped titles.
+        private readonly ActiveGameWindowTracker _windowTracker;
         private readonly UnlockScreenshotService _screenshotService;
         private readonly ScreenshotFrameCompositor _frameCompositor;
         private readonly AchievementToastTemplateResolver _templateResolver;
@@ -33,28 +37,57 @@ namespace PlayniteAchievements.Services.UI
         // The corner the current wave uses, resolved once per wave (theme override or plugin
         // setting). Read by the per-frame positioning path so it isn't re-resolved every frame.
         private ToastScreenCorner _activePosition = ToastScreenCorner.BottomRight;
+        // The game the current wave belongs to, resolved once per wave. Screenshot capture and
+        // toast placement key window resolution off this game so a wave from one running game
+        // never anchors to another running game's window.
+        private Guid? _activeWaveGameId;
 
         public ToastNotificationService(
             IPlayniteAPI api,
             PlayniteAchievementsSettings settings,
             ILogger logger,
             Action ensureResourcesLoaded,
-            Func<int?> getRunningGameProcessId = null)
+            Func<Guid?, int?> getGameProcessId = null,
+            ActiveGameWindowTracker windowTracker = null)
         {
             _api = api;
             _settings = settings;
             _logger = logger;
             _ensureResourcesLoaded = ensureResourcesLoaded;
-            _getRunningGameProcessId = getRunningGameProcessId;
+            _getGameProcessId = getGameProcessId;
+            _windowTracker = windowTracker;
             _screenshotService = new UnlockScreenshotService(logger);
             _frameCompositor = new ScreenshotFrameCompositor(logger);
             _templateResolver = new AchievementToastTemplateResolver(api, logger);
             PlayniteAchievementsPlugin.AchievementUnlocked += OnAchievementUnlocked;
         }
 
+        /// <summary>
+        /// Raised when a non-preview toast wave is fully on screen (slide-in finished and
+        /// placement snapped) — the end anchor for unlock recordings. Fires on the UI thread.
+        /// </summary>
+        internal event EventHandler<ToastWaveDisplayedEventArgs> WaveDisplayed;
+
+        private void RaiseWaveDisplayed(IReadOnlyList<AchievementToastViewModel> wave)
+        {
+            if (wave == null || wave.Count == 0 || wave[0].IsPreview)
+            {
+                return;
+            }
+
+            try
+            {
+                WaveDisplayed?.Invoke(this, new ToastWaveDisplayedEventArgs(wave, DateTime.UtcNow));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "Toast wave-displayed handler failed.");
+            }
+        }
+
         private void OnAchievementUnlocked(object sender, AchievementUnlockedEventArgs e)
         {
-            if (_disposed || !ShouldShow(e))
+            if (_disposed || !ShouldProcess(e))
             {
                 return;
             }
@@ -69,31 +102,59 @@ namespace PlayniteAchievements.Services.UI
             dispatcher.BeginInvoke(new Action(() => EnqueueOnUi(e)), DispatcherPriority.Background);
         }
 
-        private bool ShouldShow(AchievementUnlockedEventArgs args)
+        /// <summary>
+        /// Whether an unlock enters the wave pipeline at all: it either toasts, or (own unlocks
+        /// only) has at least one screenshot variant enabled. Screenshots no longer require
+        /// toasts — a screenshot-only wave runs the pipeline windowless.
+        /// </summary>
+        private bool ShouldProcess(AchievementUnlockedEventArgs args)
         {
             if (args == null)
             {
                 return false;
             }
 
-            // Preview toasts fired from the settings panel always show, regardless of the
-            // user's notification enablement toggles.
-            if (args.IsPreview)
+            if (ShouldToast(args.IsPreview, args.IsFriendUnlock, args.ProviderKey))
             {
                 return true;
             }
 
-            // The policy ANDs the EnableNotifications master switch into both toast flags and
-            // resolves all-false for null settings.
-            var effective = ProviderNotificationPolicy.Resolve(_settings?.Persisted, args.ProviderKey);
-            return args.IsFriendUnlock
+            if (args.IsFriendUnlock)
+            {
+                return false;
+            }
+
+            var persisted = _settings?.Persisted;
+            if (persisted?.EnableUnlockScreenshots != true ||
+                string.IsNullOrWhiteSpace(persisted.UnlockScreenshotDirectory))
+            {
+                return false;
+            }
+
+            return ProviderNotificationPolicy.Resolve(persisted, args.ProviderKey).AnyScreenshot;
+        }
+
+        /// <summary>
+        /// Whether this unlock shows an on-screen toast. Previews always toast; otherwise the
+        /// policy ANDs the EnableNotifications master switch into both toast flags and resolves
+        /// all-false for null settings.
+        /// </summary>
+        private bool ShouldToast(bool isPreview, bool isFriendUnlock, string providerKey)
+        {
+            if (isPreview)
+            {
+                return true;
+            }
+
+            var effective = ProviderNotificationPolicy.Resolve(_settings?.Persisted, providerKey);
+            return isFriendUnlock
                 ? effective.FriendUnlockToasts
                 : effective.UnlockToasts;
         }
 
         private void EnqueueOnUi(AchievementUnlockedEventArgs args)
         {
-            if (_disposed || !ShouldShow(args))
+            if (_disposed || !ShouldProcess(args))
             {
                 return;
             }
@@ -128,6 +189,59 @@ namespace PlayniteAchievements.Services.UI
             dispatcher.BeginInvoke(new Action(() => _queue.Clear()), DispatcherPriority.Background);
         }
 
+        /// <summary>
+        /// Drops queued (not-yet-shown) unlock toasts belonging to one game. Called when that game
+        /// stops so its stale unlocks don't pop after it closed, while queued toasts from other
+        /// still-running games stay untouched.
+        /// </summary>
+        public void ClearPending(Guid gameId)
+        {
+            if (_disposed || gameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var dispatcher = GetDispatcher();
+            if (dispatcher == null || dispatcher.CheckAccess())
+            {
+                RemovePendingForGame(gameId);
+                return;
+            }
+
+            dispatcher.BeginInvoke(new Action(() => RemovePendingForGame(gameId)), DispatcherPriority.Background);
+        }
+
+        private void RemovePendingForGame(Guid gameId)
+        {
+            if (_queue.Count == 0)
+            {
+                return;
+            }
+
+            var kept = _queue.Where(vm => vm.PlayniteGameId != gameId).ToList();
+            if (kept.Count == _queue.Count)
+            {
+                return;
+            }
+
+            _queue.Clear();
+            foreach (var vm in kept)
+            {
+                _queue.Enqueue(vm);
+            }
+        }
+
+        /// <summary>
+        /// The current wave's game window handle as learned by the foreground tracker, or
+        /// IntPtr.Zero when no tracker/game is available (callers fall back to pid resolution).
+        /// </summary>
+        private IntPtr ResolveWaveWindowHandle()
+        {
+            return _activeWaveGameId.HasValue && _windowTracker != null
+                ? _windowTracker.TryGetWindowHandle(_activeWaveGameId.Value)
+                : IntPtr.Zero;
+        }
+
         private async Task ProcessQueueAsync()
         {
             try
@@ -135,10 +249,14 @@ namespace PlayniteAchievements.Services.UI
                 await Task.Delay(125).ConfigureAwait(true);
                 while (!_disposed && _queue.Count > 0)
                 {
-                    var wave = DequeueNextWave();
+                    var wave = DequeueNextReadyWave();
                     if (wave.Count == 0)
                     {
-                        break;
+                        // Every queued wave belongs to a running game that isn't focused right now
+                        // (another window or an overlay is on top). Hold and re-check; a game's
+                        // pending toasts are dropped by ClearPending when it stops.
+                        await Task.Delay(1000).ConfigureAwait(true);
+                        continue;
                     }
 
                     await ShowWaveAsync(wave).ConfigureAwait(true);
@@ -160,7 +278,14 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        private List<AchievementToastViewModel> DequeueNextWave()
+        /// <summary>
+        /// Dequeues the next wave whose game is ready to receive it (focused, or not a running
+        /// game at all). Waves batch by friend/own and by game: a cross-game wave would share one
+        /// screenshot window and one placement anchor between two different game windows. A held
+        /// wave (its game running but not focused) is skipped over so it never blocks another
+        /// game's ready toasts; per-game ordering is preserved.
+        /// </summary>
+        private List<AchievementToastViewModel> DequeueNextReadyWave()
         {
             var max = Math.Max(1, _settings?.Persisted?.MaxConcurrentToasts ?? 3);
             var result = new List<AchievementToastViewModel>(max);
@@ -169,13 +294,58 @@ namespace PlayniteAchievements.Services.UI
                 return result;
             }
 
-            var isFriendWave = _queue.Peek().IsFriendUnlock;
-            while (_queue.Count > 0 && result.Count < max && _queue.Peek().IsFriendUnlock == isFriendWave)
+            var items = _queue.ToList();
+            var anchorIndex = items.FindIndex(IsWaveGameReady);
+            if (anchorIndex < 0)
             {
-                result.Add(_queue.Dequeue());
+                return result;
+            }
+
+            var anchor = items[anchorIndex];
+            var end = anchorIndex;
+            while (end < items.Count &&
+                   result.Count < max &&
+                   items[end].IsFriendUnlock == anchor.IsFriendUnlock &&
+                   items[end].PlayniteGameId == anchor.PlayniteGameId)
+            {
+                result.Add(items[end]);
+                end++;
+            }
+
+            _queue.Clear();
+            for (var i = 0; i < items.Count; i++)
+            {
+                if (i < anchorIndex || i >= end)
+                {
+                    _queue.Enqueue(items[i]);
+                }
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// A wave may show when its game's window is focused. Previews, unlocks without a game
+        /// id, and games that aren't running (e.g. friend unlocks for unowned titles) are always
+        /// ready; a running game that is backgrounded — or covered by an overlay, which
+        /// classifies as no-game-foreground — holds its toasts until it has focus again.
+        /// </summary>
+        private bool IsWaveGameReady(AchievementToastViewModel vm)
+        {
+            if (vm == null || vm.IsPreview || vm.PlayniteGameId == Guid.Empty || _windowTracker == null)
+            {
+                return true;
+            }
+
+            if (!_windowTracker.IsTracked(vm.PlayniteGameId))
+            {
+                return true;
+            }
+
+            // Live check rather than the last hook event: out-of-context WinEvents can be dropped
+            // while the UI thread is busy (typical during game launch), and a stale foreground
+            // state would hold toasts until the user happens to alt-tab.
+            return _windowTracker.IsGameForeground(vm.PlayniteGameId);
         }
 
         private async Task ShowWaveAsync(IReadOnlyList<AchievementToastViewModel> wave)
@@ -191,20 +361,47 @@ namespace PlayniteAchievements.Services.UI
             // setting. Positioning (including the per-frame game-window follow) and slide direction
             // both read the resolved value.
             _activePosition = EffectivePosition();
+            var waveGameId = wave[0].PlayniteGameId;
+            _activeWaveGameId = waveGameId != Guid.Empty ? waveGameId : (Guid?)null;
+
+            // Toasts and screenshots gate independently: a wave can contain items that toast,
+            // items that only produce screenshots, or a mix (waves batch by friend/own only).
+            var toastItems = wave
+                .Where(vm => ShouldToast(vm.IsPreview, vm.IsFriendUnlock, vm.ProviderKey))
+                .ToList();
 
             // The clean capture must precede window.Show(); overlapping it with the sound-align
-            // delay below adds no latency to the toast itself.
-            var plan = BuildScreenshotPlan(wave);
+            // delay below adds no latency to the toast itself. With-toast variants are dropped
+            // when nothing in the wave toasts (they would just duplicate the clean shot).
+            var plan = BuildScreenshotPlan(wave, toastItems.Count > 0);
             Task<System.Drawing.Bitmap> cleanCaptureTask = null;
             if (plan != null && plan.NeedsCleanCapture)
             {
-                var processId = _getRunningGameProcessId?.Invoke();
-                cleanCaptureTask = Task.Run(() => _screenshotService.CaptureGameWindow(processId));
+                var waveHwnd = ResolveWaveWindowHandle();
+                var processId = _getGameProcessId?.Invoke(_activeWaveGameId);
+                cleanCaptureTask = Task.Run(() => _screenshotService.CaptureGameWindow(waveHwnd, processId));
+            }
+
+            // Screenshot-only wave: no sound, no window, no delays — capture and save. Running
+            // this inside the sequential wave pipeline guarantees no earlier wave's toast is
+            // still on screen, keeping the clean shot clean.
+            if (toastItems.Count == 0)
+            {
+                if (plan != null)
+                {
+                    _ = SaveWaveScreenshotsAsync(plan, cleanCaptureTask, null);
+                }
+                else
+                {
+                    DisposeCaptureTask(cleanCaptureTask);
+                }
+
+                return;
             }
 
             // Play the sound first, then show the toast after a short delay so the audio onset and
             // the slide-in visually align.
-            PlayWaveSound(wave);
+            PlayWaveSound(toastItems);
             await Task.Delay(450).ConfigureAwait(true);
             if (_disposed)
             {
@@ -219,7 +416,7 @@ namespace PlayniteAchievements.Services.UI
 
             var items = new ItemsControl
             {
-                ItemsSource = wave,
+                ItemsSource = toastItems,
                 IsHitTestVisible = false
             };
             var template = _templateResolver.ResolveTemplate();
@@ -254,14 +451,19 @@ namespace PlayniteAchievements.Services.UI
                 window.BeginAnimation(Window.TopProperty, null);
                 PlaceWindow(window);
 
+                // The wave is now fully visible: signal the recording service so it can anchor
+                // clip ends at the moment the toast actually appeared on screen.
+                RaiseWaveDisplayed(toastItems);
+
                 // The with-toast capture happens here (toast slid in and painted; DWM has
                 // presented the frame). CopyFromScreen has no UI-thread affinity, so blit on the
                 // thread pool.
                 System.Drawing.Bitmap toastBitmap = null;
                 if (plan != null && plan.NeedsToastCapture)
                 {
-                    var processId = _getRunningGameProcessId?.Invoke();
-                    toastBitmap = await Task.Run(() => _screenshotService.CaptureGameWindow(processId))
+                    var waveHwnd = ResolveWaveWindowHandle();
+                    var processId = _getGameProcessId?.Invoke(_activeWaveGameId);
+                    toastBitmap = await Task.Run(() => _screenshotService.CaptureGameWindow(waveHwnd, processId))
                         .ConfigureAwait(true);
                 }
 
@@ -274,7 +476,9 @@ namespace PlayniteAchievements.Services.UI
                 // Follow the game window every rendered frame (smooth while dragging). The handle
                 // is resolved once — for launcher games that's the foreground game window at show
                 // time, which stays valid even if focus later changes.
-                var gameHwnd = _screenshotService.ResolveGameWindowHandle(_getRunningGameProcessId?.Invoke());
+                var gameHwnd = _screenshotService.ResolveGameWindowHandle(
+                    ResolveWaveWindowHandle(),
+                    _getGameProcessId?.Invoke(_activeWaveGameId));
                 if (gameHwnd != IntPtr.Zero)
                 {
                     onRendering = (s, e) =>
@@ -302,7 +506,7 @@ namespace PlayniteAchievements.Services.UI
                     _logger?.Debug(ex, "Toast countdown animation failed.");
                 }
 
-                await Task.Delay(remainingMs).ConfigureAwait(true);
+                var endedHidden = await HoldWaveWithFocusHidingAsync(window, remainingMs).ConfigureAwait(true);
 
                 if (onRendering != null)
                 {
@@ -310,8 +514,11 @@ namespace PlayniteAchievements.Services.UI
                     onRendering = null;
                 }
 
-                SlideOut(window);
-                await Task.Delay(210).ConfigureAwait(true);
+                if (!endedHidden)
+                {
+                    SlideOut(window);
+                    await Task.Delay(210).ConfigureAwait(true);
+                }
             }
             finally
             {
@@ -337,6 +544,59 @@ namespace PlayniteAchievements.Services.UI
                     _activeWindow = null;
                 }
             }
+        }
+
+        /// <summary>
+        /// The on-screen hold: instead of one blind delay, the remaining display time keeps
+        /// decaying while the toast hides whenever its game loses focus (alt-tab, another window
+        /// on top) and reappears if the game regains focus before the time runs out. The
+        /// countdown-bar animation runs on wall-clock time, so it stays consistent across
+        /// hide/show. Returns true when the wave expired while hidden (the caller then skips the
+        /// slide-out of an invisible window).
+        /// </summary>
+        private async Task<bool> HoldWaveWithFocusHidingAsync(Window window, int remainingMs)
+        {
+            // No game to key focus off (previews, non-running games) -> plain hold.
+            var gameId = _activeWaveGameId ?? Guid.Empty;
+            if (gameId == Guid.Empty || _windowTracker == null || !_windowTracker.IsTracked(gameId))
+            {
+                await Task.Delay(remainingMs).ConfigureAwait(true);
+                return false;
+            }
+
+            const int pollMs = 250;
+            var hidden = false;
+            var watch = Stopwatch.StartNew();
+            while (!_disposed && watch.ElapsedMilliseconds < remainingMs)
+            {
+                var focused = _windowTracker.IsGameForeground(gameId);
+                if (focused == hidden)
+                {
+                    try
+                    {
+                        if (focused)
+                        {
+                            window.Show();
+                            PlaceWindow(window);
+                        }
+                        else
+                        {
+                            window.Hide();
+                        }
+
+                        hidden = !focused;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "Toast focus hide/show failed.");
+                    }
+                }
+
+                var left = remainingMs - (int)watch.ElapsedMilliseconds;
+                await Task.Delay(Math.Max(1, Math.Min(pollMs, left))).ConfigureAwait(true);
+            }
+
+            return hidden;
         }
 
         /// <summary>
@@ -389,7 +649,9 @@ namespace PlayniteAchievements.Services.UI
         /// nothing should be captured (previews, friend waves, screenshots disabled, no directory,
         /// or every item resolved to no variants).
         /// </summary>
-        private WaveScreenshotPlan BuildScreenshotPlan(IReadOnlyList<AchievementToastViewModel> wave)
+        private WaveScreenshotPlan BuildScreenshotPlan(
+            IReadOnlyList<AchievementToastViewModel> wave,
+            bool toastWillShow)
         {
             if (wave == null || wave.Count == 0)
             {
@@ -420,7 +682,9 @@ namespace PlayniteAchievements.Services.UI
                     variants |= ScreenshotVariants.Clean;
                 }
 
-                if (effective.ScreenshotWithToast)
+                // Without an on-screen toast the with-toast variant would just duplicate the
+                // clean capture, so it only applies to waves that actually show one.
+                if (effective.ScreenshotWithToast && toastWillShow)
                 {
                     variants |= ScreenshotVariants.WithToast;
                 }
@@ -627,7 +891,9 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private Rect ResolvePlacementArea(Window window)
         {
-            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(_getRunningGameProcessId?.Invoke());
+            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(
+                ResolveWaveWindowHandle(),
+                _getGameProcessId?.Invoke(_activeWaveGameId));
             if (pixelBounds.HasValue)
             {
                 var dip = ConvertPhysicalToDip(window, pixelBounds.Value);

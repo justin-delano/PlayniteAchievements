@@ -166,12 +166,15 @@ namespace PlayniteAchievements.Services.Refresh
                         await delayBetweenGamesAsync(i, cancel).ConfigureAwait(false);
                     }
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
                 {
                     throw;
                 }
                 catch (Exception ex)
                 {
+                    // Timeout-shaped OperationCanceledExceptions (HttpClient timeouts) that arrive
+                    // without the run token being cancelled fall through here and are treated as
+                    // per-game errors rather than aborting the run as a cancel.
                     if (isAuthRequiredException != null && isAuthRequiredException(ex))
                     {
                         if (!callbackInvoked && onGameCompleted != null)
@@ -245,7 +248,7 @@ namespace PlayniteAchievements.Services.Refresh
                     cancel.ThrowIfCancellationRequested();
 
                     var plan = plans[i];
-                    sequentialResults.Add(await ExecutePlanContainedAsync(plan, executeProviderAsync).ConfigureAwait(false));
+                    sequentialResults.Add(await ExecutePlanContainedAsync(plan, executeProviderAsync, cancel).ConfigureAwait(false));
                 }
 
                 return sequentialResults;
@@ -255,7 +258,7 @@ namespace PlayniteAchievements.Services.Refresh
                 .Select(async plan =>
                 {
                     cancel.ThrowIfCancellationRequested();
-                    return await ExecutePlanContainedAsync(plan, executeProviderAsync).ConfigureAwait(false);
+                    return await ExecutePlanContainedAsync(plan, executeProviderAsync, cancel).ConfigureAwait(false);
                 })
                 .ToArray();
 
@@ -265,10 +268,13 @@ namespace PlayniteAchievements.Services.Refresh
         /// <summary>
         /// Runs one provider plan, containing any non-cancellation exception in the result's
         /// Fault so a faulted provider cannot abort sibling providers or the whole run.
+        /// A timeout-shaped OperationCanceledException without the run token cancelled is a
+        /// fault, not a cancel, so it is contained (and logged with its stack) as well.
         /// </summary>
         private static async Task<ProviderExecutionResult> ExecutePlanContainedAsync(
             ProviderExecutionPlan plan,
-            Func<ProviderExecutionPlan, Task<RebuildPayload>> executeProviderAsync)
+            Func<ProviderExecutionPlan, Task<RebuildPayload>> executeProviderAsync,
+            CancellationToken cancel)
         {
             try
             {
@@ -279,7 +285,7 @@ namespace PlayniteAchievements.Services.Refresh
                     Payload = payload
                 };
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested)
             {
                 throw;
             }

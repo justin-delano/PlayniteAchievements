@@ -179,7 +179,10 @@ namespace PlayniteAchievements.Services.Friends
                 }
 
                 Invalidate();
-                await GetSnapshotAsync(CancellationToken.None).ConfigureAwait(false);
+                using (PerfScope.StartStartup(_logger, "Warm.FriendsOverviewSnapshot", thresholdMs: 250))
+                {
+                    await GetSnapshotAsync(CancellationToken.None).ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {

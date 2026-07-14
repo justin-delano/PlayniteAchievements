@@ -174,6 +174,99 @@ namespace PlayniteAchievements.Steam.Tests
         }
 
         [TestMethod]
+        public void BuildDlcImagePlan_DlcGroupsOnly_ExcludesUpdateAndBaseGroups()
+        {
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 2138330,
+                    DlcAppName = "Phantom Liberty",
+                    AchievementApiNames = new List<string> { "dlc_ach" }
+                },
+                new SteamHuntersAchievementGroup
+                {
+                    Name = "Update #1",
+                    AchievementApiNames = new List<string> { "update_ach" }
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "dlcandupdate");
+
+            Assert.AreEqual(1, plan.Count);
+            Assert.AreEqual("Phantom Liberty", plan[0].Key);
+            Assert.AreEqual(2138330, plan[0].Value);
+        }
+
+        [TestMethod]
+        public void BuildDlcImagePlan_GameGroupBy_YieldsNothing()
+        {
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 12345,
+                    Name = "Halo 2: Anniversary",
+                    AchievementApiNames = new List<string> { "halo_2" }
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "game");
+
+            Assert.AreEqual(0, plan.Count);
+        }
+
+        [TestMethod]
+        public void BuildDlcImagePlan_DuplicateLabels_KeepsFirstDlcAppId()
+        {
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 111,
+                    Name = "Expansion"
+                },
+                new SteamHuntersAchievementGroup
+                {
+                    DlcAppId = 222,
+                    Name = "expansion"
+                }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "dlcandupdate");
+
+            Assert.AreEqual(1, plan.Count);
+            Assert.AreEqual(111, plan[0].Value);
+        }
+
+        [TestMethod]
+        public void BuildDlcImagePlan_MissingLabelOrInvalidAppId_Excluded()
+        {
+            var groups = new List<SteamHuntersAchievementGroup>
+            {
+                new SteamHuntersAchievementGroup { DlcAppId = 333, Name = "   " },
+                new SteamHuntersAchievementGroup { DlcAppId = 0, Name = "Zero App" },
+                new SteamHuntersAchievementGroup { DlcAppId = 444, DlcAppName = "Fallback Name" }
+            };
+
+            var plan = SteamHuntersCategoryEnricher.BuildDlcImagePlan(groups, "dlcandupdate");
+
+            Assert.AreEqual(1, plan.Count);
+            Assert.AreEqual("Fallback Name", plan[0].Key);
+            Assert.AreEqual(444, plan[0].Value);
+        }
+
+        [TestMethod]
+        public void BuildDlcImagePlan_NullOrEmptyGroups_YieldsNothing()
+        {
+            Assert.AreEqual(0, SteamHuntersCategoryEnricher.BuildDlcImagePlan(null, "dlcandupdate").Count);
+            Assert.AreEqual(
+                0,
+                SteamHuntersCategoryEnricher.BuildDlcImagePlan(
+                    new List<SteamHuntersAchievementGroup>(), "dlcandupdate").Count);
+        }
+
+        [TestMethod]
         public void ApplyGroups_DuplicateApiName_KeepsFirstGroupAssignment()
         {
             var achievements = new List<AchievementDetail>

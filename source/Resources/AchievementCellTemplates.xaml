@@ -358,6 +358,70 @@
         </ContentControl>
     </DataTemplate>
 
+    <!-- Achievement Category Column Template - category icon or cover, falls back to game images -->
+    <DataTemplate x:Key="AchievementCategoryColumnTemplate">
+        <ContentControl Padding="4,6"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        UseLayoutRounding="True"
+                        SnapsToDevicePixels="True">
+            <Grid>
+                <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                        ClipToBounds="True"
+                        Margin="2"
+                        HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                        VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                        RenderOptions.BitmapScalingMode="HighQuality"
+                        UseLayoutRounding="True"
+                        SnapsToDevicePixels="True"
+                        ToolTip="{Binding CategoryLabelDisplay}">
+                    <Border.Width>
+                        <MultiBinding Converter="{StaticResource ImageFitDimension}"
+                                    ConverterParameter="auto,width,12,8,12">
+                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                            <Binding RelativeSource="{RelativeSource AncestorType=controls:AchievementDataGridControl}" Path="UseCoverImages"/>
+                        </MultiBinding>
+                    </Border.Width>
+
+                    <Border.Height>
+                        <MultiBinding Converter="{StaticResource ImageFitDimension}"
+                                    ConverterParameter="auto,height,12,8,12">
+                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                            <Binding RelativeSource="{RelativeSource AncestorType=controls:AchievementDataGridControl}" Path="UseCoverImages"/>
+                        </MultiBinding>
+                    </Border.Height>
+
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background">
+                                <Setter.Value>
+                                    <ImageBrush Stretch="Uniform"
+                                                helpers:AsyncImage.Uri="{Binding CategoryIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
+                                                helpers:AsyncImage.DecodePixel="-1"/>
+                                </Setter.Value>
+                            </Setter>
+
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                            Value="True">
+                                    <Setter Property="Background">
+                                        <Setter.Value>
+                                            <ImageBrush Stretch="Uniform"
+                                                        helpers:AsyncImage.Uri="{Binding CategoryCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
+                                                        helpers:AsyncImage.DecodePixel="-1"/>
+                                        </Setter.Value>
+                                    </Setter>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                </Border>
+            </Grid>
+        </ContentControl>
+    </DataTemplate>
+
     <!-- Achievement Icon Template - glow is isolated behind an unaffected front icon -->
     <DataTemplate x:Key="AchievementIconTemplate">
         <Grid HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"

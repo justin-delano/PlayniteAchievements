@@ -38,13 +38,14 @@ namespace PlayniteAchievements.ViewModels
         internal string AchievementName => _args.DisplayName;
         internal int AchievementNumber => _args.AchievementNumber;
         internal int TotalCount => _args.TotalCount;
+        internal Guid PlayniteGameId => _args.PlayniteGameId;
 
         // The header identifies who unlocked the achievement, so it is mandatory for friend
         // unlocks; for your own unlocks it honors the user's toggle.
         public bool ShowHeader => IsFriendUnlock || _settings.ToastShowHeader;
         public bool ShowName => _settings.ToastShowName && !string.IsNullOrWhiteSpace(TitleText);
         public bool ShowDescription => _settings.ToastShowDescription && !string.IsNullOrWhiteSpace(_args.Description);
-        public bool ShowCategory => _settings.ToastShowCategory && !string.IsNullOrWhiteSpace(_args.Category);
+        public bool ShowCategory => _settings.ToastShowCategory && HasDistinctCategory;
         public bool ShowPercent => _settings.ToastShowRarityPercent && _args.GlobalPercent.HasValue;
         public bool IsCapstone => _args.IsCapstone;
         public bool HasTrophy => !string.IsNullOrWhiteSpace(_args.TrophyType);
@@ -54,21 +55,54 @@ namespace PlayniteAchievements.ViewModels
         public bool ShowGameCategorySeparator => ShowGameName && ShowCategory;
         public bool HasFriendAvatar => !string.IsNullOrWhiteSpace(FriendAvatar);
 
+        // A category that just repeats the game name (common for single-list providers) reads as
+        // a duplicate, so it is force-hidden in both the toast and the frame.
+        private bool HasDistinctCategory =>
+            !string.IsNullOrWhiteSpace(_args.Category) &&
+            !string.Equals(_args.Category?.Trim(), _args.GameName?.Trim(), StringComparison.OrdinalIgnoreCase);
+
+        // Unlock timestamp bindings (local time, current-culture formatting like the grids'
+        // UnlockTimeText). A midnight time-of-day means a date-only provider timestamp, so the
+        // time portion is suppressed. Available to both toast and frame templates.
+        private DateTime? UnlockTimeLocal => Common.DateTimeUtilities.AsLocalFromUtc(_args.UnlockTimeUtc);
+        public bool HasUnlockTime => UnlockTimeLocal.HasValue;
+        // Toast-scoped visibility for the unlock datetime on the header line (off by default).
+        // The header toggle governs only the "Achievement unlocked" text; the datetime is
+        // independent, and the separator needs both.
+        public bool ShowUnlockTime => _settings.ToastShowUnlockTime && HasUnlockTime;
+        public bool ShowHeaderDateSeparator => ShowHeader && ShowUnlockTime;
+        public bool ShowFriendAvatar => ShowHeader && HasFriendAvatar;
+        public string UnlockDateText => UnlockTimeLocal?.ToString("d") ?? string.Empty;
+        public string UnlockTimeText => UnlockTimeLocal.HasValue && UnlockTimeLocal.Value.TimeOfDay != TimeSpan.Zero
+            ? UnlockTimeLocal.Value.ToString("t")
+            : string.Empty;
+        public string UnlockDateTimeText => UnlockTimeLocal.HasValue
+            ? UnlockTimeLocal.Value.TimeOfDay != TimeSpan.Zero
+                ? UnlockTimeLocal.Value.ToString("g")
+                : UnlockTimeLocal.Value.ToString("d")
+            : string.Empty;
+
+        // Frame-scoped equivalents: the frame's header row shows "header • unlock datetime";
+        // the separator needs both, and the datetime honors its own toggle.
+        public bool FrameShowUnlockTime => _settings.FrameShowUnlockTime && HasUnlockTime;
+        public bool FrameShowHeaderDateSeparator => FrameShowHeader && FrameShowUnlockTime;
+
         // Frame-scoped visibility/appearance: the screenshot frame honors its own FrameShow*
         // settings so the saved image can show different fields than the on-screen toast.
         public bool FrameShowHeader => IsFriendUnlock || _settings.FrameShowHeader;
         public bool FrameShowName => _settings.FrameShowName && !string.IsNullOrWhiteSpace(TitleText);
         public bool FrameShowDescription => _settings.FrameShowDescription && !string.IsNullOrWhiteSpace(_args.Description);
-        public bool FrameShowCategory => _settings.FrameShowCategory && !string.IsNullOrWhiteSpace(_args.Category);
+        public bool FrameShowCategory => _settings.FrameShowCategory && HasDistinctCategory;
         public bool FrameShowPercent => _settings.FrameShowRarityPercent && _args.GlobalPercent.HasValue;
         public bool FrameShowBadge => _settings.FrameShowRarityBadge && (IsCapstone || HasTrophy || HasRarityData);
         public bool FrameShowGameName => _settings.FrameShowGameName && !string.IsNullOrWhiteSpace(_args.GameName);
         public bool FrameShowGameCategorySeparator => FrameShowGameName && FrameShowCategory;
         public bool FrameShowShineBorder => _settings.FrameShowRarityGlow && IsHardcore;
 
-        // The frame's bar is a fixed dark surface, so the non-rarity fallback is plain white
-        // rather than the theme text brush (which may be dark in light themes).
-        public Brush FrameTitleBrush => _settings.FrameRarityColoredName ? AccentBrush : Brushes.White;
+        // Mirrors TitleBrush but honors the frame's own rarity-colored-name toggle.
+        public Brush FrameTitleBrush => _settings.FrameRarityColoredName
+            ? AccentBrush
+            : Application.Current?.TryFindResource("PlayAch.Brush.Text") as Brush ?? Brushes.White;
 
         public Effect FrameRarityGlowEffect => _settings.FrameShowRarityGlow && !IsHardcore
             ? RarityAppearanceHelper.GetGlow(_rarity, 20, _settings)

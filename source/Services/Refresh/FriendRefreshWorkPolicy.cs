@@ -216,6 +216,19 @@ namespace PlayniteAchievements.Services.Refresh
             return string.Equals(providerKey, "Exophase", StringComparison.OrdinalIgnoreCase);
         }
 
+        // Providers whose friend ownership items carry no inline PlayniteGameId and match the
+        // current-user library by plain (AppId/ProviderGameKey) identity. Their items get the id
+        // stamped from current-user labels before the shared ownership save, so shared games gain a
+        // library-mapped Games row (and a FriendOwnership row) even when the friend has no unlocks.
+        // Exophase is excluded: it resolves inline ids itself with platform-aware name matching, and
+        // its string keys must not fall back to naive key equality (see
+        // SqlNadoCacheStore.ShouldUseSharedFriendGameFallback).
+        internal static bool ShouldMapOwnershipFromCurrentUserLabels(string providerKey)
+        {
+            return string.Equals(providerKey, "Steam", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(providerKey, "RetroAchievements", StringComparison.OrdinalIgnoreCase);
+        }
+
         // The discovery scopes (Full/Shared/Installed) resolve their scrape candidates from the fresh,
         // hint-bearing ownership snapshot (game-centric). Recent draws from the whole cached friend
         // library filtered by the recency gate, and SelectedGame/Custom target specific games across

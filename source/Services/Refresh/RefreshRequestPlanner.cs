@@ -64,6 +64,113 @@ namespace PlayniteAchievements.Services.Refresh
             return resolved;
         }
 
+        /// <summary>
+        /// Returns the subset of enabled providers worth probing for authentication before this
+        /// request runs: providers with at least one capable candidate game (or a forced
+        /// per-game override), plus friend-capable providers when the request includes friends.
+        /// Candidate derivation ignores authentication state, which is unknown before the probe,
+        /// so the result can only over-approximate the providers the resolved plan will use.
+        /// </summary>
+        public IReadOnlyList<IDataProvider> ResolveAuthProbeCandidates(
+            RefreshRequest request,
+            IReadOnlyList<IDataProvider> enabledProviders,
+            TargetSelectionCache targetSelectionCache = null)
+        {
+            var providers = enabledProviders?
+                .Where(provider => provider != null)
+                .ToList() ?? new List<IDataProvider>();
+            if (request == null || providers.Count == 0)
+            {
+                return providers;
+            }
+
+            var mode = ResolveMode(request);
+            var options = ResolveOptionsForRequest(request, mode);
+            var filtered = ResolveProviders(options, providers);
+            if (filtered.Count == 0)
+            {
+                return Array.Empty<IDataProvider>();
+            }
+
+            var wantsCurrent = (options.Subjects & RefreshSubjects.CurrentUser) == RefreshSubjects.CurrentUser;
+            var wantsFriends = (options.Subjects & RefreshSubjects.Friends) == RefreshSubjects.Friends;
+            var candidateKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            if (wantsFriends)
+            {
+                foreach (var provider in filtered)
+                {
+                    if (provider.Friends != null)
+                    {
+                        candidateKeys.Add(provider.ProviderKey);
+                    }
+                }
+            }
+
+            if (wantsCurrent && candidateKeys.Count < filtered.Count)
+            {
+                var candidateGames = ResolveAuthProbeCandidateGames(mode, options, filtered, targetSelectionCache);
+                foreach (var provider in _targetSelectionResolver.GetProvidersWithCapableGames(
+                    candidateGames,
+                    filtered,
+                    targetSelectionCache))
+                {
+                    candidateKeys.Add(provider.ProviderKey);
+                }
+            }
+
+            return filtered
+                .Where(provider => candidateKeys.Contains(provider.ProviderKey))
+                .ToList();
+        }
+
+        private IEnumerable<Game> ResolveAuthProbeCandidateGames(
+            RefreshModeType mode,
+            RefreshOptions options,
+            IReadOnlyList<IDataProvider> providers,
+            TargetSelectionCache targetSelectionCache)
+        {
+            if (mode == RefreshModeType.Single &&
+                (options.PlayniteGameIds == null || options.PlayniteGameIds.Count == 0))
+            {
+                return Enumerable.Empty<Game>();
+            }
+
+            if (IsNativeBulkCurrentMode(mode, options))
+            {
+                // Mirrors the candidate enumeration in TargetSelectionResolver.GetRefreshTargets,
+                // but without the recent-mode target limit: an authentication failure on an
+                // earlier game's provider frees a slot, so providers capable only of games
+                // beyond the limit must still be probed.
+                var allGames = _api.Database.Games.Where(game => game != null);
+                var games = mode == RefreshModeType.Recent
+                    ? allGames.Where(game => game.LastActivity != null)
+                    : ShouldIncludeUnplayedGames()
+                        ? allGames
+                        : allGames.Where(game => game.Playtime > 0);
+                return BulkRefreshGameFilter.ApplyHiddenFilter(games, _settings?.Persisted);
+            }
+
+            var custom = options.ToCustomOptions();
+            if (options.Scope == RefreshGameScope.SelectedGame)
+            {
+                custom.Scope = CustomGameScope.Explicit;
+            }
+
+            if (custom.Scope == CustomGameScope.Missing)
+            {
+                // Missing-scope resolution consults per-provider authentication state, which is
+                // unknown before the probe; the full hidden-filtered library over-approximates it.
+                return BulkRefreshGameFilter.ApplyHiddenFilter(
+                    _api.Database.Games.Where(game => game != null),
+                    _settings?.Persisted);
+            }
+
+            return ResolveCandidateGameIds(custom, providers, targetSelectionCache)
+                .Select(gameId => _api.Database.Games.Get(gameId))
+                .Where(game => game != null);
+        }
+
         private RefreshOptions ResolveOptionsForRequest(RefreshRequest request, RefreshModeType mode)
         {
             if (request.GameIds?.Count > 0)
@@ -303,6 +410,59 @@ namespace PlayniteAchievements.Services.Refresh
                 custom.Scope = CustomGameScope.Explicit;
             }
 
+            var mergedIds = ResolveCandidateGameIds(custom, providers, targetSelectionCache);
+
+            var targetGameIds = new List<Guid>();
+            var unserviceableGameNames = new List<string>();
+            foreach (var gameId in mergedIds)
+            {
+                var game = _api.Database.Games.Get(gameId);
+                if (game == null)
+                {
+                    continue;
+                }
+
+                if (_targetSelectionResolver.ResolveProviderForGame(game, providers, targetSelectionCache) != null)
+                {
+                    targetGameIds.Add(game.Id);
+                }
+                else
+                {
+                    unserviceableGameNames.Add(game.Name);
+                }
+            }
+
+            if (targetGameIds.Count == 0)
+            {
+                return new CurrentOptionResult
+                {
+                    UserMessage = ResolveEmptyTargetsUserMessage(unserviceableGameNames),
+                    EmptySelectionLogMessage = ResolveEmptySelectionMessage(mode, options.Scope)
+                };
+            }
+
+            return new CurrentOptionResult
+            {
+                ShouldExecute = true,
+                Options = new CacheRefreshOptions
+                {
+                    PlayniteGameIds = targetGameIds,
+                    IncludeUnplayedGames = true,
+                    BypassExclusions = true
+                }
+            };
+        }
+
+        /// <summary>
+        /// Derives the candidate game IDs for a non-native current-user refresh: scope
+        /// resolution plus include/exclude merging and user-exclusion filtering, before any
+        /// provider capability or authentication checks.
+        /// </summary>
+        private List<Guid> ResolveCandidateGameIds(
+            CustomRefreshOptions custom,
+            IReadOnlyList<IDataProvider> providers,
+            TargetSelectionCache targetSelectionCache)
+        {
             var scopedGames = ResolveCustomScopeGames(custom, providers, targetSelectionCache);
             var includeIds = custom.IncludeGameIds?
                 .Where(gameId => gameId != Guid.Empty)
@@ -353,45 +513,7 @@ namespace PlayniteAchievements.Services.Refresh
                 }
             }
 
-            var targetGameIds = new List<Guid>();
-            var unserviceableGameNames = new List<string>();
-            foreach (var gameId in mergedIds)
-            {
-                var game = _api.Database.Games.Get(gameId);
-                if (game == null)
-                {
-                    continue;
-                }
-
-                if (_targetSelectionResolver.ResolveProviderForGame(game, providers, targetSelectionCache) != null)
-                {
-                    targetGameIds.Add(game.Id);
-                }
-                else
-                {
-                    unserviceableGameNames.Add(game.Name);
-                }
-            }
-
-            if (targetGameIds.Count == 0)
-            {
-                return new CurrentOptionResult
-                {
-                    UserMessage = ResolveEmptyTargetsUserMessage(unserviceableGameNames),
-                    EmptySelectionLogMessage = ResolveEmptySelectionMessage(mode, options.Scope)
-                };
-            }
-
-            return new CurrentOptionResult
-            {
-                ShouldExecute = true,
-                Options = new CacheRefreshOptions
-                {
-                    PlayniteGameIds = targetGameIds,
-                    IncludeUnplayedGames = true,
-                    BypassExclusions = true
-                }
-            };
+            return mergedIds;
         }
 
         /// <summary>

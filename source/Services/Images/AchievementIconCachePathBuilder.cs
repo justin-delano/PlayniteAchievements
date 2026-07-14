@@ -24,6 +24,7 @@ namespace PlayniteAchievements.Services.Images
         private const string FallbackStem = "achievement";
         private const int MaxStemLength = 96;
         private const string CustomFolderName = "custom";
+        internal const string DefaultCategoryFolderName = "category_defaults";
         private static readonly HashSet<string> ReservedFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "CON",
@@ -169,6 +170,33 @@ namespace PlayniteAchievements.Services.Images
                 "icon_cache",
                 gameId.Trim(),
                 CustomFolderName,
+                fileName);
+        }
+
+        // Builds the deterministic path for a provider-supplied default category image. The path is
+        // a pure function of (gameId, normalized category label) so the write side (enrichment
+        // download) and the read side (display probe) agree without persisting anything in the
+        // database. Lives outside the custom folder so cache clears wipe defaults but keep user files.
+        public static string BuildDefaultCategoryRelativePath(
+            string gameId,
+            string categoryLabel,
+            CategoryImageKind kind)
+        {
+            if (string.IsNullOrWhiteSpace(gameId))
+            {
+                gameId = Guid.Empty.ToString("D");
+            }
+
+            var normalizedLabel = (categoryLabel ?? string.Empty).Trim();
+            var stem = SanitizeSegment(normalizedLabel);
+            var suffix = "_" + GetApiNameHashSuffix(normalizedLabel.ToLowerInvariant());
+            var extension = kind == CategoryImageKind.Cover ? ".cover.jpg" : ".icon.jpg";
+            var fileName = "category_" + TrimStemForSuffix(stem, suffix.Length) + suffix + extension;
+
+            return Path.Combine(
+                "icon_cache",
+                gameId.Trim(),
+                DefaultCategoryFolderName,
                 fileName);
         }
 
