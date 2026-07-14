@@ -4,6 +4,8 @@ using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.Settings;
 using PlayniteAchievements.Services;
+using PlayniteAchievements.Services.Achievements;
+using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Refresh;
 using Playnite.SDK;
 using Playnite.SDK.Models;
@@ -25,6 +27,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
         private readonly RetroAchievementsHashIndexStore _hashIndexStore;
         private readonly RetroAchievementsPathResolver _pathResolver;
         private readonly RetroAchievementsHashCacheStore _hashCache;
+        private readonly Func<DiskImageService> _diskImageServiceResolver;
         private readonly Dictionary<int, List<Models.RaGameListWithTitle>> _gameListCache = new();
 
         public RetroAchievementsScanner(
@@ -33,7 +36,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             RetroAchievementsApiClient api,
             RetroAchievementsHashIndexStore hashIndexStore,
             RetroAchievementsPathResolver pathResolver,
-            RetroAchievementsHashCacheStore hashCache)
+            RetroAchievementsHashCacheStore hashCache,
+            Func<DiskImageService> diskImageServiceResolver = null)
         {
             _logger = logger;
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
@@ -41,6 +45,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             _hashIndexStore = hashIndexStore ?? throw new ArgumentNullException(nameof(hashIndexStore));
             _pathResolver = pathResolver ?? throw new ArgumentNullException(nameof(pathResolver));
             _hashCache = hashCache ?? throw new ArgumentNullException(nameof(hashCache));
+            _diskImageServiceResolver = diskImageServiceResolver;
         }
 
         /// <summary>
@@ -434,6 +439,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                         var subsets = await _hashIndexStore.GetSubsetsForGameAsync(gameId, subsetConsoleId.Value, cancel).ConfigureAwait(false);
                         if (subsets != null && subsets.Count > 0)
                         {
+                            var subsetImageSources = new List<(string CategoryLabel, Models.RaGameInfoUserProgress Info)>();
                             foreach (var subset in subsets)
                             {
                                 cancel.ThrowIfCancellationRequested();
@@ -451,6 +457,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                                     _logger?.Info($"[RA] Parsed {subsetAchievements.Count} achievements for subset '{subset.Title}' (category={categoryLabel}).");
 
                                     achievements.AddRange(subsetAchievements);
+                                    subsetImageSources.Add((categoryLabel, subsetInfo));
                                 }
                                 catch (OperationCanceledException) { throw; }
                                 catch (Exception ex)
@@ -458,6 +465,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                                     _logger?.Warn(ex, $"[RA] Failed to fetch subset '{subset.Title}' (ID={subset.Id}): {ex.Message}");
                                 }
                             }
+
+                            await DownloadSubsetCategoryImagesAsync(game?.Id, subsetImageSources, cancel).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException) { throw; }
@@ -487,6 +496,104 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             {
                 _logger?.Error(ex, $"[RA] Failed to fetch game info for gameId={gameId}: {ex.Message}");
                 return BuildNoAchievements(game, appId: gameId);
+            }
+        }
+
+        // Plans one default image pair per subset category: (normalized label -> icon/cover URLs).
+        // Base-game achievements keep the game-image fallback; only fetched subsets are passed in.
+        // Dedupe is first-wins by label to match the achievement assignment order above.
+        internal static IReadOnlyList<(string Label, string IconUrl, string CoverUrl)> BuildSubsetImagePlan(
+            IReadOnlyList<(string CategoryLabel, Models.RaGameInfoUserProgress Info)> subsets)
+        {
+            var plan = new List<(string Label, string IconUrl, string CoverUrl)>();
+            if (subsets == null || subsets.Count == 0)
+            {
+                return plan;
+            }
+
+            var seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var subset in subsets)
+            {
+                var iconUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(subset.Info?.ImageIcon);
+                if (iconUrl == null)
+                {
+                    continue;
+                }
+
+                var label = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(subset.CategoryLabel);
+                if (!seenLabels.Add(label))
+                {
+                    continue;
+                }
+
+                var coverUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(subset.Info?.ImageBoxArt);
+                plan.Add((label, iconUrl, coverUrl));
+            }
+
+            return plan;
+        }
+
+        // Downloads default category art for subsets to deterministic per-game cache paths.
+        // Best-effort: failures never fail the scan. Existing targets are skipped, so re-scans
+        // cost nothing.
+        private async Task DownloadSubsetCategoryImagesAsync(
+            Guid? playniteGameId,
+            IReadOnlyList<(string CategoryLabel, Models.RaGameInfoUserProgress Info)> subsets,
+            CancellationToken cancel)
+        {
+            if (playniteGameId == null || playniteGameId.Value == Guid.Empty)
+            {
+                return;
+            }
+
+            var diskImageService = _diskImageServiceResolver?.Invoke();
+            if (diskImageService == null)
+            {
+                return;
+            }
+
+            var plan = BuildSubsetImagePlan(subsets);
+            if (plan.Count == 0)
+            {
+                return;
+            }
+
+            var gameIdText = playniteGameId.Value.ToString("D");
+            foreach (var entry in plan)
+            {
+                cancel.ThrowIfCancellationRequested();
+                try
+                {
+                    var iconTarget = diskImageService.GetDefaultCategoryImagePath(
+                        gameIdText, entry.Label, CategoryImageKind.Icon);
+                    // decodeSize 0 stores the original bytes: no square crop, original aspect.
+                    await diskImageService.GetOrDownloadIconToPathAsync(
+                        entry.IconUrl, iconTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+
+                    var coverTarget = diskImageService.GetDefaultCategoryImagePath(
+                        gameIdText, entry.Label, CategoryImageKind.Cover);
+                    string coverResult = null;
+                    if (entry.CoverUrl != null)
+                    {
+                        coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
+                            entry.CoverUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                    }
+
+                    if (coverResult == null)
+                    {
+                        // Subsets without box art reuse the subset icon.
+                        await diskImageService.GetOrDownloadIconToPathAsync(
+                            entry.IconUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                    }
+                }
+                catch (OperationCanceledException) when (cancel.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, $"[RA] Default category image download failed for subset category '{entry.Label}'.");
+                }
             }
         }
 
