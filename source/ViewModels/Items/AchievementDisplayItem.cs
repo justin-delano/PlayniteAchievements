@@ -1438,9 +1438,12 @@ namespace PlayniteAchievements.ViewModels.Items
             }
 
             var managedCustomIconService = PlayniteAchievementsPlugin.Instance?.ManagedCustomIconService;
-            return playniteGameId.HasValue
+            var resolved = playniteGameId.HasValue
                 ? managedCustomIconService?.ResolveManagedDisplayPath(normalized, playniteGameId.Value.ToString("D")) ?? normalized
                 : normalized;
+            // Category graphics are overwritten in place at a stable managed path, so the
+            // display path needs a cache-bust token or stale bitmaps are served after replacement.
+            return AchievementIconResolver.ApplyCacheBust(resolved);
         }
 
         private static string ResolveGameAssetPath(string value)
