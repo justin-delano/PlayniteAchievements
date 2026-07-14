@@ -365,6 +365,30 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
+            <!-- Category Image - category icon/cover, falls back to game images -->
+            <DataGridTemplateColumn x:Name="CategoryIconColumn"
+                                    Width="96"
+                                    MinWidth="32"
+                                    MaxWidth="240"
+                                    CanUserResize="True"
+                                    Header="{DynamicResource LOCPlayAch_Column_CategoryIcon}"
+                                    SortMemberPath="CategoryLabel"
+                                    helpers:ColumnVisibilityHelper.ColumnKey="CategoryIcon"
+                                    Visibility="Collapsed"
+                                    CellTemplate="{StaticResource AchievementCategoryColumnTemplate}">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
+                <DataGridTemplateColumn.CellStyle>
+                    <Style TargetType="DataGridCell"
+                        BasedOn="{StaticResource AchievementCellStyle}">
+                        <Setter Property="Padding" Value="0"/>
+                    </Style>
+                </DataGridTemplateColumn.CellStyle>
+            </DataGridTemplateColumn>
+
             <!-- Trophy -->
             <DataGridTemplateColumn Width="72" MinWidth="32" MaxWidth="160" Header="{DynamicResource LOCPlayAch_Column_Trophy}" CanUserResize="True" SortMemberPath="TrophyType" helpers:ColumnVisibilityHelper.ColumnKey="Trophy"
                                     CellTemplate="{StaticResource AchievementTrophyTemplate}"/>
