@@ -71,6 +71,14 @@ namespace PlayniteAchievements.Models.Achievements
         }
 
         /// <summary>
+        /// Wraps a local file path with a cache-bust token derived from the file's
+        /// last write time and length so overwriting the file at the same path
+        /// produces a new cache key. Idempotent: any existing token is replaced.
+        /// Non-file sources are returned normalized and unwrapped.
+        /// </summary>
+        public static string ApplyCacheBust(string path) => BuildDisplayIcon(path, gray: false);
+
+        /// <summary>
         /// Prefixes the icon identifier with "gray:" when not already prefixed.
         /// </summary>
         public static string ApplyGrayPrefix(string icon)
