@@ -83,6 +83,7 @@
     <Compile Include="..\..\source\Services\GameCustomData\GameCustomDataRuntimeProjector.cs" Link="Source\Services\GameCustomData\GameCustomDataRuntimeProjector.cs" />
     <Compile Include="..\..\source\Services\Hydration\AchievementDetailHydrator.cs" Link="Source\Services\Hydration\AchievementDetailHydrator.cs" />
     <Compile Include="..\..\source\Services\Images\AchievementIconCachePathBuilder.cs" Link="Source\Services\Images\AchievementIconCachePathBuilder.cs" />
+    <Compile Include="..\..\source\Services\Images\CategoryDefaultImageResolver.cs" Link="Source\Services\Images\CategoryDefaultImageResolver.cs" />
     <Compile Include="..\..\source\Services\Images\DiskImageService.cs" Link="Source\Services\Images\DiskImageService.cs" />
     <Compile Include="..\..\source\Services\Images\ManagedCustomIconService.cs" Link="Source\Services\Images\ManagedCustomIconService.cs" />
     <Compile Include="..\..\source\Services\Images\AchievementIconService.cs" Link="Source\Services\Images\AchievementIconService.cs" />
