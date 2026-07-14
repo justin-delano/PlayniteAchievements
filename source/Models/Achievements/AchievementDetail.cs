@@ -88,6 +88,14 @@ namespace PlayniteAchievements.Models.Achievements
         public string ProviderKey { get; set; }
 
         /// <summary>
+        /// Runtime-only provider-assigned category label, captured by the hydrator before
+        /// user rename overrides overwrite <see cref="Category"/>. Default category images
+        /// are keyed by this label, so resolution stays stable across renames.
+        /// </summary>
+        [IgnoreDataMember]
+        public string ProviderCategory { get; set; }
+
+        /// <summary>
         /// Runtime-only category icon path for theme/display bindings.
         /// Hydrated from the parent GameAchievementData category image overrides.
         /// </summary>
