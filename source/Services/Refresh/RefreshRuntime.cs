@@ -497,6 +497,20 @@ namespace PlayniteAchievements.Services.Refresh
                     ? new List<string>(payload.FailedProviderKeys)
                     : new List<string>();
             }
+            catch (OperationCanceledException ex) when (!cts.IsCancellationRequested)
+            {
+                // A cancellation-shaped exception (e.g. an HttpClient timeout's
+                // TaskCanceledException) without the run token being cancelled is a failure,
+                // not a user cancel; log it with its stack so the timeout site is identifiable.
+                _logger.Error(ex, $"{errorLogMessage} (operation canceled without the run token being cancelled)");
+                Report(
+                    ResourceProvider.GetString("LOCPlayAch_Error_RebuildFailed"),
+                    0,
+                    1,
+                    operationId: operationId,
+                    mode: mode,
+                    currentGameId: singleGameId);
+            }
             catch (OperationCanceledException)
             {
                 _logger.Info("User achievement refresh was canceled.");
