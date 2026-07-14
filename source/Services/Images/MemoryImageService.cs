@@ -300,7 +300,13 @@ namespace PlayniteAchievements.Services.Images
 
         private static int NormalizeDecodePixel(int decodePixel)
         {
-            if (decodePixel <= 0)
+            if (decodePixel < 0)
+            {
+                // Negative requests native-resolution decode (no DecodePixelWidth).
+                return 0;
+            }
+
+            if (decodePixel == 0)
             {
                 return DefaultDecodePixel;
             }
