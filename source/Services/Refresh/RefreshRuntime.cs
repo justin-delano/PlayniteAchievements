@@ -81,9 +81,11 @@ namespace PlayniteAchievements.Services.Refresh
         /// </summary>
         public PlayniteAchievements.Providers.ProviderRegistry ProviderRegistry => _providerRegistry;
 
-        internal virtual async Task<RefreshAuthContext> GetRefreshAuthContextOrShowDialogAsync(CancellationToken ct = default)
+        internal virtual async Task<RefreshAuthContext> GetRefreshAuthContextOrShowDialogAsync(
+            RefreshRequest request,
+            CancellationToken ct = default)
         {
-            var authContext = await GetRefreshAuthContextAsync(ct).ConfigureAwait(false);
+            var authContext = await GetRefreshAuthContextAsync(request, ct).ConfigureAwait(false);
             if (authContext.HasAuthenticatedProviders)
             {
                 return authContext;
@@ -100,7 +102,7 @@ namespace PlayniteAchievements.Services.Refresh
 
         internal virtual async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersOrShowDialogAsync(CancellationToken ct = default)
         {
-            var authContext = await GetRefreshAuthContextOrShowDialogAsync(ct).ConfigureAwait(false);
+            var authContext = await GetRefreshAuthContextOrShowDialogAsync(null, ct).ConfigureAwait(false);
             return authContext?.AuthenticatedProviders ?? Array.Empty<IDataProvider>();
         }
 
@@ -584,32 +586,89 @@ namespace PlayniteAchievements.Services.Refresh
                 new List<ProviderRefreshExecutor.ProviderExecutionPlan>();
         }
 
-        internal virtual async Task<RefreshAuthContext> GetRefreshAuthContextAsync(CancellationToken ct = default)
+        internal Task<RefreshAuthContext> GetRefreshAuthContextAsync(CancellationToken ct = default)
+        {
+            return GetRefreshAuthContextAsync(null, ct);
+        }
+
+        internal virtual async Task<RefreshAuthContext> GetRefreshAuthContextAsync(
+            RefreshRequest request,
+            CancellationToken ct = default)
         {
             var context = new RefreshAuthContext(Guid.NewGuid());
-            var enabledProviders = _providers
-                .Where(provider => provider != null &&
-                                   (_providerRegistry == null ||
-                                    _providerRegistry.IsProviderEnabled(provider.ProviderKey)))
-                .ToList();
-
+            var enabledProviders = GetEnabledProviders();
             if (enabledProviders.Count == 0)
             {
                 return context;
             }
 
-            var maxParallelism = Math.Max(1, Math.Min(4, enabledProviders.Count));
-            using (var gate = new SemaphoreSlim(maxParallelism, maxParallelism))
+            var targetSelectionCache = new TargetSelectionCache();
+            context.TargetSelectionCache = targetSelectionCache;
+
+            IReadOnlyList<IDataProvider> probeCandidates = enabledProviders;
+            if (request != null && _refreshRequestPlanner != null)
             {
-                var tasks = enabledProviders
-                    .Select(provider => ProbeProviderForAuthContextAsync(provider, context, gate, ct))
-                    .ToArray();
-                await Task.WhenAll(tasks).ConfigureAwait(false);
+                var filterTimer = Stopwatch.StartNew();
+                probeCandidates = _refreshRequestPlanner.ResolveAuthProbeCandidates(
+                    request,
+                    enabledProviders,
+                    targetSelectionCache);
+                filterTimer.Stop();
+                _logger?.Debug(
+                    $"[RefreshPerf] phase=auth.preflight.filter enabled={enabledProviders.Count} candidates={probeCandidates.Count} ms={filterTimer.ElapsedMilliseconds}");
+            }
+
+            await ProbeProvidersForAuthContextAsync(probeCandidates, context, ct).ConfigureAwait(false);
+
+            if (probeCandidates.Count < enabledProviders.Count &&
+                !enabledProviders.Any(provider => context.IsProviderAuthenticated(provider.ProviderKey)))
+            {
+                // Second chance: when no capability-filtered provider authenticates, probe the
+                // remaining enabled providers so failure dialogs and dead-end messages match an
+                // unfiltered preflight.
+                var probedKeys = new HashSet<string>(
+                    probeCandidates.Select(provider => provider.ProviderKey),
+                    StringComparer.OrdinalIgnoreCase);
+                var remaining = enabledProviders
+                    .Where(provider => !probedKeys.Contains(provider.ProviderKey))
+                    .ToList();
+                _logger?.Debug(
+                    $"[RefreshPerf] phase=auth.preflight.secondchance remaining={remaining.Count}");
+                await ProbeProvidersForAuthContextAsync(remaining, context, ct).ConfigureAwait(false);
             }
 
             context.SetAuthenticatedProviders(
                 enabledProviders.Where(provider => context.IsProviderAuthenticated(provider.ProviderKey)));
             return context;
+        }
+
+        private List<IDataProvider> GetEnabledProviders()
+        {
+            return _providers
+                .Where(provider => provider != null &&
+                                   (_providerRegistry == null ||
+                                    _providerRegistry.IsProviderEnabled(provider.ProviderKey)))
+                .ToList();
+        }
+
+        private async Task ProbeProvidersForAuthContextAsync(
+            IReadOnlyList<IDataProvider> providers,
+            RefreshAuthContext context,
+            CancellationToken ct)
+        {
+            if (providers == null || providers.Count == 0)
+            {
+                return;
+            }
+
+            var maxParallelism = Math.Max(1, Math.Min(8, providers.Count));
+            using (var gate = new SemaphoreSlim(maxParallelism, maxParallelism))
+            {
+                var tasks = providers
+                    .Select(provider => ProbeProviderForAuthContextAsync(provider, context, gate, ct))
+                    .ToArray();
+                await Task.WhenAll(tasks).ConfigureAwait(false);
+            }
         }
 
         public async Task<IReadOnlyList<IDataProvider>> GetAuthenticatedProvidersAsync(CancellationToken ct = default)
@@ -928,16 +987,16 @@ namespace PlayniteAchievements.Services.Refresh
                         .Select(key => key.Trim()),
                     StringComparer.OrdinalIgnoreCase);
 
-            var authContext = await GetRefreshAuthContextAsync(cancel).ConfigureAwait(false);
-            var providers = MaterializeProviderScope(authContext.AuthenticatedProviders)
-                .Where(provider => provider?.Friends != null)
+            var friendProviders = GetEnabledProviders()
+                .Where(provider => provider.Friends != null &&
+                                   (providerKeySet == null || providerKeySet.Count == 0 ||
+                                    providerKeySet.Contains(provider.ProviderKey)))
                 .ToList();
-            if (providerKeySet?.Count > 0)
-            {
-                providers = providers
-                    .Where(provider => providerKeySet.Contains(provider.ProviderKey))
-                    .ToList();
-            }
+            var authContext = new RefreshAuthContext(Guid.NewGuid());
+            await ProbeProvidersForAuthContextAsync(friendProviders, authContext, cancel).ConfigureAwait(false);
+            authContext.SetAuthenticatedProviders(
+                friendProviders.Where(provider => authContext.IsProviderAuthenticated(provider.ProviderKey)));
+            var providers = MaterializeProviderScope(authContext.AuthenticatedProviders);
 
             if (providers.Count == 0)
             {
@@ -1510,12 +1569,12 @@ namespace PlayniteAchievements.Services.Refresh
             var effectiveAuthContext = authContext;
             if (effectiveAuthContext == null)
             {
-                effectiveAuthContext = await GetRefreshAuthContextAsync(externalToken).ConfigureAwait(false);
+                effectiveAuthContext = await GetRefreshAuthContextAsync(request, externalToken).ConfigureAwait(false);
             }
 
             var effectiveAuthenticatedProviders = MaterializeProviderScope(
                 effectiveAuthContext?.AuthenticatedProviders);
-            var targetSelectionCache = new TargetSelectionCache();
+            var targetSelectionCache = effectiveAuthContext?.TargetSelectionCache ?? new TargetSelectionCache();
             var resolved = _refreshRequestPlanner.Resolve(
                 request,
                 effectiveAuthenticatedProviders,

@@ -462,7 +462,7 @@ namespace PlayniteAchievements.Services.UI
                 if (validateAuthentication)
                 {
                     authContext = await _refreshService
-                        .GetRefreshAuthContextOrShowDialogAsync(progress.CancelToken)
+                        .GetRefreshAuthContextOrShowDialogAsync(request, progress.CancelToken)
                         .ConfigureAwait(false);
                     if (authContext == null || !authContext.HasAuthenticatedProviders)
                     {
