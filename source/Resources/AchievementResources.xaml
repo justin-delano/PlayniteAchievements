@@ -219,4 +219,103 @@
             </Grid>
         </Border>
     </DataTemplate>
+
+    <!--
+        Default screenshot frame. Composited onto framed unlock screenshots by
+        ScreenshotFrameCompositor; never shown on screen. Themes override this by defining
+        PlayAch.Template.ScreenshotFrame in a merged dictionary or in
+        PlayniteAchievements/ScreenshotFrame.xaml inside the theme directory.
+
+        Sizing contract: the template is laid out on a virtual canvas 1080 DIPs tall (width =
+        1080 x screenshot aspect ratio) and rendered at the screenshot's exact pixel size, so
+        fixed margins/font sizes look identical at 1080p and 4K.
+
+        Images must load synchronously: use plain Image Source bindings, NOT
+        helpers:AsyncImage.Uri (async-loaded images render blank in the offscreen
+        RenderTargetBitmap pass). Text is drawn over a fixed dark bar, so light literal
+        foregrounds are used deliberately instead of theme text brushes.
+    -->
+    <DataTemplate x:Key="PlayAch.Template.ScreenshotFrame"
+                  DataType="{x:Type vm:AchievementToastViewModel}">
+        <Grid>
+            <!-- Full-bleed frame: thin dark outer edge with a rarity/capstone accent border inside. -->
+            <Border BorderBrush="#CC000000"
+                    BorderThickness="2"/>
+            <Border Margin="2"
+                    BorderBrush="{Binding AccentBrush}"
+                    BorderThickness="6"/>
+
+            <!-- Bottom info bar -->
+            <Border VerticalAlignment="Bottom"
+                    Margin="24,0,24,24"
+                    CornerRadius="12"
+                    Background="#CC141414"
+                    BorderBrush="{Binding AccentBrush}"
+                    BorderThickness="1"
+                    Padding="20,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Grid Grid.Column="0"
+                          Width="72"
+                          Height="72"
+                          VerticalAlignment="Center">
+                        <Image Stretch="UniformToFill"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               Source="{Binding IconPath}"
+                               Effect="{Binding RarityGlowEffect}"/>
+                        <Border Margin="-2"
+                                BorderThickness="2"
+                                Background="Transparent"
+                                BorderBrush="{Binding IconBorderBrush}"
+                                Visibility="{Binding ShowShineBorder, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                    </Grid>
+
+                    <StackPanel Grid.Column="1"
+                                Margin="20,0,20,0"
+                                VerticalAlignment="Center">
+                        <TextBlock Text="{Binding TitleText}"
+                                   Foreground="{Binding TitleBrush}"
+                                   FontSize="30"
+                                   FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding Description}"
+                                   Foreground="#DDDDDD"
+                                   FontSize="19"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="0,4,0,0"
+                                   Visibility="{Binding ShowDescription, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,4,0,0">
+                            <TextBlock Text="{Binding GameName}"
+                                       Foreground="#BBBBBB"
+                                       FontSize="19"
+                                       TextTrimming="CharacterEllipsis"
+                                       Visibility="{Binding ShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="  &#8226;  "
+                                       Foreground="#BBBBBB"
+                                       FontSize="19"
+                                       Visibility="{Binding ShowGameName, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <TextBlock Text="{Binding PercentText}"
+                                       Foreground="#BBBBBB"
+                                       FontSize="19"
+                                       Visibility="{Binding ShowPercent, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <Image Grid.Column="2"
+                           Source="{Binding BadgeImage}"
+                           Width="44"
+                           Height="44"
+                           VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           Visibility="{Binding ShowBadge, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                </Grid>
+            </Border>
+        </Grid>
+    </DataTemplate>
 </ResourceDictionary>

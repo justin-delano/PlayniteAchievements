@@ -27,9 +27,14 @@ namespace PlayniteAchievements.ViewModels
 
         public bool IsFriendUnlock => _args.IsFriendUnlock;
 
+        // Provider identity, bindable so a single toast/frame template can restyle per provider
+        // with DataTriggers (e.g. trigger on ProviderKey, tint with ProviderColorHex).
+        public string ProviderKey => _args.ProviderKey;
+        public string ProviderName => Providers.ProviderRegistry.GetLocalizedName(ProviderKey);
+        public string ProviderColorHex => Providers.ProviderRegistry.GetProviderColorHex(ProviderKey);
+
         // Raw fields consumed by the unlock-screenshot feature (not shown in the toast UI).
         internal bool IsPreview => _args.IsPreview;
-        internal string ProviderKey => _args.ProviderKey;
         internal string AchievementName => _args.DisplayName;
         internal int AchievementNumber => _args.AchievementNumber;
         internal int TotalCount => _args.TotalCount;

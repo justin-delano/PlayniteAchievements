@@ -514,7 +514,12 @@
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotsHeader">Unlock screenshots</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockScreenshots">Save a screenshot when you unlock an achievement</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectory">Screenshot folder</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectoryHint">Captures the game's monitor (with the toast) for your own unlocks and saves to &lt;folder&gt;\Game [Platform]\Number_Achievement.png. Requires unlock toasts to be enabled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotDirectoryHint">Captures the game's monitor for your own unlocks and saves to &lt;folder&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png, where &lt;variant&gt; is clean, toast, or framed. Requires unlock toasts to be enabled.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantClean">Clean (game only)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantWithToast">With toast overlay</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ScreenshotVariantFramed">Framed (frame added to the saved image)</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FramePreviewButton">Preview frame on screen</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_FramePreviewHint">The frame is composited onto saved screenshots only; it never appears on screen during play. The preview closes on click, Escape, or after 10 seconds.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewHint">Fire an example toast to see it on screen with your current settings, position, and slide animation.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewFriend">Friend unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleGame">Sample Game</sys:String>

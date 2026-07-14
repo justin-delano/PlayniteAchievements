@@ -96,6 +96,9 @@ namespace PlayniteAchievements.Models.Settings
             target.MaxConcurrentToasts = source.MaxConcurrentToasts;
             target.ToastPosition = source.ToastPosition;
             target.EnableUnlockScreenshots = source.EnableUnlockScreenshots;
+            target.UnlockScreenshotClean = source.UnlockScreenshotClean;
+            target.UnlockScreenshotWithToast = source.UnlockScreenshotWithToast;
+            target.UnlockScreenshotFramed = source.UnlockScreenshotFramed;
             target.UnlockScreenshotDirectory = source.UnlockScreenshotDirectory;
 
             // Display Preferences

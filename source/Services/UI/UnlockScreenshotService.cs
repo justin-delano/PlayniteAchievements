@@ -13,8 +13,8 @@ namespace PlayniteAchievements.Services.UI
 {
     /// <summary>
     /// Captures a screenshot of the monitor the running game is on and saves it under a
-    /// user-chosen base directory as &lt;base&gt;\Game\NNN_AchievementName.png. Used by
-    /// the unlock-toast pipeline to record one image per own-unlock wave. All failures are
+    /// user-chosen base directory as &lt;base&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png.
+    /// Used by the unlock-toast pipeline to record images per own-unlock wave. All failures are
     /// swallowed (logged at debug) so screenshotting never disrupts toasts.
     /// </summary>
     internal sealed class UnlockScreenshotService
@@ -176,9 +176,24 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
+        /// Maps a single screenshot variant to its filename suffix ("clean"/"toast"/"framed").
+        /// Returns null for None or combined flags.
+        /// </summary>
+        internal static string VariantSuffix(ScreenshotVariants variant)
+        {
+            switch (variant)
+            {
+                case ScreenshotVariants.Clean: return "clean";
+                case ScreenshotVariants.WithToast: return "toast";
+                case ScreenshotVariants.Framed: return "framed";
+                default: return null;
+            }
+        }
+
+        /// <summary>
         /// Saves an already-captured bitmap to
-        /// &lt;baseDir&gt;\Game\NNN_AchievementName.png. Creates directories as needed and
-        /// avoids clobbering an existing file by appending " (2)", " (3)"...
+        /// &lt;baseDir&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png. Creates directories as
+        /// needed and avoids clobbering an existing file by appending " (2)", " (3)"...
         /// </summary>
         public void Save(
             Bitmap bitmap,
@@ -187,20 +202,73 @@ namespace PlayniteAchievements.Services.UI
             string gameName,
             string achievementName,
             int number,
-            int total)
+            int total,
+            string variantSuffix = null)
         {
-            if (bitmap == null || string.IsNullOrWhiteSpace(baseDir))
+            if (bitmap == null)
+            {
+                return;
+            }
+
+            SaveCore(
+                path => bitmap.Save(path, ImageFormat.Png),
+                baseDir, providerKey, gameName, achievementName, number, total, variantSuffix);
+        }
+
+        /// <summary>
+        /// Saves an already-rendered (frozen) WPF bitmap — the framed composite — via
+        /// PngBitmapEncoder using the same naming scheme as the GDI overload.
+        /// </summary>
+        public void Save(
+            System.Windows.Media.Imaging.BitmapSource source,
+            string baseDir,
+            string providerKey,
+            string gameName,
+            string achievementName,
+            int number,
+            int total,
+            string variantSuffix = null)
+        {
+            if (source == null)
+            {
+                return;
+            }
+
+            SaveCore(
+                path =>
+                {
+                    var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                    encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(source));
+                    using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                    {
+                        encoder.Save(stream);
+                    }
+                },
+                baseDir, providerKey, gameName, achievementName, number, total, variantSuffix);
+        }
+
+        private void SaveCore(
+            Action<string> writeToPath,
+            string baseDir,
+            string providerKey,
+            string gameName,
+            string achievementName,
+            int number,
+            int total,
+            string variantSuffix)
+        {
+            if (string.IsNullOrWhiteSpace(baseDir))
             {
                 return;
             }
 
             try
             {
-                var relative = BuildRelativePath(providerKey, gameName, achievementName, number, total);
+                var relative = BuildRelativePath(providerKey, gameName, achievementName, number, total, variantSuffix);
                 var folder = Path.Combine(baseDir, relative.Folder);
                 Directory.CreateDirectory(folder);
                 var path = EnsureUniquePath(Path.Combine(folder, relative.FileName));
-                bitmap.Save(path, ImageFormat.Png);
+                writeToPath(path);
             }
             catch (Exception ex)
             {
@@ -209,7 +277,7 @@ namespace PlayniteAchievements.Services.UI
         }
 
         /// <summary>
-        /// Pure path builder: folder "Game", file "NNN_AchievementName.png" where NNN
+        /// Pure path builder: folder "Game", file "NNN_AchievementName[_suffix].ext" where NNN
         /// is zero-padded to the width of the game's total achievement count (min 3). Every
         /// segment is sanitized for the filesystem.
         /// </summary>
@@ -218,7 +286,9 @@ namespace PlayniteAchievements.Services.UI
             string gameName,
             string achievementName,
             int number,
-            int total)
+            int total,
+            string variantSuffix = null,
+            string extension = ".png")
         {
             var game = AchievementIconCachePathBuilder.SanitizeSegment(gameName);
             var name = AchievementIconCachePathBuilder.SanitizeSegment(achievementName);
@@ -226,7 +296,8 @@ namespace PlayniteAchievements.Services.UI
             var width = Math.Max(3, Math.Max(1, total).ToString(CultureInfo.InvariantCulture).Length);
             var prefix = Math.Max(0, number).ToString(CultureInfo.InvariantCulture).PadLeft(width, '0');
 
-            return (game, $"{prefix}_{name}.png");
+            var suffix = string.IsNullOrWhiteSpace(variantSuffix) ? string.Empty : $"_{variantSuffix}";
+            return (game, $"{prefix}_{name}{suffix}{extension}");
         }
 
         /// <summary>
@@ -351,7 +422,7 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        private static string EnsureUniquePath(string path)
+        internal static string EnsureUniquePath(string path)
         {
             if (!File.Exists(path))
             {

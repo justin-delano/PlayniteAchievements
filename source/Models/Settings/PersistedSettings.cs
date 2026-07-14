@@ -78,6 +78,9 @@ namespace PlayniteAchievements.Models.Settings
         private int _toastDurationSeconds = 6;
         private int _maxConcurrentToasts = 3;
         private bool _enableUnlockScreenshots = false;
+        private bool _unlockScreenshotClean = false;
+        private bool _unlockScreenshotWithToast = true;
+        private bool _unlockScreenshotFramed = false;
         private string _unlockScreenshotDirectory;
         private ToastScreenCorner _toastPosition = ToastScreenCorner.BottomRight;
         private int _recentRefreshGamesCount = 10;
@@ -938,8 +941,36 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Save a screenshot captured before the toast window is shown (game only, no overlay).
+        /// </summary>
+        public bool UnlockScreenshotClean
+        {
+            get => _unlockScreenshotClean;
+            set => SetValue(ref _unlockScreenshotClean, value);
+        }
+
+        /// <summary>
+        /// Save a screenshot captured after the toast slides in (toast visible in frame).
+        /// </summary>
+        public bool UnlockScreenshotWithToast
+        {
+            get => _unlockScreenshotWithToast;
+            set => SetValue(ref _unlockScreenshotWithToast, value);
+        }
+
+        /// <summary>
+        /// Save a copy of the clean screenshot with the theme frame composited onto the image.
+        /// The frame is never shown on screen.
+        /// </summary>
+        public bool UnlockScreenshotFramed
+        {
+            get => _unlockScreenshotFramed;
+            set => SetValue(ref _unlockScreenshotFramed, value);
+        }
+
+        /// <summary>
         /// Base directory for unlock screenshots. Files are written to
-        /// &lt;dir&gt;\Game\NNN_AchievementName.png.
+        /// &lt;dir&gt;\Game\NNN_AchievementName_&lt;variant&gt;.png.
         /// </summary>
         public string UnlockScreenshotDirectory
         {
@@ -1960,6 +1991,9 @@ namespace PlayniteAchievements.Models.Settings
                 MaxConcurrentToasts = this.MaxConcurrentToasts,
                 ToastPosition = this.ToastPosition,
                 EnableUnlockScreenshots = this.EnableUnlockScreenshots,
+                UnlockScreenshotClean = this.UnlockScreenshotClean,
+                UnlockScreenshotWithToast = this.UnlockScreenshotWithToast,
+                UnlockScreenshotFramed = this.UnlockScreenshotFramed,
                 UnlockScreenshotDirectory = this.UnlockScreenshotDirectory,
 
                 // Display Preferences
