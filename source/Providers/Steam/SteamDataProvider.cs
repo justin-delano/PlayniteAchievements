@@ -63,7 +63,10 @@ namespace PlayniteAchievements.Providers.Steam
             var steamHuntersApiClient = new SteamHuntersApiClient(
                 (url, ct) => _sessionManager.OffscreenViews.GetPageTextAsync(url, ct),
                 logger);
-            _steamHuntersCategoryEnricher = new SteamHuntersCategoryEnricher(steamHuntersApiClient, logger);
+            _steamHuntersCategoryEnricher = new SteamHuntersCategoryEnricher(
+                steamHuntersApiClient,
+                logger,
+                () => PlayniteAchievementsPlugin.Instance?.DiskImageService);
             _tokenResolver = new SteamWebApiTokenResolver(_sessionManager, logger);
             _sessionManager.SetClearInMemoryAuthState(_steamClient.ClearInMemoryAuthState);
             _scanner = new SteamScanner(settings, _steamClient, steamApiClient, _tokenResolver, _steamHuntersCategoryEnricher, api, logger);
