@@ -399,7 +399,7 @@
                                 <Setter.Value>
                                     <ImageBrush Stretch="Uniform"
                                                 helpers:AsyncImage.Uri="{Binding CategoryIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                                                helpers:AsyncImage.DecodePixel="96"/>
+                                                helpers:AsyncImage.DecodePixel="-1"/>
                                 </Setter.Value>
                             </Setter>
 
@@ -410,7 +410,7 @@
                                         <Setter.Value>
                                             <ImageBrush Stretch="Uniform"
                                                         helpers:AsyncImage.Uri="{Binding CategoryCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
-                                                        helpers:AsyncImage.DecodePixel="128"/>
+                                                        helpers:AsyncImage.DecodePixel="-1"/>
                                         </Setter.Value>
                                     </Setter>
                                 </DataTrigger>
