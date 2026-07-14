@@ -6,16 +6,16 @@ using System.Collections.Generic;
 namespace PlayniteAchievements.Tests.Providers
 {
     [TestClass]
-    public class RetroAchievementsSubsetImagePlannerTests
+    public class RetroAchievementsCategoryImagePlannerTests
     {
         private static IReadOnlyList<(string Label, string IconUrl, string CoverUrl)> Plan(
             params (string CategoryLabel, RaGameInfoUserProgress Info)[] subsets)
         {
-            return RetroAchievementsSubsetImagePlanner.BuildSubsetImagePlan(subsets);
+            return RetroAchievementsCategoryImagePlanner.BuildCategoryImagePlan(subsets);
         }
 
         [TestMethod]
-        public void BuildSubsetImagePlan_NormalizesRelativeImagePathsToAbsoluteUrls()
+        public void BuildCategoryImagePlan_NormalizesRelativeImagePathsToAbsoluteUrls()
         {
             var plan = Plan(("Bonus", new RaGameInfoUserProgress
             {
@@ -30,7 +30,7 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void BuildSubsetImagePlan_SkipsSubsetsWithoutIcon()
+        public void BuildCategoryImagePlan_SkipsSubsetsWithoutIcon()
         {
             var plan = Plan(
                 ("Bonus", new RaGameInfoUserProgress { ImageBoxArt = "/Images/051007.png" }),
@@ -42,7 +42,7 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void BuildSubsetImagePlan_LeavesCoverNullWhenBoxArtMissing()
+        public void BuildCategoryImagePlan_LeavesCoverNullWhenBoxArtMissing()
         {
             var plan = Plan(("Bonus", new RaGameInfoUserProgress { ImageIcon = "/Images/085573.png" }));
 
@@ -51,7 +51,7 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void BuildSubsetImagePlan_DedupesLabelsFirstWinsIgnoringCase()
+        public void BuildCategoryImagePlan_DedupesLabelsFirstWinsIgnoringCase()
         {
             var plan = Plan(
                 ("Bonus", new RaGameInfoUserProgress { ImageIcon = "/Images/1.png" }),
@@ -65,7 +65,7 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void BuildSubsetImagePlan_TrimsLabelsAndSkipsBlankOrDefaultLabels()
+        public void BuildCategoryImagePlan_TrimsLabelsAndSkipsBlankOrDefaultLabels()
         {
             var plan = Plan(
                 ("  Bonus  ", new RaGameInfoUserProgress { ImageIcon = "/Images/1.png" }),
@@ -77,9 +77,9 @@ namespace PlayniteAchievements.Tests.Providers
         }
 
         [TestMethod]
-        public void BuildSubsetImagePlan_ReturnsEmptyForNullOrEmptyInput()
+        public void BuildCategoryImagePlan_ReturnsEmptyForNullOrEmptyInput()
         {
-            Assert.AreEqual(0, RetroAchievementsSubsetImagePlanner.BuildSubsetImagePlan(null).Count);
+            Assert.AreEqual(0, RetroAchievementsCategoryImagePlanner.BuildCategoryImagePlan(null).Count);
             Assert.AreEqual(0, Plan().Count);
         }
     }
