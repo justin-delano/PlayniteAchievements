@@ -506,7 +506,7 @@ namespace PlayniteAchievements.Services.UI
                     _logger?.Debug(ex, "Toast countdown animation failed.");
                 }
 
-                await Task.Delay(remainingMs).ConfigureAwait(true);
+                var endedHidden = await HoldWaveWithFocusHidingAsync(window, remainingMs).ConfigureAwait(true);
 
                 if (onRendering != null)
                 {
@@ -514,8 +514,11 @@ namespace PlayniteAchievements.Services.UI
                     onRendering = null;
                 }
 
-                SlideOut(window);
-                await Task.Delay(210).ConfigureAwait(true);
+                if (!endedHidden)
+                {
+                    SlideOut(window);
+                    await Task.Delay(210).ConfigureAwait(true);
+                }
             }
             finally
             {
@@ -541,6 +544,59 @@ namespace PlayniteAchievements.Services.UI
                     _activeWindow = null;
                 }
             }
+        }
+
+        /// <summary>
+        /// The on-screen hold: instead of one blind delay, the remaining display time keeps
+        /// decaying while the toast hides whenever its game loses focus (alt-tab, another window
+        /// on top) and reappears if the game regains focus before the time runs out. The
+        /// countdown-bar animation runs on wall-clock time, so it stays consistent across
+        /// hide/show. Returns true when the wave expired while hidden (the caller then skips the
+        /// slide-out of an invisible window).
+        /// </summary>
+        private async Task<bool> HoldWaveWithFocusHidingAsync(Window window, int remainingMs)
+        {
+            // No game to key focus off (previews, non-running games) -> plain hold.
+            var gameId = _activeWaveGameId ?? Guid.Empty;
+            if (gameId == Guid.Empty || _windowTracker == null || !_windowTracker.IsTracked(gameId))
+            {
+                await Task.Delay(remainingMs).ConfigureAwait(true);
+                return false;
+            }
+
+            const int pollMs = 250;
+            var hidden = false;
+            var watch = Stopwatch.StartNew();
+            while (!_disposed && watch.ElapsedMilliseconds < remainingMs)
+            {
+                var focused = _windowTracker.IsGameForeground(gameId);
+                if (focused == hidden)
+                {
+                    try
+                    {
+                        if (focused)
+                        {
+                            window.Show();
+                            PlaceWindow(window);
+                        }
+                        else
+                        {
+                            window.Hide();
+                        }
+
+                        hidden = !focused;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Debug(ex, "Toast focus hide/show failed.");
+                    }
+                }
+
+                var left = remainingMs - (int)watch.ElapsedMilliseconds;
+                await Task.Delay(Math.Max(1, Math.Min(pollMs, left))).ConfigureAwait(true);
+            }
+
+            return hidden;
         }
 
         /// <summary>
