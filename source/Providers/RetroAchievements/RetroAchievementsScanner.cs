@@ -540,20 +540,14 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     await diskImageService.GetOrDownloadIconToPathAsync(
                         entry.IconUrl, iconTarget, decodeSize: 0, cancel).ConfigureAwait(false);
 
-                    var coverTarget = diskImageService.GetDefaultCategoryImagePath(
-                        gameIdText, entry.Label, CategoryImageKind.Cover);
-                    string coverResult = null;
+                    // Sets without real box art get no cover file; the display then falls
+                    // back to the Playnite game cover naturally.
                     if (entry.CoverUrl != null)
                     {
-                        coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
-                            entry.CoverUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
-                    }
-
-                    if (coverResult == null)
-                    {
-                        // Sets without box art reuse the set icon.
+                        var coverTarget = diskImageService.GetDefaultCategoryImagePath(
+                            gameIdText, entry.Label, CategoryImageKind.Cover);
                         await diskImageService.GetOrDownloadIconToPathAsync(
-                            entry.IconUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                            entry.CoverUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) when (cancel.IsCancellationRequested)
