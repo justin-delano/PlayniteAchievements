@@ -563,13 +563,12 @@ namespace PlayniteAchievements.Services.Recording
                 return;
             }
 
-            // Backlog unlocks re-detected at session start (e.g. the poller's first tick) predate
-            // the rolling buffer — no clip can contain them, so don't produce junk footage.
+            // A stale timestamp (before this capture session) can't anchor the clip; the timing
+            // math falls back to detection-anchored footage so every unlock still gets a clip.
             if (e.UnlockTimeUtc.HasValue && e.UnlockTimeUtc.Value < session.CaptureStartUtc.AddSeconds(-60))
             {
                 _logger?.Debug(
-                    $"[Recording] Skipping stale unlock '{e.DisplayName}' (unlocked {e.UnlockTimeUtc.Value:u}, before this session).");
-                return;
+                    $"[Recording] Unlock '{e.DisplayName}' has a pre-session timestamp ({e.UnlockTimeUtc.Value:u}); clip will anchor on detection time.");
             }
 
             var request = new ClipRequest
