@@ -445,11 +445,6 @@ namespace PlayniteAchievements.Providers.RPCS3
             new System.Text.RegularExpressions.Regex(@"\b([A-Z]{4}\d{5}_\d{2})\b",
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase);
 
-        // Pattern to extract npcommid from TROPHY.TRP file content
-        private static readonly System.Text.RegularExpressions.Regex NpCommIdPattern =
-            new System.Text.RegularExpressions.Regex(@"<npcommid>(.*?)<\/npcommid>",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-
         // Pattern to extract title-name from TROPCONF.SFM
         private static readonly System.Text.RegularExpressions.Regex TitleNamePattern =
             new System.Text.RegularExpressions.Regex(@"<title-name>(.*?)<\/title-name>",
@@ -1459,25 +1454,15 @@ namespace PlayniteAchievements.Providers.RPCS3
         /// </summary>
         private string ExtractNpCommIdFromTrpFile(string trpPath)
         {
-            using (var stream = new FileStream(trpPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var reader = new StreamReader(stream))
+            // Container-aware extraction first (real binary TRPs), then a raw
+            // byte scan for anything the container reader could not handle.
+            var npCommId = Rpcs3TrophyParser.ExtractNpCommId(trpPath, _logger);
+            if (!string.IsNullOrWhiteSpace(npCommId))
             {
-                // TROPHY.TRP contains XML with <npcommid> tag
-                // Read enough lines to find the npcommid (usually near the top)
-                for (int i = 0; i < 30; i++)
-                {
-                    var line = reader.ReadLine();
-                    if (line == null) break;
-
-                    var match = NpCommIdPattern.Match(line);
-                    if (match.Success)
-                    {
-                        return match.Groups[1].Value?.Trim();
-                    }
-                }
+                return npCommId;
             }
 
-            return null;
+            return Rpcs3NpCommIdExtractor.ExtractFirstNpCommIdFromRawFile(trpPath, _logger);
         }
 
         /// <summary>
@@ -1497,25 +1482,10 @@ namespace PlayniteAchievements.Providers.RPCS3
                     return null;
                 }
 
-                using (var reader = new StreamReader(stream))
-                {
-                    // TROPHY.TRP contains XML with <npcommid> tag
-                    // Read enough to find the npcommid (usually near the top)
-                    for (int i = 0; i < 20; i++)
-                    {
-                        var line = reader.ReadLine();
-                        if (line == null) break;
-
-                        var match = NpCommIdPattern.Match(line);
-                        if (match.Success)
-                        {
-                            return match.Groups[1].Value?.Trim();
-                        }
-                    }
-                }
+                // Bounded byte scan: the npcommid XML sits in plaintext near the
+                // start of the TRP container, after the binary header/entry table.
+                return Rpcs3NpCommIdExtractor.ExtractFirstNpCommIdFromStream(stream, _logger);
             }
-
-            return null;
         }
 
         /// <summary>
