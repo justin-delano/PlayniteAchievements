@@ -1747,15 +1747,20 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             string fileStem,
             ManagedCustomIconService managedCustomIconService)
         {
+            var normalizedLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryLabel);
+            var playniteGameId = Guid.TryParse(gameIdText, out var parsedGameId) ? parsedGameId : (Guid?)null;
             var row = new ManageAchievementsCategoryMetadataItem(gameIdText, fileStem, managedCustomIconService)
             {
-                CategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryLabel),
+                CategoryLabel = normalizedLabel,
                 ProviderCategoryLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(providerCategoryLabel),
                 TotalAchievements = achievements?.Count ?? 0,
                 UnlockedAchievements = achievements?.Count(item => item?.Unlocked == true) ?? 0,
-                DefaultIconPath = ResolveSharedImage(achievements, item => item?.GameIconPath) ??
+                // Provider-supplied defaults are the true revert target, ahead of game art.
+                DefaultIconPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedLabel, CategoryImageKind.Icon) ??
+                                  ResolveSharedImage(achievements, item => item?.GameIconPath) ??
                                   ResolveSharedImage(achievements, item => item?.CategoryIconPath),
-                DefaultCoverPath = ResolveSharedImage(achievements, item => item?.GameCoverPath) ??
+                DefaultCoverPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedLabel, CategoryImageKind.Cover) ??
+                                   ResolveSharedImage(achievements, item => item?.GameCoverPath) ??
                                    ResolveSharedImage(achievements, item => item?.CategoryCoverPath)
             };
 
