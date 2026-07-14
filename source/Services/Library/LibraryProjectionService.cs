@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Threading;
 using System.Threading.Tasks;
 using Playnite.SDK;
+using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.ThemeIntegration;
@@ -285,10 +286,13 @@ namespace PlayniteAchievements.Services.Library
                     return;
                 }
 
-                GetOverviewSnapshot(
-                    _settings,
-                    new HashSet<string>(StringComparer.OrdinalIgnoreCase),
-                    CancellationToken.None);
+                using (PerfScope.StartStartup(_logger, "Warm.OverviewProjection", thresholdMs: 250))
+                {
+                    GetOverviewSnapshot(
+                        _settings,
+                        new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+                        CancellationToken.None);
+                }
             }
             catch (Exception ex)
             {
