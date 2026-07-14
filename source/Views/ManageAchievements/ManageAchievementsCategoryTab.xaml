@@ -504,7 +504,7 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Width="2*" MinWidth="200" Header="{DynamicResource LOCPlayAch_Common_Label_Category}">
+                        <DataGridTemplateColumn Width="3*" MinWidth="260" Header="{DynamicResource LOCPlayAch_Common_Label_Category}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel VerticalAlignment="Center">
@@ -562,6 +562,7 @@
                                         <Border Grid.Column="0"
                                                 Width="88"
                                                 Height="50"
+                                                Background="Transparent"
                                                 Style="{StaticResource PreviewBorderStyle}">
                                             <Image Stretch="Uniform"
                                                    helpers:AsyncImage.Uri="{Binding IconPreviewPath}"
@@ -569,6 +570,7 @@
                                         </Border>
 
                                         <Grid Grid.Column="1"
+                                              VerticalAlignment="Center"
                                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                             <TextBox Text="{Binding IconOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                      Tag="Icon"
@@ -618,6 +620,7 @@
                                         <Border Grid.Column="0"
                                                 Width="88"
                                                 Height="50"
+                                                Background="Transparent"
                                                 Style="{StaticResource PreviewBorderStyle}">
                                             <Image Stretch="Uniform"
                                                    helpers:AsyncImage.Uri="{Binding CoverPreviewPath}"
@@ -625,6 +628,7 @@
                                         </Border>
 
                                         <Grid Grid.Column="1"
+                                              VerticalAlignment="Center"
                                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
                                             <TextBox Text="{Binding CoverOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                      Tag="Cover"
