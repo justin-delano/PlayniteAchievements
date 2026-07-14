@@ -689,7 +689,7 @@ namespace PlayniteAchievements
 
             try
             {
-                _inGamePoller?.Stop();
+                _inGamePoller?.Stop(game);
             }
             catch (Exception ex)
             {
@@ -820,7 +820,7 @@ namespace PlayniteAchievements
                 e.PropertyName == nameof(PersistedSettings.InGameFriendRefreshMultiplier) ||
                 e.PropertyName == nameof(PersistedSettings.InGameFriendBatchSize))
             {
-                RestartInGamePollerForRunningGame();
+                RestartInGamePollerForRunningGames();
             }
 
             if (e.PropertyName == nameof(PersistedSettings.UseUniformRarityBadges) ||
@@ -891,23 +891,26 @@ namespace PlayniteAchievements
             }
         }
 
-        private void RestartInGamePollerForRunningGame()
+        private void RestartInGamePollerForRunningGames()
         {
             try
             {
-                var current = _inGamePoller?.CurrentGame;
-                if (current == null || current.Id == Guid.Empty)
+                var running = _inGamePoller?.RunningGames?.ToList() ?? new List<Game>();
+                if (running.Count == 0)
                 {
-                    current = PlayniteApi?.Database?.Games?
+                    running = PlayniteApi?.Database?.Games?
                         .Where(game => game?.IsRunning == true)
                         .OrderByDescending(game => game.LastActivity)
-                        .FirstOrDefault();
+                        .ToList() ?? new List<Game>();
                 }
 
-                _inGamePoller?.Stop();
-                if (_applicationStarted && current != null)
+                _inGamePoller?.StopAll();
+                if (_applicationStarted)
                 {
-                    _inGamePoller?.Start(current);
+                    foreach (var game in running)
+                    {
+                        _inGamePoller?.Start(game);
+                    }
                 }
             }
             catch (Exception ex)
