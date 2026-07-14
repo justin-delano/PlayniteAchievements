@@ -375,10 +375,12 @@ namespace PlayniteAchievements.Providers.Steam
                 scraped = await ScrapeAchievementsAsync(steamUserId, appId, accessToken, cancel, includeLocked: true, gameName: gameName)
                     .ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { throw; }
+            catch (OperationCanceledException) when (cancel.IsCancellationRequested) { throw; }
             catch (Exception ex)
             {
-                if (IsTransientError(ex))
+                // A timeout-shaped OperationCanceledException (HttpClient timeout) without the run
+                // token being cancelled is transient, not a user cancel.
+                if (ex is OperationCanceledException || IsTransientError(ex))
                 {
                     throw new SteamTransientException($"[SteamAch] Transient scrape exception for appId={appId}.", ex);
                 }
