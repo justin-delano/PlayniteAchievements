@@ -1963,33 +1963,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private static string BuildPreviewPath(string value)
         {
             var normalized = NormalizeOverrideValue(value);
-            if (string.IsNullOrWhiteSpace(normalized))
-            {
-                return AchievementIconResolver.GetDefaultIcon();
-            }
-
-            var cacheBustToken = TryGetPreviewCacheBustToken(normalized);
-            return string.IsNullOrWhiteSpace(cacheBustToken)
-                ? normalized
-                : $"cachebust|{cacheBustToken}|{normalized}";
-        }
-
-        private static string TryGetPreviewCacheBustToken(string value)
-        {
-            var normalized = NormalizeOverrideValue(value);
-            if (string.IsNullOrWhiteSpace(normalized) || !Path.IsPathRooted(normalized) || !File.Exists(normalized))
-            {
-                return null;
-            }
-
-            try
-            {
-                return File.GetLastWriteTimeUtc(normalized).Ticks.ToString();
-            }
-            catch
-            {
-                return null;
-            }
+            return string.IsNullOrWhiteSpace(normalized)
+                ? AchievementIconResolver.GetDefaultIcon()
+                : AchievementIconResolver.ApplyCacheBust(normalized);
         }
 
         private static string NormalizeOverrideValue(string value)
