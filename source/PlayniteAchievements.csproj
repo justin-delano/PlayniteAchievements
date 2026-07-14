@@ -65,7 +65,7 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="NAudio">
-      <HintPath>packages\NAudio.1.10.0\lib\net45\NAudio.dll</HintPath>
+      <HintPath>packages\NAudio.1.10.0\lib\net35\NAudio.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
