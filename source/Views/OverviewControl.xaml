@@ -705,12 +705,6 @@
                             BorderThickness="1,0,0,1"
                             IsHitTestVisible="False"/>
 
-                    <Border Grid.Row="1"
-                            Grid.Column="1"
-                            BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                            BorderThickness="0,0,0,1"
-                            IsHitTestVisible="False"/>
-                    
                     <!-- RIGHT: Content (Recent List OR Game Details) -->
                     <Grid Grid.Row="1" Grid.Column="2">
                         <Grid.RowDefinitions>
