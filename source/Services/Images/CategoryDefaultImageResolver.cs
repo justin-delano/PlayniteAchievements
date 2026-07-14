@@ -14,14 +14,9 @@ namespace PlayniteAchievements.Services.Images
 
         public static string Resolve(Guid? playniteGameId, string categoryLabel, CategoryImageKind kind)
         {
-            // Only cover art is provider-supplied; the icon slot always falls back to
-            // Playnite game metadata. Gating here also neutralizes icon files left on
-            // disk by earlier plugin versions.
-            if (kind != CategoryImageKind.Cover)
-            {
-                return null;
-            }
-
+            // Any downloaded provider default beats Playnite game metadata. Providers that
+            // download only one kind (Steam: covers) fall back naturally for the other kind
+            // because no file exists at its path.
             if (!playniteGameId.HasValue || playniteGameId.Value == Guid.Empty)
             {
                 return null;
