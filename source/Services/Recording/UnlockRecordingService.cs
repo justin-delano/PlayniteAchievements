@@ -66,6 +66,10 @@ namespace PlayniteAchievements.Services.Recording
         private readonly Dictionary<string, Task<string>> _inFlightByWindow =
             new Dictionary<string, Task<string>>(StringComparer.Ordinal);
         private readonly HashSet<Task> _inFlightTasks = new HashSet<Task>();
+        // Buffer directories owned by a live or still-draining session (guarded by _gate). A new
+        // session's stale-buffer cleanup must not delete a previous session's buffer while its
+        // pending clips are still being produced.
+        private readonly HashSet<string> _liveBufferDirs = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         private CaptureSession _session;
         private WindowsJobObject _jobObject;
@@ -109,6 +113,7 @@ namespace PlayniteAchievements.Services.Recording
             public string EncoderArguments;
             public RecordingCaptureBackend Backend;
             public System.Drawing.Rectangle MonitorBounds;
+            public Guid OwnerGameId;
             public string GameName;
             public DateTime CaptureStartUtc;
             public FfmpegProcessHost CaptureHost;
@@ -141,7 +146,8 @@ namespace PlayniteAchievements.Services.Recording
             }
 
             _sessionNotified = false;
-            OnGameStopped();
+            // A single capture session exists at a time; the most recently started game owns it.
+            StopCurrentSession();
 
             var persisted = _settings?.Persisted;
             if (persisted?.EnableUnlockRecordings != true)
@@ -168,10 +174,14 @@ namespace PlayniteAchievements.Services.Recording
 
             var session = new CaptureSession
             {
+                // The unique suffix keeps a same-second stop-then-handoff from colliding with the
+                // previous session's still-draining buffer directory.
                 BufferDirectory = Path.Combine(
                     bufferRoot,
-                    DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture)),
+                    DateTime.Now.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture) +
+                        "-" + Guid.NewGuid().ToString("N").Substring(0, 8)),
                 FfmpegPath = ffmpegPath,
+                OwnerGameId = game?.Id ?? Guid.Empty,
                 GameName = game?.Name,
                 Cts = new CancellationTokenSource()
             };
@@ -179,12 +189,43 @@ namespace PlayniteAchievements.Services.Recording
             lock (_gate)
             {
                 _session = session;
+                _liveBufferDirs.Add(session.BufferDirectory);
             }
 
             _ = Task.Run(() => StartCaptureWhenWindowResolvesAsync(session));
         }
 
-        public void OnGameStopped()
+        /// <summary>
+        /// Owner-aware stop: ends the capture session only when the stopped game owns it, then
+        /// adopts <paramref name="handoffGame"/> (the still-running game that should be captured
+        /// next) with a fresh session and buffer. A stop for a non-owner game is a no-op so the
+        /// owner's capture keeps running.
+        /// </summary>
+        public void OnGameStopped(
+            Playnite.SDK.Models.Game stoppedGame,
+            Playnite.SDK.Models.Game handoffGame = null)
+        {
+            lock (_gate)
+            {
+                if (_session != null &&
+                    stoppedGame != null &&
+                    _session.OwnerGameId != Guid.Empty &&
+                    _session.OwnerGameId != stoppedGame.Id)
+                {
+                    _logger?.Debug(
+                        $"[Recording] '{stoppedGame.Name}' stopped but '{_session.GameName}' owns the capture; session continues.");
+                    return;
+                }
+            }
+
+            StopCurrentSession();
+            if (handoffGame != null && !_disposed)
+            {
+                OnGameStarted(handoffGame);
+            }
+        }
+
+        private void StopCurrentSession()
         {
             CaptureSession session;
             lock (_gate)
@@ -232,7 +273,7 @@ namespace PlayniteAchievements.Services.Recording
                 System.Drawing.Rectangle? bounds = null;
                 while (!token.IsCancellationRequested)
                 {
-                    var processId = _getGameProcessId?.Invoke(null);
+                    var processId = _getGameProcessId?.Invoke(session.OwnerGameId);
                     mainWindowResolved = processId.HasValue && ProcessHasMainWindow(processId.Value);
                     // Give the started process a short grace to open its main window before
                     // falling back to the foreground window's monitor (usually the same monitor
@@ -368,7 +409,7 @@ namespace PlayniteAchievements.Services.Recording
                 {
                     await Task.Delay(WindowResolvePollMs, token).ConfigureAwait(false);
 
-                    var processId = _getGameProcessId?.Invoke(null);
+                    var processId = _getGameProcessId?.Invoke(session.OwnerGameId);
                     if (!processId.HasValue || !ProcessHasMainWindow(processId.Value))
                     {
                         continue;
@@ -537,6 +578,13 @@ namespace PlayniteAchievements.Services.Recording
             {
                 _logger?.Debug(ex, "[Recording] Session shutdown failed.");
             }
+            finally
+            {
+                lock (_gate)
+                {
+                    _liveBufferDirs.Remove(session.BufferDirectory);
+                }
+            }
         }
 
         // === Unlock handling ===
@@ -568,6 +616,17 @@ namespace PlayniteAchievements.Services.Recording
 
             if (_isProviderRecordingEnabled?.Invoke(e.ProviderKey) == false)
             {
+                return;
+            }
+
+            // The buffer only contains the owner game's monitor; an unlock from another running
+            // game still gets its toast and screenshot, but a clip of the wrong game is useless.
+            if (e.PlayniteGameId != Guid.Empty &&
+                session.OwnerGameId != Guid.Empty &&
+                e.PlayniteGameId != session.OwnerGameId)
+            {
+                _logger?.Debug(
+                    $"[Recording] Unlock '{e.DisplayName}' is from '{e.GameName}' but the capture follows '{session.GameName}'; toast/screenshot only, no clip.");
                 return;
             }
 
@@ -926,7 +985,7 @@ namespace PlayniteAchievements.Services.Recording
         {
             try
             {
-                var processId = _getGameProcessId?.Invoke(null);
+                var processId = _getGameProcessId?.Invoke(session.OwnerGameId);
                 var client = _screenshotService.TryGetGameWindowBounds(processId);
                 if (client == null)
                 {
@@ -1197,7 +1256,10 @@ namespace PlayniteAchievements.Services.Recording
             return result;
         }
 
-        /// <summary>Deletes leftover buffer directories from crashed sessions at game start.</summary>
+        /// <summary>
+        /// Deletes leftover buffer directories from crashed sessions at game start. Directories
+        /// owned by the current session or a previous session still draining its clips are kept.
+        /// </summary>
         private void CleanupStaleBufferDirectories(string bufferRoot)
         {
             try
@@ -1209,6 +1271,14 @@ namespace PlayniteAchievements.Services.Recording
 
                 foreach (var directory in Directory.GetDirectories(bufferRoot))
                 {
+                    lock (_gate)
+                    {
+                        if (_liveBufferDirs.Contains(directory))
+                        {
+                            continue;
+                        }
+                    }
+
                     _logger?.Debug($"[Recording] Removing stale recording buffer: {directory}");
                     TryDeleteDirectory(directory);
                 }

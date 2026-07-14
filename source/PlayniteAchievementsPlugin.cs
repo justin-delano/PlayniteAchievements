@@ -668,8 +668,17 @@ namespace PlayniteAchievements
             {
                 UntrackStoppedGame(args?.Game);
                 _libraryProjectionService?.SetGameSessionActive(AnyGameRunning());
-                _toastNotifications?.ClearPending();
-                _unlockRecordings?.OnGameStopped();
+                if (args?.Game != null)
+                {
+                    _toastNotifications?.ClearPending(args.Game.Id);
+                    _unlockRecordings?.OnGameStopped(args.Game, ResolveMostRecentRunningGame());
+                }
+                else
+                {
+                    _toastNotifications?.ClearPending();
+                    _unlockRecordings?.OnGameStopped(null);
+                }
+
                 _achievementHotkeyTargetResolver?.NotifyGameStopped(args?.Game);
             }
             catch (Exception ex)
@@ -678,6 +687,30 @@ namespace PlayniteAchievements
             }
 
             _ = StopPollingAndRefreshStoppedGameAsync(args?.Game);
+        }
+
+        /// <summary>
+        /// The most recently started game that is still running (per the tracked start order),
+        /// used as the recording handoff target when the capture-owning game stops.
+        /// </summary>
+        private Game ResolveMostRecentRunningGame()
+        {
+            List<Guid> order;
+            lock (_runningGamesLock)
+            {
+                order = _runningGameOrder.ToList();
+            }
+
+            foreach (var gameId in order)
+            {
+                var game = PlayniteApi?.Database?.Games?.Get(gameId);
+                if (game != null)
+                {
+                    return game;
+                }
+            }
+
+            return null;
         }
 
         private async Task StopPollingAndRefreshStoppedGameAsync(Game game)
@@ -700,6 +733,13 @@ namespace PlayniteAchievements
             {
                 _logger.Info($"Game stopped: {game.Name}; no enabled provider is capable, skipping refresh.");
                 return;
+            }
+
+            // With other games still running the poller may have a tick in flight; give it a
+            // moment to finish so the stopped-game refresh isn't rejected as a concurrent run.
+            if (_refreshService?.IsRebuilding == true)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
             }
 
             _logger.Info($"Game stopped: {game.Name}. Triggering refresh.");
