@@ -90,10 +90,11 @@ namespace PlayniteAchievements.Providers.Steam
         }
 
         // Plans one default cover per category: (normalized category label -> Steam appId).
-        // The base category maps to the game's own appId; DLC groups map to their dlcAppId.
-        // Name-only update groups are excluded; they keep the game-image fallback.
-        // Dedupe is first-wins by label to match the assignment order in ApplyGroups, with
-        // the base entry first so a DLC label colliding with the game name cannot hijack it.
+        // DLC groups map to their dlcAppId; every other labeled group (the base category,
+        // update groups, collection sub-games) maps to the game's own appId so non-DLC
+        // categories share the base banner. Dedupe is first-wins by label to match the
+        // assignment order in ApplyGroups, with the base entry first so a DLC label
+        // colliding with the game name cannot hijack it.
         internal static IReadOnlyList<KeyValuePair<string, int>> BuildCategoryImagePlan(
             IList<SteamHuntersAchievementGroup> groups,
             string groupBy,
@@ -118,9 +119,10 @@ namespace PlayniteAchievements.Providers.Steam
 
             foreach (var group in groups)
             {
-                if (group?.DlcAppId == null ||
-                    group.DlcAppId.Value <= 0 ||
-                    !string.Equals(ResolveCategoryType(groupBy, group), DlcCategoryType, StringComparison.Ordinal))
+                var isDlc = string.Equals(ResolveCategoryType(groupBy, group), DlcCategoryType, StringComparison.Ordinal) &&
+                            group?.DlcAppId > 0;
+                var entryAppId = isDlc ? group.DlcAppId.Value : appId;
+                if (entryAppId <= 0)
                 {
                     continue;
                 }
@@ -133,7 +135,7 @@ namespace PlayniteAchievements.Providers.Steam
 
                 plan.Add(new KeyValuePair<string, int>(
                     AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(label),
-                    group.DlcAppId.Value));
+                    entryAppId));
             }
 
             return plan;
@@ -173,14 +175,15 @@ namespace PlayniteAchievements.Providers.Steam
                 {
                     var coverTarget = diskImageService.GetDefaultCategoryImagePath(
                         gameIdText, label, CategoryImageKind.Cover);
+                    // Wide banner art is preferred for visual consistency across categories;
+                    // portrait library art is only used when no banner exists.
                     // decodeSize 0 stores the original bytes: no square crop, original aspect.
                     var coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
-                        SteamImageUrls.Cover(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                        SteamImageUrls.Header(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     if (coverResult == null)
                     {
-                        // Many DLC apps have no library_600x900 asset; reuse the header art.
                         coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
-                            SteamImageUrls.Header(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                            SteamImageUrls.Cover(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     }
 
                     if (coverResult == null)
