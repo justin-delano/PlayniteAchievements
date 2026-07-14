@@ -473,12 +473,15 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 data.AchievementCategoryImageOverrides.TryGetValue(category, out imageOverride);
             }
 
+            // Default images are keyed by the provider label; renames only change Category.
+            var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(
+                achievement.ProviderCategory ?? achievement.Category);
             achievement.CategoryIconPath =
                 NormalizeImageOverridePath(imageOverride?.Icon) ??
-                CategoryDefaultImageResolver.Resolve(gameId, category, CategoryImageKind.Icon);
+                CategoryDefaultImageResolver.Resolve(gameId, providerCategory, CategoryImageKind.Icon);
             achievement.CategoryCoverPath =
                 NormalizeImageOverridePath(imageOverride?.Cover) ??
-                CategoryDefaultImageResolver.Resolve(gameId, category, CategoryImageKind.Cover);
+                CategoryDefaultImageResolver.Resolve(gameId, providerCategory, CategoryImageKind.Cover);
         }
 
         private static string NormalizeImageOverridePath(string value)
