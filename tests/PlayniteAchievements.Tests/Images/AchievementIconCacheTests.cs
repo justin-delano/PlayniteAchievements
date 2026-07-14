@@ -40,16 +40,15 @@ namespace PlayniteAchievements.Services.Images.Tests
         }
 
         [TestMethod]
-        public void BuildDefaultCategoryRelativePath_UsesDefaultsFolderAndKindSuffix()
+        public void BuildDefaultCategoryRelativePath_UsesDefaultsFolderAndSingleArtFile()
         {
-            var iconPath = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
+            var artPath = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
                 "game-123", "Phantom Liberty", CategoryImageKind.Icon);
-            var coverPath = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
-                "game-123", "Phantom Liberty", CategoryImageKind.Cover);
 
-            StringAssert.StartsWith(iconPath, Path.Combine("icon_cache", "game-123", "category_defaults", "category_Phantom Liberty_"));
-            StringAssert.EndsWith(iconPath, ".icon.jpg");
-            StringAssert.EndsWith(coverPath, ".cover.jpg");
+            StringAssert.StartsWith(artPath, Path.Combine("icon_cache", "game-123", "category_defaults", "category_Phantom Liberty_"));
+            StringAssert.EndsWith(artPath, ".jpg");
+            Assert.IsFalse(artPath.Contains(".icon."));
+            Assert.IsFalse(artPath.Contains(".cover."));
         }
 
         [TestMethod]
