@@ -7,6 +7,15 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 {
     internal static class RetroAchievementsCategoryImagePlanner
     {
+        // RetroAchievements serves literal placeholder art for missing media instead of
+        // omitting the field: /Images/000001.png (icon) and /Images/000002.png ("No
+        // Screenshot Found"). Treat them as absent so covers fall back to the set icon.
+        private static readonly string[] PlaceholderImagePaths =
+        {
+            "/Images/000001.png",
+            "/Images/000002.png"
+        };
+
         // Plans one default image pair per category: (normalized label -> icon/cover URLs).
         // Sources are (label, game info) pairs for the base game and each fetched subset.
         // Dedupe is first-wins by label to match the achievement assignment order.
@@ -22,7 +31,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             var seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var source in sources)
             {
-                var iconUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(source.Info?.ImageIcon);
+                var iconUrl = NormalizeMediaUrl(source.Info?.ImageIcon);
                 if (iconUrl == null)
                 {
                     continue;
@@ -38,11 +47,37 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     continue;
                 }
 
-                var coverUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(source.Info?.ImageBoxArt);
+                var coverUrl = NormalizeMediaUrl(source.Info?.ImageBoxArt);
                 plan.Add((label, iconUrl, coverUrl));
             }
 
             return plan;
+        }
+
+        private static string NormalizeMediaUrl(string pathOrUrl)
+        {
+            return IsPlaceholderImage(pathOrUrl)
+                ? null
+                : RetroAchievementsAchievementMapper.NormalizeImageUrl(pathOrUrl);
+        }
+
+        private static bool IsPlaceholderImage(string pathOrUrl)
+        {
+            if (string.IsNullOrWhiteSpace(pathOrUrl))
+            {
+                return false;
+            }
+
+            var value = pathOrUrl.Trim();
+            foreach (var placeholder in PlaceholderImagePaths)
+            {
+                if (value.EndsWith(placeholder, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }
