@@ -22,7 +22,7 @@
     <TabControl x:Name="CategorySubTabs"
                 BorderThickness="0"
                 Background="Transparent">
-        <TabItem Header="Assign Achievements">
+        <TabItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Category_Tab_Assign}">
     <Grid Margin="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -366,7 +366,7 @@
     </Grid>
         </TabItem>
 
-        <TabItem Header="Manage Categories">
+        <TabItem Header="{DynamicResource LOCPlayAch_ManageAchievements_Category_Context_ManageCategories}">
             <Grid Margin="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -383,9 +383,9 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="Manage Categories"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Category_Context_ManageCategories}"
                                        Style="{StaticResource ManageAchievementsHeaderTitleStyle}" />
-                            <TextBlock Text="Rename categories, choose category images, and drag categories into their display order."
+                            <TextBlock Text="{DynamicResource LOCPlayAch_ManageAchievements_Category_ManageHint}"
                                        Style="{StaticResource ManageAchievementsHeaderHintStyle}" />
                             <TextBlock Text="{Binding CategoryImageStatusText}"
                                        Style="{StaticResource StatusTextStyle}"
@@ -547,7 +547,7 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Width="2*" MinWidth="220" Header="Icon">
+                        <DataGridTemplateColumn Width="2*" MinWidth="220" Header="{DynamicResource LOCPlayAch_Column_Icon}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid VerticalAlignment="Center">
@@ -607,7 +607,7 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Width="2*" MinWidth="220" Header="Cover">
+                        <DataGridTemplateColumn Width="2*" MinWidth="220" Header="{DynamicResource LOCPlayAch_Column_Cover}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid VerticalAlignment="Center">
