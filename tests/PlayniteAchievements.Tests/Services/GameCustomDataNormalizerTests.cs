@@ -327,6 +327,36 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void AchievementDetailHydrator_KeepsProviderCategoryStableAcrossRenames()
+        {
+            var gameId = Guid.NewGuid();
+            var details = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "dlc_ach", Category = "Phantom Liberty", CategoryType = "DLC" }
+            };
+            var renamed = new ResolvedGameCustomData
+            {
+                AchievementCategoryOverrides = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["dlc_ach"] = "My Renamed DLC"
+                }
+            };
+
+            var hydrator = new AchievementDetailHydrator(new PersistedSettings());
+            hydrator.HydrateAllWithCapstoneOverride(details, gameId, "Steam", renamed);
+
+            Assert.AreEqual("My Renamed DLC", details[0].Category);
+            Assert.AreEqual("Phantom Liberty", details[0].ProviderCategory);
+
+            // Re-hydrating the same mutated instance without the rename override must
+            // restore the provider label rather than treat the rename as provider data.
+            hydrator.HydrateAllWithCapstoneOverride(details, gameId, "Steam", new ResolvedGameCustomData());
+
+            Assert.AreEqual("Phantom Liberty", details[0].Category);
+            Assert.AreEqual("Phantom Liberty", details[0].ProviderCategory);
+        }
+
+        [TestMethod]
         public void NormalizeInternal_ExtractsLegacyFilterCategoryTypes()
         {
             var gameId = Guid.NewGuid();
