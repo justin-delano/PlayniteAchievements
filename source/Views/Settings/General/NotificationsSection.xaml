@@ -91,7 +91,7 @@
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,8"/>
                             <TextBox Grid.Row="0" Grid.Column="1"
-                                     Text="{Binding Persisted.ToastDurationSeconds, UpdateSourceTrigger=PropertyChanged}"
+                                     Text="{Binding Persisted.ToastDurationSeconds, UpdateSourceTrigger=LostFocus}"
                                      Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
                                      TextAlignment="Right"
                                      Margin="0,0,0,8"/>
@@ -102,7 +102,7 @@
                                        VerticalAlignment="Center"
                                        Margin="0,0,8,8"/>
                             <TextBox Grid.Row="1" Grid.Column="1"
-                                     Text="{Binding Persisted.MaxConcurrentToasts, UpdateSourceTrigger=PropertyChanged}"
+                                     Text="{Binding Persisted.MaxConcurrentToasts, UpdateSourceTrigger=LostFocus}"
                                      Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
                                      TextAlignment="Right"
                                      Margin="0,0,0,8"/>
@@ -258,7 +258,7 @@
                                            VerticalAlignment="Center"
                                            Margin="0,0,8,8"/>
                                 <TextBox Grid.Row="0" Grid.Column="1"
-                                         Text="{Binding Persisted.RecordingClipSeconds, UpdateSourceTrigger=PropertyChanged}"
+                                         Text="{Binding Persisted.RecordingClipSeconds, UpdateSourceTrigger=LostFocus}"
                                          Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
                                          TextAlignment="Right"
                                          Margin="0,0,0,8"/>
@@ -269,7 +269,7 @@
                                            VerticalAlignment="Center"
                                            Margin="0,0,8,8"/>
                                 <TextBox Grid.Row="1" Grid.Column="1"
-                                         Text="{Binding Persisted.RecordingFps, UpdateSourceTrigger=PropertyChanged}"
+                                         Text="{Binding Persisted.RecordingFps, UpdateSourceTrigger=LostFocus}"
                                          Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
                                          TextAlignment="Right"
                                          Margin="0,0,0,8"/>
