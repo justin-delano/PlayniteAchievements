@@ -1106,6 +1106,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 item,
                 gameData,
                 item.CategoryLabel,
+                achievement.ProviderCategory,
                 item.GameIconPath,
                 item.GameCoverPath,
                 gameData?.PlayniteGameId);
@@ -1353,6 +1354,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 item,
                 gameData,
                 item.CategoryLabel,
+                achievement.ProviderCategory,
                 item.GameIconPath,
                 item.GameCoverPath,
                 playniteGameId);
@@ -1363,6 +1365,7 @@ namespace PlayniteAchievements.ViewModels.Items
             AchievementDisplayItem item,
             GameAchievementData gameData,
             string categoryLabel,
+            string providerCategoryLabel,
             string defaultIconPath,
             string defaultCoverPath,
             Guid? playniteGameId)
@@ -1372,6 +1375,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 gameData?.AchievementCategoryOrder,
                 gameData?.AchievementCategoryImageOverrides,
                 categoryLabel,
+                providerCategoryLabel,
                 defaultIconPath,
                 defaultCoverPath,
                 playniteGameId);
@@ -1382,6 +1386,7 @@ namespace PlayniteAchievements.ViewModels.Items
             IReadOnlyList<string> categoryOrder,
             IReadOnlyDictionary<string, CategoryImageOverrideData> categoryImageOverrides,
             string categoryLabel,
+            string providerCategoryLabel,
             string defaultIconPath,
             string defaultCoverPath,
             Guid? playniteGameId)
@@ -1401,13 +1406,19 @@ namespace PlayniteAchievements.ViewModels.Items
                 categoryImageOverrides.TryGetValue(normalizedCategory, out imageOverride);
             }
 
+            // Default images are keyed by the provider label (renames only affect the
+            // displayed label); fall back to the effective label when no provider label
+            // is available, e.g. un-hydrated details where the two are identical.
+            var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(
+                string.IsNullOrWhiteSpace(providerCategoryLabel) ? categoryLabel : providerCategoryLabel);
+
             item.CategoryIconPath =
                 ResolveCategoryImageOverridePath(imageOverride?.Icon, playniteGameId) ??
-                CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedCategory, CategoryImageKind.Icon) ??
+                CategoryDefaultImageResolver.Resolve(playniteGameId, providerCategory, CategoryImageKind.Icon) ??
                 defaultIconPath;
             item.CategoryCoverPath =
                 ResolveCategoryImageOverridePath(imageOverride?.Cover, playniteGameId) ??
-                CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedCategory, CategoryImageKind.Cover) ??
+                CategoryDefaultImageResolver.Resolve(playniteGameId, providerCategory, CategoryImageKind.Cover) ??
                 defaultCoverPath;
         }
 
