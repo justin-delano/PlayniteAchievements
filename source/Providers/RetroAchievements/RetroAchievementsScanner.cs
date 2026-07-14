@@ -428,6 +428,11 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                 _logger?.Info($"[RA] Parsed {achievements.Count} achievements for '{gameInfo?.GameTitle}'.");
 
+                var categoryImageSources = new List<(string CategoryLabel, Models.RaGameInfoUserProgress Info)>
+                {
+                    ("Base", gameInfo)
+                };
+
                 var subsetConsoleId = RetroAchievementsSubsetConsoleResolver.Resolve(gameInfo, consoleId);
 
                 // Fetch subset achievements if enabled.
@@ -438,7 +443,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                         var subsets = await _hashIndexStore.GetSubsetsForGameAsync(gameId, subsetConsoleId.Value, cancel).ConfigureAwait(false);
                         if (subsets != null && subsets.Count > 0)
                         {
-                            var subsetImageSources = new List<(string CategoryLabel, Models.RaGameInfoUserProgress Info)>();
                             foreach (var subset in subsets)
                             {
                                 cancel.ThrowIfCancellationRequested();
@@ -456,7 +460,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                                     _logger?.Info($"[RA] Parsed {subsetAchievements.Count} achievements for subset '{subset.Title}' (category={categoryLabel}).");
 
                                     achievements.AddRange(subsetAchievements);
-                                    subsetImageSources.Add((categoryLabel, subsetInfo));
+                                    categoryImageSources.Add((categoryLabel, subsetInfo));
                                 }
                                 catch (OperationCanceledException) { throw; }
                                 catch (Exception ex)
@@ -465,7 +469,6 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                                 }
                             }
 
-                            await DownloadSubsetCategoryImagesAsync(game?.Id, subsetImageSources, cancel).ConfigureAwait(false);
                         }
                     }
                     catch (OperationCanceledException) { throw; }
@@ -478,6 +481,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 {
                     _logger?.Info($"[RA] Skipping subset lookup for '{game?.Name}' because no console ID was resolved.");
                 }
+
+                await DownloadCategoryImagesAsync(game?.Id, categoryImageSources, cancel).ConfigureAwait(false);
 
                 return new GameAchievementData
                 {
@@ -498,12 +503,12 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             }
         }
 
-        // Downloads default category art for subsets to deterministic per-game cache paths.
-        // Best-effort: failures never fail the scan. Existing targets are skipped, so re-scans
-        // cost nothing.
-        private async Task DownloadSubsetCategoryImagesAsync(
+        // Downloads default category art for the base set and subsets to deterministic per-game
+        // cache paths. Best-effort: failures never fail the scan. Existing targets are skipped,
+        // so re-scans cost nothing.
+        private async Task DownloadCategoryImagesAsync(
             Guid? playniteGameId,
-            IReadOnlyList<(string CategoryLabel, Models.RaGameInfoUserProgress Info)> subsets,
+            IReadOnlyList<(string CategoryLabel, Models.RaGameInfoUserProgress Info)> sources,
             CancellationToken cancel)
         {
             if (playniteGameId == null || playniteGameId.Value == Guid.Empty)
@@ -517,7 +522,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 return;
             }
 
-            var plan = RetroAchievementsSubsetImagePlanner.BuildSubsetImagePlan(subsets);
+            var plan = RetroAchievementsCategoryImagePlanner.BuildCategoryImagePlan(sources);
             if (plan.Count == 0)
             {
                 return;
@@ -546,7 +551,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                     if (coverResult == null)
                     {
-                        // Subsets without box art reuse the subset icon.
+                        // Sets without box art reuse the set icon.
                         await diskImageService.GetOrDownloadIconToPathAsync(
                             entry.IconUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     }
@@ -557,7 +562,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, $"[RA] Default category image download failed for subset category '{entry.Label}'.");
+                    _logger?.Debug(ex, $"[RA] Default category image download failed for category '{entry.Label}'.");
                 }
             }
         }
