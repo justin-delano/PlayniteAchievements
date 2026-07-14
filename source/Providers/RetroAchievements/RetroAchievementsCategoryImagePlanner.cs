@@ -5,24 +5,24 @@ using System.Collections.Generic;
 
 namespace PlayniteAchievements.Providers.RetroAchievements
 {
-    internal static class RetroAchievementsSubsetImagePlanner
+    internal static class RetroAchievementsCategoryImagePlanner
     {
-        // Plans one default image pair per subset category: (normalized label -> icon/cover URLs).
-        // Base-game achievements keep the game-image fallback; only fetched subsets are passed in.
-        // Dedupe is first-wins by label to match the subset achievement assignment order.
-        internal static IReadOnlyList<(string Label, string IconUrl, string CoverUrl)> BuildSubsetImagePlan(
-            IReadOnlyList<(string CategoryLabel, RaGameInfoUserProgress Info)> subsets)
+        // Plans one default image pair per category: (normalized label -> icon/cover URLs).
+        // Sources are (label, game info) pairs for the base game and each fetched subset.
+        // Dedupe is first-wins by label to match the achievement assignment order.
+        internal static IReadOnlyList<(string Label, string IconUrl, string CoverUrl)> BuildCategoryImagePlan(
+            IReadOnlyList<(string CategoryLabel, RaGameInfoUserProgress Info)> sources)
         {
             var plan = new List<(string Label, string IconUrl, string CoverUrl)>();
-            if (subsets == null || subsets.Count == 0)
+            if (sources == null || sources.Count == 0)
             {
                 return plan;
             }
 
             var seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var subset in subsets)
+            foreach (var source in sources)
             {
-                var iconUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(subset.Info?.ImageIcon);
+                var iconUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(source.Info?.ImageIcon);
                 if (iconUrl == null)
                 {
                     continue;
@@ -30,7 +30,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
 
                 // Blank labels normalize to the Default category, which the display-side
                 // resolver never serves default art for, so skip them entirely.
-                var label = AchievementCategoryTypeHelper.NormalizeCategory(subset.CategoryLabel);
+                var label = AchievementCategoryTypeHelper.NormalizeCategory(source.CategoryLabel);
                 if (label == null ||
                     string.Equals(label, AchievementCategoryTypeHelper.DefaultCategoryLabel, StringComparison.OrdinalIgnoreCase) ||
                     !seenLabels.Add(label))
@@ -38,7 +38,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     continue;
                 }
 
-                var coverUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(subset.Info?.ImageBoxArt);
+                var coverUrl = RetroAchievementsAchievementMapper.NormalizeImageUrl(source.Info?.ImageBoxArt);
                 plan.Add((label, iconUrl, coverUrl));
             }
 
