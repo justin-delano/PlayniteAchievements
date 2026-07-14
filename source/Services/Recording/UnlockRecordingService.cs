@@ -33,6 +33,13 @@ namespace PlayniteAchievements.Services.Recording
         private const long MinFreeBytesToContinue = 500L * 1024 * 1024;
         private const long MaxBufferBytes = 2L * 1024 * 1024 * 1024;
         private const int WindowResolveTimeoutSeconds = 60;
+        // How long to hold off the capture start waiting for the started process's main window.
+        // Kept short: unlocks that fire before the capture is live can never be clipped, so a
+        // slow-launching game must not leave a long dead window (observed: a launcher-style
+        // process with no main window stalled the old 60s wait while the first poll tick's
+        // unlocks all got dropped). After the grace we start on the best-guess monitor and
+        // correct later if the game window appears somewhere else.
+        private const int WindowResolveGraceSeconds = 15;
         private const int WindowResolvePollMs = 2000;
         private const int ToastWaitTimeoutSeconds = 30;
         private const int MaxCaptureRestarts = 3;
@@ -94,6 +101,8 @@ namespace PlayniteAchievements.Services.Recording
             public string BufferDirectory;
             public string FfmpegPath;
             public string CaptureArguments;
+            public string EncoderArguments;
+            public RecordingCaptureBackend Backend;
             public string GameName;
             public DateTime CaptureStartUtc;
             public FfmpegProcessHost CaptureHost;
@@ -212,15 +221,20 @@ namespace PlayniteAchievements.Services.Recording
 
                 var token = session.Cts.Token;
                 var deadline = DateTime.UtcNow.AddSeconds(WindowResolveTimeoutSeconds);
+                var graceDeadline = DateTime.UtcNow.AddSeconds(WindowResolveGraceSeconds);
+                var mainWindowResolved = false;
                 System.Drawing.Rectangle? bounds = null;
                 while (!token.IsCancellationRequested)
                 {
                     var processId = _getRunningGameProcessId?.Invoke();
-                    // Give the started process time to open its main window before falling back
-                    // to whatever window is in the foreground (probably Playnite's monitor).
+                    mainWindowResolved = processId.HasValue && ProcessHasMainWindow(processId.Value);
+                    // Give the started process a short grace to open its main window before
+                    // falling back to the foreground window's monitor (usually the same monitor
+                    // the game is launching on). A later-appearing game window on a different
+                    // monitor is handled by the correction watcher below.
                     var stillLaunching = processId.HasValue &&
-                                         !ProcessHasMainWindow(processId.Value) &&
-                                         DateTime.UtcNow < deadline;
+                                         !mainWindowResolved &&
+                                         DateTime.UtcNow < graceDeadline;
                     if (!stillLaunching)
                     {
                         bounds = _screenshotService.TryGetGameMonitorBounds(processId);
@@ -256,21 +270,9 @@ namespace PlayniteAchievements.Services.Recording
                     ? RecordingCaptureBackend.Ddagrab
                     : RecordingCaptureBackend.Gdigrab;
 
-                session.CaptureArguments = RecordingCommandBuilder.BuildCaptureArguments(
-                    new RecordingCommandBuilder.CaptureOptions
-                    {
-                        Backend = backend,
-                        Fps = persisted.RecordingFps,
-                        MonitorX = bounds.Value.X,
-                        MonitorY = bounds.Value.Y,
-                        MonitorWidth = bounds.Value.Width,
-                        MonitorHeight = bounds.Value.Height,
-                        MonitorIndex = ResolveMonitorIndex(bounds.Value),
-                        Resolution = persisted.RecordingResolution,
-                        EncoderArguments = encoderArgs,
-                        SegmentSeconds = SegmentSeconds,
-                        BufferDirectory = session.BufferDirectory
-                    });
+                session.EncoderArguments = encoderArgs;
+                session.Backend = backend;
+                session.CaptureArguments = BuildCaptureArgumentsFor(session, persisted, bounds.Value);
 
                 Directory.CreateDirectory(session.BufferDirectory);
                 if (session.Stopping || !SpawnCapture(session))
@@ -300,6 +302,14 @@ namespace PlayniteAchievements.Services.Recording
                     TimeSpan.FromSeconds(PruneIntervalSeconds));
                 _logger?.Info(
                     $"[Recording] Capture started for '{session.GameName}' on monitor {bounds.Value} ({backend}, {encoderArgs}), buffer={session.BufferDirectory}.");
+
+                // Capture started from the fallback (foreground) monitor before the game window
+                // existed: keep watching, and if the game window appears on a different monitor,
+                // restart the capture there.
+                if (!mainWindowResolved)
+                {
+                    _ = Task.Run(() => CorrectMonitorWhenWindowAppearsAsync(session, bounds.Value, deadline));
+                }
             }
             catch (OperationCanceledException)
             {
@@ -308,6 +318,98 @@ namespace PlayniteAchievements.Services.Recording
             catch (Exception ex)
             {
                 _logger?.Debug(ex, "[Recording] Failed to start capture session.");
+            }
+        }
+
+        private string BuildCaptureArgumentsFor(
+            CaptureSession session,
+            PersistedSettings persisted,
+            System.Drawing.Rectangle bounds)
+        {
+            return RecordingCommandBuilder.BuildCaptureArguments(
+                new RecordingCommandBuilder.CaptureOptions
+                {
+                    Backend = session.Backend,
+                    Fps = persisted.RecordingFps,
+                    MonitorX = bounds.X,
+                    MonitorY = bounds.Y,
+                    MonitorWidth = bounds.Width,
+                    MonitorHeight = bounds.Height,
+                    MonitorIndex = ResolveMonitorIndex(bounds),
+                    Resolution = persisted.RecordingResolution,
+                    EncoderArguments = session.EncoderArguments,
+                    SegmentSeconds = SegmentSeconds,
+                    BufferDirectory = session.BufferDirectory
+                });
+        }
+
+        /// <summary>
+        /// Runs after a capture that started before the game window existed. If the game's main
+        /// window appears (within the resolve deadline) on a different monitor than the one being
+        /// captured, the ffmpeg capture is restarted on the correct monitor. Segments recorded on
+        /// the wrong monitor age out of the buffer naturally.
+        /// </summary>
+        private async Task CorrectMonitorWhenWindowAppearsAsync(
+            CaptureSession session,
+            System.Drawing.Rectangle capturedBounds,
+            DateTime deadlineUtc)
+        {
+            try
+            {
+                var token = session.Cts.Token;
+                while (!token.IsCancellationRequested && DateTime.UtcNow < deadlineUtc)
+                {
+                    await Task.Delay(WindowResolvePollMs, token).ConfigureAwait(false);
+
+                    var processId = _getRunningGameProcessId?.Invoke();
+                    if (!processId.HasValue || !ProcessHasMainWindow(processId.Value))
+                    {
+                        continue;
+                    }
+
+                    var resolved = _screenshotService.TryGetGameMonitorBounds(processId);
+                    if (!resolved.HasValue || resolved.Value == capturedBounds)
+                    {
+                        return;
+                    }
+
+                    var persisted = _settings?.Persisted;
+                    if (persisted == null || session.Stopping)
+                    {
+                        return;
+                    }
+
+                    _logger?.Info(
+                        $"[Recording] Game window appeared on {resolved.Value}; restarting capture from fallback monitor {capturedBounds}.");
+
+                    // Detach the old host first so its Exited handler doesn't count the swap as a
+                    // crash, then kill it and spawn on the correct monitor.
+                    var oldHost = session.CaptureHost;
+                    session.CaptureHost = null;
+                    try
+                    {
+                        oldHost?.Dispose();
+                    }
+                    catch
+                    {
+                    }
+
+                    session.CaptureArguments = BuildCaptureArgumentsFor(session, persisted, resolved.Value);
+                    if (!session.Stopping)
+                    {
+                        SpawnCapture(session);
+                    }
+
+                    return;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Game stopped while watching.
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, "[Recording] Monitor correction watcher failed.");
             }
         }
 
@@ -451,11 +553,22 @@ namespace PlayniteAchievements.Services.Recording
 
             if (session == null || session.Stopping || session.CaptureHost == null || session.CaptureHost.HasExited)
             {
+                _logger?.Debug(
+                    $"[Recording] Unlock '{e.DisplayName}' ignored; capture is not active (session={(session == null ? "none" : session.Stopping ? "stopping" : "no capture process")}).");
                 return;
             }
 
             if (_isProviderRecordingEnabled?.Invoke(e.ProviderKey) == false)
             {
+                return;
+            }
+
+            // Backlog unlocks re-detected at session start (e.g. the poller's first tick) predate
+            // the rolling buffer — no clip can contain them, so don't produce junk footage.
+            if (e.UnlockTimeUtc.HasValue && e.UnlockTimeUtc.Value < session.CaptureStartUtc.AddSeconds(-60))
+            {
+                _logger?.Debug(
+                    $"[Recording] Skipping stale unlock '{e.DisplayName}' (unlocked {e.UnlockTimeUtc.Value:u}, before this session).");
                 return;
             }
 
