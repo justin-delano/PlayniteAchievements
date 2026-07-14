@@ -68,8 +68,11 @@ namespace PlayniteAchievements.Providers.Steam
             string cookieSteamId64 = null,
             bool hasSteamSessionCookies = false)
         {
-            var steamId = SteamWebAuthSession.NormalizeSteamId64(cookieSteamId64)
-                ?? ExtractSteamId64(source);
+            // The page's g_steamID reflects the account the community session actually
+            // renders as; cookie-derived IDs can come from stale cookies left on other
+            // Steam domains after an account switch, so they are only a fallback.
+            var steamId = ExtractSteamId64(source)
+                ?? SteamWebAuthSession.NormalizeSteamId64(cookieSteamId64);
             var token = ExtractWebApiToken(source);
             return new SteamWebAuthSession(steamId, token, hasSteamSessionCookies);
         }
