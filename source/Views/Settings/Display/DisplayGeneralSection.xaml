@@ -103,14 +103,14 @@
                                        Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
                             <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HiddenAchievements_Description}"
                                        Style="{StaticResource MutedTextStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Sm}"/>
-                            <TextBlock Text="PREVIEW"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Context_Preview}"
                                        Style="{StaticResource ContextLabelStyle}"/>
                             <modern:AchievementDataGridControl
                                 Style="{StaticResource PreviewThemeControlStyle}"
                                 ThemeDataOverride="{Binding AchievementVisibilityPreviewThemeData, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                 PreviewMaxHeightOverride="220"
                                 Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                            <TextBlock Text="SETTINGS"
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Context_Settings}"
                                        Style="{StaticResource ContextLabelStyle}"/>
                             <StackPanel>
                                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RevealLockedIcon}"
