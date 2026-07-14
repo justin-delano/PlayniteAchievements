@@ -92,10 +92,13 @@ namespace PlayniteAchievements
         private readonly Services.Recording.UnlockRecordingService _unlockRecordings;
 
         /// <summary>
-        /// Process id of the currently running game (from OnGameStarted), used to identify the
-        /// game's window/monitor for unlock screenshots. Null when no game is running.
+        /// Started process ids of currently running games (from OnGameStarted), used to identify
+        /// each game's window/monitor for unlock screenshots and recordings. Order tracks most
+        /// recently started first. Guarded by <see cref="_runningGamesLock"/>.
         /// </summary>
-        private int? _startedProcessId;
+        private readonly object _runningGamesLock = new object();
+        private readonly List<Guid> _runningGameOrder = new List<Guid>();
+        private readonly Dictionary<Guid, int?> _startedProcessIds = new Dictionary<Guid, int?>();
         private readonly RefreshEntryPoint _refreshCoordinator;
         private bool _applicationStarted;
 
@@ -394,13 +397,13 @@ namespace PlayniteAchievements
                         settings,
                         _logger,
                         () => _resourceService.EnsureAchievementResourcesLoaded(_settingsViewModel.Settings),
-                        () => _startedProcessId);
+                        GetProcessIdForGame);
                     _unlockRecordings = new Services.Recording.UnlockRecordingService(
                         PlayniteApi,
                         settings,
                         _logger,
                         pluginUserDataPath,
-                        () => _startedProcessId,
+                        GetProcessIdForGame,
                         _toastNotifications,
                         key => Services.UI.ProviderNotificationPolicy.Resolve(settings?.Persisted, key).Recordings);
                     _inGamePoller = new InGameAchievementPoller(
@@ -586,11 +589,68 @@ namespace PlayniteAchievements
             }
         }
 
+        /// <summary>
+        /// Resolves the started process id for a specific running game, or for the most recently
+        /// started still-running game when <paramref name="gameId"/> is null or empty.
+        /// </summary>
+        private int? GetProcessIdForGame(Guid? gameId)
+        {
+            lock (_runningGamesLock)
+            {
+                if (gameId.HasValue && gameId.Value != Guid.Empty)
+                {
+                    return _startedProcessIds.TryGetValue(gameId.Value, out var pid) ? pid : null;
+                }
+
+                return _runningGameOrder.Count > 0 &&
+                       _startedProcessIds.TryGetValue(_runningGameOrder[0], out var newestPid)
+                    ? newestPid
+                    : null;
+            }
+        }
+
+        private void TrackStartedGame(Game game, int? processId)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            lock (_runningGamesLock)
+            {
+                _runningGameOrder.Remove(game.Id);
+                _runningGameOrder.Insert(0, game.Id);
+                _startedProcessIds[game.Id] = processId;
+            }
+        }
+
+        private void UntrackStoppedGame(Game game)
+        {
+            if (game == null)
+            {
+                return;
+            }
+
+            lock (_runningGamesLock)
+            {
+                _runningGameOrder.Remove(game.Id);
+                _startedProcessIds.Remove(game.Id);
+            }
+        }
+
+        private bool AnyGameRunning()
+        {
+            lock (_runningGamesLock)
+            {
+                return _runningGameOrder.Count > 0;
+            }
+        }
+
         public override void OnGameStarted(OnGameStartedEventArgs args)
         {
             try
             {
-                _startedProcessId = args?.StartedProcessId;
+                TrackStartedGame(args?.Game, args?.StartedProcessId);
                 _libraryProjectionService?.SetGameSessionActive(true);
                 _achievementHotkeyTargetResolver?.NotifyGameStarted(args?.Game);
                 _inGamePoller?.Start(args?.Game);
@@ -606,8 +666,8 @@ namespace PlayniteAchievements
         {
             try
             {
-                _startedProcessId = null;
-                _libraryProjectionService?.SetGameSessionActive(false);
+                UntrackStoppedGame(args?.Game);
+                _libraryProjectionService?.SetGameSessionActive(AnyGameRunning());
                 _toastNotifications?.ClearPending();
                 _unlockRecordings?.OnGameStopped();
                 _achievementHotkeyTargetResolver?.NotifyGameStopped(args?.Game);

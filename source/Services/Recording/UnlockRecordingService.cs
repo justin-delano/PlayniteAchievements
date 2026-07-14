@@ -54,7 +54,8 @@ namespace PlayniteAchievements.Services.Recording
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly string _pluginUserDataPath;
-        private readonly Func<int?> _getRunningGameProcessId;
+        // Resolves the started process id for a game (null game id: most recently started game).
+        private readonly Func<Guid?, int?> _getGameProcessId;
         private readonly Func<string, bool> _isProviderRecordingEnabled;
         private readonly ToastNotificationService _toastNotifications;
         private readonly UnlockScreenshotService _screenshotService;
@@ -79,7 +80,7 @@ namespace PlayniteAchievements.Services.Recording
             PlayniteAchievementsSettings settings,
             ILogger logger,
             string pluginUserDataPath,
-            Func<int?> getRunningGameProcessId,
+            Func<Guid?, int?> getGameProcessId,
             ToastNotificationService toastNotifications = null,
             Func<string, bool> isProviderRecordingEnabled = null)
         {
@@ -87,7 +88,7 @@ namespace PlayniteAchievements.Services.Recording
             _settings = settings;
             _logger = logger;
             _pluginUserDataPath = pluginUserDataPath;
-            _getRunningGameProcessId = getRunningGameProcessId;
+            _getGameProcessId = getGameProcessId;
             _toastNotifications = toastNotifications;
             _isProviderRecordingEnabled = isProviderRecordingEnabled;
             _screenshotService = new UnlockScreenshotService(logger);
@@ -231,7 +232,7 @@ namespace PlayniteAchievements.Services.Recording
                 System.Drawing.Rectangle? bounds = null;
                 while (!token.IsCancellationRequested)
                 {
-                    var processId = _getRunningGameProcessId?.Invoke();
+                    var processId = _getGameProcessId?.Invoke(null);
                     mainWindowResolved = processId.HasValue && ProcessHasMainWindow(processId.Value);
                     // Give the started process a short grace to open its main window before
                     // falling back to the foreground window's monitor (usually the same monitor
@@ -367,7 +368,7 @@ namespace PlayniteAchievements.Services.Recording
                 {
                     await Task.Delay(WindowResolvePollMs, token).ConfigureAwait(false);
 
-                    var processId = _getRunningGameProcessId?.Invoke();
+                    var processId = _getGameProcessId?.Invoke(null);
                     if (!processId.HasValue || !ProcessHasMainWindow(processId.Value))
                     {
                         continue;
@@ -925,7 +926,7 @@ namespace PlayniteAchievements.Services.Recording
         {
             try
             {
-                var processId = _getRunningGameProcessId?.Invoke();
+                var processId = _getGameProcessId?.Invoke(null);
                 var client = _screenshotService.TryGetGameWindowBounds(processId);
                 if (client == null)
                 {

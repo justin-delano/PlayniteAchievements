@@ -22,7 +22,8 @@ namespace PlayniteAchievements.Services.UI
         private readonly PlayniteAchievementsSettings _settings;
         private readonly ILogger _logger;
         private readonly Action _ensureResourcesLoaded;
-        private readonly Func<int?> _getRunningGameProcessId;
+        // Resolves the started process id for a game (null game id: most recently started game).
+        private readonly Func<Guid?, int?> _getGameProcessId;
         private readonly UnlockScreenshotService _screenshotService;
         private readonly ScreenshotFrameCompositor _frameCompositor;
         private readonly AchievementToastTemplateResolver _templateResolver;
@@ -39,13 +40,13 @@ namespace PlayniteAchievements.Services.UI
             PlayniteAchievementsSettings settings,
             ILogger logger,
             Action ensureResourcesLoaded,
-            Func<int?> getRunningGameProcessId = null)
+            Func<Guid?, int?> getGameProcessId = null)
         {
             _api = api;
             _settings = settings;
             _logger = logger;
             _ensureResourcesLoaded = ensureResourcesLoaded;
-            _getRunningGameProcessId = getRunningGameProcessId;
+            _getGameProcessId = getGameProcessId;
             _screenshotService = new UnlockScreenshotService(logger);
             _frameCompositor = new ScreenshotFrameCompositor(logger);
             _templateResolver = new AchievementToastTemplateResolver(api, logger);
@@ -256,7 +257,7 @@ namespace PlayniteAchievements.Services.UI
             Task<System.Drawing.Bitmap> cleanCaptureTask = null;
             if (plan != null && plan.NeedsCleanCapture)
             {
-                var processId = _getRunningGameProcessId?.Invoke();
+                var processId = _getGameProcessId?.Invoke(null);
                 cleanCaptureTask = Task.Run(() => _screenshotService.CaptureGameWindow(processId));
             }
 
@@ -339,7 +340,7 @@ namespace PlayniteAchievements.Services.UI
                 System.Drawing.Bitmap toastBitmap = null;
                 if (plan != null && plan.NeedsToastCapture)
                 {
-                    var processId = _getRunningGameProcessId?.Invoke();
+                    var processId = _getGameProcessId?.Invoke(null);
                     toastBitmap = await Task.Run(() => _screenshotService.CaptureGameWindow(processId))
                         .ConfigureAwait(true);
                 }
@@ -353,7 +354,7 @@ namespace PlayniteAchievements.Services.UI
                 // Follow the game window every rendered frame (smooth while dragging). The handle
                 // is resolved once — for launcher games that's the foreground game window at show
                 // time, which stays valid even if focus later changes.
-                var gameHwnd = _screenshotService.ResolveGameWindowHandle(_getRunningGameProcessId?.Invoke());
+                var gameHwnd = _screenshotService.ResolveGameWindowHandle(_getGameProcessId?.Invoke(null));
                 if (gameHwnd != IntPtr.Zero)
                 {
                     onRendering = (s, e) =>
@@ -710,7 +711,7 @@ namespace PlayniteAchievements.Services.UI
         /// </summary>
         private Rect ResolvePlacementArea(Window window)
         {
-            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(_getRunningGameProcessId?.Invoke());
+            var pixelBounds = _screenshotService?.TryGetGameWindowBounds(_getGameProcessId?.Invoke(null));
             if (pixelBounds.HasValue)
             {
                 var dip = ConvertPhysicalToDip(window, pixelBounds.Value);
