@@ -29,10 +29,12 @@
         </ResourceDictionary>
     </UserControl.Resources>
 
+    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <Grid Grid.Row="0">
@@ -43,8 +45,16 @@
 
             <Border Grid.Column="0" Style="{StaticResource SectionBorderStyle}" Margin="0,0,10,20">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_FriendsSettings_AutoDiscover}"
-                               Style="{StaticResource SectionHeaderStyle}"/>
+                    <DockPanel Margin="0,0,0,6">
+                        <Button DockPanel.Dock="Right"
+                                Content="{DynamicResource LOCPlayAch_Settings_RefreshFriendsList}"
+                                Command="{Binding RefreshAutoDiscoverCommand}"
+                                VerticalAlignment="Top"
+                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_FriendsSettings_AutoDiscover}"
+                                   Style="{StaticResource SectionHeaderStyle}"
+                                   VerticalAlignment="Center"/>
+                    </DockPanel>
 
                     <TextBlock Text="{DynamicResource LOCPlayAch_FriendsSettings_AutoDiscoverHint}"
                                Style="{StaticResource MutedTextStyle}"
@@ -70,17 +80,9 @@
                     <CheckBox Content="{DynamicResource LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnership}"
                               IsChecked="{Binding UseExophaseForSteamFriendOwnership, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                               IsEnabled="{Binding IsExophaseProviderEnabled}"
-                              Margin="0,8,0,4"/>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint}"
-                               Style="{StaticResource MutedTextStyle}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,6"/>
-
-                    <Button Content="{DynamicResource LOCPlayAch_Settings_RefreshFriendsList}"
-                            Command="{Binding RefreshAutoDiscoverCommand}"
-                            HorizontalAlignment="Left"
-                            Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"
-                            Margin="0,8,0,0"/>
+                              ToolTip="{DynamicResource LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint}"
+                              ToolTipService.ShowOnDisabled="True"
+                              Margin="0,6,0,0"/>
                 </StackPanel>
             </Border>
 
@@ -123,29 +125,28 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
-                               Text="{DynamicResource LOCPlayAch_Settings_Friends}"
-                               Style="{StaticResource SectionHeaderStyle}"/>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                        <Button DockPanel.Dock="Right"
+                                Content="{DynamicResource LOCPlayAch_FriendsSettings_MergeSelected}"
+                                Command="{Binding MergeSelectedCommand}"
+                                VerticalAlignment="Top"
+                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"/>
+                        <TextBlock Text="{DynamicResource LOCPlayAch_Settings_Friends}"
+                                   Style="{StaticResource SectionHeaderStyle}"
+                                   VerticalAlignment="Center"/>
+                    </DockPanel>
 
                     <TextBlock Grid.Row="1"
                                Text="{DynamicResource LOCPlayAch_Settings_FriendsTableHint}"
                                Style="{StaticResource MutedTextStyle}"
                                TextWrapping="Wrap"
-                               Margin="0,0,0,10"/>
+                               Margin="0,0,0,8"/>
 
-                    <DockPanel Grid.Row="2" Margin="0,0,0,8">
-                        <Button Content="{DynamicResource LOCPlayAch_FriendsSettings_MergeSelected}"
-                                Command="{Binding MergeSelectedCommand}"
-                                HorizontalAlignment="Left"
-                                Padding="{StaticResource PlayAch.Thickness.ButtonPadding.Wide}"/>
-                    </DockPanel>
-
-                    <DataGrid Grid.Row="3"
+                    <DataGrid Grid.Row="2"
                               ItemsSource="{Binding Friends}"
                               AutoGenerateColumns="False"
                               CanUserAddRows="False"
@@ -160,7 +161,8 @@
                               ColumnHeaderStyle="{StaticResource AchievementColumnHeaderStyle}"
                               CellStyle="{StaticResource AchievementCellStyle}"
                               RowStyle="{StaticResource FriendsSettingsGridRowStyle}"
-                              MinHeight="160"
+                              MinHeight="420"
+                              MaxHeight="600"
                               VerticalAlignment="Stretch"
                               VirtualizingPanel.ScrollUnit="Item"
                               ScrollViewer.VerticalScrollBarVisibility="Auto"
@@ -424,7 +426,7 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
-                    <TextBlock Grid.Row="4"
+                    <TextBlock Grid.Row="3"
                                Text="{Binding StatusText}"
                                Style="{StaticResource MutedTextStyle}"
                                TextWrapping="Wrap"
@@ -432,4 +434,5 @@
                 </Grid>
             </Border>
     </Grid>
+    </ScrollViewer>
 </UserControl>
