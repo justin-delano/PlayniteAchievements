@@ -33,6 +33,8 @@ namespace PlayniteAchievements.Services.Library
             new Dictionary<string, LibraryProjectionSnapshot>(StringComparer.Ordinal);
         private int _cacheGeneration;
         private int _warmGeneration;
+        private bool _warmSuppressed;
+        private bool _warmPending;
         private bool _disposed;
 
         public LibraryProjectionService(
@@ -128,6 +130,27 @@ namespace PlayniteAchievements.Services.Library
         // a populated game database rather than baking in blank values during early startup.
         public void Warm()
         {
+            ScheduleWarm();
+        }
+
+        // While a game session is active the background warm is deferred: the in-game poller's
+        // periodic saves would otherwise rebuild the whole-library projection every tick, and that
+        // rebuild holds the store lock long enough to stall UI-thread cache reads. Invalidate()
+        // still clears the snapshot cache on every delta, so on-demand consumers always rebuild
+        // with fresh data; only the precompute waits until the session ends.
+        public void SetGameSessionActive(bool active)
+        {
+            lock (_sync)
+            {
+                _warmSuppressed = active;
+                if (active || !_warmPending)
+                {
+                    return;
+                }
+
+                _warmPending = false;
+            }
+
             ScheduleWarm();
         }
 
@@ -272,6 +295,15 @@ namespace PlayniteAchievements.Services.Library
 
         private void ScheduleWarm()
         {
+            lock (_sync)
+            {
+                if (_warmSuppressed)
+                {
+                    _warmPending = true;
+                    return;
+                }
+            }
+
             var generation = Interlocked.Increment(ref _warmGeneration);
             _ = WarmAfterDelayAsync(generation);
         }
