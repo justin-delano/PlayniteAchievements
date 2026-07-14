@@ -143,6 +143,17 @@ namespace PlayniteAchievements.Services.Recording
 
                 _process = process;
                 jobObject?.TryAssign(process);
+                try
+                {
+                    // Capture and trim encodes must never compete with the running game or
+                    // Playnite's UI thread for CPU.
+                    process.PriorityClass = ProcessPriorityClass.BelowNormal;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed to lower ffmpeg process priority.");
+                }
+
                 process.BeginErrorReadLine();
                 process.BeginOutputReadLine();
                 return true;
