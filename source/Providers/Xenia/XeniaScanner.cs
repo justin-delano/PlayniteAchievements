@@ -100,7 +100,7 @@ namespace PlayniteAchievements.Providers.Xenia
         {
             if (!ResolveTitleID(game, out var titleID))
             {
-                _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", $"[Xenia] TitleID not found for {game.Name}! Has the game been launched?", NotificationType.Error));
+                _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", string.Format(ResourceProvider.GetString("LOCPlayAch_Xenia_NotFoundWarning"), "TitleID", game.Name), NotificationType.Error));
                 return null;
             }
 
@@ -108,7 +108,7 @@ namespace PlayniteAchievements.Providers.Xenia
 
             if (!File.Exists($"{_providerSettings.AccountPath}\\{titleID}.gpd"))
             {
-                _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", $"[Xenia] {titleID}.gpd file not found for {game.Name}! Has the game been launched?", NotificationType.Info));
+                _playniteApi.Notifications.Add(new NotificationMessage("PA_Xenia", string.Format(ResourceProvider.GetString("LOCPlayAch_Xenia_NotFoundWarning"), $"{titleID}.gpd", game.Name), NotificationType.Info));
                 _logger.Warn($"[Xenia] {titleID}.gpd file in {_providerSettings.AccountPath} not found for {game.Name}!");
                 data = new GameAchievementData
                 {
