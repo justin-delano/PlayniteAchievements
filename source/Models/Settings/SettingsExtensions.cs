@@ -117,6 +117,7 @@ namespace PlayniteAchievements.Models.Settings
             target.RecordingResolution = source.RecordingResolution;
             target.RecordingEncoder = source.RecordingEncoder;
             target.RecordingCaptureBackend = source.RecordingCaptureBackend;
+            target.RecordingIncludeAudio = source.RecordingIncludeAudio;
             target.ProviderNotificationOverrides = source.ProviderNotificationOverrides != null
                 ? source.ProviderNotificationOverrides.ToDictionary(
                     kvp => kvp.Key,

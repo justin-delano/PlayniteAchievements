@@ -99,6 +99,7 @@ namespace PlayniteAchievements.Models.Settings
         private RecordingResolution _recordingResolution = RecordingResolution.Native;
         private RecordingEncoder _recordingEncoder = RecordingEncoder.Auto;
         private RecordingCaptureBackend _recordingCaptureBackend = RecordingCaptureBackend.Auto;
+        private bool _recordingIncludeAudio = false;
         private Dictionary<string, ProviderNotificationOverride> _providerNotificationOverrides =
             new Dictionary<string, ProviderNotificationOverride>(StringComparer.OrdinalIgnoreCase);
         private ToastScreenCorner _toastPosition = ToastScreenCorner.BottomRight;
@@ -1117,6 +1118,17 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _recordingCaptureBackend;
             set => SetValue(ref _recordingCaptureBackend, value);
+        }
+
+        /// <summary>
+        /// When true, unlock clips include system audio (everything the PC is playing) captured
+        /// alongside the rolling screen capture. Off by default; audio capture is best-effort
+        /// and never blocks the video pipeline.
+        /// </summary>
+        public bool RecordingIncludeAudio
+        {
+            get => _recordingIncludeAudio;
+            set => SetValue(ref _recordingIncludeAudio, value);
         }
 
         /// <summary>
@@ -2209,6 +2221,7 @@ namespace PlayniteAchievements.Models.Settings
                 RecordingResolution = this.RecordingResolution,
                 RecordingEncoder = this.RecordingEncoder,
                 RecordingCaptureBackend = this.RecordingCaptureBackend,
+                RecordingIncludeAudio = this.RecordingIncludeAudio,
                 ProviderNotificationOverrides = this.ProviderNotificationOverrides != null
                     ? this.ProviderNotificationOverrides.ToDictionary(
                         kvp => kvp.Key,
