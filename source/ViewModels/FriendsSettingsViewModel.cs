@@ -104,6 +104,23 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
+        public bool IncludeUnownedFriendGames
+        {
+            get => _settings?.Persisted?.IncludeUnownedFriendGames == true;
+            set
+            {
+                var persisted = _settings?.Persisted;
+                if (persisted == null || persisted.IncludeUnownedFriendGames == value)
+                {
+                    return;
+                }
+
+                persisted.IncludeUnownedFriendGames = value;
+                OnPropertyChanged();
+                PersistAndNotify(null);
+            }
+        }
+
         public bool IsExophaseProviderEnabled => _exophaseSettings?.IsEnabled == true;
 
         public string ManualExophaseUsername
