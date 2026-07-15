@@ -56,8 +56,7 @@ namespace PlayniteAchievements.ViewModels.Items
         private string _gameIconPath;
         private string _gameCoverPath;
         private int _categoryOrderIndex = int.MaxValue;
-        private string _categoryIconPath;
-        private string _categoryCoverPath;
+        private string _categoryArtPath;
 
         public AchievementDetail Source => _source;
 
@@ -600,7 +599,13 @@ namespace PlayniteAchievements.ViewModels.Items
         public string GameIconPath
         {
             get => _gameIconPath;
-            set => SetValue(ref _gameIconPath, value);
+            set
+            {
+                if (SetValueAndReturn(ref _gameIconPath, value))
+                {
+                    OnPropertyChanged(nameof(CategoryIconDisplayPath));
+                }
+            }
         }
 
         /// <summary>
@@ -610,7 +615,13 @@ namespace PlayniteAchievements.ViewModels.Items
         public string GameCoverPath
         {
             get => _gameCoverPath;
-            set => SetValue(ref _gameCoverPath, value);
+            set
+            {
+                if (SetValueAndReturn(ref _gameCoverPath, value))
+                {
+                    OnPropertyChanged(nameof(CategoryCoverDisplayPath));
+                }
+            }
         }
 
         public int CategoryOrderIndex
@@ -619,17 +630,33 @@ namespace PlayniteAchievements.ViewModels.Items
             set => SetValue(ref _categoryOrderIndex, value);
         }
 
-        public string CategoryIconPath
+        /// <summary>
+        /// Category art path: custom override when set, otherwise the provider default.
+        /// Null when neither exists; the display-path properties below choose the game
+        /// icon/cover fallback per the grid's UseCoverImages setting.
+        /// </summary>
+        public string CategoryArtPath
         {
-            get => _categoryIconPath;
-            set => SetValue(ref _categoryIconPath, value);
+            get => _categoryArtPath;
+            set
+            {
+                if (SetValueAndReturn(ref _categoryArtPath, value))
+                {
+                    OnPropertyChanged(nameof(CategoryIconDisplayPath));
+                    OnPropertyChanged(nameof(CategoryCoverDisplayPath));
+                }
+            }
         }
 
-        public string CategoryCoverPath
-        {
-            get => _categoryCoverPath;
-            set => SetValue(ref _categoryCoverPath, value);
-        }
+        /// <summary>
+        /// Category column binding target when the grid shows icons: art, else the game icon.
+        /// </summary>
+        public string CategoryIconDisplayPath => CategoryArtPath ?? GameIconPath;
+
+        /// <summary>
+        /// Category column binding target when the grid shows covers: art, else the game cover.
+        /// </summary>
+        public string CategoryCoverDisplayPath => CategoryArtPath ?? GameCoverPath;
 
         /// <summary>
         /// True if this achievement has PlayStation trophy type data.
@@ -772,8 +799,7 @@ namespace PlayniteAchievements.ViewModels.Items
             string gameIconPath = null,
             string gameCoverPath = null,
             int categoryOrderIndex = int.MaxValue,
-            string categoryIconPath = null,
-            string categoryCoverPath = null)
+            string categoryArtPath = null)
         {
             SetSource(source, notifyChanges: true);
             ProviderKey = source?.ProviderKey;
@@ -796,8 +822,9 @@ namespace PlayniteAchievements.ViewModels.Items
             GameIconPath = resolvedGameIconPath;
             GameCoverPath = resolvedGameCoverPath;
             CategoryOrderIndex = categoryOrderIndex;
-            CategoryIconPath = categoryIconPath ?? source?.CategoryIconPath ?? resolvedGameIconPath;
-            CategoryCoverPath = categoryCoverPath ?? source?.CategoryCoverPath ?? resolvedGameCoverPath;
+            // Deliberately no game-asset fallback here: null means "no category art" and the
+            // display-path properties select the game icon/cover per the grid setting.
+            CategoryArtPath = categoryArtPath ?? source?.CategoryArtPath;
         }
 
         /// <summary>
@@ -825,8 +852,7 @@ namespace PlayniteAchievements.ViewModels.Items
                 sourceItem.GameIconPath,
                 sourceItem.GameCoverPath,
                 sourceItem.CategoryOrderIndex,
-                sourceItem.CategoryIconPath,
-                sourceItem.CategoryCoverPath);
+                sourceItem.CategoryArtPath);
             ProviderKey = sourceItem.ProviderKey;
             PointsValue = sourceItem.PointsValue;
             CategoryType = sourceItem.CategoryType;
@@ -1049,8 +1075,7 @@ namespace PlayniteAchievements.ViewModels.Items
             clone.GameIconPath = _gameIconPath;
             clone.GameCoverPath = _gameCoverPath;
             clone.CategoryOrderIndex = _categoryOrderIndex;
-            clone.CategoryIconPath = _categoryIconPath;
-            clone.CategoryCoverPath = _categoryCoverPath;
+            clone.CategoryArtPath = _categoryArtPath;
             clone.SetDynamicAchievementsGameCommand = SetDynamicAchievementsGameCommand;
             clone.FilterDynamicLibraryAchievementsByProviderCommand = FilterDynamicLibraryAchievementsByProviderCommand;
             clone.OpenViewAchievementsWindow = OpenViewAchievementsWindow;
@@ -1107,8 +1132,6 @@ namespace PlayniteAchievements.ViewModels.Items
                 gameData,
                 item.CategoryLabel,
                 achievement.ProviderCategory,
-                item.GameIconPath,
-                item.GameCoverPath,
                 gameData?.PlayniteGameId);
             var resolvedAppearanceSettings = appearanceSettings ?? CreateAppearanceSettingsSnapshot(
                 settings,
@@ -1355,8 +1378,6 @@ namespace PlayniteAchievements.ViewModels.Items
                 gameData,
                 item.CategoryLabel,
                 achievement.ProviderCategory,
-                item.GameIconPath,
-                item.GameCoverPath,
                 playniteGameId);
             return item;
         }
@@ -1366,8 +1387,6 @@ namespace PlayniteAchievements.ViewModels.Items
             GameAchievementData gameData,
             string categoryLabel,
             string providerCategoryLabel,
-            string defaultIconPath,
-            string defaultCoverPath,
             Guid? playniteGameId)
         {
             ApplyCategoryPresentation(
@@ -1376,8 +1395,6 @@ namespace PlayniteAchievements.ViewModels.Items
                 gameData?.AchievementCategoryImageOverrides,
                 categoryLabel,
                 providerCategoryLabel,
-                defaultIconPath,
-                defaultCoverPath,
                 playniteGameId);
         }
 
@@ -1387,8 +1404,6 @@ namespace PlayniteAchievements.ViewModels.Items
             IReadOnlyDictionary<string, CategoryImageOverrideData> categoryImageOverrides,
             string categoryLabel,
             string providerCategoryLabel,
-            string defaultIconPath,
-            string defaultCoverPath,
             Guid? playniteGameId)
         {
             if (item == null)
@@ -1412,14 +1427,9 @@ namespace PlayniteAchievements.ViewModels.Items
             var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(
                 string.IsNullOrWhiteSpace(providerCategoryLabel) ? categoryLabel : providerCategoryLabel);
 
-            item.CategoryIconPath =
-                ResolveCategoryImageOverridePath(imageOverride?.Icon, playniteGameId) ??
-                CategoryDefaultImageResolver.Resolve(playniteGameId, providerCategory, CategoryImageKind.Icon) ??
-                defaultIconPath;
-            item.CategoryCoverPath =
-                ResolveCategoryImageOverridePath(imageOverride?.Cover, playniteGameId) ??
-                CategoryDefaultImageResolver.Resolve(playniteGameId, providerCategory, CategoryImageKind.Cover) ??
-                defaultCoverPath;
+            item.CategoryArtPath =
+                ResolveCategoryImageOverridePath(imageOverride?.Art, playniteGameId) ??
+                CategoryDefaultImageResolver.Resolve(playniteGameId, providerCategory);
         }
 
         private static int ResolveCategoryOrderIndex(string categoryLabel, IReadOnlyList<string> categoryOrder)

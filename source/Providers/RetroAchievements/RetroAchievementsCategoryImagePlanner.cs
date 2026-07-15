@@ -16,15 +16,14 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             "/Images/000002.png"
         };
 
-        // Plans one default icon per category: (normalized label -> icon URL). Sources are
-        // (label, game info) pairs for the base game and each fetched subset. Covers are
-        // never planned: RA box art is inconsistent across sets, so the cover slot keeps
-        // the natural Playnite game-cover fallback. Dedupe is first-wins by label to match
-        // the achievement assignment order.
-        internal static IReadOnlyList<(string Label, string IconUrl)> BuildCategoryImagePlan(
+        // Plans one default art file per category: (normalized label -> art URL). Sources are
+        // (label, game info) pairs for the base game and each fetched subset. The RA set icon
+        // is the category art; RA box art is not used because it is inconsistent across sets.
+        // Dedupe is first-wins by label to match the achievement assignment order.
+        internal static IReadOnlyList<(string Label, string ArtUrl)> BuildCategoryImagePlan(
             IReadOnlyList<(string CategoryLabel, RaGameInfoUserProgress Info)> sources)
         {
-            var plan = new List<(string Label, string IconUrl)>();
+            var plan = new List<(string Label, string ArtUrl)>();
             if (sources == null || sources.Count == 0)
             {
                 return plan;
@@ -33,8 +32,8 @@ namespace PlayniteAchievements.Providers.RetroAchievements
             var seenLabels = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var source in sources)
             {
-                var iconUrl = NormalizeMediaUrl(source.Info?.ImageIcon);
-                if (iconUrl == null)
+                var artUrl = NormalizeMediaUrl(source.Info?.ImageIcon);
+                if (artUrl == null)
                 {
                     continue;
                 }
@@ -49,7 +48,7 @@ namespace PlayniteAchievements.Providers.RetroAchievements
                     continue;
                 }
 
-                plan.Add((label, iconUrl));
+                plan.Add((label, artUrl));
             }
 
             return plan;

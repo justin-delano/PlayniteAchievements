@@ -84,12 +84,12 @@ namespace PlayniteAchievements.Providers.Steam
 
             if (playniteGameId.HasValue && playniteGameId.Value != Guid.Empty)
             {
-                await DownloadCategoryCoverImagesAsync(playniteGameId.Value, response, gameName, appId, cancel)
+                await DownloadCategoryArtImagesAsync(playniteGameId.Value, response, gameName, appId, cancel)
                     .ConfigureAwait(false);
             }
         }
 
-        // Plans one default cover per category: (normalized category label -> Steam appId).
+        // Plans one default art file per category: (normalized category label -> Steam appId).
         // DLC groups map to their dlcAppId; every other labeled group (the base category,
         // update groups, collection sub-games) maps to the game's own appId so non-DLC
         // categories share the base banner. Dedupe is first-wins by label to match the
@@ -141,12 +141,11 @@ namespace PlayniteAchievements.Providers.Steam
             return plan;
         }
 
-        // Downloads default category cover art (base game + DLC groups) to deterministic
-        // per-game cache paths. Only the cover slot gets provider art; the icon slot always
-        // falls back to Playnite game metadata. Best-effort: failures never fail enrichment
-        // and never count toward the SteamHunters fetch backoff. Existing targets are
-        // skipped, so re-scans cost nothing.
-        private async Task DownloadCategoryCoverImagesAsync(
+        // Downloads default category art (base game + DLC groups) to deterministic per-game
+        // cache paths. Best-effort: failures never fail enrichment and never count toward
+        // the SteamHunters fetch backoff. Existing targets are skipped, so re-scans cost
+        // nothing.
+        private async Task DownloadCategoryArtImagesAsync(
             Guid playniteGameId,
             SteamHuntersAchievementGroupsResponse response,
             string gameName,
@@ -173,31 +172,31 @@ namespace PlayniteAchievements.Providers.Steam
                 var entryAppId = entry.Value;
                 try
                 {
-                    var coverTarget = diskImageService.GetDefaultCategoryImagePath(
-                        gameIdText, label, CategoryImageKind.Cover);
+                    var artTarget = diskImageService.GetDefaultCategoryImagePath(
+                        gameIdText, label);
                     // Wide banner art is preferred for visual consistency across categories:
                     // static header, then the appdetails content-hashed header (newer apps
                     // serve art only from hashed store_item_assets URLs that cannot be derived
                     // from the appId), then portrait library art as the last downloadable tier.
                     // decodeSize 0 stores the original bytes: no square crop, original aspect.
-                    var coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
-                        SteamImageUrls.Header(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
-                    if (coverResult == null)
+                    var artResult = await diskImageService.GetOrDownloadIconToPathAsync(
+                        SteamImageUrls.Header(entryAppId), artTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                    if (artResult == null)
                     {
                         var storeUrls = await SteamImageUrls
                             .GetStoreFallbackAsync(entryAppId, cancel, _logger)
                             .ConfigureAwait(false);
                         if (!string.IsNullOrWhiteSpace(storeUrls?.CoverUrl))
                         {
-                            coverResult = await diskImageService.GetOrDownloadIconToPathAsync(
-                                storeUrls.CoverUrl, coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                            artResult = await diskImageService.GetOrDownloadIconToPathAsync(
+                                storeUrls.CoverUrl, artTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                         }
                     }
 
-                    if (coverResult == null)
+                    if (artResult == null)
                     {
                         await diskImageService.GetOrDownloadIconToPathAsync(
-                            SteamImageUrls.Cover(entryAppId), coverTarget, decodeSize: 0, cancel).ConfigureAwait(false);
+                            SteamImageUrls.Cover(entryAppId), artTarget, decodeSize: 0, cancel).ConfigureAwait(false);
                     }
                 }
                 catch (OperationCanceledException) when (cancel.IsCancellationRequested)
@@ -206,7 +205,7 @@ namespace PlayniteAchievements.Providers.Steam
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, $"[SteamHunters] Default category cover download failed for appId={entryAppId}.");
+                    _logger?.Debug(ex, $"[SteamHunters] Default category art download failed for appId={entryAppId}.");
                 }
             }
         }

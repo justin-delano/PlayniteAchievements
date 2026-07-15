@@ -547,7 +547,7 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <DataGridTemplateColumn Width="2*" MinWidth="220" Header="{DynamicResource LOCPlayAch_Column_Icon}">
+                        <DataGridTemplateColumn Width="4*" MinWidth="260" Header="{DynamicResource LOCPlayAch_Column_CategoryArt}">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Grid VerticalAlignment="Center">
@@ -557,7 +557,7 @@
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
 
-                                        <!-- Wide box so arbitrary aspect ratios (Steam header art,
+                                        <!-- Wide box so arbitrary aspect ratios (Steam banner art,
                                              portrait covers, square icons) stay recognizable. -->
                                         <Border Grid.Column="0"
                                                 Width="88"
@@ -565,22 +565,21 @@
                                                 Background="Transparent"
                                                 Style="{StaticResource PreviewBorderStyle}">
                                             <Image Stretch="Uniform"
-                                                   helpers:AsyncImage.Uri="{Binding IconPreviewPath}"
+                                                   helpers:AsyncImage.Uri="{Binding ArtPreviewPath}"
                                                    helpers:AsyncImage.DecodePixel="-1" />
                                         </Border>
 
                                         <Grid Grid.Column="1"
                                               VerticalAlignment="Center"
                                               Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
-                                            <TextBox Text="{Binding IconOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     Tag="Icon"
+                                            <TextBox Text="{Binding ArtOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                                      AllowDrop="True"
                                                      PreviewDragOver="CategoryImageTextBox_PreviewDragOver"
                                                      Drop="CategoryImageTextBox_Drop">
                                                 <TextBox.Style>
                                                     <Style TargetType="TextBox" BasedOn="{StaticResource EditorTextBoxStyle}">
                                                         <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding HasIconOverrideValidationError}" Value="True">
+                                                            <DataTrigger Binding="{Binding HasArtOverrideValidationError}" Value="True">
                                                                 <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.ErrorText}" />
                                                                 <Setter Property="BorderThickness" Value="2" />
                                                             </DataTrigger>
@@ -589,8 +588,7 @@
                                                 </TextBox.Style>
                                             </TextBox>
 
-                                            <Button Tag="{Binding IconOverrideText}"
-                                                    CommandParameter="Icon"
+                                            <Button Tag="{Binding ArtOverrideText}"
                                                     Style="{StaticResource ClearSearchButtonStyle}"
                                                     Focusable="True"
                                                     Click="ClearCategoryImageButton_Click" />
@@ -598,65 +596,6 @@
 
                                         <Button Grid.Column="2"
                                                 Content="..."
-                                                Tag="Icon"
-                                                ToolTip="{DynamicResource LOCPlayAch_Button_Browse}"
-                                                Style="{StaticResource InlineBrowseButtonStyle}"
-                                                Click="BrowseCategoryImageButton_Click" />
-                                    </Grid>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-
-                        <DataGridTemplateColumn Width="2*" MinWidth="220" Header="{DynamicResource LOCPlayAch_Column_Cover}">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Grid VerticalAlignment="Center">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="96" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-
-                                        <Border Grid.Column="0"
-                                                Width="88"
-                                                Height="50"
-                                                Background="Transparent"
-                                                Style="{StaticResource PreviewBorderStyle}">
-                                            <Image Stretch="Uniform"
-                                                   helpers:AsyncImage.Uri="{Binding CoverPreviewPath}"
-                                                   helpers:AsyncImage.DecodePixel="-1" />
-                                        </Border>
-
-                                        <Grid Grid.Column="1"
-                                              VerticalAlignment="Center"
-                                              Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
-                                            <TextBox Text="{Binding CoverOverrideText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                     Tag="Cover"
-                                                     AllowDrop="True"
-                                                     PreviewDragOver="CategoryImageTextBox_PreviewDragOver"
-                                                     Drop="CategoryImageTextBox_Drop">
-                                                <TextBox.Style>
-                                                    <Style TargetType="TextBox" BasedOn="{StaticResource EditorTextBoxStyle}">
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding HasCoverOverrideValidationError}" Value="True">
-                                                                <Setter Property="BorderBrush" Value="{StaticResource PlayAch.Brush.ErrorText}" />
-                                                                <Setter Property="BorderThickness" Value="2" />
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </TextBox.Style>
-                                            </TextBox>
-
-                                            <Button Tag="{Binding CoverOverrideText}"
-                                                    CommandParameter="Cover"
-                                                    Style="{StaticResource ClearSearchButtonStyle}"
-                                                    Focusable="True"
-                                                    Click="ClearCategoryImageButton_Click" />
-                                        </Grid>
-
-                                        <Button Grid.Column="2"
-                                                Content="..."
-                                                Tag="Cover"
                                                 ToolTip="{DynamicResource LOCPlayAch_Button_Browse}"
                                                 Style="{StaticResource InlineBrowseButtonStyle}"
                                                 Click="BrowseCategoryImageButton_Click" />

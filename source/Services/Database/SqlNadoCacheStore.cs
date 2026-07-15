@@ -4949,16 +4949,14 @@ namespace PlayniteAchievements.Services.Database
 
                 var customData = ResolveFriendAchievementCustomData(playniteGameId, customDataByGameId);
                 ApplyCustomDataToFriendAchievement(item, customData);
-                // Category rollups render the shared CategoryIconPath/CategoryCoverPath, which
-                // fall back to the game images when no per-category override exists.
+                // Category rollups render the shared CategoryArtPath; the display-path
+                // properties fall back to the game images when no category art exists.
                 AchievementDisplayItem.ApplyCategoryPresentation(
                     item,
                     customData?.AchievementCategoryOrder,
                     customData?.AchievementCategoryImageOverrides,
                     item.CategoryLabel,
                     detail.Category,
-                    item.GameIconPath,
-                    item.GameCoverPath,
                     playniteGameId);
                 item.ApplyAppearanceSettings(AchievementDisplayItem.CreateAppearanceSettingsSnapshot(
                     _plugin?.Settings,

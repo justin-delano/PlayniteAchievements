@@ -13,12 +13,6 @@ namespace PlayniteAchievements.Services.Images
         Locked = 1
     }
 
-    public enum CategoryImageKind
-    {
-        Icon = 0,
-        Cover = 1
-    }
-
     internal static class AchievementIconCachePathBuilder
     {
         private const string FallbackStem = "achievement";
@@ -154,8 +148,7 @@ namespace PlayniteAchievements.Services.Images
 
         public static string BuildCustomCategoryRelativePath(
             string gameId,
-            string fileStem,
-            CategoryImageKind kind)
+            string fileStem)
         {
             if (string.IsNullOrWhiteSpace(gameId))
             {
@@ -172,14 +165,14 @@ namespace PlayniteAchievements.Services.Images
                 fileName);
         }
 
-        // Builds the deterministic path for a provider-supplied default category image. The path is
-        // a pure function of (gameId, normalized category label) so the write side (enrichment
-        // download) and the read side (display probe) agree without persisting anything in the
-        // database. Lives outside the custom folder so cache clears wipe defaults but keep user files.
+        // Builds the deterministic path for the provider-supplied default category art file. The
+        // path is a pure function of (gameId, normalized category label) so the write side
+        // (enrichment download) and the read side (display probe) agree without persisting anything
+        // in the database. Lives outside the custom folder so cache clears wipe defaults but keep
+        // user files.
         public static string BuildDefaultCategoryRelativePath(
             string gameId,
-            string categoryLabel,
-            CategoryImageKind kind)
+            string categoryLabel)
         {
             if (string.IsNullOrWhiteSpace(gameId))
             {

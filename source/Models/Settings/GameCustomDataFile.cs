@@ -19,18 +19,17 @@ namespace PlayniteAchievements.Models.Settings
         }
     }
 
+    // Single category art override. Pre-refactor files stored separate Icon and Cover values;
+    // those members are intentionally not migrated and are skipped on deserialization.
     public sealed class CategoryImageOverrideData
     {
-        public string Icon { get; set; }
-
-        public string Cover { get; set; }
+        public string Art { get; set; }
 
         public CategoryImageOverrideData Clone()
         {
             return new CategoryImageOverrideData
             {
-                Icon = Icon,
-                Cover = Cover
+                Art = Art
             };
         }
     }

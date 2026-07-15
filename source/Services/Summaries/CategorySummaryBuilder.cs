@@ -57,14 +57,17 @@ namespace PlayniteAchievements.Services.Summaries
                 }
 
                 var display = AchievementCategoryTypeHelper.ToCategoryLabelDisplayText(label);
+                // Category art fills both image slots so the grid's icon/cover toggle only
+                // selects the game-asset fallback for categories without art.
+                var sharedArt = ResolveSharedImage(bucket, item => item.CategoryArtPath);
                 var item = new CategorySummaryItem
                 {
                     CategoryLabel = label,
                     PlayniteGameId = ResolveSharedGameId(bucket),
                     GameName = display,
                     SortingName = display,
-                    GameLogo = ResolveSharedImage(bucket, item => item.CategoryIconPath),
-                    GameCoverPath = ResolveSharedImage(bucket, item => item.CategoryCoverPath)
+                    GameLogo = sharedArt ?? ResolveSharedImage(bucket, item => item.GameIconPath),
+                    GameCoverPath = sharedArt ?? ResolveSharedImage(bucket, item => item.GameCoverPath)
                 };
 
                 AchievementStatsAccumulator

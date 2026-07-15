@@ -245,8 +245,7 @@ namespace PlayniteAchievements.Services.Hydration
 
                 result[category] = new CategoryImageOverrideData
                 {
-                    Icon = ResolveIconOverridePath(pair.Value.Icon, gameIdText, managedCustomIconService),
-                    Cover = ResolveIconOverridePath(pair.Value.Cover, gameIdText, managedCustomIconService)
+                    Art = ResolveIconOverridePath(pair.Value.Art, gameIdText, managedCustomIconService)
                 };
             }
 

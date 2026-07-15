@@ -319,30 +319,27 @@ namespace PlayniteAchievements.Services.Images
             return Path.Combine(_cacheRoot, relativePath);
         }
 
-        // Absolute path for a provider-supplied default category image. Deterministic per
+        // Absolute path for the provider-supplied default category art file. Deterministic per
         // (gameId, normalized category label); see AchievementIconCachePathBuilder for the layout.
         internal string GetDefaultCategoryImagePath(
             string gameId,
-            string categoryLabel,
-            CategoryImageKind kind)
+            string categoryLabel)
         {
             var relativePath = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
                 gameId,
-                categoryLabel,
-                kind);
+                categoryLabel);
             return Path.Combine(_cacheRoot, relativePath);
         }
 
-        // Probes the default category image across supported extensions. Downloads with
+        // Probes the default category art across supported extensions. Downloads with
         // decodeSize 0 preserve the source format, so the stored extension follows the
         // source (e.g. RetroAchievements badges are .png) rather than the canonical .jpg
         // of the relative path.
         internal string FindExistingDefaultCategoryImagePath(
             string gameId,
-            string categoryLabel,
-            CategoryImageKind kind)
+            string categoryLabel)
         {
-            var canonicalPath = GetDefaultCategoryImagePath(gameId, categoryLabel, kind);
+            var canonicalPath = GetDefaultCategoryImagePath(gameId, categoryLabel);
             if (string.IsNullOrWhiteSpace(canonicalPath))
             {
                 return null;

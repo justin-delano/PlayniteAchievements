@@ -358,7 +358,8 @@
         </ContentControl>
     </DataTemplate>
 
-    <!-- Achievement Category Column Template - category icon or cover, falls back to game images -->
+    <!-- Achievement Category Column Template - category art, falling back to the game icon
+         or cover per the grid's UseCoverImages setting -->
     <DataTemplate x:Key="AchievementCategoryColumnTemplate">
         <ContentControl Padding="4,6"
                         HorizontalContentAlignment="Stretch"
@@ -398,7 +399,7 @@
                             <Setter Property="Background">
                                 <Setter.Value>
                                     <ImageBrush Stretch="Uniform"
-                                                helpers:AsyncImage.Uri="{Binding CategoryIconPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
+                                                helpers:AsyncImage.Uri="{Binding CategoryIconDisplayPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
                                                 helpers:AsyncImage.DecodePixel="-1"/>
                                 </Setter.Value>
                             </Setter>
@@ -409,7 +410,7 @@
                                     <Setter Property="Background">
                                         <Setter.Value>
                                             <ImageBrush Stretch="Uniform"
-                                                        helpers:AsyncImage.Uri="{Binding CategoryCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
+                                                        helpers:AsyncImage.Uri="{Binding CategoryCoverDisplayPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
                                                         helpers:AsyncImage.DecodePixel="-1"/>
                                         </Setter.Value>
                                     </Setter>

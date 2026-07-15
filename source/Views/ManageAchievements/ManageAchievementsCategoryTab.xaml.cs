@@ -210,7 +210,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private async void BrowseCategoryImageButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!TryResolveCategoryImageRowAndKind(sender as FrameworkElement, out var row, out var kind))
+            if (!TryResolveCategoryImageRow(sender as FrameworkElement, out var row))
             {
                 return;
             }
@@ -224,18 +224,18 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
             if (dialog.ShowDialog() == true)
             {
-                await ViewModel.ApplyCategoryLocalFileOverrideAsync(row, kind, dialog.FileName);
+                await ViewModel.ApplyCategoryLocalFileOverrideAsync(row, dialog.FileName);
             }
         }
 
         private void ClearCategoryImageButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!TryResolveCategoryImageRowAndKind(sender as FrameworkElement, out var row, out var kind))
+            if (!TryResolveCategoryImageRow(sender as FrameworkElement, out var row))
             {
                 return;
             }
 
-            row.ClearOverride(kind);
+            row.ClearOverride();
             e.Handled = true;
         }
 
@@ -248,7 +248,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private async void CategoryImageTextBox_Drop(object sender, DragEventArgs e)
         {
-            if (!TryResolveCategoryImageRowAndKind(sender as FrameworkElement, out var row, out var kind))
+            if (!TryResolveCategoryImageRow(sender as FrameworkElement, out var row))
             {
                 return;
             }
@@ -258,14 +258,14 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 if (TryGetFirstImageFilePath(e.Data, out var imagePath))
                 {
                     e.Handled = true;
-                    await ViewModel.ApplyCategoryLocalFileOverrideAsync(row, kind, imagePath);
+                    await ViewModel.ApplyCategoryLocalFileOverrideAsync(row, imagePath);
                     return;
                 }
 
                 if (TryGetFirstBrowserUrl(e.Data, out var url))
                 {
                     e.Handled = true;
-                    row.SetOverrideValue(kind, url);
+                    row.SetOverrideValue(url);
                 }
             }
             catch
@@ -274,30 +274,12 @@ namespace PlayniteAchievements.Views.ManageAchievements
             }
         }
 
-        private static bool TryResolveCategoryImageRowAndKind(
+        private static bool TryResolveCategoryImageRow(
             FrameworkElement element,
-            out ManageAchievementsCategoryMetadataItem row,
-            out CategoryImageKind kind)
+            out ManageAchievementsCategoryMetadataItem row)
         {
             row = element?.DataContext as ManageAchievementsCategoryMetadataItem;
-            kind = CategoryImageKind.Icon;
-            if (row == null)
-            {
-                return false;
-            }
-
-            var token = (element as ButtonBase)?.CommandParameter as string;
-            if (string.IsNullOrWhiteSpace(token))
-            {
-                token = element?.Tag as string;
-            }
-
-            if (string.Equals((token ?? string.Empty).Trim(), "Cover", StringComparison.OrdinalIgnoreCase))
-            {
-                kind = CategoryImageKind.Cover;
-            }
-
-            return true;
+            return row != null;
         }
 
         private void CategoryDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

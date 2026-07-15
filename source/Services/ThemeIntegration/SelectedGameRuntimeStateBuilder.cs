@@ -155,12 +155,9 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             // Default images are keyed by the provider label; renames only change Category.
             var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(
                 achievement.ProviderCategory ?? achievement.Category);
-            achievement.CategoryIconPath =
-                NormalizeImageOverridePath(imageOverride?.Icon) ??
-                CategoryDefaultImageResolver.Resolve(data?.PlayniteGameId, providerCategory, CategoryImageKind.Icon);
-            achievement.CategoryCoverPath =
-                NormalizeImageOverridePath(imageOverride?.Cover) ??
-                CategoryDefaultImageResolver.Resolve(data?.PlayniteGameId, providerCategory, CategoryImageKind.Cover);
+            achievement.CategoryArtPath =
+                NormalizeImageOverridePath(imageOverride?.Art) ??
+                CategoryDefaultImageResolver.Resolve(data?.PlayniteGameId, providerCategory);
         }
 
         private static string NormalizeImageOverridePath(string value)

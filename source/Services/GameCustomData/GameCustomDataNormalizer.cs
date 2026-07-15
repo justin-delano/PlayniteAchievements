@@ -802,18 +802,15 @@ namespace PlayniteAchievements.Services.GameCustomData
             foreach (var pair in values)
             {
                 var category = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
-                var icon = NormalizeString(pair.Value?.Icon);
-                var cover = NormalizeString(pair.Value?.Cover);
-                if (string.IsNullOrWhiteSpace(category) ||
-                    (string.IsNullOrWhiteSpace(icon) && string.IsNullOrWhiteSpace(cover)))
+                var art = NormalizeString(pair.Value?.Art);
+                if (string.IsNullOrWhiteSpace(category) || string.IsNullOrWhiteSpace(art))
                 {
                     continue;
                 }
 
                 normalized[category] = new CategoryImageOverrideData
                 {
-                    Icon = icon,
-                    Cover = cover
+                    Art = art
                 };
             }
 

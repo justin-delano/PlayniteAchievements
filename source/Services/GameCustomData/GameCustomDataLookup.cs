@@ -705,18 +705,15 @@ namespace PlayniteAchievements.Services.GameCustomData
             foreach (var pair in source)
             {
                 var key = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
-                var icon = NormalizeValue(pair.Value?.Icon);
-                var cover = NormalizeValue(pair.Value?.Cover);
-                if (string.IsNullOrWhiteSpace(key) ||
-                    (string.IsNullOrWhiteSpace(icon) && string.IsNullOrWhiteSpace(cover)))
+                var art = NormalizeValue(pair.Value?.Art);
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(art))
                 {
                     continue;
                 }
 
                 map[key] = new CategoryImageOverrideData
                 {
-                    Icon = icon,
-                    Cover = cover
+                    Art = art
                 };
             }
 

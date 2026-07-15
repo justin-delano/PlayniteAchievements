@@ -831,16 +831,9 @@ namespace PlayniteAchievements.Services.GameCustomData
                     playniteGameId,
                     pair.Value,
                     fileStem,
-                    CategoryImageKind.Icon,
-                    imageSources);
-                RewritePortableCategoryImageForPackage(
-                    playniteGameId,
-                    pair.Value,
-                    fileStem,
-                    CategoryImageKind.Cover,
                     imageSources);
 
-                if (string.IsNullOrWhiteSpace(pair.Value.Icon) && string.IsNullOrWhiteSpace(pair.Value.Cover))
+                if (string.IsNullOrWhiteSpace(pair.Value.Art))
                 {
                     overrides.Remove(pair.Key);
                 }
@@ -851,7 +844,6 @@ namespace PlayniteAchievements.Services.GameCustomData
             Guid playniteGameId,
             CategoryImageOverrideData overrideData,
             string fileStem,
-            CategoryImageKind kind,
             IDictionary<string, string> imageSources)
         {
             if (overrideData == null)
@@ -859,9 +851,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 return;
             }
 
-            var value = kind == CategoryImageKind.Cover
-                ? NormalizeText(overrideData.Cover)
-                : NormalizeText(overrideData.Icon);
+            var value = NormalizeText(overrideData.Art);
             if (string.IsNullOrWhiteSpace(value))
             {
                 return;
@@ -870,17 +860,9 @@ namespace PlayniteAchievements.Services.GameCustomData
             var bundledSource = ResolveBundledCategoryImageSourcePath(
                 playniteGameId,
                 value,
-                fileStem,
-                kind);
-            var relativeEntryName = BuildPackageCategoryImageEntryName(fileStem, kind);
-            if (kind == CategoryImageKind.Cover)
-            {
-                overrideData.Cover = relativeEntryName;
-            }
-            else
-            {
-                overrideData.Icon = relativeEntryName;
-            }
+                fileStem);
+            var relativeEntryName = BuildPackageCategoryImageEntryName(fileStem);
+            overrideData.Art = relativeEntryName;
 
             imageSources[relativeEntryName] = bundledSource;
         }
@@ -913,22 +895,14 @@ namespace PlayniteAchievements.Services.GameCustomData
                     throw new InvalidOperationException($"Could not determine a managed category image path for '{category}'.");
                 }
 
-                pair.Value.Icon = RewritePackageCategoryImageOverride(
+                pair.Value.Art = RewritePackageCategoryImageOverride(
                     managedIcons,
                     gameIdText,
                     entriesByName,
                     fileStem,
-                    pair.Value.Icon,
-                    CategoryImageKind.Icon);
-                pair.Value.Cover = RewritePackageCategoryImageOverride(
-                    managedIcons,
-                    gameIdText,
-                    entriesByName,
-                    fileStem,
-                    pair.Value.Cover,
-                    CategoryImageKind.Cover);
+                    pair.Value.Art);
 
-                if (string.IsNullOrWhiteSpace(pair.Value.Icon) && string.IsNullOrWhiteSpace(pair.Value.Cover))
+                if (string.IsNullOrWhiteSpace(pair.Value.Art))
                 {
                     overrides.Remove(pair.Key);
                 }
@@ -940,8 +914,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             string gameIdText,
             IReadOnlyDictionary<string, ZipArchiveEntry> entriesByName,
             string fileStem,
-            string overrideValue,
-            CategoryImageKind kind)
+            string overrideValue)
         {
             var normalizedValue = NormalizeText(overrideValue);
             if (string.IsNullOrWhiteSpace(normalizedValue) || IsHttpUrl(normalizedValue))
@@ -955,7 +928,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 throw new InvalidOperationException($"Package is missing bundled category image entry '{overrideValue}'.");
             }
 
-            var targetPath = managedIcons.GetCategoryCustomImagePath(gameIdText, fileStem, kind);
+            var targetPath = managedIcons.GetCategoryCustomImagePath(gameIdText, fileStem);
             var targetDirectory = Path.GetDirectoryName(targetPath);
             if (!string.IsNullOrWhiteSpace(targetDirectory))
             {
@@ -1012,8 +985,7 @@ namespace PlayniteAchievements.Services.GameCustomData
         private string ResolveBundledCategoryImageSourcePath(
             Guid playniteGameId,
             string overrideValue,
-            string fileStem,
-            CategoryImageKind kind)
+            string fileStem)
         {
             var normalizedValue = NormalizeText(overrideValue);
             if (string.IsNullOrWhiteSpace(normalizedValue))
@@ -1033,7 +1005,6 @@ namespace PlayniteAchievements.Services.GameCustomData
                     normalizedValue,
                     gameIdText,
                     fileStem,
-                    kind,
                     CancellationToken.None,
                     overwriteExistingTarget: false)
                 .GetAwaiter()
@@ -1217,19 +1188,13 @@ namespace PlayniteAchievements.Services.GameCustomData
                     continue;
                 }
 
-                if (!string.IsNullOrWhiteSpace(pair.Value.Icon) && !IsHttpUrl(pair.Value.Icon))
+                if (!string.IsNullOrWhiteSpace(pair.Value.Art) && !IsHttpUrl(pair.Value.Art))
                 {
-                    pair.Value.Icon = null;
+                    pair.Value.Art = null;
                     omitted++;
                 }
 
-                if (!string.IsNullOrWhiteSpace(pair.Value.Cover) && !IsHttpUrl(pair.Value.Cover))
-                {
-                    pair.Value.Cover = null;
-                    omitted++;
-                }
-
-                if (string.IsNullOrWhiteSpace(pair.Value.Icon) && string.IsNullOrWhiteSpace(pair.Value.Cover))
+                if (string.IsNullOrWhiteSpace(pair.Value.Art))
                 {
                     overrides.Remove(pair.Key);
                 }
@@ -1274,8 +1239,7 @@ namespace PlayniteAchievements.Services.GameCustomData
 
             foreach (var pair in overrides)
             {
-                RejectLocalCategoryImageValue(pair.Value?.Icon);
-                RejectLocalCategoryImageValue(pair.Value?.Cover);
+                RejectLocalCategoryImageValue(pair.Value?.Art);
             }
         }
 
@@ -1386,8 +1350,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                     return false;
                 }
 
-                if (!string.Equals(NormalizeText(pair.Value?.Icon), NormalizeText(rightValue?.Icon), StringComparison.Ordinal) ||
-                    !string.Equals(NormalizeText(pair.Value?.Cover), NormalizeText(rightValue?.Cover), StringComparison.Ordinal))
+                if (!string.Equals(NormalizeText(pair.Value?.Art), NormalizeText(rightValue?.Art), StringComparison.Ordinal))
                 {
                     return false;
                 }
@@ -1515,18 +1478,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 foreach (var retainedPath in EnumerateManagedCategoryImagePaths(
                     gameIdText,
                     category,
-                    pair.Value.Icon,
-                    CategoryImageKind.Icon,
-                    fileStems))
-                {
-                    yield return retainedPath;
-                }
-
-                foreach (var retainedPath in EnumerateManagedCategoryImagePaths(
-                    gameIdText,
-                    category,
-                    pair.Value.Cover,
-                    CategoryImageKind.Cover,
+                    pair.Value.Art,
                     fileStems))
                 {
                     yield return retainedPath;
@@ -1538,7 +1490,6 @@ namespace PlayniteAchievements.Services.GameCustomData
             string gameIdText,
             string category,
             string value,
-            CategoryImageKind kind,
             IReadOnlyDictionary<string, string> fileStems)
         {
             var normalizedValue = NormalizeText(value);
@@ -1565,8 +1516,7 @@ namespace PlayniteAchievements.Services.GameCustomData
 
             yield return _managedCustomIconService.GetCategoryCustomImagePath(
                 gameIdText,
-                fileStem,
-                kind);
+                fileStem);
         }
 
         private static IEnumerable<string> EnumeratePortableCategoryLabels(GameCustomDataPortableFile portable)
@@ -1597,10 +1547,9 @@ namespace PlayniteAchievements.Services.GameCustomData
             return PortablePackageImagesFolderName + "/" + fileName;
         }
 
-        private static string BuildPackageCategoryImageEntryName(string fileStem, CategoryImageKind kind)
+        private static string BuildPackageCategoryImageEntryName(string fileStem)
         {
-            var suffix = kind == CategoryImageKind.Cover ? ".cover.png" : ".icon.png";
-            return PortablePackageImagesFolderName + "/category_" + fileStem + suffix;
+            return PortablePackageImagesFolderName + "/category_" + fileStem + ".png";
         }
 
         private static bool TryParseImageOnlyPackageEntry(

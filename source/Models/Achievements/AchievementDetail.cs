@@ -96,18 +96,12 @@ namespace PlayniteAchievements.Models.Achievements
         public string ProviderCategory { get; set; }
 
         /// <summary>
-        /// Runtime-only category icon path for theme/display bindings.
-        /// Hydrated from the parent GameAchievementData category image overrides.
+        /// Runtime-only category art path for theme/display bindings: custom override when
+        /// set, otherwise the provider default. Null when neither exists; consumers choose
+        /// the game icon/cover fallback.
         /// </summary>
         [IgnoreDataMember]
-        public string CategoryIconPath { get; set; }
-
-        /// <summary>
-        /// Runtime-only category cover path for theme/display bindings.
-        /// Hydrated from the parent GameAchievementData category image overrides.
-        /// </summary>
-        [IgnoreDataMember]
-        public string CategoryCoverPath { get; set; }
+        public string CategoryArtPath { get; set; }
 
         [IgnoreDataMember]
         public ICommand SetDynamicAchievementsGameCommand { get; set; }

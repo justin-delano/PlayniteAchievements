@@ -371,7 +371,7 @@
                                     MinWidth="32"
                                     MaxWidth="240"
                                     CanUserResize="True"
-                                    Header="{DynamicResource LOCPlayAch_Column_CategoryIcon}"
+                                    Header="{DynamicResource LOCPlayAch_Column_CategoryArt}"
                                     SortMemberPath="CategoryLabel"
                                     helpers:ColumnVisibilityHelper.ColumnKey="CategoryIcon"
                                     Visibility="Collapsed"

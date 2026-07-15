@@ -398,18 +398,15 @@ namespace PlayniteAchievements.Services.Achievements
             foreach (var pair in values)
             {
                 var key = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(pair.Key);
-                var icon = NormalizeText(pair.Value?.Icon);
-                var cover = NormalizeText(pair.Value?.Cover);
-                if (string.IsNullOrWhiteSpace(key) ||
-                    (string.IsNullOrWhiteSpace(icon) && string.IsNullOrWhiteSpace(cover)))
+                var art = NormalizeText(pair.Value?.Art);
+                if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(art))
                 {
                     continue;
                 }
 
                 copy[key] = new CategoryImageOverrideData
                 {
-                    Icon = icon,
-                    Cover = cover
+                    Art = art
                 };
             }
 

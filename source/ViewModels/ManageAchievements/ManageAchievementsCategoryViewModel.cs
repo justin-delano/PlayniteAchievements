@@ -406,8 +406,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         LockedIconPath = projected.LockedIconPath,
                         GameIconPath = projected.GameIconPath,
                         GameCoverPath = projected.GameCoverPath,
-                        CategoryIconPath = projected.CategoryIconPath,
-                        CategoryCoverPath = projected.CategoryCoverPath,
+                        CategoryArtPath = projected.CategoryArtPath,
                         UnlockTimeUtc = projected.UnlockTimeUtc,
                         GlobalPercentUnlocked = projected.GlobalPercentUnlocked,
                         PointsValue = projected.PointsValue,
@@ -517,7 +516,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public async Task ApplyCategoryLocalFileOverrideAsync(
             ManageAchievementsCategoryMetadataItem row,
-            CategoryImageKind kind,
             string localFilePath)
         {
             if (row == null)
@@ -543,7 +541,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         normalizedPath,
                         _gameIdText,
                         row.FileStem,
-                        kind,
                         CancellationToken.None,
                         overwriteExistingTarget: true)
                     .ConfigureAwait(false);
@@ -553,13 +550,13 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     throw new InvalidOperationException("The image file could not be copied into plugin data.");
                 }
 
-                row.SetOverrideValue(kind, managedPath);
+                row.SetOverrideValue(managedPath);
                 SetCategoryImageStatus(null, isError: false);
                 RefreshCategoryMetadataState();
             }
             catch (Exception ex)
             {
-                _logger?.Error(ex, $"Failed copying category image for gameId={_gameId}, category={row.CategoryLabel}, kind={kind}.");
+                _logger?.Error(ex, $"Failed copying category art for gameId={_gameId}, category={row.CategoryLabel}.");
                 SetCategoryImageStatus(
                     string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
                     isError: true);
@@ -1159,8 +1156,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 return;
             }
 
-            if (e.PropertyName == nameof(ManageAchievementsCategoryMetadataItem.IconOverrideValue) ||
-                e.PropertyName == nameof(ManageAchievementsCategoryMetadataItem.CoverOverrideValue))
+            if (e.PropertyName == nameof(ManageAchievementsCategoryMetadataItem.ArtOverrideValue))
             {
                 SetCategoryImageStatus(null, isError: false);
             }
@@ -1287,17 +1283,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     continue;
                 }
 
-                var icon = row.GetNormalizedIconOverrideValue();
-                var cover = row.GetNormalizedCoverOverrideValue();
-                if (string.IsNullOrWhiteSpace(icon) && string.IsNullOrWhiteSpace(cover))
+                var art = row.GetNormalizedArtOverrideValue();
+                if (string.IsNullOrWhiteSpace(art))
                 {
                     continue;
                 }
 
                 imageOverrides[category] = new CategoryImageOverrideData
                 {
-                    Icon = icon,
-                    Cover = cover
+                    Art = art
                 };
             }
 
@@ -1367,17 +1361,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 {
                     nextImages[normalizedTarget] = sourceImages.Clone();
                 }
-                else
+                else if (string.IsNullOrWhiteSpace(targetImages.Art))
                 {
-                    if (string.IsNullOrWhiteSpace(targetImages.Icon))
-                    {
-                        targetImages.Icon = sourceImages.Icon;
-                    }
-
-                    if (string.IsNullOrWhiteSpace(targetImages.Cover))
-                    {
-                        targetImages.Cover = sourceImages.Cover;
-                    }
+                    targetImages.Art = sourceImages.Art;
                 }
             }
 
@@ -1643,10 +1629,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
     {
         private readonly string _gameIdText;
         private readonly ManagedCustomIconService _managedCustomIconService;
-        private string _baselineIconOverrideValue;
-        private string _baselineCoverOverrideValue;
-        private string _iconOverrideValue;
-        private string _coverOverrideValue;
+        private string _baselineArtOverrideValue;
+        private string _artOverrideValue;
         private string _renameOverrideText;
 
         private ManageAchievementsCategoryMetadataItem(
@@ -1690,53 +1674,32 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public string ProgressText => $"{UnlockedAchievements:N0}/{TotalAchievements:N0}";
 
-        public string DefaultIconPath { get; private set; }
+        public string DefaultArtPath { get; private set; }
 
-        public string DefaultCoverPath { get; private set; }
-
-        public string IconOverrideValue
+        public string ArtOverrideValue
         {
-            get => _iconOverrideValue;
-            set => SetOverrideValue(CategoryImageKind.Icon, value);
+            get => _artOverrideValue;
+            set => SetOverrideValue(value);
         }
 
-        public string CoverOverrideValue
+        public string ArtOverrideText
         {
-            get => _coverOverrideValue;
-            set => SetOverrideValue(CategoryImageKind.Cover, value);
+            get => GetDisplayOverrideValue();
+            set => SetOverrideValue(value);
         }
 
-        public string IconOverrideText
-        {
-            get => GetDisplayOverrideValue(CategoryImageKind.Icon);
-            set => SetOverrideValue(CategoryImageKind.Icon, value);
-        }
+        public string ArtPreviewPath => BuildPreviewPath(
+            ResolvePreviewOverrideValue(GetNormalizedArtOverrideValue()) ?? DefaultArtPath);
 
-        public string CoverOverrideText
-        {
-            get => GetDisplayOverrideValue(CategoryImageKind.Cover);
-            set => SetOverrideValue(CategoryImageKind.Cover, value);
-        }
+        public bool HasArtOverrideValidationError => !IsValidOverrideValueOrBlank(ArtOverrideValue);
 
-        public string IconPreviewPath => BuildPreviewPath(
-            ResolvePreviewOverrideValue(GetNormalizedIconOverrideValue()) ?? DefaultIconPath);
-
-        public string CoverPreviewPath => BuildPreviewPath(
-            ResolvePreviewOverrideValue(GetNormalizedCoverOverrideValue()) ?? DefaultCoverPath ?? DefaultIconPath);
-
-        public bool HasIconOverrideValidationError => !IsValidOverrideValueOrBlank(IconOverrideValue);
-
-        public bool HasCoverOverrideValidationError => !IsValidOverrideValueOrBlank(CoverOverrideValue);
-
-        public bool HasValidationErrors => HasIconOverrideValidationError || HasCoverOverrideValidationError;
+        public bool HasValidationErrors => HasArtOverrideValidationError;
 
         public bool HasChanges =>
-            !string.Equals(GetNormalizedIconOverrideValue(), _baselineIconOverrideValue, StringComparison.Ordinal) ||
-            !string.Equals(GetNormalizedCoverOverrideValue(), _baselineCoverOverrideValue, StringComparison.Ordinal);
+            !string.Equals(GetNormalizedArtOverrideValue(), _baselineArtOverrideValue, StringComparison.Ordinal);
 
         public bool HasAnyOverrideValue =>
-            !string.IsNullOrWhiteSpace(GetNormalizedIconOverrideValue()) ||
-            !string.IsNullOrWhiteSpace(GetNormalizedCoverOverrideValue());
+            !string.IsNullOrWhiteSpace(GetNormalizedArtOverrideValue());
 
         public static ManageAchievementsCategoryMetadataItem Create(
             string categoryLabel,
@@ -1758,71 +1721,56 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 UnlockedAchievements = achievements?.Count(item => item?.Unlocked == true) ?? 0,
                 // Provider-supplied defaults are the true revert target, ahead of game art.
                 // They are keyed by the provider label so renamed rows still find them.
-                DefaultIconPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedProviderLabel, CategoryImageKind.Icon) ??
-                                  ResolveSharedImage(achievements, item => item?.GameIconPath) ??
-                                  ResolveSharedImage(achievements, item => item?.CategoryIconPath),
-                DefaultCoverPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedProviderLabel, CategoryImageKind.Cover) ??
-                                   ResolveSharedImage(achievements, item => item?.GameCoverPath) ??
-                                   ResolveSharedImage(achievements, item => item?.CategoryCoverPath)
+                DefaultArtPath = CategoryDefaultImageResolver.Resolve(playniteGameId, normalizedProviderLabel) ??
+                                 ResolveSharedImage(achievements, item => item?.GameIconPath) ??
+                                 ResolveSharedImage(achievements, item => item?.GameCoverPath)
             };
 
             row._renameOverrideText = string.Equals(row.CategoryLabel, row.ProviderCategoryLabel, StringComparison.OrdinalIgnoreCase)
                 ? string.Empty
                 : row.CategoryLabel;
-            row._baselineIconOverrideValue = row.ResolveOverrideInputValue(imageOverride?.Icon);
-            row._baselineCoverOverrideValue = row.ResolveOverrideInputValue(imageOverride?.Cover);
-            row._iconOverrideValue = row._baselineIconOverrideValue ?? string.Empty;
-            row._coverOverrideValue = row._baselineCoverOverrideValue ?? string.Empty;
+            row._baselineArtOverrideValue = row.ResolveOverrideInputValue(imageOverride?.Art);
+            row._artOverrideValue = row._baselineArtOverrideValue ?? string.Empty;
             return row;
         }
 
-        public void SetOverrideValue(CategoryImageKind kind, string value)
+        public void SetOverrideValue(string value)
         {
             var nextValue = ResolveOverrideInputValue(value) ?? string.Empty;
-            if (string.Equals(GetCurrentOverrideValue(kind), nextValue, StringComparison.Ordinal))
+            if (string.Equals(_artOverrideValue, nextValue, StringComparison.Ordinal))
             {
                 return;
             }
 
-            SetCurrentOverrideValue(kind, nextValue);
-            NotifyOverrideStateChanged(kind);
+            _artOverrideValue = nextValue;
+            NotifyOverrideStateChanged();
         }
 
-        public void ClearOverride(CategoryImageKind kind)
+        public void ClearOverride()
         {
-            SetOverrideValue(kind, null);
+            SetOverrideValue(null);
         }
 
         public void ClearImageOverrides()
         {
-            SetOverrideValue(CategoryImageKind.Icon, null);
-            SetOverrideValue(CategoryImageKind.Cover, null);
+            SetOverrideValue(null);
         }
 
         public void ResetToBaseline()
         {
-            _iconOverrideValue = _baselineIconOverrideValue ?? string.Empty;
-            _coverOverrideValue = _baselineCoverOverrideValue ?? string.Empty;
-            NotifyOverrideStateChanged(CategoryImageKind.Icon);
-            NotifyOverrideStateChanged(CategoryImageKind.Cover);
+            _artOverrideValue = _baselineArtOverrideValue ?? string.Empty;
+            NotifyOverrideStateChanged();
         }
 
         public void CommitCurrentOverridesAsBaseline()
         {
-            _baselineIconOverrideValue = GetNormalizedIconOverrideValue();
-            _baselineCoverOverrideValue = GetNormalizedCoverOverrideValue();
-            NotifyOverrideStateChanged(CategoryImageKind.Icon);
-            NotifyOverrideStateChanged(CategoryImageKind.Cover);
+            _baselineArtOverrideValue = GetNormalizedArtOverrideValue();
+            NotifyOverrideStateChanged();
         }
 
-        public string GetNormalizedIconOverrideValue()
+        public string GetNormalizedArtOverrideValue()
         {
-            return NormalizeOverrideValue(IconOverrideValue);
-        }
-
-        public string GetNormalizedCoverOverrideValue()
-        {
-            return NormalizeOverrideValue(CoverOverrideValue);
+            return NormalizeOverrideValue(ArtOverrideValue);
         }
 
         public string GetNormalizedRenameOverrideValue()
@@ -1838,27 +1786,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 : CategoryLabel;
         }
 
-        private string GetCurrentOverrideValue(CategoryImageKind kind)
+        private string GetDisplayOverrideValue()
         {
-            return kind == CategoryImageKind.Cover ? _coverOverrideValue : _iconOverrideValue;
-        }
-
-        private void SetCurrentOverrideValue(CategoryImageKind kind, string value)
-        {
-            if (kind == CategoryImageKind.Cover)
-            {
-                _coverOverrideValue = value ?? string.Empty;
-            }
-            else
-            {
-                _iconOverrideValue = value ?? string.Empty;
-            }
-        }
-
-        private string GetDisplayOverrideValue(CategoryImageKind kind)
-        {
-            var currentValue = GetCurrentOverrideValue(kind);
-            return _managedCustomIconService.GetManagedDisplayPath(currentValue, _gameIdText) ?? string.Empty;
+            return _managedCustomIconService.GetManagedDisplayPath(_artOverrideValue, _gameIdText) ?? string.Empty;
         }
 
         private string ResolveOverrideInputValue(string value)
@@ -1919,23 +1849,12 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                    File.Exists(value);
         }
 
-        private void NotifyOverrideStateChanged(CategoryImageKind kind)
+        private void NotifyOverrideStateChanged()
         {
-            if (kind == CategoryImageKind.Cover)
-            {
-                OnPropertyChanged(nameof(CoverOverrideValue));
-                OnPropertyChanged(nameof(CoverOverrideText));
-                OnPropertyChanged(nameof(HasCoverOverrideValidationError));
-                OnPropertyChanged(nameof(CoverPreviewPath));
-            }
-            else
-            {
-                OnPropertyChanged(nameof(IconOverrideValue));
-                OnPropertyChanged(nameof(IconOverrideText));
-                OnPropertyChanged(nameof(HasIconOverrideValidationError));
-                OnPropertyChanged(nameof(IconPreviewPath));
-            }
-
+            OnPropertyChanged(nameof(ArtOverrideValue));
+            OnPropertyChanged(nameof(ArtOverrideText));
+            OnPropertyChanged(nameof(HasArtOverrideValidationError));
+            OnPropertyChanged(nameof(ArtPreviewPath));
             OnPropertyChanged(nameof(HasValidationErrors));
             OnPropertyChanged(nameof(HasChanges));
             OnPropertyChanged(nameof(HasAnyOverrideValue));

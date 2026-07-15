@@ -3,7 +3,7 @@ using System;
 
 namespace PlayniteAchievements.Services.Images
 {
-    // Read side of provider-supplied default category images: probes the deterministic
+    // Read side of provider-supplied default category art: probes the deterministic
     // cache path for (gameId, normalized category label) and returns it only when the file
     // exists. Defaults sit below user overrides and above the game icon/cover fallback.
     internal static class CategoryDefaultImageResolver
@@ -12,11 +12,9 @@ namespace PlayniteAchievements.Services.Images
         // this file compilable in the test project, which does not include the plugin entry point.
         internal static Func<DiskImageService> DiskImageServiceAccessor { get; set; }
 
-        public static string Resolve(Guid? playniteGameId, string categoryLabel, CategoryImageKind kind)
+        public static string Resolve(Guid? playniteGameId, string categoryLabel)
         {
-            // Any downloaded provider default beats Playnite game metadata. Providers that
-            // download only one kind (Steam: covers) fall back naturally for the other kind
-            // because no file exists at its path.
+            // Any downloaded provider default beats Playnite game metadata.
             if (!playniteGameId.HasValue || playniteGameId.Value == Guid.Empty)
             {
                 return null;
@@ -41,8 +39,7 @@ namespace PlayniteAchievements.Services.Images
             {
                 return diskImageService.FindExistingDefaultCategoryImagePath(
                     playniteGameId.Value.ToString("D"),
-                    normalizedLabel,
-                    kind);
+                    normalizedLabel);
             }
             catch
             {
