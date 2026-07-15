@@ -76,6 +76,8 @@ namespace PlayniteAchievements.Models.Settings
             target.ViewAchievementsHotkey = source.ViewAchievementsHotkey;
             target.ManageAchievementsHotkey = source.ManageAchievementsHotkey;
             target.OverviewHotkey = source.OverviewHotkey;
+            target.OpenSettingsHotkey = source.OpenSettingsHotkey;
+            target.CategoryModeHotkey = source.CategoryModeHotkey;
 
             // Notification Settings
             target.EnableNotifications = source.EnableNotifications;
