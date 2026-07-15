@@ -307,7 +307,7 @@
                                     <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
                                 </MultiBinding>
                             </Border.Height>
-                            <Image Stretch="UniformToFill"
+                            <Image Stretch="Uniform"
                                    ToolTip="{Binding FriendName}"
                                    helpers:AsyncImage.Uri="{Binding FriendAvatarPath}"
                                    helpers:AsyncImage.DecodePixel="56"/>

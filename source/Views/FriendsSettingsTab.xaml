@@ -201,7 +201,7 @@
                                                     VerticalAlignment="Center">
                                                 <Image helpers:AsyncImage.Uri="{Binding AvatarSource}"
                                                        helpers:AsyncImage.DecodePixel="96"
-                                                       Stretch="UniformToFill"
+                                                       Stretch="Uniform"
                                                        RenderOptions.BitmapScalingMode="HighQuality"/>
                                             </Border>
 
@@ -264,7 +264,7 @@
                                                                 VerticalAlignment="Center">
                                                             <Image helpers:AsyncImage.Uri="{Binding AvatarSource}"
                                                                    helpers:AsyncImage.DecodePixel="48"
-                                                                   Stretch="UniformToFill"
+                                                                   Stretch="Uniform"
                                                                    RenderOptions.BitmapScalingMode="HighQuality"/>
                                                         </Border>
 

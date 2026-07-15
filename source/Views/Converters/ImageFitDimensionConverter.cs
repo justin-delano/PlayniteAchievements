@@ -5,7 +5,8 @@ using System.Windows.Data;
 namespace PlayniteAchievements.Views.Converters
 {
     /// <summary>
-    /// Sizes image cells from the available column width. Platform badges keep row-aware uniform sizing.
+    /// Sizes image cells to fit both the available column width and row height,
+    /// preserving aspect ratio so images scale down instead of being clipped.
     /// ConverterParameter: mode,dimension,horizontalPadding,verticalPadding,fallbackSize.
     /// mode is icon, cover, platform, or auto. dimension is width or height.
     /// </summary>
@@ -31,10 +32,7 @@ namespace PlayniteAchievements.Views.Converters
             var availableHeight = rowHeight.HasValue
                 ? Math.Max(1d, rowHeight.Value - verticalPadding)
                 : fallbackSize / aspectRatio;
-            var fitWidth = mode == "icon" || mode == "cover" || mode == "auto";
-            var height = fitWidth
-                ? availableWidth / aspectRatio
-                : Math.Min(availableHeight, availableWidth / aspectRatio);
+            var height = Math.Min(availableHeight, availableWidth / aspectRatio);
             if (double.IsNaN(height) || double.IsInfinity(height) || height <= 0)
             {
                 height = fallbackSize / aspectRatio;
