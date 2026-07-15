@@ -99,13 +99,16 @@ namespace PlayniteAchievements.Tests.Views
                 section,
                 "FriendSummaries[ViewFriendsAchievements]",
                 "GameSummaries[ViewFriendsAchievements]",
-                "GameSummaries[ViewFriendsAchievementsSelectedFriend]",
                 "Achievement[ViewFriendsAchievements]",
                 "CategorySummaries[ViewFriendsAchievements]",
                 "ShowCategoryModeRow=\"True\"");
             AssertContainsNone(
+                section,
+                "GameSummaries[ViewFriendsAchievementsSelectedFriend]");
+            AssertContainsNone(
                 overviewSection,
-                "Achievement[ViewFriendsAchievements]");
+                "Achievement[ViewFriendsAchievements]",
+                "GameSummaries[FriendsOverviewSelectedFriend]");
         }
 
         private static void AssertContainsAll(string content, params string[] expected)
