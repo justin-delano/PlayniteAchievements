@@ -472,8 +472,8 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _rowHeight, PersistedSettings.NormalizeGridRowHeight(value));
         }
 
-        // Categories show achievement icons by default (matching the achievement grid), not the
-        // larger cover art game-summary grids default to.
+        // Selects the fallback for categories without art: game cover when true, game icon
+        // when false. Category art itself always wins in both modes.
         public bool UseCoverImages
         {
             get => _useCoverImages;
