@@ -211,8 +211,10 @@
             </Style>
 
             <!-- Underline tab style for the Overview/Friends view switch.
-                 Text-only tabs; the active tab (Tag="active") gets accent text and
-                 an accent underline bar. No chevron, no border, no fill. -->
+                 Text-only tabs; the active tab (Tag="active") gets full text-brush
+                 text and an accent underline bar (the accent stays on the bar only
+                 because it can resolve to a gradient on some themes). The single-cell
+                 grid keeps the label vertically centered with the window title. -->
             <Style x:Key="OverviewSubViewSwitchButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
                 <Setter Property="MinHeight" Value="24"/>
                 <Setter Property="Padding" Value="2,2"/>
@@ -229,12 +231,7 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Grid Background="Transparent">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="2"/>
-                                </Grid.RowDefinitions>
                                 <TextBlock x:Name="Label"
-                                           Grid.Row="0"
                                            Text="{TemplateBinding Content}"
                                            Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                            FontWeight="{TemplateBinding FontWeight}"
@@ -244,7 +241,6 @@
                                            VerticalAlignment="Center"
                                            TextWrapping="NoWrap"/>
                                 <Border x:Name="Underline"
-                                        Grid.Row="1"
                                         Height="2"
                                         Margin="2,0"
                                         VerticalAlignment="Bottom"
@@ -260,7 +256,7 @@
                                     <Setter TargetName="Underline" Property="Opacity" Value="0.4"/>
                                 </Trigger>
                                 <Trigger Property="Tag" Value="active">
-                                    <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                                     <Setter TargetName="Underline" Property="Visibility" Value="Visible"/>
                                     <Setter TargetName="Underline" Property="Opacity" Value="1"/>
                                 </Trigger>
