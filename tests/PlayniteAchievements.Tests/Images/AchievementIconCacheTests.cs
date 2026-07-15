@@ -1115,18 +1115,117 @@ namespace PlayniteAchievements.Services.Images.Tests
                     gameId, "Bonus"));
 
                 // decodeSize 0 downloads keep the source extension, so a .png source lands
-                // beside the canonical .jpg path with its extension swapped.
+                // beside the canonical .jpg path with its extension swapped. Direct disk writes
+                // bypass the service's write seams, so the snapshot must be invalidated manually.
                 var canonicalPath = diskImageService.GetDefaultCategoryImagePath(
                     gameId, "Bonus");
                 var pngPath = Path.ChangeExtension(canonicalPath, ".png");
                 WritePlaceholderFile(pngPath);
+                diskImageService.InvalidateDefaultCategoryArtSnapshot(gameId);
 
                 Assert.AreEqual(pngPath, diskImageService.FindExistingDefaultCategoryImagePath(
                     gameId, "Bonus"));
 
                 // The canonical .jpg wins when both exist.
                 WritePlaceholderFile(canonicalPath);
+                diskImageService.InvalidateDefaultCategoryArtSnapshot(gameId);
                 Assert.AreEqual(canonicalPath, diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus"));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task FindExistingDefaultCategoryImagePath_SeesWritesThroughServiceWithoutManualInvalidation()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var gameId = Guid.NewGuid().ToString("D");
+
+                // Caches the empty snapshot before the write.
+                Assert.IsNull(diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus"));
+
+                var sourcePath = Path.Combine(tempDir, "source.png");
+                WritePlaceholderFile(sourcePath);
+                var written = await diskImageService.GetOrCopyLocalIconToPathAsync(
+                    sourcePath,
+                    diskImageService.GetDefaultCategoryImagePath(gameId, "Bonus"),
+                    decodeSize: 0,
+                    CancellationToken.None);
+
+                Assert.IsNotNull(written);
+                Assert.AreEqual(written, diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus"));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task FindExistingDefaultCategoryImagePath_ClearGameCacheInvalidatesSnapshot()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var gameId = Guid.NewGuid().ToString("D");
+
+                var sourcePath = Path.Combine(tempDir, "source.png");
+                WritePlaceholderFile(sourcePath);
+                var written = await diskImageService.GetOrCopyLocalIconToPathAsync(
+                    sourcePath,
+                    diskImageService.GetDefaultCategoryImagePath(gameId, "Bonus"),
+                    decodeSize: 0,
+                    CancellationToken.None);
+
+                Assert.AreEqual(written, diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus"));
+
+                diskImageService.ClearGameCache(gameId);
+
+                Assert.IsNull(diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus"));
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task FindExistingDefaultCategoryImagePath_ClearIconCacheInvalidatesSnapshot()
+        {
+            var tempDir = CreateTempDirectory();
+
+            try
+            {
+                var diskImageService = new DiskImageService(logger: null, cacheRoot: tempDir);
+                var gameId = Guid.NewGuid().ToString("D");
+
+                var sourcePath = Path.Combine(tempDir, "source.png");
+                WritePlaceholderFile(sourcePath);
+                var written = await diskImageService.GetOrCopyLocalIconToPathAsync(
+                    sourcePath,
+                    diskImageService.GetDefaultCategoryImagePath(gameId, "Bonus"),
+                    decodeSize: 0,
+                    CancellationToken.None);
+
+                Assert.AreEqual(written, diskImageService.FindExistingDefaultCategoryImagePath(
+                    gameId, "Bonus"));
+
+                diskImageService.ClearIconCache(IconCacheClearScope.All);
+
+                Assert.IsNull(diskImageService.FindExistingDefaultCategoryImagePath(
                     gameId, "Bonus"));
             }
             finally
