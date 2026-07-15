@@ -192,6 +192,8 @@ namespace PlayniteAchievements.ViewModels
             var viewLabel = L("LOCPlayAch_Menu_ViewAchievements", "View Achievements");
             var manageLabel = L("LOCPlayAch_Menu_ManageAchievements", "Manage Achievements");
             var overviewLabel = L("LOCPlayAch_Menu_OpenOverview", "Achievements Overview");
+            var openSettingsLabel = L("LOCPlayAch_Landing_OpenSettings", "Open Plugin Settings");
+            var categoryModeLabel = L("LOCPlayAch_CategorySummaries_ToggleToolTip", "Group achievements by category");
             var invalidMessage = L(
                 "LOCPlayAch_Hotkeys_InvalidShortcut",
                 "Unsupported shortcut. Press a letter, digit, function key, or a modified shortcut.");
@@ -200,11 +202,15 @@ namespace PlayniteAchievements.ViewModels
             var viewValid = TryValidateHotkey(viewLabel, persisted.ViewAchievementsHotkey, invalidMessage, errors, out var viewGesture);
             var manageValid = TryValidateHotkey(manageLabel, persisted.ManageAchievementsHotkey, invalidMessage, errors, out var manageGesture);
             var overviewValid = TryValidateHotkey(overviewLabel, persisted.OverviewHotkey, invalidMessage, errors, out var overviewGesture);
+            var openSettingsValid = TryValidateHotkey(openSettingsLabel, persisted.OpenSettingsHotkey, invalidMessage, errors, out var openSettingsGesture);
+            var categoryModeValid = TryValidateHotkey(categoryModeLabel, persisted.CategoryModeHotkey, invalidMessage, errors, out var categoryModeGesture);
 
             var assignedGestures = new List<AchievementHotkeyGesture>();
             AddDuplicateHotkeyError(viewValid, viewGesture, assignedGestures, duplicateMessage, errors);
             AddDuplicateHotkeyError(manageValid, manageGesture, assignedGestures, duplicateMessage, errors);
             AddDuplicateHotkeyError(overviewValid, overviewGesture, assignedGestures, duplicateMessage, errors);
+            AddDuplicateHotkeyError(openSettingsValid, openSettingsGesture, assignedGestures, duplicateMessage, errors);
+            AddDuplicateHotkeyError(categoryModeValid, categoryModeGesture, assignedGestures, duplicateMessage, errors);
         }
 
         private void ApplyThemeResources()
