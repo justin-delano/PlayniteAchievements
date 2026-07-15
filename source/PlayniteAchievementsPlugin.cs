@@ -387,7 +387,8 @@ namespace PlayniteAchievements
                         _settingsViewModel.Settings,
                         _cacheManager,
                         _gameCustomDataStore,
-                        _logger);
+                        _logger,
+                        isRefreshActive: () => _refreshService?.IsRebuilding == true);
                     _gameCustomDataStore.AttachAchievementDataService(_achievementDataService);
                     _notifications = new NotificationPublisher(api, settings, _logger);
                     _refreshCoordinator = new RefreshEntryPoint(
