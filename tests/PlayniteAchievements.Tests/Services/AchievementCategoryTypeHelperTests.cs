@@ -18,6 +18,32 @@ namespace PlayniteAchievements.Tests.Services
         }
 
         [TestMethod]
+        public void NormalizeOrDefault_ReturnsStableResultsAcrossRepeatedCalls()
+        {
+            foreach (var _ in Enumerable.Range(0, 3))
+            {
+                Assert.AreEqual("Softcore", AchievementCategoryTypeHelper.NormalizeOrDefault("casual"));
+                Assert.AreEqual("Hardcore", AchievementCategoryTypeHelper.NormalizeOrDefault("hardcore"));
+                Assert.AreEqual("Base|DLC|Missable", AchievementCategoryTypeHelper.NormalizeOrDefault("DLC, base; missable"));
+                Assert.AreEqual("Default", AchievementCategoryTypeHelper.NormalizeOrDefault("not-a-category"));
+                Assert.AreEqual("Default", AchievementCategoryTypeHelper.NormalizeOrDefault(null));
+                Assert.AreEqual("Default", AchievementCategoryTypeHelper.NormalizeOrDefault(string.Empty));
+                Assert.AreEqual("Default", AchievementCategoryTypeHelper.NormalizeOrDefault("   "));
+            }
+        }
+
+        [TestMethod]
+        public void NormalizeOrDefault_CaseVariantsReturnSameValue()
+        {
+            Assert.AreEqual(
+                AchievementCategoryTypeHelper.NormalizeOrDefault("casual"),
+                AchievementCategoryTypeHelper.NormalizeOrDefault("CASUAL"));
+            Assert.AreEqual(
+                AchievementCategoryTypeHelper.NormalizeOrDefault("dlc|missable"),
+                AchievementCategoryTypeHelper.NormalizeOrDefault("Missable, DLC"));
+        }
+
+        [TestMethod]
         public void AllowedCategoryTypes_IncludesDerivedTypes()
         {
             CollectionAssert.Contains(
