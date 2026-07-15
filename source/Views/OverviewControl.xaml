@@ -352,7 +352,7 @@
         <Border Grid.Row="0"
                 Background="Transparent"
                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
-                Padding="16,0,16,4"
+                Padding="8,0,8,4"
                 WindowChrome.IsHitTestVisibleInChrome="True">
             <Border.Style>
                 <Style TargetType="Border">
@@ -529,7 +529,7 @@
                 Background="Transparent"
                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                 BorderThickness="0,0,0,1"
-                Padding="16,8"
+                Padding="8,8"
                 Visibility="{Binding ActiveRefreshHeader.ShowProgress, ElementName=OverviewControlRoot, Converter={StaticResource BoolToVis}}">
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="{Binding ActiveRefreshHeader.ProgressMessage, ElementName=OverviewControlRoot}"
@@ -575,7 +575,7 @@
                     <Border Grid.Row="0" Grid.Column="0"
                             Background="Transparent"
                             Height="{StaticResource PlayAch.Size.Header.Height}"
-                            Padding="16,0"
+                            Padding="8,0"
                             BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                             BorderThickness="0,0,0,1">
                         <Grid>
@@ -597,7 +597,7 @@
                             </Grid.RowDefinitions>
                         <controls:GameSummariesGridControl x:Name="GameSummariesGridControl"
                                                                 Grid.Row="0"
-                                                                Margin="16,8,16,0"
+                                                                Margin="8,8,8,0"
                                                                 KeyboardNavigation.DirectionalNavigation="Contained"
                                                                 ItemsSource="{Binding GameSummaries}"
                                                                 SelectedItem="{Binding SelectedGame, Mode=OneWay}"
@@ -627,7 +627,7 @@
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
                                 Height="{StaticResource PlayAch.Size.Header.Height}"
-                                Padding="16,0"
+                                Padding="8,0"
                                 Visibility="{Binding ShowRecentAchievementsPanel, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="{DynamicResource LOCPlayAch_RecentAchievements}"
                                        Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
@@ -641,7 +641,7 @@
                                 BorderBrush="{DynamicResource PlayAch.Brush.ControlBorder}"
                                 BorderThickness="0,0,0,1"
                                 Height="{StaticResource PlayAch.Size.Header.Height}"
-                                Padding="16,0"
+                                Padding="8,0"
                                 Visibility="{Binding IsSelectedGameContentReady, Converter={StaticResource BoolToVis}}">
 
                             <StackPanel Orientation="Horizontal"
@@ -723,7 +723,7 @@
 
                             <controls:AchievementDataGridControl x:Name="RecentAchievementsDataGrid"
                                                                  Grid.Row="0"
-                                                                 Margin="16,8,16,0"
+                                                                 Margin="8,8,8,0"
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding RecentAchievements}"
                                                                  ColumnSettingsKey="OverviewRecentAchievements"
@@ -753,7 +753,7 @@
                             <!-- Game Achievements List -->
                             <controls:AchievementDataGridControl x:Name="GameAchievementsGrid"
                                                                  Grid.Row="0"
-                                                                 Margin="16,8,16,0"
+                                                                 Margin="8,8,8,0"
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
                                                                  ColumnSettingsKey="OverviewSelectedGameAchievements"

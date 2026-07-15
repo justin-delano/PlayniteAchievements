@@ -247,7 +247,7 @@
 
         <!-- Achievements List -->
         <Grid Grid.Row="2"
-              Margin="16,0,16,0"
+              Margin="8,0,8,0"
               Visibility="{Binding HasAchievements, Converter={StaticResource BoolToVis}}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
