@@ -2513,6 +2513,8 @@ namespace PlayniteAchievements.Services.Tests
             public List<FriendIdentity> LoadFriendIdentities(string providerKey) =>
                 CachedFriends.ToList();
 
+            public DateTime? GetMostRecentFriendLastRefreshedUtc() => null;
+
             public List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
                 string providerKey,
                 FriendRefreshOptions options)
