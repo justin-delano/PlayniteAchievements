@@ -80,7 +80,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             int unlockedCount = 0,
             int achievementCount = 0,
             ICommand openViewAchievementsWindow = null,
-            ICommand openManageAchievementsWindow = null)
+            ICommand openManageAchievementsWindow = null,
+            string sortingName = null)
             : base(
                 gameId,
                 name,
@@ -105,7 +106,8 @@ namespace PlayniteAchievements.Models.ThemeIntegration
                 unlockedCount,
                 achievementCount,
                 openViewAchievementsWindow,
-                openManageAchievementsWindow)
+                openManageAchievementsWindow,
+                sortingName)
         {
         }
 

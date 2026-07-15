@@ -336,6 +336,7 @@ namespace PlayniteAchievements.Services.Database
 
         private sealed class GamePresentation
         {
+            public string DisplayName { get; set; }
             public string SortingName { get; set; }
             public string IconPath { get; set; }
             public string CoverPath { get; set; }
@@ -794,6 +795,7 @@ namespace PlayniteAchievements.Services.Database
         {
             return new GamePresentation
             {
+                DisplayName = playniteGame?.Name,
                 SortingName = playniteGame?.SortingName,
                 IconPath = !string.IsNullOrWhiteSpace(playniteGame?.Icon)
                     ? ResolvePlayniteAssetPath(playniteGame.Icon)
@@ -4400,8 +4402,8 @@ namespace PlayniteAchievements.Services.Database
                         AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
                         ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
                         PlayniteGameId = playniteGameId,
-                        GameName = row.GameName,
-                        SortingName = presentation.SortingName ?? row.GameName,
+                        GameName = presentation.DisplayName ?? row.GameName,
+                        SortingName = presentation.SortingName ?? presentation.DisplayName ?? row.GameName,
                         GameLogo = ResolveFriendGameIconPath(presentation, row.IconPath),
                         GameCoverPath = ResolveFriendGameCoverPath(presentation, row.CoverPath),
                         PlatformText = presentation.PlatformText,
@@ -4958,8 +4960,8 @@ namespace PlayniteAchievements.Services.Database
                     ProviderKey = row.ProviderKey,
                     AppId = (int)Math.Max(0, row.ProviderGameId ?? 0),
                     ProviderGameKey = NormalizeProviderGameKey(row.ProviderGameKey),
-                    GameName = row.GameName,
-                    SortingName = presentation.SortingName ?? row.GameName,
+                    GameName = presentation.DisplayName ?? row.GameName,
+                    SortingName = presentation.SortingName ?? presentation.DisplayName ?? row.GameName,
                     PlayniteGameId = playniteGameId,
                     GameIconPath = ResolveFriendGameIconPath(presentation, row.IconPath),
                     GameCoverPath = ResolveFriendGameCoverPath(presentation, row.CoverPath),

@@ -258,6 +258,19 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
+            <DataGridTemplateColumn Width="72" MinWidth="48" MaxWidth="112" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Owned}" SortMemberPath="Owned" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryOwned">
+                <DataGridTemplateColumn.CellTemplate>
+                    <DataTemplate>
+                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
+                            <Grid>
+                                <TextBlock Text="{Binding OwnedText}"
+                                           Style="{StaticResource GameSummaryGridTextStyle}"/>
+                            </Grid>
+                        </ContentControl>
+                    </DataTemplate>
+                </DataGridTemplateColumn.CellTemplate>
+            </DataGridTemplateColumn>
+
             <DataGridTemplateColumn Width="*" MinWidth="22" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_LastPlayed}" SortMemberPath="LastPlayed" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryLastPlayed">
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>

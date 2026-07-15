@@ -34,6 +34,10 @@ namespace PlayniteAchievements.ViewModels.Items
         private string _sortingName;
         public string SortingName { get => _sortingName; set => SetValue(ref _sortingName, value); }
 
+        public bool Owned => PlayniteGameId.HasValue;
+
+        public string OwnedText => Owned ? "True" : "False";
+
         private string _gameLogo;
         public string GameLogo { get => _gameLogo; set => SetValue(ref _gameLogo, value); }
 
@@ -75,7 +79,20 @@ namespace PlayniteAchievements.ViewModels.Items
 
         public int AppId { get; set; } // Stays as AppId is immutable ID
         public string ProviderGameKey { get; set; }
-        public Guid? PlayniteGameId { get; set; }
+
+        private Guid? _playniteGameId;
+        public Guid? PlayniteGameId
+        {
+            get => _playniteGameId;
+            set
+            {
+                if (SetValueAndReturn(ref _playniteGameId, value))
+                {
+                    OnPropertyChanged(nameof(Owned));
+                    OnPropertyChanged(nameof(OwnedText));
+                }
+            }
+        }
 
         private int _totalAchievements;
         public int TotalAchievements 

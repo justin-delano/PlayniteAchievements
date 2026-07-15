@@ -50,7 +50,11 @@ namespace PlayniteAchievements.Tests.Views
 
             AssertContainsAll(
                 xaml,
-                "ColumnKey=\"GameSummaryLastUnlock\"");
+                "ColumnKey=\"GameSummaryLastUnlock\"",
+                "ColumnKey=\"GameSummaryOwned\"",
+                "Header=\"{DynamicResource LOCPlayAch_Column_Owned}\"",
+                "SortMemberPath=\"Owned\"",
+                "Text=\"{Binding OwnedText}\"");
             AssertContainsNone(
                 xaml,
                 "ColumnKey=\"FriendGameFriendsWithUnlocks\"",
@@ -68,6 +72,8 @@ namespace PlayniteAchievements.Tests.Views
                 code,
                 "FriendsOverviewGameSummaries",
                 "FriendsOverviewSelectedFriendGameSummaries",
+                "FriendGameOnlyColumnKeys",
+                "\"GameSummaryOwned\"",
                 "GridSurface.FriendsOverview",
                 "GridSurface.FriendsOverviewSelectedFriend",
                 "GetGameSummaries(GridOptionKeys.GameSummaries.FriendsOverview)",
@@ -92,6 +98,50 @@ namespace PlayniteAchievements.Tests.Views
                 code,
                 "SelectedFriendGameSummariesGridControl?.Dispose()",
                 "ClearGridSelection(SelectedFriendGameSummariesGridControl?.InternalDataGrid)");
+        }
+
+        [TestMethod]
+        public void FriendsOverview_PersistsSplitterColumnRatios()
+        {
+            var xaml = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml"));
+            var code = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml.cs"));
+            var settings = File.ReadAllText(FindRepoFile("source", "Models", "Settings", "PersistedSettings.cs"));
+
+            AssertContainsAll(
+                xaml,
+                "x:Name=\"FriendsOverviewFriendColumn\"",
+                "x:Name=\"FriendsOverviewGameColumn\"",
+                "x:Name=\"FriendsOverviewAchievementColumn\"",
+                "DragCompleted=\"FriendsOverviewGridSplitter_DragCompleted\"");
+            AssertContainsAll(
+                code,
+                "ApplyFriendsOverviewColumnRatios()",
+                "PersistFriendsOverviewColumnRatios",
+                "FriendsOverviewFriendColumnRatio",
+                "FriendsOverviewGameColumnRatio",
+                "_persistSettingsForUi?.Invoke()");
+            AssertContainsAll(
+                settings,
+                "DefaultFriendsOverviewFriendColumnRatio",
+                "DefaultFriendsOverviewGameColumnRatio",
+                "public double FriendsOverviewFriendColumnRatio",
+                "public double FriendsOverviewGameColumnRatio");
+        }
+
+        [TestMethod]
+        public void OverviewSummaries_DisplayPlayniteNameAndSortBySortingName()
+        {
+            var builder = File.ReadAllText(FindRepoFile("source", "Services", "Summaries", "GameSummaryItemBuilder.cs"));
+            var overview = File.ReadAllText(FindRepoFile("source", "Services", "Overview", "OverviewDataBuilder.cs"));
+
+            AssertContainsAll(
+                builder,
+                "GameName = presentation.DisplayName ?? gameData.GameName ?? \"Unknown\"",
+                "SortingName = presentation.SortingName ?? presentation.DisplayName ?? gameData.GameName ?? \"Unknown\"");
+            AssertContainsAll(
+                overview,
+                "GameName = presentation.DisplayName ?? game.GameName ?? \"Unknown\"",
+                "SortingName = presentation.SortingName ?? presentation.DisplayName ?? game.GameName ?? \"Unknown\"");
         }
 
         [TestMethod]

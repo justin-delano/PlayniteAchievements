@@ -197,6 +197,8 @@ namespace PlayniteAchievements.Models.Settings
 
             // Layout State
             target.OverviewLeftColumnRatio = source.OverviewLeftColumnRatio;
+            target.FriendsOverviewFriendColumnRatio = source.FriendsOverviewFriendColumnRatio;
+            target.FriendsOverviewGameColumnRatio = source.FriendsOverviewGameColumnRatio;
             target.WindowPlacements = source.WindowPlacements != null
                 ? source.WindowPlacements.ToDictionary(
                     kvp => kvp.Key,

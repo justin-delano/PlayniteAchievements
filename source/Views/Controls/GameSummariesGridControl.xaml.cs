@@ -55,6 +55,11 @@ namespace PlayniteAchievements.Views.Controls
             "GameSummaryLastUnlock"
         };
 
+        private static readonly string[] FriendGameOnlyColumnKeys =
+        {
+            "GameSummaryOwned"
+        };
+
         // Columns kept in the codebase for other surfaces but not wanted on the aggregate
         // (no friend selected) Friends Overview grid; collapsed and dropped from its toggle menu.
         private static readonly string[] AggregateFriendExcludedColumnKeys =
@@ -112,20 +117,24 @@ namespace PlayniteAchievements.Views.Controls
                 // No friend selected: Cover, Game, Platform only.
                 ["FriendsOverviewGameSummaries"] = CreateGameSummaryVisibility(
                     platform: true,
+                    owned: true,
                     progress: false,
                     total: false),
                 // Friend selected: Cover, Game, Platform, Progress.
                 ["FriendsOverviewSelectedFriendGameSummaries"] = CreateGameSummaryVisibility(
                     platform: true,
+                    owned: true,
                     total: false),
                 // View Friends Achievements summary row, aggregate (no friend selected).
                 ["ViewFriendsAchievementsGameSummaries"] = CreateGameSummaryVisibility(
                     platform: true,
+                    owned: true,
                     progress: false,
                     total: false),
                 // View Friends Achievements summary row, selected friend.
                 ["ViewFriendsAchievementsSelectedFriendGameSummaries"] = CreateGameSummaryVisibility(
                     platform: true,
+                    owned: true,
                     total: false),
                 // Category-summaries surfaces: full game-summary set, Cover kept, platform/playtime/
                 // last-played dropped (no per-category meaning). Friend-only columns are excluded at
@@ -157,6 +166,7 @@ namespace PlayniteAchievements.Views.Controls
             bool cover = true,
             bool game = true,
             bool platform = false,
+            bool owned = false,
             bool lastPlayed = false,
             bool lastUnlock = false,
             bool playtime = false,
@@ -171,6 +181,7 @@ namespace PlayniteAchievements.Views.Controls
                 ["Cover"] = cover,
                 ["GameSummaryName"] = game,
                 ["GameSummaryPlatform"] = platform,
+                ["GameSummaryOwned"] = owned,
                 ["GameSummaryLastPlayed"] = lastPlayed,
                 ["GameSummaryLastUnlock"] = lastUnlock,
                 ["GameSummaryPlaytime"] = playtime,
@@ -994,6 +1005,18 @@ namespace PlayniteAchievements.Views.Controls
             if (surface == GridSurface.FriendsOverview || surface == GridSurface.ViewFriendsAchievements)
             {
                 foreach (var key in AggregateFriendExcludedColumnKeys)
+                {
+                    _columnPersistence.ForcedCollapsedKeys.Add(key);
+                    _columnPersistence.ExcludedVisibilityKeys.Add(key);
+                }
+            }
+
+            if (surface != GridSurface.FriendsOverview &&
+                surface != GridSurface.FriendsOverviewSelectedFriend &&
+                surface != GridSurface.ViewFriendsAchievements &&
+                surface != GridSurface.ViewFriendsAchievementsSelectedFriend)
+            {
+                foreach (var key in FriendGameOnlyColumnKeys)
                 {
                     _columnPersistence.ForcedCollapsedKeys.Add(key);
                     _columnPersistence.ExcludedVisibilityKeys.Add(key);

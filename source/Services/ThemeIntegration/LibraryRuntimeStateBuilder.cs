@@ -116,7 +116,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     providerName,
                     data.Game?.LastActivity,
                     stats.UnlockedAchievements,
-                    stats.TotalAchievements);
+                    stats.TotalAchievements,
+                    sortingName: data.Game?.SortingName ?? data.Game?.Name ?? data.GameName ?? string.Empty);
 
                 allGames.Add(summary);
             }
@@ -221,7 +222,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     providerName,
                     presentation.LastPlayed,
                     game.UnlockedAchievements,
-                    game.TotalAchievements));
+                    game.TotalAchievements,
+                    sortingName: presentation.SortingName ?? presentation.Game?.Name ?? game.GameName ?? string.Empty));
 
                 collectorScore = AddScore(collectorScore, game.CollectionScore);
                 prestigeScore = AddScore(prestigeScore, game.PrestigeScore);
@@ -599,7 +601,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 Game = game,
                 Platform = game?.Source?.Name ?? "Unknown",
                 CoverImagePath = ResolveCoverImagePath(game, api),
-                LastPlayed = game?.LastActivity
+                LastPlayed = game?.LastActivity,
+                SortingName = game?.SortingName
             };
         }
 
@@ -827,6 +830,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             public string CoverImagePath { get; set; }
 
             public DateTime? LastPlayed { get; set; }
+
+            public string SortingName { get; set; }
         }
 
         private sealed class ProviderBucket

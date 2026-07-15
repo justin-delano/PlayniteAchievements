@@ -262,7 +262,7 @@
 
     <!-- DataGrid Cell Style -->
     <Style x:Key="AchievementCellStyle" TargetType="DataGridCell">
-        <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowBackground}"/>
+        <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Focusable" Value="True"/>
         <Setter Property="IsTabStop" Value="True"/>
@@ -282,34 +282,6 @@
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
-        <Style.Triggers>
-            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=ContextMenu.IsOpen}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
-            </DataTrigger>
-            <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True">
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
-            </DataTrigger>
-            <MultiDataTrigger>
-                <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsMouseOver}" Value="True"/>
-                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
-                </MultiDataTrigger.Conditions>
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
-            </MultiDataTrigger>
-            <MultiDataTrigger>
-                <MultiDataTrigger.Conditions>
-                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsSelected}" Value="True"/>
-                    <Condition Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, Path=IsKeyboardFocusWithin}" Value="True"/>
-                </MultiDataTrigger.Conditions>
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
-            </MultiDataTrigger>
-        </Style.Triggers>
     </Style>
 
     <Style x:Key="ManageAchievementsDataGridCellStyle"
@@ -498,6 +470,34 @@
         <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="MinHeight" Value="66"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=ContextMenu.IsOpen}" Value="True">
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
+            </DataTrigger>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
+            </Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowHoverBackground}"/>
+            </Trigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsMouseOver" Value="True"/>
+                    <Condition Property="IsSelected" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
+            </MultiTrigger>
+            <MultiTrigger>
+                <MultiTrigger.Conditions>
+                    <Condition Property="IsSelected" Value="True"/>
+                    <Condition Property="IsKeyboardFocusWithin" Value="True"/>
+                </MultiTrigger.Conditions>
+                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Grid.RowSelectedBackground}"/>
+            </MultiTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="ManageAchievementsDataGridRowStyle"

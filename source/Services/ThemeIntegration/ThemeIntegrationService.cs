@@ -1741,7 +1741,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                     item.LastPlayed,
                     item.UnlockedCount,
                     item.AchievementCount,
-                    openManageAchievementsWindow: GetOpenManageAchievementsCommand(item.GameId)))
+                    openManageAchievementsWindow: GetOpenManageAchievementsCommand(item.GameId),
+                    sortingName: item.SortingName))
                 .ToList();
 
             AttachGameSummaryCommands(projected);
@@ -1785,7 +1786,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                         item.LastFriendPlayedUtc,
                         item.UniqueFriendUnlockedAchievementsCount,
                         item.TotalAchievements,
-                        openManageAchievementsWindow: hasLocalGame ? GetOpenManageAchievementsCommand(gameId) : null)
+                        openManageAchievementsWindow: hasLocalGame ? GetOpenManageAchievementsCommand(gameId) : null,
+                        sortingName: item.SortingName)
                     {
                         AppId = item.AppId,
                         ProviderGameKey = item.ProviderGameKey,
@@ -3684,8 +3686,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
         private static DynamicSortTable<FriendGameSummaryItem> CreateFriendGameSummarySortTable()
         {
             var table = new DynamicSortTable<FriendGameSummaryItem>();
-            var thenByGameName = table.ThenByName(item => item?.GameName ?? string.Empty);
-            table.Add(DynamicThemeViewKeys.Name, table.ByName(item => item?.GameName ?? string.Empty));
+            var thenByGameName = table.ThenByName(item => GetFriendGameSortingName(item));
+            table.Add(DynamicThemeViewKeys.Name, table.ByName(GetFriendGameSortingName));
             table.Add(DynamicThemeViewKeys.Provider, table.ByName(item => item?.Provider ?? item?.ProviderKey ?? string.Empty, thenByGameName));
             table.Add(DynamicThemeViewKeys.Progress, table.ByValue(item => item?.Progression ?? 0, thenByGameName));
             table.Add(DynamicThemeViewKeys.LastPlayed, table.ByValue(
@@ -3695,6 +3697,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             table.Add(DynamicThemeViewKeys.AchievementCount, table.ByValue(item => item?.TotalAchievements ?? 0, thenByGameName));
             table.SetDefault(table.ByValue(item => item?.LastUnlockUtc ?? DateTime.MinValue, thenByGameName));
             return table;
+        }
+
+        private static string GetFriendGameSortingName(FriendGameSummaryItem item)
+        {
+            return string.IsNullOrWhiteSpace(item?.SortingName)
+                ? item?.GameName ?? string.Empty
+                : item.SortingName;
         }
 
         private static readonly DynamicSortTable<FriendAchievementDisplayItem> FriendAchievementSortTable = CreateFriendAchievementSortTable();
@@ -3732,8 +3741,8 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             var table = new DynamicSortTable<GameAchievementSummary>();
             var thenByLastUnlockDescending = table.ThenByValueDescending(item => item?.LastUnlockDate ?? DateTime.MinValue);
             var thenByProgressDescending = table.ThenByValueDescending(item => item?.Progress ?? 0);
-            var thenByName = table.ThenByName(item => item?.Name ?? string.Empty);
-            table.Add(DynamicThemeViewKeys.Name, table.ByName(item => item?.Name ?? string.Empty, thenByLastUnlockDescending));
+            var thenByName = table.ThenByName(GetGameSummarySortingName);
+            table.Add(DynamicThemeViewKeys.Name, table.ByName(GetGameSummarySortingName, thenByLastUnlockDescending));
             table.Add(DynamicThemeViewKeys.Provider, table.ByName(item => item?.ProviderName ?? item?.ProviderKey ?? string.Empty, thenByName));
             table.Add(DynamicThemeViewKeys.Progress, table.ByValue(item => item?.Progress ?? 0, thenByLastUnlockDescending, thenByName));
             table.Add(DynamicThemeViewKeys.LastPlayed, table.ByValue(item => item?.LastPlayed ?? DateTime.MinValue, thenByLastUnlockDescending, thenByName));
@@ -3741,6 +3750,13 @@ namespace PlayniteAchievements.Services.ThemeIntegration
             table.Add(DynamicThemeViewKeys.AchievementCount, table.ByValue(item => item?.AchievementCount ?? 0, thenByProgressDescending, thenByLastUnlockDescending, thenByName));
             table.SetDefault(table.ByValue(item => item?.LastUnlockDate ?? DateTime.MinValue, thenByProgressDescending, thenByName));
             return table;
+        }
+
+        private static string GetGameSummarySortingName(GameAchievementSummary item)
+        {
+            return string.IsNullOrWhiteSpace(item?.SortingName)
+                ? item?.Name ?? string.Empty
+                : item.SortingName;
         }
 
         private static IEnumerable<AchievementDetail> SelectSelectedGameAchievementSource(

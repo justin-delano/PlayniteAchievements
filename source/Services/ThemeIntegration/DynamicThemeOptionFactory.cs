@@ -103,15 +103,22 @@ namespace PlayniteAchievements.Services.ThemeIntegration
                 .Select(group =>
                 {
                     var game = group.First();
-                    return new DynamicThemeOption(
-                        game.GameId.ToString("D"),
-                        !string.IsNullOrWhiteSpace(game.Name) ? game.Name : game.GameId.ToString("D"),
-                        game.AchievementCount,
-                        IsSelected(game.GameId.ToString("D"), selectedKey),
-                        applyCommand,
-                        commandParameterFactory?.Invoke(game.GameId.ToString("D")));
+                    var key = game.GameId.ToString("D");
+                    return new
+                    {
+                        Option = new DynamicThemeOption(
+                            key,
+                            !string.IsNullOrWhiteSpace(game.Name) ? game.Name : key,
+                            game.AchievementCount,
+                            IsSelected(key, selectedKey),
+                            applyCommand,
+                            commandParameterFactory?.Invoke(key)),
+                        SortName = string.IsNullOrWhiteSpace(game.SortingName) ? game.Name : game.SortingName
+                    };
                 })
-                .OrderBy(option => option.Label, StringComparer.CurrentCultureIgnoreCase)
+                .OrderBy(item => item.SortName, StringComparer.CurrentCultureIgnoreCase)
+                .ThenBy(item => item.Option.Label, StringComparer.CurrentCultureIgnoreCase)
+                .Select(item => item.Option)
                 .ToList();
 
             if (!string.IsNullOrWhiteSpace(selectedKey) &&

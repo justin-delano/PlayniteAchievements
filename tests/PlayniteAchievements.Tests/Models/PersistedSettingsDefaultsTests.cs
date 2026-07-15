@@ -216,6 +216,12 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(
                 PersistedSettings.DefaultOverviewLeftColumnRatio,
                 settings.OverviewLeftColumnRatio);
+            Assert.AreEqual(
+                PersistedSettings.DefaultFriendsOverviewFriendColumnRatio,
+                settings.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(
+                PersistedSettings.DefaultFriendsOverviewGameColumnRatio,
+                settings.FriendsOverviewGameColumnRatio);
         }
 
         [TestMethod]
@@ -364,6 +370,21 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(
                 PersistedSettings.DefaultOverviewLeftColumnRatio,
                 settings.OverviewLeftColumnRatio);
+
+            settings.FriendsOverviewFriendColumnRatio = -1d;
+            Assert.AreEqual(
+                PersistedSettings.MinFriendsOverviewColumnRatio,
+                settings.FriendsOverviewFriendColumnRatio);
+
+            settings.FriendsOverviewGameColumnRatio = 2d;
+            Assert.AreEqual(
+                PersistedSettings.MaxFriendsOverviewColumnRatio,
+                settings.FriendsOverviewGameColumnRatio);
+
+            settings.FriendsOverviewFriendColumnRatio = double.NaN;
+            Assert.AreEqual(
+                PersistedSettings.DefaultFriendsOverviewFriendColumnRatio,
+                settings.FriendsOverviewFriendColumnRatio);
         }
 
         [TestMethod]
@@ -371,7 +392,9 @@ namespace PlayniteAchievements.Models.Tests
         {
             var source = new PersistedSettings
             {
-                OverviewLeftColumnRatio = 0.64d
+                OverviewLeftColumnRatio = 0.64d,
+                FriendsOverviewFriendColumnRatio = 0.24d,
+                FriendsOverviewGameColumnRatio = 0.32d
             };
 
             var clone = source.Clone();
@@ -380,6 +403,10 @@ namespace PlayniteAchievements.Models.Tests
 
             Assert.AreEqual(0.64d, clone.OverviewLeftColumnRatio);
             Assert.AreEqual(0.64d, target.OverviewLeftColumnRatio);
+            Assert.AreEqual(0.24d, clone.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(0.24d, target.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(0.32d, clone.FriendsOverviewGameColumnRatio);
+            Assert.AreEqual(0.32d, target.FriendsOverviewGameColumnRatio);
         }
 
         [TestMethod]
@@ -951,7 +978,9 @@ namespace PlayniteAchievements.Models.Tests
                 FriendsOverviewAchievementsGridRowHeight = 47d,
                 FriendsOverviewFriendSummariesGridMaxRows = 2,
                 FriendsOverviewGameSummariesGridMaxRows = 3,
-                FriendsOverviewAchievementsGridMaxRows = 4
+                FriendsOverviewAchievementsGridMaxRows = 4,
+                FriendsOverviewFriendColumnRatio = 0.22d,
+                FriendsOverviewGameColumnRatio = 0.36d
             };
             settings.FriendsOverviewAchievementColumnVisibility["Friend"] = false;
             settings.FriendsOverviewAchievementColumnWidths["Friend"] = 144d;
@@ -989,6 +1018,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.FriendsOverviewFriendSummariesGridMaxRows, settings.FriendsOverviewFriendSummariesGridMaxRows);
             Assert.AreEqual(defaults.FriendsOverviewGameSummariesGridMaxRows, settings.FriendsOverviewGameSummariesGridMaxRows);
             Assert.AreEqual(defaults.FriendsOverviewAchievementsGridMaxRows, settings.FriendsOverviewAchievementsGridMaxRows);
+            Assert.AreEqual(defaults.FriendsOverviewFriendColumnRatio, settings.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(defaults.FriendsOverviewGameColumnRatio, settings.FriendsOverviewGameColumnRatio);
             Assert.AreEqual(0, settings.FriendsOverviewAchievementColumnVisibility.Count);
             Assert.AreEqual(0, settings.FriendsOverviewAchievementColumnWidths.Count);
             Assert.AreEqual(0, settings.FriendsOverviewAchievementColumnOrder.Count);
@@ -1122,6 +1153,8 @@ namespace PlayniteAchievements.Models.Tests
                 OverviewGameSummariesGridRowHeight = 64d,
                 OverviewGameSummariesGridMaxRows = 4,
                 OverviewLeftColumnRatio = 0.72d,
+                FriendsOverviewFriendColumnRatio = 0.23d,
+                FriendsOverviewGameColumnRatio = 0.37d,
                 ViewAchievementsTimelineRange = TimelineRange.All,
                 ViewAchievementsTimelineVisible = true
             };
@@ -1236,6 +1269,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.StartPageActivityScope, settings.StartPageActivityScope);
             Assert.AreEqual(defaults.StartPageProgressScope, settings.StartPageProgressScope);
             Assert.AreEqual(defaults.OverviewLeftColumnRatio, settings.OverviewLeftColumnRatio);
+            Assert.AreEqual(defaults.FriendsOverviewFriendColumnRatio, settings.FriendsOverviewFriendColumnRatio);
+            Assert.AreEqual(defaults.FriendsOverviewGameColumnRatio, settings.FriendsOverviewGameColumnRatio);
             Assert.AreEqual(defaults.ViewAchievementsTimelineRange, settings.ViewAchievementsTimelineRange);
             Assert.AreEqual(defaults.ViewAchievementsTimelineVisible, settings.ViewAchievementsTimelineVisible);
 

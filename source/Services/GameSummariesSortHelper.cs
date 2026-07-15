@@ -337,6 +337,11 @@ namespace PlayniteAchievements.Services
                     b,
                     sortMemberPath,
                     CompareInt(a?.Points ?? 0, b?.Points ?? 0, direction)),
+                nameof(GameSummaryItem.Owned) => (a, b) => CompareWithTieBreakers(
+                    a,
+                    b,
+                    sortMemberPath,
+                    CompareBool(a?.Owned ?? false, b?.Owned ?? false, direction)),
                 "SortingName" => (a, b) => CompareWithTieBreakers(
                     a,
                     b,
@@ -502,6 +507,12 @@ namespace PlayniteAchievements.Services
         }
 
         private static int CompareInt(int left, int right, ListSortDirection direction)
+        {
+            var comparison = left.CompareTo(right);
+            return direction == ListSortDirection.Ascending ? comparison : -comparison;
+        }
+
+        private static int CompareBool(bool left, bool right, ListSortDirection direction)
         {
             var comparison = left.CompareTo(right);
             return direction == ListSortDirection.Ascending ? comparison : -comparison;

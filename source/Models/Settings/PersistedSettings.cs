@@ -31,6 +31,10 @@ namespace PlayniteAchievements.Models.Settings
         public const double DefaultOverviewLeftColumnRatio = 0.5d;
         public const double MinOverviewLeftColumnRatio = 0.01d;
         public const double MaxOverviewLeftColumnRatio = 0.99d;
+        public const double DefaultFriendsOverviewFriendColumnRatio = 0.25d;
+        public const double DefaultFriendsOverviewGameColumnRatio = 0.31d;
+        public const double MinFriendsOverviewColumnRatio = 0.01d;
+        public const double MaxFriendsOverviewColumnRatio = 0.98d;
         public const GameActivityScope DefaultStartPageActivityScope = GameActivityScope.Played;
         public const GameProgressScope DefaultStartPageProgressScope =
             GameProgressScope.Completed | GameProgressScope.InProgress;
@@ -176,6 +180,8 @@ namespace PlayniteAchievements.Models.Settings
             new Dictionary<string, ResourceOverrideSetting>(StringComparer.OrdinalIgnoreCase);
         private List<CustomRefreshPreset> _customRefreshPresets = new List<CustomRefreshPreset>();
         private double _overviewLeftColumnRatio = DefaultOverviewLeftColumnRatio;
+        private double _friendsOverviewFriendColumnRatio = DefaultFriendsOverviewFriendColumnRatio;
+        private double _friendsOverviewGameColumnRatio = DefaultFriendsOverviewGameColumnRatio;
         private Dictionary<string, WindowPlacementState> _windowPlacements =
             new Dictionary<string, WindowPlacementState>(StringComparer.OrdinalIgnoreCase);
         private TimelineRange _overviewTimelineRange = TimelineRange.OneYear;
@@ -1819,6 +1825,22 @@ namespace PlayniteAchievements.Models.Settings
             }
         }
 
+        public double FriendsOverviewFriendColumnRatio
+        {
+            get => _friendsOverviewFriendColumnRatio;
+            set => SetValue(
+                ref _friendsOverviewFriendColumnRatio,
+                NormalizeFriendsOverviewColumnRatio(value, DefaultFriendsOverviewFriendColumnRatio));
+        }
+
+        public double FriendsOverviewGameColumnRatio
+        {
+            get => _friendsOverviewGameColumnRatio;
+            set => SetValue(
+                ref _friendsOverviewGameColumnRatio,
+                NormalizeFriendsOverviewColumnRatio(value, DefaultFriendsOverviewGameColumnRatio));
+        }
+
         /// <summary>
         /// Saved bounds for plugin-owned windows keyed by stable window name.
         /// </summary>
@@ -2318,6 +2340,8 @@ namespace PlayniteAchievements.Models.Settings
 
                 // Layout State
                 OverviewLeftColumnRatio = this.OverviewLeftColumnRatio,
+                FriendsOverviewFriendColumnRatio = this.FriendsOverviewFriendColumnRatio,
+                FriendsOverviewGameColumnRatio = this.FriendsOverviewGameColumnRatio,
                 WindowPlacements = this.WindowPlacements != null
                     ? this.WindowPlacements.ToDictionary(
                         kvp => kvp.Key,
@@ -2449,8 +2473,22 @@ namespace PlayniteAchievements.Models.Settings
 
 
             OverviewLeftColumnRatio = defaults.OverviewLeftColumnRatio;
+            FriendsOverviewFriendColumnRatio = defaults.FriendsOverviewFriendColumnRatio;
+            FriendsOverviewGameColumnRatio = defaults.FriendsOverviewGameColumnRatio;
             ViewAchievementsTimelineRange = defaults.ViewAchievementsTimelineRange;
             ViewAchievementsTimelineVisible = defaults.ViewAchievementsTimelineVisible;
+        }
+
+        private static double NormalizeFriendsOverviewColumnRatio(double value, double fallback)
+        {
+            if (double.IsNaN(value) || double.IsInfinity(value))
+            {
+                return fallback;
+            }
+
+            return Math.Max(
+                MinFriendsOverviewColumnRatio,
+                Math.Min(MaxFriendsOverviewColumnRatio, value));
         }
 
         public static double? NormalizeGridRowHeight(double? value)

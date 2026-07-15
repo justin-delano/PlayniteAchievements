@@ -307,6 +307,31 @@ namespace PlayniteAchievements.Services.Tests
                 items.Select(item => item.GameName).ToArray());
         }
 
+        [TestMethod]
+        public void TrySortItems_Owned_UsesPlayniteGamePresence()
+        {
+            var items = new List<GameSummaryItem>
+            {
+                CreateItem("Gamma", owned: false),
+                CreateItem("Beta", owned: true),
+                CreateItem("Alpha", owned: false)
+            };
+            string currentSortPath = null;
+            var currentSortDirection = ListSortDirection.Ascending;
+
+            var sorted = GameSummariesSortHelper.TrySortItems(
+                items,
+                nameof(GameSummaryItem.Owned),
+                ListSortDirection.Descending,
+                ref currentSortPath,
+                ref currentSortDirection);
+
+            Assert.IsTrue(sorted);
+            CollectionAssert.AreEqual(
+                new[] { "Beta", "Alpha", "Gamma" },
+                items.Select(item => item.GameName).ToArray());
+        }
+
         private static GameSummaryItem CreateItem(
             string gameName,
             string sortingName = null,
@@ -316,7 +341,8 @@ namespace PlayniteAchievements.Services.Tests
             int unlockedAchievements = 5,
             int collectionScore = 0,
             int prestigeScore = 0,
-            int points = 0)
+            int points = 0,
+            bool owned = false)
         {
             return new GameSummaryItem
             {
@@ -329,6 +355,7 @@ namespace PlayniteAchievements.Services.Tests
                 CollectionScore = collectionScore,
                 PrestigeScore = prestigeScore,
                 Points = points,
+                PlayniteGameId = owned ? Guid.NewGuid() : (Guid?)null,
                 AppId = Math.Abs(gameName.GetHashCode())
             };
         }

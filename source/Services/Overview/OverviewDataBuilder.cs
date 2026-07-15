@@ -23,6 +23,7 @@ namespace PlayniteAchievements.Services.Overview
     {
         private sealed class GamePresentation
         {
+            public string DisplayName { get; set; }
             public string SortingName { get; set; }
 
             public string IconPath { get; set; }
@@ -288,8 +289,8 @@ namespace PlayniteAchievements.Services.Overview
                 var presentation = ResolveGamePresentation(game.PlayniteGameId, presentationByGameId);
                 snapshot.GameSummaries.Add(new GameSummaryItem
                 {
-                    GameName = game.GameName ?? "Unknown",
-                    SortingName = presentation.SortingName ?? game.GameName ?? "Unknown",
+                    GameName = presentation.DisplayName ?? game.GameName ?? "Unknown",
+                    SortingName = presentation.SortingName ?? presentation.DisplayName ?? game.GameName ?? "Unknown",
                     GameLogo = presentation.IconPath,
                     GameCoverPath = presentation.CoverPath,
                     PlatformText = presentation.PlatformText,
@@ -722,6 +723,7 @@ namespace PlayniteAchievements.Services.Overview
             return new GamePresentation
             {
                 Game = playniteGame,
+                DisplayName = playniteGame?.Name,
                 SortingName = playniteGame?.SortingName,
                 IconPath = !string.IsNullOrEmpty(playniteGame?.Icon)
                     ? ResolveGameAssetPath(playniteGame.Icon)

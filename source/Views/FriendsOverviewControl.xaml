@@ -270,11 +270,11 @@
         <!-- ROW 2: Three connected grids -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="1.1*" MinWidth="260"/>
+                <ColumnDefinition x:Name="FriendsOverviewFriendColumn" Width="1.1*" MinWidth="260"/>
                 <ColumnDefinition Width="4"/>
-                <ColumnDefinition Width="1.35*" MinWidth="320"/>
+                <ColumnDefinition x:Name="FriendsOverviewGameColumn" Width="1.35*" MinWidth="320"/>
                 <ColumnDefinition Width="4"/>
-                <ColumnDefinition Width="2.1*" MinWidth="440"/>
+                <ColumnDefinition x:Name="FriendsOverviewAchievementColumn" Width="2.1*" MinWidth="440"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -394,11 +394,13 @@
 
             <GridSplitter Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                           Style="{StaticResource CenterLineSplitterStyle}"
+                          DragCompleted="FriendsOverviewGridSplitter_DragCompleted"
                           Focusable="False"
                           IsTabStop="False"/>
 
             <GridSplitter Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
                           Style="{StaticResource CenterLineSplitterStyle}"
+                          DragCompleted="FriendsOverviewGridSplitter_DragCompleted"
                           Focusable="False"
                           IsTabStop="False"/>
 

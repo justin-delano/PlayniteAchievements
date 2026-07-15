@@ -59,6 +59,11 @@ namespace PlayniteAchievements.Models.ThemeIntegration
         public string Name { get; }
 
         /// <summary>
+        /// Sort title from Playnite, when it differs from the visible game name.
+        /// </summary>
+        public string SortingName { get; }
+
+        /// <summary>
         /// Platform/source name (e.g., "Steam", "GOG").
         /// </summary>
         public string Platform { get; }
@@ -234,10 +239,12 @@ namespace PlayniteAchievements.Models.ThemeIntegration
             int unlockedCount = 0,
             int achievementCount = 0,
             ICommand openViewAchievementsWindow = null,
-            ICommand openManageAchievementsWindow = null)
+            ICommand openManageAchievementsWindow = null,
+            string sortingName = null)
         {
             GameId = gameId;
             Name = name ?? string.Empty;
+            SortingName = string.IsNullOrWhiteSpace(sortingName) ? Name : sortingName;
             Platform = platform ?? "Unknown";
             ProviderKey = providerKey ?? string.Empty;
             ProviderName = providerName ?? string.Empty;
