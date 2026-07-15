@@ -31,6 +31,8 @@ namespace PlayniteAchievements.Services.Library
         private readonly ILogger _logger;
         private readonly Dictionary<string, LibraryProjectionSnapshot> _cache =
             new Dictionary<string, LibraryProjectionSnapshot>(StringComparer.Ordinal);
+        private readonly Dictionary<string, InFlightBuild> _inFlight =
+            new Dictionary<string, InFlightBuild>(StringComparer.Ordinal);
         private int _cacheGeneration;
         private int _warmGeneration;
         private bool _warmSuppressed;
@@ -151,6 +153,11 @@ namespace PlayniteAchievements.Services.Library
         {
             _disposed = true;
 
+            lock (_sync)
+            {
+                _inFlight.Clear();
+            }
+
             if (_cacheManager != null)
             {
                 _cacheManager.CacheInvalidated -= OnProjectionSourceChanged;
@@ -173,9 +180,19 @@ namespace PlayniteAchievements.Services.Library
             bool useCache,
             Func<LibraryProjectionSnapshot> build)
         {
-            int generation = 0;
-            if (useCache)
+            if (!useCache)
             {
+                // Caller-specific builds (e.g. overview with revealed spoiler keys) capture
+                // per-caller state and must never be shared or cached.
+                ThrowIfDisposed();
+                return build() ?? new LibraryProjectionSnapshot();
+            }
+
+            while (true)
+            {
+                InFlightBuild flight;
+                bool owner = false;
+
                 lock (_sync)
                 {
                     ThrowIfDisposed();
@@ -184,29 +201,71 @@ namespace PlayniteAchievements.Services.Library
                         return cached;
                     }
 
-                    generation = _cacheGeneration;
-                }
-            }
-            else
-            {
-                ThrowIfDisposed();
-            }
-
-            var snapshot = build() ?? new LibraryProjectionSnapshot();
-
-            if (useCache)
-            {
-                lock (_sync)
-                {
-                    ThrowIfDisposed();
-                    if (generation == _cacheGeneration)
+                    var generation = _cacheGeneration;
+                    if (_inFlight.TryGetValue(key, out var existing) && existing.Generation == generation)
                     {
-                        _cache[key] = snapshot;
+                        flight = existing;
+                    }
+                    else
+                    {
+                        // Either no build is running for this key, or the running one started
+                        // before the latest Invalidate(). Start a fresh build; a superseded
+                        // build keeps running but fails the ReferenceEquals check below, so its
+                        // result is returned to its own callers without being stored as current.
+                        flight = new InFlightBuild
+                        {
+                            Generation = generation,
+                            Task = Task.Run(build)
+                        };
+                        _inFlight[key] = flight;
+                        owner = true;
                     }
                 }
-            }
 
-            return snapshot;
+                LibraryProjectionSnapshot snapshot = null;
+                try
+                {
+                    try
+                    {
+                        snapshot = flight.Task.GetAwaiter().GetResult() ?? new LibraryProjectionSnapshot();
+                    }
+                    catch when (!owner)
+                    {
+                        // A joined build faulted or was canceled via its owner's token. Retry
+                        // instead of propagating another caller's exception; the next iteration
+                        // finds a cached snapshot, joins a newer build, or becomes the owner.
+                        snapshot = null;
+                    }
+                }
+                finally
+                {
+                    lock (_sync)
+                    {
+                        if (_inFlight.TryGetValue(key, out var current) && ReferenceEquals(current, flight))
+                        {
+                            _inFlight.Remove(key);
+                            if (snapshot != null && flight.Generation == _cacheGeneration)
+                            {
+                                _cache[key] = snapshot;
+                            }
+                        }
+                    }
+                }
+
+                if (snapshot != null)
+                {
+                    return snapshot;
+                }
+            }
+        }
+
+        // Shares one build per cache key across concurrent callers. Without this, a burst of
+        // invalidations (e.g. per-game saves during a bulk refresh) spawns overlapping
+        // whole-library builds whose combined allocations can exhaust memory.
+        private sealed class InFlightBuild
+        {
+            public Task<LibraryProjectionSnapshot> Task;
+            public int Generation;
         }
 
         private LibraryProjectionSnapshot BuildOverview(
