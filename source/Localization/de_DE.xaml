@@ -529,7 +529,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityPercent">Rarity percent</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowDescription">Description</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowGameName">Game name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_TabNotifications">Notifications</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_TabNotifications">Benachrichtigungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastBehavior">Behavior</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ScreenshotsHeader">Unlock screenshots</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableUnlockScreenshots">Save a screenshot when you unlock an achievement</sys:String>
@@ -1008,7 +1008,7 @@ This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:
     <sys:String x:Key="LOCPlayAch_Rarity_UltraRare">Äußerst selten</sys:String>
     <sys:String x:Key="LOCPlayAch_Rarity_Uncommon">Ungewöhnlich</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Notifications">Benachrichtigungen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Synchronisation &amp; Aktualisierung</sys:String>
+    <sys:String x:Key="LOCPlayAch_Section_SyncUpdates">Datenabgleich</sys:String>
     <sys:String x:Key="LOCPlayAch_Section_Timeline">Erfolgshistogramm</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_14D">14 Tage</sys:String>
     <sys:String x:Key="LOCPlayAch_TimeRange_1M">1 Monat</sys:String>
