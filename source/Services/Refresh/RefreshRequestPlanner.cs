@@ -604,6 +604,17 @@ namespace PlayniteAchievements.Services.Refresh
             }
 
             var friendScope = ResolveFriendScope(options.Scope);
+
+            // Global unowned-games gate: Full is the only scope that scans games outside the
+            // current user's library, so when unowned friend games are excluded every Full
+            // request (UI mode, per-friend refresh, scheduled run) is clamped to Shared here,
+            // the single seam all friend refreshes pass through.
+            if (friendScope == FriendRefreshScope.Full &&
+                _settings?.Persisted?.IncludeUnownedFriendGames != true)
+            {
+                friendScope = FriendRefreshScope.Shared;
+            }
+
             IReadOnlyCollection<Guid> playniteGameIds = options.PlayniteGameIds?
                 .Where(id => id != Guid.Empty)
                 .Distinct()
