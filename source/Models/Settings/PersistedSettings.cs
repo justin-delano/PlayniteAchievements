@@ -37,6 +37,8 @@ namespace PlayniteAchievements.Models.Settings
         public const string DefaultViewAchievementsHotkey = "Ctrl+Alt+V";
         public const string DefaultManageAchievementsHotkey = "Ctrl+Alt+M";
         public const string DefaultOverviewHotkey = "Ctrl+Alt+O";
+        public const string DefaultOpenSettingsHotkey = "Ctrl+Alt+P";
+        public const string DefaultCategoryModeHotkey = "C";
 
         /// <summary>
         /// Column key of the Progress column in game-summaries grids (matches the XAML ColumnKey and
@@ -112,6 +114,8 @@ namespace PlayniteAchievements.Models.Settings
         private string _viewAchievementsHotkey = DefaultViewAchievementsHotkey;
         private string _manageAchievementsHotkey = DefaultManageAchievementsHotkey;
         private string _overviewHotkey = DefaultOverviewHotkey;
+        private string _openSettingsHotkey = DefaultOpenSettingsHotkey;
+        private string _categoryModeHotkey = DefaultCategoryModeHotkey;
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
@@ -835,6 +839,25 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _overviewHotkey;
             set => SetValue(ref _overviewHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that opens the plugin settings window.
+        /// </summary>
+        public string OpenSettingsHotkey
+        {
+            get => _openSettingsHotkey;
+            set => SetValue(ref _openSettingsHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that flips category mode in a focused achievement grid, when the
+        /// category toggle is available there.
+        /// </summary>
+        public string CategoryModeHotkey
+        {
+            get => _categoryModeHotkey;
+            set => SetValue(ref _categoryModeHotkey, NormalizeHotkeyText(value));
         }
 
         #endregion
@@ -2201,6 +2224,8 @@ namespace PlayniteAchievements.Models.Settings
                 ViewAchievementsHotkey = this.ViewAchievementsHotkey,
                 ManageAchievementsHotkey = this.ManageAchievementsHotkey,
                 OverviewHotkey = this.OverviewHotkey,
+                OpenSettingsHotkey = this.OpenSettingsHotkey,
+                CategoryModeHotkey = this.CategoryModeHotkey,
 
                 // Notification Settings
                 EnableNotifications = this.EnableNotifications,
