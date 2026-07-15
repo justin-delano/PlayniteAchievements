@@ -249,6 +249,76 @@ namespace PlayniteAchievements.SqlNado.Tests
         }
 
         [TestMethod]
+        public void ComputeDefinitionCategoryBackfills_FillsOnlyDefaultPlaceholders()
+        {
+            var existing = new List<(long Id, string ApiName, string Category, string CategoryType)>
+            {
+                (1, "ach_blank", null, null),
+                (2, "ach_default", "Default", "Default"),
+                (3, "ach_categorized", "Base Game", "Base"),
+                (4, "ach_no_incoming", "Default", "Default")
+            };
+            var incoming = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "ach_blank", Category = "Phantom Liberty", CategoryType = "DLC" },
+                new AchievementDetail { ApiName = "ach_default", Category = "Phantom Liberty", CategoryType = "DLC" },
+                new AchievementDetail { ApiName = "ach_categorized", Category = "Renamed Group", CategoryType = "DLC" }
+            };
+
+            var backfills = SqlNadoCacheBehavior.ComputeDefinitionCategoryBackfills(existing, incoming);
+
+            Assert.AreEqual(2, backfills.Count);
+            Assert.AreEqual(1L, backfills[0].DefinitionId);
+            Assert.AreEqual("Phantom Liberty", backfills[0].Category);
+            Assert.AreEqual("DLC", backfills[0].CategoryType);
+            Assert.AreEqual(2L, backfills[1].DefinitionId);
+            Assert.AreEqual("Phantom Liberty", backfills[1].Category);
+            Assert.AreEqual("DLC", backfills[1].CategoryType);
+        }
+
+        [TestMethod]
+        public void ComputeDefinitionCategoryBackfills_FillsPartiallyMissingFieldsIndependently()
+        {
+            var existing = new List<(long Id, string ApiName, string Category, string CategoryType)>
+            {
+                (1, "ach_label_only", "Existing Label", "Default"),
+                (2, "ach_type_only", "Default", "DLC")
+            };
+            var incoming = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "ach_label_only", Category = "Incoming Label", CategoryType = "DLC" },
+                new AchievementDetail { ApiName = "ach_type_only", Category = "Incoming Label", CategoryType = "Base" }
+            };
+
+            var backfills = SqlNadoCacheBehavior.ComputeDefinitionCategoryBackfills(existing, incoming);
+
+            Assert.AreEqual(2, backfills.Count);
+            Assert.AreEqual("Existing Label", backfills[0].Category);
+            Assert.AreEqual("DLC", backfills[0].CategoryType);
+            Assert.AreEqual("Incoming Label", backfills[1].Category);
+            Assert.AreEqual("DLC", backfills[1].CategoryType);
+        }
+
+        [TestMethod]
+        public void ComputeDefinitionCategoryBackfills_SkipsDefaultOnlyIncomingAndUnknownApiNames()
+        {
+            var existing = new List<(long Id, string ApiName, string Category, string CategoryType)>
+            {
+                (1, "ach_one", null, null)
+            };
+            var incoming = new List<AchievementDetail>
+            {
+                new AchievementDetail { ApiName = "ach_one", Category = "  ", CategoryType = "Default" },
+                new AchievementDetail { ApiName = "ach_unknown", Category = "DLC Pack", CategoryType = "DLC" },
+                null
+            };
+
+            Assert.AreEqual(0, SqlNadoCacheBehavior.ComputeDefinitionCategoryBackfills(existing, incoming).Count);
+            Assert.AreEqual(0, SqlNadoCacheBehavior.ComputeDefinitionCategoryBackfills(null, incoming).Count);
+            Assert.AreEqual(0, SqlNadoCacheBehavior.ComputeDefinitionCategoryBackfills(existing, null).Count);
+        }
+
+        [TestMethod]
         public void HasLegacyExophaseKeyedDefinitions_DetectsOnlyLegacyPrefix()
         {
             Assert.IsTrue(SqlNadoCacheBehavior.HasLegacyExophaseKeyedDefinitions(
