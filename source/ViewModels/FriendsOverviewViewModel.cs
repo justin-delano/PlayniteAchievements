@@ -2006,6 +2006,12 @@ namespace PlayniteAchievements.ViewModels
             }
 
             if (string.IsNullOrWhiteSpace(propertyName) ||
+                propertyName == nameof(PersistedSettings.IncludeUnownedFriendGames))
+            {
+                RebuildFriendRefreshModes();
+            }
+
+            if (string.IsNullOrWhiteSpace(propertyName) ||
                 propertyName == nameof(PersistedSettings.FriendsOverviewFriendSummariesGridMaxRows) ||
                 propertyName == nameof(PersistedSettings.FriendsOverviewGameSummariesGridMaxRows) ||
                 propertyName == nameof(PersistedSettings.FriendsOverviewAchievementsGridMaxRows))
@@ -2041,14 +2047,35 @@ namespace PlayniteAchievements.ViewModels
             }
         }
 
-        private static IEnumerable<RefreshMode> CreateFriendRefreshModes()
+        private IEnumerable<RefreshMode> CreateFriendRefreshModes()
         {
             yield return CreateRefreshMode(RefreshModeType.FriendsRecent);
-            yield return CreateRefreshMode(RefreshModeType.FriendsFull);
+            if (_settings?.Persisted?.IncludeUnownedFriendGames == true)
+            {
+                // Full is the only mode that scans unowned friend games; hide it entirely when
+                // the global toggle excludes unowned games (the planner also clamps any Full
+                // request to Shared as a backstop).
+                yield return CreateRefreshMode(RefreshModeType.FriendsFull);
+            }
+
             yield return CreateRefreshMode(RefreshModeType.FriendsShared);
             yield return CreateRefreshMode(RefreshModeType.FriendsInstalled);
             yield return CreateRefreshMode(RefreshModeType.FriendsSelectedGame);
             yield return CreateRefreshMode(RefreshModeType.FriendsCustom);
+        }
+
+        private void RebuildFriendRefreshModes()
+        {
+            FriendRefreshModes.Clear();
+            foreach (var mode in CreateFriendRefreshModes())
+            {
+                FriendRefreshModes.Add(mode);
+            }
+
+            if (!FriendRefreshModes.Any(mode => string.Equals(mode?.Key, SelectedRefreshMode, StringComparison.Ordinal)))
+            {
+                SelectedRefreshMode = RefreshModeType.FriendsRecent.GetKey();
+            }
         }
 
         private static RefreshMode CreateRefreshMode(RefreshModeType type)
