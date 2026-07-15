@@ -143,14 +143,44 @@ namespace PlayniteAchievements.Providers.Tests
 
                 var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
 
-                Assert.IsNotNull(data);
-                Assert.AreEqual("RPCS3", data.ProviderKey);
-                Assert.IsFalse(data.HasAchievements);
-                Assert.AreEqual(0, data.Achievements.Count);
+                // Trophy data for the override was not located: no payload is produced,
+                // so previously cached achievements are preserved instead of being wiped.
+                Assert.IsNull(data);
             }
             finally
             {
                 PlayniteAchievementsPlugin.Instance = previousPlugin;
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
+        public async Task RefreshAsync_UnlocatableGame_ReturnsNoPayloadSoCacheIsPreserved()
+        {
+            var tempDir = CreateTempDirectory();
+            var rpcs3Root = Path.Combine(tempDir, "rpcs3");
+
+            try
+            {
+                // Trophy data exists for some other game so the scan is not skipped outright.
+                CreateRpcs3TrophyData(rpcs3Root, "NPWR22222_00", "Detected Game", "Detected Trophy");
+
+                var provider = CreateProvider(rpcs3Root);
+
+                // Uninstalled game: no install directory, roms, or matching title name.
+                var game = new Game
+                {
+                    Id = Guid.NewGuid(),
+                    Name = "Completely Unrelated Title",
+                    InstallDirectory = null
+                };
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNull(data);
+            }
+            finally
+            {
                 DeleteDirectory(tempDir);
             }
         }

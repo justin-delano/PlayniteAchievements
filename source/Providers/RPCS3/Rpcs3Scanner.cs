@@ -242,9 +242,11 @@ namespace PlayniteAchievements.Providers.RPCS3
                 .Where(source => source != null && !string.IsNullOrWhiteSpace(source.NpCommId))
                 .ToList();
 
+            // A null result means "trophy data not located"; the refresh pipeline skips
+            // persistence for null results so previously cached achievements are preserved.
             if (sources.Count == 0)
             {
-                return Task.FromResult(BuildNoAchievementsData(game));
+                return Task.FromResult<GameAchievementData>(null);
             }
 
             cancel.ThrowIfCancellationRequested();
@@ -260,7 +262,7 @@ namespace PlayniteAchievements.Providers.RPCS3
 
             if (achievements.Count == 0)
             {
-                return Task.FromResult(BuildNoAchievementsData(game));
+                return Task.FromResult<GameAchievementData>(null);
             }
 
             return Task.FromResult(new GameAchievementData
@@ -1697,19 +1699,6 @@ namespace PlayniteAchievements.Providers.RPCS3
             {
                 return path;
             }
-        }
-
-        private static GameAchievementData BuildNoAchievementsData(Game game)
-        {
-            return new GameAchievementData
-            {
-                ProviderKey = "RPCS3",
-                LibrarySourceName = game?.Source?.Name,
-                GameName = game?.Name,
-                PlayniteGameId = game?.Id,
-                HasAchievements = false,
-                LastUpdatedUtc = DateTime.UtcNow
-            };
         }
 
         private static string NormalizeTrophyType(string trophyType)
