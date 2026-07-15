@@ -153,7 +153,11 @@ namespace PlayniteAchievements.Services.Images
                 }
                 else
                 {
-                    bmp = LoadLocal(uri, decodePixel);
+                    // Decode off the calling thread; GetAsync runs synchronously up to the first
+                    // await, so an inline decode would run on the UI thread that requested the
+                    // image. The bitmap is frozen below before crossing back. Mirrors the
+                    // disk-cache path's Task.Run decode.
+                    bmp = await Task.Run(() => LoadLocal(uri, decodePixel)).ConfigureAwait(false);
                 }
 
                 if (gray && bmp != null)
