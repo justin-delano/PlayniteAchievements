@@ -399,8 +399,19 @@
 
                     <StackPanel Orientation="Horizontal"
                                 VerticalAlignment="Center"
-                                Margin="18,0,0,0"
-                                Visibility="{Binding EnableFriendsFeatures, Converter={StaticResource BoolToVis}}">
+                                Margin="18,0,0,0">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="{Binding EnableFriendsFeatures, Converter={StaticResource BoolToVis}}"/>
+                                <Style.Triggers>
+                                    <!-- Keep the subview switch reachable while the friends view is
+                                         active so disabling the feature never traps the user there. -->
+                                    <DataTrigger Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Friends}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
                         <Button x:Name="OverviewSubViewButton"
                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Overview}"
                                 Click="OverviewSubViewButton_Click">
