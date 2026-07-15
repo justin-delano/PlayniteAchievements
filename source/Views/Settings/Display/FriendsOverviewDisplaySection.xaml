@@ -54,18 +54,6 @@
 
             <Border Style="{StaticResource SectionBorderStyle}">
                 <StackPanel>
-                    <TextBlock Text="{DynamicResource LOCPlayAch_Overview_GameSummaries}"
-                               Style="{StaticResource SectionHeaderStyle}"
-                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-                    <Border Style="{StaticResource SectionAccentRuleStyle}"/>
-                    <Border Style="{StaticResource SettingGroupCardStyle}">
-                        <controls:GridOptionsEditor Options="{Binding Persisted.GridOptions.GameSummaries[FriendsOverviewSelectedFriend]}"/>
-                    </Border>
-                </StackPanel>
-            </Border>
-
-            <Border Style="{StaticResource SectionBorderStyle}">
-                <StackPanel>
                     <TextBlock Text="{DynamicResource LOCPlayAch_FriendsOverview_Title}"
                                Style="{StaticResource SectionHeaderStyle}"
                                Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
