@@ -252,30 +252,33 @@
     <DataTemplate x:Key="PlayAch.Template.ScreenshotFrame"
                   DataType="{x:Type vm:AchievementToastViewModel}">
         <Grid>
-            <!-- Frame chrome: a black vignette around the whole shot; no border lines and no
-                 banner card. The fade is strong enough at the edges to carry the bottom content. -->
+            <!-- Frame chrome: a circular black vignette around the whole shot; no border lines
+                 and no banner card. Relative radial gradients stretch to the bounds, so the radii
+                 undo the 16:9 aspect (radius = half-diagonal: 0.57 of width, 1.02 of height) and
+                 the fade stays a circle through the corners instead of an edge-hugging ellipse. -->
             <Rectangle IsHitTestVisible="False">
                 <Rectangle.Fill>
                     <RadialGradientBrush Center="0.5,0.5"
                                          GradientOrigin="0.5,0.5"
-                                         RadiusX="1.0"
-                                         RadiusY="1.0">
+                                         RadiusX="0.57"
+                                         RadiusY="1.02">
                         <GradientStop Color="#00000000" Offset="0"/>
-                        <GradientStop Color="#00000000" Offset="0.45"/>
-                        <GradientStop Color="#66000000" Offset="0.78"/>
-                        <GradientStop Color="#CC000000" Offset="1"/>
+                        <GradientStop Color="#00000000" Offset="0.38"/>
+                        <GradientStop Color="#73000000" Offset="0.72"/>
+                        <GradientStop Color="#F2000000" Offset="1"/>
                     </RadialGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
 
-            <!-- Bottom contrast wash so the floating content reads over any game footage -->
+            <!-- Bottom contrast wash so the floating content reads over any game footage; the
+                 circular vignette is lightest at the bottom-center, so this carries the text. -->
             <Rectangle VerticalAlignment="Bottom"
-                       Height="260"
+                       Height="280"
                        IsHitTestVisible="False">
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                         <GradientStop Color="#00000000" Offset="0"/>
-                        <GradientStop Color="#B4000000" Offset="1"/>
+                        <GradientStop Color="#D0000000" Offset="1"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
