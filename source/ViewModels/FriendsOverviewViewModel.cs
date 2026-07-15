@@ -430,9 +430,7 @@ namespace PlayniteAchievements.ViewModels
 
                 if (SelectedFriend != null)
                 {
-                    return string.Format(
-                        ResourceProvider.GetString("LOCPlayAch_FriendsOverview_SelectedFriendAchievements") ?? "{0} Achievements",
-                        SelectedFriend.DisplayName);
+                    return SelectedFriend.DisplayName;
                 }
 
                 if (SelectedGame != null)
