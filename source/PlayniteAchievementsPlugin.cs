@@ -461,6 +461,7 @@ namespace PlayniteAchievements
                         gameId => _windowService.ToggleViewAchievementsWindowFromHotkey(gameId),
                         gameId => _windowService.ToggleManageAchievementsViewFromHotkey(gameId),
                         ToggleOverviewWindowFromHotkey,
+                        () => OpenSettingsView(),
                         TryRefreshActivePluginView);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
