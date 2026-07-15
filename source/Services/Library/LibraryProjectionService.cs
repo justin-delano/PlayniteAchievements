@@ -20,6 +20,7 @@ namespace PlayniteAchievements.Services.Library
     internal sealed class LibraryProjectionService : IDisposable
     {
         private const int WarmDebounceMs = 1500;
+        private static readonly TimeSpan MinEagerWarmInterval = TimeSpan.FromSeconds(30);
 
         private readonly object _sync = new object();
         private readonly AchievementDataService _achievementDataService;
@@ -36,6 +37,7 @@ namespace PlayniteAchievements.Services.Library
             new Dictionary<string, InFlightBuild>(StringComparer.Ordinal);
         private int _cacheGeneration;
         private int _warmGeneration;
+        private DateTime _lastWarmStartedUtc;
         private bool _warmSuppressed;
         private bool _disposed;
 
@@ -379,10 +381,33 @@ namespace PlayniteAchievements.Services.Library
         {
             try
             {
-                await Task.Delay(WarmDebounceMs).ConfigureAwait(false);
+                // Rate-limit eager warms in addition to the debounce. A trickle of
+                // invalidations spaced wider than the debounce (e.g. per-game Playnite
+                // ItemUpdated events while post-refresh tag sync drains) would otherwise
+                // trigger a whole-library rebuild per event, and each rebuild holds the
+                // cache lock long enough to stall concurrent per-game reads. Invalidate()
+                // has already cleared the cache, so on-demand consumers stay fresh; only
+                // the precompute is deferred until the interval elapses, and the trailing
+                // warm still runs after the last invalidation.
+                var delay = TimeSpan.FromMilliseconds(WarmDebounceMs);
+                lock (_sync)
+                {
+                    var untilNextWarm = MinEagerWarmInterval - (DateTime.UtcNow - _lastWarmStartedUtc);
+                    if (untilNextWarm > delay)
+                    {
+                        delay = untilNextWarm;
+                    }
+                }
+
+                await Task.Delay(delay).ConfigureAwait(false);
                 if (_disposed || generation != Volatile.Read(ref _warmGeneration))
                 {
                     return;
+                }
+
+                lock (_sync)
+                {
+                    _lastWarmStartedUtc = DateTime.UtcNow;
                 }
 
                 using (PerfScope.StartStartup(_logger, "Warm.OverviewProjection", thresholdMs: 250))

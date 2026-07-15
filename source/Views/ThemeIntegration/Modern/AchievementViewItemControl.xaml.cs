@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Models;
+using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.Cache;
@@ -373,15 +374,27 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         private void UpdateForGame(Guid gameId)
         {
-            var gameData = Plugin?.AchievementDataService?.GetVisibleGameAchievementData(gameId);
+            // Fetch off the UI thread: the cache read can wait multiple seconds behind
+            // whole-library loads (projection warms, friends overview snapshots) holding
+            // the cache lock, and this runs once per visible grid item.
+            var gameIdText = gameId.ToString();
+            ViewItemAchievementDataLoader.LoadAsync(
+                Plugin?.AchievementDataService,
+                gameId,
+                Dispatcher,
+                isStale: () => !string.Equals(_currentGameIdText, gameIdText, StringComparison.OrdinalIgnoreCase),
+                apply: ApplyGameData,
+                logger: _logger);
+        }
 
+        private void ApplyGameData(GameAchievementData gameData)
+        {
             if (gameData == null || !gameData.HasAchievements || (gameData.Achievements?.Count ?? 0) == 0)
             {
                 ClearData();
                 return;
             }
 
-            var achievements = gameData.Achievements;
             // Use pre-computed counts from GameAchievementData instead of counting with LINQ
             UnlockedCount = gameData.UnlockedCount;
             AchievementCount = gameData.AchievementCount;
