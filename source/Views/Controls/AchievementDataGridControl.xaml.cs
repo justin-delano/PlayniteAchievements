@@ -509,6 +509,8 @@ namespace PlayniteAchievements.Views.Controls
         private GridSearchControl _categorySearch;
         private GridSearchControl _originalSearch;
         private string _categorySearchText = string.Empty;
+        private string _categorySortPath;
+        private ListSortDirection? _categorySortDirection;
         private bool _startInCategoryModeApplied;
         private DataGridRow _pendingCategoryRightClickRow;
 
@@ -1086,6 +1088,8 @@ namespace PlayniteAchievements.Views.Controls
                 }
 
                 _categorySearchText = string.Empty;
+                _categorySortPath = null;
+                _categorySortDirection = null;
                 RebuildCategorySummaries();
             }
 
@@ -1120,16 +1124,35 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(_categorySearchText))
+            var visible = all;
+            if (!string.IsNullOrWhiteSpace(_categorySearchText))
             {
-                CategorySummaries = all;
-                return;
+                var needle = _categorySearchText.Trim();
+                visible = all
+                    .Where(c => (c.GameName ?? string.Empty).IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToList();
             }
 
-            var needle = _categorySearchText.Trim();
-            CategorySummaries = all
-                .Where(c => (c.GameName ?? string.Empty).IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
-                .ToList();
+            // A manual column sort overlays the builder's default order (custom category order,
+            // then provider order); sorting a copy keeps _allCategorySummaries as the reset target.
+            if (_categorySortDirection.HasValue && !string.IsNullOrWhiteSpace(_categorySortPath))
+            {
+                var sortPath = string.Empty;
+                var sortDirection = ListSortDirection.Ascending;
+                var sorted = new List<GameSummaryItem>(visible);
+                if (GameSummariesSortHelper.TrySortItems(
+                        sorted,
+                        _categorySortPath,
+                        _categorySortDirection.Value,
+                        ref sortPath,
+                        ref sortDirection))
+                {
+                    visible = sorted;
+                }
+            }
+
+            CategorySummaries = visible;
+            CategoryListGrid?.SetSortIndicator(_categorySortPath, _categorySortDirection);
         }
 
         private void DrillIntoCategory(CategorySummaryItem item)
@@ -1280,6 +1303,34 @@ namespace PlayniteAchievements.Views.Controls
             {
                 DrillIntoCategory(selected);
             }
+        }
+
+        // Category rows default to the builder's source order (custom category order, then
+        // provider order); header clicks cycle ascending -> descending -> back to that default.
+        private void CategoryList_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            e.Handled = true;
+            var sortAction = GameSummariesSortHelper.ResolveSourceOrderedGridSortAction(
+                e.Column?.SortMemberPath,
+                _categorySortPath,
+                _categorySortDirection);
+            if (sortAction.Kind == GameSummariesGridSortActionKind.None)
+            {
+                return;
+            }
+
+            if (sortAction.Kind == GameSummariesGridSortActionKind.ResetToDefault)
+            {
+                _categorySortPath = null;
+                _categorySortDirection = null;
+            }
+            else
+            {
+                _categorySortPath = sortAction.SortMemberPath;
+                _categorySortDirection = sortAction.Direction;
+            }
+
+            ApplyCategoryNameFilter();
         }
 
         private void CategoryList_RowPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
