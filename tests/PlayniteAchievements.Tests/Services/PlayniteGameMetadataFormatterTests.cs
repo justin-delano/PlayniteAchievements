@@ -7,9 +7,15 @@ namespace PlayniteAchievements.Services.Tests
     public class PlayniteGameMetadataFormatterTests
     {
         [TestMethod]
-        public void FormatPlaytime_FormatsZeroMinutes()
+        public void FormatPlaytime_ReturnsEmptyForZeroPlaytime()
         {
-            Assert.AreEqual("0m", PlayniteGameMetadataFormatter.FormatPlaytime(0));
+            Assert.AreEqual(string.Empty, PlayniteGameMetadataFormatter.FormatPlaytime(0));
+        }
+
+        [TestMethod]
+        public void FormatPlaytime_FormatsSubMinutePlaytime()
+        {
+            Assert.AreEqual("0m", PlayniteGameMetadataFormatter.FormatPlaytime(30));
         }
 
         [TestMethod]

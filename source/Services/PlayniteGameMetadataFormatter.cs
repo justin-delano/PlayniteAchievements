@@ -58,6 +58,13 @@ namespace PlayniteAchievements.Services
 
         public static string FormatPlaytime(ulong playtimeSeconds)
         {
+            if (playtimeSeconds == 0)
+            {
+                // Zero doubles as the "no playtime data" sentinel (providers such as
+                // Exophase report no playtime), so show nothing instead of "0m".
+                return string.Empty;
+            }
+
             var totalMinutes = playtimeSeconds / 60;
             var hours = totalMinutes / 60;
             var minutes = totalMinutes % 60;
