@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Playnite.SDK;
@@ -37,6 +38,13 @@ namespace PlayniteAchievements.Services.Achievements
                 SoftcoreCategoryType,
                 HardcoreCategoryType
             };
+
+        private const int NormalizeCacheCapacity = 512;
+
+        private static readonly ConcurrentDictionary<string, string> NormalizeOrDefaultCache =
+            new ConcurrentDictionary<string, string>(StringComparer.Ordinal);
+
+        private static readonly char[] ValueSeparators = { '|', ',', ';', '/' };
 
         private static readonly Dictionary<string, string> CanonicalByAlias =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -83,8 +91,24 @@ namespace PlayniteAchievements.Services.Achievements
 
         public static string NormalizeOrDefault(string rawValue)
         {
+            // Called once per achievement row when materializing the whole library from the
+            // cache database, with raw values drawn from a tiny fixed vocabulary. Memoized to
+            // avoid the per-call split/LINQ allocations; results are pure functions of the
+            // immutable canonical tables, so entries never need invalidation.
+            var key = rawValue ?? string.Empty;
+            if (NormalizeOrDefaultCache.TryGetValue(key, out var cached))
+            {
+                return cached;
+            }
+
             var normalized = Normalize(rawValue);
-            return string.IsNullOrWhiteSpace(normalized) ? DefaultCategoryType : normalized;
+            var result = string.IsNullOrWhiteSpace(normalized) ? DefaultCategoryType : normalized;
+            if (NormalizeOrDefaultCache.Count < NormalizeCacheCapacity)
+            {
+                NormalizeOrDefaultCache.TryAdd(key, result);
+            }
+
+            return result;
         }
 
         public static string NormalizeCategory(string rawValue)
@@ -118,9 +142,8 @@ namespace PlayniteAchievements.Services.Achievements
                 return new List<string>();
             }
 
-            var separators = new[] { '|', ',', ';', '/' };
             var split = rawValue
-                .Split(separators, StringSplitOptions.RemoveEmptyEntries)
+                .Split(ValueSeparators, StringSplitOptions.RemoveEmptyEntries)
                 .Select(a => (a ?? string.Empty).Trim())
                 .Where(a => !string.IsNullOrWhiteSpace(a))
                 .ToList();
