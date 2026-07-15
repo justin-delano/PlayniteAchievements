@@ -800,6 +800,62 @@ namespace PlayniteAchievements.Views.Controls
             return ControlBar?.Items.OfType<GridToggleFilter>().All(t => t.IsChecked) ?? true;
         }
 
+        // Flips category mode from the keyboard (configurable, default "C") while focus is inside
+        // this control. It drives the same GridModeToggle the control bar renders, so the hotkey
+        // acts exactly when that toggle is currently shown and clickable, and never otherwise.
+        protected override void OnKeyDown(KeyEventArgs e)
+        {
+            base.OnKeyDown(e);
+            if (e != null && !e.Handled && TryHandleCategoryModeHotkey(e))
+            {
+                e.Handled = true;
+            }
+        }
+
+        private bool TryHandleCategoryModeHotkey(KeyEventArgs e)
+        {
+            if (e.IsRepeat)
+            {
+                return false;
+            }
+
+            var persisted = PlayniteAchievementsPlugin.Instance?.Settings?.Persisted;
+            if (persisted?.EnableAchievementHotkeys != true ||
+                !AchievementHotkeyGesture.TryParse(persisted.CategoryModeHotkey, out var configured) ||
+                configured == null ||
+                configured.IsEmpty)
+            {
+                return false;
+            }
+
+            var key = e.Key == Key.System ? e.SystemKey
+                : e.Key == Key.ImeProcessed ? e.ImeProcessedKey
+                : e.Key;
+            if (!AchievementHotkeyGesture.TryCreate(key, Keyboard.Modifiers, out var pressed) ||
+                !configured.Equals(pressed) ||
+                Services.UI.KeyboardFocusScope.IsTextInputFocused())
+            {
+                return false;
+            }
+
+            // Mirror the toggle's own gating: it must be injected into the currently attached
+            // control bar, the bar itself shown, and the toggle effectively visible (it auto-hides
+            // when category mode is unavailable, e.g. multi-game sources or active filters).
+            var toggle = _modeToggle;
+            if (toggle == null ||
+                !ShowControlBar ||
+                _controlBarWithToggle == null ||
+                !ReferenceEquals(_controlBarWithToggle, ControlBar) ||
+                !toggle.EffectiveIsVisible)
+            {
+                return false;
+            }
+
+            // Same path as clicking the control-bar ToggleButton (bound to GridModeToggle.IsChecked).
+            toggle.IsChecked = !toggle.IsChecked;
+            return true;
+        }
+
         // Injects the category-mode toggle and Back button into the surface-owned control bar and
         // reconciles which items are shown for the current mode (flat / category list / drill).
         private void SyncModeToggle()
