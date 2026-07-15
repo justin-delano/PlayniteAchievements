@@ -1018,12 +1018,13 @@ namespace PlayniteAchievements.Services.Database
                             if (gameId > 0)
                             {
                                 // A complete Ok definition fetch is authoritative for provider-only
-                                // rows. Mapped proxy rows mirror the current user's schema via the
-                                // proxy refresh (authoritative at unlock-save time); writing the
-                                // aggregator schema onto them would re-introduce a second key family
-                                // the proxy refresh just pruned — regardless of phase ordering — so
-                                // mapped rows get no definition write here at all (state and banner
-                                // are still recorded below).
+                                // rows. Mapped proxy rows mirror the current user's schema, which
+                                // stays canonical: Exophase definitions use aggregator api-name
+                                // families that the proxy refresh prunes, so they are never written
+                                // here. Native-provider definitions share the user's key family, so
+                                // when the mapped row has no schema yet the category-bearing fetch
+                                // seeds it (non-authoritative: it must never prune a user scan), and
+                                // otherwise only Default category placeholders are backfilled.
                                 var isProviderOnlyRow = !ParseGuid(game?.PlayniteGameId).HasValue;
                                 if (isProviderOnlyRow)
                                 {
@@ -1037,9 +1038,31 @@ namespace PlayniteAchievements.Services.Database
                                         authoritativeSource: true);
                                     writtenCount = definition.Achievements.Count;
                                 }
-                                else
+                                else if (IsExophaseProvider(providerKey))
                                 {
                                     _logger?.Debug($"Skipping definition write for mapped friend game {providerKey}/{definition.ProviderGameKey}; the mapped current-user schema is canonical for its proxy row.");
+                                }
+                                else if (db.ExecuteScalar<long>(
+                                    "SELECT COUNT(1) FROM AchievementDefinitions WHERE GameId = ?;",
+                                    gameId) == 0)
+                                {
+                                    UpsertAchievementDefinitions(
+                                        db,
+                                        gameId,
+                                        definition.Achievements,
+                                        nowIso,
+                                        checkedIso,
+                                        renamedApiNames,
+                                        authoritativeSource: false);
+                                    writtenCount = definition.Achievements.Count;
+                                }
+                                else
+                                {
+                                    writtenCount = BackfillDefinitionCategories(
+                                        db,
+                                        gameId,
+                                        definition.Achievements,
+                                        checkedIso);
                                 }
 
                                 renamedPlayniteGameId = ParseGuid(game?.PlayniteGameId);
@@ -5910,6 +5933,45 @@ namespace PlayniteAchievements.Services.Database
                 existing.Id);
 
             return existing.Id;
+        }
+
+        // Fills Category/CategoryType on existing definition rows that still hold the Default
+        // placeholder, matched by ApiName. Used for mapped friend proxy rows: the current user's
+        // schema stays canonical, so a friend definition fetch only supplies category data that
+        // is missing and never rewrites rows a user scan already categorized.
+        private int BackfillDefinitionCategories(
+            SQLiteDatabase db,
+            long gameId,
+            IReadOnlyList<AchievementDetail> achievements,
+            string updatedIso)
+        {
+            var existingDefinitions = db.Load<AchievementDefinitionRow>(
+                    @"SELECT Id, GameId, ApiName, Category, CategoryType
+                      FROM AchievementDefinitions
+                      WHERE GameId = ?;",
+                    gameId)
+                .Where(a => a != null)
+                .Select(a => (a.Id, a.ApiName, a.Category, a.CategoryType))
+                .ToList();
+
+            var backfills = SqlNadoCacheBehavior.ComputeDefinitionCategoryBackfills(
+                existingDefinitions,
+                achievements);
+            foreach (var backfill in backfills)
+            {
+                db.ExecuteNonQuery(
+                    @"UPDATE AchievementDefinitions
+                      SET Category = ?,
+                          CategoryType = ?,
+                          UpdatedUtc = ?
+                      WHERE Id = ?;",
+                    DbValue(backfill.Category),
+                    DbValue(backfill.CategoryType),
+                    updatedIso,
+                    backfill.DefinitionId);
+            }
+
+            return backfills.Count;
         }
 
         private Dictionary<string, long> UpsertAchievementDefinitions(

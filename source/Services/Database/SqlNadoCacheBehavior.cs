@@ -3,11 +3,84 @@ using System.Collections.Generic;
 using System.Linq;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Friends;
+using PlayniteAchievements.Services.Achievements;
 
 namespace PlayniteAchievements.Services.Database
 {
+    internal sealed class DefinitionCategoryBackfill
+    {
+        public long DefinitionId { get; set; }
+        public string Category { get; set; }
+        public string CategoryType { get; set; }
+    }
+
     internal static class SqlNadoCacheBehavior
     {
+        // Computes category backfills for a mapped friend proxy row: a fetched definition's
+        // Category/CategoryType only fills existing rows still holding the Default placeholder
+        // (or blank), matched by ApiName. Rows a user scan already categorized are never changed,
+        // keeping the mapped current-user schema canonical.
+        public static List<DefinitionCategoryBackfill> ComputeDefinitionCategoryBackfills(
+            IReadOnlyList<(long Id, string ApiName, string Category, string CategoryType)> existingDefinitions,
+            IEnumerable<AchievementDetail> achievements)
+        {
+            var result = new List<DefinitionCategoryBackfill>();
+            if (existingDefinitions == null || existingDefinitions.Count == 0 || achievements == null)
+            {
+                return result;
+            }
+
+            var incomingByApiName = new Dictionary<string, AchievementDetail>(StringComparer.OrdinalIgnoreCase);
+            foreach (var achievement in achievements)
+            {
+                var incomingApiName = achievement?.ApiName?.Trim();
+                if (!string.IsNullOrWhiteSpace(incomingApiName) && !incomingByApiName.ContainsKey(incomingApiName))
+                {
+                    incomingByApiName[incomingApiName] = achievement;
+                }
+            }
+
+            foreach (var existing in existingDefinitions)
+            {
+                var apiName = existing.ApiName?.Trim();
+                if (string.IsNullOrWhiteSpace(apiName) ||
+                    existing.Id <= 0 ||
+                    !incomingByApiName.TryGetValue(apiName, out var incoming))
+                {
+                    continue;
+                }
+
+                var incomingCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(incoming.Category);
+                var incomingCategoryType = AchievementCategoryTypeHelper.NormalizeOrDefault(incoming.CategoryType);
+                var fillCategory = !IsDefaultCategoryValue(incomingCategory) && IsDefaultCategoryValue(existing.Category);
+                var fillCategoryType = !IsDefaultCategoryValue(incomingCategoryType) && IsDefaultCategoryValue(existing.CategoryType);
+                if (!fillCategory && !fillCategoryType)
+                {
+                    continue;
+                }
+
+                result.Add(new DefinitionCategoryBackfill
+                {
+                    DefinitionId = existing.Id,
+                    Category = fillCategory ? incomingCategory : existing.Category,
+                    CategoryType = fillCategoryType ? incomingCategoryType : existing.CategoryType
+                });
+            }
+
+            return result;
+        }
+
+        // Blank and the "Default" placeholder both mean "no category assigned".
+        public static bool IsDefaultCategoryValue(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim();
+            return normalized.Length == 0 ||
+                   string.Equals(
+                       normalized,
+                       AchievementCategoryTypeHelper.DefaultCategoryLabel,
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
         // Builds fallback achievement definitions from a friend unlock scrape, used only when a game has
         // no cached definitions. Requires a stable ApiName plus a display name; rows a provider could only
         // key as unlock-status (no ApiName/name) are skipped and duplicate ApiNames are collapsed, so this
