@@ -899,8 +899,8 @@ Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werd
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Ungespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Visible">Sichtbar</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">Capstone</sys:String>
-    <sys:String x:Key="LOCPlayAch_Dynamic_Started">Started</sys:String>
-    <sys:String x:Key="LOCPlayAch_Dynamic_NotStarted">Not Started</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_Started">Gestartet</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_NotStarted">Nicht gestartet</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Has Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NoLastUnlock">No Last Unlock</sys:String>
     <sys:String x:Key="LOCPlayAch_Overview_GameSummaries">Spieleübersicht</sys:String>
