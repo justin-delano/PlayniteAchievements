@@ -209,6 +209,53 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void ResolveSourceOrderedGridSortAction_CyclesAscendingDescendingThenResetsToSourceOrder()
+        {
+            var first = GameSummariesSortHelper.ResolveSourceOrderedGridSortAction(
+                "SortingName",
+                currentSortPath: null,
+                currentSortDirection: null);
+            var second = GameSummariesSortHelper.ResolveSourceOrderedGridSortAction(
+                "SortingName",
+                first.SortMemberPath,
+                first.Direction);
+            var third = GameSummariesSortHelper.ResolveSourceOrderedGridSortAction(
+                "SortingName",
+                second.SortMemberPath,
+                second.Direction);
+
+            Assert.AreEqual(GameSummariesGridSortActionKind.ApplySort, first.Kind);
+            Assert.AreEqual(ListSortDirection.Ascending, first.Direction);
+            Assert.AreEqual(GameSummariesGridSortActionKind.ApplySort, second.Kind);
+            Assert.AreEqual(ListSortDirection.Descending, second.Direction);
+            Assert.AreEqual(GameSummariesGridSortActionKind.ResetToDefault, third.Kind);
+        }
+
+        [TestMethod]
+        public void ResolveSourceOrderedGridSortAction_DifferentColumn_RestartsAtAscending()
+        {
+            var action = GameSummariesSortHelper.ResolveSourceOrderedGridSortAction(
+                nameof(GameSummaryItem.Progression),
+                currentSortPath: "SortingName",
+                currentSortDirection: ListSortDirection.Descending);
+
+            Assert.AreEqual(GameSummariesGridSortActionKind.ApplySort, action.Kind);
+            Assert.AreEqual(nameof(GameSummaryItem.Progression), action.SortMemberPath);
+            Assert.AreEqual(ListSortDirection.Ascending, action.Direction);
+        }
+
+        [TestMethod]
+        public void ResolveSourceOrderedGridSortAction_MissingSortMemberPath_ReturnsNone()
+        {
+            var action = GameSummariesSortHelper.ResolveSourceOrderedGridSortAction(
+                null,
+                currentSortPath: "SortingName",
+                currentSortDirection: ListSortDirection.Ascending);
+
+            Assert.AreEqual(GameSummariesGridSortActionKind.None, action.Kind);
+        }
+
+        [TestMethod]
         public void ApplySortIndicator_RecentUnlockDefault_DoesNotReturnVisibleColumn()
         {
             string indicatorPath = "seed";

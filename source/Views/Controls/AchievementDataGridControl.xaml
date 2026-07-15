@@ -70,6 +70,7 @@
                                                ShowMetadataRegion="False"
                                                ShowColumnHeaders="{Binding CategoryShowColumnHeaders, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
                                                FixedRowHeight="{Binding CategoryFixedRowHeight, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}}"
+                                               Sorting="CategoryList_Sorting"
                                                RowPreviewMouseRightButtonDown="CategoryList_RowPreviewMouseRightButtonDown"
                                                RowPreviewMouseRightButtonUp="CategoryList_RowPreviewMouseRightButtonUp"
                                                SelectionChanged="CategoryList_SelectionChanged"/>
