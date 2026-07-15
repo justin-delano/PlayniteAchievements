@@ -118,9 +118,7 @@ namespace PlayniteAchievements.Models.Achievements
 
         public Game Game { get; set; }
 
-        public string CategoryIconPath { get; set; }
-
-        public string CategoryCoverPath { get; set; }
+        public string CategoryArtPath { get; set; }
 
         public System.Windows.Input.ICommand SetDynamicAchievementsGameCommand { get; set; }
 
@@ -309,9 +307,7 @@ namespace PlayniteAchievements.ViewModels
 
         public int CategoryOrderIndex { get; set; } = int.MaxValue;
 
-        public string CategoryIconPath { get; set; }
-
-        public string CategoryCoverPath { get; set; }
+        public string CategoryArtPath { get; set; }
 
         public string GameIconPath { get; set; }
 
@@ -474,8 +470,7 @@ namespace PlayniteAchievements.ViewModels
                 CategoryType = CategoryType,
                 CategoryLabel = CategoryLabel,
                 CategoryOrderIndex = CategoryOrderIndex,
-                CategoryIconPath = CategoryIconPath,
-                CategoryCoverPath = CategoryCoverPath,
+                CategoryArtPath = CategoryArtPath,
                 GameIconPath = GameIconPath,
                 GameCoverPath = GameCoverPath,
                 Hidden = Hidden,
@@ -518,8 +513,7 @@ namespace PlayniteAchievements.ViewModels
             string gameIconPath = null,
             string gameCoverPath = null,
             int categoryOrderIndex = int.MaxValue,
-            string categoryIconPath = null,
-            string categoryCoverPath = null)
+            string categoryArtPath = null)
         {
             Source = source;
             DisplayName = source?.DisplayName;
@@ -555,8 +549,8 @@ namespace PlayniteAchievements.ViewModels
             GameIconPath = gameIconPath;
             GameCoverPath = gameCoverPath;
             CategoryOrderIndex = categoryOrderIndex;
-            CategoryIconPath = categoryIconPath ?? source?.CategoryIconPath ?? gameIconPath;
-            CategoryCoverPath = categoryCoverPath ?? source?.CategoryCoverPath ?? gameCoverPath;
+            // Mirrors the real display item: no game-asset fallback baked into the art path.
+            CategoryArtPath = categoryArtPath ?? source?.CategoryArtPath;
         }
     }
 }

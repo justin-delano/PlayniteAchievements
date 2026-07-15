@@ -64,7 +64,7 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         ["DLC"] = new CategoryImageOverrideData
                         {
-                            Icon = "https://example.com/icon.png"
+                            Art = "https://example.com/art.png"
                         }
                     }
                 },
@@ -196,18 +196,15 @@ namespace PlayniteAchievements.Services.Tests
                     {
                         [" DLC "] = new CategoryImageOverrideData
                         {
-                            Icon = " https://example.com/icon.png ",
-                            Cover = " "
+                            Art = " https://example.com/art.png "
                         },
                         ["Base"] = new CategoryImageOverrideData
                         {
-                            Icon = " ",
-                            Cover = "managed://cover.png"
+                            Art = "managed://art.png"
                         },
                         ["Empty"] = new CategoryImageOverrideData
                         {
-                            Icon = " ",
-                            Cover = null
+                            Art = " "
                         }
                     }
                 },
@@ -217,10 +214,8 @@ namespace PlayniteAchievements.Services.Tests
                 new[] { "DLC", "Base" },
                 normalized.AchievementCategoryOrder);
             Assert.AreEqual(2, normalized.AchievementCategoryImageOverrides.Count);
-            Assert.AreEqual("https://example.com/icon.png", normalized.AchievementCategoryImageOverrides["DLC"].Icon);
-            Assert.IsNull(normalized.AchievementCategoryImageOverrides["DLC"].Cover);
-            Assert.IsNull(normalized.AchievementCategoryImageOverrides["Base"].Icon);
-            Assert.AreEqual("managed://cover.png", normalized.AchievementCategoryImageOverrides["Base"].Cover);
+            Assert.AreEqual("https://example.com/art.png", normalized.AchievementCategoryImageOverrides["DLC"].Art);
+            Assert.AreEqual("managed://art.png", normalized.AchievementCategoryImageOverrides["Base"].Art);
             Assert.IsFalse(normalized.AchievementCategoryImageOverrides.ContainsKey("Empty"));
             Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(normalized));
         }
@@ -237,35 +232,34 @@ namespace PlayniteAchievements.Services.Tests
                 {
                     ["DLC"] = new CategoryImageOverrideData
                     {
-                        Icon = "icon.png",
-                        Cover = "cover.png"
+                        Art = "art.png"
                     }
                 }
             };
 
             var internalClone = internalData.Clone();
             internalClone.AchievementCategoryOrder[0] = "Base";
-            internalClone.AchievementCategoryImageOverrides["DLC"].Icon = "changed.png";
+            internalClone.AchievementCategoryImageOverrides["DLC"].Art = "changed.png";
             Assert.AreEqual("DLC", internalData.AchievementCategoryOrder[0]);
-            Assert.AreEqual("icon.png", internalData.AchievementCategoryImageOverrides["DLC"].Icon);
+            Assert.AreEqual("art.png", internalData.AchievementCategoryImageOverrides["DLC"].Art);
 
             var portable = internalData.ToPortable();
             portable.AchievementCategoryOrder[0] = "Portable";
-            portable.AchievementCategoryImageOverrides["DLC"].Cover = "portable.png";
+            portable.AchievementCategoryImageOverrides["DLC"].Art = "portable.png";
             Assert.AreEqual("DLC", internalData.AchievementCategoryOrder[0]);
-            Assert.AreEqual("cover.png", internalData.AchievementCategoryImageOverrides["DLC"].Cover);
+            Assert.AreEqual("art.png", internalData.AchievementCategoryImageOverrides["DLC"].Art);
 
             var portableClone = portable.Clone();
             portableClone.AchievementCategoryOrder[0] = "Clone";
-            portableClone.AchievementCategoryImageOverrides["DLC"].Icon = "clone.png";
+            portableClone.AchievementCategoryImageOverrides["DLC"].Art = "clone.png";
             Assert.AreEqual("Portable", portable.AchievementCategoryOrder[0]);
-            Assert.AreEqual("icon.png", portable.AchievementCategoryImageOverrides["DLC"].Icon);
+            Assert.AreEqual("portable.png", portable.AchievementCategoryImageOverrides["DLC"].Art);
 
             var imported = GameCustomDataFile.FromPortable(portable, Guid.NewGuid(), false, false);
             imported.AchievementCategoryOrder[0] = "Import";
-            imported.AchievementCategoryImageOverrides["DLC"].Cover = "import.png";
+            imported.AchievementCategoryImageOverrides["DLC"].Art = "import.png";
             Assert.AreEqual("Portable", portable.AchievementCategoryOrder[0]);
-            Assert.AreEqual("portable.png", portable.AchievementCategoryImageOverrides["DLC"].Cover);
+            Assert.AreEqual("portable.png", portable.AchievementCategoryImageOverrides["DLC"].Art);
         }
 
         [TestMethod]

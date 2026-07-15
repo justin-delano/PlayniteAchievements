@@ -105,8 +105,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 {
                     ["DLC"] = new CategoryImageOverrideData
                     {
-                        Icon = "category-icon.png",
-                        Cover = "category-cover.png"
+                        Art = "category-art.png"
                     }
                 }
             };
@@ -114,8 +113,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             var state = SelectedGameRuntimeStateBuilder.Build(gameId, data);
             var detail = state.AllAchievements.Single();
 
-            Assert.AreEqual("category-icon.png", detail.CategoryIconPath);
-            Assert.AreEqual("category-cover.png", detail.CategoryCoverPath);
+            Assert.AreEqual("category-art.png", detail.CategoryArtPath);
 
             var displayItem = new AchievementDisplayItem();
             displayItem.UpdateFrom(
@@ -130,8 +128,7 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
                 useSeparateLockedIconsWhenAvailable: false,
                 showRarityBar: true);
 
-            Assert.AreEqual("category-icon.png", displayItem.CategoryIconPath);
-            Assert.AreEqual("category-cover.png", displayItem.CategoryCoverPath);
+            Assert.AreEqual("category-art.png", displayItem.CategoryArtPath);
         }
 
         [TestMethod]

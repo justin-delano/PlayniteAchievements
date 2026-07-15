@@ -8,7 +8,7 @@ namespace PlayniteAchievements.Tests.Providers
     [TestClass]
     public class RetroAchievementsCategoryImagePlannerTests
     {
-        private static IReadOnlyList<(string Label, string IconUrl)> Plan(
+        private static IReadOnlyList<(string Label, string ArtUrl)> Plan(
             params (string CategoryLabel, RaGameInfoUserProgress Info)[] sources)
         {
             return RetroAchievementsCategoryImagePlanner.BuildCategoryImagePlan(sources);
@@ -24,7 +24,7 @@ namespace PlayniteAchievements.Tests.Providers
 
             Assert.AreEqual(1, plan.Count);
             Assert.AreEqual("Bonus", plan[0].Label);
-            Assert.AreEqual("https://retroachievements.org/Images/085573.png", plan[0].IconUrl);
+            Assert.AreEqual("https://retroachievements.org/Images/085573.png", plan[0].ArtUrl);
         }
 
         [TestMethod]
@@ -50,7 +50,7 @@ namespace PlayniteAchievements.Tests.Providers
             }));
 
             Assert.AreEqual(1, plan.Count);
-            Assert.AreEqual("https://retroachievements.org/Images/085573.png", plan[0].IconUrl);
+            Assert.AreEqual("https://retroachievements.org/Images/085573.png", plan[0].ArtUrl);
         }
 
         [TestMethod]
@@ -63,7 +63,7 @@ namespace PlayniteAchievements.Tests.Providers
 
             Assert.AreEqual(2, plan.Count);
             Assert.AreEqual("Bonus", plan[0].Label);
-            Assert.AreEqual("https://retroachievements.org/Images/1.png", plan[0].IconUrl);
+            Assert.AreEqual("https://retroachievements.org/Images/1.png", plan[0].ArtUrl);
             Assert.AreEqual("Multi", plan[1].Label);
         }
 

@@ -43,7 +43,7 @@ namespace PlayniteAchievements.Services.Images.Tests
         public void BuildDefaultCategoryRelativePath_UsesDefaultsFolderAndSingleArtFile()
         {
             var artPath = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
-                "game-123", "Phantom Liberty", CategoryImageKind.Icon);
+                "game-123", "Phantom Liberty");
 
             StringAssert.StartsWith(artPath, Path.Combine("icon_cache", "game-123", "category_defaults", "category_Phantom Liberty_"));
             StringAssert.EndsWith(artPath, ".jpg");
@@ -55,11 +55,11 @@ namespace PlayniteAchievements.Services.Images.Tests
         public void BuildDefaultCategoryRelativePath_IsDeterministicAndCaseStable()
         {
             var first = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
-                "game-123", "Expansion", CategoryImageKind.Icon);
+                "game-123", "Expansion");
             var second = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
-                "game-123", "Expansion", CategoryImageKind.Icon);
+                "game-123", "Expansion");
             var upper = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
-                "game-123", "EXPANSION", CategoryImageKind.Icon);
+                "game-123", "EXPANSION");
 
             Assert.AreEqual(first, second);
             // The hash suffix is case-insensitive so write/read label casing differences
@@ -71,7 +71,7 @@ namespace PlayniteAchievements.Services.Images.Tests
         public void BuildDefaultCategoryRelativePath_SanitizesLabelsOutsideCustomFolder()
         {
             var path = AchievementIconCachePathBuilder.BuildDefaultCategoryRelativePath(
-                "game-123", "Blood/On:Crystal", CategoryImageKind.Icon);
+                "game-123", "Blood/On:Crystal");
 
             StringAssert.Contains(path, Path.Combine("game-123", "category_defaults") + Path.DirectorySeparatorChar);
             StringAssert.Contains(path, "category_Blood_On_Crystal_");
@@ -1112,22 +1112,22 @@ namespace PlayniteAchievements.Services.Images.Tests
                 var gameId = Guid.NewGuid().ToString("D");
 
                 Assert.IsNull(diskImageService.FindExistingDefaultCategoryImagePath(
-                    gameId, "Bonus", CategoryImageKind.Icon));
+                    gameId, "Bonus"));
 
                 // decodeSize 0 downloads keep the source extension, so a .png source lands
                 // beside the canonical .jpg path with its extension swapped.
                 var canonicalPath = diskImageService.GetDefaultCategoryImagePath(
-                    gameId, "Bonus", CategoryImageKind.Icon);
+                    gameId, "Bonus");
                 var pngPath = Path.ChangeExtension(canonicalPath, ".png");
                 WritePlaceholderFile(pngPath);
 
                 Assert.AreEqual(pngPath, diskImageService.FindExistingDefaultCategoryImagePath(
-                    gameId, "Bonus", CategoryImageKind.Icon));
+                    gameId, "Bonus"));
 
                 // The canonical .jpg wins when both exist.
                 WritePlaceholderFile(canonicalPath);
                 Assert.AreEqual(canonicalPath, diskImageService.FindExistingDefaultCategoryImagePath(
-                    gameId, "Bonus", CategoryImageKind.Icon));
+                    gameId, "Bonus"));
             }
             finally
             {
