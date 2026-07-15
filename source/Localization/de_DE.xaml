@@ -442,12 +442,12 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsFull">Vollständig</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsCustom">Benutzerdefiniert</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsInstalled">Installierte</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsRecent">Recent</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsRecent">Letztgespielte</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsSelectedGame">Ausgewählte</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_FriendsShared">Gemeinsame</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Installed">Installierte</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Missing">Fehlende</sys:String>
-    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Recent">Letztgespielt</sys:String>
+    <sys:String x:Key="LOCPlayAch_RefreshModeShort_Recent">Letztgespielte</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Selected">Ausgewählte</sys:String>
     <sys:String x:Key="LOCPlayAch_RefreshModeShort_Single">Einzeln</sys:String>
     <sys:String x:Key="LOCPlayAch_Status_AuthRequired">Authentifizierung erforderlich. Aktualisierung abgebrochen.</sys:String>
