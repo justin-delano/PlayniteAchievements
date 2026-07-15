@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading;
 
 namespace PlayniteAchievements.Services.Achievements
 {
@@ -56,8 +57,12 @@ namespace PlayniteAchievements.Services.Achievements
 
         // Hydrated visible game data for the overview. Used only when achievement filters are
         // configured (which disables the summary fast path), where each open would otherwise
-        // repeat the full load + hydrate.
-        private List<GameAchievementData> _overviewVisibleGameData;
+        // repeat the full load + hydrate. Held as a Lazy so concurrent first callers share a
+        // single load instead of each running the full load + hydrate; a null factory result
+        // marks a failed load, which is never memoized. The factory takes the cache manager's
+        // internal lock under the Lazy's own lock, never under _overviewProjectionCacheSync,
+        // while invalidation takes only _overviewProjectionCacheSync - no lock cycle.
+        private Lazy<List<GameAchievementData>> _overviewVisibleGameData;
 
         public AchievementDataService(
             ICacheManager cacheService,
@@ -226,32 +231,51 @@ namespace PlayniteAchievements.Services.Achievements
 
         public List<GameAchievementData> GetAllVisibleGameAchievementDataForOverview()
         {
+            Lazy<List<GameAchievementData>> lazy;
             lock (_overviewProjectionCacheSync)
             {
-                if (_overviewVisibleGameData != null)
+                if (_overviewVisibleGameData == null)
                 {
-                    return _overviewVisibleGameData;
+                    _overviewVisibleGameData = new Lazy<List<GameAchievementData>>(
+                        LoadVisibleOverviewGameData,
+                        LazyThreadSafetyMode.ExecutionAndPublication);
+                }
+
+                lazy = _overviewVisibleGameData;
+            }
+
+            // Shared read-only snapshot; consumers (the overview builder) only enumerate it.
+            var visible = lazy.Value;
+            if (visible != null)
+            {
+                return visible;
+            }
+
+            // The load failed; drop the failed Lazy (unless an invalidation already replaced
+            // it) so the next call retries instead of memoizing the failure.
+            lock (_overviewProjectionCacheSync)
+            {
+                if (ReferenceEquals(_overviewVisibleGameData, lazy))
+                {
+                    _overviewVisibleGameData = null;
                 }
             }
 
+            return new List<GameAchievementData>();
+        }
+
+        private List<GameAchievementData> LoadVisibleOverviewGameData()
+        {
             try
             {
                 var result = LoadAllCachedGameData();
                 HydrateAll(result, includeAchievementOverlays: false);
-                var visible = ProjectVisibleGameAchievementData(result, excludeSummaryFiltered: true);
-
-                lock (_overviewProjectionCacheSync)
-                {
-                    // Shared read-only snapshot; consumers (the overview builder) only enumerate it.
-                    _overviewVisibleGameData = visible;
-                }
-
-                return visible;
+                return ProjectVisibleGameAchievementData(result, excludeSummaryFiltered: true);
             }
             catch (Exception ex)
             {
                 _logger?.Error(ex, "Failed to get all visible overview achievement data");
-                return new List<GameAchievementData>();
+                return null;
             }
         }
 
