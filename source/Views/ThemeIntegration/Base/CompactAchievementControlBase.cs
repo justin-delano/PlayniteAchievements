@@ -177,12 +177,9 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             };
             image.SetBinding(AchievementImage.ShowRarityGlowProperty, glowBinding);
 
-            if (SupportsHiddenReveal)
-            {
-                // The handler gates on the achievement stored in Tag, so it is safe to
-                // attach once at creation regardless of which achievement is displayed.
-                image.MouseLeftButtonDown += HiddenAchievement_MouseLeftButtonDown;
-            }
+            // The handler gates on the achievement stored in Tag, so it is safe to
+            // attach once at creation regardless of which achievement is displayed.
+            image.MouseLeftButtonDown += AchievementImage_MouseLeftButtonDown;
 
             return image;
         }
@@ -198,11 +195,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             image.HasRarityPercent = achievement.HasRarityPercent;
             image.Rarity = achievement.Rarity;
             image.RarityText = achievement.RarityText;
+            image.Tag = achievement; // Store achievement for click handler
 
             if (SupportsHiddenReveal)
             {
                 bool hiddenLocked = achievement.Hidden && !achievement.Unlocked;
-                image.Tag = achievement; // Store achievement for click handler
                 image.Cursor = hiddenLocked ? Cursors.Hand : null;
                 HiddenRevealHelper.SetIsRevealed(image, false);
                 ApplyAchievementDisplay(image, achievement, obscured: hiddenLocked && !ShowHiddenIcon);
@@ -234,11 +231,14 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             }
         }
 
-        private void HiddenAchievement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void AchievementImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (sender is AchievementImage image &&
-                image.Tag is AchievementDetail achievement &&
-                achievement.Hidden && !achievement.Unlocked)
+            if (!(sender is AchievementImage image) || !(image.Tag is AchievementDetail achievement))
+            {
+                return;
+            }
+
+            if (SupportsHiddenReveal && achievement.Hidden && !achievement.Unlocked)
             {
                 bool isRevealed = !HiddenRevealHelper.GetIsRevealed(image);
                 HiddenRevealHelper.SetIsRevealed(image, isRevealed);
@@ -248,7 +248,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 _lastLayoutAchievements = null;
 
                 e.Handled = true;
+                return;
             }
+
+            e.Handled = true;
+            OpenViewAchievementsWindowFocused(null, achievement.ApiName, achievement.DisplayName);
         }
 
         protected CompactAchievementControlBase()

@@ -225,6 +225,32 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
                 : (Guid?)null;
         }
 
+        /// <summary>
+        /// Opens the View Achievements window for the given game (falling back to the
+        /// control's current game context) focused on the given achievement.
+        /// Used by compact list controls when an achievement row is clicked.
+        /// </summary>
+        /// <param name="gameId">The Playnite game id, or null to use the current game context.</param>
+        /// <param name="apiName">The achievement ApiName used to locate the row.</param>
+        /// <param name="displayName">Fallback identifier when the achievement has no ApiName.</param>
+        protected void OpenViewAchievementsWindowFocused(Guid? gameId, string apiName, string displayName)
+        {
+            if (ThemeDataOverride != null || LegacyThemeOverride != null)
+            {
+                // Preview/mock data contexts have no real game to open.
+                return;
+            }
+
+            var targetGameId = gameId ?? GetExpectedSelectedGameId();
+            if (targetGameId == null || targetGameId == Guid.Empty)
+            {
+                return;
+            }
+
+            var focusAchievementId = string.IsNullOrWhiteSpace(apiName) ? displayName : apiName;
+            Plugin?.OpenViewAchievementsWindow(targetGameId.Value, focusAchievementId);
+        }
+
         protected bool IsEffectiveModernThemeCurrentForContext()
         {
             if (ThemeDataOverride != null)

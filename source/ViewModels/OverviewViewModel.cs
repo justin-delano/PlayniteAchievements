@@ -911,7 +911,20 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewRarityPieChart => _settings?.Persisted?.ShowOverviewRarityPieChart ?? true;
 
-        public bool ShowOverviewTrophyPieChart => _settings?.Persisted?.ShowOverviewTrophyPieChart ?? true;
+        public bool ShowOverviewTrophyPieChart => _hasTrophyPieChartData && (_settings?.Persisted?.ShowOverviewTrophyPieChart ?? true);
+
+        private bool _hasTrophyPieChartData;
+        private void SetHasTrophyPieChartData(bool value)
+        {
+            if (_hasTrophyPieChartData == value)
+            {
+                return;
+            }
+
+            _hasTrophyPieChartData = value;
+            OnPropertyChanged(nameof(ShowOverviewTrophyPieChart));
+            OnPropertyChanged(nameof(ShowOverviewPieCharts));
+        }
 
         public bool ShowOverviewPiePercentages => _settings?.Persisted?.ShowOverviewPiePercentages ?? true;
 
@@ -3355,6 +3368,7 @@ namespace PlayniteAchievements.ViewModels
                     useUniformRarityBadges);
             }
 
+            var hasTrophyData = useSelectedTrophy;
             if (useSelectedTrophy)
             {
                 TrophyPieChart.SetTrophyData(
@@ -3375,6 +3389,12 @@ namespace PlayniteAchievements.ViewModels
             else
             {
                 var trophySummary = BuildTrophySummaryFromGames(snapshot?.GameSummaries);
+                // Only surface aggregate trophy data when no game is selected; a selected
+                // game without trophy tiers should hide the trophy pie instead of falling
+                // back to library-wide totals.
+                hasTrophyData = selectedGame == null &&
+                    (trophySummary.PlatinumTotal + trophySummary.GoldTotal +
+                     trophySummary.SilverTotal + trophySummary.BronzeTotal) > 0;
                 TrophyPieChart.SetTrophyData(
                     trophySummary.PlatinumUnlocked,
                     trophySummary.GoldUnlocked,
@@ -3390,6 +3410,8 @@ namespace PlayniteAchievements.ViewModels
                     trophyBronzeLabel,
                     lockedLabel);
             }
+
+            SetHasTrophyPieChartData(hasTrophyData);
 
             var rarityTitle = L("LOCPlayAch_Overview_RarityPieChart", "Achievements by Rarity");
             var trophyTitle = L("LOCPlayAch_Overview_TrophyPieChart", "Achievements by Trophy");
