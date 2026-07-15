@@ -252,40 +252,39 @@
     <DataTemplate x:Key="PlayAch.Template.ScreenshotFrame"
                   DataType="{x:Type vm:AchievementToastViewModel}">
         <Grid>
-            <!-- Frame chrome: a soft vignette fades the edges to dark instead of drawing border
-                 lines, so the frame reads as a finish on the shot rather than a box. -->
+            <!-- Frame chrome: a black vignette around the whole shot; no border lines and no
+                 banner card. The fade is strong enough at the edges to carry the bottom content. -->
             <Rectangle IsHitTestVisible="False">
                 <Rectangle.Fill>
                     <RadialGradientBrush Center="0.5,0.5"
                                          GradientOrigin="0.5,0.5"
-                                         RadiusX="0.85"
-                                         RadiusY="0.85">
+                                         RadiusX="1.0"
+                                         RadiusY="1.0">
                         <GradientStop Color="#00000000" Offset="0"/>
-                        <GradientStop Color="#00000000" Offset="0.62"/>
-                        <GradientStop Color="#99000000" Offset="1"/>
+                        <GradientStop Color="#00000000" Offset="0.45"/>
+                        <GradientStop Color="#66000000" Offset="0.78"/>
+                        <GradientStop Color="#CC000000" Offset="1"/>
                     </RadialGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
 
-            <!-- Bottom contrast wash so the banner reads over any game footage -->
+            <!-- Bottom contrast wash so the floating content reads over any game footage -->
             <Rectangle VerticalAlignment="Bottom"
-                       Height="200"
+                       Height="260"
                        IsHitTestVisible="False">
                 <Rectangle.Fill>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
                         <GradientStop Color="#00000000" Offset="0"/>
-                        <GradientStop Color="#8C000000" Offset="1"/>
+                        <GradientStop Color="#B4000000" Offset="1"/>
                     </LinearGradientBrush>
                 </Rectangle.Fill>
             </Rectangle>
 
-            <!-- Bottom banner: full-bleed across the frame, accent rule on top. Binds the
-                 FrameShow*/Frame* properties (its own settings), not the toast's Show* toggles. -->
-            <Border VerticalAlignment="Bottom"
-                    BorderBrush="{Binding AccentBrush}"
-                    BorderThickness="0,3,0,0"
-                    Background="{DynamicResource PlayAch.Brush.PopupSurface}">
-                <Grid Margin="28,14,28,14">
+            <!-- Bottom content floats directly over the vignette; the wash above supplies the
+                 contrast behind it. Binds the FrameShow*/Frame* properties (its own settings),
+                 not the toast's Show* toggles. -->
+            <Grid VerticalAlignment="Bottom"
+                  Margin="36,0,36,26">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
@@ -418,8 +417,7 @@
                                        FontWeight="SemiBold"/>
                         </StackPanel>
                     </StackPanel>
-                </Grid>
-            </Border>
+            </Grid>
         </Grid>
     </DataTemplate>
 </ResourceDictionary>
