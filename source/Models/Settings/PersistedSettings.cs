@@ -56,6 +56,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enablePeriodicUpdates = true;
         private bool _includeHiddenGamesInBulkScans = true;
         private int _periodicUpdateHours = 6;
+        private bool _enableFriendsPeriodicUpdates = false;
+        private int _friendsPeriodicUpdateHours = 24;
         private bool _enableInGamePolling = true;
         private int _inGamePollIntervalSeconds = 15;
         private bool _inGamePollRefreshFriends = false;
@@ -204,6 +206,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableFriendsFeatures = true;
         private HashSet<string> _autoDiscoverFriendProviderKeys = CreateDefaultAutoDiscoverFriendProviderKeys();
         private bool _useExophaseForSteamFriendOwnership = false;
+        private bool _includeUnownedFriendGames = false;
         private ObservableCollection<FriendSettingsEntry> _friends = new ObservableCollection<FriendSettingsEntry>();
         private ObservableCollection<FriendMergeGroup> _friendMergeGroups = new ObservableCollection<FriendMergeGroup>();
 
@@ -241,6 +244,17 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _useExophaseForSteamFriendOwnership;
             set => SetValue(ref _useExophaseForSteamFriendOwnership, value);
+        }
+
+        /// <summary>
+        /// When true, friend refreshes may scan games the current user does not own (the Full
+        /// scope). When false, Full-scope requests are clamped to Shared so no unowned friend
+        /// games are ever scanned.
+        /// </summary>
+        public bool IncludeUnownedFriendGames
+        {
+            get => _includeUnownedFriendGames;
+            set => SetValue(ref _includeUnownedFriendGames, value);
         }
 
         public ObservableCollection<FriendSettingsEntry> Friends
@@ -724,6 +738,24 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _periodicUpdateHours;
             set => SetValue(ref _periodicUpdateHours, Math.Max(1, value));
+        }
+
+        /// <summary>
+        /// Enable the background periodic Recent friends refresh.
+        /// </summary>
+        public bool EnableFriendsPeriodicUpdates
+        {
+            get => _enableFriendsPeriodicUpdates;
+            set => SetValue(ref _enableFriendsPeriodicUpdates, value);
+        }
+
+        /// <summary>
+        /// Hours between periodic background Recent friends refreshes.
+        /// </summary>
+        public int FriendsPeriodicUpdateHours
+        {
+            get => _friendsPeriodicUpdateHours;
+            set => SetValue(ref _friendsPeriodicUpdateHours, Math.Max(1, value));
         }
 
         public bool EnableInGamePolling
@@ -2168,6 +2200,7 @@ namespace PlayniteAchievements.Models.Settings
                     ? new HashSet<string>(this.AutoDiscoverFriendProviderKeys, StringComparer.OrdinalIgnoreCase)
                     : CreateDefaultAutoDiscoverFriendProviderKeys(),
                 UseExophaseForSteamFriendOwnership = this.UseExophaseForSteamFriendOwnership,
+                IncludeUnownedFriendGames = this.IncludeUnownedFriendGames,
                 Friends = new ObservableCollection<FriendSettingsEntry>(
                     (this.Friends ?? new ObservableCollection<FriendSettingsEntry>())
                     .Where(friend => friend != null)
@@ -2184,6 +2217,8 @@ namespace PlayniteAchievements.Models.Settings
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
+                EnableFriendsPeriodicUpdates = this.EnableFriendsPeriodicUpdates,
+                FriendsPeriodicUpdateHours = this.FriendsPeriodicUpdateHours,
                 EnableInGamePolling = this.EnableInGamePolling,
                 InGamePollIntervalSeconds = this.InGamePollIntervalSeconds,
                 InGamePollRefreshFriends = this.InGamePollRefreshFriends,
