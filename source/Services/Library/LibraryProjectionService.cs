@@ -28,6 +28,7 @@ namespace PlayniteAchievements.Services.Library
         private readonly ICacheManager _cacheManager;
         private readonly GameCustomDataStore _customDataStore;
         private readonly PlayniteAchievementsSettings _settings;
+        private readonly Func<bool> _isRefreshActive;
         private readonly ILogger _logger;
         private readonly Dictionary<string, LibraryProjectionSnapshot> _cache =
             new Dictionary<string, LibraryProjectionSnapshot>(StringComparer.Ordinal);
@@ -45,7 +46,8 @@ namespace PlayniteAchievements.Services.Library
             PlayniteAchievementsSettings settings,
             ICacheManager cacheManager,
             GameCustomDataStore customDataStore,
-            ILogger logger)
+            ILogger logger,
+            Func<bool> isRefreshActive = null)
         {
             _achievementDataService = achievementDataService ?? throw new ArgumentNullException(nameof(achievementDataService));
             _providers = providers ?? new List<IDataProvider>();
@@ -53,6 +55,7 @@ namespace PlayniteAchievements.Services.Library
             _cacheManager = cacheManager;
             _customDataStore = customDataStore;
             _settings = settings;
+            _isRefreshActive = isRefreshActive;
             _logger = logger;
 
             if (_cacheManager != null)
@@ -353,6 +356,19 @@ namespace PlayniteAchievements.Services.Library
                 {
                     return;
                 }
+            }
+
+            // During a bulk refresh every per-game save invalidates the projection; eagerly
+            // rebuilding the whole-library snapshot after each one is wasted work (and the
+            // rebuild storm can exhaust memory). Invalidate() has already cleared the cache, so
+            // on-demand consumers still rebuild with fresh data mid-refresh; only the precompute
+            // is skipped. No end-of-refresh warm is needed here: RefreshRuntime ends the run
+            // (making this predicate false) before raising CacheInvalidated, so the final
+            // invalidation schedules the one post-refresh warm. Invoked outside _sync because
+            // the predicate takes the refresh state manager's own lock.
+            if (_isRefreshActive?.Invoke() == true)
+            {
+                return;
             }
 
             var generation = Interlocked.Increment(ref _warmGeneration);
