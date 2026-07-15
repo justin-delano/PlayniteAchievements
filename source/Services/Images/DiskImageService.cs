@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -71,6 +72,13 @@ namespace PlayniteAchievements.Services.Images
         private readonly object _pathWriteLocksSync = new object();
         private readonly Dictionary<string, PathWriteLockEntry> _pathWriteLocks =
             new Dictionary<string, PathWriteLockEntry>(StringComparer.OrdinalIgnoreCase);
+
+        // Per-game snapshot of the category_defaults folder contents, so whole-library snapshot
+        // builds resolve default category art with one directory scan per game instead of
+        // per-achievement File.Exists probes. Entries are immutable once published; writes and
+        // deletes under the folder drop the entry so the next probe rescans.
+        private readonly ConcurrentDictionary<string, Lazy<HashSet<string>>> _defaultCategoryArtSnapshots =
+            new ConcurrentDictionary<string, Lazy<HashSet<string>>>(StringComparer.OrdinalIgnoreCase);
 
         private sealed class PathWriteLockEntry
         {
@@ -345,6 +353,37 @@ namespace PlayniteAchievements.Services.Images
                 return null;
             }
 
+            var snapshot = GetDefaultCategoryArtSnapshot(gameId);
+            if (snapshot == null)
+            {
+                return ProbeDefaultCategoryImagePath(canonicalPath);
+            }
+
+            if (snapshot.Count == 0)
+            {
+                return null;
+            }
+
+            if (snapshot.Contains(Path.GetFileName(canonicalPath)))
+            {
+                return canonicalPath;
+            }
+
+            foreach (var extension in SupportedImageExtensions)
+            {
+                var candidate = Path.ChangeExtension(canonicalPath, extension);
+                if (snapshot.Contains(Path.GetFileName(candidate)))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        // Direct disk fallback for a single call when the directory snapshot could not be built.
+        private static string ProbeDefaultCategoryImagePath(string canonicalPath)
+        {
             if (File.Exists(canonicalPath))
             {
                 return canonicalPath;
@@ -360,6 +399,96 @@ namespace PlayniteAchievements.Services.Images
             }
 
             return null;
+        }
+
+        private HashSet<string> GetDefaultCategoryArtSnapshot(string gameId)
+        {
+            var key = NormalizeSnapshotGameKey(gameId);
+            var lazy = _defaultCategoryArtSnapshots.GetOrAdd(
+                key,
+                k => new Lazy<HashSet<string>>(
+                    () => ScanDefaultCategoryArtDirectory(k),
+                    LazyThreadSafetyMode.ExecutionAndPublication));
+
+            var snapshot = lazy.Value;
+            if (snapshot == null)
+            {
+                // Scan failed; drop the entry so a later probe retries instead of caching the failure.
+                _defaultCategoryArtSnapshots.TryRemove(key, out _);
+            }
+
+            return snapshot;
+        }
+
+        private HashSet<string> ScanDefaultCategoryArtDirectory(string gameId)
+        {
+            try
+            {
+                var directory = Path.Combine(
+                    IconCacheDirectory,
+                    gameId,
+                    AchievementIconCachePathBuilder.DefaultCategoryFolderName);
+                if (!Directory.Exists(directory))
+                {
+                    return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                }
+
+                return new HashSet<string>(
+                    Directory.EnumerateFiles(directory).Select(Path.GetFileName),
+                    StringComparer.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // Mirrors the empty-gameId fallback in AchievementIconCachePathBuilder so the snapshot key
+        // always matches the directory the path builder writes into.
+        private static string NormalizeSnapshotGameKey(string gameId)
+        {
+            return string.IsNullOrWhiteSpace(gameId) ? Guid.Empty.ToString("D") : gameId.Trim();
+        }
+
+        internal void InvalidateDefaultCategoryArtSnapshot(string gameId)
+        {
+            _defaultCategoryArtSnapshots.TryRemove(NormalizeSnapshotGameKey(gameId), out _);
+        }
+
+        private void InvalidateDefaultCategoryArtSnapshotForTargetPath(string targetPath)
+        {
+            if (string.IsNullOrWhiteSpace(targetPath))
+            {
+                return;
+            }
+
+            try
+            {
+                var parent = Path.GetDirectoryName(targetPath);
+                if (string.IsNullOrEmpty(parent) ||
+                    !string.Equals(
+                        Path.GetFileName(parent),
+                        AchievementIconCachePathBuilder.DefaultCategoryFolderName,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+
+                var gameDir = Path.GetDirectoryName(parent);
+                var gameId = string.IsNullOrEmpty(gameDir) ? null : Path.GetFileName(gameDir);
+                if (!string.IsNullOrWhiteSpace(gameId))
+                {
+                    InvalidateDefaultCategoryArtSnapshot(gameId);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        private void ClearDefaultCategoryArtSnapshots()
+        {
+            _defaultCategoryArtSnapshots.Clear();
         }
 
         public bool TryMigrateLegacyAchievementIcon(
@@ -390,6 +519,7 @@ namespace PlayniteAchievements.Services.Images
 
                 EnsureTargetDirectory(targetPath);
                 File.Move(legacyPath, targetPath);
+                InvalidateDefaultCategoryArtSnapshotForTargetPath(targetPath);
                 return true;
             }
             catch (IOException)
@@ -548,12 +678,19 @@ namespace PlayniteAchievements.Services.Images
                     if (preserveOriginalFormat)
                     {
                         await SaveBytesWithRetryAsync(resolvedTargetPath, bytes, cancel).ConfigureAwait(false);
+                        InvalidateDefaultCategoryArtSnapshotForTargetPath(resolvedTargetPath);
                         return resolvedTargetPath;
                     }
 
                     using (var ms = new MemoryStream(bytes, writable: false))
                     {
-                        return await SaveBitmapStreamToPathAsync(ms, resolvedTargetPath, decodeSize, cancel).ConfigureAwait(false);
+                        var savedPath = await SaveBitmapStreamToPathAsync(ms, resolvedTargetPath, decodeSize, cancel).ConfigureAwait(false);
+                        if (savedPath != null)
+                        {
+                            InvalidateDefaultCategoryArtSnapshotForTargetPath(savedPath);
+                        }
+
+                        return savedPath;
                     }
                 }
                 catch (OperationCanceledException)
@@ -827,6 +964,10 @@ namespace PlayniteAchievements.Services.Images
                 _logger?.Error(ex, $"Failed to clear icon cache for scope '{scope}'.");
                 return 0;
             }
+            finally
+            {
+                ClearDefaultCategoryArtSnapshots();
+            }
         }
 
         public void ClearGameCache(string gameId)
@@ -870,6 +1011,10 @@ namespace PlayniteAchievements.Services.Images
             catch (Exception ex)
             {
                 _logger?.Warn(ex, $"Failed to clear icon cache for game '{gameId}'.");
+            }
+            finally
+            {
+                InvalidateDefaultCategoryArtSnapshot(gameId);
             }
         }
 
@@ -924,6 +1069,10 @@ namespace PlayniteAchievements.Services.Images
             catch (Exception ex)
             {
                 _logger?.Warn(ex, $"Failed to delete cache directory '{relativeDirectory}'.");
+            }
+            finally
+            {
+                ClearDefaultCategoryArtSnapshots();
             }
         }
 
@@ -1282,12 +1431,19 @@ namespace PlayniteAchievements.Services.Images
                     if (preserveOriginalFormat)
                     {
                         File.Copy(localPath, resolvedTargetPath, overwrite: overwriteExistingTarget);
+                        InvalidateDefaultCategoryArtSnapshotForTargetPath(resolvedTargetPath);
                         return resolvedTargetPath;
                     }
 
                     using (var ms = new MemoryStream(File.ReadAllBytes(localPath), writable: false))
                     {
-                        return await SaveBitmapStreamToPathAsync(ms, resolvedTargetPath, decodeSize, cancel).ConfigureAwait(false);
+                        var savedPath = await SaveBitmapStreamToPathAsync(ms, resolvedTargetPath, decodeSize, cancel).ConfigureAwait(false);
+                        if (savedPath != null)
+                        {
+                            InvalidateDefaultCategoryArtSnapshotForTargetPath(savedPath);
+                        }
+
+                        return savedPath;
                     }
                 }
                 catch (OperationCanceledException)
@@ -1333,6 +1489,7 @@ namespace PlayniteAchievements.Services.Images
 
                     cancel.ThrowIfCancellationRequested();
                     File.Copy(existingPath, targetPath, overwrite: overwriteExistingTarget);
+                    InvalidateDefaultCategoryArtSnapshotForTargetPath(targetPath);
                     return targetPath;
                 }
                 catch (IOException)
