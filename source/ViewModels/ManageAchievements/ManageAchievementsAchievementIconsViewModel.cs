@@ -32,7 +32,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         private bool _hasAchievements;
         private bool _hasChanges;
-        private bool _hasAnyOverrides;
         private bool _hasValidationErrors;
         private bool _isSaving;
         private string _saveStatusText;
@@ -57,7 +56,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             AchievementRows = new ObservableCollection<AchievementIconOverrideItem>();
             SaveCommand = new RelayCommand(_ => Save(), _ => CanSave);
             RevertChangesCommand = new RelayCommand(_ => RevertChanges(), _ => HasChanges && !IsSaving);
-            ClearAllCommand = new RelayCommand(_ => ClearAllOverrides(), _ => HasAchievements && HasAnyOverrides && !IsSaving);
             OpenIconsFolderCommand = new RelayCommand(_ => OpenIconsFolder(), _ => !IsSaving);
 
             ForceReloadData();
@@ -69,7 +67,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public RelayCommand SaveCommand { get; }
         public RelayCommand RevertChangesCommand { get; }
-        public RelayCommand ClearAllCommand { get; }
         public RelayCommand OpenIconsFolderCommand { get; }
 
         public bool HasAchievements
@@ -90,18 +87,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             private set
             {
                 if (SetValueAndReturn(ref _hasChanges, value))
-                {
-                    RaiseCommandStates();
-                }
-            }
-        }
-
-        public bool HasAnyOverrides
-        {
-            get => _hasAnyOverrides;
-            private set
-            {
-                if (SetValueAndReturn(ref _hasAnyOverrides, value))
                 {
                     RaiseCommandStates();
                 }
@@ -391,22 +376,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             RefreshComputedState();
         }
 
-        private void ClearAllOverrides()
-        {
-            if (!HasAchievements)
-            {
-                return;
-            }
-
-            for (var i = 0; i < AchievementRows.Count; i++)
-            {
-                AchievementRows[i]?.ClearAllOverrides();
-            }
-
-            SetSaveStatus(null, isError: false);
-            RefreshComputedState();
-        }
-
         private void OpenIconsFolder()
         {
             try
@@ -475,7 +444,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private void RefreshComputedState()
         {
             var hasChanges = false;
-            var hasAnyOverrides = false;
             var hasValidationErrors = false;
 
             for (var i = 0; i < AchievementRows.Count; i++)
@@ -487,12 +455,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
 
                 hasChanges |= row.HasChanges;
-                hasAnyOverrides |= row.HasAnyOverrideValue;
                 hasValidationErrors |= row.HasValidationErrors;
             }
 
             HasChanges = hasChanges;
-            HasAnyOverrides = hasAnyOverrides;
             HasValidationErrors = hasValidationErrors;
         }
 
@@ -509,7 +475,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         {
             SaveCommand?.RaiseCanExecuteChanged();
             RevertChangesCommand?.RaiseCanExecuteChanged();
-            ClearAllCommand?.RaiseCanExecuteChanged();
             OpenIconsFolderCommand?.RaiseCanExecuteChanged();
         }
 
@@ -710,10 +675,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public bool HasValidationErrors => HasUnlockedOverrideValidationError || HasLockedOverrideValidationError;
 
-        public bool HasAnyOverrideValue =>
-            !string.IsNullOrWhiteSpace(GetNormalizedUnlockedOverrideValue()) ||
-            !string.IsNullOrWhiteSpace(GetNormalizedLockedOverrideValue());
-
         public bool HasChanges =>
             _hasUnlockedContentChange ||
             _hasLockedContentChange ||
@@ -802,7 +763,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 nameof(LockedOverrideToolTip),
                 nameof(HasUnlockedOverrideValidationError),
                 nameof(HasLockedOverrideValidationError),
-                nameof(HasAnyOverrideValue),
                 nameof(UnlockedPreviewPath),
                 nameof(LockedPreviewPath));
         }
@@ -823,12 +783,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public void ClearOverride(AchievementIconVariant variant)
         {
             SetOverrideValue(variant, string.Empty);
-        }
-
-        public void ClearAllOverrides()
-        {
-            ClearOverride(AchievementIconVariant.Unlocked);
-            ClearOverride(AchievementIconVariant.Locked);
         }
 
         public void CommitCurrentOverridesAsBaseline()
@@ -1247,7 +1201,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     nameof(LockedOverrideValue),
                     nameof(LockedOverrideToolTip),
                     nameof(HasLockedOverrideValidationError),
-                    nameof(HasAnyOverrideValue),
                     nameof(LockedPreviewPath));
             }
             else
@@ -1257,7 +1210,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     nameof(UnlockedOverrideValue),
                     nameof(UnlockedOverrideToolTip),
                     nameof(HasUnlockedOverrideValidationError),
-                    nameof(HasAnyOverrideValue),
                     nameof(UnlockedPreviewPath),
                     nameof(LockedPreviewPath));
             }
