@@ -66,6 +66,30 @@ namespace PlayniteAchievements.Tests.Views
                 "Both hydrate paths must copy GameSummaryCategory onto the game data.");
         }
 
+        [TestMethod]
+        public void VisibleProjectionClone_PreservesSummaryCategorySelection()
+        {
+            var service = File.ReadAllText(FindRepoFile(
+                "source", "Services", "Achievements", "AchievementDataService.cs"));
+
+            // Games with filtered achievements go through the projection clone; it must
+            // carry the selection or their summary art silently falls back to defaults.
+            AssertContainsAll(
+                service,
+                "GameSummaryCategory = source.GameSummaryCategory,");
+        }
+
+        [TestMethod]
+        public void ManageAchievementsCover_ResolvesSummaryCategoryArt()
+        {
+            var viewModel = File.ReadAllText(FindRepoFile(
+                "source", "ViewModels", "ManageAchievements", "ManageAchievementsViewModel.cs"));
+
+            AssertContainsAll(
+                viewModel,
+                "GameSummaryArtResolver.ResolveForGame(_gameId)");
+        }
+
         private static int CountOccurrences(string content, string value)
         {
             var count = 0;
