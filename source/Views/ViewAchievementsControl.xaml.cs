@@ -162,15 +162,14 @@ namespace PlayniteAchievements.Views
                              string.Equals(item.ApiName, achievementId, StringComparison.OrdinalIgnoreCase))
                          ?? items?.FirstOrDefault(item =>
                              string.Equals(item?.DisplayName, achievementId, StringComparison.OrdinalIgnoreCase));
-            var grid = AchievementsDataGridControl?.InternalDataGrid;
-            if (target == null || grid == null)
+            if (target == null)
             {
                 return;
             }
 
-            grid.SelectedItem = target;
-            grid.UpdateLayout();
-            grid.ScrollIntoView(target);
+            // Drills into the achievement's category first when the grid opened in category
+            // mode, so the clicked achievement ends up visible and highlighted.
+            AchievementsDataGridControl?.FocusAchievementItem(target);
         }
 
         private void UpdateDefaultSortIndicator()
