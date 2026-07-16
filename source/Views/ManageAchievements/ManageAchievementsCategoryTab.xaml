@@ -403,10 +403,6 @@
                                         Content="{DynamicResource LOCPlayAch_Common_RevertChanges}"
                                         Command="{Binding RevertCategoryImageChangesCommand}"
                                         Style="{StaticResource ToolbarButtonStyle}" />
-                                <Button x:Name="ClearCategoryImagesButton"
-                                        Content="{DynamicResource LOCPlayAch_Common_ClearOverrides}"
-                                        Command="{Binding ClearCategoryImagesCommand}"
-                                        Style="{StaticResource ToolbarButtonStyle}" />
                                 <Button x:Name="SaveCategoryImagesButton"
                                         Content="{DynamicResource LOCPlayAch_Button_Save}"
                                         Command="{Binding SaveCategoryImagesCommand}"
