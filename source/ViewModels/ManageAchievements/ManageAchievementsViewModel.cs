@@ -19,6 +19,7 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.Services.GameCustomData;
 using PlayniteAchievements.Services.Refresh;
+using PlayniteAchievements.Services.Summaries;
 using AsyncCommand = PlayniteAchievements.Common.AsyncCommand;
 using RelayCommand = PlayniteAchievements.Common.RelayCommand;
 
@@ -632,8 +633,10 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 HasGame = game != null;
                 GameName = game?.Name ?? L("LOCPlayAch_Text_UnknownGame", "Unknown Game");
 
-                var imagePath = string.Empty;
-                if (game != null)
+                // Summary-category art selected via Manage Categories wins over the
+                // Playnite cover/icon, matching the game summaries grid.
+                var imagePath = GameSummaryArtResolver.ResolveForGame(_gameId);
+                if (string.IsNullOrWhiteSpace(imagePath) && game != null)
                 {
                     if (!string.IsNullOrWhiteSpace(game.CoverImage))
                     {
