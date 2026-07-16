@@ -231,6 +231,7 @@
     <Compile Include="..\..\source\ViewModels\Items\ManualAchievementEditItem.cs" Link="Source\ViewModels\Items\ManualAchievementEditItem.cs" />
     <Compile Include="..\..\source\ViewModels\AchievementToastViewModel.cs" Link="Source\ViewModels\AchievementToastViewModel.cs" />
     <Compile Include="..\..\source\Views\Converters\PercentToRarityGlowConverter.cs" Link="Source\Views\Converters\PercentToRarityGlowConverter.cs" />
+    <Compile Include="..\..\source\Views\Converters\ImageFitDimensionConverter.cs" Link="Source\Views\Converters\ImageFitDimensionConverter.cs" />
     <Compile Include="..\..\source\Models\AuthOutcome.cs" Link="Source\Models\AuthOutcome.cs" />
     <Compile Include="..\..\source\Models\AuthProbeResult.cs" Link="Source\Models\AuthProbeResult.cs" />
     <Compile Include="..\..\source\Models\CacheDeltaEventArgs.cs" Link="Source\Models\CacheDeltaEventArgs.cs" />
