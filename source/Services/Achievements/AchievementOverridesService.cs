@@ -124,7 +124,8 @@ namespace PlayniteAchievements.Services.Achievements
         public void SetAchievementCategoryMetadata(
             Guid gameId,
             IReadOnlyList<string> categoryOrder,
-            IReadOnlyDictionary<string, CategoryImageOverrideData> categoryImageOverrides)
+            IReadOnlyDictionary<string, CategoryImageOverrideData> categoryImageOverrides,
+            GameSummaryCategoryData gameSummaryCategory)
         {
             if (gameId == Guid.Empty)
             {
@@ -135,6 +136,7 @@ namespace PlayniteAchievements.Services.Achievements
             {
                 customData.AchievementCategoryOrder = CopyCategoryOrder(categoryOrder);
                 customData.AchievementCategoryImageOverrides = CopyCategoryImageOverrides(categoryImageOverrides);
+                customData.GameSummaryCategory = GameCustomDataNormalizer.NormalizeGameSummaryCategory(gameSummaryCategory);
             });
         }
 
