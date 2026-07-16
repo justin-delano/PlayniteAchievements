@@ -117,11 +117,13 @@ namespace PlayniteAchievements.Tests.Services.UI
             AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Rare", ParseColor(RarityColorSettings.DefaultRare));
             AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.UltraRare", ParseColor(RarityColorSettings.DefaultUltraRare));
 
-            // The completed fill is always the CompletedStart -> CompletedEnd gradient;
-            // the badge's rainbow default never applies to the bar.
+            // The completed fill is always a plain CompletedStart -> CompletedEnd sweep;
+            // the badge's rainbow default and highlight band never apply to the bar.
             var completed = resources["PlayAch.Brush.Progress.CompletedFill"] as LinearGradientBrush;
             Assert.IsNotNull(completed);
             Assert.IsTrue(completed.IsFrozen);
+            Assert.AreEqual(new Point(1, 0), completed.EndPoint);
+            Assert.AreEqual(2, completed.GradientStops.Count);
             Assert.AreEqual(ParseColor(RarityColorSettings.DefaultCompletedStart), completed.GradientStops.First().Color);
             Assert.AreEqual(ParseColor(RarityColorSettings.DefaultCompletedEnd), completed.GradientStops.Last().Color);
         }
