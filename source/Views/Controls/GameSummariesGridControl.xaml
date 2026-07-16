@@ -124,16 +124,47 @@
                              the column grows the art and auto rows grow to match. A configured
                              fixed row height bounds the layout instead, and Uniform stretch then
                              fits the art inside both cell dimensions without clipping. -->
-                        <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                ClipToBounds="True"
-                                Margin="6,2"
-                                RenderOptions.BitmapScalingMode="HighQuality"
-                                UseLayoutRounding="True"
-                                SnapsToDevicePixels="True"
-                                HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
-                                VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">
-                            <Image Style="{StaticResource GameImageStyle}"/>
-                        </Border>
+                        <Grid ClipToBounds="False"
+                              Margin="8,6"
+                              UseLayoutRounding="True"
+                              SnapsToDevicePixels="True"
+                              HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                              VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">
+                            <!-- Backing completion-glow layer: two art copies carrying the
+                                 completed-gradient start/end glows, cached as one bitmap so the
+                                 blur is not re-rasterized while scrolling. Sits outside the
+                                 rounded clipping border so the bloom is never cut off. -->
+                            <Border CacheMode="BitmapCache"
+                                    IsHitTestVisible="False">
+                                <Border.Style>
+                                    <Style TargetType="Border">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <MultiDataTrigger>
+                                                <MultiDataTrigger.Conditions>
+                                                    <Condition Binding="{Binding IsCompleted}" Value="True"/>
+                                                    <Condition Binding="{Binding ShowCompletionGlow, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
+                                                </MultiDataTrigger.Conditions>
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </MultiDataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Border.Style>
+                                <Grid>
+                                    <Image Style="{StaticResource GameImageStyle}"
+                                           Effect="{DynamicResource PlayAch.Effect.CompletedGlowStart}"/>
+                                    <Image Style="{StaticResource GameImageStyle}"
+                                           Effect="{DynamicResource PlayAch.Effect.CompletedGlowEnd}"/>
+                                </Grid>
+                            </Border>
+                            <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                    ClipToBounds="True"
+                                    RenderOptions.BitmapScalingMode="HighQuality"
+                                    UseLayoutRounding="True"
+                                    SnapsToDevicePixels="True">
+                                <Image Style="{StaticResource GameImageStyle}"/>
+                            </Border>
+                        </Grid>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
