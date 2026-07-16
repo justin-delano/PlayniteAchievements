@@ -132,6 +132,7 @@ namespace PlayniteAchievements.ViewModels
             FilteredFriends = new BulkObservableCollection<FriendSummaryItem>();
             FilteredGames = new BulkObservableCollection<FriendGameSummaryItem>();
             DisplayedAchievements = new BulkObservableCollection<FriendAchievementDisplayItem>();
+            SelectedFriendGameAllAchievements = new BulkObservableCollection<FriendAchievementDisplayItem>();
             ProviderFilterOptions = new ObservableCollection<string>();
             TypeFilterOptions = new ObservableCollection<string>();
             CategoryFilterOptions = new ObservableCollection<string>();
@@ -174,6 +175,10 @@ namespace PlayniteAchievements.ViewModels
         public BulkObservableCollection<FriendSummaryItem> FilteredFriends { get; }
         public BulkObservableCollection<FriendGameSummaryItem> FilteredGames { get; }
         public BulkObservableCollection<FriendAchievementDisplayItem> DisplayedAchievements { get; }
+
+        // Unfiltered friend+game comparison rows in canonical definition order feeding the grid's
+        // CategorySummarySource so category ordering does not follow the configured or live sort.
+        public BulkObservableCollection<FriendAchievementDisplayItem> SelectedFriendGameAllAchievements { get; }
 
         public BulkObservableCollection<FriendSummaryItem> Friends => FilteredFriends;
         public BulkObservableCollection<FriendGameSummaryItem> Games => FilteredGames;
@@ -1323,6 +1328,7 @@ namespace PlayniteAchievements.ViewModels
                     FilteredFriends.ReplaceAll(Array.Empty<FriendSummaryItem>());
                     FilteredGames.ReplaceAll(Array.Empty<FriendGameSummaryItem>());
                     DisplayedAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
+                    SelectedFriendGameAllAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
                     StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_LoadFailed") ??
                                  "Failed to load friend achievement data.";
                     OnPropertyChanged(nameof(HasData));
@@ -1540,6 +1546,15 @@ namespace PlayniteAchievements.ViewModels
                 DisplayedAchievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(
                     _filteredAchievementsList,
                     persisted?.FriendsOverviewAchievementsGridMaxRows));
+
+                // Keep the unfiltered category-summary source current; achievement filters and grid
+                // sorts never touch it, so the category fallback order stays the definition-ordered
+                // snapshot loaded from the cache.
+                SelectedFriendGameAllAchievements.ReplaceAll(HasFriendGameSelection
+                    ? _allAchievements.Where(achievement =>
+                        IsSameFriend(achievement, SelectedFriend) &&
+                        IsSameGame(achievement, SelectedGame))
+                    : Enumerable.Empty<FriendAchievementDisplayItem>());
                 OnPropertyChanged(nameof(AchievementCountText));
                 OnPropertyChanged(nameof(HasData));
             }
