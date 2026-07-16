@@ -442,7 +442,7 @@
                                                      CategoryColumnSettingsKey="FriendsOverviewCategorySummaries"
                                                      ShowGameColumn="True"
                                                      ShowFriendColumn="True"
-                                                     HideStatusColumn="{Binding HasFriendGameSelection, Converter={StaticResource InvertBoolConverter}}"
+                                                     HideStatusColumn="False"
                                                      UseCoverImages="{Binding Settings.Persisted.FriendsOverviewAchievementsUseCoverImages}"
                                                      ShowRarityGlow="{Binding Settings.Persisted.FriendsOverviewAchievementsShowRarityGlow}"
                                                      ColorNamesByRarity="{Binding Settings.Persisted.FriendsOverviewAchievementsColorNamesByRarity}"
