@@ -56,6 +56,50 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void FriendsOverview_BindsCategorySummariesToDefinitionOrderedSnapshot()
+        {
+            var xaml = File.ReadAllText(FindRepoFile("source", "Views", "FriendsOverviewControl.xaml"));
+            var code = File.ReadAllText(FindRepoFile("source", "ViewModels", "FriendsOverviewViewModel.cs"));
+
+            AssertContainsAll(xaml, "CategorySummarySource=\"{Binding SelectedFriendGameAllAchievements}\"");
+            AssertContainsAll(
+                code,
+                "public BulkObservableCollection<FriendAchievementDisplayItem> SelectedFriendGameAllAchievements { get; }",
+                "SelectedFriendGameAllAchievements.ReplaceAll(HasFriendGameSelection");
+            Assert.IsFalse(
+                code.Contains("SelectedFriendGameAllAchievements.ReplaceAll(_filteredAchievementsList"),
+                "Friends overview category-summary source must not follow the filtered/sorted achievement list.");
+        }
+
+        [TestMethod]
+        public void ViewFriendsAchievements_BindsCategorySummariesToDefinitionOrderedSnapshot()
+        {
+            var xaml = File.ReadAllText(FindRepoFile("source", "Views", "ViewFriendsAchievementsControl.xaml"));
+            var code = File.ReadAllText(FindRepoFile("source", "ViewModels", "ViewFriendsAchievementsViewModel.cs"));
+
+            AssertContainsAll(xaml, "CategorySummarySource=\"{Binding SelectedFriendAllAchievements}\"");
+            AssertContainsAll(
+                code,
+                "public BulkObservableCollection<FriendAchievementDisplayItem> SelectedFriendAllAchievements { get; }",
+                "SelectedFriendAllAchievements.ReplaceAll(SelectedFriend != null");
+        }
+
+        [TestMethod]
+        public void FriendCache_FullAchievementLoadsUseDefinitionOrder()
+        {
+            var store = File.ReadAllText(FindRepoFile("source", "Services", "Database", "SqlNadoCacheStore.cs"));
+
+            // Recent-unlock queries stay unlock-time ordered for LIMIT correctness; full comparison
+            // loads order by AchievementDefinitions id so friend surfaces see the same canonical
+            // definition order as the non-friend surfaces.
+            AssertContainsAll(
+                store,
+                "sql.Append(requireUnlockTime",
+                "? \" ORDER BY ua.UnlockTimeUtc DESC, u.DisplayName, g.GameName, ad.Id\"",
+                ": \" ORDER BY u.DisplayName, g.GameName, ad.Id\");");
+        }
+
+        [TestMethod]
         public void ManageCategoriesTab_OrdersCategoryRowsFromDefinitionOrderedRows()
         {
             var code = File.ReadAllText(FindRepoFile(
