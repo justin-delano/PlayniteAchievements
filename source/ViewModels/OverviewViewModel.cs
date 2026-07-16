@@ -929,7 +929,7 @@ namespace PlayniteAchievements.ViewModels
 
         public bool ShowOverviewGameMetadataRegion => _settings?.Persisted?.ShowOverviewGameMetadataRegion ?? true;
 
-        public bool ShowCompletionBorder => _settings?.Persisted?.ShowCompletionBorder ?? true;
+        public bool ShowCompletionGlow => _settings?.Persisted?.ShowCompletionGlow ?? true;
 
         public bool ShowOverviewGameSummariesGridColumnHeaders => _settings?.Persisted?.ShowOverviewGameSummariesGridColumnHeaders ?? true;
 
@@ -944,6 +944,8 @@ namespace PlayniteAchievements.ViewModels
         public double? OverviewSelectedGameCategorySummariesGridRowHeight => _settings?.Persisted?.OverviewSelectedGameCategorySummariesGridRowHeight;
 
         public bool OverviewSelectedGameCategorySummariesUseCoverImages => _settings?.Persisted?.OverviewSelectedGameCategorySummariesUseCoverImages ?? false;
+
+        public bool OverviewSelectedGameCategorySummariesShowCompletionGlow => _settings?.Persisted?.OverviewSelectedGameCategorySummariesShowCompletionGlow ?? true;
 
         public bool ShowOverviewGameSummariesGridControlBar => _settings?.Persisted?.ShowOverviewGameSummariesGridControlBar ?? true;
 
@@ -2361,7 +2363,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataPlatform));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataPlaytime));
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataRegion));
-                OnPropertyChanged(nameof(ShowCompletionBorder));
+                OnPropertyChanged(nameof(ShowCompletionGlow));
                 OnPropertyChanged(nameof(ShowOverviewGameSummariesGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridColumnHeaders));
                 OnPropertyChanged(nameof(ShowOverviewSelectedGameGridColumnHeaders));
@@ -2369,6 +2371,7 @@ namespace PlayniteAchievements.ViewModels
                 OnPropertyChanged(nameof(ShowOverviewSelectedGameCategorySummariesGridColumnHeaders));
                 OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesGridRowHeight));
                 OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesUseCoverImages));
+                OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesShowCompletionGlow));
                 OnPropertyChanged(nameof(ShowOverviewGameSummariesGridControlBar));
                 OnPropertyChanged(nameof(ShowOverviewRecentAchievementsGridControlBar));
                 OnPropertyChanged(nameof(ShowOverviewSelectedGameGridControlBar));
@@ -2457,9 +2460,9 @@ namespace PlayniteAchievements.ViewModels
             {
                 OnPropertyChanged(nameof(ShowOverviewGameMetadataRegion));
             }
-            else if (propertyName == nameof(PersistedSettings.ShowCompletionBorder))
+            else if (propertyName == nameof(PersistedSettings.ShowCompletionGlow))
             {
-                OnPropertyChanged(nameof(ShowCompletionBorder));
+                OnPropertyChanged(nameof(ShowCompletionGlow));
             }
             else if (propertyName == nameof(PersistedSettings.ShowOverviewGameSummariesGridColumnHeaders))
             {
@@ -2488,6 +2491,10 @@ namespace PlayniteAchievements.ViewModels
             else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameCategorySummariesUseCoverImages))
             {
                 OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesUseCoverImages));
+            }
+            else if (propertyName == nameof(PersistedSettings.OverviewSelectedGameCategorySummariesShowCompletionGlow))
+            {
+                OnPropertyChanged(nameof(OverviewSelectedGameCategorySummariesShowCompletionGlow));
             }
             else if (propertyName == nameof(PersistedSettings.ShowOverviewGameSummariesGridControlBar))
             {
