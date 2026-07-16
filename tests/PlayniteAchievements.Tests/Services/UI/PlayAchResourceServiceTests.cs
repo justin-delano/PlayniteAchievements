@@ -101,6 +101,29 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
+        public void Apply_PublishesProgressTierAndCompletedFillBrushes()
+        {
+            var resources = new ResourceDictionary();
+
+            PlayAchResourceService.Apply(resources, null);
+
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Common", ParseColor(RarityColorSettings.DefaultCommon));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Uncommon", ParseColor(RarityColorSettings.DefaultUncommon));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Rare", ParseColor(RarityColorSettings.DefaultRare));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.UltraRare", ParseColor(RarityColorSettings.DefaultUltraRare));
+
+            Assert.IsTrue(resources.Contains("PlayAch.Brush.Progress.CompletedFill"));
+            var gradient = resources["PlayAch.Brush.Progress.CompletedFill"] as LinearGradientBrush;
+            Assert.IsNotNull(gradient);
+            Assert.IsTrue(gradient.IsFrozen);
+            Assert.AreEqual(new Point(0, 0), gradient.StartPoint);
+            Assert.AreEqual(new Point(1, 0), gradient.EndPoint);
+            Assert.AreEqual(2, gradient.GradientStops.Count);
+            Assert.AreEqual(ParseColor(RarityColorSettings.DefaultCompletedStart), gradient.GradientStops[0].Color);
+            Assert.AreEqual(ParseColor(RarityColorSettings.DefaultCompletedEnd), gradient.GradientStops[1].Color);
+        }
+
+        [TestMethod]
         public void Apply_ResolvesTransparentOverrideToTransparentBrush()
         {
             var resources = new ResourceDictionary();
@@ -268,6 +291,11 @@ namespace PlayniteAchievements.Tests.Services.UI
                 PlayAchResourceService.ResourceDescriptors.Any(item =>
                     string.Equals(item.ResourceKey, resourceKey, StringComparison.Ordinal)),
                 resourceKey);
+        }
+
+        private static Color ParseColor(string hex)
+        {
+            return (Color)ColorConverter.ConvertFromString(hex);
         }
 
         private static ResourceOverrideSetting CreateBrushOverride(string color)
