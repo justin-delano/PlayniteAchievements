@@ -10,7 +10,7 @@
                                              x:Name="FriendsRecentUnlocksGrid"
                                              ShowGameColumn="True"
                                              ShowFriendColumn="True"
-                                             HideStatusColumn="True"
+                                             HideStatusColumn="False"
                                              UseCoverImages="{Binding UseCoverImages}"
                                              ShowRarityGlow="{Binding ShowRarityGlow}"
                                              ColorNamesByRarity="{Binding ColorNamesByRarity}"

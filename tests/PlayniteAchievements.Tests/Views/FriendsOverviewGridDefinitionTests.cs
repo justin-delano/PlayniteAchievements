@@ -102,7 +102,7 @@ namespace PlayniteAchievements.Tests.Views
                 "EnableCategoryMode=\"{Binding HasFriendGameSelection}\"",
                 "ShowGameColumn=\"True\"",
                 "ShowFriendColumn=\"True\"",
-                "HideStatusColumn=\"{Binding HasFriendGameSelection, Converter={StaticResource InvertBoolConverter}}\"",
+                "HideStatusColumn=\"False\"",
                 "Visibility=\"{Binding HasFriendSelection, Converter={StaticResource InverseBoolToVis}}\"",
                 "Visibility=\"{Binding HasFriendSelection, Converter={StaticResource BoolToVis}}\"");
             AssertContainsAll(

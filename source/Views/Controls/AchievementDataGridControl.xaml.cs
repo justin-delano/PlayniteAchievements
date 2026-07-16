@@ -131,7 +131,13 @@ namespace PlayniteAchievements.Views.Controls
                     rarityTier: true,
                     collectionScore: false,
                     prestigeScore: false,
-                    points: false)
+                    points: false),
+                ["StartPageFriendAchievements"] = CreateAchievementVisibility(
+                    status: false,
+                    game: true,
+                    friendAvatar: true,
+                    friend: true,
+                    unlockDate: true)
             };
 
         private static IReadOnlyDictionary<string, bool> CreateAchievementVisibility(
@@ -204,6 +210,11 @@ namespace PlayniteAchievements.Views.Controls
                 ["ViewFriendsAchievementsSelectedFriendAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Status"] = 0
+                },
+                ["StartPageFriendAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Avatar"] = 0,
+                    ["Friend"] = 1
                 }
             };
 
@@ -570,6 +581,7 @@ namespace PlayniteAchievements.Views.Controls
         private GridActionButton _backButton;
         private GridControlBarViewModel _controlBarWithToggle;
         private INotifyCollectionChanged _observedItemsSource;
+        private INotifyCollectionChanged _observedCategorySummarySource;
         private BulkObservableCollection<AchievementDisplayItem> _drillItems;
         private List<GameSummaryItem> _allCategorySummaries;
         private GridSearchControl _categorySearch;
@@ -735,9 +747,13 @@ namespace PlayniteAchievements.Views.Controls
 
         private static void OnCategorySummarySourceChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (d is AchievementDataGridControl control && control._isCategoryMode)
+            if (d is AchievementDataGridControl control)
             {
-                control.OnItemsSourceContentChanged();
+                control.ObserveCategorySummarySourceCollection();
+                if (control._isCategoryMode)
+                {
+                    control.OnItemsSourceContentChanged();
+                }
             }
         }
 
@@ -1358,6 +1374,33 @@ namespace PlayniteAchievements.Views.Controls
         private void OnItemsSourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             OnItemsSourceContentChanged();
+        }
+
+        // Hosts feed CategorySummarySource from a stable collection mutated in place (ReplaceAll),
+        // so the dependency-property callback alone never sees updates. Without observing the
+        // collection itself, category rollups keep the previous selection's rows after a friend
+        // or game switch, showing the wrong game's categories and drill contents.
+        private void ObserveCategorySummarySourceCollection()
+        {
+            if (_observedCategorySummarySource != null)
+            {
+                _observedCategorySummarySource.CollectionChanged -= OnCategorySummarySourceCollectionChanged;
+                _observedCategorySummarySource = null;
+            }
+
+            if (CategorySummarySource is INotifyCollectionChanged incc)
+            {
+                _observedCategorySummarySource = incc;
+                incc.CollectionChanged += OnCategorySummarySourceCollectionChanged;
+            }
+        }
+
+        private void OnCategorySummarySourceCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (_isCategoryMode)
+            {
+                OnItemsSourceContentChanged();
+            }
         }
 
         private void OnItemsSourceContentChanged()
@@ -2131,6 +2174,7 @@ namespace PlayniteAchievements.Views.Controls
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
                 case "StartPageAchievements":
+                case "StartPageFriendAchievements":
                     return false;
                 default:
                     return true;
@@ -2753,6 +2797,12 @@ namespace PlayniteAchievements.Views.Controls
             {
                 _observedItemsSource.CollectionChanged -= OnItemsSourceCollectionChanged;
                 _observedItemsSource = null;
+            }
+
+            if (_observedCategorySummarySource != null)
+            {
+                _observedCategorySummarySource.CollectionChanged -= OnCategorySummarySourceCollectionChanged;
+                _observedCategorySummarySource = null;
             }
             DataGridAlignmentBehavior.SetColumnCellAlignmentOverridesProvider(AchievementsDataGrid, null);
             DataGridAlignmentBehavior.SetColumnCellVerticalAlignmentOverridesProvider(AchievementsDataGrid, null);

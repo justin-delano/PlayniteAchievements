@@ -519,15 +519,16 @@ namespace PlayniteAchievements.ViewModels
             SortAchievements(filtered);
 
             var maxRows = AchievementGridOptions?.MaxRows;
-            Achievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(filtered, maxRows));
 
             // Keep the unfiltered category-summary source current; achievement filters and grid
             // sorts never touch it, so the category fallback order stays the definition-ordered
-            // snapshot loaded from the cache.
+            // snapshot loaded from the cache. Replaced before Achievements so the grid's
+            // items-source reset rebuilds category rollups from the new selection's rows.
             SelectedFriendAllAchievements.ReplaceAll(SelectedFriend != null
                 ? _allAchievements.Where(achievement =>
                     FriendOverviewProjection.IsSameFriend(achievement, SelectedFriend))
                 : Enumerable.Empty<FriendAchievementDisplayItem>());
+            Achievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(filtered, maxRows));
             StatusText = _allAchievements.Count == 0
                 ? L("LOCPlayAch_ViewFriendsAchievements_NoData", "No friend achievement data for this game yet.")
                 : string.Empty;
