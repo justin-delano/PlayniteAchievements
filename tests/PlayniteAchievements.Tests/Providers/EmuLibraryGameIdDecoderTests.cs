@@ -84,6 +84,50 @@ namespace PlayniteAchievements.Tests.Providers
             Assert.IsFalse(EmuLibraryGameIdDecoder.TryDecodeSingleFile(game, out _, out _));
         }
 
+        [TestMethod]
+        public void TryDecodeMultiFile_ValidPayload_ReturnsDecodedValues()
+        {
+            var expectedMappingId = Guid.NewGuid();
+
+            var game = new Game
+            {
+                PluginId = EmuLibraryGameIdDecoder.EmuLibraryPluginId,
+                GameId = BuildGameId(new EmuLibraryMultiFileGameInfo
+                {
+                    MappingId = expectedMappingId,
+                    SourceBaseDir = "Chrono Trigger",
+                    SourceFilePath = @"Chrono Trigger\disc1.chd"
+                })
+            };
+
+            var decoded = EmuLibraryGameIdDecoder.TryDecodeMultiFile(
+                game,
+                out var mappingId,
+                out var sourceFilePath,
+                out var sourceBaseDir);
+
+            Assert.IsTrue(decoded);
+            Assert.AreEqual(expectedMappingId, mappingId);
+            Assert.AreEqual(@"Chrono Trigger\disc1.chd", sourceFilePath);
+            Assert.AreEqual("Chrono Trigger", sourceBaseDir);
+        }
+
+        [TestMethod]
+        public void TryDecodeMultiFile_SingleFilePayload_ReturnsFalse()
+        {
+            var game = new Game
+            {
+                PluginId = EmuLibraryGameIdDecoder.EmuLibraryPluginId,
+                GameId = BuildGameId(new EmuLibrarySingleFileGameInfo
+                {
+                    MappingId = Guid.NewGuid(),
+                    SourcePath = @"NES\Super Mario Bros.nes"
+                })
+            };
+
+            Assert.IsFalse(EmuLibraryGameIdDecoder.TryDecodeMultiFile(game, out _, out _, out _));
+        }
+
         private static string BuildGameId(EmuLibraryGameInfoBase gameInfo)
         {
             using (var memoryStream = new MemoryStream())
