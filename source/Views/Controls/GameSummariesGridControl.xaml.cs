@@ -862,9 +862,8 @@ namespace PlayniteAchievements.Views.Controls
                     return persisted.FriendsOverviewGameSummariesLastPlayedDateMode;
                 case GridSurface.ViewFriendsAchievements:
                 case GridSurface.ViewFriendsAchievementsCategory:
-                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements).LastPlayedDateMode;
                 case GridSurface.ViewFriendsAchievementsSelectedFriend:
-                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend).LastPlayedDateMode;
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements).LastPlayedDateMode;
                 default:
                     return persisted.OverviewGameSummariesLastPlayedDateMode;
             }
