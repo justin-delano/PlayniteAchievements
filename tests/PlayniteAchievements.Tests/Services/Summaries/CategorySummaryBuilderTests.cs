@@ -142,6 +142,62 @@ namespace PlayniteAchievements.Tests.Services.Summaries
             Assert.AreEqual(0, CategorySummaryBuilder.Build(new List<AchievementDisplayItem>()).Count);
         }
 
+        [TestMethod]
+        public void Build_FullyUnlockedCategoryIsCompleted()
+        {
+            var result = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
+            {
+                DisplayItem("DLC", unlocked: true),
+                DisplayItem("DLC", unlocked: true)
+            });
+
+            Assert.IsTrue(result.Single().IsCompleted);
+        }
+
+        [TestMethod]
+        public void Build_UnlockedCapstoneCompletesPartialCategory()
+        {
+            var result = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
+            {
+                DisplayItem("Base", unlocked: true, isCapstone: true),
+                DisplayItem("Base", unlocked: false)
+            });
+
+            Assert.IsTrue(result.Single().IsCompleted);
+        }
+
+        [TestMethod]
+        public void Build_LockedCapstoneOrPartialUnlocksStayIncomplete()
+        {
+            var lockedCapstone = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
+            {
+                DisplayItem("Base", unlocked: false, isCapstone: true),
+                DisplayItem("Base", unlocked: true)
+            });
+            Assert.IsFalse(lockedCapstone.Single().IsCompleted);
+
+            var partial = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
+            {
+                DisplayItem("Base", unlocked: true),
+                DisplayItem("Base", unlocked: false)
+            });
+            Assert.IsFalse(partial.Single().IsCompleted);
+        }
+
+        [TestMethod]
+        public void Build_CapstoneOnlyCompletesItsOwnCategory()
+        {
+            var result = CategorySummaryBuilder.Build(new List<AchievementDisplayItem>
+            {
+                DisplayItem("Base", unlocked: true, isCapstone: true),
+                DisplayItem("DLC", unlocked: false)
+            });
+
+            var byLabel = result.Cast<CategorySummaryItem>().ToDictionary(item => item.CategoryLabel);
+            Assert.IsTrue(byLabel["Base"].IsCompleted);
+            Assert.IsFalse(byLabel["DLC"].IsCompleted);
+        }
+
         private static AchievementDisplayItem DisplayItem(
             string label,
             bool unlocked,
@@ -149,7 +205,8 @@ namespace PlayniteAchievements.Tests.Services.Summaries
             string gameIcon = null,
             string gameCover = null,
             int categoryOrderIndex = int.MaxValue,
-            Guid? playniteGameId = null)
+            Guid? playniteGameId = null,
+            bool isCapstone = false)
         {
             return new AchievementDisplayItem
             {
@@ -157,6 +214,7 @@ namespace PlayniteAchievements.Tests.Services.Summaries
                 PlayniteGameId = playniteGameId,
                 CategoryLabel = label,
                 Unlocked = unlocked,
+                IsCapstone = isCapstone,
                 CategoryArtPath = categoryArt,
                 GameIconPath = gameIcon,
                 GameCoverPath = gameCover,
