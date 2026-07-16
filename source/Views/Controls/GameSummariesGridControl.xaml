@@ -374,6 +374,8 @@
                                             <ProgressBar Value="{Binding Progression, Mode=OneWay}"
                                                          Style="{StaticResource OverviewProgressBarStyle}"/>
                                             <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextHaloStyle}"/>
+                                            <TextBlock Text="{Binding ProgressionText}"
                                                        Style="{StaticResource OverviewProgressPercentTextStyle}"/>
                                         </Grid>
     
