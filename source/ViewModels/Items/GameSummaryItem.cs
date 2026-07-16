@@ -99,9 +99,10 @@ namespace PlayniteAchievements.ViewModels.Items
             { 
                 if (_totalAchievements != value)
                 {
-                    SetValue(ref _totalAchievements, value); 
-                    OnPropertyChanged(nameof(Progression)); 
-                    OnPropertyChanged(nameof(ProgressionText)); 
+                    SetValue(ref _totalAchievements, value);
+                    OnPropertyChanged(nameof(Progression));
+                    OnPropertyChanged(nameof(ProgressionText));
+                    OnPropertyChanged(nameof(ProgressTier));
                 }
             } 
         }
@@ -114,9 +115,10 @@ namespace PlayniteAchievements.ViewModels.Items
             { 
                 if (_unlockedAchievements != value)
                 {
-                    SetValue(ref _unlockedAchievements, value); 
-                    OnPropertyChanged(nameof(Progression)); 
-                    OnPropertyChanged(nameof(ProgressionText)); 
+                    SetValue(ref _unlockedAchievements, value);
+                    OnPropertyChanged(nameof(Progression));
+                    OnPropertyChanged(nameof(ProgressionText));
+                    OnPropertyChanged(nameof(ProgressTier));
                 }
             } 
         }
@@ -279,6 +281,22 @@ namespace PlayniteAchievements.ViewModels.Items
         public int Progression => AchievementCompletionPercentCalculator.ComputeRoundedPercent(UnlockedAchievements, TotalAchievements);
 
         public string ProgressionText => $"{Progression}%";
+
+        /// <summary>
+        /// Progress-quartile tier for progress-bar coloring: 0-24 Common, 25-49 Uncommon,
+        /// 50-74 Rare, 75+ UltraRare. Completion is handled separately via <see cref="IsCompleted"/>.
+        /// </summary>
+        public RarityTier ProgressTier
+        {
+            get
+            {
+                var progression = Progression;
+                if (progression >= 75) { return RarityTier.UltraRare; }
+                if (progression >= 50) { return RarityTier.Rare; }
+                if (progression >= 25) { return RarityTier.Uncommon; }
+                return RarityTier.Common;
+            }
+        }
 
         public string CollectionScoreFractionText => FormatScoreFraction(CollectionScore, CollectionScoreTotal);
 
