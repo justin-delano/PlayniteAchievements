@@ -107,9 +107,9 @@
                               Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
                 </StackPanel>
             </StackPanel>
-            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionBorder}"
-                      IsChecked="{Binding GameSummaryOptions.ShowCompletionBorder, ElementName=EditorRoot}"
-                      Visibility="{Binding ShowCompletionBorderRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionGlow}"
+                      IsChecked="{Binding GameSummaryOptions.ShowCompletionGlow, ElementName=EditorRoot}"
+                      Visibility="{Binding ShowCompletionGlowRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
         </StackPanel>
 
@@ -122,6 +122,10 @@
             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCategoryGridColumnHeaders}"
                       IsChecked="{Binding CategorySummaryOptions.ShowColumnHeaders, ElementName=EditorRoot}"
                       Visibility="{Binding ShowColumnHeadersRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
+                      Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
+            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowCompletionGlow}"
+                      IsChecked="{Binding CategorySummaryOptions.ShowCompletionGlow, ElementName=EditorRoot}"
+                      Visibility="{Binding ShowCompletionGlowRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
             <StackPanel Orientation="Horizontal"
                         Visibility="{Binding ShowRowHeightRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"

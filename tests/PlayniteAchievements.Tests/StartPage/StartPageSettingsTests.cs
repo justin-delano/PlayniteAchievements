@@ -132,7 +132,7 @@ namespace PlayniteAchievements.Tests.StartPage
             source.StartPageGameSummariesGrid.ShowMetadataPlatform = false;
             source.StartPageGameSummariesGrid.ShowMetadataPlaytime = false;
             source.StartPageGameSummariesGrid.ShowMetadataRegion = false;
-            source.StartPageGameSummariesGrid.ShowCompletionBorder = false;
+            source.StartPageGameSummariesGrid.ShowCompletionGlow = false;
             source.StartPageGameSummariesGrid.ShowColumnHeaders = false;
             source.StartPageGameSummariesGrid.ShowControlBar = true;
             source.StartPageGameSummariesGrid.RowHeight = 72d;
@@ -173,7 +173,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.IsFalse(clone.StartPageGameSummariesGrid.ShowMetadataPlatform);
             Assert.IsFalse(clone.StartPageGameSummariesGrid.ShowMetadataPlaytime);
             Assert.IsFalse(clone.StartPageGameSummariesGrid.ShowMetadataRegion);
-            Assert.IsFalse(clone.StartPageGameSummariesGrid.ShowCompletionBorder);
+            Assert.IsFalse(clone.StartPageGameSummariesGrid.ShowCompletionGlow);
             Assert.IsFalse(clone.StartPageGameSummariesGrid.ShowColumnHeaders);
             Assert.IsTrue(clone.StartPageGameSummariesGrid.ShowControlBar);
             Assert.AreEqual(72d, clone.StartPageGameSummariesGrid.RowHeight);
@@ -537,7 +537,7 @@ namespace PlayniteAchievements.Tests.StartPage
             options.ShowMetadataPlatform = seed % 2 != 0;
             options.ShowMetadataPlaytime = seed % 2 == 0;
             options.ShowMetadataRegion = seed % 2 != 0;
-            options.ShowCompletionBorder = seed % 2 == 0;
+            options.ShowCompletionGlow = seed % 2 == 0;
             options.LastPlayedDateMode = (DateDisplayMode)(seed % 3);
             options.SortMode = (GameSummariesSortMode)(seed % 5);
             options.SortDescending = seed % 2 == 0;
@@ -550,7 +550,7 @@ namespace PlayniteAchievements.Tests.StartPage
             Assert.AreEqual(seed % 2 != 0, options.ShowMetadataPlatform);
             Assert.AreEqual(seed % 2 == 0, options.ShowMetadataPlaytime);
             Assert.AreEqual(seed % 2 != 0, options.ShowMetadataRegion);
-            Assert.AreEqual(seed % 2 == 0, options.ShowCompletionBorder);
+            Assert.AreEqual(seed % 2 == 0, options.ShowCompletionGlow);
             Assert.AreEqual((DateDisplayMode)(seed % 3), options.LastPlayedDateMode);
             Assert.AreEqual((GameSummariesSortMode)(seed % 5), options.SortMode);
             Assert.AreEqual(seed % 2 == 0, options.SortDescending);

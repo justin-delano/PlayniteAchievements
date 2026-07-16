@@ -46,10 +46,10 @@ namespace PlayniteAchievements.Models.Settings
             set => Options.UseCoverImages = value;
         }
 
-        public bool ShowCompletionBorder
+        public bool ShowCompletionGlow
         {
-            get => Options.ShowCompletionBorder;
-            set => Options.ShowCompletionBorder = value;
+            get => Options.ShowCompletionGlow;
+            set => Options.ShowCompletionGlow = value;
         }
 
         public bool ShowColumnHeaders
@@ -104,7 +104,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ShowMetadataPlaytime = ShowMetadataPlaytime;
             target.ShowMetadataRegion = ShowMetadataRegion;
             target.UseCoverImages = UseCoverImages;
-            target.ShowCompletionBorder = ShowCompletionBorder;
+            target.ShowCompletionGlow = ShowCompletionGlow;
             target.ShowColumnHeaders = ShowColumnHeaders;
             target.ShowControlBar = ShowControlBar;
             target.RowHeight = RowHeight;

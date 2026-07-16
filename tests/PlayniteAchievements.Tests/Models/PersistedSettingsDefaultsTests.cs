@@ -640,7 +640,7 @@ namespace PlayniteAchievements.Models.Tests
                 ViewAchievementsGameSummariesShowMetadataPlatform = !defaults.ViewAchievementsGameSummariesShowMetadataPlatform,
                 ViewAchievementsGameSummariesShowMetadataPlaytime = !defaults.ViewAchievementsGameSummariesShowMetadataPlaytime,
                 ViewAchievementsGameSummariesShowMetadataRegion = !defaults.ViewAchievementsGameSummariesShowMetadataRegion,
-                ViewAchievementsGameSummariesShowCompletionBorder = !defaults.ViewAchievementsGameSummariesShowCompletionBorder,
+                ViewAchievementsGameSummariesShowCompletionGlow = !defaults.ViewAchievementsGameSummariesShowCompletionGlow,
                 ShowViewAchievementsGameSummariesGridColumnHeaders = !defaults.ShowViewAchievementsGameSummariesGridColumnHeaders,
                 ShowViewAchievementsAchievementGridControlBar = !defaults.ShowViewAchievementsAchievementGridControlBar,
                 ViewAchievementsAchievementGridStartInCategoryMode = !defaults.ViewAchievementsAchievementGridStartInCategoryMode,
@@ -686,7 +686,7 @@ namespace PlayniteAchievements.Models.Tests
                 Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataPlatform, copy.ViewAchievementsGameSummariesShowMetadataPlatform);
                 Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataPlaytime, copy.ViewAchievementsGameSummariesShowMetadataPlaytime);
                 Assert.AreEqual(source.ViewAchievementsGameSummariesShowMetadataRegion, copy.ViewAchievementsGameSummariesShowMetadataRegion);
-                Assert.AreEqual(source.ViewAchievementsGameSummariesShowCompletionBorder, copy.ViewAchievementsGameSummariesShowCompletionBorder);
+                Assert.AreEqual(source.ViewAchievementsGameSummariesShowCompletionGlow, copy.ViewAchievementsGameSummariesShowCompletionGlow);
                 Assert.AreEqual(source.ShowViewAchievementsGameSummariesGridColumnHeaders, copy.ShowViewAchievementsGameSummariesGridColumnHeaders);
                 Assert.AreEqual(source.ShowViewAchievementsAchievementGridControlBar, copy.ShowViewAchievementsAchievementGridControlBar);
                 Assert.AreEqual(source.ViewAchievementsAchievementGridStartInCategoryMode, copy.ViewAchievementsAchievementGridStartInCategoryMode);
@@ -1176,7 +1176,7 @@ namespace PlayniteAchievements.Models.Tests
                 ShowOverviewGameMetadataRegion = false,
                 ShowTopMenuBarButton = false,
                 ShowCompactListRarityBar = false,
-                ShowCompletionBorder = false,
+                ShowCompletionGlow = false,
                 ShowOverviewGameSummariesGridColumnHeaders = false,
                 ShowOverviewRecentAchievementsGridColumnHeaders = false,
                 ShowDesktopThemeAchievementGridColumnHeaders = false,
@@ -1281,7 +1281,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.ShowOverviewGameMetadataRegion, settings.ShowOverviewGameMetadataRegion);
             Assert.AreEqual(defaults.ShowTopMenuBarButton, settings.ShowTopMenuBarButton);
             Assert.AreEqual(defaults.ShowCompactListRarityBar, settings.ShowCompactListRarityBar);
-            Assert.AreEqual(defaults.ShowCompletionBorder, settings.ShowCompletionBorder);
+            Assert.AreEqual(defaults.ShowCompletionGlow, settings.ShowCompletionGlow);
             Assert.AreEqual(defaults.ShowOverviewGameSummariesGridColumnHeaders, settings.ShowOverviewGameSummariesGridColumnHeaders);
             Assert.AreEqual(defaults.ShowOverviewRecentAchievementsGridColumnHeaders, settings.ShowOverviewRecentAchievementsGridColumnHeaders);
             Assert.AreEqual(defaults.ShowDesktopThemeAchievementGridColumnHeaders, settings.ShowDesktopThemeAchievementGridColumnHeaders);

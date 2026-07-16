@@ -355,7 +355,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showMetadataPlatform = true;
         private bool _showMetadataPlaytime = true;
         private bool _showMetadataRegion = true;
-        private bool _showCompletionBorder = true;
+        private bool _showCompletionGlow = true;
         private DateDisplayMode _lastPlayedDateMode = DateDisplayMode.DateAndTime;
         private GameSummariesSortMode _sortMode = GameSummariesSortMode.RecentUnlock;
         private bool _sortDescending = true;
@@ -384,10 +384,10 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _showMetadataRegion, value);
         }
 
-        public bool ShowCompletionBorder
+        public bool ShowCompletionGlow
         {
-            get => _showCompletionBorder;
-            set => SetValue(ref _showCompletionBorder, value);
+            get => _showCompletionGlow;
+            set => SetValue(ref _showCompletionGlow, value);
         }
 
         public DateDisplayMode LastPlayedDateMode
@@ -416,7 +416,7 @@ namespace PlayniteAchievements.Models.Settings
             clone.ShowMetadataPlatform = ShowMetadataPlatform;
             clone.ShowMetadataPlaytime = ShowMetadataPlaytime;
             clone.ShowMetadataRegion = ShowMetadataRegion;
-            clone.ShowCompletionBorder = ShowCompletionBorder;
+            clone.ShowCompletionGlow = ShowCompletionGlow;
             clone.LastPlayedDateMode = LastPlayedDateMode;
             clone.SortMode = SortMode;
             clone.SortDescending = SortDescending;
@@ -465,6 +465,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showColumnHeaders = true;
         private double? _rowHeight;
         private bool _useCoverImages;
+        private bool _showCompletionGlow = true;
 
         public GridColumnLayoutOptions Columns
         {
@@ -492,6 +493,12 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _useCoverImages, value);
         }
 
+        public bool ShowCompletionGlow
+        {
+            get => _showCompletionGlow;
+            set => SetValue(ref _showCompletionGlow, value);
+        }
+
         public CategorySummaryGridOptions Clone()
         {
             return new CategorySummaryGridOptions
@@ -499,7 +506,8 @@ namespace PlayniteAchievements.Models.Settings
                 Columns = Columns?.Clone() ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment(),
                 ShowColumnHeaders = ShowColumnHeaders,
                 RowHeight = RowHeight,
-                UseCoverImages = UseCoverImages
+                UseCoverImages = UseCoverImages,
+                ShowCompletionGlow = ShowCompletionGlow
             };
         }
     }

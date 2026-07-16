@@ -81,6 +81,8 @@ namespace PlayniteAchievements.Views.Controls
         private static readonly string[] MirroredBadgeResourceKeys =
         {
             "PlayAch.Brush.CompletedGame",
+            "PlayAch.Effect.CompletedGlowStart",
+            "PlayAch.Effect.CompletedGlowEnd",
             "BadgeCompletedGame",
             "BadgeRarityUltraRare",
             "BadgeRarityRare",
@@ -283,17 +285,17 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(ShowMetadataRegionProperty, value);
         }
 
-        public static readonly DependencyProperty ShowCompletionBorderProperty =
+        public static readonly DependencyProperty ShowCompletionGlowProperty =
             DependencyProperty.Register(
-                nameof(ShowCompletionBorder),
+                nameof(ShowCompletionGlow),
                 typeof(bool),
                 typeof(GameSummariesGridControl),
                 new PropertyMetadata(true));
 
-        public bool ShowCompletionBorder
+        public bool ShowCompletionGlow
         {
-            get => (bool)GetValue(ShowCompletionBorderProperty);
-            set => SetValue(ShowCompletionBorderProperty, value);
+            get => (bool)GetValue(ShowCompletionGlowProperty);
+            set => SetValue(ShowCompletionGlowProperty, value);
         }
 
         public static readonly DependencyProperty ColumnSettingsKeyProperty =
