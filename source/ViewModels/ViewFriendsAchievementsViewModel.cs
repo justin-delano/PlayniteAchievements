@@ -286,6 +286,8 @@ namespace PlayniteAchievements.ViewModels
 
         public bool SummaryShowMetadataRegion => GameSummaryOptions?.ShowMetadataRegion ?? true;
 
+        public bool SummaryShowCompletionGlow => GameSummaryOptions?.ShowCompletionGlow ?? true;
+
         public bool SummaryShowColumnHeaders => GameSummaryOptions?.ShowColumnHeaders ?? true;
 
         public double? SummaryGridRowHeight => GameSummaryOptions?.RowHeight;
@@ -331,6 +333,9 @@ namespace PlayniteAchievements.ViewModels
 
         public bool CategorySummariesUseCoverImages =>
             CategorySummaryOptions?.UseCoverImages ?? false;
+
+        public bool CategorySummariesShowCompletionGlow =>
+            CategorySummaryOptions?.ShowCompletionGlow ?? true;
 
         private AchievementGridOptions AchievementGridOptions =>
             _settings?.Persisted?.GridOptions?.GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements);
@@ -729,6 +734,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(ColorNamesByRarity));
             OnPropertyChanged(nameof(ColorRarityColumnsByRarity));
             OnPropertyChanged(nameof(SummaryUseCoverImages));
+            OnPropertyChanged(nameof(SummaryShowCompletionGlow));
             OnPropertyChanged(nameof(SummaryShowMetadataPlatform));
             OnPropertyChanged(nameof(SummaryShowMetadataPlaytime));
             OnPropertyChanged(nameof(SummaryShowMetadataRegion));
@@ -738,6 +744,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(CategorySummariesShowColumnHeaders));
             OnPropertyChanged(nameof(CategorySummariesGridRowHeight));
             OnPropertyChanged(nameof(CategorySummariesUseCoverImages));
+            OnPropertyChanged(nameof(CategorySummariesShowCompletionGlow));
         }
 
         private void OpenGameInLibrary()
