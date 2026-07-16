@@ -100,7 +100,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty);
             SaveCategoryImagesCommand = new RelayCommand(_ => SaveCategoryImages(), _ => CanSaveCategoryImages);
             RevertCategoryImageChangesCommand = new RelayCommand(_ => RevertCategoryImageChanges(), _ => HasCategoryImageChanges && !IsSavingCategoryImages);
-            ClearCategoryImagesCommand = new RelayCommand(_ => ClearCategoryImages(), _ => HasAchievements && CategoryRows.Any(row => row?.HasAnyOverrideValue == true) && !IsSavingCategoryImages);
             OpenCategoryImagesFolderCommand = new RelayCommand(_ => OpenCategoryImagesFolder(), _ => !IsSavingCategoryImages);
 
             ReloadData();
@@ -116,7 +115,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public RelayCommand ClearSearchCommand { get; }
         public RelayCommand SaveCategoryImagesCommand { get; }
         public RelayCommand RevertCategoryImageChangesCommand { get; }
-        public RelayCommand ClearCategoryImagesCommand { get; }
         public RelayCommand OpenCategoryImagesFolderCommand { get; }
         public bool HasAchievements
         {
@@ -781,17 +779,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             foreach (var row in CategoryRows.Where(row => row != null))
             {
                 row.ResetToBaseline();
-            }
-
-            SetCategoryImageStatus(null, isError: false);
-            RefreshCategoryMetadataState();
-        }
-
-        private void ClearCategoryImages()
-        {
-            foreach (var row in CategoryRows.Where(row => row != null))
-            {
-                row.ClearImageOverrides();
             }
 
             SetCategoryImageStatus(null, isError: false);
@@ -1531,7 +1518,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
             HasCategoryImageChanges = hasChanges;
             HasCategoryImageValidationErrors = hasValidationErrors;
-            ClearCategoryImagesCommand?.RaiseCanExecuteChanged();
         }
 
         private void SetCategoryImageStatus(string text, bool isError)
@@ -1547,7 +1533,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         {
             SaveCategoryImagesCommand?.RaiseCanExecuteChanged();
             RevertCategoryImageChangesCommand?.RaiseCanExecuteChanged();
-            ClearCategoryImagesCommand?.RaiseCanExecuteChanged();
             OpenCategoryImagesFolderCommand?.RaiseCanExecuteChanged();
         }
 
@@ -1862,9 +1847,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             !string.Equals(GetNormalizedArtOverrideValue(), _baselineArtOverrideValue, StringComparison.Ordinal) ||
             _isSummarySelected != _baselineIsSummarySelected;
 
-        public bool HasAnyOverrideValue =>
-            !string.IsNullOrWhiteSpace(GetNormalizedArtOverrideValue());
-
         public static ManageAchievementsCategoryMetadataItem Create(
             string categoryLabel,
             string providerCategoryLabel,
@@ -1914,11 +1896,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         }
 
         public void ClearOverride()
-        {
-            SetOverrideValue(null);
-        }
-
-        public void ClearImageOverrides()
         {
             SetOverrideValue(null);
         }
@@ -2031,7 +2008,6 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             OnPropertyChanged(nameof(ArtPreviewPath));
             OnPropertyChanged(nameof(HasValidationErrors));
             OnPropertyChanged(nameof(HasChanges));
-            OnPropertyChanged(nameof(HasAnyOverrideValue));
         }
 
         private static string ResolveSharedImage(
