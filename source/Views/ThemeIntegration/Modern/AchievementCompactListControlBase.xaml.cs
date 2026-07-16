@@ -416,13 +416,15 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
 
         /// <summary>
         /// Opens the View Achievements window focused on the clicked achievement.
-        /// Reveal clicks on hidden achievements are handled (and consumed) by the
-        /// compact item control before this bubbling handler runs.
+        /// Handled on the tunneling event: theme-provided implicit styles/behaviors
+        /// (e.g. drag-scroll ScrollViewer styles) can consume the bubbling event
+        /// inside this control's template, so the bubble phase never reliably
+        /// reaches this control. Reveal clicks keep priority: an obscured item is
+        /// left for the compact item control's own preview handler to reveal.
         /// </summary>
-        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+        protected override void OnPreviewMouseLeftButtonDown(MouseButtonEventArgs e)
         {
-            base.OnMouseLeftButtonDown(e);
-            _logger.Debug($"Compact list click: source={e.OriginalSource?.GetType().Name}, handled={e.Handled}");
+            base.OnPreviewMouseLeftButtonDown(e);
             if (e.Handled)
             {
                 return;
@@ -432,7 +434,12 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 e.OriginalSource as DependencyObject);
             if (!(itemControl?.DataContext is AchievementDisplayItem item))
             {
-                _logger.Debug($"Compact list click: no item under source (itemControl={(itemControl == null ? "null" : "found")}, dataContext={itemControl?.DataContext?.GetType().Name ?? "null"}).");
+                return;
+            }
+
+            if (item.CanReveal && !item.IsRevealed)
+            {
+                // Let the click tunnel on to the item control, which reveals it.
                 return;
             }
 
