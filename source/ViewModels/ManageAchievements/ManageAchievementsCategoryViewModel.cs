@@ -528,7 +528,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
                 HasAchievements = false;
                 HasCustomOverrides = false;
-                SetCustomCategoryMetadataState(hasOrder: false, hasNames: false, hasArt: false);
+                SetCustomCategoryMetadataState(hasOrder: false, hasNames: false, hasArt: false, hasSummaryCategory: false);
                 SetCategoryImageStatus(
                     string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
                     isError: true);
