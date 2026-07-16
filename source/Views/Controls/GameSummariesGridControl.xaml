@@ -373,6 +373,9 @@
                                         <Grid>
                                             <ProgressBar Value="{Binding Progression, Mode=OneWay}"
                                                          Style="{StaticResource OverviewProgressBarStyle}"/>
+                                            <!-- Two stacked halo copies double the outline density behind the text. -->
+                                            <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextHaloStyle}"/>
                                             <TextBlock Text="{Binding ProgressionText}"
                                                        Style="{StaticResource OverviewProgressPercentTextHaloStyle}"/>
                                             <TextBlock Text="{Binding ProgressionText}"
