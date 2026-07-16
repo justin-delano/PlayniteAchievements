@@ -131,7 +131,13 @@ namespace PlayniteAchievements.Views.Controls
                     rarityTier: true,
                     collectionScore: false,
                     prestigeScore: false,
-                    points: false)
+                    points: false),
+                ["StartPageFriendAchievements"] = CreateAchievementVisibility(
+                    status: false,
+                    game: true,
+                    friendAvatar: true,
+                    friend: true,
+                    unlockDate: true)
             };
 
         private static IReadOnlyDictionary<string, bool> CreateAchievementVisibility(
@@ -204,6 +210,11 @@ namespace PlayniteAchievements.Views.Controls
                 ["ViewFriendsAchievementsSelectedFriendAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Status"] = 0
+                },
+                ["StartPageFriendAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Avatar"] = 0,
+                    ["Friend"] = 1
                 }
             };
 
@@ -2151,6 +2162,7 @@ namespace PlayniteAchievements.Views.Controls
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
                 case "StartPageAchievements":
+                case "StartPageFriendAchievements":
                     return false;
                 default:
                     return true;
