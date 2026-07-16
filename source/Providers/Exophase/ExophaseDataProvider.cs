@@ -335,6 +335,7 @@ namespace PlayniteAchievements.Providers.Exophase
                     }
 
                     summary.GamesRefreshed++;
+                    summary.RefreshedGameIds.Add(game.Id);
                     if (data != null && data.HasAchievements)
                     {
                         summary.GamesWithAchievements++;
