@@ -603,6 +603,28 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
+
+                        <DataGridTemplateColumn Width="Auto"
+                                                MinWidth="96"
+                                                CanUserResize="False"
+                                                CanUserSort="False"
+                                                Header="{DynamicResource LOCPlayAch_Column_UseForGameSummaries}">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <!-- No GroupName: exclusivity is enforced in the view model because
+                                         recycled virtualized rows make WPF radio groups unreliable. The
+                                         OneWay binding keeps the view model the single writer; the
+                                         Preview/Key handlers toggle, enabling click-again-to-clear. -->
+                                    <RadioButton IsChecked="{Binding IsSummarySelected, Mode=OneWay}"
+                                                 PreviewMouseLeftButtonDown="SummaryCategoryRadioButton_PreviewMouseLeftButtonDown"
+                                                 KeyDown="SummaryCategoryRadioButton_KeyDown"
+                                                 ToolTip="{DynamicResource LOCPlayAch_ManageAchievements_Category_SummaryArtTooltip}"
+                                                 Focusable="True"
+                                                 HorizontalAlignment="Center"
+                                                 VerticalAlignment="Center" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
 
