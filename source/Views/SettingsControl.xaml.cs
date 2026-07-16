@@ -19,6 +19,7 @@ namespace PlayniteAchievements.Views
     public partial class SettingsControl : UserControl, IDisposable
     {
         private readonly PlayniteAchievementsPlugin _plugin;
+        private bool _windowPlacementAttached;
         private readonly PlayniteAchievementsSettingsViewModel _settingsViewModel;
         private readonly ILogger _logger;
         private readonly ProviderRegistry _providerRegistry;
@@ -135,6 +136,8 @@ namespace PlayniteAchievements.Views
                     SettingsTabControl.SelectedItem = ProvidersTab;
                     NavigateToPendingProvider();
                 }
+
+                AttachSettingsWindowPlacement();
             };
         }
 
@@ -215,6 +218,32 @@ namespace PlayniteAchievements.Views
         private static string GetProviderSettingsGroupName(string providerKey)
         {
             return ResourceProvider.GetString(ProviderUiPolicies.GetSettingsGroupResourceKey(providerKey));
+        }
+
+        // Playnite owns the window hosting this control, so placement persistence
+        // cannot be attached at window creation the way the plugin's own windows do.
+        // Attach only to Playnite's dedicated plugin-settings dialog; when this control
+        // is embedded in the shared add-ons window, resizing it would affect unrelated UI.
+        private void AttachSettingsWindowPlacement()
+        {
+            if (_windowPlacementAttached)
+            {
+                return;
+            }
+
+            var window = Window.GetWindow(this);
+            if (window == null || window.GetType().Name != "PluginSettingsWindow")
+            {
+                return;
+            }
+
+            _windowPlacementAttached = true;
+            Helpers.WindowPlacementPersistenceService.Attach(
+                window,
+                _settingsViewModel.Settings?.Persisted,
+                _plugin.PersistSettingsForUi,
+                "PluginSettings",
+                _logger);
         }
 
         private void NavigateToPendingProvider()
