@@ -1349,8 +1349,8 @@ namespace PlayniteAchievements.ViewModels
                     _projection = new FriendOverviewProjection(null);
                     FilteredFriends.ReplaceAll(Array.Empty<FriendSummaryItem>());
                     FilteredGames.ReplaceAll(Array.Empty<FriendGameSummaryItem>());
-                    DisplayedAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
                     SelectedFriendGameAllAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
+                    DisplayedAchievements.ReplaceAll(Array.Empty<FriendAchievementDisplayItem>());
                     StatusText = ResourceProvider.GetString("LOCPlayAch_FriendsOverview_LoadFailed") ??
                                  "Failed to load friend achievement data.";
                     OnPropertyChanged(nameof(HasData));
@@ -1565,18 +1565,18 @@ namespace PlayniteAchievements.ViewModels
                 FilteredGames.ReplaceAll(DisplayGridRowLimitHelper.Limit(
                     _filteredGamesList,
                     persisted?.FriendsOverviewGameSummariesGridMaxRows));
-                DisplayedAchievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(
-                    _filteredAchievementsList,
-                    persisted?.FriendsOverviewAchievementsGridMaxRows));
-
                 // Keep the unfiltered category-summary source current; achievement filters and grid
                 // sorts never touch it, so the category fallback order stays the definition-ordered
-                // snapshot loaded from the cache.
+                // snapshot loaded from the cache. Replaced before DisplayedAchievements so the grid's
+                // items-source reset rebuilds category rollups from the new selection's rows.
                 SelectedFriendGameAllAchievements.ReplaceAll(HasFriendGameSelection
                     ? _allAchievements.Where(achievement =>
                         IsSameFriend(achievement, SelectedFriend) &&
                         IsSameGame(achievement, SelectedGame))
                     : Enumerable.Empty<FriendAchievementDisplayItem>());
+                DisplayedAchievements.ReplaceAll(DisplayGridRowLimitHelper.Limit(
+                    _filteredAchievementsList,
+                    persisted?.FriendsOverviewAchievementsGridMaxRows));
                 OnPropertyChanged(nameof(AchievementCountText));
                 OnPropertyChanged(nameof(HasData));
             }
