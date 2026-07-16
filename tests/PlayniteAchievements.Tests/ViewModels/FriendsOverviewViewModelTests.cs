@@ -311,6 +311,49 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void SelectedFriendGameAllAchievements_KeepsSnapshotOrderIndependentOfDisplaySort()
+        {
+            var data = CreateData();
+            var locked = CreateAchievement(
+                "Steam",
+                "alice",
+                "Alice",
+                "https://cdn.example/alice.png",
+                10,
+                data.Games[0].PlayniteGameId.Value,
+                "Game One",
+                "AAA Locked",
+                "Story",
+                "Main",
+                new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+            locked.Unlocked = false;
+            locked.UnlockTimeUtc = null;
+            // The locked row precedes the unlocked one, mirroring the cache's definition-ordered load.
+            data.AllAchievements = new[] { locked }.Concat(data.AllUnlockedAchievements).ToList();
+
+            var viewModel = CreateViewModel(data);
+            viewModel.LoadAsync().GetAwaiter().GetResult();
+
+            // No friend+game pair selected: the category-summary source stays empty.
+            Assert.AreEqual(0, viewModel.SelectedFriendGameAllAchievements.Count);
+
+            viewModel.SelectedFriend = data.Friends[0];
+            viewModel.SelectedGame = data.Games[0];
+
+            // The displayed grid follows the configured default sort (unlock time descending), but
+            // the category-summary source preserves the definition-ordered snapshot.
+            CollectionAssert.AreEqual(
+                new[] { "Recent Only", "AAA Locked" },
+                viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
+            CollectionAssert.AreEqual(
+                new[] { "AAA Locked", "Recent Only" },
+                viewModel.SelectedFriendGameAllAchievements.Select(item => item.DisplayName).ToArray());
+
+            viewModel.ClearGameSelection();
+            Assert.AreEqual(0, viewModel.SelectedFriendGameAllAchievements.Count);
+        }
+
+        [TestMethod]
         public void SelectedFriendGameHeaderUsesFriendUnlockFraction_NotVisibleRows()
         {
             var data = CreateData();

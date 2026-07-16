@@ -430,6 +430,7 @@
                                                      ControlBar="{Binding AchievementsControlBar}"
                                                      ShowControlBar="{Binding Settings.Persisted.ShowFriendsOverviewAchievementsGridControlBar}"
                                                      ItemsSource="{Binding DisplayedAchievements}"
+                                                     CategorySummarySource="{Binding SelectedFriendGameAllAchievements}"
                                                      ColumnSettingsKey="{Binding AchievementColumnSettingsKey}"
                                                      EnableCategoryMode="{Binding HasFriendGameSelection}"
                                                      HideBackButton="True"
