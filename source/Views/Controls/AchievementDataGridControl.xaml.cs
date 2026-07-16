@@ -45,7 +45,7 @@ namespace PlayniteAchievements.Views.Controls
         private const double MinimumFriendAvatarColumnWidth = 32;
         private const double MinimumFriendColumnWidth = 64;
         private const double MaximumStatusColumnWidth = 96;
-        private const double MaximumGameImageColumnWidth = 240;
+        private const double MaximumGameImageColumnWidth = 600;
         private const double MaximumFriendAvatarColumnWidth = 96;
         private const double MaximumFriendColumnWidth = 280;
         private const string StatusColumnKey = "Status";
