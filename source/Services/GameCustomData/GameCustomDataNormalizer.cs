@@ -831,7 +831,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                 return null;
             }
 
-            var providerLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(value.ProviderLabel);
+            var providerLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(value?.ProviderLabel);
             return new GameSummaryCategoryData
             {
                 Label = label,
