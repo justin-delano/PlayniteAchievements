@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Threading;
 
 namespace PlayniteAchievements.Views
 {
@@ -176,6 +177,7 @@ namespace PlayniteAchievements.Views
         private bool _canRun;
         private CustomRefreshPreset _selectedPreset;
         private CustomRefreshPreset _placeholderPreset;
+        private DispatcherTimer _summaryDebounceTimer;
 
         public event EventHandler RequestClose;
         public event PropertyChangedEventHandler PropertyChanged;
@@ -257,7 +259,7 @@ namespace PlayniteAchievements.Views
 
                 _selectedScope = value;
                 OnPropertyChanged(nameof(SelectedScope));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -273,7 +275,7 @@ namespace PlayniteAchievements.Views
 
                 _useRecentLimitOverride = value;
                 OnPropertyChanged(nameof(UseRecentLimitOverride));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -289,7 +291,7 @@ namespace PlayniteAchievements.Views
 
                 _recentLimitOverrideText = value;
                 OnPropertyChanged(nameof(RecentLimitOverrideText));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -305,7 +307,7 @@ namespace PlayniteAchievements.Views
 
                 _useIncludeUnplayedOverride = value;
                 OnPropertyChanged(nameof(UseIncludeUnplayedOverride));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -321,7 +323,7 @@ namespace PlayniteAchievements.Views
 
                 _includeUnplayedOverrideValue = value;
                 OnPropertyChanged(nameof(IncludeUnplayedOverrideValue));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -337,7 +339,7 @@ namespace PlayniteAchievements.Views
 
                 _respectUserExclusions = value;
                 OnPropertyChanged(nameof(RespectUserExclusions));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -353,7 +355,7 @@ namespace PlayniteAchievements.Views
 
                 _forceBypassExclusionsForExplicitIncludes = value;
                 OnPropertyChanged(nameof(ForceBypassExclusionsForExplicitIncludes));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -575,7 +577,7 @@ namespace PlayniteAchievements.Views
                     await _refreshService.IsProviderAuthenticatedAsync(provider, CancellationToken.None).ConfigureAwait(true);
             }
 
-            RecalculateSummary();
+            ScheduleSummaryRecalculation();
         }
 
         private void InitializeGames()
@@ -783,7 +785,7 @@ namespace PlayniteAchievements.Views
                 e?.PropertyName == nameof(ProviderOptionItem.IsAuthenticated) ||
                 e?.PropertyName == nameof(ProviderOptionItem.IsEnabled))
             {
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -792,7 +794,7 @@ namespace PlayniteAchievements.Views
             if (e?.PropertyName == nameof(GameOptionItem.IsIncluded) ||
                 e?.PropertyName == nameof(GameOptionItem.IsExcluded))
             {
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -1014,6 +1016,30 @@ namespace PlayniteAchievements.Views
                     GameCustomDataLookup.TryGetProviderOverride(game.Id, out _));
         }
 
+        /// <summary>
+        /// Debounces summary recalculation. Recomputing the estimated-target count walks the whole
+        /// library with per-provider capability checks, so running it synchronously on every checkbox
+        /// toggle makes clicks sluggish; coalesce bursts of changes into one deferred recompute.
+        /// </summary>
+        private void ScheduleSummaryRecalculation()
+        {
+            if (_summaryDebounceTimer == null)
+            {
+                _summaryDebounceTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(150)
+                };
+                _summaryDebounceTimer.Tick += (s, e) =>
+                {
+                    _summaryDebounceTimer.Stop();
+                    RecalculateSummary();
+                };
+            }
+
+            _summaryDebounceTimer.Stop();
+            _summaryDebounceTimer.Start();
+        }
+
         private void RecalculateSummary()
         {
             var selectedProviders = GetSelectedProviders();
@@ -1145,7 +1171,7 @@ namespace PlayniteAchievements.Views
                 gameOption.IsExcluded = excludeIds.Contains(gameOption.GameId);
             }
 
-            RecalculateSummary();
+            ScheduleSummaryRecalculation();
         }
 
         private void UpsertPreset(string presetName, CustomRefreshOptions options)
