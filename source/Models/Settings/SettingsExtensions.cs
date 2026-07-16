@@ -40,6 +40,7 @@ namespace PlayniteAchievements.Models.Settings
             // Friend Settings (Friends must be copied before FriendMergeGroups because the
             // merge-group setter normalizes against the current Friends collection)
             target.EnableFriendsFeatures = source.EnableFriendsFeatures;
+            target.IncludeUnownedFriendGames = source.IncludeUnownedFriendGames;
             target.AutoDiscoverFriendProviderKeys = source.AutoDiscoverFriendProviderKeys != null
                 ? new HashSet<string>(source.AutoDiscoverFriendProviderKeys, StringComparer.OrdinalIgnoreCase)
                 : PersistedSettings.CreateDefaultAutoDiscoverFriendProviderKeys();
@@ -59,6 +60,8 @@ namespace PlayniteAchievements.Models.Settings
             target.EnablePeriodicUpdates = source.EnablePeriodicUpdates;
             target.IncludeHiddenGamesInBulkScans = source.IncludeHiddenGamesInBulkScans;
             target.PeriodicUpdateHours = source.PeriodicUpdateHours;
+            target.EnableFriendsPeriodicUpdates = source.EnableFriendsPeriodicUpdates;
+            target.FriendsPeriodicUpdateHours = source.FriendsPeriodicUpdateHours;
             target.EnableInGamePolling = source.EnableInGamePolling;
             target.InGamePollIntervalSeconds = source.InGamePollIntervalSeconds;
             target.InGamePollRefreshFriends = source.InGamePollRefreshFriends;
@@ -76,6 +79,8 @@ namespace PlayniteAchievements.Models.Settings
             target.ViewAchievementsHotkey = source.ViewAchievementsHotkey;
             target.ManageAchievementsHotkey = source.ManageAchievementsHotkey;
             target.OverviewHotkey = source.OverviewHotkey;
+            target.OpenSettingsHotkey = source.OpenSettingsHotkey;
+            target.CategoryModeHotkey = source.CategoryModeHotkey;
 
             // Notification Settings
             target.EnableNotifications = source.EnableNotifications;
@@ -142,6 +147,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ModernUnlockedListShowRarityGlow = source.ModernUnlockedListShowRarityGlow;
             target.UseUniformRarityBadges = source.UseUniformRarityBadges;
             target.UseTrophiesForRarity = source.UseTrophiesForRarity;
+            target.RoundRarityPercentages = source.RoundRarityPercentages;
             target.RarityColors = source.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault();
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
             target.ShowOverviewCollectionScoreCard = source.ShowOverviewCollectionScoreCard;

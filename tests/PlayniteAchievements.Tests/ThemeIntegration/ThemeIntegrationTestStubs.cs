@@ -37,6 +37,10 @@ namespace PlayniteAchievements
         public void RequestThemeUpdate(Game gameContext)
         {
         }
+
+        public void OpenViewAchievementsWindow(Guid gameId, string focusAchievementId = null)
+        {
+        }
     }
 }
 

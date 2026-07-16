@@ -244,6 +244,30 @@ namespace PlayniteAchievements.Tests.Views
         }
 
         [TestMethod]
+        public void MergedOverview_DisablingFriendsNeverTrapsFriendsSubview()
+        {
+            var xaml = File.ReadAllText(FindRepoFile("source", "Views", "OverviewControl.xaml"));
+            var code = File.ReadAllText(FindRepoFile("source", "Views", "OverviewControl.xaml.cs"));
+
+            // The subview switch stays reachable while the friends subview is active even when
+            // the feature toggle is off.
+            AssertContainsAll(
+                xaml,
+                "<Setter Property=\"Visibility\" Value=\"{Binding EnableFriendsFeatures, Converter={StaticResource BoolToVis}}\"/>",
+                "<DataTrigger Binding=\"{Binding ActiveSubView, ElementName=OverviewControlRoot}\" Value=\"{x:Static rootModels:OverviewSubView.Friends}\">");
+
+            // The friends subview is left on construction and on settings save when the feature
+            // is disabled.
+            AssertContainsAll(
+                code,
+                "ActiveSubView = _settings?.Persisted?.EnableFriendsFeatures == false",
+                "? OverviewSubView.Overview",
+                ": _lastSelectedSubView;",
+                "if (_settings?.Persisted?.EnableFriendsFeatures == false &&",
+                "ActiveSubView == OverviewSubView.Friends)");
+        }
+
+        [TestMethod]
         public void MergedOverview_OnlyRegistersOneSidebarEntry()
         {
             var plugin = File.ReadAllText(FindRepoFile("source", "PlayniteAchievementsPlugin.cs"));

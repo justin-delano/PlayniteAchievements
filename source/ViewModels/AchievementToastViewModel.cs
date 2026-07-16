@@ -135,7 +135,7 @@ namespace PlayniteAchievements.ViewModels
             : _args.FriendAvatarUrl;
 
         public string PercentText => _args.GlobalPercent.HasValue
-            ? $"{_args.GlobalPercent.Value:F1}%"
+            ? AchievementRarityResolver.FormatPercent(_args.GlobalPercent.Value)
             : string.Empty;
 
         /// <summary>

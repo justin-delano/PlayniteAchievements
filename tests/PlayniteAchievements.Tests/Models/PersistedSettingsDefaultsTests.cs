@@ -118,6 +118,30 @@ namespace PlayniteAchievements.Models.Tests
         }
 
         [TestMethod]
+        public void Constructor_DefaultsRoundRarityPercentagesOff()
+        {
+            var settings = new PersistedSettings();
+
+            Assert.IsFalse(settings.RoundRarityPercentages);
+        }
+
+        [TestMethod]
+        public void CloneAndCopyFrom_PreserveRoundRarityPercentages()
+        {
+            var source = new PersistedSettings
+            {
+                RoundRarityPercentages = true
+            };
+
+            var clone = source.Clone();
+            var target = new PersistedSettings();
+            target.CopyFrom(source);
+
+            Assert.IsTrue(clone.RoundRarityPercentages);
+            Assert.IsTrue(target.RoundRarityPercentages);
+        }
+
+        [TestMethod]
         public void CloneAndCopyFrom_PreserveProgressColumnAlignmentDefaultedFlag()
         {
             var source = new PersistedSettings { ProgressColumnAlignmentDefaulted = false };
@@ -319,6 +343,8 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(PersistedSettings.DefaultViewAchievementsHotkey, settings.ViewAchievementsHotkey);
             Assert.AreEqual(PersistedSettings.DefaultManageAchievementsHotkey, settings.ManageAchievementsHotkey);
             Assert.AreEqual(PersistedSettings.DefaultOverviewHotkey, settings.OverviewHotkey);
+            Assert.AreEqual(PersistedSettings.DefaultOpenSettingsHotkey, settings.OpenSettingsHotkey);
+            Assert.AreEqual(PersistedSettings.DefaultCategoryModeHotkey, settings.CategoryModeHotkey);
         }
 
         [TestMethod]
@@ -704,7 +730,9 @@ namespace PlayniteAchievements.Models.Tests
                 EnableGlobalAchievementHotkeys = true,
                 ViewAchievementsHotkey = "F8",
                 ManageAchievementsHotkey = "Shift+F9",
-                OverviewHotkey = "F10"
+                OverviewHotkey = "F10",
+                OpenSettingsHotkey = "F11",
+                CategoryModeHotkey = "Shift+G"
             };
 
             var clone = source.Clone();
@@ -716,12 +744,16 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual("F8", clone.ViewAchievementsHotkey);
             Assert.AreEqual("Shift+F9", clone.ManageAchievementsHotkey);
             Assert.AreEqual("F10", clone.OverviewHotkey);
+            Assert.AreEqual("F11", clone.OpenSettingsHotkey);
+            Assert.AreEqual("Shift+G", clone.CategoryModeHotkey);
 
             Assert.IsFalse(target.EnableAchievementHotkeys);
             Assert.IsTrue(target.EnableGlobalAchievementHotkeys);
             Assert.AreEqual("F8", target.ViewAchievementsHotkey);
             Assert.AreEqual("Shift+F9", target.ManageAchievementsHotkey);
             Assert.AreEqual("F10", target.OverviewHotkey);
+            Assert.AreEqual("F11", target.OpenSettingsHotkey);
+            Assert.AreEqual("Shift+G", target.CategoryModeHotkey);
         }
 
         [TestMethod]
@@ -1114,6 +1146,7 @@ namespace PlayniteAchievements.Models.Tests
                 ModernUnlockedListShowRarityGlow = false,
                 UseUniformRarityBadges = true,
                 UseTrophiesForRarity = true,
+                RoundRarityPercentages = true,
                 OverviewGameSummariesUseCoverImages = false,
                 OverviewRecentAchievementsUseCoverImages = false,
                 ShowOverviewCollectionScoreCard = false,
@@ -1214,6 +1247,7 @@ namespace PlayniteAchievements.Models.Tests
             Assert.AreEqual(defaults.ModernUnlockedListShowRarityGlow, settings.ModernUnlockedListShowRarityGlow);
             Assert.AreEqual(defaults.UseUniformRarityBadges, settings.UseUniformRarityBadges);
             Assert.AreEqual(defaults.UseTrophiesForRarity, settings.UseTrophiesForRarity);
+            Assert.AreEqual(defaults.RoundRarityPercentages, settings.RoundRarityPercentages);
             Assert.AreEqual(defaults.OverviewGameSummariesUseCoverImages, settings.OverviewGameSummariesUseCoverImages);
             Assert.AreEqual(defaults.OverviewRecentAchievementsUseCoverImages, settings.OverviewRecentAchievementsUseCoverImages);
             Assert.AreEqual(defaults.ShowOverviewCollectionScoreCard, settings.ShowOverviewCollectionScoreCard);

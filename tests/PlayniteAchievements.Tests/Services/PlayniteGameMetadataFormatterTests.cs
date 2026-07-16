@@ -7,9 +7,15 @@ namespace PlayniteAchievements.Services.Tests
     public class PlayniteGameMetadataFormatterTests
     {
         [TestMethod]
-        public void FormatPlaytime_FormatsZeroMinutes()
+        public void FormatPlaytime_ReturnsEmptyForZeroPlaytime()
         {
-            Assert.AreEqual("0m", PlayniteGameMetadataFormatter.FormatPlaytime(0));
+            Assert.AreEqual(string.Empty, PlayniteGameMetadataFormatter.FormatPlaytime(0));
+        }
+
+        [TestMethod]
+        public void FormatPlaytime_ReturnsEmptyForSubMinutePlaytime()
+        {
+            Assert.AreEqual(string.Empty, PlayniteGameMetadataFormatter.FormatPlaytime(30));
         }
 
         [TestMethod]
@@ -68,8 +74,32 @@ namespace PlayniteAchievements.Services.Tests
         public void BuildOverviewMetadataText_ReturnsPlaytimeOnlyWhenOtherSegmentsMissing()
         {
             Assert.AreEqual(
-                "0m",
+                "59m",
+                PlayniteGameMetadataFormatter.BuildOverviewMetadataText(string.Empty, "59m", string.Empty));
+        }
+
+        [TestMethod]
+        public void BuildOverviewMetadataText_DropsZeroPlaytimeSegment()
+        {
+            Assert.AreEqual(
+                "PlayStation 3 • Japan",
+                PlayniteGameMetadataFormatter.BuildOverviewMetadataText("PlayStation 3", "0h", "Japan"));
+            Assert.AreEqual(
+                string.Empty,
                 PlayniteGameMetadataFormatter.BuildOverviewMetadataText(string.Empty, "0m", string.Empty));
+        }
+
+        [TestMethod]
+        public void IsZeroPlaytimeText_DetectsZeroDurationsAcrossUnitFormats()
+        {
+            Assert.IsTrue(PlayniteGameMetadataFormatter.IsZeroPlaytimeText("0m"));
+            Assert.IsTrue(PlayniteGameMetadataFormatter.IsZeroPlaytimeText("0h"));
+            Assert.IsTrue(PlayniteGameMetadataFormatter.IsZeroPlaytimeText("0h0m"));
+            Assert.IsTrue(PlayniteGameMetadataFormatter.IsZeroPlaytimeText("0 hours"));
+            Assert.IsFalse(PlayniteGameMetadataFormatter.IsZeroPlaytimeText("0h30m"));
+            Assert.IsFalse(PlayniteGameMetadataFormatter.IsZeroPlaytimeText("10h"));
+            Assert.IsFalse(PlayniteGameMetadataFormatter.IsZeroPlaytimeText(string.Empty));
+            Assert.IsFalse(PlayniteGameMetadataFormatter.IsZeroPlaytimeText("hours"));
         }
 
         [TestMethod]

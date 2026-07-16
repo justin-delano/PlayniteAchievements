@@ -459,6 +459,18 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
+        public DateTime? GetMostRecentFriendLastRefreshedUtc()
+        {
+            return WithDb(db =>
+            {
+                var value = db.ExecuteScalar<string>(
+                    @"SELECT MAX(u.LastRefreshedUtc)
+                      FROM Users u
+                      WHERE " + ActiveFriendPredicateSql + ";");
+                return ParseUtc(value);
+            });
+        }
+
         public string GetCurrentUserScopeToken()
         {
             return WithDb(db =>
@@ -4802,6 +4814,10 @@ namespace PlayniteAchievements.Services.Database
             return LoadFriendAchievementRows(db, 0, requireUnlockTime: false, unlockedOnly: true);
         }
 
+        // Rows are driven from the game's full AchievementDefinitions schema with the friend's
+        // stored unlock rows LEFT JOINed on the stable definition key, so the friend+game pair
+        // view always shows every achievement of the game with the friend's unlock state per
+        // row, even when the friend's stored rows cover only a subset of the schema.
         private static List<FriendRecentUnlockRow> LoadFriendAchievementRows(
             SQLiteDatabase db,
             int recentLimit,
@@ -4853,7 +4869,7 @@ namespace PlayniteAchievements.Services.Database
                     ad.GlobalPercentUnlocked AS GlobalPercentUnlocked,
                     ad.Rarity AS Rarity,
                     ua.UnlockTimeUtc AS UnlockTimeUtc,
-                    ua.Unlocked AS Unlocked,
+                    COALESCE(ua.Unlocked, 0) AS Unlocked,
                     COALESCE(cu.Unlocked, 0) AS MyUnlocked,
                     ua.ProgressNum AS ProgressNum,
                     ua.ProgressDenom AS ProgressDenom,
@@ -4863,8 +4879,9 @@ namespace PlayniteAchievements.Services.Database
                   INNER JOIN UserGameProgress ugp ON ugp.UserId = u.Id
                   INNER JOIN Games g ON g.Id = ugp.GameId
                   INNER JOIN FriendOwnership fo ON fo.UserId = u.Id AND fo.GameId = g.Id
-                  INNER JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id
-                  INNER JOIN AchievementDefinitions ad ON ad.Id = ua.AchievementDefinitionId
+                  INNER JOIN AchievementDefinitions ad ON ad.GameId = g.Id
+                  LEFT JOIN UserAchievements ua ON ua.UserGameProgressId = ugp.Id
+                      AND ua.AchievementDefinitionId = ad.Id
                   LEFT JOIN CurrentUnlocks cu ON cu.PlayniteGameId = g.PlayniteGameId
                       AND cu.ApiName = ad.ApiName
                   WHERE " + ActiveFriendPredicateSql);

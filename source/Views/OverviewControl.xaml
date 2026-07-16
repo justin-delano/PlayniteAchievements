@@ -88,51 +88,6 @@
                 </Setter>
             </Style>
 
-            <!-- Compact, square close button for the selected-game header (kept small so it
-                 does not expand the header row like the larger circular NavigationButtonStyle). -->
-            <Style x:Key="ClearGameSelectionButtonStyle" TargetType="Button">
-                <Setter Property="Width" Value="18"/>
-                <Setter Property="Height" Value="18"/>
-                <Setter Property="Padding" Value="0"/>
-                <Setter Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background}"/>
-                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
-                <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="FontSize" Value="12"/>
-                <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Opacity" Value="0.72"/>
-                <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="VerticalAlignment" Value="Center"/>
-                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
-                <Setter Property="Template">
-                    <Setter.Value>
-                        <ControlTemplate TargetType="Button">
-                            <Border x:Name="Chrome"
-                                    Background="{TemplateBinding Background}"
-                                    CornerRadius="{StaticResource PlayAch.Radius.Small}"
-                                    SnapsToDevicePixels="True">
-                                <TextBlock Text="{TemplateBinding Content}"
-                                           Foreground="{TemplateBinding Foreground}"
-                                           FontSize="{TemplateBinding FontSize}"
-                                           FontWeight="{TemplateBinding FontWeight}"
-                                           HorizontalAlignment="Center"
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                            <ControlTemplate.Triggers>
-                                <Trigger Property="IsMouseOver" Value="True">
-                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
-                                    <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}"/>
-                                    <Setter Property="Opacity" Value="1"/>
-                                </Trigger>
-                                <Trigger Property="IsKeyboardFocused" Value="True">
-                                    <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource PlayAch.Brush.Button.Background.Hover}"/>
-                                    <Setter Property="Opacity" Value="1"/>
-                                </Trigger>
-                            </ControlTemplate.Triggers>
-                        </ControlTemplate>
-                    </Setter.Value>
-                </Setter>
-            </Style>
-
             <!-- Invisible button style for click areas -->
             <Style x:Key="InvisibleButtonStyle" TargetType="Button">
                 <Setter Property="Background" Value="Transparent"/>
@@ -211,8 +166,10 @@
             </Style>
 
             <!-- Underline tab style for the Overview/Friends view switch.
-                 Text-only tabs; the active tab (Tag="active") gets accent text and
-                 an accent underline bar. No chevron, no border, no fill. -->
+                 Text-only tabs; the active tab (Tag="active") gets full text-brush
+                 text and an accent underline bar (the accent stays on the bar only
+                 because it can resolve to a gradient on some themes). The single-cell
+                 grid keeps the label vertically centered with the window title. -->
             <Style x:Key="OverviewSubViewSwitchButtonStyle" TargetType="Button" BasedOn="{StaticResource PlayAch.Button.BaseStyle}">
                 <Setter Property="MinHeight" Value="24"/>
                 <Setter Property="Padding" Value="2,2"/>
@@ -229,12 +186,7 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Grid Background="Transparent">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*"/>
-                                    <RowDefinition Height="2"/>
-                                </Grid.RowDefinitions>
                                 <TextBlock x:Name="Label"
-                                           Grid.Row="0"
                                            Text="{TemplateBinding Content}"
                                            Style="{DynamicResource PlayAch.TextBlock.BaseStyle}"
                                            FontWeight="{TemplateBinding FontWeight}"
@@ -244,7 +196,6 @@
                                            VerticalAlignment="Center"
                                            TextWrapping="NoWrap"/>
                                 <Border x:Name="Underline"
-                                        Grid.Row="1"
                                         Height="2"
                                         Margin="2,0"
                                         VerticalAlignment="Bottom"
@@ -260,7 +211,7 @@
                                     <Setter TargetName="Underline" Property="Opacity" Value="0.4"/>
                                 </Trigger>
                                 <Trigger Property="Tag" Value="active">
-                                    <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource PlayAch.Brush.Accent}"/>
+                                    <Setter TargetName="Label" Property="Foreground" Value="{DynamicResource PlayAch.Brush.Text}"/>
                                     <Setter TargetName="Underline" Property="Visibility" Value="Visible"/>
                                     <Setter TargetName="Underline" Property="Opacity" Value="1"/>
                                 </Trigger>
@@ -399,8 +350,19 @@
 
                     <StackPanel Orientation="Horizontal"
                                 VerticalAlignment="Center"
-                                Margin="18,0,0,0"
-                                Visibility="{Binding EnableFriendsFeatures, Converter={StaticResource BoolToVis}}">
+                                Margin="18,0,0,0">
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="{Binding EnableFriendsFeatures, Converter={StaticResource BoolToVis}}"/>
+                                <Style.Triggers>
+                                    <!-- Keep the subview switch reachable while the friends view is
+                                         active so disabling the feature never traps the user there. -->
+                                    <DataTrigger Binding="{Binding ActiveSubView, ElementName=OverviewControlRoot}" Value="{x:Static rootModels:OverviewSubView.Friends}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
                         <Button x:Name="OverviewSubViewButton"
                                 Content="{DynamicResource LOCPlayAch_ManageAchievements_Tab_Overview}"
                                 Click="OverviewSubViewButton_Click">

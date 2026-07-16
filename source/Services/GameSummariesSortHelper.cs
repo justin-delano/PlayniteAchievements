@@ -220,6 +220,32 @@ namespace PlayniteAchievements.Services
                 cycleDirections[currentDirectionIndex + 1]);
         }
 
+        // Sort-action resolution for grids whose default is the source collection's own order
+        // (e.g. category summaries in provider/custom category order) rather than a configured
+        // sort mode: every column cycles ascending -> descending -> reset to source order.
+        internal static GameSummariesGridSortAction ResolveSourceOrderedGridSortAction(
+            string clickedSortMemberPath,
+            string currentSortPath,
+            ListSortDirection? currentSortDirection)
+        {
+            if (string.IsNullOrWhiteSpace(clickedSortMemberPath))
+            {
+                return GameSummariesGridSortAction.None();
+            }
+
+            if (!currentSortDirection.HasValue ||
+                !string.Equals(currentSortPath, clickedSortMemberPath, StringComparison.Ordinal))
+            {
+                return GameSummariesGridSortAction.ApplySort(
+                    clickedSortMemberPath,
+                    ListSortDirection.Ascending);
+            }
+
+            return currentSortDirection.Value == ListSortDirection.Ascending
+                ? GameSummariesGridSortAction.ApplySort(clickedSortMemberPath, ListSortDirection.Descending)
+                : GameSummariesGridSortAction.ResetToDefault();
+        }
+
         public static bool TrySortItems<TItem>(
             List<TItem> items,
             string sortMemberPath,

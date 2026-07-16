@@ -14,6 +14,8 @@ using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.Achievements;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.Views.Controls;
+using PlayniteAchievements.Views.Helpers;
 using PlayniteAchievements.Views.ThemeIntegration.Base;
 
 namespace PlayniteAchievements.Views.ThemeIntegration.Modern
@@ -369,6 +371,30 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             }
 
             return map;
+        }
+
+        /// <summary>
+        /// Opens the View Achievements window focused on the clicked achievement.
+        /// Reveal clicks on hidden achievements are handled (and consumed) by the
+        /// compact item control before this bubbling handler runs.
+        /// </summary>
+        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
+        {
+            base.OnMouseLeftButtonDown(e);
+            if (e.Handled)
+            {
+                return;
+            }
+
+            var itemControl = VisualTreeHelpers.FindVisualParent<AchievementCompactItemControl>(
+                e.OriginalSource as DependencyObject);
+            if (!(itemControl?.DataContext is AchievementDisplayItem item))
+            {
+                return;
+            }
+
+            e.Handled = true;
+            OpenViewAchievementsWindowFocused(item.PlayniteGameId, item.ApiName, item.DisplayName);
         }
 
         /// <summary>

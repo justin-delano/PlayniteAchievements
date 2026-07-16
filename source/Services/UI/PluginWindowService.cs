@@ -1140,11 +1140,11 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        public void OpenViewAchievementsWindow(Guid gameId)
+        public void OpenViewAchievementsWindow(Guid gameId, string focusAchievementId = null)
         {
             try
             {
-                InvokeOnUiThread(() => OpenViewAchievementsWindowCore(gameId));
+                InvokeOnUiThread(() => OpenViewAchievementsWindowCore(gameId, focusAchievementId));
             }
             catch (Exception ex)
             {
@@ -1155,10 +1155,17 @@ namespace PlayniteAchievements.Services.UI
             }
         }
 
-        private void OpenViewAchievementsWindowCore(Guid gameId)
+        private void OpenViewAchievementsWindowCore(Guid gameId, string focusAchievementId = null)
         {
             if (TryActivateTrackedWindow(AchievementWindowKind.ViewAchievements, gameId))
             {
+                if (!string.IsNullOrWhiteSpace(focusAchievementId) &&
+                    TryGetTrackedWindow(AchievementWindowKind.ViewAchievements, gameId, out var existingWindow) &&
+                    TryGetWindowContent<ViewAchievementsControl>(existingWindow, out var existingView))
+                {
+                    existingView.FocusAchievement(focusAchievementId);
+                }
+
                 return;
             }
 
@@ -1177,6 +1184,11 @@ namespace PlayniteAchievements.Services.UI
                     _settings,
                     _achievementOverridesService,
                     _cacheManager);
+
+                if (!string.IsNullOrWhiteSpace(focusAchievementId))
+                {
+                    view.FocusAchievement(focusAchievementId);
+                }
 
                 var windowOptions = new WindowOptions
                 {

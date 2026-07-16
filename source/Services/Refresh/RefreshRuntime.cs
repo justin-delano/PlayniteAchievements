@@ -825,7 +825,10 @@ namespace PlayniteAchievements.Services.Refresh
                 // (a single-game refresh would sit at 0 until completion, then jump to 100%).
                 _refreshProgressReporter.ConfigureWeightedProgress(
                     FriendRefreshProgressSession.TotalUnits, 0, FriendRefreshProgressSession.TotalUnits);
-                _refreshProgressReporter.Initialize(totalGames);
+                // One id per (game, provider) pass; the reporter counts distinct games so multi-provider
+                // games do not inflate the "n/total" denominator.
+                _refreshProgressReporter.Initialize(
+                    plans.SelectMany(plan => plan.Games).Select(game => game?.Id ?? Guid.Empty));
             }
 
             var progressScope = new RefreshProgressScope(operationId, mode, singleGameId);
@@ -915,7 +918,6 @@ namespace PlayniteAchievements.Services.Refresh
                     continue;
                 }
 
-                mergedSummary.GamesRefreshed += result.Payload.Summary.GamesRefreshed;
                 mergedSummary.GamesWithAchievements += result.Payload.Summary.GamesWithAchievements;
                 mergedSummary.GamesWithoutAchievements += result.Payload.Summary.GamesWithoutAchievements;
 
@@ -924,6 +926,10 @@ namespace PlayniteAchievements.Services.Refresh
                     mergedSummary.RefreshedGameIds.AddRange(result.Payload.Summary.RefreshedGameIds);
                 }
             }
+
+            // Providers count their own passes, so summing per-provider GamesRefreshed counts a game
+            // once per servicing provider. The user-facing count is distinct games refreshed.
+            mergedSummary.GamesRefreshed = mergedSummary.RefreshedGameIds.Distinct().Count();
 
             return new RebuildPayload
             {
@@ -1196,9 +1202,11 @@ namespace PlayniteAchievements.Services.Refresh
                 {
                     // Combined preparation runs current-game refreshes and friend-roster loads concurrently.
                     // Drive one shared aggregate over [0, preparationUnits] so the two workstreams cannot
-                    // collide or freeze each other. Initialize still tracks the current-game count so the
-                    // per-game status text ("Refreshing X (n/total)") stays correct.
-                    _refreshProgressReporter.Initialize(currentPlanBuild.Targets.Count);
+                    // collide or freeze each other. Initialize still tracks the current-game targets (one
+                    // id per provider pass, counted as distinct games) so the per-game status text
+                    // ("Refreshing X (n/total)") stays correct.
+                    _refreshProgressReporter.Initialize(
+                        currentPlanBuild.Targets.Select(target => target.Game?.Id ?? Guid.Empty));
                     _refreshProgressReporter.InitializePreparation(
                         currentPlanBuild.Targets.Count + orderedFriendProviders.Count,
                         preparationUnits,
@@ -1268,6 +1276,14 @@ namespace PlayniteAchievements.Services.Refresh
                     {
                         FriendRefreshCoordinator.Merge(payload, result?.Payload);
                         RecordProviderFault(result, payload.FaultedProviderKeys);
+                    }
+
+                    // Merge dedupes RefreshedGameIds but sums per-provider pass counts; report the
+                    // user-facing count as distinct games refreshed.
+                    if (payload.Summary != null)
+                    {
+                        payload.Summary.GamesRefreshed = payload.Summary.RefreshedGameIds?.Distinct().Count()
+                            ?? payload.Summary.GamesRefreshed;
                     }
 
                     if (hasFriendWork)

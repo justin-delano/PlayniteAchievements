@@ -509,6 +509,8 @@ namespace PlayniteAchievements.Views.Controls
         private GridSearchControl _categorySearch;
         private GridSearchControl _originalSearch;
         private string _categorySearchText = string.Empty;
+        private string _categorySortPath;
+        private ListSortDirection? _categorySortDirection;
         private bool _startInCategoryModeApplied;
         private DataGridRow _pendingCategoryRightClickRow;
 
@@ -800,6 +802,32 @@ namespace PlayniteAchievements.Views.Controls
             return ControlBar?.Items.OfType<GridToggleFilter>().All(t => t.IsChecked) ?? true;
         }
 
+        // Invoked by AchievementHotkeyService when the category-mode hotkey is pressed while this
+        // control's hosting window is active. Drives the same GridModeToggle the control bar
+        // renders, so the hotkey acts exactly when that toggle is currently shown and clickable,
+        // and never otherwise. Returns true when the mode was flipped.
+        public bool TryFlipCategoryModeFromHotkey()
+        {
+            // Mirror the toggle's own gating: this control must be on screen, the control bar
+            // shown, the toggle injected into the currently attached bar, and effectively visible
+            // (it auto-hides when category mode is unavailable, e.g. multi-game sources or active
+            // filters).
+            var toggle = _modeToggle;
+            if (toggle == null ||
+                !IsVisible ||
+                !ShowControlBar ||
+                _controlBarWithToggle == null ||
+                !ReferenceEquals(_controlBarWithToggle, ControlBar) ||
+                !toggle.EffectiveIsVisible)
+            {
+                return false;
+            }
+
+            // Same path as clicking the control-bar ToggleButton (bound to GridModeToggle.IsChecked).
+            toggle.IsChecked = !toggle.IsChecked;
+            return true;
+        }
+
         // Injects the category-mode toggle and Back button into the surface-owned control bar and
         // reconciles which items are shown for the current mode (flat / category list / drill).
         private void SyncModeToggle()
@@ -1086,6 +1114,8 @@ namespace PlayniteAchievements.Views.Controls
                 }
 
                 _categorySearchText = string.Empty;
+                _categorySortPath = null;
+                _categorySortDirection = null;
                 RebuildCategorySummaries();
             }
 
@@ -1120,16 +1150,35 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(_categorySearchText))
+            var visible = all;
+            if (!string.IsNullOrWhiteSpace(_categorySearchText))
             {
-                CategorySummaries = all;
-                return;
+                var needle = _categorySearchText.Trim();
+                visible = all
+                    .Where(c => (c.GameName ?? string.Empty).IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
+                    .ToList();
             }
 
-            var needle = _categorySearchText.Trim();
-            CategorySummaries = all
-                .Where(c => (c.GameName ?? string.Empty).IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0)
-                .ToList();
+            // A manual column sort overlays the builder's default order (custom category order,
+            // then provider order); sorting a copy keeps _allCategorySummaries as the reset target.
+            if (_categorySortDirection.HasValue && !string.IsNullOrWhiteSpace(_categorySortPath))
+            {
+                var sortPath = string.Empty;
+                var sortDirection = ListSortDirection.Ascending;
+                var sorted = new List<GameSummaryItem>(visible);
+                if (GameSummariesSortHelper.TrySortItems(
+                        sorted,
+                        _categorySortPath,
+                        _categorySortDirection.Value,
+                        ref sortPath,
+                        ref sortDirection))
+                {
+                    visible = sorted;
+                }
+            }
+
+            CategorySummaries = visible;
+            CategoryListGrid?.SetSortIndicator(_categorySortPath, _categorySortDirection);
         }
 
         private void DrillIntoCategory(CategorySummaryItem item)
@@ -1280,6 +1329,34 @@ namespace PlayniteAchievements.Views.Controls
             {
                 DrillIntoCategory(selected);
             }
+        }
+
+        // Category rows default to the builder's source order (custom category order, then
+        // provider order); header clicks cycle ascending -> descending -> back to that default.
+        private void CategoryList_Sorting(object sender, DataGridSortingEventArgs e)
+        {
+            e.Handled = true;
+            var sortAction = GameSummariesSortHelper.ResolveSourceOrderedGridSortAction(
+                e.Column?.SortMemberPath,
+                _categorySortPath,
+                _categorySortDirection);
+            if (sortAction.Kind == GameSummariesGridSortActionKind.None)
+            {
+                return;
+            }
+
+            if (sortAction.Kind == GameSummariesGridSortActionKind.ResetToDefault)
+            {
+                _categorySortPath = null;
+                _categorySortDirection = null;
+            }
+            else
+            {
+                _categorySortPath = sortAction.SortMemberPath;
+                _categorySortDirection = sortAction.Direction;
+            }
+
+            ApplyCategoryNameFilter();
         }
 
         private void CategoryList_RowPreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)

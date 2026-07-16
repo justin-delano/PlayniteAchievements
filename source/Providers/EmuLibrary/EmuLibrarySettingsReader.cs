@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace PlayniteAchievements.Providers.RetroAchievements
+namespace PlayniteAchievements.Providers.EmuLibrary
 {
     internal static class EmuLibrarySettingsReader
     {

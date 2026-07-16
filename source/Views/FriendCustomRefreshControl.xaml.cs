@@ -433,7 +433,13 @@ namespace PlayniteAchievements.Views
         private void InitializeScopes()
         {
             ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Recent, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsRecent", "Recent") });
-            ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Full, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsFull", "Full") });
+            if (_settings?.Persisted?.IncludeUnownedFriendGames == true)
+            {
+                // Full scans unowned friend games; hidden when the global toggle excludes them
+                // (the request planner also clamps Full to Shared as a backstop).
+                ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Full, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsFull", "Full") });
+            }
+
             ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Shared, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsShared", "Shared") });
             ScopeOptions.Add(new ScopeOptionItem { Scope = FriendRefreshScope.Installed, DisplayName = L("LOCPlayAch_RefreshModeShort_FriendsInstalled", "Installed") });
             if (_selectedGameId.HasValue)

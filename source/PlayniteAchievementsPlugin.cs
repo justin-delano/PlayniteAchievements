@@ -283,6 +283,37 @@ namespace PlayniteAchievements
             return false;
         }
 
+        // Invoked by AchievementHotkeyService on the category-mode hotkey. Flips category mode on
+        // an eligible achievement grid hosted by the active/topmost window (a plugin window, or
+        // the Overview sidebar view inside Playnite's main window) regardless of which element
+        // holds focus. A grid whose keyboard focus scope contains the caret wins over the others;
+        // otherwise the first eligible grid in visual order is used. Returns true when a grid
+        // flipped, so the service can mark the key handled; unrelated windows report false and
+        // the key passes through.
+        private bool TryFlipCategoryModeInActiveView()
+        {
+            var window = Application.Current?.Windows
+                .OfType<Window>()
+                .FirstOrDefault(w => w.IsActive)
+                ?? Application.Current?.MainWindow;
+            if (window == null)
+            {
+                return false;
+            }
+
+            var grids = VisualTreeHelpers.FindVisualChildren<Views.Controls.AchievementDataGridControl>(window)
+                .OrderByDescending(grid => grid.IsKeyboardFocusWithin);
+            foreach (var grid in grids)
+            {
+                if (grid.TryFlipCategoryModeFromHotkey())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
         {
             // Initialize logging system first
@@ -303,6 +334,9 @@ namespace PlayniteAchievements
                 {
                     _settingsViewModel = new PlayniteAchievementsSettingsViewModel(this);
                 }
+
+                AchievementRarityResolver.RoundDisplayPercentages =
+                    _settingsViewModel?.Settings?.Persisted?.RoundRarityPercentages ?? false;
 
                 // NECESSARY TO MAKE SURE CHARTS WORK
                 var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
@@ -461,6 +495,8 @@ namespace PlayniteAchievements
                         gameId => _windowService.ToggleViewAchievementsWindowFromHotkey(gameId),
                         gameId => _windowService.ToggleManageAchievementsViewFromHotkey(gameId),
                         ToggleOverviewWindowFromHotkey,
+                        () => OpenSettingsView(),
+                        TryFlipCategoryModeInActiveView,
                         TryRefreshActivePluginView);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
@@ -887,7 +923,10 @@ namespace PlayniteAchievements
             }
 
             if (e.PropertyName == nameof(PersistedSettings.EnablePeriodicUpdates) ||
-                e.PropertyName == nameof(PersistedSettings.PeriodicUpdateHours))
+                e.PropertyName == nameof(PersistedSettings.PeriodicUpdateHours) ||
+                e.PropertyName == nameof(PersistedSettings.EnableFriendsPeriodicUpdates) ||
+                e.PropertyName == nameof(PersistedSettings.FriendsPeriodicUpdateHours) ||
+                e.PropertyName == nameof(PersistedSettings.EnableFriendsFeatures))
             {
                 RestartBackgroundUpdater();
             }
@@ -906,6 +945,12 @@ namespace PlayniteAchievements
             {
                 RarityAppearanceHelper.ApplyBadgeApplicationResources(
                     _settingsViewModel?.Settings?.Persisted);
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.RoundRarityPercentages))
+            {
+                AchievementRarityResolver.RoundDisplayPercentages =
+                    _settingsViewModel?.Settings?.Persisted?.RoundRarityPercentages ?? false;
             }
 
             if (e.PropertyName == nameof(PersistedSettings.EnableAchievementHotkeys) ||

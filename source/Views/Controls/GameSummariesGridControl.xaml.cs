@@ -470,6 +470,7 @@ namespace PlayniteAchievements.Views.Controls
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
             MirrorBadgeResources();
+            ApplyCategoryHeaderOverride();
 
             UpdateLastPlayedDateMode(settings);
             if (_subscribedPersisted == null)
@@ -872,9 +873,8 @@ namespace PlayniteAchievements.Views.Controls
                     return persisted.FriendsOverviewGameSummariesLastPlayedDateMode;
                 case GridSurface.ViewFriendsAchievements:
                 case GridSurface.ViewFriendsAchievementsCategory:
-                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements).LastPlayedDateMode;
                 case GridSurface.ViewFriendsAchievementsSelectedFriend:
-                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievementsSelectedFriend).LastPlayedDateMode;
+                    return persisted.GridOptions.GetGameSummaries(GridOptionKeys.GameSummaries.ViewFriendsAchievements).LastPlayedDateMode;
                 default:
                     return persisted.OverviewGameSummariesLastPlayedDateMode;
             }
@@ -981,6 +981,29 @@ namespace PlayniteAchievements.Views.Controls
             }
 
             return GridSurface.Overview;
+        }
+
+        // Category-summaries surfaces reuse this grid with category labels in the name column,
+        // so that column takes the Category header instead of Game.
+        private void ApplyCategoryHeaderOverride()
+        {
+            if (!IsCategorySurface(ResolveSurface()) || GameSummariesGrid?.Columns == null)
+            {
+                return;
+            }
+
+            foreach (var column in GameSummariesGrid.Columns)
+            {
+                if (string.Equals(
+                    ColumnVisibilityHelper.GetColumnKey(column),
+                    "GameSummaryName",
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    var header = ResourceProvider.GetString("LOCPlayAch_Common_Label_Category");
+                    column.Header = string.IsNullOrWhiteSpace(header) ? "Category" : header;
+                    return;
+                }
+            }
         }
 
         private static bool IsCategorySurface(GridSurface surface)

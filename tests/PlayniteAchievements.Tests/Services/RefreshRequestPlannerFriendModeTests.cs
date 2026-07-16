@@ -443,6 +443,74 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
+        public void Resolve_FriendsFull_WithUnownedGamesExcluded_ClampsScopeToShared()
+        {
+            var planner = CreatePlanner(Array.Empty<Game>(), includeUnownedFriendGames: false);
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest { Mode = RefreshModeType.FriendsFull },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.IsNotNull(resolved.FriendOptions);
+            Assert.AreEqual(FriendRefreshScope.Shared, resolved.FriendOptions.Scope);
+            Assert.IsFalse(resolved.FriendOptions.ForceDefinitionRefresh);
+            Assert.IsFalse(resolved.FriendOptions.DiscoversProviderOnlyGames());
+        }
+
+        [TestMethod]
+        public void Resolve_FriendsCustomFullScope_WithUnownedGamesExcluded_ClampsScopeToShared()
+        {
+            // The per-friend context-menu "Refresh friend" path issues a FriendsCustom request
+            // with Full scope; the global toggle must clamp it to Shared for that friend.
+            var planner = CreatePlanner(Array.Empty<Game>(), includeUnownedFriendGames: false);
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest
+                {
+                    Mode = RefreshModeType.FriendsCustom,
+                    Options = RefreshOptions.FromFriend(new FriendCustomRefreshOptions
+                    {
+                        ProviderKeys = new[] { "Steam" },
+                        Scope = FriendRefreshScope.Full,
+                        FriendAccounts = new[] { FriendAccountRef.From("Steam", "alice") },
+                        FriendExternalUserIds = new[] { "alice" }
+                    })
+                },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.IsNotNull(resolved.FriendOptions);
+            Assert.AreEqual(FriendRefreshScope.Shared, resolved.FriendOptions.Scope);
+            CollectionAssert.AreEquivalent(
+                new[] { "alice" },
+                resolved.FriendOptions.FriendExternalUserIds.ToList());
+        }
+
+        [DataTestMethod]
+        [DataRow(RefreshModeType.FriendsRecent, FriendRefreshScope.Recent)]
+        [DataRow(RefreshModeType.FriendsShared, FriendRefreshScope.Shared)]
+        [DataRow(RefreshModeType.FriendsInstalled, FriendRefreshScope.Installed)]
+        public void Resolve_NonFullFriendModes_WithUnownedGamesExcluded_KeepScope(
+            RefreshModeType mode,
+            FriendRefreshScope expectedScope)
+        {
+            var planner = CreatePlanner(
+                new[] { new Game { Id = Guid.NewGuid(), Name = "Installed", IsInstalled = true } },
+                includeUnownedFriendGames: false);
+            var friendProvider = new FakeProvider("Steam", new FakeFriendsProvider("Steam"));
+
+            var resolved = planner.Resolve(
+                new RefreshRequest { Mode = mode },
+                new IDataProvider[] { friendProvider });
+
+            Assert.IsTrue(resolved.ShouldExecute);
+            Assert.AreEqual(expectedScope, resolved.FriendOptions.Scope);
+        }
+
+        [TestMethod]
         public void Resolve_FriendMode_WithNoFriendProviders_DoesNotExecute()
         {
             var planner = CreatePlanner(Array.Empty<Game>());
@@ -456,10 +524,12 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         private static RefreshRequestPlanner CreatePlanner(
-            IEnumerable<Game> games)
+            IEnumerable<Game> games,
+            bool includeUnownedFriendGames = true)
         {
             var settings = new PlayniteAchievementsSettings();
             settings.Persisted.IncludeUnplayedGames = true;
+            settings.Persisted.IncludeUnownedFriendGames = includeUnownedFriendGames;
             var api = new FakePlayniteApi(games ?? Enumerable.Empty<Game>());
             var resolver = new TargetSelectionResolver(
                 api,

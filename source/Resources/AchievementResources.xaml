@@ -100,7 +100,7 @@
                     <Grid Width="55"
                           Height="55"
                           HorizontalAlignment="Center">
-                        <Image Stretch="UniformToFill"
+                        <Image Stretch="Uniform"
                                RenderOptions.BitmapScalingMode="HighQuality"
                                helpers:AsyncImage.Uri="{Binding IconPath}"
                                helpers:AsyncImage.DecodePixel="160"
@@ -145,7 +145,7 @@
                                 Margin="0,0,5,0"
                                 ClipToBounds="True"
                                 Visibility="{Binding ShowFriendAvatar, Converter={StaticResource BooleanToVisibilityConverter}}">
-                            <Image Stretch="UniformToFill"
+                            <Image Stretch="Uniform"
                                    helpers:AsyncImage.Uri="{Binding FriendAvatar}"
                                    helpers:AsyncImage.DecodePixel="64"/>
                         </Border>
@@ -300,7 +300,7 @@
                         <Grid Width="84"
                               Height="84"
                               HorizontalAlignment="Center">
-                            <Image Stretch="UniformToFill"
+                            <Image Stretch="Uniform"
                                    RenderOptions.BitmapScalingMode="HighQuality"
                                    Source="{Binding IconPath}"
                                    Effect="{Binding FrameRarityGlowEffect}"/>

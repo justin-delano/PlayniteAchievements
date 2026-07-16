@@ -41,6 +41,8 @@ namespace PlayniteAchievements.Models.Settings
         public const string DefaultViewAchievementsHotkey = "Ctrl+Alt+V";
         public const string DefaultManageAchievementsHotkey = "Ctrl+Alt+M";
         public const string DefaultOverviewHotkey = "Ctrl+Alt+O";
+        public const string DefaultOpenSettingsHotkey = "Ctrl+Alt+P";
+        public const string DefaultCategoryModeHotkey = "C";
 
         /// <summary>
         /// Column key of the Progress column in game-summaries grids (matches the XAML ColumnKey and
@@ -60,6 +62,8 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enablePeriodicUpdates = true;
         private bool _includeHiddenGamesInBulkScans = true;
         private int _periodicUpdateHours = 6;
+        private bool _enableFriendsPeriodicUpdates = false;
+        private int _friendsPeriodicUpdateHours = 24;
         private bool _enableInGamePolling = true;
         private int _inGamePollIntervalSeconds = 15;
         private bool _inGamePollRefreshFriends = false;
@@ -116,6 +120,8 @@ namespace PlayniteAchievements.Models.Settings
         private string _viewAchievementsHotkey = DefaultViewAchievementsHotkey;
         private string _manageAchievementsHotkey = DefaultManageAchievementsHotkey;
         private string _overviewHotkey = DefaultOverviewHotkey;
+        private string _openSettingsHotkey = DefaultOpenSettingsHotkey;
+        private string _categoryModeHotkey = DefaultCategoryModeHotkey;
         private bool _showHiddenIcon = false;
         private bool _showHiddenTitle = false;
         private bool _showHiddenDescription = false;
@@ -128,6 +134,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _modernUnlockedListShowRarityGlow = true;
         private bool _useUniformRarityBadges = false;
         private bool _useTrophiesForRarity = false;
+        private bool _roundRarityPercentages = false;
         private RarityColorSettings _rarityColors = RarityColorSettings.CreateDefault();
         private bool _includeUnplayedGames = true;
         private bool _showOverviewCollectionScoreCard = true;
@@ -210,6 +217,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _enableFriendsFeatures = true;
         private HashSet<string> _autoDiscoverFriendProviderKeys = CreateDefaultAutoDiscoverFriendProviderKeys();
         private bool _useExophaseForSteamFriendOwnership = false;
+        private bool _includeUnownedFriendGames = false;
         private ObservableCollection<FriendSettingsEntry> _friends = new ObservableCollection<FriendSettingsEntry>();
         private ObservableCollection<FriendMergeGroup> _friendMergeGroups = new ObservableCollection<FriendMergeGroup>();
 
@@ -247,6 +255,17 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _useExophaseForSteamFriendOwnership;
             set => SetValue(ref _useExophaseForSteamFriendOwnership, value);
+        }
+
+        /// <summary>
+        /// When true, friend refreshes may scan games the current user does not own (the Full
+        /// scope). When false, Full-scope requests are clamped to Shared so no unowned friend
+        /// games are ever scanned.
+        /// </summary>
+        public bool IncludeUnownedFriendGames
+        {
+            get => _includeUnownedFriendGames;
+            set => SetValue(ref _includeUnownedFriendGames, value);
         }
 
         public ObservableCollection<FriendSettingsEntry> Friends
@@ -732,6 +751,24 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _periodicUpdateHours, Math.Max(1, value));
         }
 
+        /// <summary>
+        /// Enable the background periodic Recent friends refresh.
+        /// </summary>
+        public bool EnableFriendsPeriodicUpdates
+        {
+            get => _enableFriendsPeriodicUpdates;
+            set => SetValue(ref _enableFriendsPeriodicUpdates, value);
+        }
+
+        /// <summary>
+        /// Hours between periodic background Recent friends refreshes.
+        /// </summary>
+        public int FriendsPeriodicUpdateHours
+        {
+            get => _friendsPeriodicUpdateHours;
+            set => SetValue(ref _friendsPeriodicUpdateHours, Math.Max(1, value));
+        }
+
         public bool EnableInGamePolling
         {
             get => _enableInGamePolling;
@@ -841,6 +878,25 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _overviewHotkey;
             set => SetValue(ref _overviewHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that opens the plugin settings window.
+        /// </summary>
+        public string OpenSettingsHotkey
+        {
+            get => _openSettingsHotkey;
+            set => SetValue(ref _openSettingsHotkey, NormalizeHotkeyText(value));
+        }
+
+        /// <summary>
+        /// Shortcut that flips category mode in a focused achievement grid, when the
+        /// category toggle is available there.
+        /// </summary>
+        public string CategoryModeHotkey
+        {
+            get => _categoryModeHotkey;
+            set => SetValue(ref _categoryModeHotkey, NormalizeHotkeyText(value));
         }
 
         #endregion
@@ -1347,6 +1403,16 @@ namespace PlayniteAchievements.Models.Settings
         {
             get => _useTrophiesForRarity;
             set => SetValue(ref _useTrophiesForRarity, value);
+        }
+
+        /// <summary>
+        /// When true, rarity percentages display rounded to the nearest whole percent and values
+        /// under 1% display as "&lt;1%". Display-only; stored percent values are unaffected.
+        /// </summary>
+        public bool RoundRarityPercentages
+        {
+            get => _roundRarityPercentages;
+            set => SetValue(ref _roundRarityPercentages, value);
         }
 
         /// <summary>
@@ -2190,6 +2256,7 @@ namespace PlayniteAchievements.Models.Settings
                     ? new HashSet<string>(this.AutoDiscoverFriendProviderKeys, StringComparer.OrdinalIgnoreCase)
                     : CreateDefaultAutoDiscoverFriendProviderKeys(),
                 UseExophaseForSteamFriendOwnership = this.UseExophaseForSteamFriendOwnership,
+                IncludeUnownedFriendGames = this.IncludeUnownedFriendGames,
                 Friends = new ObservableCollection<FriendSettingsEntry>(
                     (this.Friends ?? new ObservableCollection<FriendSettingsEntry>())
                     .Where(friend => friend != null)
@@ -2206,6 +2273,8 @@ namespace PlayniteAchievements.Models.Settings
                 EnablePeriodicUpdates = this.EnablePeriodicUpdates,
                 IncludeHiddenGamesInBulkScans = this.IncludeHiddenGamesInBulkScans,
                 PeriodicUpdateHours = this.PeriodicUpdateHours,
+                EnableFriendsPeriodicUpdates = this.EnableFriendsPeriodicUpdates,
+                FriendsPeriodicUpdateHours = this.FriendsPeriodicUpdateHours,
                 EnableInGamePolling = this.EnableInGamePolling,
                 InGamePollIntervalSeconds = this.InGamePollIntervalSeconds,
                 InGamePollRefreshFriends = this.InGamePollRefreshFriends,
@@ -2223,6 +2292,8 @@ namespace PlayniteAchievements.Models.Settings
                 ViewAchievementsHotkey = this.ViewAchievementsHotkey,
                 ManageAchievementsHotkey = this.ManageAchievementsHotkey,
                 OverviewHotkey = this.OverviewHotkey,
+                OpenSettingsHotkey = this.OpenSettingsHotkey,
+                CategoryModeHotkey = this.CategoryModeHotkey,
 
                 // Notification Settings
                 EnableNotifications = this.EnableNotifications,
@@ -2286,6 +2357,7 @@ namespace PlayniteAchievements.Models.Settings
                 ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
                 UseTrophiesForRarity = this.UseTrophiesForRarity,
+                RoundRarityPercentages = this.RoundRarityPercentages,
                 RarityColors = this.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
@@ -2427,6 +2499,7 @@ namespace PlayniteAchievements.Models.Settings
             ModernUnlockedListShowRarityGlow = defaults.ModernUnlockedListShowRarityGlow;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
             UseTrophiesForRarity = defaults.UseTrophiesForRarity;
+            RoundRarityPercentages = defaults.RoundRarityPercentages;
             RarityColors = RarityColorSettings.CreateDefault();
             ResourceOverrides = CreateDefaultResourceOverrides();
 

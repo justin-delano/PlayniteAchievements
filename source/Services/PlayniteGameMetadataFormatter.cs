@@ -58,6 +58,14 @@ namespace PlayniteAchievements.Services
 
         public static string FormatPlaytime(ulong playtimeSeconds)
         {
+            if (playtimeSeconds < 60)
+            {
+                // Zero doubles as the "no playtime data" sentinel (providers such as
+                // Exophase report no playtime), and sub-minute residue would render a
+                // zero duration ("0m"), so show nothing instead.
+                return string.Empty;
+            }
+
             var totalMinutes = playtimeSeconds / 60;
             var hours = totalMinutes / 60;
             var minutes = totalMinutes % 60;
@@ -124,7 +132,7 @@ namespace PlayniteAchievements.Services
                 parts.Add(platformText.Trim());
             }
 
-            if (showPlaytime && !string.IsNullOrWhiteSpace(playtimeText))
+            if (showPlaytime && !string.IsNullOrWhiteSpace(playtimeText) && !IsZeroPlaytimeText(playtimeText))
             {
                 parts.Add(playtimeText.Trim());
             }
@@ -135,6 +143,38 @@ namespace PlayniteAchievements.Services
             }
 
             return parts.Count > 0 ? string.Join(" • ", parts) : string.Empty;
+        }
+
+        /// <summary>
+        /// True when the playtime text is a zero duration in any unit format
+        /// ("0m", "0h", "0h0m", "0 hours", localized digits-and-units variants):
+        /// it contains at least one digit and every digit is zero. Zero playtime
+        /// means "no playtime data", so the metadata line drops the segment.
+        /// </summary>
+        public static bool IsZeroPlaytimeText(string playtimeText)
+        {
+            if (string.IsNullOrWhiteSpace(playtimeText))
+            {
+                return false;
+            }
+
+            var hasDigit = false;
+            foreach (var ch in playtimeText)
+            {
+                if (!char.IsDigit(ch))
+                {
+                    continue;
+                }
+
+                if (ch != '0')
+                {
+                    return false;
+                }
+
+                hasDigit = true;
+            }
+
+            return hasDigit;
         }
     }
 }

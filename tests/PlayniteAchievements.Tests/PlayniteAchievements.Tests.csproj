@@ -159,8 +159,9 @@
     <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsCategoryImagePlanner.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsCategoryImagePlanner.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsSubsetTitleResolver.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsSubsetTitleResolver.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RaConsoleIdResolver.cs" Link="Source\Providers\RetroAchievements\RaConsoleIdResolver.cs" />
-    <Compile Include="..\..\source\Providers\RetroAchievements\EmuLibraryGameIdDecoder.cs" Link="Source\Providers\RetroAchievements\EmuLibraryGameIdDecoder.cs" />
-    <Compile Include="..\..\source\Providers\RetroAchievements\EmuLibrarySettingsReader.cs" Link="Source\Providers\RetroAchievements\EmuLibrarySettingsReader.cs" />
+    <Compile Include="..\..\source\Providers\EmuLibrary\EmuLibraryGameIdDecoder.cs" Link="Source\Providers\EmuLibrary\EmuLibraryGameIdDecoder.cs" />
+    <Compile Include="..\..\source\Providers\EmuLibrary\EmuLibrarySettingsReader.cs" Link="Source\Providers\EmuLibrary\EmuLibrarySettingsReader.cs" />
+    <Compile Include="..\..\source\Providers\EmuLibrary\EmuLibraryPathResolver.cs" Link="Source\Providers\EmuLibrary\EmuLibraryPathResolver.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\RetroAchievementsHashCacheStore.cs" Link="Source\Providers\RetroAchievements\RetroAchievementsHashCacheStore.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\Hashing\CueSheetParser.cs" Link="Source\Providers\RetroAchievements\Hashing\CueSheetParser.cs" />
     <Compile Include="..\..\source\Providers\RetroAchievements\Hashing\CueTrackReader.cs" Link="Source\Providers\RetroAchievements\Hashing\CueTrackReader.cs" />
