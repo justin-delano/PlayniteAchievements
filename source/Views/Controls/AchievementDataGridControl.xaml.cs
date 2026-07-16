@@ -1631,6 +1631,49 @@ namespace PlayniteAchievements.Views.Controls
         // summary list, for surfaces where HideBackButton suppresses the in-grid Back button.
         public void ExitDrilledCategory() => CategoryBackToList();
 
+        /// <summary>
+        /// Selects and scrolls to the given achievement. When category grouping is active
+        /// (e.g. the surface starts in category mode), first drills into the achievement's
+        /// category so the row is actually visible and highlighted.
+        /// </summary>
+        public void FocusAchievementItem(AchievementDisplayItem item)
+        {
+            if (item == null)
+            {
+                return;
+            }
+
+            if (IsCategoryGroupingEffective())
+            {
+                var label = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(item.CategoryLabel);
+                if (!string.Equals(_drilledCategory, label, StringComparison.OrdinalIgnoreCase))
+                {
+                    var match = CategorySummaries?
+                        .OfType<CategorySummaryItem>()
+                        .FirstOrDefault(c => string.Equals(
+                            AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(c.CategoryLabel),
+                            label,
+                            StringComparison.OrdinalIgnoreCase));
+                    if (match == null)
+                    {
+                        return;
+                    }
+
+                    DrillIntoCategory(match);
+                }
+            }
+
+            var grid = AchievementsDataGrid;
+            if (grid == null)
+            {
+                return;
+            }
+
+            grid.SelectedItem = item;
+            grid.UpdateLayout();
+            grid.ScrollIntoView(item);
+        }
+
         private void CategoryBackToList()
         {
             _drilledCategory = null;
