@@ -9,6 +9,7 @@ using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.Refresh;
 using PlayniteAchievements.Services.Search;
 using PlayniteAchievements.ViewModels.Items;
+using PlayniteAchievements.Views.Helpers;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -1812,6 +1813,7 @@ namespace PlayniteAchievements.ViewModels
 
             try
             {
+                PlayniteUiProvider.RestoreMainView();
                 _playniteApi?.MainView?.SelectGame(gameId);
             }
             catch (Exception ex)
