@@ -208,6 +208,13 @@ namespace PlayniteAchievements.Views
                 OnPropertyChanged(nameof(CanLoadPreset));
                 OnPropertyChanged(nameof(CanSavePreset));
                 OnPropertyChanged(nameof(CanDeletePreset));
+
+                // Selecting a preset applies it immediately; the Load button remains as an
+                // explicit way to re-apply the preset after tweaking individual options.
+                if (_selectedPreset?.Options != null)
+                {
+                    ApplySelectedPreset();
+                }
             }
         }
 
@@ -575,6 +582,13 @@ namespace PlayniteAchievements.Views
                 option.IsEnabled = isEnabled;
                 option.IsAuthenticated = isEnabled &&
                     await _refreshService.IsProviderAuthenticatedAsync(provider, CancellationToken.None).ConfigureAwait(true);
+
+                // Settle any selection made while this probe was pending (e.g. a preset applied at
+                // window open): a provider confirmed unavailable cannot stay selected.
+                if (!option.IsSelectable && option.IsSelected)
+                {
+                    option.IsSelected = false;
+                }
             }
 
             ScheduleSummaryRecalculation();
@@ -1140,7 +1154,13 @@ namespace PlayniteAchievements.Views
                 StringComparer.OrdinalIgnoreCase);
             foreach (var providerOption in ProviderOptions)
             {
-                providerOption.IsSelected = providerOption.IsSelectable &&
+                // Gate only on IsEnabled (known synchronously). IsAuthenticated is probed
+                // asynchronously after the window opens and starts pessimistically false for
+                // session-managed providers (e.g. Steam), so gating on IsSelectable here would
+                // silently drop a preset's providers when it is applied before the probe finishes.
+                // RefreshProviderOptionsAsync deselects any provider whose probe confirms it is
+                // unavailable.
+                providerOption.IsSelected = providerOption.IsEnabled &&
                     providerKeys.Contains(providerOption.ProviderKey);
             }
 
@@ -1209,13 +1229,22 @@ namespace PlayniteAchievements.Views
 
         private void LoadPresetButton_Click(object sender, RoutedEventArgs e)
         {
+            ApplySelectedPreset();
+        }
+
+        private void ApplySelectedPreset()
+        {
             if (SelectedPreset?.Options == null)
             {
                 return;
             }
 
+            // Prune against providers that are missing or disabled, not against IsSelectable:
+            // authentication is probed asynchronously and starts pessimistically false, so a
+            // selectable provider would otherwise be pruned when the preset is applied right
+            // after the window opens.
             var availableProviderKeys = ProviderOptions
-                .Where(option => option.IsSelectable)
+                .Where(option => option.IsEnabled)
                 .Select(option => option.ProviderKey)
                 .ToList();
             var availableGameIds = _gamesById.Keys.ToList();
