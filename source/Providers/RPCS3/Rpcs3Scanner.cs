@@ -1,6 +1,7 @@
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.EmuLibrary;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Providers.RetroAchievements.Hashing;
 using PlayniteAchievements.Providers.RPCS3.Models;
@@ -896,6 +897,14 @@ namespace PlayniteAchievements.Providers.RPCS3
                 {
                     AddActionExecutablePathCandidates(game, action, candidates, seen, installDir, hasExplicitGamePath);
                 }
+            }
+
+            // Uninstalled EmuLibrary games carry no rom or install paths; recover the
+            // original source path from the serialized EmuLibrary game id as a last resort.
+            if (_playniteApi != null &&
+                EmuLibraryPathResolver.TryResolveSourcePath(_playniteApi, game, out var emuLibrarySourcePath))
+            {
+                AddCandidate(candidates, seen, emuLibrarySourcePath, installDir);
             }
 
             return candidates;
