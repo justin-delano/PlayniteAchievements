@@ -186,6 +186,38 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             LoadData();
             // Attach mouse wheel handler for horizontal scrolling
             PreviewMouseWheel += OnPreviewMouseWheel;
+            AttachClickRouteProbes();
+        }
+
+        private bool _clickProbesAttached;
+
+        private void AttachClickRouteProbes()
+        {
+            if (_clickProbesAttached)
+            {
+                return;
+            }
+
+            var itemsControl = VisualTreeHelpers.FindVisualChildren<ItemsControl>(this).FirstOrDefault();
+            if (itemsControl == null)
+            {
+                _logger.Debug("Click probe: no ItemsControl found in visual tree.");
+                return;
+            }
+
+            _clickProbesAttached = true;
+            itemsControl.AddHandler(
+                MouseLeftButtonDownEvent,
+                new MouseButtonEventHandler((s, args) =>
+                    _logger.Debug($"Compact itemscontrol bubble: handled={args.Handled}, source={args.OriginalSource?.GetType().Name}")),
+                handledEventsToo: true);
+
+            var scrollViewer = VisualTreeHelpers.FindVisualChildren<ScrollViewer>(itemsControl).FirstOrDefault();
+            scrollViewer?.AddHandler(
+                MouseLeftButtonDownEvent,
+                new MouseButtonEventHandler((s, args) =>
+                    _logger.Debug($"Compact scrollviewer bubble: handled={args.Handled}, source={args.OriginalSource?.GetType().Name}")),
+                handledEventsToo: true);
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
