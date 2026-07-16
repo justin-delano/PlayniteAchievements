@@ -171,6 +171,11 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected AchievementCompactListControlBase()
         {
             DataContext = this;
+            AddHandler(
+                MouseLeftButtonDownEvent,
+                new MouseButtonEventHandler((s, e) =>
+                    _logger.Debug($"Compact list bubble: handled={e.Handled}, source={e.OriginalSource?.GetType().Name}")),
+                handledEventsToo: true);
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }

@@ -52,6 +52,11 @@ namespace PlayniteAchievements.Views.Controls
 
             // Handle click to reveal hidden achievements
             PreviewMouseLeftButtonDown += OnPreviewMouseLeftButtonDown;
+            AddHandler(
+                MouseLeftButtonDownEvent,
+                new MouseButtonEventHandler((s, e) =>
+                    _logger.Debug($"Compact item bubble: handled={e.Handled}, source={e.OriginalSource?.GetType().Name}")),
+                handledEventsToo: true);
             MouseLeave += OnMouseLeave;
             Unloaded += OnUnloaded;
         }
