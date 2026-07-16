@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:helpers="clr-namespace:PlayniteAchievements.Views.Helpers"
+             xmlns:converters="clr-namespace:PlayniteAchievements.Views.Converters"
              xmlns:vm="clr-namespace:PlayniteAchievements.ViewModels.Items"
              xmlns:modern="clr-namespace:PlayniteAchievements.Views.ThemeIntegration.Modern"
              mc:Ignorable="d"
@@ -16,6 +17,7 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/PlayniteAchievements;component/Resources/AchievementResources.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <converters:RarityPercentToTextConverter x:Key="RarityPercentToTextConverter"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -195,7 +197,7 @@
                          Background="{StaticResource PlayAch.Brush.Overlay.Shade.80}"
                          Foreground="{DynamicResource PlayAch.Brush.Accent}"
                          BorderThickness="0"/>
-            <TextBlock Text="{Binding RarityPercentValue, Mode=OneWay, StringFormat={}{0:F0}%}"
+            <TextBlock Text="{Binding RarityPercentValue, Mode=OneWay, Converter={StaticResource RarityPercentToTextConverter}}"
                        Style="{StaticResource PlayAch.TextBlock.BaseStyle}"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
