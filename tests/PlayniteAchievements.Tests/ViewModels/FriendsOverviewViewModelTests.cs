@@ -114,6 +114,60 @@ namespace PlayniteAchievements.Tests.ViewModels
         }
 
         [TestMethod]
+        public void FriendsOverviewDataCoordinator_Warm_WithCurrentSnapshot_InvalidatesWithoutRebuilding()
+        {
+            var cache = new StubFriendCache(CreateData());
+            using var coordinator = new FriendsOverviewDataCoordinator(
+                cache,
+                () => new PersistedSettings(),
+                warmDebounceInterval: TimeSpan.Zero);
+            coordinator.GetSnapshotAsync(CancellationToken.None).GetAwaiter().GetResult();
+            Assert.AreEqual(1, cache.LoadFriendsOverviewDataCalls);
+            var invalidated = false;
+            coordinator.SnapshotInvalidated += (_, __) => invalidated = true;
+
+            coordinator.Warm();
+
+            Assert.IsTrue(SpinWait.SpinUntil(() => invalidated, TimeSpan.FromSeconds(2)));
+            Assert.IsFalse(coordinator.TryGetCurrentSnapshot(out _));
+            Thread.Sleep(100);
+            Assert.AreEqual(1, cache.LoadFriendsOverviewDataCalls);
+
+            coordinator.GetSnapshotAsync(CancellationToken.None).GetAwaiter().GetResult();
+            Assert.AreEqual(2, cache.LoadFriendsOverviewDataCalls);
+        }
+
+        [TestMethod]
+        public void FriendsOverviewDataCoordinator_Warm_WithBuildInFlight_DoesNotStartSecondBuild()
+        {
+            using var firstLoadEntered = new ManualResetEventSlim(false);
+            using var releaseFirstLoad = new ManualResetEventSlim(false);
+            var cache = new StubFriendCache(CreateData())
+            {
+                FirstLoadEntered = firstLoadEntered,
+                ReleaseFirstLoad = releaseFirstLoad
+            };
+            using var coordinator = new FriendsOverviewDataCoordinator(
+                cache,
+                () => new PersistedSettings(),
+                warmDebounceInterval: TimeSpan.Zero);
+            var invalidated = false;
+            coordinator.SnapshotInvalidated += (_, __) => invalidated = true;
+
+            var task = coordinator.GetSnapshotAsync(CancellationToken.None);
+            Assert.IsTrue(firstLoadEntered.Wait(TimeSpan.FromSeconds(2)));
+
+            coordinator.Warm();
+            Thread.Sleep(100);
+            releaseFirstLoad.Set();
+
+            Assert.IsTrue(task.Wait(TimeSpan.FromSeconds(2)));
+            Assert.AreEqual(1, cache.LoadFriendsOverviewDataCalls);
+            Assert.IsFalse(invalidated);
+            Assert.IsTrue(coordinator.TryGetCurrentSnapshot(out _));
+        }
+
+        [TestMethod]
         public void LoadAsync_ReloadsWhenSharedCoordinatorInvalidates()
         {
             var staleData = CreateData();

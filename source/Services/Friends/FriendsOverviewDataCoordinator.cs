@@ -87,9 +87,11 @@ namespace PlayniteAchievements.Services.Friends
             SnapshotInvalidated?.Invoke(this, EventArgs.Empty);
         }
 
-        // Matches the overview/start-page projection warm: wait until Playnite's game database
-        // is populated, then rebuild the shared friend snapshot so library covers/icons resolve
-        // without relying on another UI surface to trigger a second load.
+        // Matches the overview/start-page projection warm: called once Playnite has finished
+        // starting so the shared friend snapshot reflects a populated game database. The theme
+        // integration constructor path usually has a whole-library build completed (or in
+        // flight) by then, so this coalesces instead of always rebuilding; see
+        // WarmAfterDelayAsync for the per-state behavior.
         public void Warm()
         {
             var generation = Interlocked.Increment(ref _warmGeneration);
@@ -178,7 +180,37 @@ namespace PlayniteAchievements.Services.Friends
                     return;
                 }
 
+                // The theme integration service requests a whole-library snapshot build during
+                // plugin construction, so by the time the post-start warm fires that build has
+                // usually completed (or is still running). Rebuilding here would repeat the
+                // multi-second friend cache load and hold the cache lock while the main view is
+                // coming up, so coalesce instead:
+                // - build in flight: leave it untouched. Invalidating now would make the
+                //   awaiting consumer rebuild immediately, recreating the duplicate load.
+                // - completed build: mark it stale (it may have resolved game presentation
+                //   before Playnite's database was populated) and let the next consumer rebuild
+                //   on demand.
+                // - no snapshot and no build: eager warm, as before, so friend surfaces do not
+                //   depend on another UI surface to trigger the first load.
+                bool hasCurrentSnapshot;
+                bool hasBuildInFlight;
+                lock (_syncRoot)
+                {
+                    hasCurrentSnapshot = _snapshot != null && _snapshotVersion == _invalidationVersion;
+                    hasBuildInFlight = _buildTask != null;
+                }
+
+                if (hasBuildInFlight)
+                {
+                    return;
+                }
+
                 Invalidate();
+                if (hasCurrentSnapshot)
+                {
+                    return;
+                }
+
                 using (PerfScope.StartStartup(_logger, "Warm.FriendsOverviewSnapshot", thresholdMs: 250))
                 {
                     await GetSnapshotAsync(CancellationToken.None).ConfigureAwait(false);
