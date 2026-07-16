@@ -147,6 +147,7 @@ namespace PlayniteAchievements.Models.Settings
             target.ModernUnlockedListShowRarityGlow = source.ModernUnlockedListShowRarityGlow;
             target.UseUniformRarityBadges = source.UseUniformRarityBadges;
             target.UseTrophiesForRarity = source.UseTrophiesForRarity;
+            target.RoundRarityPercentages = source.RoundRarityPercentages;
             target.RarityColors = source.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault();
             target.IncludeUnplayedGames = source.IncludeUnplayedGames;
             target.ShowOverviewCollectionScoreCard = source.ShowOverviewCollectionScoreCard;
