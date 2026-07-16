@@ -101,21 +101,11 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
-        public void Apply_PublishesProgressTierAndCompletedFillBrushes()
+        public void Apply_PublishesCompletedFillBrush()
         {
             var resources = new ResourceDictionary();
 
             PlayAchResourceService.Apply(resources, null);
-
-            AssertBrush(resources, "PlayAch.Brush.Rarity.Common", ParseColor(RarityColorSettings.DefaultCommon));
-            AssertBrush(resources, "PlayAch.Brush.Rarity.Uncommon", ParseColor(RarityColorSettings.DefaultUncommon));
-            AssertBrush(resources, "PlayAch.Brush.Rarity.Rare", ParseColor(RarityColorSettings.DefaultRare));
-            AssertBrush(resources, "PlayAch.Brush.Rarity.UltraRare", ParseColor(RarityColorSettings.DefaultUltraRare));
-
-            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Common", ParseColor(RarityColorSettings.DefaultCommon));
-            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Uncommon", ParseColor(RarityColorSettings.DefaultUncommon));
-            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Rare", ParseColor(RarityColorSettings.DefaultRare));
-            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.UltraRare", ParseColor(RarityColorSettings.DefaultUltraRare));
 
             // The completed fill is always a plain CompletedStart -> CompletedEnd sweep;
             // the badge's rainbow default and highlight band never apply to the bar.
@@ -129,32 +119,19 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
-        public void Apply_UsesPersistedRarityColorsForProgressTierBrushes()
+        public void Apply_UsesPersistedCompletedGradientColorsForCompletedFill()
         {
             var resources = new ResourceDictionary();
             var settings = new PersistedSettings
             {
                 RarityColors = new RarityColorSettings
                 {
-                    Common = "#FF010203",
-                    Uncommon = "#FF112233",
-                    Rare = "#FF445566",
-                    UltraRare = "#FF778899",
                     CompletedStart = "#FFABCDEF",
                     CompletedEnd = "#FF123456"
                 }
             };
 
             PlayAchResourceService.Apply(resources, null, settings);
-
-            AssertBrush(resources, "PlayAch.Brush.Rarity.Common", ParseColor("#FF010203"));
-            AssertBrush(resources, "PlayAch.Brush.Rarity.Uncommon", ParseColor("#FF112233"));
-            AssertBrush(resources, "PlayAch.Brush.Rarity.Rare", ParseColor("#FF445566"));
-            AssertBrush(resources, "PlayAch.Brush.Rarity.UltraRare", ParseColor("#FF778899"));
-            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Common", ParseColor("#FF010203"));
-            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Uncommon", ParseColor("#FF112233"));
-            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Rare", ParseColor("#FF445566"));
-            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.UltraRare", ParseColor("#FF778899"));
 
             var completed = resources["PlayAch.Brush.Progress.CompletedFill"] as LinearGradientBrush;
             Assert.IsNotNull(completed);
@@ -163,7 +140,7 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
-        public void ApplyProgressTierBrushResources_UsesCustomCompletedGradientWhenSupplied()
+        public void ApplyCompletedProgressFillResource_UsesCustomCompletedGradientWhenSupplied()
         {
             var resources = new ResourceDictionary();
             var settings = new PersistedSettings
@@ -176,26 +153,13 @@ namespace PlayniteAchievements.Tests.Services.UI
             };
 
             PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
-                .ApplyProgressTierBrushResources(resources, settings);
+                .ApplyCompletedProgressFillResource(resources, settings);
 
             var gradient = resources["PlayAch.Brush.Progress.CompletedFill"] as LinearGradientBrush;
             Assert.IsNotNull(gradient);
             Assert.IsTrue(gradient.IsFrozen);
             Assert.AreEqual(ParseColor("#FF112233"), gradient.GradientStops.First().Color);
             Assert.AreEqual(ParseColor("#FF445566"), gradient.GradientStops.Last().Color);
-        }
-
-        private static void AssertShineFill(ResourceDictionary resources, string resourceKey, Color baseColor)
-        {
-            Assert.IsTrue(resources.Contains(resourceKey), resourceKey);
-            var gradient = resources[resourceKey] as LinearGradientBrush;
-            Assert.IsNotNull(gradient, resourceKey);
-            Assert.IsTrue(gradient.IsFrozen, resourceKey);
-            Assert.AreEqual(5, gradient.GradientStops.Count, resourceKey);
-            Assert.AreEqual(baseColor, gradient.GradientStops.First().Color, resourceKey);
-            Assert.AreEqual(baseColor, gradient.GradientStops.Last().Color, resourceKey);
-            // The mid highlight blends toward white, giving the badge-style sheen.
-            Assert.AreNotEqual(baseColor, gradient.GradientStops[2].Color, resourceKey);
         }
 
         [TestMethod]
