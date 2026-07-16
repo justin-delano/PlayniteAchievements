@@ -56,10 +56,6 @@
                                 Content="{DynamicResource LOCPlayAch_Common_RevertChanges}"
                                 Command="{Binding RevertChangesCommand}"
                                 Style="{StaticResource ToolbarButtonStyle}" />
-                        <Button x:Name="ClearAllButton"
-                                Content="{DynamicResource LOCPlayAch_Common_ClearOverrides}"
-                                Command="{Binding ClearAllCommand}"
-                                Style="{StaticResource ToolbarButtonStyle}" />
                         <Button x:Name="SaveButton"
                                 Content="{DynamicResource LOCPlayAch_Button_Save}"
                                 Command="{Binding SaveCommand}"
