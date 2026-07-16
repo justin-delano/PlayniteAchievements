@@ -136,6 +136,7 @@ namespace PlayniteAchievements.ViewModels
                 if (SetValueAndReturn(ref _selectedFriend, value))
                 {
                     OnPropertyChanged(nameof(HasFriendSelection));
+                    OnPropertyChanged(nameof(AchievementColumnSettingsKey));
                     OnPropertyChanged(nameof(AchievementSectionTitle));
                     OnPropertyChanged(nameof(AchievementCountText));
                     UpdateSummaryItems();
@@ -145,6 +146,9 @@ namespace PlayniteAchievements.ViewModels
         }
 
         public bool HasFriendSelection => SelectedFriend != null;
+        public string AchievementColumnSettingsKey => HasFriendSelection
+            ? "ViewFriendsAchievementsSelectedFriendAchievements"
+            : "ViewFriendsAchievements";
 
         // Category the achievement grid is currently drilled into (null when not drilled), pushed
         // up from AchievementDataGridControl so a breadcrumb header can be shown above the grid.

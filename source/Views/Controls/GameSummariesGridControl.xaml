@@ -258,15 +258,46 @@
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>
 
-            <DataGridTemplateColumn Width="72" MinWidth="48" MaxWidth="112" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Owned}" SortMemberPath="Owned" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryOwned">
+            <DataGridTemplateColumn Width="40" MinWidth="28" MaxWidth="96" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Owned}" SortMemberPath="Owned" helpers:ColumnVisibilityHelper.ColumnKey="GameSummaryOwned"
+                                    CellStyle="{StaticResource AchievementStatusCellStyle}">
+                <DataGridTemplateColumn.HeaderTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding}" Opacity="0"/>
+                    </DataTemplate>
+                </DataGridTemplateColumn.HeaderTemplate>
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}">
-                            <Grid>
-                                <TextBlock Text="{Binding OwnedText}"
-                                           Style="{StaticResource GameSummaryGridTextStyle}"/>
+                        <Viewbox Stretch="Uniform"
+                                 VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
+                                 HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                 ClipToBounds="False"
+                                 UseLayoutRounding="True"
+                                 SnapsToDevicePixels="True"
+                                 Visibility="{Binding Owned, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <Viewbox.Width>
+                                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,width,8,12,18">
+                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                </MultiBinding>
+                            </Viewbox.Width>
+                            <Viewbox.Height>
+                                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="platform,height,8,12,18">
+                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
+                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
+                                </MultiBinding>
+                            </Viewbox.Height>
+
+                            <Grid Width="18" Height="18">
+                                <Path Data="{StaticResource GeoCheck}"
+                                      Stroke="{DynamicResource PlayAch.Brush.Glyph}"
+                                      StrokeThickness="2.3"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
                             </Grid>
-                        </ContentControl>
+                        </Viewbox>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

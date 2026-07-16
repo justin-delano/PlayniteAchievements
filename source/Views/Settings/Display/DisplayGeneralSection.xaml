@@ -80,6 +80,13 @@
                                     <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_GridVerticalAlignment_Bottom}" Tag="{x:Static settings:GridVerticalAlignment.Bottom}"/>
                                 </ComboBox>
                             </StackPanel>
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_RoundRarityPercentages}"
+                                      IsChecked="{Binding Persisted.RoundRarityPercentages}"
+                                      Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_RoundRarityPercentages_Help}"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       Margin="24,0,0,10"
+                                       TextWrapping="Wrap"/>
                             <CheckBox Content="{DynamicResource LOCPlayAch_Settings_ShowTopMenuBarButton}"
                                       IsChecked="{Binding Persisted.ShowTopMenuBarButton}"
                                       Margin="{StaticResource PlayAch.Thickness.Bottom.Xs}"/>

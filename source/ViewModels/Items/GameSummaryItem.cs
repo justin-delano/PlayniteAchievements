@@ -36,8 +36,6 @@ namespace PlayniteAchievements.ViewModels.Items
 
         public bool Owned => PlayniteGameId.HasValue;
 
-        public string OwnedText => Owned ? "True" : "False";
-
         private string _gameLogo;
         public string GameLogo { get => _gameLogo; set => SetValue(ref _gameLogo, value); }
 
@@ -89,7 +87,6 @@ namespace PlayniteAchievements.ViewModels.Items
                 if (SetValueAndReturn(ref _playniteGameId, value))
                 {
                     OnPropertyChanged(nameof(Owned));
-                    OnPropertyChanged(nameof(OwnedText));
                 }
             }
         }

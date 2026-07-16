@@ -52,11 +52,17 @@ namespace PlayniteAchievements.Tests.Views
                 xaml,
                 "ColumnKey=\"GameSummaryLastUnlock\"",
                 "ColumnKey=\"GameSummaryOwned\"",
+                "Width=\"40\" MinWidth=\"28\" MaxWidth=\"96\"",
                 "Header=\"{DynamicResource LOCPlayAch_Column_Owned}\"",
                 "SortMemberPath=\"Owned\"",
-                "Text=\"{Binding OwnedText}\"");
+                "CellStyle=\"{StaticResource AchievementStatusCellStyle}\"",
+                "Text=\"{Binding}\" Opacity=\"0\"",
+                "Visibility=\"{Binding Owned, Converter={StaticResource BooleanToVisibilityConverter}}",
+                "Data=\"{StaticResource GeoCheck}\"",
+                "Stroke=\"{DynamicResource PlayAch.Brush.Glyph}\"");
             AssertContainsNone(
                 xaml,
+                "Text=\"{Binding OwnedText}\"",
                 "ColumnKey=\"FriendGameFriendsWithUnlocks\"",
                 "ColumnKey=\"FriendGameLastUnlock\"",
                 "ColumnKey=\"FriendGamePlaytime\"",
@@ -92,6 +98,11 @@ namespace PlayniteAchievements.Tests.Views
                 "x:Name=\"SelectedFriendGameSummariesGridControl\"",
                 "ColumnSettingsKey=\"FriendsOverviewGameSummaries\"",
                 "ColumnSettingsKey=\"FriendsOverviewSelectedFriendGameSummaries\"",
+                "ColumnSettingsKey=\"{Binding AchievementColumnSettingsKey}\"",
+                "EnableCategoryMode=\"{Binding HasFriendGameSelection}\"",
+                "ShowGameColumn=\"{Binding HasGameSelection, Converter={StaticResource InvertBoolConverter}}\"",
+                "ShowFriendColumn=\"{Binding HasFriendSelection, Converter={StaticResource InvertBoolConverter}}\"",
+                "HideStatusColumn=\"{Binding HasFriendGameSelection, Converter={StaticResource InvertBoolConverter}}\"",
                 "Visibility=\"{Binding HasFriendSelection, Converter={StaticResource InverseBoolToVis}}\"",
                 "Visibility=\"{Binding HasFriendSelection, Converter={StaticResource BoolToVis}}\"");
             AssertContainsAll(
@@ -166,12 +177,20 @@ namespace PlayniteAchievements.Tests.Views
             AssertContainsAll(
                 code,
                 "FriendsOverviewRecentAchievements",
+                "FriendsOverviewSelectedFriendAchievements",
+                "FriendsOverviewSelectedGameAchievements",
+                "FriendsOverviewSelectedFriendGameAchievements",
                 "RowPreviewMouseLeftButtonDownEvent",
+                "status: true",
+                "status: false",
                 "friendAvatar: true",
+                "friendAvatar: false",
                 "GridOptionsCatalog.ResolveAchievementId(ColumnSettingsKey)",
                 "GetAchievement(id).Columns",
                 "FriendsOverviewAchievementsUnlockDateMode",
-                "unlockDate: true");
+                "unlockDate: true",
+                "SetForcedColumnCollapsed(_columnPersistence, StatusColumnKey, HideStatusColumn)",
+                "control._columnPersistence?.Refresh()");
         }
 
         [TestMethod]

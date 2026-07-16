@@ -48,6 +48,10 @@ namespace PlayniteAchievements.Views.Controls
         private const double MaximumGameImageColumnWidth = 240;
         private const double MaximumFriendAvatarColumnWidth = 96;
         private const double MaximumFriendColumnWidth = 280;
+        private const string StatusColumnKey = "Status";
+        private const string GameColumnKey = "Game";
+        private const string FriendAvatarColumnKey = "Avatar";
+        private const string FriendColumnKey = "Friend";
 
         private static readonly IReadOnlyDictionary<string, double> DefaultImageColumnWidthSeeds =
             new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase)
@@ -85,11 +89,35 @@ namespace PlayniteAchievements.Views.Controls
                     friendAvatar: true,
                     friend: true,
                     unlockDate: true),
+                ["FriendsOverviewSelectedFriendAchievements"] = CreateAchievementVisibility(
+                    status: false,
+                    game: true,
+                    friendAvatar: false,
+                    friend: false,
+                    unlockDate: true),
+                ["FriendsOverviewSelectedGameAchievements"] = CreateAchievementVisibility(
+                    status: false,
+                    game: false,
+                    friendAvatar: true,
+                    friend: true,
+                    unlockDate: true),
+                ["FriendsOverviewSelectedFriendGameAchievements"] = CreateAchievementVisibility(
+                    status: true,
+                    game: false,
+                    friendAvatar: false,
+                    friend: false,
+                    unlockDate: true),
                 ["ViewFriendsAchievements"] = CreateAchievementVisibility(
                     status: true,
                     game: false,
                     friendAvatar: true,
                     friend: true,
+                    unlockDate: true),
+                ["ViewFriendsAchievementsSelectedFriendAchievements"] = CreateAchievementVisibility(
+                    status: true,
+                    game: false,
+                    friendAvatar: false,
+                    friend: false,
                     unlockDate: true),
                 ["Overview"] = CreateAchievementVisibility(status: false, game: true),
                 ["StartPageAchievements"] = CreateAchievementVisibility(
@@ -159,10 +187,23 @@ namespace PlayniteAchievements.Views.Controls
                     ["Avatar"] = 0,
                     ["Friend"] = 1
                 },
+                ["FriendsOverviewSelectedGameAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Avatar"] = 0,
+                    ["Friend"] = 1
+                },
+                ["FriendsOverviewSelectedFriendGameAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Status"] = 0,
+                },
                 ["ViewFriendsAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["Avatar"] = 0,
                     ["Friend"] = 1
+                },
+                ["ViewFriendsAchievementsSelectedFriendAchievements"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Status"] = 0
                 }
             };
 
@@ -216,7 +257,7 @@ namespace PlayniteAchievements.Views.Controls
         /// </summary>
         public static readonly DependencyProperty ColumnSettingsKeyProperty =
             DependencyProperty.Register(nameof(ColumnSettingsKey), typeof(string),
-                typeof(AchievementDataGridControl), new PropertyMetadata("Default"));
+                typeof(AchievementDataGridControl), new PropertyMetadata("Default", OnColumnSettingsKeyChanged));
 
         /// <summary>
         /// Gets or sets the key used to persist column settings separately per control instance.
@@ -1592,8 +1633,35 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (d is AchievementDataGridControl control)
             {
+                control.UpdateColumnPersistenceContextOverrides();
                 control.UpdateColumnVisibility();
+                control._columnPersistence?.Refresh();
             }
+        }
+
+        private static void OnColumnSettingsKeyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            if (d is AchievementDataGridControl control)
+            {
+                control.UpdateUnlockDateMode();
+                control.ReattachColumnPersistence();
+                control.SyncModeToggle();
+            }
+        }
+
+        private void ReattachColumnPersistence()
+        {
+            if (_columnPersistence == null)
+            {
+                return;
+            }
+
+            _columnPersistence.Dispose();
+            _columnPersistence = null;
+            AttachColumnPersistence();
+            UpdateColumnVisibility();
+            UpdateColumnHeadersVisibility();
+            DataGridAlignmentBehavior.Refresh(AchievementsDataGrid);
         }
 
         private void UpdateColumnVisibility()
@@ -1707,6 +1775,40 @@ namespace PlayniteAchievements.Views.Controls
             column.Width = new DataGridLength(0, DataGridLengthUnitType.Pixel);
         }
 
+        private void UpdateColumnPersistenceContextOverrides()
+        {
+            if (_columnPersistence == null)
+            {
+                return;
+            }
+
+            SetForcedColumnCollapsed(_columnPersistence, StatusColumnKey, HideStatusColumn);
+            SetForcedColumnCollapsed(_columnPersistence, GameColumnKey, !ShowGameColumn);
+            SetForcedColumnCollapsed(_columnPersistence, FriendAvatarColumnKey, !ShowFriendColumn);
+            SetForcedColumnCollapsed(_columnPersistence, FriendColumnKey, !ShowFriendColumn);
+        }
+
+        private static void SetForcedColumnCollapsed(
+            DataGridColumnLayoutService layout,
+            string columnKey,
+            bool forceCollapsed)
+        {
+            if (layout == null || string.IsNullOrWhiteSpace(columnKey))
+            {
+                return;
+            }
+
+            if (forceCollapsed)
+            {
+                layout.ForcedCollapsedKeys.Add(columnKey);
+                layout.ExcludedVisibilityKeys.Add(columnKey);
+                return;
+            }
+
+            layout.ForcedCollapsedKeys.Remove(columnKey);
+            layout.ExcludedVisibilityKeys.Remove(columnKey);
+        }
+
         private static void OnRowSizingChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             if (d is AchievementDataGridControl control)
@@ -1773,6 +1875,9 @@ namespace PlayniteAchievements.Views.Controls
                     UnlockDateMode = persisted.OverviewRecentAchievementsUnlockDateMode;
                     break;
                 case "FriendsOverviewRecentAchievements":
+                case "FriendsOverviewSelectedFriendAchievements":
+                case "FriendsOverviewSelectedGameAchievements":
+                case "FriendsOverviewSelectedFriendGameAchievements":
                     UnlockDateMode = persisted.FriendsOverviewAchievementsUnlockDateMode;
                     break;
                 case "OverviewSelectedGameAchievements":
@@ -1785,6 +1890,9 @@ namespace PlayniteAchievements.Views.Controls
                 case "ViewFriendsAchievements":
                 case "ViewFriendsAchievementsAchievements":
                     UnlockDateMode = persisted.GridOptions.GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements).UnlockDateMode;
+                    break;
+                case "ViewFriendsAchievementsSelectedFriendAchievements":
+                    UnlockDateMode = persisted.GridOptions.GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend).UnlockDateMode;
                     break;
                 default:
                     // "SingleGame" and any unspecified key fall back to the view-achievements grid.
@@ -1947,27 +2055,8 @@ namespace PlayniteAchievements.Views.Controls
                 isRuntimeDefaultWidth: IsLegacyImageColumnRuntimeDefaultWidth);
             _columnPersistence.DelayInitialRenderUntilNormalized = DelayInitialRenderUntilNormalized;
 
-            // Force collapse Game column when not shown (prevents flicker by applying during persistence)
-            // Also exclude from visibility toggle menu
-            if (!ShowGameColumn)
-            {
-                _columnPersistence.ForcedCollapsedKeys.Add("Game");
-                _columnPersistence.ExcludedVisibilityKeys.Add("Game");
-            }
-            if (!ShowFriendColumn)
-            {
-                _columnPersistence.ForcedCollapsedKeys.Add("Avatar");
-                _columnPersistence.ExcludedVisibilityKeys.Add("Avatar");
-                _columnPersistence.ForcedCollapsedKeys.Add("Friend");
-                _columnPersistence.ExcludedVisibilityKeys.Add("Friend");
-            }
-            // Force collapse Status column when hidden (prevents flicker by applying during persistence)
-            // Also exclude from visibility toggle menu
-            if (HideStatusColumn)
-            {
-                _columnPersistence.ForcedCollapsedKeys.Add("Status");
-                _columnPersistence.ExcludedVisibilityKeys.Add("Status");
-            }
+            UpdateColumnPersistenceContextOverrides();
+            UpdateColumnVisibility();
 
             _columnPersistence.Attach();
         }
@@ -2016,6 +2105,9 @@ namespace PlayniteAchievements.Views.Controls
             {
                 case "OverviewRecentAchievements":
                 case "FriendsOverviewRecentAchievements":
+                case "FriendsOverviewSelectedFriendAchievements":
+                case "FriendsOverviewSelectedGameAchievements":
+                case "FriendsOverviewSelectedFriendGameAchievements":
                 case "Overview":
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
@@ -2569,6 +2661,7 @@ namespace PlayniteAchievements.Views.Controls
                 return false;
             }
 
+            UpdateColumnPersistenceContextOverrides();
             var menu = _columnPersistence?.BuildColumnVisibilityMenu((owner as DataGridColumnHeader)?.Column);
             if (menu == null || menu.Items.Count == 0)
             {

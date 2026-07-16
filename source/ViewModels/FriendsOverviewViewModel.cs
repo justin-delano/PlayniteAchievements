@@ -253,6 +253,28 @@ namespace PlayniteAchievements.ViewModels
         public bool HasGameSelection => SelectedGame != null;
         public bool HasAnySelection => SelectedFriend != null || SelectedGame != null;
         public bool HasFriendGameSelection => SelectedFriend != null && SelectedGame != null;
+        public string AchievementColumnSettingsKey
+        {
+            get
+            {
+                if (HasFriendGameSelection)
+                {
+                    return "FriendsOverviewSelectedFriendGameAchievements";
+                }
+
+                if (HasFriendSelection)
+                {
+                    return "FriendsOverviewSelectedFriendAchievements";
+                }
+
+                if (HasGameSelection)
+                {
+                    return "FriendsOverviewSelectedGameAchievements";
+                }
+
+                return "FriendsOverviewRecentAchievements";
+            }
+        }
 
         // Category the achievement grid is currently drilled into (null when not drilled), pushed
         // up from AchievementDataGridControl so a breadcrumb segment can follow the section title.
@@ -1979,6 +2001,7 @@ namespace PlayniteAchievements.ViewModels
             OnPropertyChanged(nameof(HasGameSelection));
             OnPropertyChanged(nameof(HasAnySelection));
             OnPropertyChanged(nameof(HasFriendGameSelection));
+            OnPropertyChanged(nameof(AchievementColumnSettingsKey));
             OnPropertyChanged(nameof(AchievementSectionTitle));
             OnPropertyChanged(nameof(AchievementCountText));
         }

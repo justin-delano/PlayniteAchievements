@@ -46,6 +46,12 @@ namespace PlayniteAchievements.Tests.ViewModels
             });
         }
 
+        [TestMethod]
+        public void OwnedText_IsNotExposed()
+        {
+            Assert.IsNull(typeof(GameSummaryItem).GetProperty("OwnedText"));
+        }
+
         private static void WithUsCulture(Action action)
         {
             var previousCulture = Thread.CurrentThread.CurrentCulture;

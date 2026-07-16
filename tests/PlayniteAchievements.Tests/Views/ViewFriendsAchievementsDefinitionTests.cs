@@ -40,11 +40,14 @@ namespace PlayniteAchievements.Tests.Views
 
             AssertContainsAll(
                 xaml,
+                "ColumnSettingsKey=\"{Binding AchievementColumnSettingsKey}\"",
                 "EnableCategoryMode=\"{Binding HasFriendSelection}\"",
                 "CategoryColumnSettingsKey=\"ViewFriendsAchievementsCategorySummaries\"",
                 "HideBackButton=\"True\"",
                 "HideCategorySummaryRow=\"{Binding HideCategorySummaryRow}\"",
                 "DrilledCategory=\"{Binding SelectedCategoryName, Mode=OneWayToSource}\"",
+                "ShowGameColumn=\"False\"",
+                "ShowFriendColumn=\"{Binding HasFriendSelection, Converter={StaticResource InvertBoolConverter}}\"",
                 "MouseLeftButtonUp=\"GameNameBreadcrumb_Click\"");
             AssertContainsAll(
                 code,
@@ -79,8 +82,11 @@ namespace PlayniteAchievements.Tests.Views
             AssertContainsAll(
                 code,
                 "[\"ViewFriendsAchievements\"] = CreateAchievementVisibility(",
+                "[\"ViewFriendsAchievementsSelectedFriendAchievements\"] = CreateAchievementVisibility(",
                 "[\"ViewFriendsAchievements\"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)",
-                "GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements).UnlockDateMode");
+                "[\"ViewFriendsAchievementsSelectedFriendAchievements\"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)",
+                "GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements).UnlockDateMode",
+                "GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend).UnlockDateMode");
         }
 
         [TestMethod]

@@ -314,7 +314,11 @@ namespace PlayniteAchievements.Tests.StartPage
                 GridOptionKeys.Achievement.OverviewRecent,
                 GridOptionKeys.Achievement.OverviewSelectedGame,
                 GridOptionKeys.Achievement.FriendsOverviewRecent,
+                GridOptionKeys.Achievement.FriendsOverviewSelectedFriend,
+                GridOptionKeys.Achievement.FriendsOverviewSelectedGame,
+                GridOptionKeys.Achievement.FriendsOverviewSelectedFriendGame,
                 GridOptionKeys.Achievement.ViewFriendsAchievements,
+                GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend,
                 GridOptionKeys.Achievement.StartPageRecent,
                 GridOptionKeys.Achievement.StartPageFriendAchievements,
                 GridOptionKeys.Achievement.DesktopTheme

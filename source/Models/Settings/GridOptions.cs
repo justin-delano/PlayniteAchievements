@@ -14,7 +14,11 @@ namespace PlayniteAchievements.Models.Settings
             public const string OverviewRecent = "OverviewRecent";
             public const string OverviewSelectedGame = "OverviewSelectedGame";
             public const string FriendsOverviewRecent = "FriendsOverviewRecent";
+            public const string FriendsOverviewSelectedFriend = "FriendsOverviewSelectedFriend";
+            public const string FriendsOverviewSelectedGame = "FriendsOverviewSelectedGame";
+            public const string FriendsOverviewSelectedFriendGame = "FriendsOverviewSelectedFriendGame";
             public const string ViewFriendsAchievements = "ViewFriendsAchievements";
+            public const string ViewFriendsAchievementsSelectedFriend = "ViewFriendsAchievementsSelectedFriend";
             public const string StartPageRecent = "StartPageRecent";
             public const string StartPageFriendAchievements = "StartPageFriendAchievements";
             public const string DesktopTheme = "DesktopTheme";
@@ -664,9 +668,17 @@ namespace PlayniteAchievements.Models.Settings
                     return GridOptionKeys.Achievement.OverviewRecent;
                 case "FriendsOverviewRecentAchievements":
                     return GridOptionKeys.Achievement.FriendsOverviewRecent;
+                case "FriendsOverviewSelectedFriendAchievements":
+                    return GridOptionKeys.Achievement.FriendsOverviewSelectedFriend;
+                case "FriendsOverviewSelectedGameAchievements":
+                    return GridOptionKeys.Achievement.FriendsOverviewSelectedGame;
+                case "FriendsOverviewSelectedFriendGameAchievements":
+                    return GridOptionKeys.Achievement.FriendsOverviewSelectedFriendGame;
                 case "ViewFriendsAchievements":
                 case "ViewFriendsAchievementsAchievements":
                     return GridOptionKeys.Achievement.ViewFriendsAchievements;
+                case "ViewFriendsAchievementsSelectedFriendAchievements":
+                    return GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend;
                 case "OverviewSelectedGameAchievements":
                 case "OverviewGame":
                     return GridOptionKeys.Achievement.OverviewSelectedGame;
@@ -741,7 +753,11 @@ namespace PlayniteAchievements.Models.Settings
             Ensure(_achievement, GridOptionKeys.Achievement.OverviewRecent, () => CreateDefaultAchievement(GridOptionKeys.Achievement.OverviewRecent));
             Ensure(_achievement, GridOptionKeys.Achievement.OverviewSelectedGame, () => CreateDefaultAchievement(GridOptionKeys.Achievement.OverviewSelectedGame));
             Ensure(_achievement, GridOptionKeys.Achievement.FriendsOverviewRecent, () => CreateDefaultAchievement(GridOptionKeys.Achievement.FriendsOverviewRecent));
+            Ensure(_achievement, GridOptionKeys.Achievement.FriendsOverviewSelectedFriend, () => CreateDefaultAchievement(GridOptionKeys.Achievement.FriendsOverviewSelectedFriend));
+            Ensure(_achievement, GridOptionKeys.Achievement.FriendsOverviewSelectedGame, () => CreateDefaultAchievement(GridOptionKeys.Achievement.FriendsOverviewSelectedGame));
+            Ensure(_achievement, GridOptionKeys.Achievement.FriendsOverviewSelectedFriendGame, () => CreateDefaultAchievement(GridOptionKeys.Achievement.FriendsOverviewSelectedFriendGame));
             Ensure(_achievement, GridOptionKeys.Achievement.ViewFriendsAchievements, () => CreateDefaultAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements));
+            Ensure(_achievement, GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend, () => CreateDefaultAchievement(GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend));
             Ensure(_achievement, GridOptionKeys.Achievement.StartPageRecent, () => CreateDefaultAchievement(GridOptionKeys.Achievement.StartPageRecent));
             Ensure(_achievement, GridOptionKeys.Achievement.StartPageFriendAchievements, () => CreateDefaultAchievement(GridOptionKeys.Achievement.StartPageFriendAchievements));
             Ensure(_achievement, GridOptionKeys.Achievement.DesktopTheme, () => CreateDefaultAchievement(GridOptionKeys.Achievement.DesktopTheme));
