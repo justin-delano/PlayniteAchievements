@@ -102,8 +102,7 @@
     <!-- Progress-tier defaults; PlayAchResourceService replaces these with the user's
          configured rarity and completed-game gradient colors at runtime. TierFill brushes
          mirror RarityAppearanceHelper's shine gradient (white blends at 30%/70%); the
-         completed fill mirrors its CompletedStart -> CompletedEnd gradient with the 0.55
-         highlight band. -->
+         completed fill is a plain horizontal CompletedStart -> CompletedEnd sweep. -->
     <SolidColorBrush x:Key="PlayAch.Brush.Rarity.Common" Color="#B56A37"/>
     <SolidColorBrush x:Key="PlayAch.Brush.Rarity.Uncommon" Color="#A6B1BF"/>
     <SolidColorBrush x:Key="PlayAch.Brush.Rarity.Rare" Color="#CF9B1F"/>
@@ -136,10 +135,8 @@
         <GradientStop Color="#AAD8FF" Offset="0.65"/>
         <GradientStop Color="#86C8FF" Offset="1.00"/>
     </LinearGradientBrush>
-    <LinearGradientBrush x:Key="PlayAch.Brush.Progress.CompletedFill" StartPoint="0,0" EndPoint="1,1">
+    <LinearGradientBrush x:Key="PlayAch.Brush.Progress.CompletedFill" StartPoint="0,0" EndPoint="1,0">
         <GradientStop Offset="0.00" Color="#9C27B0"/>
-        <GradientStop Offset="0.35" Color="#714EC7"/>
-        <GradientStop Offset="0.55" Color="#D0D4F3"/>
         <GradientStop Offset="1.00" Color="#2196F3"/>
     </LinearGradientBrush>
     <SolidColorBrush x:Key="PlayAch.Brush.ErrorText" Color="{StaticResource PlayAch.Color.ErrorText}"/>
