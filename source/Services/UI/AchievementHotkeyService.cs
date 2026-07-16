@@ -39,6 +39,7 @@ namespace PlayniteAchievements.Services.UI
         private readonly Action<Guid> _toggleManageAchievementsWindow;
         private readonly Action _toggleOverviewWindow;
         private readonly Action _openSettings;
+        private readonly Func<bool> _tryFlipCategoryMode;
         private readonly Func<bool> _tryRefreshFocusedView;
         private readonly Dictionary<int, AchievementHotkeyAction> _registeredGlobalHotkeys =
             new Dictionary<int, AchievementHotkeyAction>();
@@ -51,6 +52,7 @@ namespace PlayniteAchievements.Services.UI
         private AchievementHotkeyGesture _manageGesture = AchievementHotkeyGesture.Empty;
         private AchievementHotkeyGesture _overviewGesture = AchievementHotkeyGesture.Empty;
         private AchievementHotkeyGesture _openSettingsGesture = AchievementHotkeyGesture.Empty;
+        private AchievementHotkeyGesture _categoryModeGesture = AchievementHotkeyGesture.Empty;
         private AchievementHotkeyAction? _lastHandledAction;
         private DateTime _lastHandledAtUtc;
         private string _lastGlobalRegistrationFailureSignature;
@@ -64,6 +66,7 @@ namespace PlayniteAchievements.Services.UI
             Action<Guid> toggleManageAchievementsWindow,
             Action toggleOverviewWindow,
             Action openSettings = null,
+            Func<bool> tryFlipCategoryMode = null,
             Func<bool> tryRefreshFocusedView = null)
         {
             _api = api;
@@ -74,6 +77,7 @@ namespace PlayniteAchievements.Services.UI
             _toggleManageAchievementsWindow = toggleManageAchievementsWindow ?? throw new ArgumentNullException(nameof(toggleManageAchievementsWindow));
             _toggleOverviewWindow = toggleOverviewWindow ?? throw new ArgumentNullException(nameof(toggleOverviewWindow));
             _openSettings = openSettings;
+            _tryFlipCategoryMode = tryFlipCategoryMode;
             _tryRefreshFocusedView = tryRefreshFocusedView;
         }
 
@@ -149,13 +153,14 @@ namespace PlayniteAchievements.Services.UI
             _manageGesture = ParseGesture(_settings?.Persisted?.ManageAchievementsHotkey);
             _overviewGesture = ParseGesture(_settings?.Persisted?.OverviewHotkey);
             _openSettingsGesture = ParseGesture(_settings?.Persisted?.OpenSettingsHotkey);
+            _categoryModeGesture = ParseGesture(_settings?.Persisted?.CategoryModeHotkey);
 
             var persisted = _settings?.Persisted;
             var enableGlobalHotkeys = persisted?.EnableAchievementHotkeys == true &&
                                       persisted.EnableGlobalAchievementHotkeys;
 
             _logger?.Debug(
-                $"Refreshing achievement hotkeys. enabled={persisted?.EnableAchievementHotkeys == true}, global={enableGlobalHotkeys}, view='{_viewGesture}', manage='{_manageGesture}', overview='{_overviewGesture}', openSettings='{_openSettingsGesture}', sinkHandle={_globalHotkeyWindowHandle}");
+                $"Refreshing achievement hotkeys. enabled={persisted?.EnableAchievementHotkeys == true}, global={enableGlobalHotkeys}, view='{_viewGesture}', manage='{_manageGesture}', overview='{_overviewGesture}', openSettings='{_openSettingsGesture}', categoryMode='{_categoryModeGesture}', sinkHandle={_globalHotkeyWindowHandle}");
 
             UnregisterGlobalHotkeys(disposeSink: !enableGlobalHotkeys);
 
@@ -212,6 +217,16 @@ namespace PlayniteAchievements.Services.UI
 
             if (!TryResolveAction(gesture, out var action))
             {
+                // The category-mode gesture is scoped, not app-wide: it is handled synchronously
+                // so the key passes through untouched whenever the active window hosts no
+                // achievement grid whose category toggle is currently available.
+                if (!_categoryModeGesture.IsEmpty &&
+                    gesture.Equals(_categoryModeGesture) &&
+                    _tryFlipCategoryMode?.Invoke() == true)
+                {
+                    keyArgs.Handled = true;
+                }
+
                 return;
             }
 

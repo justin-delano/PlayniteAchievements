@@ -283,6 +283,37 @@ namespace PlayniteAchievements
             return false;
         }
 
+        // Invoked by AchievementHotkeyService on the category-mode hotkey. Flips category mode on
+        // an eligible achievement grid hosted by the active/topmost window (a plugin window, or
+        // the Overview sidebar view inside Playnite's main window) regardless of which element
+        // holds focus. A grid whose keyboard focus scope contains the caret wins over the others;
+        // otherwise the first eligible grid in visual order is used. Returns true when a grid
+        // flipped, so the service can mark the key handled; unrelated windows report false and
+        // the key passes through.
+        private bool TryFlipCategoryModeInActiveView()
+        {
+            var window = Application.Current?.Windows
+                .OfType<Window>()
+                .FirstOrDefault(w => w.IsActive)
+                ?? Application.Current?.MainWindow;
+            if (window == null)
+            {
+                return false;
+            }
+
+            var grids = VisualTreeHelpers.FindVisualChildren<Views.Controls.AchievementDataGridControl>(window)
+                .OrderByDescending(grid => grid.IsKeyboardFocusWithin);
+            foreach (var grid in grids)
+            {
+                if (grid.TryFlipCategoryModeFromHotkey())
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public PlayniteAchievementsPlugin(IPlayniteAPI api) : base(api)
         {
             // Initialize logging system first
@@ -462,6 +493,7 @@ namespace PlayniteAchievements
                         gameId => _windowService.ToggleManageAchievementsViewFromHotkey(gameId),
                         ToggleOverviewWindowFromHotkey,
                         () => OpenSettingsView(),
+                        TryFlipCategoryModeInActiveView,
                         TryRefreshActivePluginView);
 
                     _themeAutoMigrationService = new ThemeAutoMigrationService(
