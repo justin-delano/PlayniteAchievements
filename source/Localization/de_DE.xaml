@@ -62,9 +62,9 @@
     <sys:String x:Key="LOCPlayAch_Common_Date_Today">Heute</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_Yesterday">Gestern</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisWeek">Diese Woche</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_LastWeek">Last Week</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_LastWeek">Letzte Woche</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisMonth">Diesen Monat</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_LastMonth">Last Month</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_LastMonth">Letzten Monat</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisYear">Dieses Jahr</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">Letztes Jahr</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_YearsAgo">Vor {0} Jahren</sys:String>
@@ -688,9 +688,9 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_DateDisplay">Datumsformat</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_LastPlayedDateDisplay">Datumsformat</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UnlockDateDisplay">Datumsformat</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplay">Playtime format</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursMinutes">Hours and minutes</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursOnly">Hours only</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplay">Format der Spielzeit</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursMinutes">Stunden und Minuten</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_PlaytimeDisplayMode_HoursOnly">Stunden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_PixelsAutomaticUnit">Pixel (leer = automatisch)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RowsUnlimitedUnit">(leer = unbegrenzt)</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewRecentAchievementsGrid">Recent Achievements Grid</sys:String>
@@ -813,7 +813,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ShowHiddenSuffix">Suffix &quot;(verborgener Erfolg)&quot; anfügen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowRarityGlow">Seltenheitsleuchten auf Symbolen freigeschalteter Erfolge anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewBarCharts">Histogramm für Erfolge anzeigen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Game metadata</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_GameMetadataHeader">Metadaten</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewCollectionScoreCard">Plakette für Sammelwertung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewPrestigeScoreCard">Plakette für Prestigewertung anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ShowOverviewGamesPieChart">Kreisdiagramm für Vervollständigungen anzeigen</sys:String>
@@ -828,6 +828,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_UseUniformRarityBadges">Vereinheitlichte Seltenheitsabzeichen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_UseTrophiesForRarity">Trophäen als Seltenheitsabzeichen verwenden</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ColorNamesByRarity">Erfolgstitel nach Seltenheit färben</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ColorRarityColumnsByRarity">Color Rarity Columns by Rarity</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ViewAchievementsWindow">Erfolgsfenster anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode">Handhabung kleiner Segmente</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_OverviewPieSmallSliceMode_Exact">Exakt darstellen</sys:String>
@@ -852,7 +853,7 @@ Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werd
     <sys:String x:Key="LOCPlayAch_Settings_Context_Preview">VORSCHAU</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Context_Settings">EINSTELLUNGEN</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance">Darstellung</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Presets">Appearance presets</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_Appearance_Presets">Voreinstellungen für Darstellung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_Preset">Voreinstellung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_PresetNumbered">Voreinstellung {0}</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_Appearance_BadgeColors">Abzeichenfarben</sys:String>
@@ -886,7 +887,7 @@ Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werd
     <!-- 11 Authentication -->
     <!-- ================================================================= -->
     <sys:String x:Key="LOCPlayAch_Auth_Authenticated">Authentifiziert</sys:String>
-    <sys:String x:Key="LOCPlayAch_Auth_AuthenticatedAs">Authenticated as {0}</sys:String>
+    <sys:String x:Key="LOCPlayAch_Auth_AuthenticatedAs">Angemeldet als &quot;{0}&quot;</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_Checking">Prüfe Authentifizierung...</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_NotChecked">Warte auf Prüfung</sys:String>
     <sys:String x:Key="LOCPlayAch_Auth_TemporaryFailure">Authentifizierungsprüfung fehlgeschlagen. Erneut versuchen.</sys:String>
@@ -905,7 +906,7 @@ Schlagworte können zur Filterung und Organisation der Bibliothek verwendet werd
     <sys:String x:Key="LOCPlayAch_Filter_Played">Gespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Filter_Unplayed">Ungespielt</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Visible">Sichtbar</sys:String>
-    <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">Capstone</sys:String>
+    <sys:String x:Key="LOCPlayAch_Dynamic_Capstone">Vollendungserfolg</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_Started">Gestartet</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_NotStarted">Nicht gestartet</sys:String>
     <sys:String x:Key="LOCPlayAch_Dynamic_HasLastUnlock">Has Last Unlock</sys:String>
@@ -947,10 +948,10 @@ This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:
     <sys:String x:Key="LOCPlayAch_FriendCustomRefresh_SelectionHint">Leave unselected to include all. Selections narrow the chosen scope.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_NoAuthenticatedProviders">No authenticated friend-capable platforms are available.</sys:String>
     <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LoadingFriends">Lade Freundesdaten {1}/{2}: {0}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">Refreshing friend libraries {0}/{1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed">Refreshing friend libraries {0}/{1}: {2}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecks">Refreshing friend games {0}/{1}</sys:String>
-    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed">Refreshing friend games {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_Libraries">Aktualisiere Bibliotheken von Freunden {0}/{1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_LibrariesNamed">Aktualisiere Bibliotheken von Freunden {0}/{1}: {2}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecks">Aktualisiere Spiele von Freunden {0}/{1}</sys:String>
+    <sys:String x:Key="LOCPlayAch_FriendsRefresh_Progress_GameChecksNamed">Aktualisiere Spiele von Freunden {0}/{1}: {2}</sys:String>
 
     <!-- ================================================================= -->
     <!-- 13 Theme Migration -->
@@ -988,7 +989,7 @@ This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:
     <sys:String x:Key="LOCPlayAch_Landing_NoAuthTitle">Konten konfigurieren</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_OpenSettings">Plugin-Einstellungen</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_ProviderStatus">Plattformstatus</sys:String>
-    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeChecking">Checking</sys:String>
+    <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeChecking">Prüfe</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_BadgeSetup">Einrichtung</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_Checking">Überprüfe...</sys:String>
     <sys:String x:Key="LOCPlayAch_Landing_Status_ConfigureInSettings">In Einstellungen konfigurieren</sys:String>
@@ -1025,7 +1026,7 @@ This will delete {0:N0} provider-only games, {1:N0} achievement definitions, {2:
     <sys:String x:Key="LOCPlayAch_Playtime_HoursMinutes">{0} h {1} min</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_Hours">{0} h</sys:String>
     <sys:String x:Key="LOCPlayAch_Playtime_Minutes">{0} min</sys:String>
-    <sys:String x:Key="LOCPlayAch_Playtime_LessThanOneHour">&lt;1h</sys:String>
+    <sys:String x:Key="LOCPlayAch_Playtime_LessThanOneHour">&lt; 1 h</sys:String>
 
     <!-- ================================================================= -->
     <!-- 17 Errors and Notifications -->
