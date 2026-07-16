@@ -1083,13 +1083,37 @@ namespace PlayniteAchievements.ViewModels.Items
             return clone;
         }
 
+        /// <summary>
+        /// Per-rebuild-pass memo for category presentation (order index and resolved art path).
+        /// Rows in one pass share a single game's category order, image overrides, and default
+        /// art directory, so the resolution repeats per distinct category; without a memo every
+        /// row pays override-path resolution and disk probing again. Scope one memo to a single
+        /// pass over a single game's achievements and discard it afterwards.
+        /// </summary>
+        public sealed class CategoryPresentationMemo
+        {
+            internal sealed class Entry
+            {
+                public int OrderIndex { get; set; }
+                public string ArtPath { get; set; }
+            }
+
+            private readonly Dictionary<string, Entry> _entries =
+                new Dictionary<string, Entry>(StringComparer.OrdinalIgnoreCase);
+
+            internal bool TryGet(string key, out Entry entry) => _entries.TryGetValue(key, out entry);
+
+            internal void Set(string key, Entry entry) => _entries[key] = entry;
+        }
+
         public static AchievementDisplayItem Create(
             GameAchievementData gameData,
             AchievementDetail achievement,
             PlayniteAchievementsSettings settings,
             ISet<string> revealedKeys = null,
             Guid? playniteGameIdOverride = null,
-            AppearanceSettingsSnapshot appearanceSettings = null)
+            AppearanceSettingsSnapshot appearanceSettings = null,
+            CategoryPresentationMemo categoryMemo = null)
         {
             if (achievement == null)
             {
@@ -1097,7 +1121,7 @@ namespace PlayniteAchievements.ViewModels.Items
             }
 
             var gameId = playniteGameIdOverride ?? gameData?.PlayniteGameId;
-            var item = CreateBaseItem(gameData, achievement, gameId, ResolvePoints(achievement, gameData));
+            var item = CreateBaseItem(gameData, achievement, gameId, ResolvePoints(achievement, gameData), categoryMemo);
             var resolvedAppearanceSettings = appearanceSettings ?? CreateAppearanceSettingsSnapshot(
                 settings,
                 gameId,
@@ -1360,7 +1384,8 @@ namespace PlayniteAchievements.ViewModels.Items
             GameAchievementData gameData,
             AchievementDetail achievement,
             Guid? playniteGameId,
-            int? pointsValue)
+            int? pointsValue,
+            CategoryPresentationMemo categoryMemo = null)
         {
             var item = new AchievementDisplayItem();
             item.SetSource(achievement, notifyChanges: false);
@@ -1378,7 +1403,8 @@ namespace PlayniteAchievements.ViewModels.Items
                 gameData,
                 item.CategoryLabel,
                 achievement.ProviderCategory,
-                playniteGameId);
+                playniteGameId,
+                categoryMemo);
             return item;
         }
 
@@ -1387,7 +1413,8 @@ namespace PlayniteAchievements.ViewModels.Items
             GameAchievementData gameData,
             string categoryLabel,
             string providerCategoryLabel,
-            Guid? playniteGameId)
+            Guid? playniteGameId,
+            CategoryPresentationMemo categoryMemo = null)
         {
             ApplyCategoryPresentation(
                 item,
@@ -1395,7 +1422,8 @@ namespace PlayniteAchievements.ViewModels.Items
                 gameData?.AchievementCategoryImageOverrides,
                 categoryLabel,
                 providerCategoryLabel,
-                playniteGameId);
+                playniteGameId,
+                categoryMemo);
         }
 
         internal static void ApplyCategoryPresentation(
@@ -1404,7 +1432,8 @@ namespace PlayniteAchievements.ViewModels.Items
             IReadOnlyDictionary<string, CategoryImageOverrideData> categoryImageOverrides,
             string categoryLabel,
             string providerCategoryLabel,
-            Guid? playniteGameId)
+            Guid? playniteGameId,
+            CategoryPresentationMemo categoryMemo = null)
         {
             if (item == null)
             {
@@ -1412,7 +1441,27 @@ namespace PlayniteAchievements.ViewModels.Items
             }
 
             var normalizedCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryLabel);
-            item.CategoryOrderIndex = ResolveCategoryOrderIndex(normalizedCategory, categoryOrder);
+
+            // Default images are keyed by the provider label (renames only affect the
+            // displayed label); fall back to the effective label when no provider label
+            // is available, e.g. un-hydrated details where the two are identical.
+            var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(
+                string.IsNullOrWhiteSpace(providerCategoryLabel) ? categoryLabel : providerCategoryLabel);
+
+            string memoKey = null;
+            if (categoryMemo != null)
+            {
+                memoKey = string.Concat(normalizedCategory, "\u001f", providerCategory);
+                if (categoryMemo.TryGet(memoKey, out var cached))
+                {
+                    item.CategoryOrderIndex = cached.OrderIndex;
+                    item.CategoryArtPath = cached.ArtPath;
+                    return;
+                }
+            }
+
+            var orderIndex = ResolveCategoryOrderIndex(normalizedCategory, categoryOrder);
+            item.CategoryOrderIndex = orderIndex;
 
             CategoryImageOverrideData imageOverride = null;
             if (!string.IsNullOrWhiteSpace(normalizedCategory) &&
@@ -1421,15 +1470,19 @@ namespace PlayniteAchievements.ViewModels.Items
                 categoryImageOverrides.TryGetValue(normalizedCategory, out imageOverride);
             }
 
-            // Default images are keyed by the provider label (renames only affect the
-            // displayed label); fall back to the effective label when no provider label
-            // is available, e.g. un-hydrated details where the two are identical.
-            var providerCategory = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(
-                string.IsNullOrWhiteSpace(providerCategoryLabel) ? categoryLabel : providerCategoryLabel);
-
-            item.CategoryArtPath =
+            var artPath =
                 ResolveCategoryImageOverridePath(imageOverride?.Art, playniteGameId) ??
                 CategoryDefaultImageResolver.Resolve(playniteGameId, providerCategory);
+            item.CategoryArtPath = artPath;
+
+            if (memoKey != null)
+            {
+                categoryMemo.Set(memoKey, new CategoryPresentationMemo.Entry
+                {
+                    OrderIndex = orderIndex,
+                    ArtPath = artPath
+                });
+            }
         }
 
         private static int ResolveCategoryOrderIndex(string categoryLabel, IReadOnlyList<string> categoryOrder)

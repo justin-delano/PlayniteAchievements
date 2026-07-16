@@ -162,6 +162,16 @@ namespace PlayniteAchievements.Views
         private readonly Dictionary<Guid, Game> _gamesById = new Dictionary<Guid, Game>();
         private readonly HashSet<string> _cachedGameIds;
 
+        // Provider capability results are stable while the dialog is open, but IsCapable can be
+        // expensive (custom-data lookups, emulator file probing), so cache per provider+game.
+        // Guarded by a lock because estimates run on background threads.
+        private readonly object _capabilityCacheSync = new object();
+        private readonly Dictionary<string, Dictionary<Guid, bool>> _capabilityCacheByProvider =
+            new Dictionary<string, Dictionary<Guid, bool>>(StringComparer.OrdinalIgnoreCase);
+
+        // UI-thread-only generation counter; stale background estimate results are dropped.
+        private int _summaryGeneration;
+
         private string _includeSearchText = string.Empty;
         private string _excludeSearchText = string.Empty;
         private CustomGameScope _selectedScope = CustomGameScope.All;
@@ -463,6 +473,9 @@ namespace PlayniteAchievements.Views
             _ = RefreshProviderOptionsAsync();
             InitializeGames();
             InitializePresets();
+
+            // Kicks off the estimate on a background thread; the window opens without
+            // waiting for the full library capability walk.
             RecalculateSummary();
         }
 
@@ -596,18 +609,24 @@ namespace PlayniteAchievements.Views
 
         private void InitializeGames()
         {
-            GameOptions.Clear();
-            _gamesById.Clear();
-
-            foreach (var game in _api.Database.Games
-                .Where(game => game != null && game.Id != Guid.Empty)
-                .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase))
+            // Both collection views observe GameOptions; defer their refreshes so bulk
+            // population does not run per-item filter passes twice per added game.
+            using (IncludeGameView.DeferRefresh())
+            using (ExcludeGameView.DeferRefresh())
             {
-                _gamesById[game.Id] = game;
+                GameOptions.Clear();
+                _gamesById.Clear();
 
-                var gameItem = new GameOptionItem(game.Id, BuildGameDisplayName(game));
-                gameItem.PropertyChanged += OnGameOptionChanged;
-                GameOptions.Add(gameItem);
+                foreach (var game in _api.Database.Games
+                    .Where(game => game != null && game.Id != Guid.Empty)
+                    .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    _gamesById[game.Id] = game;
+
+                    var gameItem = new GameOptionItem(game.Id, BuildGameDisplayName(game));
+                    gameItem.PropertyChanged += OnGameOptionChanged;
+                    GameOptions.Add(gameItem);
+                }
             }
         }
 
@@ -825,20 +844,64 @@ namespace PlayniteAchievements.Views
                 .ToList();
         }
 
-        private List<Guid> ResolveEstimatedTargets(IReadOnlyList<IDataProvider> providers)
+        /// <summary>
+        /// Immutable snapshot of the UI state an estimate depends on, captured on the UI
+        /// thread so the estimate itself can run on a background thread.
+        /// </summary>
+        private sealed class SummaryEstimateRequest
         {
+            public IReadOnlyList<IDataProvider> Providers { get; set; }
+            public CustomGameScope Scope { get; set; }
+            public bool IncludeUnplayed { get; set; }
+            public int RecentLimit { get; set; }
+            public List<Game> LibrarySelectedGames { get; set; }
+            public List<Guid> IncludeIds { get; set; }
+            public List<Guid> ExcludeIds { get; set; }
+            public bool RespectUserExclusions { get; set; }
+            public bool ForceBypassExclusionsForExplicitIncludes { get; set; }
+        }
+
+        private SummaryEstimateRequest BuildSummaryEstimateRequest(IReadOnlyList<IDataProvider> providers)
+        {
+            return new SummaryEstimateRequest
+            {
+                Providers = providers,
+                Scope = SelectedScope,
+                IncludeUnplayed = UseIncludeUnplayedOverride
+                    ? IncludeUnplayedOverrideValue
+                    : (_settings?.Persisted?.IncludeUnplayedGames ?? true),
+                RecentLimit = ResolveRecentLimitForEstimate(),
+                LibrarySelectedGames = SelectedScope == CustomGameScope.LibrarySelected
+                    ? (_api.MainView.SelectedGames?.Where(game => game != null).ToList() ?? new List<Game>())
+                    : null,
+                IncludeIds = GameOptions
+                    .Where(option => option.IsIncluded)
+                    .Select(option => option.GameId)
+                    .Distinct()
+                    .ToList(),
+                ExcludeIds = GameOptions
+                    .Where(option => option.IsExcluded)
+                    .Select(option => option.GameId)
+                    .Distinct()
+                    .ToList(),
+                RespectUserExclusions = RespectUserExclusions,
+                ForceBypassExclusionsForExplicitIncludes = ForceBypassExclusionsForExplicitIncludes
+            };
+        }
+
+        private List<Guid> ResolveEstimatedTargets(SummaryEstimateRequest request)
+        {
+            var providers = request?.Providers;
             if (providers == null || providers.Count == 0)
             {
                 return new List<Guid>();
             }
 
-            var includeUnplayed = UseIncludeUnplayedOverride
-                ? IncludeUnplayedOverrideValue
-                : (_settings?.Persisted?.IncludeUnplayedGames ?? true);
-            var recentLimit = ResolveRecentLimitForEstimate();
+            var includeUnplayed = request.IncludeUnplayed;
+            var recentLimit = request.RecentLimit;
 
             IEnumerable<Game> scopedGames;
-            switch (SelectedScope)
+            switch (request.Scope)
             {
                 case CustomGameScope.All:
                     scopedGames = _gamesById.Values;
@@ -877,7 +940,7 @@ namespace PlayniteAchievements.Views
                     break;
 
                 case CustomGameScope.LibrarySelected:
-                    scopedGames = _api.MainView.SelectedGames?.Where(game => game != null) ?? Enumerable.Empty<Game>();
+                    scopedGames = request.LibrarySelectedGames ?? Enumerable.Empty<Game>();
                     break;
 
                 case CustomGameScope.Missing:
@@ -895,21 +958,13 @@ namespace PlayniteAchievements.Views
                     break;
             }
 
-            if (ShouldApplyHiddenFilter(SelectedScope))
+            if (ShouldApplyHiddenFilter(request.Scope))
             {
                 scopedGames = BulkRefreshGameFilter.ApplyHiddenFilter(scopedGames, _settings?.Persisted);
             }
 
-            var includeIds = GameOptions
-                .Where(option => option.IsIncluded)
-                .Select(option => option.GameId)
-                .Distinct()
-                .ToList();
-            var excludeIds = GameOptions
-                .Where(option => option.IsExcluded)
-                .Select(option => option.GameId)
-                .Distinct()
-                .ToList();
+            var includeIds = request.IncludeIds ?? new List<Guid>();
+            var excludeIds = request.ExcludeIds ?? new List<Guid>();
 
             var explicitIncludeSet = new HashSet<Guid>(includeIds);
             var explicitExcludeSet = new HashSet<Guid>(excludeIds);
@@ -940,7 +995,7 @@ namespace PlayniteAchievements.Views
                 orderedIds = orderedIds.Where(id => !explicitExcludeSet.Contains(id)).ToList();
             }
 
-            if (RespectUserExclusions)
+            if (request.RespectUserExclusions)
             {
                 var excludedByUser = GameCustomDataLookup.GetExcludedRefreshGameIds(_settings?.Persisted);
                 if (excludedByUser != null && excludedByUser.Count > 0)
@@ -953,7 +1008,7 @@ namespace PlayniteAchievements.Views
                                 return true;
                             }
 
-                            return ForceBypassExclusionsForExplicitIncludes &&
+                            return request.ForceBypassExclusionsForExplicitIncludes &&
                                    explicitIncludeSet.Contains(id) &&
                                    !explicitExcludeSet.Contains(id);
                         })
@@ -992,20 +1047,49 @@ namespace PlayniteAchievements.Views
                     continue;
                 }
 
-                try
+                if (IsCapableCached(provider, game))
                 {
-                    if (provider.IsCapable(game))
-                    {
-                        return true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger?.Debug(ex, $"Provider capability check failed for game '{game?.Name}'.");
+                    return true;
                 }
             }
 
             return false;
+        }
+
+        private bool IsCapableCached(IDataProvider provider, Game game)
+        {
+            Dictionary<Guid, bool> providerCache;
+            lock (_capabilityCacheSync)
+            {
+                if (!_capabilityCacheByProvider.TryGetValue(provider.ProviderKey, out providerCache))
+                {
+                    providerCache = new Dictionary<Guid, bool>();
+                    _capabilityCacheByProvider[provider.ProviderKey] = providerCache;
+                }
+
+                if (providerCache.TryGetValue(game.Id, out var cached))
+                {
+                    return cached;
+                }
+            }
+
+            bool result;
+            try
+            {
+                result = provider.IsCapable(game);
+            }
+            catch (Exception ex)
+            {
+                _logger?.Debug(ex, $"Provider capability check failed for game '{game?.Name}'.");
+                result = false;
+            }
+
+            lock (_capabilityCacheSync)
+            {
+                providerCache[game.Id] = result;
+            }
+
+            return result;
         }
 
         private static bool ShouldApplyHiddenFilter(CustomGameScope scope)
@@ -1031,9 +1115,9 @@ namespace PlayniteAchievements.Views
         }
 
         /// <summary>
-        /// Debounces summary recalculation. Recomputing the estimated-target count walks the whole
-        /// library with per-provider capability checks, so running it synchronously on every checkbox
-        /// toggle makes clicks sluggish; coalesce bursts of changes into one deferred recompute.
+        /// Debounces summary recalculation so bursts of checkbox toggles coalesce into one
+        /// recompute. The recompute itself runs on a background thread (see
+        /// <see cref="RecalculateSummary"/>), so the debounce only limits redundant work.
         /// </summary>
         private void ScheduleSummaryRecalculation()
         {
@@ -1054,6 +1138,13 @@ namespace PlayniteAchievements.Views
             _summaryDebounceTimer.Start();
         }
 
+        /// <summary>
+        /// Snapshots the estimate inputs on the UI thread, then resolves the estimated-target
+        /// count on a background thread. The estimate walks the library with per-provider
+        /// capability checks (cached per provider+game after first evaluation), which is too
+        /// slow to run on the UI thread for large libraries. Stale results are dropped via a
+        /// generation counter so rapid changes cannot apply out of order.
+        /// </summary>
         private void RecalculateSummary()
         {
             var selectedProviders = GetSelectedProviders();
@@ -1066,13 +1157,37 @@ namespace PlayniteAchievements.Views
                 ? L("LOCPlayAch_Common_None", "None")
                 : string.Join(", ", selectedProviderNames);
 
-            var estimatedTargets = ResolveEstimatedTargets(selectedProviders).Count;
-            SummaryText = string.Format(
-                L("LOCPlayAch_CustomRefresh_SummaryFormat", "Providers: {0} | Estimated targets: {1}"),
-                providerDisplay,
-                estimatedTargets);
+            var request = BuildSummaryEstimateRequest(selectedProviders);
+            var generation = ++_summaryGeneration;
 
-            CanRun = selectedProviders.Count > 0 && estimatedTargets > 0;
+            _ = Task.Run(() =>
+            {
+                int estimatedTargets;
+                try
+                {
+                    estimatedTargets = ResolveEstimatedTargets(request).Count;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.Debug(ex, "Failed resolving estimated custom refresh targets.");
+                    estimatedTargets = 0;
+                }
+
+                _ = Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (generation != _summaryGeneration)
+                    {
+                        return;
+                    }
+
+                    SummaryText = string.Format(
+                        L("LOCPlayAch_CustomRefresh_SummaryFormat", "Providers: {0} | Estimated targets: {1}"),
+                        providerDisplay,
+                        estimatedTargets);
+
+                    CanRun = selectedProviders.Count > 0 && estimatedTargets > 0;
+                }));
+            });
         }
 
         private string BuildGameDisplayName(Game game)
