@@ -750,6 +750,7 @@ namespace PlayniteAchievements.Services.Achievements
                     ? new List<string>(source.AchievementCategoryOrder)
                     : null,
                 AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(source.AchievementCategoryImageOverrides),
+                GameSummaryCategory = source.GameSummaryCategory,
                 ExcludedFromSummaries = source.ExcludedFromSummaries,
                 UseSeparateLockedIconsWhenAvailable = source.UseSeparateLockedIconsWhenAvailable,
                 Achievements = visibleAchievements
