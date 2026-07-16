@@ -34,6 +34,25 @@ namespace PlayniteAchievements.Models.Settings
         }
     }
 
+    // Category whose art is used as the game's image in game summary grids.
+    // Label matches the image-override key space (effective/display label);
+    // ProviderLabel keys provider-default art and survives renames.
+    public sealed class GameSummaryCategoryData
+    {
+        public string Label { get; set; }
+
+        public string ProviderLabel { get; set; }
+
+        public GameSummaryCategoryData Clone()
+        {
+            return new GameSummaryCategoryData
+            {
+                Label = Label,
+                ProviderLabel = ProviderLabel
+            };
+        }
+    }
+
     /// <summary>
     /// Internal storage representation for per-game custom data.
     /// </summary>
@@ -60,6 +79,8 @@ namespace PlayniteAchievements.Models.Settings
         public List<string> AchievementCategoryOrder { get; set; }
 
         public Dictionary<string, CategoryImageOverrideData> AchievementCategoryImageOverrides { get; set; }
+
+        public GameSummaryCategoryData GameSummaryCategory { get; set; }
 
         public List<string> FilteredAchievementApiNames { get; set; }
 
@@ -108,6 +129,7 @@ namespace PlayniteAchievements.Models.Settings
                     ? new List<string>(AchievementCategoryOrder)
                     : null,
                 AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(AchievementCategoryImageOverrides),
+                GameSummaryCategory = GameSummaryCategory?.Clone(),
                 FilteredAchievementApiNames = FilteredAchievementApiNames != null
                     ? new List<string>(FilteredAchievementApiNames)
                     : null,
@@ -154,6 +176,7 @@ namespace PlayniteAchievements.Models.Settings
                     ? new List<string>(AchievementCategoryOrder)
                     : null,
                 AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(AchievementCategoryImageOverrides),
+                GameSummaryCategory = GameSummaryCategory?.Clone(),
                 FilteredAchievementApiNames = FilteredAchievementApiNames != null
                     ? new List<string>(FilteredAchievementApiNames)
                     : null,
@@ -206,6 +229,7 @@ namespace PlayniteAchievements.Models.Settings
                     ? new List<string>(portable.AchievementCategoryOrder)
                     : null,
                 AchievementCategoryImageOverrides = CloneCategoryImageOverrideMap(portable?.AchievementCategoryImageOverrides),
+                GameSummaryCategory = portable?.GameSummaryCategory?.Clone(),
                 FilteredAchievementApiNames = portable?.FilteredAchievementApiNames != null
                     ? new List<string>(portable.FilteredAchievementApiNames)
                     : null,
