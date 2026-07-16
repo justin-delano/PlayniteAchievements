@@ -252,6 +252,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 var fileStems = AchievementIconCachePathBuilder.BuildFileStems(
                     orderedAchievements.Select(achievement => achievement?.ApiName));
 
+                // Per-game invariants hoisted out of the row loop: the appearance snapshot and
+                // category art/order resolution are identical for every row in this pass.
+                var appearanceSnapshot = AchievementDisplayItem.CreateAppearanceSettingsSnapshot(
+                    _settings,
+                    _gameId,
+                    displayGameData?.UseSeparateLockedIconsWhenAvailable);
+                var categoryMemo = new AchievementDisplayItem.CategoryPresentationMemo();
+
                 var rows = new List<AchievementIconOverrideItem>();
                 for (var i = 0; i < orderedAchievements.Count; i++)
                 {
@@ -260,7 +268,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         displayGameData,
                         achievement,
                         _settings,
-                        playniteGameIdOverride: _gameId);
+                        playniteGameIdOverride: _gameId,
+                        appearanceSettings: appearanceSnapshot,
+                        categoryMemo: categoryMemo);
                     if (projected == null || string.IsNullOrWhiteSpace(projected.ApiName))
                     {
                         continue;

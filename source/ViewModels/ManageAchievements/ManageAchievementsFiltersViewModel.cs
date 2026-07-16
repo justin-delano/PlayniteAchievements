@@ -297,6 +297,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     achievement => ResolveEffectiveCategoryLabel(achievement, categoryOverrides),
                     hydratedGameData?.AchievementCategoryOrder);
 
+                // Per-game invariants hoisted out of the row loop: the appearance snapshot and
+                // category art/order resolution are identical for every row in this pass.
+                var appearanceSnapshot = AchievementDisplayItem.CreateAppearanceSettingsSnapshot(
+                    _settings,
+                    _gameId,
+                    projectionSource?.UseSeparateLockedIconsWhenAvailable);
+                var categoryMemo = new AchievementDisplayItem.CategoryPresentationMemo();
+
                 _allRows = orderedAchievements.Select(a =>
                 {
                     var apiName = (a.ApiName ?? string.Empty).Trim();
@@ -304,7 +312,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                         projectionSource,
                         a,
                         _settings,
-                        playniteGameIdOverride: _gameId);
+                        playniteGameIdOverride: _gameId,
+                        appearanceSettings: appearanceSnapshot,
+                        categoryMemo: categoryMemo);
                     if (projected == null)
                     {
                         return null;
