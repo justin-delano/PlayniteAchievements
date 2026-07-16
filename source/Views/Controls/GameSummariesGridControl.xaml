@@ -126,7 +126,7 @@
                              fits the art inside both cell dimensions without clipping. -->
                         <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
                                 ClipToBounds="True"
-                                Margin="6,8"
+                                Margin="6,2"
                                 RenderOptions.BitmapScalingMode="HighQuality"
                                 UseLayoutRounding="True"
                                 SnapsToDevicePixels="True"
