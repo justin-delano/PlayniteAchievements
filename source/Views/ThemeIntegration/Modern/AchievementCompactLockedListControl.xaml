@@ -81,13 +81,11 @@
         </ItemsControl.ItemTemplate>
     </ItemsControl>
 
-    <!-- Empty state message -->
-    <TextBlock Text="{DynamicResource LOCPlayAch_NoLockedAchievements}"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"
-               Foreground="{DynamicResource TextBrushDarker}">
-        <TextBlock.Style>
-            <Style TargetType="{x:Type TextBlock}">
+    <!-- Empty state message, sized to the icon row height like the legacy control -->
+    <Border MinHeight="{Binding IconSize, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}"
+            Margin="4">
+        <Border.Style>
+            <Style TargetType="{x:Type Border}">
                 <Setter Property="Visibility" Value="Collapsed"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding DisplayItems.Count, RelativeSource={RelativeSource AncestorType=modern:AchievementCompactListControlBase}}"
@@ -100,8 +98,12 @@
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
-        </TextBlock.Style>
-    </TextBlock>
+        </Border.Style>
+        <TextBlock Text="{DynamicResource LOCPlayAch_NoLockedAchievements}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Foreground="{DynamicResource TextBrushDarker}"/>
+    </Border>
     </Grid>
 </modern:AchievementCompactListControlBase>
 
