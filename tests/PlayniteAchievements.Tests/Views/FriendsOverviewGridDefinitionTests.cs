@@ -81,7 +81,6 @@ namespace PlayniteAchievements.Tests.Views
                 "FriendGameOnlyColumnKeys",
                 "\"GameSummaryOwned\"",
                 "MirroredAppearanceResourceKeys",
-                "\"PlayAch.Brush.Progress.TierFill.Common\"",
                 "\"PlayAch.Brush.Progress.CompletedFill\"",
                 "GridSurface.FriendsOverview",
                 "GridSurface.FriendsOverviewSelectedFriend",
