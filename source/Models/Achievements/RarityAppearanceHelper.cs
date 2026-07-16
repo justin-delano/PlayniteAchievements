@@ -140,6 +140,48 @@ namespace PlayniteAchievements.Models.Achievements
             resources["PlayAch.Effect.CompletedGlowEnd"] = GetCompletedGlow(useEndColor: true, settings);
         }
 
+        /// <summary>
+        /// Publishes the per-tier rarity brushes and the completed progress-bar fill so the
+        /// progress-bar style can color by progress quartile and switch to the completed
+        /// gradient via DynamicResource.
+        /// </summary>
+        public static void ApplyProgressTierBrushResources(ResourceDictionary resources, PersistedSettings settings = null)
+        {
+            if (resources == null)
+            {
+                return;
+            }
+
+            resources["PlayAch.Brush.Rarity.Common"] = GetBrush(RarityTier.Common, settings);
+            resources["PlayAch.Brush.Rarity.Uncommon"] = GetBrush(RarityTier.Uncommon, settings);
+            resources["PlayAch.Brush.Rarity.Rare"] = GetBrush(RarityTier.Rare, settings);
+            resources["PlayAch.Brush.Rarity.UltraRare"] = GetBrush(RarityTier.UltraRare, settings);
+            resources["PlayAch.Brush.Progress.CompletedFill"] = CreateCompletedProgressFillBrush(settings);
+        }
+
+        /// <summary>
+        /// Horizontal CompletedStart -> CompletedEnd sweep for the progress-bar fill and border.
+        /// Intentionally simpler than <see cref="CreateCompletedGradientBrush"/> (the diagonal
+        /// badge brush with a white mid highlight), which reads poorly on a thin bar.
+        /// </summary>
+        private static Brush CreateCompletedProgressFillBrush(PersistedSettings settings)
+        {
+            var brush = new LinearGradientBrush
+            {
+                StartPoint = new Point(0, 0),
+                EndPoint = new Point(1, 0)
+            };
+
+            brush.GradientStops.Add(new GradientStop(GetCompletedStartColor(settings), 0.0));
+            brush.GradientStops.Add(new GradientStop(GetCompletedEndColor(settings), 1.0));
+            if (brush.CanFreeze)
+            {
+                brush.Freeze();
+            }
+
+            return brush;
+        }
+
         public static Color GetCompletedStartColor(PersistedSettings settings = null)
         {
             var persisted = settings ?? _activeSettings;
@@ -294,6 +336,7 @@ namespace PlayniteAchievements.Models.Achievements
             SetGeneratedBadge(resources, RarityTier.Rare, "BadgeGoldHexagon");
             SetGeneratedBadge(resources, RarityTier.UltraRare, "BadgePlatinumHexagon");
             ApplyCompletedGameBrushResource(resources, settings);
+            ApplyProgressTierBrushResources(resources, settings);
             var completedBadge = CreateCompletedBadgeImage(settings);
             resources["BadgeCompletedGame"] = completedBadge;
             // Runtime-only alias with no static definition in RarityBadges.xaml, mirroring the
