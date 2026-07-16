@@ -60,6 +60,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private bool _hasCustomCategoryOrder;
         private bool _hasCustomCategoryNames;
         private bool _hasCustomCategoryArt;
+        private bool _hasCustomSummaryCategory;
+        private bool _isEnforcingSummarySelection;
         private bool _hasCategoryImageChanges;
         private bool _hasCategoryImageValidationErrors;
         private bool _isSavingCategoryImages;
@@ -198,7 +200,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             private set => SetValue(ref _hasCustomOverrides, value);
         }
 
-        public bool HasCustomCategoryMetadata => HasCustomCategoryOrder || HasCustomCategoryNames || HasCustomCategoryArt;
+        public bool HasCustomCategoryMetadata => HasCustomCategoryOrder || HasCustomCategoryNames || HasCustomCategoryArt || HasCustomSummaryCategory;
 
         public bool HasCustomCategoryOrder
         {
@@ -230,6 +232,18 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             private set
             {
                 if (SetValueAndReturn(ref _hasCustomCategoryArt, value))
+                {
+                    OnPropertyChanged(nameof(HasCustomCategoryMetadata));
+                }
+            }
+        }
+
+        public bool HasCustomSummaryCategory
+        {
+            get => _hasCustomSummaryCategory;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasCustomSummaryCategory, value))
                 {
                     OnPropertyChanged(nameof(HasCustomCategoryMetadata));
                 }
@@ -549,7 +563,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             }
 
             var images = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
-            _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, Array.Empty<string>(), images);
+            var summaryCategory = GameCustomDataLookup.GetGameSummaryCategory(_gameId, _settings?.Persisted);
+            _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, Array.Empty<string>(), images, summaryCategory);
             RefreshCategoryRows();
             return true;
         }
@@ -576,7 +591,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public bool ResetCategoryArt()
         {
             var images = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
-            if (images == null || images.Count == 0)
+            var summaryCategory = GameCustomDataLookup.GetGameSummaryCategory(_gameId, _settings?.Persisted);
+            if ((images == null || images.Count == 0) && summaryCategory == null)
             {
                 return false;
             }
@@ -585,7 +601,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             _achievementOverridesService.SetAchievementCategoryMetadata(
                 _gameId,
                 order,
-                new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase));
+                new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase),
+                gameSummaryCategory: null);
             RefreshCategoryRows();
             return true;
         }
@@ -1237,6 +1254,25 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 SetCategoryImageStatus(null, isError: false);
             }
 
+            if (e.PropertyName == nameof(ManageAchievementsCategoryMetadataItem.IsSummarySelected) &&
+                !_isEnforcingSummarySelection &&
+                sender is ManageAchievementsCategoryMetadataItem selectedRow &&
+                selectedRow.IsSummarySelected)
+            {
+                _isEnforcingSummarySelection = true;
+                try
+                {
+                    foreach (var row in CategoryRows.Where(row => row != null && !ReferenceEquals(row, selectedRow)))
+                    {
+                        row.IsSummarySelected = false;
+                    }
+                }
+                finally
+                {
+                    _isEnforcingSummarySelection = false;
+                }
+            }
+
             RefreshCategoryMetadataState();
         }
 
@@ -1249,14 +1285,16 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             if (groups.Count == 0)
             {
                 ReplaceCategoryRows(Array.Empty<ManageAchievementsCategoryMetadataItem>());
-                SetCustomCategoryMetadataState(hasOrder: false, hasNames: false, hasArt: false);
+                SetCustomCategoryMetadataState(hasOrder: false, hasNames: false, hasArt: false, hasSummaryCategory: false);
                 return;
             }
 
             var categoryOrder = GameCustomDataLookup.GetAchievementCategoryOrder(_gameId, _settings?.Persisted);
             var categoryImages = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
+            var summaryCategory = GameCustomDataLookup.GetGameSummaryCategory(_gameId, _settings?.Persisted);
             HasCustomCategoryOrder = categoryOrder != null && categoryOrder.Count > 0;
             HasCustomCategoryArt = categoryImages != null && categoryImages.Count > 0;
+            HasCustomSummaryCategory = summaryCategory != null;
 
             var orderedLabels = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
                 _definitionOrderedRows.Count > 0 ? _definitionOrderedRows : _allRows,
@@ -1287,7 +1325,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     imageOverride,
                     _gameIdText,
                     fileStem,
-                    _managedCustomIconService));
+                    _managedCustomIconService,
+                    isSummarySelected: summaryCategory != null &&
+                        string.Equals(summaryCategory.Label, label, StringComparison.OrdinalIgnoreCase)));
             }
 
             HasCustomCategoryNames = rows.Any(row =>
@@ -1372,19 +1412,32 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 };
             }
 
+            var summaryRow = CategoryRows.FirstOrDefault(row =>
+                row != null && row.IsSummarySelected && !string.IsNullOrWhiteSpace(row.CategoryLabel));
+            var summaryCategory = summaryRow != null
+                ? new GameSummaryCategoryData
+                {
+                    Label = summaryRow.CategoryLabel,
+                    ProviderLabel = summaryRow.ProviderCategoryLabel
+                }
+                : null;
+
             _achievementOverridesService.SetAchievementCategoryMetadata(
                 _gameId,
                 categoryOrder,
-                imageOverrides);
+                imageOverrides,
+                summaryCategory);
             HasCustomCategoryOrder = categoryOrder.Count > 0;
             HasCustomCategoryArt = imageOverrides.Count > 0;
+            HasCustomSummaryCategory = summaryCategory != null;
         }
 
-        private void SetCustomCategoryMetadataState(bool hasOrder, bool hasNames, bool hasArt)
+        private void SetCustomCategoryMetadataState(bool hasOrder, bool hasNames, bool hasArt, bool hasSummaryCategory)
         {
             HasCustomCategoryOrder = hasOrder;
             HasCustomCategoryNames = hasNames;
             HasCustomCategoryArt = hasArt;
+            HasCustomSummaryCategory = hasSummaryCategory;
         }
 
         private void RenameCategoryMetadata(string sourceCategory, string targetCategory)
@@ -1452,7 +1505,18 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 }
             }
 
-            _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, nextOrder, nextImages);
+            var summaryCategory = GameCustomDataLookup.GetGameSummaryCategory(_gameId, _settings?.Persisted);
+            if (summaryCategory != null &&
+                string.Equals(summaryCategory.Label, normalizedSource, StringComparison.OrdinalIgnoreCase))
+            {
+                summaryCategory = new GameSummaryCategoryData
+                {
+                    Label = normalizedTarget,
+                    ProviderLabel = summaryCategory.ProviderLabel
+                };
+            }
+
+            _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, nextOrder, nextImages, summaryCategory);
         }
 
         private void RefreshCategoryMetadataState()
@@ -1717,6 +1781,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private string _baselineArtOverrideValue;
         private string _artOverrideValue;
         private string _renameOverrideText;
+        private bool _baselineIsSummarySelected;
+        private bool _isSummarySelected;
 
         private ManageAchievementsCategoryMetadataItem(
             string gameIdText,
@@ -1780,8 +1846,21 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
 
         public bool HasValidationErrors => HasArtOverrideValidationError;
 
+        public bool IsSummarySelected
+        {
+            get => _isSummarySelected;
+            set
+            {
+                if (SetValueAndReturn(ref _isSummarySelected, value))
+                {
+                    OnPropertyChanged(nameof(HasChanges));
+                }
+            }
+        }
+
         public bool HasChanges =>
-            !string.Equals(GetNormalizedArtOverrideValue(), _baselineArtOverrideValue, StringComparison.Ordinal);
+            !string.Equals(GetNormalizedArtOverrideValue(), _baselineArtOverrideValue, StringComparison.Ordinal) ||
+            _isSummarySelected != _baselineIsSummarySelected;
 
         public bool HasAnyOverrideValue =>
             !string.IsNullOrWhiteSpace(GetNormalizedArtOverrideValue());
@@ -1793,7 +1872,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             CategoryImageOverrideData imageOverride,
             string gameIdText,
             string fileStem,
-            ManagedCustomIconService managedCustomIconService)
+            ManagedCustomIconService managedCustomIconService,
+            bool isSummarySelected = false)
         {
             var normalizedLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(categoryLabel);
             var normalizedProviderLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(providerCategoryLabel);
@@ -1816,6 +1896,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 : row.CategoryLabel;
             row._baselineArtOverrideValue = row.ResolveOverrideInputValue(imageOverride?.Art);
             row._artOverrideValue = row._baselineArtOverrideValue ?? string.Empty;
+            row._baselineIsSummarySelected = isSummarySelected;
+            row._isSummarySelected = isSummarySelected;
             return row;
         }
 
@@ -1844,12 +1926,19 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         public void ResetToBaseline()
         {
             _artOverrideValue = _baselineArtOverrideValue ?? string.Empty;
+            if (_isSummarySelected != _baselineIsSummarySelected)
+            {
+                _isSummarySelected = _baselineIsSummarySelected;
+                OnPropertyChanged(nameof(IsSummarySelected));
+            }
+
             NotifyOverrideStateChanged();
         }
 
         public void CommitCurrentOverridesAsBaseline()
         {
             _baselineArtOverrideValue = GetNormalizedArtOverrideValue();
+            _baselineIsSummarySelected = _isSummarySelected;
             NotifyOverrideStateChanged();
         }
 
