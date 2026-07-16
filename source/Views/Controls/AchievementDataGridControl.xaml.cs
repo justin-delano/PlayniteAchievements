@@ -228,7 +228,14 @@ namespace PlayniteAchievements.Views.Controls
             if (d is AchievementDataGridControl control)
             {
                 control._preSortItems = null;
-                DataGridSortingHelper.ClearSortIndicators(control.AchievementsDataGrid);
+                if (!control.UseExternalSorting)
+                {
+                    // Externally sorted surfaces own their header indicators via SetSortIndicator
+                    // and re-apply them only when their sort state changes; clearing here would
+                    // drop the arrow on a plain source swap while the external sort still applies.
+                    DataGridSortingHelper.ClearSortIndicators(control.AchievementsDataGrid);
+                }
+
                 control.ObserveItemsSourceCollection();
                 control.OnItemsSourceContentChanged();
             }
