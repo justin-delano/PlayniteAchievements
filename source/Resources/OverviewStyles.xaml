@@ -193,6 +193,29 @@
 
     <Style x:Key="OverviewProgressBarStyle" TargetType="ProgressBar" BasedOn="{StaticResource GameProgressBar}">
         <Setter Property="Height" Value="22"/>
+        <Style.Triggers>
+            <DataTrigger Binding="{Binding ProgressTier}" Value="Common">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Rarity.Common}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Rarity.Common}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding ProgressTier}" Value="Uncommon">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Rarity.Uncommon}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Rarity.Uncommon}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding ProgressTier}" Value="Rare">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Rarity.Rare}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Rarity.Rare}"/>
+            </DataTrigger>
+            <DataTrigger Binding="{Binding ProgressTier}" Value="UltraRare">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Rarity.UltraRare}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Rarity.UltraRare}"/>
+            </DataTrigger>
+            <!-- Declared last: later matching triggers win, so completion overrides the tier color. -->
+            <DataTrigger Binding="{Binding IsCompleted}" Value="True">
+                <Setter Property="Foreground" Value="{DynamicResource PlayAch.Brush.Progress.CompletedFill}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource PlayAch.Brush.Progress.CompletedFill}"/>
+            </DataTrigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="OverviewProgressPercentTextStyle" TargetType="TextBlock" BasedOn="{StaticResource PlayAch.TextBlock.BaseStyle}">
