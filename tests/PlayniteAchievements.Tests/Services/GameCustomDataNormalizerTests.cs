@@ -70,6 +70,13 @@ namespace PlayniteAchievements.Services.Tests
                 },
                 new GameCustomDataFile
                 {
+                    GameSummaryCategory = new GameSummaryCategoryData
+                    {
+                        Label = "DLC"
+                    }
+                },
+                new GameCustomDataFile
+                {
                     FilteredAchievementApiNames = new List<string> { "ach_one" }
                 },
                 new GameCustomDataFile
@@ -218,6 +225,142 @@ namespace PlayniteAchievements.Services.Tests
             Assert.AreEqual("managed://art.png", normalized.AchievementCategoryImageOverrides["Base"].Art);
             Assert.IsFalse(normalized.AchievementCategoryImageOverrides.ContainsKey("Empty"));
             Assert.IsTrue(GameCustomDataNormalizer.HasVisibleCustomization(normalized));
+        }
+
+        [TestMethod]
+        public void HasInternalData_GameSummaryCategoryOnly_ReturnsTrue()
+        {
+            var data = new GameCustomDataFile
+            {
+                GameSummaryCategory = new GameSummaryCategoryData
+                {
+                    Label = "DLC",
+                    ProviderLabel = "Phantom Liberty"
+                }
+            };
+
+            Assert.IsTrue(GameCustomDataNormalizer.HasInternalData(data));
+            Assert.IsTrue(GameCustomDataNormalizer.HasPortableData(data));
+        }
+
+        [TestMethod]
+        public void NormalizeInternal_GameSummaryCategory_NormalizesLabelsAndDefaultsProviderLabel()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    GameSummaryCategory = new GameSummaryCategoryData
+                    {
+                        Label = " DLC ",
+                        ProviderLabel = " "
+                    }
+                },
+                gameId);
+
+            Assert.IsNotNull(normalized.GameSummaryCategory);
+            Assert.AreEqual("DLC", normalized.GameSummaryCategory.Label);
+            Assert.AreEqual("DLC", normalized.GameSummaryCategory.ProviderLabel);
+        }
+
+        [TestMethod]
+        public void NormalizeInternal_GameSummaryCategory_BlankLabel_DropsSelection()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizeInternal(
+                new GameCustomDataFile
+                {
+                    PlayniteGameId = gameId,
+                    GameSummaryCategory = new GameSummaryCategoryData
+                    {
+                        Label = " ",
+                        ProviderLabel = "Phantom Liberty"
+                    }
+                },
+                gameId);
+
+            Assert.IsNull(normalized.GameSummaryCategory);
+        }
+
+        [TestMethod]
+        public void NormalizePortable_GameSummaryCategory_KeepsDistinctProviderLabel()
+        {
+            var gameId = Guid.NewGuid();
+            var normalized = GameCustomDataNormalizer.NormalizePortable(
+                new GameCustomDataPortableFile
+                {
+                    PlayniteGameId = gameId,
+                    GameSummaryCategory = new GameSummaryCategoryData
+                    {
+                        Label = "My Renamed DLC",
+                        ProviderLabel = " Phantom Liberty "
+                    }
+                },
+                gameId);
+
+            Assert.IsNotNull(normalized.GameSummaryCategory);
+            Assert.AreEqual("My Renamed DLC", normalized.GameSummaryCategory.Label);
+            Assert.AreEqual("Phantom Liberty", normalized.GameSummaryCategory.ProviderLabel);
+        }
+
+        [TestMethod]
+        public void MergePreferExisting_GameSummaryCategory_PrefersExistingThenLegacy()
+        {
+            var existing = new GameCustomDataFile
+            {
+                GameSummaryCategory = new GameSummaryCategoryData
+                {
+                    Label = "Existing",
+                    ProviderLabel = "Existing"
+                }
+            };
+            var legacy = new GameCustomDataFile
+            {
+                GameSummaryCategory = new GameSummaryCategoryData
+                {
+                    Label = "Legacy",
+                    ProviderLabel = "Legacy"
+                }
+            };
+
+            var merged = GameCustomDataNormalizer.MergePreferExisting(existing, legacy);
+            Assert.AreEqual("Existing", merged.GameSummaryCategory.Label);
+
+            var mergedFromLegacy = GameCustomDataNormalizer.MergePreferExisting(new GameCustomDataFile(), legacy);
+            Assert.AreEqual("Legacy", mergedFromLegacy.GameSummaryCategory.Label);
+        }
+
+        [TestMethod]
+        public void GameCustomDataFiles_CloneAndPortableRoundTrip_DeepCopyGameSummaryCategory()
+        {
+            var internalData = new GameCustomDataFile
+            {
+                PlayniteGameId = Guid.NewGuid(),
+                GameSummaryCategory = new GameSummaryCategoryData
+                {
+                    Label = "DLC",
+                    ProviderLabel = "Phantom Liberty"
+                }
+            };
+
+            var internalClone = internalData.Clone();
+            internalClone.GameSummaryCategory.Label = "Changed";
+            Assert.AreEqual("DLC", internalData.GameSummaryCategory.Label);
+
+            var portable = internalData.ToPortable();
+            portable.GameSummaryCategory.Label = "Portable";
+            Assert.AreEqual("DLC", internalData.GameSummaryCategory.Label);
+
+            var portableClone = portable.Clone();
+            portableClone.GameSummaryCategory.Label = "Clone";
+            Assert.AreEqual("Portable", portable.GameSummaryCategory.Label);
+
+            var imported = GameCustomDataFile.FromPortable(portable, Guid.NewGuid(), false, false);
+            Assert.AreEqual("Portable", imported.GameSummaryCategory.Label);
+            Assert.AreEqual("Phantom Liberty", imported.GameSummaryCategory.ProviderLabel);
+            imported.GameSummaryCategory.Label = "Import";
+            Assert.AreEqual("Portable", portable.GameSummaryCategory.Label);
         }
 
         [TestMethod]
