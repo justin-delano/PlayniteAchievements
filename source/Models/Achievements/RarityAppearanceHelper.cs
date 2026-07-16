@@ -104,6 +104,42 @@ namespace PlayniteAchievements.Models.Achievements
             resources["PlayAch.Brush.CompletedGame"] = GetCompletedBrush(settings);
         }
 
+        /// <summary>
+        /// Soft glow effect in the completed-game gradient start or end color for the
+        /// game/category art completion glow. The two effects are offset toward opposite
+        /// corners so stacked copies read as a two-tone bloom matching the diagonal of the
+        /// completed badge gradient.
+        /// </summary>
+        public static DropShadowEffect GetCompletedGlow(bool useEndColor, PersistedSettings settings = null)
+        {
+            var effect = new DropShadowEffect
+            {
+                BlurRadius = 14,
+                ShadowDepth = 2,
+                Direction = useEndColor ? 315 : 135,
+                Color = useEndColor ? GetCompletedEndColor(settings) : GetCompletedStartColor(settings),
+                Opacity = 1.0
+            };
+
+            if (effect.CanFreeze)
+            {
+                effect.Freeze();
+            }
+
+            return effect;
+        }
+
+        public static void ApplyCompletedGlowEffectResources(ResourceDictionary resources, PersistedSettings settings = null)
+        {
+            if (resources == null)
+            {
+                return;
+            }
+
+            resources["PlayAch.Effect.CompletedGlowStart"] = GetCompletedGlow(useEndColor: false, settings);
+            resources["PlayAch.Effect.CompletedGlowEnd"] = GetCompletedGlow(useEndColor: true, settings);
+        }
+
         public static Color GetCompletedStartColor(PersistedSettings settings = null)
         {
             var persisted = settings ?? _activeSettings;
