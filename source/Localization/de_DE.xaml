@@ -64,8 +64,8 @@
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisWeek">Diese Woche</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisMonth">Diesen Monat</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_Date_ThisYear">Dieses Jahr</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">1 year ago</sys:String>
-    <sys:String x:Key="LOCPlayAch_Common_Date_YearsAgo">{0} years ago</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_OneYearAgo">Letztes Jahr</sys:String>
+    <sys:String x:Key="LOCPlayAch_Common_Date_YearsAgo">Vor {0} Jahren</sys:String>
     <sys:String x:Key="LOCPlayAch_Common_View">Ansehen</sys:String>
     <sys:String x:Key="LOCPlayAch_Completed">Vervollständigt</sys:String>
     <sys:String x:Key="LOCPlayAch_Format_Counts">{0}/{1}</sys:String>
@@ -123,10 +123,10 @@
     <sys:String x:Key="LOCPlayAch_Column_Trophy">Trophäe</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_UnlockToasts">Unlock notifications</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_FriendToasts">Friend notifications</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_Owned">Owned</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_Owned">In Besitz</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Screenshots">Screenshots</sys:String>
     <sys:String x:Key="LOCPlayAch_Column_Recordings">Aufnahmen</sys:String>
-    <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Category Art</sys:String>
+    <sys:String x:Key="LOCPlayAch_Column_CategoryArt">Kategoriegrafik</sys:String>
 
     <!-- ================================================================= -->
     <!-- 04 Buttons -->
@@ -344,7 +344,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_HideCategorySummaryRow">Hide category summary row above the achievement list when a category is selected</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryGrid">Kategorietabelle</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_CategoryGridUseCoverImages">Fall back to game covers instead of game icons for categories without art</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ShowCategoryGridColumnHeaders">Show Category Grid Column Headers</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ShowCategoryGridColumnHeaders">Spaltenüberschriften anzeigen</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_CustomIcons">Symbole</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_ManualTracking">Manuelle Verfolgung</sys:String>
     <sys:String x:Key="LOCPlayAch_ManageAchievements_Tab_Notes">Notizen</sys:String>
@@ -527,8 +527,8 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowName">Erfolgstitel</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityBadge">Rarity badge</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityGlow">Seltenheitsleuchten</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastRarityColoredName">Rarity-colored name</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityPercent">Rarity percent</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastRarityColoredName">Erfolgstitel in Seltenheisfarbe</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_ToastShowRarityPercent">Prozentualer Seltenheitswert</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowDescription">Beschreibung</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_ToastShowGameName">Spielname</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_TabNotifications">Benachrichtigungen</sys:String>
@@ -584,7 +584,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_Hotkeys_NoTarget">Vor der Verwendung von Erfolgstastenkürzel ein Spiel auswählen oder starten.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Title">Tastenkürzel</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_EnableTagging">Schlagwortsynchronisation aktivieren</sys:String>
-    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Ungespielte Spiele enthalten</sys:String>
+    <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames">Ungespielte enthalten</sys:String>
     <sys:String x:Key="LOCPlayAch_IncludeUnplayedGames_Help">Wenn deaktiviert: Spiele ohne Spielzeit werden bei Aktualisierungen übersprungen.</sys:String>
     <sys:String x:Key="LOCPlayAch_InvalidPath">Ordner existiert nicht</sys:String>
 
@@ -757,7 +757,7 @@ This removes per-game exclusions, manual links, capstones, custom icon links, or
     <sys:String x:Key="LOCPlayAch_RaEnableSubsetScanning">Subsets von RetroAchievements abfragen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaEnableAutomaticCapstoneAssignment">Vollendungserfolge automatisch aus Siegesbedingungen zuweisen</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats">Seltenheitsstatistik</sys:String>
-    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Casual</sys:String>
+    <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Casual">Zwanglos</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Description">Rarity for each unlocked achievement follows its own unlock mode (hardcore or softcore). This setting controls which rarity is shown for locked achievements. Changing it requires a refresh to update cached values.</sys:String>
     <sys:String x:Key="LOCPlayAch_Settings_RaRarityStats_Hardcore">Hardcore</sys:String>
 
