@@ -227,18 +227,10 @@
         <Setter Property="Margin" Value="0"/>
     </Style>
 
-    <!-- Halo layer stacked behind the percent text: the same text in the shadow color,
-         blurred, gives a dense outline that keeps the crisp text above readable over
-         the bright tier-fill gradients. A lone DropShadowEffect halo is too faint. -->
-    <Style x:Key="OverviewProgressPercentTextHaloStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewProgressPercentTextStyle}">
+    <Style x:Key="OverviewProgressPercentTextOutlineStyle" TargetType="TextBlock" BasedOn="{StaticResource OverviewProgressPercentTextStyle}">
         <Setter Property="Foreground">
             <Setter.Value>
-                <SolidColorBrush Color="{StaticResource PlayAch.Color.Shadow}"/>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="Effect">
-            <Setter.Value>
-                <BlurEffect Radius="4"/>
+                <SolidColorBrush Color="{StaticResource PlayAch.Color.Shadow}" Opacity="0.92"/>
             </Setter.Value>
         </Setter>
     </Style>

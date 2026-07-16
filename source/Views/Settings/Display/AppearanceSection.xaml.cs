@@ -498,7 +498,8 @@ namespace PlayniteAchievements.Views.Settings.Display
             {
                 PlayAchResourceService.Apply(
                     resources,
-                    _settings?.Persisted?.ResourceOverrides);
+                    _settings?.Persisted?.ResourceOverrides,
+                    _settings?.Persisted);
             }
         }
 

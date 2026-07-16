@@ -78,11 +78,20 @@ namespace PlayniteAchievements.Views.Controls
             "GameSummaryLastPlayed"
         };
 
-        private static readonly string[] MirroredBadgeResourceKeys =
+        private static readonly string[] MirroredAppearanceResourceKeys =
         {
             "PlayAch.Brush.CompletedGame",
             "PlayAch.Effect.CompletedGlowStart",
             "PlayAch.Effect.CompletedGlowEnd",
+            "PlayAch.Brush.Rarity.Common",
+            "PlayAch.Brush.Rarity.Uncommon",
+            "PlayAch.Brush.Rarity.Rare",
+            "PlayAch.Brush.Rarity.UltraRare",
+            "PlayAch.Brush.Progress.TierFill.Common",
+            "PlayAch.Brush.Progress.TierFill.Uncommon",
+            "PlayAch.Brush.Progress.TierFill.Rare",
+            "PlayAch.Brush.Progress.TierFill.UltraRare",
+            "PlayAch.Brush.Progress.CompletedFill",
             "BadgeCompletedGame",
             "BadgeRarityUltraRare",
             "BadgeRarityRare",
@@ -470,7 +479,7 @@ namespace PlayniteAchievements.Views.Controls
 
             UpdateColumnHeadersVisibility();
             UpdateRealizedRowHeights();
-            MirrorBadgeResources();
+            MirrorAppearanceResources();
             ApplyCategoryHeaderOverride();
 
             UpdateLastPlayedDateMode(settings);
@@ -553,12 +562,12 @@ namespace PlayniteAchievements.Views.Controls
 
         private void RarityAppearanceHelper_AppearanceChanged(object sender, EventArgs e)
         {
-            Dispatcher?.BeginInvoke(new Action(MirrorBadgeResources));
+            Dispatcher?.BeginInvoke(new Action(MirrorAppearanceResources));
         }
 
-        private void MirrorBadgeResources()
+        private void MirrorAppearanceResources()
         {
-            foreach (var key in MirroredBadgeResourceKeys)
+            foreach (var key in MirroredAppearanceResourceKeys)
             {
                 try
                 {

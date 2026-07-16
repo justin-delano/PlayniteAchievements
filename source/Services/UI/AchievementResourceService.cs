@@ -38,7 +38,10 @@ namespace PlayniteAchievements.Services.UI
 
                 void LoadResources()
                 {
-                    PlayAchResourceService.Apply(app.Resources, settings?.Persisted?.ResourceOverrides);
+                    PlayAchResourceService.Apply(
+                        app.Resources,
+                        settings?.Persisted?.ResourceOverrides,
+                        settings?.Persisted);
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/DesignTokens.xaml");
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/CommonResources.xaml");
                     EnsureMergedDictionaryLoaded(app.Resources, "/PlayniteAchievements;component/Resources/RarityBadges.xaml");

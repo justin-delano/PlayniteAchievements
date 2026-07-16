@@ -218,7 +218,10 @@ namespace PlayniteAchievements.ViewModels
             var resources = Application.Current?.Resources;
             if (resources != null)
             {
-                PlayAchResourceService.Apply(resources, Settings?.Persisted?.ResourceOverrides);
+                PlayAchResourceService.Apply(
+                    resources,
+                    Settings?.Persisted?.ResourceOverrides,
+                    Settings?.Persisted);
             }
         }
 

@@ -530,7 +530,10 @@ namespace PlayniteAchievements.Views
             var resources = Application.Current?.Resources;
             if (resources != null)
             {
-                PlayAchResourceService.Apply(resources, settings?.Persisted?.ResourceOverrides);
+                PlayAchResourceService.Apply(
+                    resources,
+                    settings?.Persisted?.ResourceOverrides,
+                    settings?.Persisted);
             }
         }
 

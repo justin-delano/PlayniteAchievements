@@ -373,11 +373,54 @@
                                         <Grid>
                                             <ProgressBar Value="{Binding Progression, Mode=OneWay}"
                                                          Style="{StaticResource OverviewProgressBarStyle}"/>
-                                            <!-- Two stacked halo copies double the outline density behind the text. -->
                                             <TextBlock Text="{Binding ProgressionText}"
-                                                       Style="{StaticResource OverviewProgressPercentTextHaloStyle}"/>
+                                                       Style="{StaticResource OverviewProgressPercentTextOutlineStyle}">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform X="-1" Y="-1"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
                                             <TextBlock Text="{Binding ProgressionText}"
-                                                       Style="{StaticResource OverviewProgressPercentTextHaloStyle}"/>
+                                                       Style="{StaticResource OverviewProgressPercentTextOutlineStyle}">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform X="0" Y="-1"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextOutlineStyle}">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform X="1" Y="-1"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextOutlineStyle}">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform X="-1" Y="0"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextOutlineStyle}">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform X="1" Y="0"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextOutlineStyle}">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform X="-1" Y="1"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextOutlineStyle}">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform X="0" Y="1"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
+                                            <TextBlock Text="{Binding ProgressionText}"
+                                                       Style="{StaticResource OverviewProgressPercentTextOutlineStyle}">
+                                                <TextBlock.RenderTransform>
+                                                    <TranslateTransform X="1" Y="1"/>
+                                                </TextBlock.RenderTransform>
+                                            </TextBlock>
                                             <TextBlock Text="{Binding ProgressionText}"
                                                        Style="{StaticResource OverviewProgressPercentTextStyle}"/>
                                         </Grid>

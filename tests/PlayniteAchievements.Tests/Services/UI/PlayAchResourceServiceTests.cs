@@ -129,6 +129,40 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
+        public void Apply_UsesPersistedRarityColorsForProgressTierBrushes()
+        {
+            var resources = new ResourceDictionary();
+            var settings = new PersistedSettings
+            {
+                RarityColors = new RarityColorSettings
+                {
+                    Common = "#FF010203",
+                    Uncommon = "#FF112233",
+                    Rare = "#FF445566",
+                    UltraRare = "#FF778899",
+                    CompletedStart = "#FFABCDEF",
+                    CompletedEnd = "#FF123456"
+                }
+            };
+
+            PlayAchResourceService.Apply(resources, null, settings);
+
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Common", ParseColor("#FF010203"));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Uncommon", ParseColor("#FF112233"));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Rare", ParseColor("#FF445566"));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.UltraRare", ParseColor("#FF778899"));
+            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Common", ParseColor("#FF010203"));
+            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Uncommon", ParseColor("#FF112233"));
+            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Rare", ParseColor("#FF445566"));
+            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.UltraRare", ParseColor("#FF778899"));
+
+            var completed = resources["PlayAch.Brush.Progress.CompletedFill"] as LinearGradientBrush;
+            Assert.IsNotNull(completed);
+            Assert.AreEqual(ParseColor("#FFABCDEF"), completed.GradientStops.First().Color);
+            Assert.AreEqual(ParseColor("#FF123456"), completed.GradientStops.Last().Color);
+        }
+
+        [TestMethod]
         public void ApplyProgressTierBrushResources_UsesCustomCompletedGradientWhenSupplied()
         {
             var resources = new ResourceDictionary();
