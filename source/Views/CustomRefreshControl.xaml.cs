@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Threading;
 
 namespace PlayniteAchievements.Views
 {
@@ -176,6 +177,7 @@ namespace PlayniteAchievements.Views
         private bool _canRun;
         private CustomRefreshPreset _selectedPreset;
         private CustomRefreshPreset _placeholderPreset;
+        private DispatcherTimer _summaryDebounceTimer;
 
         public event EventHandler RequestClose;
         public event PropertyChangedEventHandler PropertyChanged;
@@ -206,6 +208,13 @@ namespace PlayniteAchievements.Views
                 OnPropertyChanged(nameof(CanLoadPreset));
                 OnPropertyChanged(nameof(CanSavePreset));
                 OnPropertyChanged(nameof(CanDeletePreset));
+
+                // Selecting a preset applies it immediately; the Load button remains as an
+                // explicit way to re-apply the preset after tweaking individual options.
+                if (_selectedPreset?.Options != null)
+                {
+                    ApplySelectedPreset();
+                }
             }
         }
 
@@ -257,7 +266,7 @@ namespace PlayniteAchievements.Views
 
                 _selectedScope = value;
                 OnPropertyChanged(nameof(SelectedScope));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -273,7 +282,7 @@ namespace PlayniteAchievements.Views
 
                 _useRecentLimitOverride = value;
                 OnPropertyChanged(nameof(UseRecentLimitOverride));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -289,7 +298,7 @@ namespace PlayniteAchievements.Views
 
                 _recentLimitOverrideText = value;
                 OnPropertyChanged(nameof(RecentLimitOverrideText));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -305,7 +314,7 @@ namespace PlayniteAchievements.Views
 
                 _useIncludeUnplayedOverride = value;
                 OnPropertyChanged(nameof(UseIncludeUnplayedOverride));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -321,7 +330,7 @@ namespace PlayniteAchievements.Views
 
                 _includeUnplayedOverrideValue = value;
                 OnPropertyChanged(nameof(IncludeUnplayedOverrideValue));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -337,7 +346,7 @@ namespace PlayniteAchievements.Views
 
                 _respectUserExclusions = value;
                 OnPropertyChanged(nameof(RespectUserExclusions));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -353,7 +362,7 @@ namespace PlayniteAchievements.Views
 
                 _forceBypassExclusionsForExplicitIncludes = value;
                 OnPropertyChanged(nameof(ForceBypassExclusionsForExplicitIncludes));
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -573,9 +582,16 @@ namespace PlayniteAchievements.Views
                 option.IsEnabled = isEnabled;
                 option.IsAuthenticated = isEnabled &&
                     await _refreshService.IsProviderAuthenticatedAsync(provider, CancellationToken.None).ConfigureAwait(true);
+
+                // Settle any selection made while this probe was pending (e.g. a preset applied at
+                // window open): a provider confirmed unavailable cannot stay selected.
+                if (!option.IsSelectable && option.IsSelected)
+                {
+                    option.IsSelected = false;
+                }
             }
 
-            RecalculateSummary();
+            ScheduleSummaryRecalculation();
         }
 
         private void InitializeGames()
@@ -783,7 +799,7 @@ namespace PlayniteAchievements.Views
                 e?.PropertyName == nameof(ProviderOptionItem.IsAuthenticated) ||
                 e?.PropertyName == nameof(ProviderOptionItem.IsEnabled))
             {
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -792,7 +808,7 @@ namespace PlayniteAchievements.Views
             if (e?.PropertyName == nameof(GameOptionItem.IsIncluded) ||
                 e?.PropertyName == nameof(GameOptionItem.IsExcluded))
             {
-                RecalculateSummary();
+                ScheduleSummaryRecalculation();
             }
         }
 
@@ -1014,6 +1030,30 @@ namespace PlayniteAchievements.Views
                     GameCustomDataLookup.TryGetProviderOverride(game.Id, out _));
         }
 
+        /// <summary>
+        /// Debounces summary recalculation. Recomputing the estimated-target count walks the whole
+        /// library with per-provider capability checks, so running it synchronously on every checkbox
+        /// toggle makes clicks sluggish; coalesce bursts of changes into one deferred recompute.
+        /// </summary>
+        private void ScheduleSummaryRecalculation()
+        {
+            if (_summaryDebounceTimer == null)
+            {
+                _summaryDebounceTimer = new DispatcherTimer
+                {
+                    Interval = TimeSpan.FromMilliseconds(150)
+                };
+                _summaryDebounceTimer.Tick += (s, e) =>
+                {
+                    _summaryDebounceTimer.Stop();
+                    RecalculateSummary();
+                };
+            }
+
+            _summaryDebounceTimer.Stop();
+            _summaryDebounceTimer.Start();
+        }
+
         private void RecalculateSummary()
         {
             var selectedProviders = GetSelectedProviders();
@@ -1114,7 +1154,13 @@ namespace PlayniteAchievements.Views
                 StringComparer.OrdinalIgnoreCase);
             foreach (var providerOption in ProviderOptions)
             {
-                providerOption.IsSelected = providerOption.IsSelectable &&
+                // Gate only on IsEnabled (known synchronously). IsAuthenticated is probed
+                // asynchronously after the window opens and starts pessimistically false for
+                // session-managed providers (e.g. Steam), so gating on IsSelectable here would
+                // silently drop a preset's providers when it is applied before the probe finishes.
+                // RefreshProviderOptionsAsync deselects any provider whose probe confirms it is
+                // unavailable.
+                providerOption.IsSelected = providerOption.IsEnabled &&
                     providerKeys.Contains(providerOption.ProviderKey);
             }
 
@@ -1145,7 +1191,7 @@ namespace PlayniteAchievements.Views
                 gameOption.IsExcluded = excludeIds.Contains(gameOption.GameId);
             }
 
-            RecalculateSummary();
+            ScheduleSummaryRecalculation();
         }
 
         private void UpsertPreset(string presetName, CustomRefreshOptions options)
@@ -1183,13 +1229,22 @@ namespace PlayniteAchievements.Views
 
         private void LoadPresetButton_Click(object sender, RoutedEventArgs e)
         {
+            ApplySelectedPreset();
+        }
+
+        private void ApplySelectedPreset()
+        {
             if (SelectedPreset?.Options == null)
             {
                 return;
             }
 
+            // Prune against providers that are missing or disabled, not against IsSelectable:
+            // authentication is probed asynchronously and starts pessimistically false, so a
+            // selectable provider would otherwise be pruned when the preset is applied right
+            // after the window opens.
             var availableProviderKeys = ProviderOptions
-                .Where(option => option.IsSelectable)
+                .Where(option => option.IsEnabled)
                 .Select(option => option.ProviderKey)
                 .ToList();
             var availableGameIds = _gamesById.Keys.ToList();
