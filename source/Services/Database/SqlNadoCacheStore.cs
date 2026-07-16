@@ -2754,9 +2754,9 @@ namespace PlayniteAchievements.Services.Database
                     .Where(item => item?.Unlocked == true)
                     .ToList();
 
-                // Recent unlocks are the time-stamped subset of all unlocked achievements, already
-                // ordered by unlock time DESC from the query - derive them in memory rather than
-                // re-running the identical friend/achievement join a second time.
+                // Recent unlocks are the time-stamped subset of all unlocked achievements - derive
+                // them in memory (with an explicit unlock-time sort, since the full load is in
+                // definition order) rather than re-running the identical friend/achievement join.
                 var recentUnlocked = data.AllUnlockedAchievements
                     .Where(item => item.UnlockTimeUtc.HasValue)
                     .OrderByDescending(item => item.UnlockTimeUtc ?? DateTime.MinValue);
@@ -4902,7 +4902,13 @@ namespace PlayniteAchievements.Services.Database
                 args.Add(playniteGameId.Value.ToString("D"));
             }
 
-            sql.Append(" ORDER BY ua.UnlockTimeUtc DESC, u.DisplayName, g.GameName, ad.Id");
+            // Recent-unlock queries stay unlock-time ordered so LIMIT takes the newest rows.
+            // Full comparison loads order by AchievementDefinitions id so each friend+game pair's
+            // rows arrive in the same canonical definition order the non-friend surfaces use,
+            // keeping category-order fallbacks independent of unlock recency and grid sorts.
+            sql.Append(requireUnlockTime
+                ? " ORDER BY ua.UnlockTimeUtc DESC, u.DisplayName, g.GameName, ad.Id"
+                : " ORDER BY u.DisplayName, g.GameName, ad.Id");
             if (recentLimit > 0)
             {
                 sql.Append(" LIMIT ?");
