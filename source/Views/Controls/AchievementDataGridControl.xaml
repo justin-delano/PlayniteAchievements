@@ -294,7 +294,6 @@
                         <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
                                 ClipToBounds="True"
                                 Margin="6,4"
-                                MaxHeight="{Binding FixedRowHeight, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, TargetNullValue=80, FallbackValue=80}"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Background="{DynamicResource PlayAch.Brush.Control.Background}">

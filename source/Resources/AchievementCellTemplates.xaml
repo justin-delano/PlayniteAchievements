@@ -295,14 +295,14 @@
     </DataTemplate>
 
     <!-- Achievement Game Column Template - Icon or Cover with toggle support.
-         The image is bounded by the cell width and the row height (fixed row
-         heights constrain the layout directly; MaxHeight caps auto-sized rows),
-         so Uniform stretch always fits the art inside the cell. -->
+         Sizing is width-driven: the Uniform image fills the column width, so
+         resizing the column grows the art and auto rows grow to match. When a
+         fixed row height is configured it bounds the layout, and Uniform
+         stretch fits the art inside both cell dimensions without clipping. -->
     <DataTemplate x:Key="AchievementGameColumnTemplate">
         <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
                 ClipToBounds="True"
                 Margin="2"
-                MaxHeight="{Binding FixedRowHeight, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, TargetNullValue=84, FallbackValue=84}"
                 HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                 VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                 RenderOptions.BitmapScalingMode="HighQuality"
@@ -334,7 +334,6 @@
         <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
                 ClipToBounds="True"
                 Margin="2"
-                MaxHeight="{Binding FixedRowHeight, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, TargetNullValue=84, FallbackValue=84}"
                 HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
                 VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
                 RenderOptions.BitmapScalingMode="HighQuality"
@@ -362,7 +361,6 @@
     <DataTemplate x:Key="AchievementIconTemplate">
         <Grid HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
               VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-              MaxHeight="{Binding FixedRowHeight, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, TargetNullValue=74, FallbackValue=74}"
               ClipToBounds="False"
               UseLayoutRounding="True"
               SnapsToDevicePixels="True">

@@ -120,13 +120,13 @@
                 </DataGridTemplateColumn.HeaderTemplate>
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <!-- Bounded by the cell width and the row height (fixed row heights
-                             constrain the layout directly; MaxHeight caps auto-sized rows),
-                             so Uniform stretch always fits the art inside the cell. -->
+                        <!-- Width-driven: the Uniform image fills the column width, so resizing
+                             the column grows the art and auto rows grow to match. A configured
+                             fixed row height bounds the layout instead, and Uniform stretch then
+                             fits the art inside both cell dimensions without clipping. -->
                         <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
                                 ClipToBounds="True"
                                 Margin="6,8"
-                                MaxHeight="{Binding FixedRowHeight, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}, TargetNullValue=95, FallbackValue=95}"
                                 RenderOptions.BitmapScalingMode="HighQuality"
                                 UseLayoutRounding="True"
                                 SnapsToDevicePixels="True"
