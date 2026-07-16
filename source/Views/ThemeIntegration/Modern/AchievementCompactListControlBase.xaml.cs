@@ -5,10 +5,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
-using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
@@ -28,8 +26,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
     /// </summary>
     public abstract class AchievementCompactListControlBase : ThemeControlBase
     {
-        private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(AchievementCompactListControlBase));
-
         /// <summary>
         /// Gets a value indicating whether this control should subscribe to theme data change notifications.
         /// </summary>
@@ -171,11 +167,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected AchievementCompactListControlBase()
         {
             DataContext = this;
-            AddHandler(
-                MouseLeftButtonDownEvent,
-                new MouseButtonEventHandler((s, e) =>
-                    _logger.Debug($"Compact list bubble: handled={e.Handled}, source={e.OriginalSource?.GetType().Name}")),
-                handledEventsToo: true);
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
@@ -186,38 +177,6 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
             LoadData();
             // Attach mouse wheel handler for horizontal scrolling
             PreviewMouseWheel += OnPreviewMouseWheel;
-            AttachClickRouteProbes();
-        }
-
-        private bool _clickProbesAttached;
-
-        private void AttachClickRouteProbes()
-        {
-            if (_clickProbesAttached)
-            {
-                return;
-            }
-
-            var itemsControl = VisualTreeHelpers.FindVisualChildren<ItemsControl>(this).FirstOrDefault();
-            if (itemsControl == null)
-            {
-                _logger.Debug("Click probe: no ItemsControl found in visual tree.");
-                return;
-            }
-
-            _clickProbesAttached = true;
-            itemsControl.AddHandler(
-                MouseLeftButtonDownEvent,
-                new MouseButtonEventHandler((s, args) =>
-                    _logger.Debug($"Compact itemscontrol bubble: handled={args.Handled}, source={args.OriginalSource?.GetType().Name}")),
-                handledEventsToo: true);
-
-            var scrollViewer = VisualTreeHelpers.FindVisualChildren<ScrollViewer>(itemsControl).FirstOrDefault();
-            scrollViewer?.AddHandler(
-                MouseLeftButtonDownEvent,
-                new MouseButtonEventHandler((s, args) =>
-                    _logger.Debug($"Compact scrollviewer bubble: handled={args.Handled}, source={args.OriginalSource?.GetType().Name}")),
-                handledEventsToo: true);
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs e)
