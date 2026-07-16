@@ -465,6 +465,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _showColumnHeaders = true;
         private double? _rowHeight;
         private bool _useCoverImages;
+        private bool _showCompletionGlow = true;
 
         public GridColumnLayoutOptions Columns
         {
@@ -492,6 +493,12 @@ namespace PlayniteAchievements.Models.Settings
             set => SetValue(ref _useCoverImages, value);
         }
 
+        public bool ShowCompletionGlow
+        {
+            get => _showCompletionGlow;
+            set => SetValue(ref _showCompletionGlow, value);
+        }
+
         public CategorySummaryGridOptions Clone()
         {
             return new CategorySummaryGridOptions
@@ -499,7 +506,8 @@ namespace PlayniteAchievements.Models.Settings
                 Columns = Columns?.Clone() ?? GridColumnLayoutOptions.CreateWithProgressRightAlignment(),
                 ShowColumnHeaders = ShowColumnHeaders,
                 RowHeight = RowHeight,
-                UseCoverImages = UseCoverImages
+                UseCoverImages = UseCoverImages,
+                ShowCompletionGlow = ShowCompletionGlow
             };
         }
     }
