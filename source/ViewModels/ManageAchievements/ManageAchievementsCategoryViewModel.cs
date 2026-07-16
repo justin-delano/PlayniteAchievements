@@ -57,7 +57,9 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
         private readonly HashSet<string> _selectedCategoryLabelFilters =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private bool _hasCustomOverrides;
-        private bool _hasCustomCategoryMetadata;
+        private bool _hasCustomCategoryOrder;
+        private bool _hasCustomCategoryNames;
+        private bool _hasCustomCategoryArt;
         private bool _hasCategoryImageChanges;
         private bool _hasCategoryImageValidationErrors;
         private bool _isSavingCategoryImages;
@@ -196,10 +198,42 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             private set => SetValue(ref _hasCustomOverrides, value);
         }
 
-        public bool HasCustomCategoryMetadata
+        public bool HasCustomCategoryMetadata => HasCustomCategoryOrder || HasCustomCategoryNames || HasCustomCategoryArt;
+
+        public bool HasCustomCategoryOrder
         {
-            get => _hasCustomCategoryMetadata;
-            private set => SetValue(ref _hasCustomCategoryMetadata, value);
+            get => _hasCustomCategoryOrder;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasCustomCategoryOrder, value))
+                {
+                    OnPropertyChanged(nameof(HasCustomCategoryMetadata));
+                }
+            }
+        }
+
+        public bool HasCustomCategoryNames
+        {
+            get => _hasCustomCategoryNames;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasCustomCategoryNames, value))
+                {
+                    OnPropertyChanged(nameof(HasCustomCategoryMetadata));
+                }
+            }
+        }
+
+        public bool HasCustomCategoryArt
+        {
+            get => _hasCustomCategoryArt;
+            private set
+            {
+                if (SetValueAndReturn(ref _hasCustomCategoryArt, value))
+                {
+                    OnPropertyChanged(nameof(HasCustomCategoryMetadata));
+                }
+            }
         }
 
         public bool HasCategoryImageChanges
@@ -472,7 +506,7 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 OnPropertyChanged(nameof(SelectedCategoryLabelFilterText));
                 HasAchievements = false;
                 HasCustomOverrides = false;
-                HasCustomCategoryMetadata = false;
+                SetCustomCategoryMetadataState(hasOrder: false, hasNames: false, hasArt: false);
                 SetCategoryImageStatus(
                     string.Format(L("LOCPlayAch_Status_Failed", "Error: {0}"), ex.Message),
                     isError: true);
@@ -496,19 +530,51 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             return true;
         }
 
-        public bool ResetCategoryMetadata()
+        public bool ResetCategoryOrder()
         {
             var order = GameCustomDataLookup.GetAchievementCategoryOrder(_gameId, _settings?.Persisted);
-            var images = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
-            if ((order == null || order.Count == 0) &&
-                (images == null || images.Count == 0))
+            if (order == null || order.Count == 0)
             {
                 return false;
             }
 
+            var images = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
+            _achievementOverridesService.SetAchievementCategoryMetadata(_gameId, Array.Empty<string>(), images);
+            RefreshCategoryRows();
+            return true;
+        }
+
+        public bool ResetCategoryNames()
+        {
+            var renames = CategoryRows
+                .Where(row => row != null &&
+                              !string.IsNullOrWhiteSpace(row.CategoryLabel) &&
+                              !string.IsNullOrWhiteSpace(row.ProviderCategoryLabel) &&
+                              !string.Equals(row.CategoryLabel, row.ProviderCategoryLabel, StringComparison.OrdinalIgnoreCase))
+                .Select(row => new { Source = row.CategoryLabel, Target = row.ProviderCategoryLabel })
+                .ToList();
+
+            var renamed = false;
+            foreach (var rename in renames)
+            {
+                renamed |= RenameCategoryLabel(rename.Source, rename.Target);
+            }
+
+            return renamed;
+        }
+
+        public bool ResetCategoryArt()
+        {
+            var images = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
+            if (images == null || images.Count == 0)
+            {
+                return false;
+            }
+
+            var order = GameCustomDataLookup.GetAchievementCategoryOrder(_gameId, _settings?.Persisted);
             _achievementOverridesService.SetAchievementCategoryMetadata(
                 _gameId,
-                Array.Empty<string>(),
+                order,
                 new Dictionary<string, CategoryImageOverrideData>(StringComparer.OrdinalIgnoreCase));
             RefreshCategoryRows();
             return true;
@@ -1173,15 +1239,14 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
             if (groups.Count == 0)
             {
                 ReplaceCategoryRows(Array.Empty<ManageAchievementsCategoryMetadataItem>());
-                HasCustomCategoryMetadata = false;
+                SetCustomCategoryMetadataState(hasOrder: false, hasNames: false, hasArt: false);
                 return;
             }
 
             var categoryOrder = GameCustomDataLookup.GetAchievementCategoryOrder(_gameId, _settings?.Persisted);
             var categoryImages = GameCustomDataLookup.GetAchievementCategoryImageOverrides(_gameId, _settings?.Persisted);
-            HasCustomCategoryMetadata =
-                (categoryOrder != null && categoryOrder.Count > 0) ||
-                (categoryImages != null && categoryImages.Count > 0);
+            HasCustomCategoryOrder = categoryOrder != null && categoryOrder.Count > 0;
+            HasCustomCategoryArt = categoryImages != null && categoryImages.Count > 0;
 
             var orderedLabels = AchievementCategoryFilterOrderHelper.BuildOrderedCategoryLabels(
                 _definitionOrderedRows.Count > 0 ? _definitionOrderedRows : _allRows,
@@ -1215,6 +1280,8 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                     _managedCustomIconService));
             }
 
+            HasCustomCategoryNames = rows.Any(row =>
+                !string.Equals(row.CategoryLabel, row.ProviderCategoryLabel, StringComparison.OrdinalIgnoreCase));
             ReplaceCategoryRows(rows);
         }
 
@@ -1299,7 +1366,15 @@ namespace PlayniteAchievements.ViewModels.ManageAchievements
                 _gameId,
                 categoryOrder,
                 imageOverrides);
-            HasCustomCategoryMetadata = categoryOrder.Count > 0 || imageOverrides.Count > 0;
+            HasCustomCategoryOrder = categoryOrder.Count > 0;
+            HasCustomCategoryArt = imageOverrides.Count > 0;
+        }
+
+        private void SetCustomCategoryMetadataState(bool hasOrder, bool hasNames, bool hasArt)
+        {
+            HasCustomCategoryOrder = hasOrder;
+            HasCustomCategoryNames = hasNames;
+            HasCustomCategoryArt = hasArt;
         }
 
         private void RenameCategoryMetadata(string sourceCategory, string targetCategory)

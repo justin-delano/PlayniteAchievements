@@ -691,12 +691,43 @@ namespace PlayniteAchievements.Views.ManageAchievements
 
         private void ResetCategoryMetadataButton_Click(object sender, RoutedEventArgs e)
         {
-            if (ViewModel?.ResetCategoryMetadata() == true)
+            if (ViewModel == null)
+            {
+                return;
+            }
+
+            var menu = new ContextMenu();
+            menu.Items.Add(CreateResetMenuItem(
+                L("LOCPlayAch_ManageAchievements_Tab_AchievementOrder", "Order"),
+                ViewModel.HasCustomCategoryOrder,
+                () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryOrder)));
+            menu.Items.Add(CreateResetMenuItem(
+                L("LOCPlayAch_Column_Name", "Name"),
+                ViewModel.HasCustomCategoryNames,
+                () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryNames)));
+            menu.Items.Add(CreateResetMenuItem(
+                L("LOCPlayAch_Column_CategoryArt", "Category Art"),
+                ViewModel.HasCustomCategoryArt,
+                () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryArt)));
+
+            ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);
+            OpenSelectorContextMenu(ResetCategoryMetadataButton, menu);
+            e.Handled = true;
+        }
+
+        private MenuItem CreateResetMenuItem(string header, bool isEnabled, Action onClick)
+        {
+            var item = CreateMenuItem(header, onClick);
+            item.IsEnabled = isEnabled;
+            return item;
+        }
+
+        private void ResetCategoryMetadataAspect(Func<bool> reset)
+        {
+            if (reset?.Invoke() == true)
             {
                 DataGridRowReorderBehavior.CancelPendingDrag(CategoryManagerDataGrid);
             }
-
-            e.Handled = true;
         }
 
         private void SetAllSelectableRows(bool selected)
