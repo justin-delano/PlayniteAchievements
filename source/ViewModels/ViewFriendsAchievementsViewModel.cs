@@ -251,7 +251,7 @@ namespace PlayniteAchievements.ViewModels
             ? string.Format(
                 L("LOCPlayAch_FriendsOverview_SelectedFriendAchievements", "{0} Achievements"),
                 SelectedFriend.DisplayName)
-            : L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "Friends Achievements");
+            : L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "View Friends Achievements");
 
         public string AchievementCountText
         {
@@ -771,7 +771,7 @@ namespace PlayniteAchievements.ViewModels
                 _logger?.Debug(ex, $"Failed to resolve game name for {_gameId}.");
             }
 
-            return L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "Friends Achievements");
+            return L("LOCPlayAch_ViewFriendsAchievements_TitleFallback", "View Friends Achievements");
         }
 
         private static string L(string key, string fallback)
