@@ -5,8 +5,10 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Playnite.SDK;
 using Playnite.SDK.Models;
 using PlayniteAchievements.Common;
+using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Models.ThemeIntegration;
@@ -26,6 +28,8 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
     /// </summary>
     public abstract class AchievementCompactListControlBase : ThemeControlBase
     {
+        private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(AchievementCompactListControlBase));
+
         /// <summary>
         /// Gets a value indicating whether this control should subscribe to theme data change notifications.
         /// </summary>
@@ -381,6 +385,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e)
         {
             base.OnMouseLeftButtonDown(e);
+            _logger.Debug($"Compact list click: source={e.OriginalSource?.GetType().Name}, handled={e.Handled}");
             if (e.Handled)
             {
                 return;
@@ -390,6 +395,7 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Modern
                 e.OriginalSource as DependencyObject);
             if (!(itemControl?.DataContext is AchievementDisplayItem item))
             {
+                _logger.Debug($"Compact list click: no item under source (itemControl={(itemControl == null ? "null" : "found")}, dataContext={itemControl?.DataContext?.GetType().Name ?? "null"}).");
                 return;
             }
 
