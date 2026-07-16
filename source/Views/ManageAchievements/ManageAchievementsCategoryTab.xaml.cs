@@ -418,7 +418,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
             if (CategorySubTabs?.SelectedIndex == 1)
             {
                 elements.Add(RevertCategoryImagesButton);
-                elements.Add(ClearCategoryImagesButton);
                 elements.Add(SaveCategoryImagesButton);
                 elements.Add(ResetCategoryMetadataButton);
                 elements.Add(OpenCategoryImagesFolderButton);
