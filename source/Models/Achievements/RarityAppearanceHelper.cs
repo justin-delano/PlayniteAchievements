@@ -149,7 +149,8 @@ namespace PlayniteAchievements.Models.Achievements
         /// progress-bar style can color by progress quartile and switch to the completed
         /// gradient via DynamicResource. Solid Rarity brushes back the bar border; the
         /// TierFill brushes add the same diagonal shine the rarity badges use; the completed
-        /// fill reuses the badge gradient (rainbow default, the user's gradient when supplied).
+        /// fill is always the CompletedStart -> CompletedEnd gradient (the badge's rainbow
+        /// default stays badge-only).
         /// </summary>
         public static void ApplyProgressTierBrushResources(ResourceDictionary resources, PersistedSettings settings = null)
         {
@@ -166,7 +167,7 @@ namespace PlayniteAchievements.Models.Achievements
             resources["PlayAch.Brush.Progress.TierFill.Uncommon"] = CreateShineBrush(GetBaseColor(RarityTier.Uncommon, settings));
             resources["PlayAch.Brush.Progress.TierFill.Rare"] = CreateShineBrush(GetBaseColor(RarityTier.Rare, settings));
             resources["PlayAch.Brush.Progress.TierFill.UltraRare"] = CreateShineBrush(GetBaseColor(RarityTier.UltraRare, settings));
-            resources["PlayAch.Brush.Progress.CompletedFill"] = CreateCompletedGradientBrush(settings);
+            resources["PlayAch.Brush.Progress.CompletedFill"] = CreateCompletedColorGradientBrush(settings);
         }
 
         public static Color GetCompletedStartColor(PersistedSettings settings = null)
@@ -552,6 +553,11 @@ namespace PlayniteAchievements.Models.Achievements
                 }
             }
 
+            return CreateCompletedColorGradientBrush(settings);
+        }
+
+        private static Brush CreateCompletedColorGradientBrush(PersistedSettings settings)
+        {
             var startColor = GetCompletedStartColor(settings);
             var endColor = GetCompletedEndColor(settings);
 

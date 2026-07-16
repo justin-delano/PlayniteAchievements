@@ -117,10 +117,13 @@ namespace PlayniteAchievements.Tests.Services.UI
             AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Rare", ParseColor(RarityColorSettings.DefaultRare));
             AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.UltraRare", ParseColor(RarityColorSettings.DefaultUltraRare));
 
-            // Default completed colors resolve to the badge's rainbow brush in the app, or the
-            // constructed gradient fallback when the static dictionary is unavailable.
-            Assert.IsTrue(resources.Contains("PlayAch.Brush.Progress.CompletedFill"));
-            Assert.IsNotNull(resources["PlayAch.Brush.Progress.CompletedFill"] as Brush);
+            // The completed fill is always the CompletedStart -> CompletedEnd gradient;
+            // the badge's rainbow default never applies to the bar.
+            var completed = resources["PlayAch.Brush.Progress.CompletedFill"] as LinearGradientBrush;
+            Assert.IsNotNull(completed);
+            Assert.IsTrue(completed.IsFrozen);
+            Assert.AreEqual(ParseColor(RarityColorSettings.DefaultCompletedStart), completed.GradientStops.First().Color);
+            Assert.AreEqual(ParseColor(RarityColorSettings.DefaultCompletedEnd), completed.GradientStops.Last().Color);
         }
 
         [TestMethod]

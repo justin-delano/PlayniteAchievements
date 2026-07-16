@@ -225,6 +225,14 @@
         <Setter Property="HorizontalAlignment" Value="Center"/>
         <Setter Property="TextAlignment" Value="Center"/>
         <Setter Property="Margin" Value="0"/>
+        <!-- Zero-depth shadow outlines the percent text so it stays readable over the
+             bright tier-fill gradients. Effects take a Color, not a Brush, so this uses
+             the shadow color token rather than a text brush. -->
+        <Setter Property="Effect">
+            <Setter.Value>
+                <DropShadowEffect Color="{StaticResource PlayAch.Color.Shadow}" ShadowDepth="0" BlurRadius="3" Opacity="0.9"/>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style x:Key="OverviewProgressMetaRowStyle" TargetType="StackPanel">
