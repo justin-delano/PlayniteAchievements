@@ -139,28 +139,18 @@ namespace PlayniteAchievements.Models.Achievements
         }
 
         /// <summary>
-        /// Publishes the per-tier rarity brushes and the completed progress-bar fill so the
-        /// progress-bar style can color by progress quartile and switch to the completed
-        /// gradient via DynamicResource. Solid Rarity brushes back the bar border; the
-        /// TierFill brushes add the same diagonal shine the rarity badges use; the completed
-        /// fill is always a plain CompletedStart -> CompletedEnd sweep (the badge's rainbow
-        /// default and highlight band stay badge-only).
+        /// Publishes the completed progress-bar fill so the progress-bar style can switch to
+        /// the completed gradient via DynamicResource. The fill is always a plain
+        /// CompletedStart -> CompletedEnd sweep (the badge's rainbow default and highlight
+        /// band stay badge-only).
         /// </summary>
-        public static void ApplyProgressTierBrushResources(ResourceDictionary resources, PersistedSettings settings = null)
+        public static void ApplyCompletedProgressFillResource(ResourceDictionary resources, PersistedSettings settings = null)
         {
             if (resources == null)
             {
                 return;
             }
 
-            resources["PlayAch.Brush.Rarity.Common"] = GetBrush(RarityTier.Common, settings);
-            resources["PlayAch.Brush.Rarity.Uncommon"] = GetBrush(RarityTier.Uncommon, settings);
-            resources["PlayAch.Brush.Rarity.Rare"] = GetBrush(RarityTier.Rare, settings);
-            resources["PlayAch.Brush.Rarity.UltraRare"] = GetBrush(RarityTier.UltraRare, settings);
-            resources["PlayAch.Brush.Progress.TierFill.Common"] = CreateShineBrush(GetBaseColor(RarityTier.Common, settings));
-            resources["PlayAch.Brush.Progress.TierFill.Uncommon"] = CreateShineBrush(GetBaseColor(RarityTier.Uncommon, settings));
-            resources["PlayAch.Brush.Progress.TierFill.Rare"] = CreateShineBrush(GetBaseColor(RarityTier.Rare, settings));
-            resources["PlayAch.Brush.Progress.TierFill.UltraRare"] = CreateShineBrush(GetBaseColor(RarityTier.UltraRare, settings));
             resources["PlayAch.Brush.Progress.CompletedFill"] = CreateCompletedProgressFillBrush(settings);
         }
 
@@ -318,7 +308,7 @@ namespace PlayniteAchievements.Models.Achievements
             SetGeneratedBadge(resources, RarityTier.Rare, "BadgeGoldHexagon");
             SetGeneratedBadge(resources, RarityTier.UltraRare, "BadgePlatinumHexagon");
             ApplyCompletedGameBrushResource(resources, settings);
-            ApplyProgressTierBrushResources(resources, settings);
+            ApplyCompletedProgressFillResource(resources, settings);
             var completedBadge = CreateCompletedBadgeImage(settings);
             resources["BadgeCompletedGame"] = completedBadge;
             // Runtime-only alias with no static definition in RarityBadges.xaml, mirroring the
