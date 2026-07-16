@@ -119,6 +119,8 @@ namespace PlayniteAchievements
 
         // Tagging
         private readonly object _tagSyncGate = new object();
+        private readonly HashSet<Guid> _pendingTagSyncIds = new HashSet<Guid>();
+        private bool _tagSyncDrainRunning;
         private TagSyncService _tagSyncService;
 
         public override Guid Id { get; } =
@@ -1278,20 +1280,50 @@ namespace PlayniteAchievements
                 return;
             }
 
-            _ = Task.Run(() =>
+            // Accumulate ids and let a single drainer sync them in batches. Ids that
+            // arrive while a batch is running (e.g. per-game refresh events during a
+            // large scan) are picked up by the next batch, so the Playnite database
+            // sees a few batched writes instead of one write per game.
+            lock (_tagSyncGate)
             {
+                _pendingTagSyncIds.Add(gameId);
+                if (_tagSyncDrainRunning)
+                {
+                    return;
+                }
+
+                _tagSyncDrainRunning = true;
+            }
+
+            _ = Task.Run(() => DrainPendingTagSyncs(tagSyncService));
+        }
+
+        private void DrainPendingTagSyncs(TagSyncService tagSyncService)
+        {
+            while (true)
+            {
+                List<Guid> batch;
+                lock (_tagSyncGate)
+                {
+                    if (_pendingTagSyncIds.Count == 0)
+                    {
+                        _tagSyncDrainRunning = false;
+                        return;
+                    }
+
+                    batch = _pendingTagSyncIds.ToList();
+                    _pendingTagSyncIds.Clear();
+                }
+
                 try
                 {
-                    lock (_tagSyncGate)
-                    {
-                        tagSyncService.SyncTagsForGames(new List<Guid> { gameId });
-                    }
+                    tagSyncService.SyncTagsForGames(batch);
                 }
                 catch (Exception ex)
                 {
-                    _logger?.Debug(ex, $"Failed to sync tags after custom-data change for gameId={gameId}.");
+                    _logger?.Debug(ex, $"Failed queued tag sync for {batch.Count} game(s).");
                 }
-            });
+            }
         }
 
         private void OnAchievementGameRefreshed(Guid gameId)
@@ -1299,8 +1331,9 @@ namespace PlayniteAchievements
             var persisted = _settingsViewModel?.Settings?.Persisted;
             if (_tagSyncService != null && persisted?.TaggingSettings?.EnableTagging == true)
             {
-                // Queued off-thread behind the tag-sync gate so the Playnite DB write (and its
-                // ItemUpdated fan-out) does not run inside the provider's per-game refresh loop.
+                // Queued off-thread into the batched tag-sync drainer so the Playnite DB
+                // write (and its ItemUpdated fan-out) does not run inside the provider's
+                // per-game refresh loop.
                 QueueTagSync(gameId);
             }
 

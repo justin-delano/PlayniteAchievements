@@ -255,38 +255,43 @@ namespace PlayniteAchievements.Services.Tagging
                 targetCompletionStatusId = GetCompletionStatusId();
             }
 
-            foreach (var game in games)
+            // Buffer database writes so all game updates in this pass raise a single
+            // coalesced ItemUpdated event instead of one event per game.
+            using (_api.Database.BufferedUpdate())
             {
-                if (game == null) continue;
-
-                if (progress != null)
+                foreach (var game in games)
                 {
-                    progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_SyncingProgress")}: {game.Name}";
-                    progress.CurrentProgressValue++;
-                }
+                    if (game == null) continue;
 
-                try
-                {
-                    var tagTypes = DetermineTagTypes(game);
-                    if (SyncGameTags(game, tagConfigs, tagTypes, allManagedTagIds))
+                    if (progress != null)
                     {
-                        updatedCount++;
+                        progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_SyncingProgress")}: {game.Name}";
+                        progress.CurrentProgressValue++;
                     }
 
-                    // Also update completion status in the same pass
-                    if (targetCompletionStatusId.HasValue)
+                    try
                     {
-                        if (tagTypes.Contains(TagType.Completed) &&
-                            game.CompletionStatusId != targetCompletionStatusId.Value)
+                        var tagTypes = DetermineTagTypes(game);
+                        if (SyncGameTags(game, tagConfigs, tagTypes, allManagedTagIds))
                         {
-                            game.CompletionStatusId = targetCompletionStatusId.Value;
-                            _api.Database.Games.Update(game);
+                            updatedCount++;
+                        }
+
+                        // Also update completion status in the same pass
+                        if (targetCompletionStatusId.HasValue)
+                        {
+                            if (tagTypes.Contains(TagType.Completed) &&
+                                game.CompletionStatusId != targetCompletionStatusId.Value)
+                            {
+                                game.CompletionStatusId = targetCompletionStatusId.Value;
+                                _api.Database.Games.Update(game);
+                            }
                         }
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error(ex, $"Failed to sync tags for game {game.Name}");
+                    catch (Exception ex)
+                    {
+                        _logger.Error(ex, $"Failed to sync tags for game {game.Name}");
+                    }
                 }
             }
 
@@ -315,30 +320,35 @@ namespace PlayniteAchievements.Services.Tagging
                     ? GetCompletionStatusId()
                     : (Guid?)null;
 
-                foreach (var gameId in gameIds)
+                // Buffer database writes so all game updates in this batch raise a single
+                // coalesced ItemUpdated event instead of one event per game.
+                using (_api.Database.BufferedUpdate())
                 {
-                    var game = _api.Database.Games.Get(gameId);
-                    if (game == null) continue;
-
-                    try
+                    foreach (var gameId in gameIds)
                     {
-                        var tagTypes = DetermineTagTypes(game);
-                        SyncGameTags(game, tagConfigs, tagTypes);
+                        var game = _api.Database.Games.Get(gameId);
+                        if (game == null) continue;
 
-                        // Also update completion status if enabled
-                        if (targetStatusId.HasValue)
+                        try
                         {
-                            if (tagTypes.Contains(TagType.Completed) &&
-                                game.CompletionStatusId != targetStatusId.Value)
+                            var tagTypes = DetermineTagTypes(game);
+                            SyncGameTags(game, tagConfigs, tagTypes);
+
+                            // Also update completion status if enabled
+                            if (targetStatusId.HasValue)
                             {
-                                game.CompletionStatusId = targetStatusId.Value;
-                                _api.Database.Games.Update(game);
+                                if (tagTypes.Contains(TagType.Completed) &&
+                                    game.CompletionStatusId != targetStatusId.Value)
+                                {
+                                    game.CompletionStatusId = targetStatusId.Value;
+                                    _api.Database.Games.Update(game);
+                                }
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex, $"Failed to sync tags for game {game.Name}");
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, $"Failed to sync tags for game {game.Name}");
+                        }
                     }
                 }
 
@@ -662,24 +672,29 @@ namespace PlayniteAchievements.Services.Tagging
 
                 var removedCount = 0;
 
-                foreach (var game in games)
+                // Buffer database writes so all game updates in this pass raise a single
+                // coalesced ItemUpdated event instead of one event per game.
+                using (_api.Database.BufferedUpdate())
                 {
-                    if (game == null) continue;
-
-                    progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_RemovingProgress")}: {game.Name}";
-                    progress.CurrentProgressValue++;
-
-                    try
+                    foreach (var game in games)
                     {
-                        if (RemoveManagedTags(game))
+                        if (game == null) continue;
+
+                        progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_RemovingProgress")}: {game.Name}";
+                        progress.CurrentProgressValue++;
+
+                        try
                         {
-                            _api.Database.Games.Update(game);
-                            removedCount++;
+                            if (RemoveManagedTags(game))
+                            {
+                                _api.Database.Games.Update(game);
+                                removedCount++;
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex, $"Failed to remove tags for game {game.Name}");
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, $"Failed to remove tags for game {game.Name}");
+                        }
                     }
                 }
 
@@ -817,26 +832,31 @@ namespace PlayniteAchievements.Services.Tagging
 
                 var updatedCount = 0;
 
-                foreach (var game in games)
+                // Buffer database writes so all game updates in this pass raise a single
+                // coalesced ItemUpdated event instead of one event per game.
+                using (_api.Database.BufferedUpdate())
                 {
-                    if (game == null) continue;
-
-                    progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_SyncingProgress")}: {game.Name}";
-                    progress.CurrentProgressValue++;
-
-                    try
+                    foreach (var game in games)
                     {
-                        var tagType = DetermineTagType(game);
-                        if (tagType == TagType.Completed && game.CompletionStatusId != targetStatusId)
+                        if (game == null) continue;
+
+                        progress.Text = $"{ResourceProvider.GetString("LOCPlayAch_Tagging_SyncingProgress")}: {game.Name}";
+                        progress.CurrentProgressValue++;
+
+                        try
                         {
-                            game.CompletionStatusId = targetStatusId.Value;
-                            _api.Database.Games.Update(game);
-                            updatedCount++;
+                            var tagType = DetermineTagType(game);
+                            if (tagType == TagType.Completed && game.CompletionStatusId != targetStatusId)
+                            {
+                                game.CompletionStatusId = targetStatusId.Value;
+                                _api.Database.Games.Update(game);
+                                updatedCount++;
+                            }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex, $"Failed to update completion status for game {game.Name}");
+                        catch (Exception ex)
+                        {
+                            _logger.Error(ex, $"Failed to update completion status for game {game.Name}");
+                        }
                     }
                 }
 
