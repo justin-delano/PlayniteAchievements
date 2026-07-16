@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
+using Playnite.SDK;
+using PlayniteAchievements.Services.Logging;
 using PlayniteAchievements.ViewModels;
 using PlayniteAchievements.ViewModels.Items;
 
@@ -14,6 +16,8 @@ namespace PlayniteAchievements.Views.Controls
     /// </summary>
     public partial class AchievementCompactItemControl : UserControl
     {
+        private static readonly ILogger _logger = PluginLogger.GetLogger(nameof(AchievementCompactItemControl));
+
         private bool _reopenToolTipAfterReveal;
 
         public static readonly DependencyProperty IconSizeProperty =
@@ -54,10 +58,13 @@ namespace PlayniteAchievements.Views.Controls
 
         private void OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
+            var item = DataContext as AchievementDisplayItem;
+            _logger.Debug($"Compact item click: item={(item == null ? "null" : item.DisplayName)}, canReveal={item?.CanReveal}, isRevealed={item?.IsRevealed}");
+
             // Consume only the click that reveals an obscured achievement; revealed
             // (or never-obscured) items let the click bubble so the hosting list can
             // open the achievements window focused on this achievement.
-            if (DataContext is AchievementDisplayItem item && item.CanReveal && !item.IsRevealed)
+            if (item != null && item.CanReveal && !item.IsRevealed)
             {
                 _reopenToolTipAfterReveal = ItemToolTip?.IsOpen == true;
                 item.ToggleReveal();
