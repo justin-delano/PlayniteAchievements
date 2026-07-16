@@ -1825,13 +1825,14 @@ namespace PlayniteAchievements.Services.Tests
 
             Assert.AreEqual(2, friends.GetOwnedGamesCalls);
             Assert.AreEqual(2, cache.SaveFriendOwnershipCalls);
-            // Exophase friend achievement scrapes include the schema, so a separate definition page
-            // prefetch would duplicate the same rendered Exophase page work.
-            Assert.AreEqual(0, friends.GetFriendGameDefinitionCalls);
+            // Exophase friend unlocks come from the earned-awards JSON endpoint whose rows carry
+            // only stable award ids, so the mapped game's schema comes from a single definition
+            // fetch shared across all friends.
+            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
         }
 
         [TestMethod]
-        public async Task RefreshAsync_ExophaseFullScope_SkipsRowsWithoutProfileAchievementProgress()
+        public async Task RefreshAsync_ExophaseFullScope_ProbesUnknownHintRowsAndSkipsZeroTotalRows()
         {
             var playniteGameId = Guid.NewGuid();
             var cache = new FakeFriendCache
@@ -1882,10 +1883,16 @@ namespace PlayniteAchievements.Services.Tests
                 .ConfigureAwait(false);
 
             Assert.AreEqual(1, friends.GetOwnedGamesCalls);
-            Assert.AreEqual(0, friends.GetFriendGameDefinitionCalls);
-            Assert.AreEqual(0, friends.GetFriendGameAchievementsCalls);
-            Assert.AreEqual(0, cache.SaveFriendGameDefinitionCalls);
-            Assert.AreEqual(0, cache.SaveFriendGameAchievementsCalls);
+            // The mapped game is refreshed regardless of hints: one eager schema (definition) fetch
+            // and one unlock scrape.
+            Assert.AreEqual(1, friends.GetFriendGameDefinitionCalls);
+            Assert.AreEqual(1, cache.SaveFriendGameDefinitionCalls);
+            // Two unlock scrapes: the mapped game plus the probe of the unknown-hint provider-only
+            // row (probed rather than silently dropped). The zero-total row is never fetched.
+            Assert.AreEqual(2, friends.GetFriendGameAchievementsCalls);
+            // The empty probe leaves no trace, so only the mapped game's rows are saved.
+            Assert.AreEqual(1, cache.SaveFriendGameAchievementsCalls);
+            Assert.AreEqual(0, cache.SaveProviderOnlyOwnershipCalls);
         }
 
         [TestMethod]

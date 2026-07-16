@@ -4809,11 +4809,6 @@ namespace PlayniteAchievements.Services.Database
             return LoadFriendAchievementRows(db, 0, requireUnlockTime: false, unlockedOnly: false);
         }
 
-        private static List<FriendRecentUnlockRow> LoadFriendUnlockedAchievementRows(SQLiteDatabase db)
-        {
-            return LoadFriendAchievementRows(db, 0, requireUnlockTime: false, unlockedOnly: true);
-        }
-
         // Rows are driven from the game's full AchievementDefinitions schema with the friend's
         // stored unlock rows LEFT JOINed on the stable definition key, so the friend+game pair
         // view always shows every achievement of the game with the friend's unlock state per

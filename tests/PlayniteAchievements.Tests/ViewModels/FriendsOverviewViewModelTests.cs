@@ -724,14 +724,20 @@ namespace PlayniteAchievements.Tests.ViewModels
             var viewModel = CreateViewModel(data);
             viewModel.LoadAsync().GetAwaiter().GetResult();
 
+            // Type/category options are game-specific vocabulary: they are only populated once a
+            // single game is selected (with no game selected the option lists are cleared and any
+            // selections are pruned, so the dropdowns auto-hide).
             viewModel.SetProviderFilter("Steam");
             viewModel.FriendSearchText = "ali";
-            viewModel.SelectedFriend = data.Friends[0];
+            viewModel.SelectedGame = data.Games[0];
             viewModel.SetTypeFilterSelected("Story", true);
             viewModel.SetCategoryFilterSelected("Main", true);
 
+            // Game One has two unlocked rows (Alice's Challenge/Side, Bob's Story/Main); the type
+            // and category filters compose to keep only Bob's row while the friend search filters
+            // the friends grid independently.
             CollectionAssert.AreEqual(
-                new[] { "Alice Game Two" },
+                new[] { "Bob Game One" },
                 viewModel.DisplayedAchievements.Select(item => item.DisplayName).ToArray());
             CollectionAssert.AreEqual(
                 new[] { "Alice" },
