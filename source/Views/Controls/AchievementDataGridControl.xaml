@@ -254,7 +254,7 @@
             <DataGridTemplateColumn x:Name="GameColumn"
                                     Width="96"
                                     MinWidth="32"
-                                    MaxWidth="240"
+                                    MaxWidth="600"
                                     CanUserResize="True"
                                     Header="{DynamicResource LOCPlayAch_Column_Game}"
                                     SortMemberPath="SortingName"
@@ -293,21 +293,11 @@
                     <DataTemplate>
                         <Border CornerRadius="{StaticResource PlayAch.Radius.Small}"
                                 ClipToBounds="True"
+                                Margin="6,4"
+                                MaxHeight="{Binding FixedRowHeight, RelativeSource={RelativeSource AncestorType=controls:AchievementDataGridControl}, TargetNullValue=80, FallbackValue=80}"
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Background="{DynamicResource PlayAch.Brush.Control.Background}">
-                            <Border.Width>
-                                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,width,12,8,12">
-                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
-                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
-                                </MultiBinding>
-                            </Border.Width>
-                            <Border.Height>
-                                <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="icon,height,12,8,12">
-                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
-                                    <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
-                                </MultiBinding>
-                            </Border.Height>
                             <Image Stretch="Uniform"
                                    ToolTip="{Binding FriendName}"
                                    helpers:AsyncImage.Uri="{Binding FriendAvatarPath}"
@@ -370,7 +360,7 @@
             <DataGridTemplateColumn x:Name="CategoryIconColumn"
                                     Width="96"
                                     MinWidth="32"
-                                    MaxWidth="240"
+                                    MaxWidth="600"
                                     CanUserResize="True"
                                     Header="{DynamicResource LOCPlayAch_Column_CategoryArt}"
                                     SortMemberPath="CategoryLabel"

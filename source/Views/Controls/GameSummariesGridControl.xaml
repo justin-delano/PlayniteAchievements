@@ -15,44 +15,20 @@
             </ResourceDictionary.MergedDictionaries>
 
 
-            <Style x:Key="GameImageBorderStyle" TargetType="Border" BasedOn="{StaticResource GameImageBorderBaseStyle}">
-                <Setter Property="Margin" Value="2"/>
+            <!-- Game icon/cover image, switching source and decode size with the
+                 grid's UseCoverImages and PreserveImageResolution settings. -->
+            <Style x:Key="GameImageStyle" TargetType="Image">
+                <Setter Property="Stretch" Value="Uniform"/>
+                <Setter Property="helpers:AsyncImage.Uri" Value="{Binding GameLogo, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"/>
+                <Setter Property="helpers:AsyncImage.DecodePixel" Value="160"/>
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
-                        <Setter Property="Background">
-                            <Setter.Value>
-                                <ImageBrush Stretch="Uniform"
-                                            helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
-                                            helpers:AsyncImage.DecodePixel="320"/>
-                            </Setter.Value>
-                        </Setter>
+                        <Setter Property="helpers:AsyncImage.Uri" Value="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"/>
+                        <Setter Property="helpers:AsyncImage.DecodePixel" Value="320"/>
                     </DataTrigger>
-                    <MultiDataTrigger>
-                        <MultiDataTrigger.Conditions>
-                            <Condition Binding="{Binding PreserveImageResolution, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
-                            <Condition Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="False"/>
-                        </MultiDataTrigger.Conditions>
-                        <Setter Property="Background">
-                            <Setter.Value>
-                                <ImageBrush Stretch="Uniform"
-                                            helpers:AsyncImage.Uri="{Binding GameLogo, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                                            helpers:AsyncImage.DecodePixel="-1"/>
-                            </Setter.Value>
-                        </Setter>
-                    </MultiDataTrigger>
-                    <MultiDataTrigger>
-                        <MultiDataTrigger.Conditions>
-                            <Condition Binding="{Binding PreserveImageResolution, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
-                            <Condition Binding="{Binding UseCoverImages, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True"/>
-                        </MultiDataTrigger.Conditions>
-                        <Setter Property="Background">
-                            <Setter.Value>
-                                <ImageBrush Stretch="Uniform"
-                                            helpers:AsyncImage.Uri="{Binding GameCoverPath, Converter={StaticResource DefaultGameImage}, ConverterParameter=cover}"
-                                            helpers:AsyncImage.DecodePixel="-1"/>
-                            </Setter.Value>
-                        </Setter>
-                    </MultiDataTrigger>
+                    <DataTrigger Binding="{Binding PreserveImageResolution, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}}" Value="True">
+                        <Setter Property="helpers:AsyncImage.DecodePixel" Value="-1"/>
+                    </DataTrigger>
                 </Style.Triggers>
             </Style>
 
@@ -134,7 +110,7 @@
                    BasedOn="{StaticResource GameSummariesGridRowStyle}"/>
         </DataGrid.RowStyle>
         <DataGrid.Columns>
-            <DataGridTemplateColumn Width="96" MinWidth="56" MaxWidth="240" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Cover}"
+            <DataGridTemplateColumn Width="96" MinWidth="56" MaxWidth="600" CanUserResize="True" Header="{DynamicResource LOCPlayAch_Column_Cover}"
                                     CellStyle="{StaticResource GameSummariesImageCellStyle}"
                                     helpers:ColumnVisibilityHelper.ColumnKey="Cover">
                 <DataGridTemplateColumn.HeaderTemplate>
@@ -144,30 +120,20 @@
                 </DataGridTemplateColumn.HeaderTemplate>
                 <DataGridTemplateColumn.CellTemplate>
                     <DataTemplate>
-                        <ContentControl Style="{StaticResource OverviewCompletedCellFrameStyle}"
-                                        Padding="4,6">
-                            <Grid>
-                                <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
-                                        HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
-                                        VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}"
-                                        Style="{StaticResource GameImageBorderStyle}">
-                                    <Border.Width>
-                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,width,12,8,12">
-                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
-                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
-                                            <Binding RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}" Path="UseCoverImages"/>
-                                        </MultiBinding>
-                                    </Border.Width>
-                                    <Border.Height>
-                                        <MultiBinding Converter="{StaticResource ImageFitDimension}" ConverterParameter="auto,height,12,8,12">
-                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridRow}" Path="ActualHeight"/>
-                                            <Binding RelativeSource="{RelativeSource AncestorType=DataGridCell}" Path="ActualWidth"/>
-                                            <Binding RelativeSource="{RelativeSource AncestorType=controls:GameSummariesGridControl}" Path="UseCoverImages"/>
-                                        </MultiBinding>
-                                    </Border.Height>
-                                </Border>
-                            </Grid>
-                        </ContentControl>
+                        <!-- Bounded by the cell width and the row height (fixed row heights
+                             constrain the layout directly; MaxHeight caps auto-sized rows),
+                             so Uniform stretch always fits the art inside the cell. -->
+                        <Border CornerRadius="{StaticResource PlayAch.Radius.Card}"
+                                ClipToBounds="True"
+                                Margin="6,8"
+                                MaxHeight="{Binding FixedRowHeight, RelativeSource={RelativeSource AncestorType=controls:GameSummariesGridControl}, TargetNullValue=95, FallbackValue=95}"
+                                RenderOptions.BitmapScalingMode="HighQuality"
+                                UseLayoutRounding="True"
+                                SnapsToDevicePixels="True"
+                                HorizontalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellHorizontalAlignment)}"
+                                VerticalAlignment="{Binding RelativeSource={RelativeSource AncestorType={x:Type DataGridCell}}, Path=Column.(helpers:DataGridAlignmentBehavior.CellVerticalAlignment)}">
+                            <Image Style="{StaticResource GameImageStyle}"/>
+                        </Border>
                     </DataTemplate>
                 </DataGridTemplateColumn.CellTemplate>
             </DataGridTemplateColumn>

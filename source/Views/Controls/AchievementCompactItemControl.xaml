@@ -11,7 +11,8 @@
              d:DesignHeight="48" d:DesignWidth="48"
              d:DataContext="{d:DesignInstance vm:AchievementDisplayItem}"
              UseLayoutRounding="True"
-             SnapsToDevicePixels="True">
+             SnapsToDevicePixels="True"
+             Cursor="Hand">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>

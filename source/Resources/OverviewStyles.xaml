@@ -164,20 +164,6 @@
         </Setter>
     </Style>
 
-    <Style x:Key="GameImageBorderBaseStyle" TargetType="Border">
-        <Setter Property="RenderOptions.BitmapScalingMode" Value="HighQuality"/>
-        <Setter Property="UseLayoutRounding" Value="True"/>
-        <Setter Property="SnapsToDevicePixels" Value="True"/>
-        <Setter Property="ClipToBounds" Value="True"/>
-        <Setter Property="Background">
-            <Setter.Value>
-                <ImageBrush Stretch="Uniform"
-                            helpers:AsyncImage.Uri="{Binding GameLogo, Converter={StaticResource DefaultGameImage}, ConverterParameter=icon}"
-                            helpers:AsyncImage.DecodePixel="160"/>
-            </Setter.Value>
-        </Setter>
-    </Style>
-
     <Style x:Key="GameSummaryNameTextStyle" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{DynamicResource PlayAch.FontFamily.Body}"/>
         <Setter Property="FontSize" Value="{DynamicResource PlayAch.FontSize.Body}"/>
