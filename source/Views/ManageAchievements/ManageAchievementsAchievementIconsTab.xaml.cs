@@ -591,7 +591,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
             var elements = new List<UIElement>
             {
                 RevertChangesButton,
-                ClearAllButton,
                 SaveButton,
                 OpenIconsFolderButton
             };

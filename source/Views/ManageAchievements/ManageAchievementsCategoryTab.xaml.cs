@@ -239,6 +239,32 @@ namespace PlayniteAchievements.Views.ManageAchievements
             e.Handled = true;
         }
 
+        // The radio is bound OneWay with VM-enforced exclusivity, so the toggle here is the
+        // single writer; handling the tunneling event also allows click-again-to-clear, which
+        // a RadioButton's own click cannot do.
+        private void SummaryCategoryRadioButton_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!TryResolveCategoryImageRow(sender as FrameworkElement, out var row))
+            {
+                return;
+            }
+
+            row.IsSummarySelected = !row.IsSummarySelected;
+            e.Handled = true;
+        }
+
+        private void SummaryCategoryRadioButton_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Space ||
+                !TryResolveCategoryImageRow(sender as FrameworkElement, out var row))
+            {
+                return;
+            }
+
+            row.IsSummarySelected = !row.IsSummarySelected;
+            e.Handled = true;
+        }
+
         private void CategoryImageTextBox_PreviewDragOver(object sender, DragEventArgs e)
         {
             var hasDropPayload = TryGetFirstImageFilePath(e.Data, out _) || TryGetFirstBrowserUrl(e.Data, out _);
@@ -392,7 +418,6 @@ namespace PlayniteAchievements.Views.ManageAchievements
             if (CategorySubTabs?.SelectedIndex == 1)
             {
                 elements.Add(RevertCategoryImagesButton);
-                elements.Add(ClearCategoryImagesButton);
                 elements.Add(SaveCategoryImagesButton);
                 elements.Add(ResetCategoryMetadataButton);
                 elements.Add(OpenCategoryImagesFolderButton);
@@ -707,7 +732,7 @@ namespace PlayniteAchievements.Views.ManageAchievements
                 () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryNames)));
             menu.Items.Add(CreateResetMenuItem(
                 L("LOCPlayAch_Column_CategoryArt", "Category Art"),
-                ViewModel.HasCustomCategoryArt,
+                ViewModel.HasCustomCategoryArt || ViewModel.HasCustomSummaryCategory,
                 () => ResetCategoryMetadataAspect(ViewModel.ResetCategoryArt)));
 
             ContextMenuStyleHelper.ApplyAchievementContextMenuStyle(this, menu);

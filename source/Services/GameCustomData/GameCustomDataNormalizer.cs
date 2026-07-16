@@ -56,6 +56,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             normalized.AchievementCategoryOverrides = NormalizeCategoryOverrides(normalized.AchievementCategoryOverrides);
             normalized.AchievementCategoryOrder = NormalizeCategoryOrder(normalized.AchievementCategoryOrder);
             normalized.AchievementCategoryImageOverrides = NormalizeCategoryImageOverrides(normalized.AchievementCategoryImageOverrides);
+            normalized.GameSummaryCategory = NormalizeGameSummaryCategory(normalized.GameSummaryCategory);
             var extractedFilters = ExtractLegacyAchievementFilters(normalized.AchievementCategoryTypeOverrides);
             normalized.AchievementCategoryTypeOverrides = extractedFilters.CategoryTypeOverrides;
             normalized.FilteredAchievementApiNames = MergeApiNameLists(
@@ -94,6 +95,7 @@ namespace PlayniteAchievements.Services.GameCustomData
             normalized.AchievementCategoryOverrides = NormalizeCategoryOverrides(normalized.AchievementCategoryOverrides);
             normalized.AchievementCategoryOrder = NormalizeCategoryOrder(normalized.AchievementCategoryOrder);
             normalized.AchievementCategoryImageOverrides = NormalizeCategoryImageOverrides(normalized.AchievementCategoryImageOverrides);
+            normalized.GameSummaryCategory = NormalizeGameSummaryCategory(normalized.GameSummaryCategory);
             normalized.AchievementCategoryTypeOverrides = NormalizeCategoryTypeOverrides(normalized.AchievementCategoryTypeOverrides);
             normalized.FilteredAchievementApiNames = NormalizeAchievementApiNameList(normalized.FilteredAchievementApiNames);
             normalized.SummaryFilteredAchievementApiNames = NormalizeAchievementApiNameList(normalized.SummaryFilteredAchievementApiNames);
@@ -120,6 +122,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                    (data.AchievementCategoryTypeOverrides != null && data.AchievementCategoryTypeOverrides.Count > 0) ||
                    (data.AchievementCategoryOrder != null && data.AchievementCategoryOrder.Count > 0) ||
                    (data.AchievementCategoryImageOverrides != null && data.AchievementCategoryImageOverrides.Count > 0) ||
+                   data.GameSummaryCategory != null ||
                    (data.FilteredAchievementApiNames != null && data.FilteredAchievementApiNames.Count > 0) ||
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
@@ -153,6 +156,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                    (data.AchievementCategoryTypeOverrides != null && data.AchievementCategoryTypeOverrides.Count > 0) ||
                    (data.AchievementCategoryOrder != null && data.AchievementCategoryOrder.Count > 0) ||
                    (data.AchievementCategoryImageOverrides != null && data.AchievementCategoryImageOverrides.Count > 0) ||
+                   data.GameSummaryCategory != null ||
                    (data.FilteredAchievementApiNames != null && data.FilteredAchievementApiNames.Count > 0) ||
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
@@ -181,6 +185,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                    (data.AchievementCategoryTypeOverrides != null && data.AchievementCategoryTypeOverrides.Count > 0) ||
                    (data.AchievementCategoryOrder != null && data.AchievementCategoryOrder.Count > 0) ||
                    (data.AchievementCategoryImageOverrides != null && data.AchievementCategoryImageOverrides.Count > 0) ||
+                   data.GameSummaryCategory != null ||
                    (data.FilteredAchievementApiNames != null && data.FilteredAchievementApiNames.Count > 0) ||
                    (data.SummaryFilteredAchievementApiNames != null && data.SummaryFilteredAchievementApiNames.Count > 0) ||
                    (data.AchievementUnlockedIconOverrides != null && data.AchievementUnlockedIconOverrides.Count > 0) ||
@@ -242,6 +247,7 @@ namespace PlayniteAchievements.Services.GameCustomData
                     : legacy.AchievementCategoryImageOverrides != null && legacy.AchievementCategoryImageOverrides.Count > 0
                         ? GameCustomDataFile.CloneCategoryImageOverrideMap(legacy.AchievementCategoryImageOverrides)
                         : null,
+                GameSummaryCategory = existing.GameSummaryCategory?.Clone() ?? legacy.GameSummaryCategory?.Clone(),
                 FilteredAchievementApiNames = existing.FilteredAchievementApiNames != null && existing.FilteredAchievementApiNames.Count > 0
                     ? new List<string>(existing.FilteredAchievementApiNames)
                     : legacy.FilteredAchievementApiNames != null && legacy.FilteredAchievementApiNames.Count > 0
@@ -815,6 +821,22 @@ namespace PlayniteAchievements.Services.GameCustomData
             }
 
             return normalized.Count > 0 ? normalized : null;
+        }
+
+        internal static GameSummaryCategoryData NormalizeGameSummaryCategory(GameSummaryCategoryData value)
+        {
+            var label = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(value?.Label);
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                return null;
+            }
+
+            var providerLabel = AchievementCategoryTypeHelper.NormalizeCategoryOrDefault(value.ProviderLabel);
+            return new GameSummaryCategoryData
+            {
+                Label = label,
+                ProviderLabel = string.IsNullOrWhiteSpace(providerLabel) ? label : providerLabel
+            };
         }
 
         private static ManualAchievementLink NormalizeManualLink(ManualAchievementLink link)

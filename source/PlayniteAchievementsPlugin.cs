@@ -30,6 +30,7 @@ using Playnite.SDK.Plugins;
 using PlayniteAchievements.Common;
 using PlayniteAchievements.Services.Images;
 using PlayniteAchievements.Services.Logging;
+using PlayniteAchievements.Services.Summaries;
 using PlayniteAchievements.Services.Library;
 using PlayniteAchievements.Services.Friends;
 using PlayniteAchievements.Services.ThemeIntegration;
@@ -374,6 +375,7 @@ namespace PlayniteAchievements
                     _diskImageService = new DiskImageService(_logger, pluginUserDataPath);
                     CategoryDefaultImageResolver.DiskImageServiceAccessor = () => _diskImageService;
                     _managedCustomIconService = new ManagedCustomIconService(_diskImageService, _logger);
+                    GameSummaryArtResolver.ManagedCustomIconServiceAccessor = () => _managedCustomIconService;
                     _imageService = new MemoryImageService(_logger, _diskImageService);
                     _gameCustomDataStore.AttachManagedCustomIconService(_managedCustomIconService);
 

@@ -79,13 +79,17 @@ namespace PlayniteAchievements.Services.Summaries
 
             var presentation = CreateGamePresentation(playniteGame);
             var (providerName, providerKey, providerMetadata) = ResolveProvider(gameData);
+            var summaryArt = GameSummaryArtResolver.Resolve(
+                gameData.PlayniteGameId,
+                gameData.GameSummaryCategory,
+                gameData.AchievementCategoryImageOverrides);
 
             var item = new GameSummaryItem
             {
                 GameName = presentation.DisplayName ?? gameData.GameName ?? "Unknown",
                 SortingName = presentation.SortingName ?? presentation.DisplayName ?? gameData.GameName ?? "Unknown",
-                GameLogo = presentation.IconPath,
-                GameCoverPath = presentation.CoverPath,
+                GameLogo = summaryArt ?? presentation.IconPath,
+                GameCoverPath = summaryArt ?? presentation.CoverPath,
                 PlatformText = presentation.PlatformText,
                 Platforms = presentation.Platforms,
                 RegionText = presentation.RegionText,
