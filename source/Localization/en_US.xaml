@@ -562,7 +562,7 @@
     <sys:String x:Key="LOCPlayAch_Settings_ToastPreviewSampleFriend">Friend</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CaptureButton">Press keys...</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_CapturePrompt">Press a shortcut...</sys:String>
-    <sys:String x:Key="LOCPlayAch_Hotkeys_CategoryModeHelp">The category grouping shortcut applies while an achievement grid is focused and its category toggle is shown.</sys:String>
+    <sys:String x:Key="LOCPlayAch_Hotkeys_CategoryModeHelp">The category grouping shortcut applies while the active window shows an achievement grid whose category toggle is available.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Description">Configure shortcuts for opening achievement windows and the overview. Game-specific hotkeys use the running game first, then the selected game.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_DuplicateShortcut">That shortcut is already assigned.</sys:String>
     <sys:String x:Key="LOCPlayAch_Hotkeys_Enable">Enable achievement hotkeys</sys:String>
