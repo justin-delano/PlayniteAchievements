@@ -238,17 +238,25 @@ namespace PlayniteAchievements.Views.ThemeIntegration.Base
             if (ThemeDataOverride != null || LegacyThemeOverride != null)
             {
                 // Preview/mock data contexts have no real game to open.
+                _logger.Debug("Compact click ignored: preview/mock data context.");
                 return;
             }
 
             var targetGameId = gameId ?? GetExpectedSelectedGameId();
             if (targetGameId == null || targetGameId == Guid.Empty)
             {
+                _logger.Debug($"Compact click ignored: no game id for achievement '{displayName}'.");
+                return;
+            }
+
+            if (Plugin == null)
+            {
+                _logger.Debug("Compact click ignored: no plugin reference on theme control.");
                 return;
             }
 
             var focusAchievementId = string.IsNullOrWhiteSpace(apiName) ? displayName : apiName;
-            Plugin?.OpenViewAchievementsWindow(targetGameId.Value, focusAchievementId);
+            Plugin.OpenViewAchievementsWindow(targetGameId.Value, focusAchievementId);
         }
 
         protected bool IsEffectiveModernThemeCurrentForContext()
