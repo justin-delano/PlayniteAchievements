@@ -201,6 +201,7 @@
                     <controls:AchievementDataGridControl x:Name="FriendsAchievementsGrid"
                                                          Margin="12,0,0,0"
                                                          ItemsSource="{Binding Achievements}"
+                                                         CategorySummarySource="{Binding SelectedFriendAllAchievements}"
                                                          ColumnSettingsKey="ViewFriendsAchievements"
                                                          EnableCategoryMode="{Binding HasFriendSelection}"
                                                          CategoryColumnSettingsKey="ViewFriendsAchievementsCategorySummaries"
