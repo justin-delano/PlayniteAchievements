@@ -8,23 +8,33 @@ namespace PlayniteAchievements.Tests.Views
     public class GridStyleDefinitionTests
     {
         [TestMethod]
-        public void SharedGridStyles_PaintRowStateOnceToAvoidCellSeams()
+        public void SharedGridStyles_PaintRowStateOnceWithoutCellOverdraw()
         {
             var overview = File.ReadAllText(FindRepoFile("source", "Resources", "OverviewStyles.xaml"));
             var achievement = File.ReadAllText(FindRepoFile("source", "Resources", "AchievementGridStyles.xaml"));
 
+            var overviewCellStyle = ExtractStyleBlock(overview, "GameSummariesGridCellStyle");
+            var overviewRowStyle = ExtractStyleBlock(overview, "GameSummariesGridRowBaseStyle");
+            var achievementCellStyle = ExtractStyleBlock(achievement, "AchievementCellStyle");
+            var achievementRowStyle = ExtractStyleBlock(achievement, "AchievementRowStyle");
+            var stretchCellStyle = ExtractStyleBlock(achievement, "PlayAch.StretchDataGridCellStyle");
+
             AssertContainsAll(
-                ExtractStyleBlock(overview, "GameSummariesGridCellStyle"),
+                overviewCellStyle,
                 "TargetType=\"DataGridCell\"",
                 "Property=\"Background\" Value=\"Transparent\"");
             AssertContainsNone(
-                ExtractStyleBlock(overview, "GameSummariesGridCellStyle"),
+                overviewCellStyle,
+                "Margin=\"0,0,-1,0\"",
+                "Path=IsMouseOver",
+                "Path=IsSelected",
                 "PlayAch.Brush.Grid.RowHoverBackground",
                 "PlayAch.Brush.Grid.RowSelectedBackground");
             AssertContainsAll(
-                ExtractStyleBlock(overview, "GameSummariesGridRowBaseStyle"),
-                "TargetType=\"DataGridRow\"",
-                "Path=ContextMenu.IsOpen",
+                overviewRowStyle,
+                "x:Name=\"DGR_Border\"",
+                "TargetName=\"DGR_Border\"",
+                "ContextMenu.IsOpen",
                 "Property=\"IsMouseOver\" Value=\"True\"",
                 "Property=\"IsSelected\" Value=\"True\"",
                 "Property=\"IsKeyboardFocusWithin\" Value=\"True\"",
@@ -32,22 +42,32 @@ namespace PlayniteAchievements.Tests.Views
                 "PlayAch.Brush.Grid.RowSelectedBackground");
 
             AssertContainsAll(
-                ExtractStyleBlock(achievement, "AchievementCellStyle"),
+                achievementCellStyle,
                 "TargetType=\"DataGridCell\"",
                 "Property=\"Background\" Value=\"Transparent\"");
             AssertContainsNone(
-                ExtractStyleBlock(achievement, "AchievementCellStyle"),
+                achievementCellStyle,
+                "Margin=\"0,0,-1,0\"",
+                "Path=IsMouseOver",
+                "Path=IsSelected",
                 "PlayAch.Brush.Grid.RowHoverBackground",
                 "PlayAch.Brush.Grid.RowSelectedBackground");
             AssertContainsAll(
-                ExtractStyleBlock(achievement, "AchievementRowStyle"),
-                "TargetType=\"DataGridRow\"",
-                "Path=ContextMenu.IsOpen",
+                achievementRowStyle,
+                "x:Name=\"DGR_Border\"",
+                "TargetName=\"DGR_Border\"",
+                "ContextMenu.IsOpen",
                 "Property=\"IsMouseOver\" Value=\"True\"",
                 "Property=\"IsSelected\" Value=\"True\"",
                 "Property=\"IsKeyboardFocusWithin\" Value=\"True\"",
                 "PlayAch.Brush.Grid.RowHoverBackground",
                 "PlayAch.Brush.Grid.RowSelectedBackground");
+            AssertContainsAll(
+                stretchCellStyle,
+                "TargetType=\"DataGridCell\"");
+            AssertContainsNone(
+                stretchCellStyle,
+                "Margin=\"0,0,-1,0\"");
         }
 
         private static string ExtractStyleBlock(string content, string key)
