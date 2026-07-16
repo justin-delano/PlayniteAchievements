@@ -466,7 +466,9 @@ namespace PlayniteAchievements.Models.Tests
                 DesktopThemeAchievementsUnlockDateMode = DateDisplayMode.Relative,
                 FriendsOverviewFriendSummariesLastUnlockDateMode = DateDisplayMode.DateOnly,
                 FriendsOverviewGameSummariesLastPlayedDateMode = DateDisplayMode.Relative,
-                FriendsOverviewAchievementsUnlockDateMode = DateDisplayMode.DateOnly
+                FriendsOverviewAchievementsUnlockDateMode = DateDisplayMode.DateOnly,
+                UnlockDateDisplayMode = DateDisplayMode.Relative,
+                PlaytimeDisplayMode = PlaytimeDisplayMode.HoursOnly
             };
 
             var clone = source.Clone();
@@ -486,6 +488,8 @@ namespace PlayniteAchievements.Models.Tests
                 Assert.AreEqual(DateDisplayMode.DateOnly, copy.FriendsOverviewFriendSummariesLastUnlockDateMode);
                 Assert.AreEqual(DateDisplayMode.Relative, copy.FriendsOverviewGameSummariesLastPlayedDateMode);
                 Assert.AreEqual(DateDisplayMode.DateOnly, copy.FriendsOverviewAchievementsUnlockDateMode);
+                Assert.AreEqual(DateDisplayMode.Relative, copy.UnlockDateDisplayMode);
+                Assert.AreEqual(PlaytimeDisplayMode.HoursOnly, copy.PlaytimeDisplayMode);
             }
         }
 

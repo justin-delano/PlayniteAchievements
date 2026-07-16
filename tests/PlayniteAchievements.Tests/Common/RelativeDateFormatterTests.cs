@@ -56,13 +56,33 @@ namespace PlayniteAchievements.Tests.Common
         [TestMethod]
         public void GetBucket_EarlierThisMonthPriorWeek_ReturnsThisMonth()
         {
-            Assert.AreEqual(RelativeDateBucket.ThisMonth, RelativeDateFormatter.GetBucket(new DateTime(2026, 6, 15), Now));
+            Assert.AreEqual(RelativeDateBucket.ThisMonth, RelativeDateFormatter.GetBucket(new DateTime(2026, 6, 10), Now));
+        }
+
+        [TestMethod]
+        public void GetBucket_PreviousCalendarWeek_ReturnsLastWeek()
+        {
+            Assert.AreEqual(RelativeDateBucket.LastWeek, RelativeDateFormatter.GetBucket(new DateTime(2026, 6, 15), Now));
+        }
+
+        [TestMethod]
+        public void GetBucket_PreviousCalendarMonth_ReturnsLastMonth()
+        {
+            Assert.AreEqual(RelativeDateBucket.LastMonth, RelativeDateFormatter.GetBucket(new DateTime(2026, 5, 15), Now));
         }
 
         [TestMethod]
         public void GetBucket_EarlierThisYearPriorMonth_ReturnsThisYear()
         {
-            Assert.AreEqual(RelativeDateBucket.ThisYear, RelativeDateFormatter.GetBucket(new DateTime(2026, 5, 15), Now));
+            Assert.AreEqual(RelativeDateBucket.ThisYear, RelativeDateFormatter.GetBucket(new DateTime(2026, 4, 15), Now));
+        }
+
+        [TestMethod]
+        public void GetBucket_LastMonthAcrossYearBoundary_ReturnsLastMonth()
+        {
+            Assert.AreEqual(
+                RelativeDateBucket.LastMonth,
+                RelativeDateFormatter.GetBucket(new DateTime(2025, 12, 15), new DateTime(2026, 1, 15)));
         }
 
         [TestMethod]

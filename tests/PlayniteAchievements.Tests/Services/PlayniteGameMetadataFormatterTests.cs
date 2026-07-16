@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Services;
 
 namespace PlayniteAchievements.Services.Tests
@@ -19,22 +20,45 @@ namespace PlayniteAchievements.Services.Tests
         }
 
         [TestMethod]
-        public void FormatPlaytime_FormatsMinutesOnly()
+        public void FormatPlaytime_FormatsSubHourPlaytimeAsLessThanOneHour()
         {
-            Assert.AreEqual("59m", PlayniteGameMetadataFormatter.FormatPlaytime(59UL * 60));
+            Assert.AreEqual(
+                "<1h",
+                PlayniteGameMetadataFormatter.FormatPlaytime(59UL * 60, PlaytimeDisplayMode.HoursAndMinutes));
         }
 
         [TestMethod]
         public void FormatPlaytime_FormatsHoursOnly()
         {
-            Assert.AreEqual("4h", PlayniteGameMetadataFormatter.FormatPlaytime(4UL * 60 * 60));
+            Assert.AreEqual(
+                "4h",
+                PlayniteGameMetadataFormatter.FormatPlaytime(4UL * 60 * 60, PlaytimeDisplayMode.HoursAndMinutes));
         }
 
         [TestMethod]
         public void FormatPlaytime_FormatsHoursAndMinutes()
         {
             var playtimeSeconds = ((125UL * 60) + 28UL) * 60;
-            Assert.AreEqual("125h28m", PlayniteGameMetadataFormatter.FormatPlaytime(playtimeSeconds));
+            Assert.AreEqual(
+                "125h28m",
+                PlayniteGameMetadataFormatter.FormatPlaytime(playtimeSeconds, PlaytimeDisplayMode.HoursAndMinutes));
+        }
+
+        [TestMethod]
+        public void FormatPlaytime_HoursOnlyMode_DropsMinutes()
+        {
+            var playtimeSeconds = ((125UL * 60) + 28UL) * 60;
+            Assert.AreEqual(
+                "125h",
+                PlayniteGameMetadataFormatter.FormatPlaytime(playtimeSeconds, PlaytimeDisplayMode.HoursOnly));
+        }
+
+        [TestMethod]
+        public void FormatPlaytime_HoursOnlyMode_FormatsSubHourPlaytimeAsLessThanOneHour()
+        {
+            Assert.AreEqual(
+                "<1h",
+                PlayniteGameMetadataFormatter.FormatPlaytime(15UL * 60, PlaytimeDisplayMode.HoursOnly));
         }
 
         [TestMethod]

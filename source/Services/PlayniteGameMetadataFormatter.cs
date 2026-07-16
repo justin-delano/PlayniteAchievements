@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using Playnite.SDK;
 using Playnite.SDK.Models;
+using PlayniteAchievements.Models.Settings;
 
 namespace PlayniteAchievements.Services
 {
@@ -58,6 +59,11 @@ namespace PlayniteAchievements.Services
 
         public static string FormatPlaytime(ulong playtimeSeconds)
         {
+            return FormatPlaytime(playtimeSeconds, ResolvePlaytimeDisplayMode());
+        }
+
+        public static string FormatPlaytime(ulong playtimeSeconds, PlaytimeDisplayMode displayMode)
+        {
             if (playtimeSeconds < 60)
             {
                 // Zero doubles as the "no playtime data" sentinel (providers such as
@@ -70,14 +76,32 @@ namespace PlayniteAchievements.Services
             var hours = totalMinutes / 60;
             var minutes = totalMinutes % 60;
 
-            if (hours > 0)
+            if (hours == 0)
             {
-                return minutes > 0
-                    ? string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_HoursMinutes", "{0}h{1}m"), hours, minutes)
-                    : string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours", "{0}h"), hours);
+                return L("LOCPlayAch_Playtime_LessThanOneHour", "<1h");
             }
 
-            return string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Minutes", "{0}m"), totalMinutes);
+            if (displayMode == PlaytimeDisplayMode.HoursOnly)
+            {
+                return string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours", "{0}h"), hours);
+            }
+
+            return minutes > 0
+                ? string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_HoursMinutes", "{0}h{1}m"), hours, minutes)
+                : string.Format(CultureInfo.CurrentCulture, L("LOCPlayAch_Playtime_Hours", "{0}h"), hours);
+        }
+
+        private static PlaytimeDisplayMode ResolvePlaytimeDisplayMode()
+        {
+            try
+            {
+                return PlayniteAchievementsPlugin.Instance?.Settings?.Persisted?.PlaytimeDisplayMode ??
+                    PlaytimeDisplayMode.HoursAndMinutes;
+            }
+            catch (Exception)
+            {
+                return PlaytimeDisplayMode.HoursAndMinutes;
+            }
         }
 
         private static string L(string key, string fallback)

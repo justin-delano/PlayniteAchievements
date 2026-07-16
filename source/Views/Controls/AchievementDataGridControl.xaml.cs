@@ -997,8 +997,7 @@ namespace PlayniteAchievements.Views.Controls
         }
 
         // The Start in Category Mode setting is edited once per view (on the parent surface's grid
-        // options), while the friends grids swap ColumnSettingsKey per selection state. Mirror the
-        // UpdateUnlockDateMode mapping so the selected-state keys read the parent surface's setting.
+        // options), while the friends grids swap ColumnSettingsKey per selection state.
         private string ResolveStartInCategoryModeOptionsId()
         {
             switch (ColumnSettingsKey)
@@ -1874,12 +1873,7 @@ namespace PlayniteAchievements.Views.Controls
         private void OnPersistedSettingsChanged(object sender, PropertyChangedEventArgs e)
         {
             if (string.IsNullOrEmpty(e.PropertyName) ||
-                e.PropertyName == nameof(PersistedSettings.OverviewRecentAchievementsUnlockDateMode) ||
-                e.PropertyName == nameof(PersistedSettings.FriendsOverviewAchievementsUnlockDateMode) ||
-                e.PropertyName == nameof(PersistedSettings.OverviewSelectedGameAchievementsUnlockDateMode) ||
-                e.PropertyName == nameof(PersistedSettings.ViewAchievementsAchievementsUnlockDateMode) ||
-                e.PropertyName == nameof(PersistedSettings.StartPageAchievementsUnlockDateMode) ||
-                e.PropertyName == nameof(PersistedSettings.DesktopThemeAchievementsUnlockDateMode))
+                e.PropertyName == nameof(PersistedSettings.UnlockDateDisplayMode))
             {
                 UpdateUnlockDateMode();
             }
@@ -1893,40 +1887,7 @@ namespace PlayniteAchievements.Views.Controls
                 return;
             }
 
-            switch (ColumnSettingsKey)
-            {
-                case "DesktopTheme":
-                    UnlockDateMode = persisted.DesktopThemeAchievementsUnlockDateMode;
-                    break;
-                case "OverviewRecentAchievements":
-                case "Overview":
-                    UnlockDateMode = persisted.OverviewRecentAchievementsUnlockDateMode;
-                    break;
-                case "FriendsOverviewRecentAchievements":
-                case "FriendsOverviewSelectedFriendAchievements":
-                case "FriendsOverviewSelectedGameAchievements":
-                case "FriendsOverviewSelectedFriendGameAchievements":
-                    UnlockDateMode = persisted.FriendsOverviewAchievementsUnlockDateMode;
-                    break;
-                case "OverviewSelectedGameAchievements":
-                case "OverviewGame":
-                    UnlockDateMode = persisted.OverviewSelectedGameAchievementsUnlockDateMode;
-                    break;
-                case "StartPageAchievements":
-                    UnlockDateMode = persisted.StartPageAchievementsUnlockDateMode;
-                    break;
-                case "ViewFriendsAchievements":
-                case "ViewFriendsAchievementsAchievements":
-                    UnlockDateMode = persisted.GridOptions.GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements).UnlockDateMode;
-                    break;
-                case "ViewFriendsAchievementsSelectedFriendAchievements":
-                    UnlockDateMode = persisted.GridOptions.GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend).UnlockDateMode;
-                    break;
-                default:
-                    // "SingleGame" and any unspecified key fall back to the view-achievements grid.
-                    UnlockDateMode = persisted.ViewAchievementsAchievementsUnlockDateMode;
-                    break;
-            }
+            UnlockDateMode = persisted.UnlockDateDisplayMode;
         }
 
         private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)

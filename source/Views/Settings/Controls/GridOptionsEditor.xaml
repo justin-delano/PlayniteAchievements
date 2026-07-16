@@ -30,13 +30,6 @@
                     </DataTrigger>
                 </Style.Triggers>
             </Style>
-            <Style x:Key="FriendSummaryPanelStyle" TargetType="StackPanel">
-                <Style.Triggers>
-                    <DataTrigger Binding="{Binding FriendSummaryOptions, ElementName=EditorRoot}" Value="{x:Null}">
-                        <Setter Property="Visibility" Value="Collapsed"/>
-                    </DataTrigger>
-                </Style.Triggers>
-            </Style>
             <Style x:Key="CategorySummaryPanelStyle" TargetType="StackPanel">
                 <Style.Triggers>
                     <DataTrigger Binding="{Binding CategorySummaryOptions, ElementName=EditorRoot}" Value="{x:Null}">
@@ -160,7 +153,7 @@
                       Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
         </StackPanel>
 
-        <!-- Achievement date/category rows -->
+        <!-- Achievement category rows -->
         <StackPanel Style="{StaticResource AchievementPanelStyle}">
             <StackPanel Visibility="{Binding ShowCategoryModeRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}">
                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_StartInCategoryMode}"
@@ -169,20 +162,6 @@
                 <CheckBox Content="{DynamicResource LOCPlayAch_Settings_HideCategorySummaryRow}"
                           IsChecked="{Binding AchievementOptions.HideCategorySummaryRow, ElementName=EditorRoot}"
                           Margin="{StaticResource PlayAch.Thickness.Bottom.Md}"/>
-            </StackPanel>
-            <StackPanel Orientation="Horizontal"
-                        Visibility="{Binding ShowDateModeRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
-                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
-                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_UnlockDateDisplay}"
-                           VerticalAlignment="Center"/>
-                <ComboBox SelectedValue="{Binding AchievementOptions.UnlockDateMode, ElementName=EditorRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          SelectedValuePath="Tag"
-                          MinWidth="140"
-                          Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
-                    <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
-                    <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
-                    <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
-                </ComboBox>
             </StackPanel>
         </StackPanel>
 
@@ -194,24 +173,6 @@
                 <TextBlock Text="{DynamicResource LOCPlayAch_Settings_LastPlayedDateDisplay}"
                            VerticalAlignment="Center"/>
                 <ComboBox SelectedValue="{Binding GameSummaryOptions.LastPlayedDateMode, ElementName=EditorRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          SelectedValuePath="Tag"
-                          MinWidth="140"
-                          Margin="{StaticResource PlayAch.Thickness.Left.Sm}">
-                    <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateAndTime}" Tag="{x:Static settings:DateDisplayMode.DateAndTime}"/>
-                    <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_DateOnly}" Tag="{x:Static settings:DateDisplayMode.DateOnly}"/>
-                    <ComboBoxItem Content="{DynamicResource LOCPlayAch_Settings_DateDisplayMode_Relative}" Tag="{x:Static settings:DateDisplayMode.Relative}"/>
-                </ComboBox>
-            </StackPanel>
-        </StackPanel>
-
-        <!-- Friend-summary date row -->
-        <StackPanel Style="{StaticResource FriendSummaryPanelStyle}">
-            <StackPanel Orientation="Horizontal"
-                        Visibility="{Binding ShowDateModeRow, ElementName=EditorRoot, Converter={StaticResource BoolToVis}}"
-                        Margin="{StaticResource PlayAch.Thickness.Bottom.Md}">
-                <TextBlock Text="{DynamicResource LOCPlayAch_Settings_DateDisplay}"
-                           VerticalAlignment="Center"/>
-                <ComboBox SelectedValue="{Binding FriendSummaryOptions.LastUnlockDateMode, ElementName=EditorRoot, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           SelectedValuePath="Tag"
                           MinWidth="140"
                           Margin="{StaticResource PlayAch.Thickness.Left.Sm}">

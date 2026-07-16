@@ -39,7 +39,7 @@ namespace PlayniteAchievements.Tests.Views
                 "GridOptions",
                 "GridOptionsCatalog.ResolveFriendSummariesId(ColumnSettingsKey)",
                 "GetFriendSummaries(id)",
-                "FriendsOverviewFriendSummariesLastUnlockDateMode");
+                "UnlockDateDisplayMode");
         }
 
         [TestMethod]
@@ -187,7 +187,7 @@ namespace PlayniteAchievements.Tests.Views
                 "friendAvatar: false",
                 "GridOptionsCatalog.ResolveAchievementId(ColumnSettingsKey)",
                 "GetAchievement(id).Columns",
-                "FriendsOverviewAchievementsUnlockDateMode",
+                "UnlockDateDisplayMode",
                 "unlockDate: true",
                 "SetForcedColumnCollapsed(_columnPersistence, StatusColumnKey, HideStatusColumn)",
                 "control._columnPersistence?.Refresh()");

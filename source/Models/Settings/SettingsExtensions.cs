@@ -170,6 +170,8 @@ namespace PlayniteAchievements.Models.Settings
             target.GridColumnHeaderAlignment = source.GridColumnHeaderAlignment;
             target.GridCellAlignment = source.GridCellAlignment;
             target.GridCellVerticalAlignment = source.GridCellVerticalAlignment;
+            target.UnlockDateDisplayMode = source.UnlockDateDisplayMode;
+            target.PlaytimeDisplayMode = source.PlaytimeDisplayMode;
             target.EnableAchievementCompactListControl = source.EnableAchievementCompactListControl;
             target.EnableAchievementDataGridControl = source.EnableAchievementDataGridControl;
             target.EnableAchievementCompactUnlockedListControl = source.EnableAchievementCompactUnlockedListControl;

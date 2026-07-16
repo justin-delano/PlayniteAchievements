@@ -12,7 +12,9 @@ namespace PlayniteAchievements.Common
         Today,
         Yesterday,
         ThisWeek,
+        LastWeek,
         ThisMonth,
+        LastMonth,
         ThisYear,
         LongAgo
     }
@@ -44,14 +46,28 @@ namespace PlayniteAchievements.Common
                 return RelativeDateBucket.Yesterday;
             }
 
-            if (valueDate >= StartOfWeek(today))
+            var startOfCurrentWeek = StartOfWeek(today);
+            if (valueDate >= startOfCurrentWeek)
             {
                 return RelativeDateBucket.ThisWeek;
+            }
+
+            var startOfLastWeek = startOfCurrentWeek.AddDays(-7);
+            if (valueDate >= startOfLastWeek && valueDate < startOfCurrentWeek)
+            {
+                return RelativeDateBucket.LastWeek;
             }
 
             if (valueDate.Year == today.Year && valueDate.Month == today.Month)
             {
                 return RelativeDateBucket.ThisMonth;
+            }
+
+            var startOfCurrentMonth = new DateTime(today.Year, today.Month, 1);
+            var startOfLastMonth = startOfCurrentMonth.AddMonths(-1);
+            if (valueDate >= startOfLastMonth && valueDate < startOfCurrentMonth)
+            {
+                return RelativeDateBucket.LastMonth;
             }
 
             if (valueDate.Year == today.Year)
@@ -84,8 +100,12 @@ namespace PlayniteAchievements.Common
                     return ResourceProvider.GetString("LOCPlayAch_Common_Date_Yesterday");
                 case RelativeDateBucket.ThisWeek:
                     return ResourceProvider.GetString("LOCPlayAch_Common_Date_ThisWeek");
+                case RelativeDateBucket.LastWeek:
+                    return ResourceProvider.GetString("LOCPlayAch_Common_Date_LastWeek");
                 case RelativeDateBucket.ThisMonth:
                     return ResourceProvider.GetString("LOCPlayAch_Common_Date_ThisMonth");
+                case RelativeDateBucket.LastMonth:
+                    return ResourceProvider.GetString("LOCPlayAch_Common_Date_LastMonth");
                 case RelativeDateBucket.ThisYear:
                     return ResourceProvider.GetString("LOCPlayAch_Common_Date_ThisYear");
                 default:

@@ -158,6 +158,8 @@ namespace PlayniteAchievements.Models.Settings
         private GridAlignment _gridColumnHeaderAlignment = GridAlignment.Center;
         private GridAlignment _gridCellAlignment = GridAlignment.Left;
         private GridVerticalAlignment _gridCellVerticalAlignment = GridVerticalAlignment.Center;
+        private DateDisplayMode _unlockDateDisplayMode = DateDisplayMode.DateAndTime;
+        private PlaytimeDisplayMode _playtimeDisplayMode = PlaytimeDisplayMode.HoursAndMinutes;
         private bool _enableAchievementCompactListControl = true;
         private bool _enableAchievementDataGridControl = true;
         private bool _enableAchievementCompactUnlockedListControl = true;
@@ -1648,6 +1650,24 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// Date display mode for achievement unlock dates and friend last-unlock dates.
+        /// </summary>
+        public DateDisplayMode UnlockDateDisplayMode
+        {
+            get => _unlockDateDisplayMode;
+            set => SetValue(ref _unlockDateDisplayMode, value);
+        }
+
+        /// <summary>
+        /// Display mode for playtime text shown in summaries and metadata.
+        /// </summary>
+        public PlaytimeDisplayMode PlaytimeDisplayMode
+        {
+            get => _playtimeDisplayMode;
+            set => SetValue(ref _playtimeDisplayMode, value);
+        }
+
+        /// <summary>
         /// When true, enables the modern compact list control.
         /// </summary>
         public bool EnableAchievementCompactListControl
@@ -2379,6 +2399,8 @@ namespace PlayniteAchievements.Models.Settings
                 GridColumnHeaderAlignment = this.GridColumnHeaderAlignment,
                 GridCellAlignment = this.GridCellAlignment,
                 GridCellVerticalAlignment = this.GridCellVerticalAlignment,
+                UnlockDateDisplayMode = this.UnlockDateDisplayMode,
+                PlaytimeDisplayMode = this.PlaytimeDisplayMode,
                 EnableAchievementCompactListControl = this.EnableAchievementCompactListControl,
                 EnableAchievementDataGridControl = this.EnableAchievementDataGridControl,
                 EnableAchievementCompactUnlockedListControl = this.EnableAchievementCompactUnlockedListControl,
@@ -2519,6 +2541,8 @@ namespace PlayniteAchievements.Models.Settings
             GridColumnHeaderAlignment = defaults.GridColumnHeaderAlignment;
             GridCellAlignment = defaults.GridCellAlignment;
             GridCellVerticalAlignment = defaults.GridCellVerticalAlignment;
+            UnlockDateDisplayMode = defaults.UnlockDateDisplayMode;
+            PlaytimeDisplayMode = defaults.PlaytimeDisplayMode;
 
             EnableAchievementCompactListControl = defaults.EnableAchievementCompactListControl;
             EnableAchievementDataGridControl = defaults.EnableAchievementDataGridControl;

@@ -85,8 +85,7 @@ namespace PlayniteAchievements.Tests.Views
                 "[\"ViewFriendsAchievementsSelectedFriendAchievements\"] = CreateAchievementVisibility(",
                 "[\"ViewFriendsAchievements\"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)",
                 "[\"ViewFriendsAchievementsSelectedFriendAchievements\"] = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)",
-                "GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievements).UnlockDateMode",
-                "GetAchievement(GridOptionKeys.Achievement.ViewFriendsAchievementsSelectedFriend).UnlockDateMode");
+                "UnlockDateDisplayMode");
         }
 
         [TestMethod]

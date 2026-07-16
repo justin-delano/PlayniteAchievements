@@ -1065,6 +1065,12 @@ namespace PlayniteAchievements.Views.Controls
             {
                 UpdateLastPlayedDateMode(PlayniteAchievementsPlugin.Instance?.Settings);
             }
+
+            if (string.IsNullOrEmpty(e.PropertyName) ||
+                e.PropertyName == nameof(PersistedSettings.PlaytimeDisplayMode))
+            {
+                RefreshPlaytimeText();
+            }
         }
 
         private void UpdateLastPlayedDateMode(PlayniteAchievementsSettings settings)
@@ -1272,6 +1278,24 @@ namespace PlayniteAchievements.Views.Controls
         {
             _columnPersistence?.Refresh();
             UpdateLastPlayedDateMode(PlayniteAchievementsPlugin.Instance?.Settings);
+            RefreshPlaytimeText();
+        }
+
+        private void RefreshPlaytimeText()
+        {
+            var items = GameSummariesGrid?.ItemsSource as System.Collections.IEnumerable;
+            if (items != null)
+            {
+                foreach (var item in items)
+                {
+                    if (item is GameSummaryItem gameSummary)
+                    {
+                        gameSummary.OnPropertyChanged(nameof(GameSummaryItem.PlaytimeText));
+                    }
+                }
+            }
+
+            GameSummariesGrid?.Items?.Refresh();
         }
 
         public void Dispose()
