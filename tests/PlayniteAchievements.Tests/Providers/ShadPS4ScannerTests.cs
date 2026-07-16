@@ -6,9 +6,11 @@ using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
 using PlayniteAchievements.Models.Settings;
 using PlayniteAchievements.Providers;
+using PlayniteAchievements.Providers.EmuLibrary;
 using PlayniteAchievements.Providers.ShadPS4;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.GameCustomData;
+using PlayniteAchievements.Tests.Providers;
 using System;
 using System.IO;
 using System.Threading;
@@ -241,6 +243,47 @@ namespace PlayniteAchievements.Providers.Tests
         }
 
         [TestMethod]
+        public async Task RefreshAsync_UninstalledEmuLibraryGame_ResolvesTitleIdFromSourcePath()
+        {
+            var tempDir = CreateTempDirectory();
+            var legacyGameDataPath = Path.Combine(tempDir, "user", "game_data");
+
+            try
+            {
+                CreateLegacyTrophyData(legacyGameDataPath, "CUSA22222", "EmuLibrary Trophy");
+
+                var extensionsDataPath = Path.Combine(tempDir, "ExtensionsData");
+                var mappingId = Guid.NewGuid();
+                EmuLibraryPathResolverTests.WriteConfig(
+                    extensionsDataPath,
+                    mappingId,
+                    Path.Combine(tempDir, "network", "PS4"));
+
+                // Uninstalled EmuLibrary game: no install directory, only the serialized game id.
+                var game = EmuLibraryPathResolverTests.BuildEmuLibraryGame(new EmuLibraryMultiFileGameInfo
+                {
+                    MappingId = mappingId,
+                    SourceBaseDir = "CUSA22222",
+                    SourceFilePath = @"CUSA22222\eboot.bin"
+                });
+                game.Id = Guid.NewGuid();
+                game.Name = "Uninstalled EmuLibrary Game";
+
+                var provider = CreateProvider(legacyGameDataPath, extensionsDataPath);
+
+                var data = await RefreshSingleGameAsync(provider, game).ConfigureAwait(false);
+
+                Assert.IsNotNull(data);
+                Assert.IsTrue(data.HasAchievements);
+                Assert.AreEqual("EmuLibrary Trophy", data.Achievements[0].DisplayName);
+            }
+            finally
+            {
+                DeleteDirectory(tempDir);
+            }
+        }
+
+        [TestMethod]
         public async Task RefreshAsync_UnlocatableGame_ReturnsNoPayloadSoCacheIsPreserved()
         {
             var tempDir = CreateTempDirectory();
@@ -443,7 +486,7 @@ namespace PlayniteAchievements.Providers.Tests
             return captured;
         }
 
-        private static ShadPS4DataProvider CreateProvider(string configuredPath)
+        private static ShadPS4DataProvider CreateProvider(string configuredPath, string extensionsDataPath = null)
         {
             var settings = new PlayniteAchievementsSettings();
             var registry = new ProviderRegistry(settings, new[] { "ShadPS4" });
@@ -451,7 +494,7 @@ namespace PlayniteAchievements.Providers.Tests
             providerSettings.GameDataPath = configuredPath;
             registry.Save(providerSettings);
 
-            return new ShadPS4DataProvider(new FakeLogger(), settings, new FakePlayniteApi());
+            return new ShadPS4DataProvider(new FakeLogger(), settings, new FakePlayniteApi(extensionsDataPath));
         }
 
         private static void CreateNewFormatTrophyData(string appDataRoot, string userId, string npCommId, string trophyName)
@@ -588,10 +631,15 @@ namespace PlayniteAchievements.Providers.Tests
 
         private sealed class FakePlayniteApi : IPlayniteAPI
         {
+            public FakePlayniteApi(string extensionsDataPath = null)
+            {
+                Paths = extensionsDataPath == null ? null : new FakePathsApi(extensionsDataPath);
+            }
+
             public IMainViewAPI MainView => null;
             public IGameDatabaseAPI Database => null;
             public IDialogsFactory Dialogs => null;
-            public IPlaynitePathsAPI Paths => null;
+            public IPlaynitePathsAPI Paths { get; }
             public INotificationsAPI Notifications => null;
             public IPlayniteInfoAPI ApplicationInfo => null;
             public IWebViewFactory WebViews => null;
@@ -610,6 +658,19 @@ namespace PlayniteAchievements.Providers.Tests
             public void AddCustomElementSupport(Plugin plugin, AddCustomElementSupportArgs args) { }
             public void AddSettingsSupport(Plugin plugin, AddSettingsSupportArgs args) { }
             public void AddConvertersSupport(Plugin plugin, AddConvertersSupportArgs args) { }
+        }
+
+        private sealed class FakePathsApi : IPlaynitePathsAPI
+        {
+            public FakePathsApi(string extensionsDataPath)
+            {
+                ExtensionsDataPath = extensionsDataPath;
+            }
+
+            public bool IsPortable => false;
+            public string ApplicationPath => null;
+            public string ConfigurationPath => null;
+            public string ExtensionsDataPath { get; }
         }
     }
 }

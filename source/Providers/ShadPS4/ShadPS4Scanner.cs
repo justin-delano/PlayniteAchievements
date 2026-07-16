@@ -1,5 +1,6 @@
 using PlayniteAchievements.Models;
 using PlayniteAchievements.Models.Achievements;
+using PlayniteAchievements.Providers.EmuLibrary;
 using PlayniteAchievements.Providers.Exophase;
 using PlayniteAchievements.Services;
 using PlayniteAchievements.Services.GameCustomData;
@@ -655,11 +656,15 @@ namespace PlayniteAchievements.Providers.ShadPS4
 
         private string ExtractTitleIdFromGame(Game game)
         {
-            var rawInstallDir = game?.InstallDirectory;
-            if (string.IsNullOrWhiteSpace(rawInstallDir)) return null;
+            var installDir = ExpandGamePath(game, game?.InstallDirectory);
 
-            var installDir = ExpandGamePath(game, rawInstallDir);
-            if (string.IsNullOrWhiteSpace(installDir)) return null;
+            // Uninstalled EmuLibrary games carry no install directory; recover the
+            // original source path from the serialized EmuLibrary game id instead.
+            if (string.IsNullOrWhiteSpace(installDir) &&
+                !EmuLibraryPathResolver.TryResolveSourcePath(_playniteApi, game, out installDir))
+            {
+                return null;
+            }
 
             var match = TitleIdPattern.Match(installDir);
             return match.Success ? ShadPS4MatchIdHelper.Normalize(match.Groups[1].Value) : null;
