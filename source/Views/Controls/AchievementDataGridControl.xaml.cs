@@ -655,6 +655,18 @@ namespace PlayniteAchievements.Views.Controls
             set => SetValue(CategoryUseCoverImagesProperty, value);
         }
 
+        public static readonly DependencyProperty CategoryShowCompletionGlowProperty =
+            DependencyProperty.Register(nameof(CategoryShowCompletionGlow), typeof(bool),
+                typeof(AchievementDataGridControl), new PropertyMetadata(true));
+
+        // Completion glow toggle for the embedded category grids (list + drill header),
+        // kept distinct from any game-summaries grid on the same surface.
+        public bool CategoryShowCompletionGlow
+        {
+            get => (bool)GetValue(CategoryShowCompletionGlowProperty);
+            set => SetValue(CategoryShowCompletionGlowProperty, value);
+        }
+
         public static readonly DependencyProperty CategoryShowColumnHeadersProperty =
             DependencyProperty.Register(nameof(CategoryShowColumnHeaders), typeof(bool),
                 typeof(AchievementDataGridControl), new PropertyMetadata(true));
