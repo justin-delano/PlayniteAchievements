@@ -46,8 +46,8 @@ namespace PlayniteAchievements.Tests.Views
                 "HideBackButton=\"True\"",
                 "HideCategorySummaryRow=\"{Binding HideCategorySummaryRow}\"",
                 "DrilledCategory=\"{Binding SelectedCategoryName, Mode=OneWayToSource}\"",
-                "ShowGameColumn=\"False\"",
-                "ShowFriendColumn=\"{Binding HasFriendSelection, Converter={StaticResource InvertBoolConverter}}\"",
+                "ShowGameColumn=\"True\"",
+                "ShowFriendColumn=\"True\"",
                 "MouseLeftButtonUp=\"GameNameBreadcrumb_Click\"");
             AssertContainsAll(
                 code,

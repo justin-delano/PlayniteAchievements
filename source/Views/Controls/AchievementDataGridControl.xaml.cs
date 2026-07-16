@@ -228,7 +228,14 @@ namespace PlayniteAchievements.Views.Controls
             if (d is AchievementDataGridControl control)
             {
                 control._preSortItems = null;
-                DataGridSortingHelper.ClearSortIndicators(control.AchievementsDataGrid);
+                if (!control.UseExternalSorting)
+                {
+                    // Externally sorted surfaces own their header indicators via SetSortIndicator
+                    // and re-apply them only when their sort state changes; clearing here would
+                    // drop the arrow on a plain source swap while the external sort still applies.
+                    DataGridSortingHelper.ClearSortIndicators(control.AchievementsDataGrid);
+                }
+
                 control.ObserveItemsSourceCollection();
                 control.OnItemsSourceContentChanged();
             }
@@ -986,8 +993,25 @@ namespace PlayniteAchievements.Views.Controls
                 return false;
             }
 
-            var id = GridOptionsCatalog.ResolveAchievementId(ColumnSettingsKey);
-            return persisted.GridOptions.GetAchievement(id).StartInCategoryMode;
+            return persisted.GridOptions.GetAchievement(ResolveStartInCategoryModeOptionsId()).StartInCategoryMode;
+        }
+
+        // The Start in Category Mode setting is edited once per view (on the parent surface's grid
+        // options), while the friends grids swap ColumnSettingsKey per selection state. Mirror the
+        // UpdateUnlockDateMode mapping so the selected-state keys read the parent surface's setting.
+        private string ResolveStartInCategoryModeOptionsId()
+        {
+            switch (ColumnSettingsKey)
+            {
+                case "FriendsOverviewSelectedFriendAchievements":
+                case "FriendsOverviewSelectedGameAchievements":
+                case "FriendsOverviewSelectedFriendGameAchievements":
+                    return GridOptionKeys.Achievement.FriendsOverviewRecent;
+                case "ViewFriendsAchievementsSelectedFriendAchievements":
+                    return GridOptionKeys.Achievement.ViewFriendsAchievements;
+                default:
+                    return GridOptionsCatalog.ResolveAchievementId(ColumnSettingsKey);
+            }
         }
 
         // Positions the category-mode Back and toggle controls for the current mode. The toggle always
@@ -1643,6 +1667,10 @@ namespace PlayniteAchievements.Views.Controls
         {
             if (d is AchievementDataGridControl control)
             {
+                // A new key means a new surface (e.g. the friends grid switching from the recent
+                // feed to a selected friend+game pair), so re-arm the one-shot start-in-category
+                // application for the incoming surface.
+                control._startInCategoryModeApplied = false;
                 control.UpdateUnlockDateMode();
                 control.ReattachColumnPersistence();
                 control.SyncModeToggle();

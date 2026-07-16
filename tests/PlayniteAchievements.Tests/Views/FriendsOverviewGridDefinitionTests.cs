@@ -100,8 +100,8 @@ namespace PlayniteAchievements.Tests.Views
                 "ColumnSettingsKey=\"FriendsOverviewSelectedFriendGameSummaries\"",
                 "ColumnSettingsKey=\"{Binding AchievementColumnSettingsKey}\"",
                 "EnableCategoryMode=\"{Binding HasFriendGameSelection}\"",
-                "ShowGameColumn=\"{Binding HasGameSelection, Converter={StaticResource InvertBoolConverter}}\"",
-                "ShowFriendColumn=\"{Binding HasFriendSelection, Converter={StaticResource InvertBoolConverter}}\"",
+                "ShowGameColumn=\"True\"",
+                "ShowFriendColumn=\"True\"",
                 "HideStatusColumn=\"{Binding HasFriendGameSelection, Converter={StaticResource InvertBoolConverter}}\"",
                 "Visibility=\"{Binding HasFriendSelection, Converter={StaticResource InverseBoolToVis}}\"",
                 "Visibility=\"{Binding HasFriendSelection, Converter={StaticResource BoolToVis}}\"");

@@ -719,6 +719,7 @@
                                                                  KeyboardNavigation.DirectionalNavigation="Contained"
                                                                  ItemsSource="{Binding SelectedGameAchievements}"
                                                                  ColumnSettingsKey="OverviewSelectedGameAchievements"
+                                                                 ShowGameColumn="True"
                                                                  EnableCategoryMode="True"
                                                                  HideBackButton="True"
                                                                  HideCategorySummaryRow="{Binding OverviewSelectedGameAchievementsHideCategorySummaryRow}"

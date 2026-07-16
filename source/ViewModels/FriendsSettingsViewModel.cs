@@ -117,7 +117,9 @@ namespace PlayniteAchievements.ViewModels
 
                 persisted.IncludeUnownedFriendGames = value;
                 OnPropertyChanged();
-                PersistAndNotify(null);
+                // Debounce the persist/sync fan-out (settings serialization, cache sync, theme
+                // refresh) so rapid checkbox toggles stay responsive.
+                SchedulePersistAndNotify(null);
             }
         }
 

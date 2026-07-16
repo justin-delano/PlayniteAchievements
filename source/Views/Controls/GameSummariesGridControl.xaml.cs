@@ -50,14 +50,13 @@ namespace PlayniteAchievements.Views.Controls
                 ["GameSummaryPlatform"] = 36
             };
 
-        private static readonly string[] SelectedFriendOnlyColumnKeys =
-        {
-            "GameSummaryLastUnlock"
-        };
-
+        // Columns only meaningful on the friend game-summaries surfaces: Owned marks games the
+        // current user shares with friends, and Last unlock surfaces the newest friend unlock per
+        // game (MAX across friends on the aggregate grids, the friend's own on selected-friend).
         private static readonly string[] FriendGameOnlyColumnKeys =
         {
-            "GameSummaryOwned"
+            "GameSummaryOwned",
+            "GameSummaryLastUnlock"
         };
 
         // Columns kept in the codebase for other surfaces but not wanted on the aggregate
@@ -1040,16 +1039,6 @@ namespace PlayniteAchievements.Views.Controls
                 surface != GridSurface.ViewFriendsAchievementsSelectedFriend)
             {
                 foreach (var key in FriendGameOnlyColumnKeys)
-                {
-                    _columnPersistence.ForcedCollapsedKeys.Add(key);
-                    _columnPersistence.ExcludedVisibilityKeys.Add(key);
-                }
-            }
-
-            if (surface != GridSurface.FriendsOverviewSelectedFriend &&
-                surface != GridSurface.ViewFriendsAchievementsSelectedFriend)
-            {
-                foreach (var key in SelectedFriendOnlyColumnKeys)
                 {
                     _columnPersistence.ForcedCollapsedKeys.Add(key);
                     _columnPersistence.ExcludedVisibilityKeys.Add(key);
