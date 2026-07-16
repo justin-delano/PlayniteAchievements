@@ -101,6 +101,65 @@ namespace PlayniteAchievements.Tests.Services.UI
         }
 
         [TestMethod]
+        public void Apply_PublishesProgressTierAndCompletedFillBrushes()
+        {
+            var resources = new ResourceDictionary();
+
+            PlayAchResourceService.Apply(resources, null);
+
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Common", ParseColor(RarityColorSettings.DefaultCommon));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Uncommon", ParseColor(RarityColorSettings.DefaultUncommon));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.Rare", ParseColor(RarityColorSettings.DefaultRare));
+            AssertBrush(resources, "PlayAch.Brush.Rarity.UltraRare", ParseColor(RarityColorSettings.DefaultUltraRare));
+
+            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Common", ParseColor(RarityColorSettings.DefaultCommon));
+            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Uncommon", ParseColor(RarityColorSettings.DefaultUncommon));
+            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.Rare", ParseColor(RarityColorSettings.DefaultRare));
+            AssertShineFill(resources, "PlayAch.Brush.Progress.TierFill.UltraRare", ParseColor(RarityColorSettings.DefaultUltraRare));
+
+            // Default completed colors resolve to the badge's rainbow brush in the app, or the
+            // constructed gradient fallback when the static dictionary is unavailable.
+            Assert.IsTrue(resources.Contains("PlayAch.Brush.Progress.CompletedFill"));
+            Assert.IsNotNull(resources["PlayAch.Brush.Progress.CompletedFill"] as Brush);
+        }
+
+        [TestMethod]
+        public void ApplyProgressTierBrushResources_UsesCustomCompletedGradientWhenSupplied()
+        {
+            var resources = new ResourceDictionary();
+            var settings = new PersistedSettings
+            {
+                RarityColors = new RarityColorSettings
+                {
+                    CompletedStart = "#FF112233",
+                    CompletedEnd = "#FF445566"
+                }
+            };
+
+            PlayniteAchievements.Models.Achievements.RarityAppearanceHelper
+                .ApplyProgressTierBrushResources(resources, settings);
+
+            var gradient = resources["PlayAch.Brush.Progress.CompletedFill"] as LinearGradientBrush;
+            Assert.IsNotNull(gradient);
+            Assert.IsTrue(gradient.IsFrozen);
+            Assert.AreEqual(ParseColor("#FF112233"), gradient.GradientStops.First().Color);
+            Assert.AreEqual(ParseColor("#FF445566"), gradient.GradientStops.Last().Color);
+        }
+
+        private static void AssertShineFill(ResourceDictionary resources, string resourceKey, Color baseColor)
+        {
+            Assert.IsTrue(resources.Contains(resourceKey), resourceKey);
+            var gradient = resources[resourceKey] as LinearGradientBrush;
+            Assert.IsNotNull(gradient, resourceKey);
+            Assert.IsTrue(gradient.IsFrozen, resourceKey);
+            Assert.AreEqual(5, gradient.GradientStops.Count, resourceKey);
+            Assert.AreEqual(baseColor, gradient.GradientStops.First().Color, resourceKey);
+            Assert.AreEqual(baseColor, gradient.GradientStops.Last().Color, resourceKey);
+            // The mid highlight blends toward white, giving the badge-style sheen.
+            Assert.AreNotEqual(baseColor, gradient.GradientStops[2].Color, resourceKey);
+        }
+
+        [TestMethod]
         public void Apply_ResolvesTransparentOverrideToTransparentBrush()
         {
             var resources = new ResourceDictionary();
@@ -268,6 +327,11 @@ namespace PlayniteAchievements.Tests.Services.UI
                 PlayAchResourceService.ResourceDescriptors.Any(item =>
                     string.Equals(item.ResourceKey, resourceKey, StringComparison.Ordinal)),
                 resourceKey);
+        }
+
+        private static Color ParseColor(string hex)
+        {
+            return (Color)ColorConverter.ConvertFromString(hex);
         }
 
         private static ResourceOverrideSetting CreateBrushOverride(string color)

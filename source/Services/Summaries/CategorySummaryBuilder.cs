@@ -74,10 +74,42 @@ namespace PlayniteAchievements.Services.Summaries
                     .FromDisplayItems(bucket)
                     .ApplyTo(item);
 
+                item.IsCompleted = ComputeIsCompleted(bucket);
+
                 result.Add(item);
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Mirrors <see cref="PlayniteAchievements.Models.Achievements.GameAchievementData.IsCompleted"/>:
+        /// every achievement unlocked, or the category contains the game's unlocked capstone achievement.
+        /// </summary>
+        private static bool ComputeIsCompleted(IReadOnlyList<AchievementDisplayItem> bucket)
+        {
+            var hasAny = false;
+            var allUnlocked = true;
+            foreach (var achievement in bucket)
+            {
+                if (achievement == null)
+                {
+                    continue;
+                }
+
+                hasAny = true;
+                if (achievement.IsCapstone && achievement.Unlocked)
+                {
+                    return true;
+                }
+
+                if (!achievement.Unlocked)
+                {
+                    allUnlocked = false;
+                }
+            }
+
+            return hasAny && allUnlocked;
         }
 
         private static System.Guid? ResolveSharedGameId(IReadOnlyList<AchievementDisplayItem> bucket)
