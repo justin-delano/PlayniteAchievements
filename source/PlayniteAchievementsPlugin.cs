@@ -335,6 +335,9 @@ namespace PlayniteAchievements
                     _settingsViewModel = new PlayniteAchievementsSettingsViewModel(this);
                 }
 
+                AchievementRarityResolver.RoundDisplayPercentages =
+                    _settingsViewModel?.Settings?.Persisted?.RoundRarityPercentages ?? false;
+
                 // NECESSARY TO MAKE SURE CHARTS WORK
                 var Circle = LiveCharts.Wpf.DefaultGeometries.Circle;
                 var panel = new WpfToolkit.Controls.VirtualizingWrapPanel();
@@ -942,6 +945,12 @@ namespace PlayniteAchievements
             {
                 RarityAppearanceHelper.ApplyBadgeApplicationResources(
                     _settingsViewModel?.Settings?.Persisted);
+            }
+
+            if (e.PropertyName == nameof(PersistedSettings.RoundRarityPercentages))
+            {
+                AchievementRarityResolver.RoundDisplayPercentages =
+                    _settingsViewModel?.Settings?.Persisted?.RoundRarityPercentages ?? false;
             }
 
             if (e.PropertyName == nameof(PersistedSettings.EnableAchievementHotkeys) ||

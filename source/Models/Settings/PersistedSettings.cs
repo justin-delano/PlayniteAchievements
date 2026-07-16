@@ -130,6 +130,7 @@ namespace PlayniteAchievements.Models.Settings
         private bool _modernUnlockedListShowRarityGlow = true;
         private bool _useUniformRarityBadges = false;
         private bool _useTrophiesForRarity = false;
+        private bool _roundRarityPercentages = false;
         private RarityColorSettings _rarityColors = RarityColorSettings.CreateDefault();
         private bool _includeUnplayedGames = true;
         private bool _showOverviewCollectionScoreCard = true;
@@ -1399,6 +1400,16 @@ namespace PlayniteAchievements.Models.Settings
         }
 
         /// <summary>
+        /// When true, rarity percentages display rounded to the nearest whole percent and values
+        /// under 1% display as "&lt;1%". Display-only; stored percent values are unaffected.
+        /// </summary>
+        public bool RoundRarityPercentages
+        {
+            get => _roundRarityPercentages;
+            set => SetValue(ref _roundRarityPercentages, value);
+        }
+
+        /// <summary>
         /// User-selected base colors for rarity, completed game, and trophy badges.
         /// </summary>
         public RarityColorSettings RarityColors
@@ -2324,6 +2335,7 @@ namespace PlayniteAchievements.Models.Settings
                 ModernUnlockedListShowRarityGlow = this.ModernUnlockedListShowRarityGlow,
                 UseUniformRarityBadges = this.UseUniformRarityBadges,
                 UseTrophiesForRarity = this.UseTrophiesForRarity,
+                RoundRarityPercentages = this.RoundRarityPercentages,
                 RarityColors = this.RarityColors?.Clone() ?? RarityColorSettings.CreateDefault(),
                 IncludeUnplayedGames = this.IncludeUnplayedGames,
                 ShowOverviewCollectionScoreCard = this.ShowOverviewCollectionScoreCard,
@@ -2463,6 +2475,7 @@ namespace PlayniteAchievements.Models.Settings
             ModernUnlockedListShowRarityGlow = defaults.ModernUnlockedListShowRarityGlow;
             UseUniformRarityBadges = defaults.UseUniformRarityBadges;
             UseTrophiesForRarity = defaults.UseTrophiesForRarity;
+            RoundRarityPercentages = defaults.RoundRarityPercentages;
             RarityColors = RarityColorSettings.CreateDefault();
             ResourceOverrides = CreateDefaultResourceOverrides();
 
