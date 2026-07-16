@@ -83,6 +83,15 @@
                               ToolTip="{DynamicResource LOCPlayAch_FriendsSettings_UseExophaseForSteamOwnershipHint}"
                               ToolTipService.ShowOnDisabled="True"
                               Margin="0,6,0,0"/>
+
+                    <CheckBox Content="{DynamicResource LOCPlayAch_FriendsSettings_IncludeUnownedGames}"
+                              IsChecked="{Binding IncludeUnownedFriendGames, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                              ToolTip="{DynamicResource LOCPlayAch_FriendsSettings_IncludeUnownedGamesHint}"
+                              Margin="0,6,0,0"/>
+                    <TextBlock Text="{DynamicResource LOCPlayAch_FriendsSettings_IncludeUnownedGamesHint}"
+                               Style="{StaticResource MutedTextStyle}"
+                               TextWrapping="Wrap"
+                               Margin="18,2,0,0"/>
                 </StackPanel>
             </Border>
 

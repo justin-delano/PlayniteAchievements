@@ -228,6 +228,11 @@ namespace PlayniteAchievements.Services.Friends
 
         List<FriendIdentity> LoadFriendIdentities(string providerKey);
 
+        // Most recent LastRefreshedUtc across all active friends, used by the background updater
+        // to decide whether a periodic Recent friends refresh is due (the friend analogue of
+        // ICacheManager.GetMostRecentLastUpdatedUtc).
+        DateTime? GetMostRecentFriendLastRefreshedUtc();
+
         List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
             string providerKey,
             FriendRefreshOptions options);

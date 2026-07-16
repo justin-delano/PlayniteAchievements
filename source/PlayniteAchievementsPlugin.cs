@@ -888,7 +888,10 @@ namespace PlayniteAchievements
             }
 
             if (e.PropertyName == nameof(PersistedSettings.EnablePeriodicUpdates) ||
-                e.PropertyName == nameof(PersistedSettings.PeriodicUpdateHours))
+                e.PropertyName == nameof(PersistedSettings.PeriodicUpdateHours) ||
+                e.PropertyName == nameof(PersistedSettings.EnableFriendsPeriodicUpdates) ||
+                e.PropertyName == nameof(PersistedSettings.FriendsPeriodicUpdateHours) ||
+                e.PropertyName == nameof(PersistedSettings.EnableFriendsFeatures))
             {
                 RestartBackgroundUpdater();
             }

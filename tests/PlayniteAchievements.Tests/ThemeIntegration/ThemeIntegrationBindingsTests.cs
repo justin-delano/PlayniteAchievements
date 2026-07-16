@@ -2992,6 +2992,8 @@ namespace PlayniteAchievements.ThemeIntegration.Tests
             public List<FriendIdentity> LoadFriendIdentities(string providerKey) =>
                 new List<FriendIdentity>();
 
+            public DateTime? GetMostRecentFriendLastRefreshedUtc() => null;
+
             public List<FriendRefreshCandidate> LoadFriendRefreshCandidates(
                 string providerKey,
                 FriendRefreshOptions options) =>

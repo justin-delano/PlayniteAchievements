@@ -458,6 +458,18 @@ namespace PlayniteAchievements.Services.Database
             });
         }
 
+        public DateTime? GetMostRecentFriendLastRefreshedUtc()
+        {
+            return WithDb(db =>
+            {
+                var value = db.ExecuteScalar<string>(
+                    @"SELECT MAX(u.LastRefreshedUtc)
+                      FROM Users u
+                      WHERE " + ActiveFriendPredicateSql + ";");
+                return ParseUtc(value);
+            });
+        }
+
         public string GetCurrentUserScopeToken()
         {
             return WithDb(db =>

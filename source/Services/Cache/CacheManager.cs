@@ -1144,6 +1144,15 @@ namespace PlayniteAchievements.Services.Cache
             }
         }
 
+        DateTime? IFriendCacheManager.GetMostRecentFriendLastRefreshedUtc()
+        {
+            lock (_sync)
+            {
+                EnsureReady_Locked("GetMostRecentFriendLastRefreshedUtc");
+                return _store.GetMostRecentFriendLastRefreshedUtc();
+            }
+        }
+
         List<FriendRefreshCandidate> IFriendCacheManager.LoadFriendRefreshCandidates(
             string providerKey,
             FriendRefreshOptions options)

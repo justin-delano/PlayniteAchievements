@@ -49,6 +49,33 @@
                         </StackPanel>
                     </Grid>
 
+                    <!-- Periodic Friends Updates -->
+                    <Grid Style="{StaticResource SettingRowStyle}"
+                          Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}"
+                          Visibility="{Binding Persisted.EnableFriendsFeatures, Converter={StaticResource BoolToVis}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <CheckBox Content="{DynamicResource LOCPlayAch_Settings_EnableFriendsPeriodicUpdates}"
+                                      IsChecked="{Binding Persisted.EnableFriendsPeriodicUpdates}"
+                                      VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal">
+                            <TextBlock Text="{DynamicResource LOCPlayAch_Settings_HoursBetweenUpdates}"
+                                       Foreground="{DynamicResource PlayAch.Brush.Text}"
+                                       VerticalAlignment="Center"
+                                       Margin="{StaticResource PlayAch.Thickness.Right.Sm}"/>
+                            <TextBox Text="{Binding Persisted.FriendsPeriodicUpdateHours, UpdateSourceTrigger=PropertyChanged}"
+                                     Width="{StaticResource PlayAch.Size.Input.NarrowWidth}"
+                                     IsEnabled="{Binding Persisted.EnableFriendsPeriodicUpdates}"
+                                     TextAlignment="Right"/>
+                        </StackPanel>
+                    </Grid>
+
                     <!-- In-Game Polling -->
                     <Grid Style="{StaticResource SettingRowStyle}" Margin="{StaticResource PlayAch.Thickness.Bottom.Lg}">
                         <Grid.ColumnDefinitions>
